@@ -303,8 +303,11 @@ export type Database = {
           created_at: string
           employee_id: string | null
           employee_name: string
+          holiday_taken_date: string | null
           hours: number
           id: string
+          leave_year_end: string | null
+          leave_year_start: string | null
           notes: string | null
           payroll_period_id: string
           rate: number
@@ -314,8 +317,11 @@ export type Database = {
           created_at?: string
           employee_id?: string | null
           employee_name: string
+          holiday_taken_date?: string | null
           hours: number
           id?: string
+          leave_year_end?: string | null
+          leave_year_start?: string | null
           notes?: string | null
           payroll_period_id: string
           rate: number
@@ -325,8 +331,11 @@ export type Database = {
           created_at?: string
           employee_id?: string | null
           employee_name?: string
+          holiday_taken_date?: string | null
           hours?: number
           id?: string
+          leave_year_end?: string | null
+          leave_year_start?: string | null
           notes?: string | null
           payroll_period_id?: string
           rate?: number
