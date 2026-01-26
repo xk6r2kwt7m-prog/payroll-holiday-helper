@@ -14,16 +14,502 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_log: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action"]
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action"]
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action"]
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      employee_changes: {
+        Row: {
+          change_type: string
+          changed_by: string | null
+          created_at: string
+          employee_id: string
+          field_name: string | null
+          id: string
+          new_value: string | null
+          notes: string | null
+          old_value: string | null
+        }
+        Insert: {
+          change_type: string
+          changed_by?: string | null
+          created_at?: string
+          employee_id: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          employee_id?: string
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_changes_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          bank_account_no: string | null
+          created_at: string
+          department: Database["public"]["Enums"]["department_type"]
+          employee_ref: string | null
+          end_date: string | null
+          forename: string
+          hourly_rate: number
+          id: string
+          nationality: string | null
+          ni_number: string | null
+          notes: string | null
+          passport_no: string | null
+          residence_permit: string | null
+          service_charge: number | null
+          settlement_status: string | null
+          sharing_code: string | null
+          sort_code: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["employee_status"]
+          surname: string
+          updated_at: string
+        }
+        Insert: {
+          bank_account_no?: string | null
+          created_at?: string
+          department: Database["public"]["Enums"]["department_type"]
+          employee_ref?: string | null
+          end_date?: string | null
+          forename: string
+          hourly_rate: number
+          id?: string
+          nationality?: string | null
+          ni_number?: string | null
+          notes?: string | null
+          passport_no?: string | null
+          residence_permit?: string | null
+          service_charge?: number | null
+          settlement_status?: string | null
+          sharing_code?: string | null
+          sort_code?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          surname: string
+          updated_at?: string
+        }
+        Update: {
+          bank_account_no?: string | null
+          created_at?: string
+          department?: Database["public"]["Enums"]["department_type"]
+          employee_ref?: string | null
+          end_date?: string | null
+          forename?: string
+          hourly_rate?: number
+          id?: string
+          nationality?: string | null
+          ni_number?: string | null
+          notes?: string | null
+          passport_no?: string | null
+          residence_permit?: string | null
+          service_charge?: number | null
+          settlement_status?: string | null
+          sharing_code?: string | null
+          sort_code?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          surname?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      holiday_balances: {
+        Row: {
+          created_at: string
+          employee_id: string
+          hours_accrued: number | null
+          hours_carried_over: number | null
+          hours_taken: number | null
+          id: string
+          leave_year_end: string
+          leave_year_start: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          hours_accrued?: number | null
+          hours_carried_over?: number | null
+          hours_taken?: number | null
+          id?: string
+          leave_year_end: string
+          leave_year_start: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          hours_accrued?: number | null
+          hours_carried_over?: number | null
+          hours_taken?: number | null
+          id?: string
+          leave_year_end?: string
+          leave_year_start?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holiday_balances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holiday_payments: {
+        Row: {
+          created_at: string
+          employee_id: string | null
+          employee_name: string
+          hours: number
+          id: string
+          notes: string | null
+          payroll_period_id: string
+          rate: number
+          total: number
+        }
+        Insert: {
+          created_at?: string
+          employee_id?: string | null
+          employee_name: string
+          hours: number
+          id?: string
+          notes?: string | null
+          payroll_period_id: string
+          rate: number
+          total: number
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string | null
+          employee_name?: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          payroll_period_id?: string
+          rate?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holiday_payments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holiday_payments_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_entries: {
+        Row: {
+          created_at: string
+          employee_id: string
+          holiday_accrued_hours: number | null
+          hourly_rate: number
+          id: string
+          notes: string | null
+          payroll_period_id: string
+          performance_bonus: number | null
+          service_charge: number | null
+          special_bonus: number | null
+          timesheet_hours: number
+          total_pay: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          holiday_accrued_hours?: number | null
+          hourly_rate: number
+          id?: string
+          notes?: string | null
+          payroll_period_id: string
+          performance_bonus?: number | null
+          service_charge?: number | null
+          special_bonus?: number | null
+          timesheet_hours?: number
+          total_pay?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          holiday_accrued_hours?: number | null
+          hourly_rate?: number
+          id?: string
+          notes?: string | null
+          payroll_period_id?: string
+          performance_bonus?: number | null
+          service_charge?: number | null
+          special_bonus?: number | null
+          timesheet_hours?: number
+          total_pay?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_entries_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_entries_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_imports: {
+        Row: {
+          created_at: string
+          errors: Json | null
+          file_name: string
+          file_path: string | null
+          id: string
+          import_status: string | null
+          imported_by: string | null
+          payroll_period_id: string | null
+          records_imported: number | null
+        }
+        Insert: {
+          created_at?: string
+          errors?: Json | null
+          file_name: string
+          file_path?: string | null
+          id?: string
+          import_status?: string | null
+          imported_by?: string | null
+          payroll_period_id?: string | null
+          records_imported?: number | null
+        }
+        Update: {
+          created_at?: string
+          errors?: Json | null
+          file_name?: string
+          file_path?: string | null
+          id?: string
+          import_status?: string | null
+          imported_by?: string | null
+          payroll_period_id?: string | null
+          records_imported?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_imports_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_periods: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          end_date: string
+          grand_total: number | null
+          holidays_total: number | null
+          id: string
+          imported_by: string | null
+          incentives_total: number | null
+          notes: string | null
+          pay_date: string | null
+          period_name: string
+          start_date: string
+          status: Database["public"]["Enums"]["payroll_status"]
+          timesheet_total: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          end_date: string
+          grand_total?: number | null
+          holidays_total?: number | null
+          id?: string
+          imported_by?: string | null
+          incentives_total?: number | null
+          notes?: string | null
+          pay_date?: string | null
+          period_name: string
+          start_date: string
+          status?: Database["public"]["Enums"]["payroll_status"]
+          timesheet_total?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          end_date?: string
+          grand_total?: number | null
+          holidays_total?: number | null
+          id?: string
+          imported_by?: string | null
+          incentives_total?: number | null
+          notes?: string | null
+          pay_date?: string | null
+          period_name?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["payroll_status"]
+          timesheet_total?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_holiday_accrual: {
+        Args: { hours_worked: number }
+        Returns: number
+      }
+      has_any_role: { Args: never; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "manager" | "viewer"
+      audit_action:
+        | "create"
+        | "update"
+        | "delete"
+        | "approve"
+        | "reject"
+        | "import"
+      department_type: "FOH" | "BOH" | "CPU"
+      employee_status: "active" | "leaver" | "starter"
+      payroll_status: "draft" | "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +636,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "manager", "viewer"],
+      audit_action: [
+        "create",
+        "update",
+        "delete",
+        "approve",
+        "reject",
+        "import",
+      ],
+      department_type: ["FOH", "BOH", "CPU"],
+      employee_status: ["active", "leaver", "starter"],
+      payroll_status: ["draft", "pending", "approved", "rejected"],
+    },
   },
 } as const
