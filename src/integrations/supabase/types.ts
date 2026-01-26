@@ -53,6 +53,38 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_branches: {
+        Row: {
+          branch: Database["public"]["Enums"]["branch_type"]
+          created_at: string
+          employee_id: string
+          id: string
+          is_primary: boolean | null
+        }
+        Insert: {
+          branch: Database["public"]["Enums"]["branch_type"]
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_primary?: boolean | null
+        }
+        Update: {
+          branch?: Database["public"]["Enums"]["branch_type"]
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_primary?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_branches_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_changes: {
         Row: {
           change_type: string
@@ -266,6 +298,7 @@ export type Database = {
       }
       payroll_entries: {
         Row: {
+          bank_details_exported: boolean | null
           created_at: string
           employee_id: string
           holiday_accrued_hours: number | null
@@ -281,6 +314,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bank_details_exported?: boolean | null
           created_at?: string
           employee_id: string
           holiday_accrued_hours?: number | null
@@ -296,6 +330,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bank_details_exported?: boolean | null
           created_at?: string
           employee_id?: string
           holiday_accrued_hours?: number | null
@@ -507,6 +542,7 @@ export type Database = {
         | "approve"
         | "reject"
         | "import"
+      branch_type: "Fitzrovia" | "Carnaby" | "Brixton"
       department_type: "FOH" | "BOH" | "CPU"
       employee_status: "active" | "leaver" | "starter"
       payroll_status: "draft" | "pending" | "approved" | "rejected"
@@ -646,6 +682,7 @@ export const Constants = {
         "reject",
         "import",
       ],
+      branch_type: ["Fitzrovia", "Carnaby", "Brixton"],
       department_type: ["FOH", "BOH", "CPU"],
       employee_status: ["active", "leaver", "starter"],
       payroll_status: ["draft", "pending", "approved", "rejected"],

@@ -17,7 +17,7 @@ export function usePayrollPeriods() {
       const { data, error } = await supabase
         .from("payroll_periods")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("start_date", { ascending: false });
       
       if (error) throw error;
       return data as PayrollPeriod[];
@@ -55,7 +55,12 @@ export function usePayrollEntries(periodId?: string) {
             forename,
             surname,
             department,
-            status
+            status,
+            hourly_rate,
+            service_charge,
+            bank_account_no,
+            sort_code,
+            ni_number
           )
         `)
         .order("total_pay", { ascending: false });
@@ -174,6 +179,124 @@ export function useUpdatePayrollEntry() {
       
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+    },
+  });
+}
+
+export function useBulkUpdatePayrollEntries() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (entries: { id: string; updates: PayrollEntryUpdate }[]) => {
+      const results = await Promise.all(
+        entries.map(async ({ id, updates }) => {
+          const { data, error } = await supabase
+            .from("payroll_entries")
+            .update(updates)
+            .eq("id", id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          return data;
+        })
+      );
+      return results;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+    },
+  });
+}
+
+export function useCopyPayrollPeriod() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      sourcePeriodId, 
+      newPeriodName, 
+      startDate, 
+      endDate, 
+      payDate 
+    }: { 
+      sourcePeriodId: string; 
+      newPeriodName: string; 
+      startDate: string; 
+      endDate: string;
+      payDate?: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Create new period
+      const { data: newPeriod, error: periodError } = await supabase
+        .from("payroll_periods")
+        .insert({
+          period_name: newPeriodName,
+          start_date: startDate,
+          end_date: endDate,
+          pay_date: payDate || null,
+          status: "draft" as const,
+          imported_by: user?.id,
+        })
+        .select()
+        .single();
+
+      if (periodError) throw periodError;
+
+      // Get source entries
+      const { data: sourceEntries, error: entriesError } = await supabase
+        .from("payroll_entries")
+        .select("*")
+        .eq("payroll_period_id", sourcePeriodId);
+
+      if (entriesError) throw entriesError;
+
+      // Copy entries with zero timesheet hours
+      if (sourceEntries && sourceEntries.length > 0) {
+        const newEntries = sourceEntries.map(entry => ({
+          payroll_period_id: newPeriod.id,
+          employee_id: entry.employee_id,
+          hourly_rate: entry.hourly_rate,
+          service_charge: entry.service_charge,
+          timesheet_hours: 0, // Reset timesheet hours
+          performance_bonus: entry.performance_bonus,
+          special_bonus: entry.special_bonus,
+          holiday_accrued_hours: 0, // Will be recalculated
+          total_pay: 0, // Will be recalculated
+          bank_details_exported: false,
+        }));
+
+        const { error: insertError } = await supabase
+          .from("payroll_entries")
+          .insert(newEntries);
+
+        if (insertError) throw insertError;
+      }
+
+      return newPeriod;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+    },
+  });
+}
+
+export function useMarkBankDetailsExported() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (entryIds: string[]) => {
+      const { error } = await supabase
+        .from("payroll_entries")
+        .update({ bank_details_exported: true })
+        .in("id", entryIds);
+      
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
