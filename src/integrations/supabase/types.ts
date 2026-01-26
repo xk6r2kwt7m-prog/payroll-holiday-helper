@@ -129,6 +129,59 @@ export type Database = {
           },
         ]
       }
+      employee_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          employee_id: string
+          expires_at: string | null
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          notes: string | null
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          employee_id: string
+          expires_at?: string | null
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: Database["public"]["Enums"]["document_type"]
+          employee_id?: string
+          expires_at?: string | null
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           bank_account_no: string | null
@@ -544,6 +597,17 @@ export type Database = {
         | "import"
       branch_type: "Fitzrovia" | "Carnaby" | "Brixton"
       department_type: "FOH" | "BOH" | "CPU"
+      document_type:
+        | "contract"
+        | "id_document"
+        | "passport"
+        | "right_to_work"
+        | "visa"
+        | "driving_license"
+        | "bank_statement"
+        | "p45"
+        | "p60"
+        | "other"
       employee_status: "active" | "leaver" | "starter"
       payroll_status: "draft" | "pending" | "approved" | "rejected"
     }
@@ -684,6 +748,18 @@ export const Constants = {
       ],
       branch_type: ["Fitzrovia", "Carnaby", "Brixton"],
       department_type: ["FOH", "BOH", "CPU"],
+      document_type: [
+        "contract",
+        "id_document",
+        "passport",
+        "right_to_work",
+        "visa",
+        "driving_license",
+        "bank_statement",
+        "p45",
+        "p60",
+        "other",
+      ],
       employee_status: ["active", "leaver", "starter"],
       payroll_status: ["draft", "pending", "approved", "rejected"],
     },

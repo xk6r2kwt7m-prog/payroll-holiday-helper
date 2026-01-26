@@ -1,6 +1,7 @@
 import { Users, DollarSign, Calendar, Clock, FileText } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocumentsWidget";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
 import { useHolidayPayments, formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
@@ -96,16 +97,26 @@ const Index = () => {
           ))}
         </div>
 
-        {/* UK Holiday Law Info Banner */}
-        <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 flex items-center gap-3 animate-fade-in">
-          <div className="text-2xl">⚖️</div>
-          <div className="flex-1">
-            <p className="text-sm text-card-foreground">
-              <strong>UK Holiday Law:</strong> Employees accrue <strong>{(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}%</strong> of hours worked as holiday entitlement.
-              {totalHolidayAccrued > 0 && (
-                <> This period: <strong>{formatHours(totalHolidayAccrued)} hours</strong> accrued.</>
-              )}
+        {/* Expiring Documents + UK Holiday Law */}
+        <div className="grid gap-4 lg:grid-cols-2 animate-fade-in">
+          <ExpiringDocumentsWidget />
+          
+          {/* UK Holiday Law Info Banner */}
+          <div className="rounded-xl bg-card shadow-card p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="text-2xl">⚖️</div>
+              <h3 className="font-semibold text-card-foreground">UK Holiday Law</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Employees accrue <strong className="text-card-foreground">{(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}%</strong> of hours worked as holiday entitlement.
             </p>
+            {totalHolidayAccrued > 0 && (
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+                <p className="text-sm text-card-foreground">
+                  This period: <strong className="text-primary">{formatHours(totalHolidayAccrued)} hours</strong> accrued
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

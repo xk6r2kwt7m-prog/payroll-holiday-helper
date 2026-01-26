@@ -1,10 +1,11 @@
-import { X, User, Building, CreditCard, FileText, Calendar, Phone, Globe, Edit2 } from "lucide-react";
+import { X, User, Building, CreditCard, FileText, Calendar, Phone, Globe, Edit2, FolderOpen } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
+import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
@@ -180,6 +181,15 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin }: E
               </p>
             </Section>
           )}
+
+          {/* Documents */}
+          <Section title="Documents" icon={FolderOpen}>
+            <EmployeeDocumentList
+              employeeId={employee.id}
+              employeeName={`${employee.forename} ${employee.surname}`}
+              isAdmin={isAdmin}
+            />
+          </Section>
 
           {/* Timestamps */}
           <div className="text-xs text-muted-foreground space-y-1 pt-4 border-t border-border">
