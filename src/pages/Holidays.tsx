@@ -1,17 +1,9 @@
-import { Calendar, DollarSign, Clock, Info, Scale } from "lucide-react";
+import { Calendar, DollarSign, Clock, Scale } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  holidayPayments, 
-  formatCurrency, 
-  payrollSummary, 
-  employees,
-  UK_HOLIDAY_LAW,
-  getTotalHolidayAccrual,
-  formatHours,
-  roundHolidayHours
-} from "@/data/payrollData";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { useHolidayPayments, formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
+import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
 import {
   Accordion,
   AccordionContent,
@@ -20,10 +12,23 @@ import {
 } from "@/components/ui/accordion";
 
 const Holidays = () => {
-  const totalHolidayPay = holidayPayments.reduce((sum, h) => sum + h.total, 0);
-  const totalHolidayHours = holidayPayments.reduce((sum, h) => sum + h.units, 0);
-  const avgRate = holidayPayments.reduce((sum, h) => sum + h.rate, 0) / holidayPayments.length;
-  const totalAccruedThisPeriod = getTotalHolidayAccrual();
+  const { data: periods = [] } = usePayrollPeriods();
+  const latestPeriod = periods[0];
+  const { data: holidayPayments = [] } = useHolidayPayments(latestPeriod?.id);
+  const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
+
+  const totalHolidayPay = holidayPayments.reduce((sum, h) => sum + Number(h.total), 0);
+  const totalHolidayHours = holidayPayments.reduce((sum, h) => sum + Number(h.hours), 0);
+  const avgRate = holidayPayments.length > 0 
+    ? holidayPayments.reduce((sum, h) => sum + Number(h.rate), 0) / holidayPayments.length 
+    : 0;
+  const totalAccruedThisPeriod = entries.reduce((sum, e) => sum + Number(e.holiday_accrued_hours), 0);
+
+  const roundHolidayHours = (hours: number): number => {
+    const wholeHours = Math.floor(hours);
+    const fraction = hours - wholeHours;
+    return fraction >= 0.5 ? wholeHours + 1 : wholeHours;
+  };
 
   return (
     <AppLayout>
@@ -33,7 +38,7 @@ const Holidays = () => {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Holiday Payments</h1>
             <p className="text-muted-foreground">
-              Period: {payrollSummary.period}
+              {latestPeriod ? `Period: ${latestPeriod.period_name}` : "No payroll periods yet"}
             </p>
           </div>
         </div>
@@ -129,156 +134,160 @@ const Holidays = () => {
         </div>
 
         {/* Holiday Accrual Table */}
-        <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
-          <div className="border-b border-border px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-card-foreground">Holiday Accrual This Period</h3>
-                <p className="text-sm text-muted-foreground">12.07% of hours worked per UK law</p>
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
-                <Clock className="h-5 w-5 text-success" />
+        {entries.length > 0 && (
+          <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
+            <div className="border-b border-border px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-card-foreground">Holiday Accrual This Period</h3>
+                  <p className="text-sm text-muted-foreground">12.07% of hours worked per UK law</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
+                  <Clock className="h-5 w-5 text-success" />
+                </div>
               </div>
             </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Employee
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Dept
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Hours Worked
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Holiday Accrued
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Rounded
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {employees.slice(0, 10).map((emp) => (
-                  <tr
-                    key={emp.employeeId}
-                    className="transition-colors hover:bg-muted/30"
-                  >
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                            {emp.forename[0]}{emp.surname[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium text-card-foreground">
-                          {emp.forename} {emp.surname}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                      {emp.department}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                      {formatHours(emp.timesheetHours)}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-success">
-                      {formatHours(emp.holidayAccruedThisPeriod)} hrs
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-card-foreground">
-                      {roundHolidayHours(emp.holidayAccruedThisPeriod)} hrs
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Employee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Dept
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Hours Worked
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Holiday Accrued
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Rounded
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {entries.slice(0, 10).map((entry: any) => (
+                    <tr key={entry.id} className="transition-colors hover:bg-muted/30">
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                              {entry.employees?.forename?.[0]}{entry.employees?.surname?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium text-card-foreground">
+                            {entry.employees?.forename} {entry.employees?.surname}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
+                        {entry.employees?.department}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
+                        {formatHours(Number(entry.timesheet_hours))}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-success">
+                        {formatHours(Number(entry.holiday_accrued_hours))} hrs
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-card-foreground">
+                        {roundHolidayHours(Number(entry.holiday_accrued_hours))} hrs
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Holiday Payments Table */}
-        <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
-          <div className="border-b border-border px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-card-foreground">Holiday Payments Made</h3>
-                <p className="text-sm text-muted-foreground">Payments for holiday taken this period</p>
-              </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
-                <Calendar className="h-5 w-5 text-accent" />
+        {holidayPayments.length > 0 && (
+          <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
+            <div className="border-b border-border px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-card-foreground">Holiday Payments Made</h3>
+                  <p className="text-sm text-muted-foreground">Payments for holiday taken this period</p>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
+                  <Calendar className="h-5 w-5 text-accent" />
+                </div>
               </div>
             </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Employee
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Rate
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Hours
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {holidayPayments.map((holiday) => (
-                  <tr
-                    key={holiday.id}
-                    className="transition-colors hover:bg-muted/30"
-                  >
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                            {holiday.employeeForename[0]}{holiday.employeeSurname?.[0] || ""}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium text-card-foreground">
-                          {holiday.employeeForename} {holiday.employeeSurname || ""}
-                        </span>
-                      </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Employee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Rate
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Hours
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {holidayPayments.map((holiday: any) => (
+                    <tr key={holiday.id} className="transition-colors hover:bg-muted/30">
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+                              {holiday.employee_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium text-card-foreground">
+                            {holiday.employee_name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
+                        {formatCurrency(Number(holiday.rate))}/hr
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
+                        {holiday.hours}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-card-foreground">
+                        {formatCurrency(Number(holiday.total))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border bg-muted/50">
+                    <td className="px-6 py-4 font-semibold text-card-foreground">TOTAL</td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                      Avg: {formatCurrency(avgRate)}/hr
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                      {formatCurrency(holiday.rate)}/hr
+                    <td className="px-6 py-4 font-semibold text-card-foreground">
+                      {formatHours(totalHolidayHours)}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                      {holiday.units}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-card-foreground">
-                      {formatCurrency(holiday.total)}
+                    <td className="px-6 py-4 font-bold text-primary">
+                      {formatCurrency(totalHolidayPay)}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-border bg-muted/50">
-                  <td className="px-6 py-4 font-semibold text-card-foreground">
-                    TOTAL
-                  </td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">
-                    Avg: {formatCurrency(avgRate)}/hr
-                  </td>
-                  <td className="px-6 py-4 font-semibold text-card-foreground">
-                    {formatHours(totalHolidayHours)}
-                  </td>
-                  <td className="px-6 py-4 font-bold text-primary">
-                    {formatCurrency(totalHolidayPay)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                </tfoot>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Empty State */}
+        {entries.length === 0 && (
+          <div className="rounded-xl bg-card shadow-card p-8 text-center animate-fade-in">
+            <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No holiday data yet. Import payroll to see holiday accruals.</p>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
