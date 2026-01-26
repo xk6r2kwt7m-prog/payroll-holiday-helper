@@ -48,7 +48,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
   const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
 
-  // Reset form when dialog opens/closes or employee changes
+  // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setFormData({
@@ -69,18 +69,20 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         employee_ref: employee?.employee_ref || "",
       });
       setActiveTab("personal");
-      
-      // Set existing branches
-      if (employee && existingBranches.length > 0) {
-        setSelectedBranches(existingBranches.map(b => b.branch));
-        const primary = existingBranches.find(b => b.is_primary);
-        setPrimaryBranch(primary?.branch);
-      } else {
-        setSelectedBranches([]);
-        setPrimaryBranch(undefined);
-      }
     }
-  }, [open, employee, existingBranches]);
+  }, [open, employee]);
+
+  // Set branches when they load (separate effect to avoid infinite loop)
+  useEffect(() => {
+    if (open && employee && existingBranches.length > 0) {
+      setSelectedBranches(existingBranches.map(b => b.branch));
+      const primary = existingBranches.find(b => b.is_primary);
+      setPrimaryBranch(primary?.branch);
+    } else if (open && !employee) {
+      setSelectedBranches([]);
+      setPrimaryBranch(undefined);
+    }
+  }, [open, employee?.id, existingBranches.length]);
 
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
