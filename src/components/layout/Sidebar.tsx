@@ -8,7 +8,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,12 +34,12 @@ export function Sidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary">
-              <Briefcase className="h-5 w-5 text-sidebar-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary text-2xl">
+              🥟
             </div>
             {!collapsed && (
               <span className="text-lg font-semibold text-sidebar-foreground animate-fade-in">
-                PayrollHub
+                Ugly Dumpling
               </span>
             )}
           </div>
