@@ -11,6 +11,7 @@ import { CreatePayrollDialog } from "@/components/payroll/CreatePayrollDialog";
 import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const statusStyles = {
   draft: "bg-muted text-muted-foreground",
@@ -53,55 +54,83 @@ const Payroll = () => {
     }
   };
 
-  const handleExport = (includeBankDetails: boolean) => {
+  const handleExport = async (includeBankDetails: boolean) => {
     if (!selectedPeriod || entries.length === 0) return;
 
-    // Generate CSV content
-    const headers = [
-      "Employee",
-      "Department",
-      "NI Number",
-      ...(includeBankDetails ? ["Sort Code", "Account Number"] : []),
-      "Hourly Rate",
-      "Service Charge",
-      "Hours",
-      "Performance Bonus",
-      "Special Bonus",
-      "Holiday Accrued",
-      "Total Pay",
-    ];
+    try {
+      // Get current user for audit logging
+      const { data: { user } } = await supabase.auth.getUser();
 
-    const rows = entries.map((entry: any) => {
-      const emp = entry.employees;
-      const row = [
-        `${emp?.forename} ${emp?.surname}`,
-        emp?.department,
-        emp?.ni_number || "",
-        ...(includeBankDetails ? [emp?.sort_code || "", emp?.bank_account_no || ""] : []),
-        entry.hourly_rate,
-        entry.service_charge || 0,
-        entry.timesheet_hours,
-        entry.performance_bonus || 0,
-        entry.special_bonus || 0,
-        entry.holiday_accrued_hours || 0,
-        entry.total_pay,
+      // Log the export action to audit_log for compliance
+      // Using 'import' action type as closest match for data export operations
+      const { error: auditError } = await supabase.from("audit_log").insert({
+        user_id: user?.id || null,
+        action: "import" as const, // Using 'import' as it relates to data transfer operations
+        table_name: "payroll_entries",
+        record_id: selectedPeriod.id,
+        new_data: {
+          operation: "export",
+          period_name: selectedPeriod.period_name,
+          included_bank_details: includeBankDetails,
+          entry_count: entries.length,
+          export_type: "csv"
+        }
+      });
+      
+      if (auditError) {
+        console.error("Audit log failed:", auditError);
+      }
+
+      // Generate CSV content
+      const headers = [
+        "Employee",
+        "Department",
+        "NI Number",
+        ...(includeBankDetails ? ["Sort Code", "Account Number"] : []),
+        "Hourly Rate",
+        "Service Charge",
+        "Hours",
+        "Performance Bonus",
+        "Special Bonus",
+        "Holiday Accrued",
+        "Total Pay",
       ];
-      return row.join(",");
-    });
 
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `payroll-${selectedPeriod.period_name.replace(/\s+/g, "-")}${includeBankDetails ? "-with-bank" : ""}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+      const rows = entries.map((entry: any) => {
+        const emp = entry.employees;
+        const row = [
+          `${emp?.forename} ${emp?.surname}`,
+          emp?.department,
+          emp?.ni_number || "",
+          ...(includeBankDetails ? [emp?.sort_code || "", emp?.bank_account_no || ""] : []),
+          entry.hourly_rate,
+          entry.service_charge || 0,
+          entry.timesheet_hours,
+          entry.performance_bonus || 0,
+          entry.special_bonus || 0,
+          entry.holiday_accrued_hours || 0,
+          entry.total_pay,
+        ];
+        return row.join(",");
+      });
 
-    toast.success(includeBankDetails 
-      ? "Exported with bank details (marked as exported)" 
-      : "Payroll exported"
-    );
+      const csv = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `payroll-${selectedPeriod.period_name.replace(/\s+/g, "-")}${includeBankDetails ? "-with-bank" : ""}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(includeBankDetails 
+        ? "Exported with bank details (marked as exported)" 
+        : "Payroll exported"
+      );
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Failed to export payroll");
+    }
   };
 
   return (
