@@ -5,7 +5,7 @@ import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocument
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
 import { useHolidayPayments, formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -55,6 +55,7 @@ const Index = () => {
             value={employees.length}
             subtitle={`${activeEmployees} active`}
             icon={<Users className="h-5 w-5" />}
+            href="/employees"
           />
           <StatCard
             title="Total Payroll"
@@ -62,6 +63,7 @@ const Index = () => {
             subtitle={latestPeriod ? latestPeriod.period_name : "No data"}
             icon={<DollarSign className="h-5 w-5" />}
             variant="primary"
+            href="/payroll"
           />
           <StatCard
             title="Holiday Accrued"
@@ -69,31 +71,37 @@ const Index = () => {
             subtitle={`${(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% rate`}
             icon={<Calendar className="h-5 w-5" />}
             variant="accent"
+            href="/holidays"
           />
           <StatCard
             title="Hours Tracked"
             value={formatHours(totalHours)}
             subtitle="This period"
             icon={<Clock className="h-5 w-5" />}
+            href="/payroll"
           />
         </div>
 
         {/* Department Summary */}
         <div className="grid gap-4 sm:grid-cols-3 animate-fade-in">
           {(["FOH", "BOH", "CPU"] as const).map((dept) => (
-            <div key={dept} className="rounded-xl bg-card p-5 shadow-card">
+            <Link 
+              key={dept} 
+              to={`/employees?dept=${dept}`}
+              className="rounded-xl bg-card p-5 shadow-card transition-all hover:shadow-elevated hover:-translate-y-1 group cursor-pointer"
+            >
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-card-foreground">{dept}</h3>
+                <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{dept}</h3>
                 <span className="text-sm text-muted-foreground">
                   {departmentStats[dept]?.count || 0} staff
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                {dept === "FOH" && "Front of House"}
-                {dept === "BOH" && "Back of House"}
-                {dept === "CPU" && "Central Production Unit"}
+                {dept === "FOH" && "🍽️ Front of House"}
+                {dept === "BOH" && "👨‍🍳 Back of House"}
+                {dept === "CPU" && "🏭 Central Production Unit"}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
 
