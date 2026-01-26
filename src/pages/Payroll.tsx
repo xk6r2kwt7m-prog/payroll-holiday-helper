@@ -1,8 +1,8 @@
-import { Download, Calendar, DollarSign, Users, Clock } from "lucide-react";
+import { Download, DollarSign, Clock } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { employees, payrollSummary, formatCurrency, getDepartmentStats } from "@/data/payrollData";
+import { employees, payrollSummary, formatCurrency, formatHours, getDepartmentStats, UK_HOLIDAY_LAW } from "@/data/payrollData";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Department } from "@/data/payrollData";

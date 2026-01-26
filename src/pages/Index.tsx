@@ -1,10 +1,10 @@
-import { Users, DollarSign, Calendar, Clock, TrendingUp, TrendingDown } from "lucide-react";
+import { Users, DollarSign, Calendar, Clock } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { EmployeeTable } from "@/components/dashboard/EmployeeTable";
 import { HolidayRequests } from "@/components/dashboard/HolidayRequests";
 import { UpcomingPayroll } from "@/components/dashboard/UpcomingPayroll";
-import { employees, payrollSummary, formatCurrency, getDepartmentStats, holidayPayments } from "@/data/payrollData";
+import { employees, payrollSummary, formatCurrency, getDepartmentStats, holidayPayments, getTotalHolidayAccrual, formatHours, UK_HOLIDAY_LAW } from "@/data/payrollData";
 
 const Index = () => {
   const activeEmployees = employees.filter(e => e.status === "active").length;
@@ -12,6 +12,7 @@ const Index = () => {
   const totalHours = employees.reduce((sum, e) => sum + e.timesheetHours, 0);
   const pendingHolidays = holidayPayments.length;
   const departmentStats = getDepartmentStats();
+  const totalHolidayAccrued = getTotalHolidayAccrual();
 
   return (
     <AppLayout>
@@ -54,7 +55,7 @@ const Index = () => {
           />
         </div>
 
-        {/* Department Summary */}
+        {/* Department Summary with Holiday Accrual */}
         <div className="grid gap-4 sm:grid-cols-3 animate-fade-in">
           {(["FOH", "BOH", "CPU"] as const).map((dept) => (
             <div key={dept} className="rounded-xl bg-card p-5 shadow-card">
@@ -68,12 +69,27 @@ const Index = () => {
                   <span className="font-medium text-card-foreground">{formatCurrency(departmentStats[dept].totalPay)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Hours</span>
-                  <span className="font-medium text-card-foreground">{departmentStats[dept].totalHours.toFixed(1)}</span>
+                  <span className="text-muted-foreground">Hours Worked</span>
+                  <span className="font-medium text-card-foreground">{formatHours(departmentStats[dept].totalHours)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Holiday Accrued</span>
+                  <span className="font-medium text-accent">{formatHours(departmentStats[dept].holidayAccrued)} hrs</span>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* UK Holiday Law Info Banner */}
+        <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 flex items-center gap-3 animate-fade-in">
+          <div className="text-2xl">⚖️</div>
+          <div className="flex-1">
+            <p className="text-sm text-card-foreground">
+              <strong>UK Holiday Law:</strong> Employees accrue <strong>{(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}%</strong> of hours worked as holiday entitlement. 
+              This period: <strong>{formatHours(totalHolidayAccrued)} hours</strong> accrued across all staff.
+            </p>
+          </div>
         </div>
 
         {/* Main Content Grid */}

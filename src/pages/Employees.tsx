@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Search, Filter } from "lucide-react";
+import { Search } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { employees, formatCurrency, type PayrollEntry, type Department, type EmployeeStatus } from "@/data/payrollData";
+import { employees, formatCurrency, formatHours, calculateHolidayAccrual, UK_HOLIDAY_LAW, type Department } from "@/data/payrollData";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const statusStyles = {
@@ -109,11 +108,19 @@ const Employees = () => {
               <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border">
                 <div>
                   <p className="text-xs text-muted-foreground">Hours</p>
-                  <p className="text-sm font-medium text-card-foreground">{employee.timesheetHours.toFixed(1)}</p>
+                  <p className="text-sm font-medium text-card-foreground">{formatHours(employee.timesheetHours)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Total Pay</p>
                   <p className="text-sm font-semibold text-primary">{formatCurrency(employee.totalPay)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Holiday Accrued</p>
+                  <p className="text-sm font-medium text-accent">{formatHours(employee.holidayAccruedThisPeriod)} hrs</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Rate ({(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(0)}%)</p>
+                  <p className="text-sm font-medium text-muted-foreground">{formatCurrency(employee.hourlyRate)}/hr</p>
                 </div>
                 {(employee.performanceBonus > 0 || employee.specialBonus > 0) && (
                   <>
