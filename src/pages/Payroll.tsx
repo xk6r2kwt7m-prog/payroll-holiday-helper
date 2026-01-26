@@ -1,38 +1,37 @@
-import { Download, Calendar, TrendingUp, DollarSign } from "lucide-react";
+import { Download, Calendar, DollarSign, Users, Clock } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
-
-interface PayrollRecord {
-  id: string;
-  period: string;
-  payDate: string;
-  totalAmount: number;
-  employees: number;
-  status: "completed" | "processing" | "scheduled";
-}
-
-const payrollHistory: PayrollRecord[] = [
-  { id: "1", period: "February 2024", payDate: "Feb 28, 2024", totalAmount: 352500, employees: 48, status: "scheduled" },
-  { id: "2", period: "January 2024", payDate: "Jan 31, 2024", totalAmount: 348200, employees: 47, status: "completed" },
-  { id: "3", period: "December 2023", payDate: "Dec 29, 2023", totalAmount: 365800, employees: 47, status: "completed" },
-  { id: "4", period: "November 2023", payDate: "Nov 30, 2023", totalAmount: 342100, employees: 46, status: "completed" },
-  { id: "5", period: "October 2023", payDate: "Oct 31, 2023", totalAmount: 338500, employees: 45, status: "completed" },
-];
+import { employees, payrollSummary, formatCurrency, getDepartmentStats } from "@/data/payrollData";
+import { useState } from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Department } from "@/data/payrollData";
 
 const statusStyles = {
-  completed: "bg-success/10 text-success",
-  processing: "bg-warning/10 text-warning",
-  scheduled: "bg-primary/10 text-primary",
+  active: "bg-success/10 text-success",
+  leaver: "bg-destructive/10 text-destructive",
+  starter: "bg-primary/10 text-primary",
 };
 
 const statusLabels = {
-  completed: "Completed",
-  processing: "Processing",
-  scheduled: "Scheduled",
+  active: "Active",
+  leaver: "Leaver",
+  starter: "Starter",
 };
 
 const Payroll = () => {
+  const [departmentFilter, setDepartmentFilter] = useState<Department | "all">("all");
+  const departmentStats = getDepartmentStats();
+
+  const filteredEmployees = departmentFilter === "all" 
+    ? employees 
+    : employees.filter(e => e.department === departmentFilter);
+
+  const totalHours = filteredEmployees.reduce((sum, e) => sum + e.timesheetHours, 0);
+  const totalPay = filteredEmployees.reduce((sum, e) => sum + e.totalPay, 0);
+  const avgHourlyRate = employees.reduce((sum, e) => sum + e.hourlyRate, 0) / employees.length;
+  const totalBonuses = employees.reduce((sum, e) => sum + e.performanceBonus + e.specialBonus, 0);
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -41,91 +40,129 @@ const Payroll = () => {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Payroll</h1>
             <p className="text-muted-foreground">
-              Manage payroll runs and view payment history
+              Period: {payrollSummary.period}
             </p>
           </div>
           <Button className="gradient-primary">
-            <Calendar className="mr-2 h-4 w-4" />
-            Run Payroll
+            <Download className="mr-2 h-4 w-4" />
+            Export Payroll
           </Button>
         </div>
 
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="This Month"
-            value="$352,500"
-            subtitle="Due Feb 28"
+            title="Total Payroll"
+            value={formatCurrency(payrollSummary.totalPayroll)}
+            subtitle={`Timesheet: ${formatCurrency(payrollSummary.timesheet)}`}
             icon={<DollarSign className="h-5 w-5" />}
             variant="primary"
           />
           <StatCard
-            title="YTD Payroll"
-            value="$700,700"
-            icon={<TrendingUp className="h-5 w-5" />}
-            trend={{ value: 5.2, isPositive: true }}
+            title="Total Hours"
+            value={totalHours.toLocaleString("en-GB", { maximumFractionDigits: 0 })}
+            subtitle={`${employees.length} employees`}
+            icon={<Clock className="h-5 w-5" />}
           />
           <StatCard
-            title="Avg. Salary"
-            value="$87,500"
+            title="Avg. Hourly Rate"
+            value={formatCurrency(avgHourlyRate)}
             icon={<DollarSign className="h-5 w-5" />}
           />
           <StatCard
             title="Total Bonuses"
-            value="$45,000"
-            subtitle="This quarter"
-            icon={<TrendingUp className="h-5 w-5" />}
+            value={formatCurrency(totalBonuses)}
+            subtitle={`Incentives: ${formatCurrency(payrollSummary.incentives)}`}
+            icon={<DollarSign className="h-5 w-5" />}
             variant="success"
           />
         </div>
 
-        {/* Payroll History */}
+        {/* Department Filter */}
+        <div className="flex justify-between items-center">
+          <Tabs value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v as Department | "all")}>
+            <TabsList>
+              <TabsTrigger value="all">All Departments</TabsTrigger>
+              <TabsTrigger value="FOH">FOH ({departmentStats.FOH.count})</TabsTrigger>
+              <TabsTrigger value="BOH">BOH ({departmentStats.BOH.count})</TabsTrigger>
+              <TabsTrigger value="CPU">CPU ({departmentStats.CPU.count})</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredEmployees.length} employees · {formatCurrency(totalPay)} total
+          </div>
+        </div>
+
+        {/* Payroll Table */}
         <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
           <div className="border-b border-border px-6 py-4">
-            <h3 className="text-lg font-semibold text-card-foreground">Payroll History</h3>
-            <p className="text-sm text-muted-foreground">View and download past payroll records</p>
+            <h3 className="text-lg font-semibold text-card-foreground">Payroll Details</h3>
+            <p className="text-sm text-muted-foreground">Timesheet hours and payments for this period</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Period
+                    Employee
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Pay Date
+                    Dept
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Employees
+                    H. Rate
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Total Amount
+                    S.C.
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Hours
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Perf. Bonus
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Sp. Bonus
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Total Pay
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {payrollHistory.map((record) => (
+                {filteredEmployees.map((record) => (
                   <tr
-                    key={record.id}
+                    key={record.employeeId}
                     className="transition-colors hover:bg-muted/30"
                   >
                     <td className="whitespace-nowrap px-6 py-4">
-                      <span className="font-medium text-card-foreground">{record.period}</span>
+                      <span className="font-medium text-card-foreground">
+                        {record.forename} {record.surname}
+                      </span>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                      {record.payDate}
+                      {record.department}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                      {record.employees} employees
+                      {formatCurrency(record.hourlyRate)}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
+                      {formatCurrency(record.serviceCharge)}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
+                      {record.timesheetHours.toFixed(2)}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-success">
+                      {record.performanceBonus > 0 ? formatCurrency(record.performanceBonus) : "-"}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-accent">
+                      {record.specialBonus > 0 ? formatCurrency(record.specialBonus) : "-"}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-card-foreground">
-                      ${record.totalAmount.toLocaleString()}
+                      {formatCurrency(record.totalPay)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <span
@@ -136,14 +173,29 @@ const Payroll = () => {
                         {statusLabels[record.status]}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/50">
+                  <td colSpan={4} className="px-6 py-4 font-semibold text-card-foreground">
+                    TOTAL
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-card-foreground">
+                    {totalHours.toFixed(2)}
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-success">
+                    {formatCurrency(filteredEmployees.reduce((sum, e) => sum + e.performanceBonus, 0))}
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-accent">
+                    {formatCurrency(filteredEmployees.reduce((sum, e) => sum + e.specialBonus, 0))}
+                  </td>
+                  <td className="px-6 py-4 font-bold text-primary">
+                    {formatCurrency(totalPay)}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>

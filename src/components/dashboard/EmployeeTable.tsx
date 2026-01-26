@@ -1,41 +1,36 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-
-interface Employee {
-  id: string;
-  name: string;
-  role: string;
-  department: string;
-  salary: number;
-  status: "active" | "on-leave" | "pending";
-}
-
-const employees: Employee[] = [
-  { id: "1", name: "Sarah Johnson", role: "Senior Developer", department: "Engineering", salary: 95000, status: "active" },
-  { id: "2", name: "Michael Chen", role: "Product Manager", department: "Product", salary: 105000, status: "active" },
-  { id: "3", name: "Emily Davis", role: "UX Designer", department: "Design", salary: 85000, status: "on-leave" },
-  { id: "4", name: "James Wilson", role: "Data Analyst", department: "Analytics", salary: 78000, status: "active" },
-  { id: "5", name: "Lisa Anderson", role: "HR Manager", department: "Human Resources", salary: 88000, status: "pending" },
-];
+import { employees, formatCurrency, type PayrollEntry } from "@/data/payrollData";
 
 const statusStyles = {
   active: "bg-success/10 text-success border-success/20",
-  "on-leave": "bg-warning/10 text-warning border-warning/20",
-  pending: "bg-muted text-muted-foreground border-border",
+  leaver: "bg-destructive/10 text-destructive border-destructive/20",
+  starter: "bg-primary/10 text-primary border-primary/20",
 };
 
 const statusLabels = {
   active: "Active",
-  "on-leave": "On Leave",
-  pending: "Pending",
+  leaver: "Leaver",
+  starter: "Starter",
+};
+
+const departmentStyles = {
+  FOH: "bg-accent/10 text-accent",
+  BOH: "bg-primary/10 text-primary",
+  CPU: "bg-warning/10 text-warning",
 };
 
 export function EmployeeTable() {
+  // Show top 8 employees by pay
+  const topEmployees = [...employees]
+    .sort((a, b) => b.totalPay - a.totalPay)
+    .slice(0, 8);
+
   return (
     <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
       <div className="border-b border-border px-6 py-4">
-        <h3 className="text-lg font-semibold text-card-foreground">Recent Employees</h3>
-        <p className="text-sm text-muted-foreground">Overview of your team members</p>
+        <h3 className="text-lg font-semibold text-card-foreground">Top Earners This Period</h3>
+        <p className="text-sm text-muted-foreground">Employees sorted by total pay</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -45,10 +40,13 @@ export function EmployeeTable() {
                 Employee
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Department
+                Dept
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Salary
+                Hours
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Pay
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Status
@@ -56,32 +54,34 @@ export function EmployeeTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {employees.map((employee) => (
+            {topEmployees.map((employee) => (
               <tr
-                key={employee.id}
+                key={employee.employeeId}
                 className="transition-colors hover:bg-muted/30"
               >
                 <td className="whitespace-nowrap px-6 py-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
                       <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                        {employee.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                        {employee.forename[0]}{employee.surname[0]}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-card-foreground">{employee.name}</p>
-                      <p className="text-sm text-muted-foreground">{employee.role}</p>
+                      <p className="font-medium text-card-foreground">{employee.forename} {employee.surname}</p>
+                      <p className="text-sm text-muted-foreground">{formatCurrency(employee.hourlyRate)}/hr</p>
                     </div>
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                  {employee.department}
+                <td className="whitespace-nowrap px-6 py-4">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${departmentStyles[employee.department]}`}>
+                    {employee.department}
+                  </span>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-card-foreground">
-                  ${employee.salary.toLocaleString()}
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
+                  {employee.timesheetHours.toFixed(2)}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-card-foreground">
+                  {formatCurrency(employee.totalPay)}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
                   <Badge
