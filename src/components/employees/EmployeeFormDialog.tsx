@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar } from "lucide-react";
+import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
+import { useEmployeeBranches, useSetEmployeeBranches, BRANCHES, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +26,8 @@ interface EmployeeFormDialogProps {
 export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFormDialogProps) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
+  const [selectedBranches, setSelectedBranches] = useState<BranchType[]>([]);
+  const [primaryBranch, setPrimaryBranch] = useState<BranchType | undefined>();
   const [formData, setFormData] = useState({
     forename: "",
     surname: "",
@@ -41,6 +45,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     passport_no: "",
     employee_ref: "",
   });
+
+  const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
 
   // Reset form when dialog opens/closes or employee changes
   useEffect(() => {
@@ -63,18 +69,51 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         employee_ref: employee?.employee_ref || "",
       });
       setActiveTab("personal");
+      
+      // Set existing branches
+      if (employee && existingBranches.length > 0) {
+        setSelectedBranches(existingBranches.map(b => b.branch));
+        const primary = existingBranches.find(b => b.is_primary);
+        setPrimaryBranch(primary?.branch);
+      } else {
+        setSelectedBranches([]);
+        setPrimaryBranch(undefined);
+      }
     }
-  }, [open, employee]);
+  }, [open, employee, existingBranches]);
 
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
+  const setEmployeeBranches = useSetEmployeeBranches();
+
+  const isNewEmployee = !employee;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate required fields
     if (!formData.forename.trim() || !formData.surname.trim() || !formData.hourly_rate) {
-      toast.error("Please fill in all required fields");
+      toast.error("Please fill in all required fields (name and hourly rate)");
       return;
+    }
+
+    // For new employees, require banking details
+    if (isNewEmployee) {
+      if (!formData.ni_number.trim()) {
+        toast.error("National Insurance Number is required for new employees");
+        setActiveTab("personal");
+        return;
+      }
+      if (!formData.sort_code.trim() || !formData.bank_account_no.trim()) {
+        toast.error("Bank details (sort code and account number) are required for new employees");
+        setActiveTab("banking");
+        return;
+      }
+      if (selectedBranches.length === 0) {
+        toast.error("Please select at least one branch for this employee");
+        setActiveTab("employment");
+        return;
+      }
     }
 
     try {
@@ -96,13 +135,24 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         employee_ref: formData.employee_ref.trim() || null,
       };
 
+      let employeeId: string;
+
       if (employee) {
         await updateEmployee.mutateAsync({ id: employee.id, updates: employeeData });
+        employeeId = employee.id;
         toast.success("Employee updated successfully");
       } else {
-        await createEmployee.mutateAsync(employeeData);
+        const newEmployee = await createEmployee.mutateAsync(employeeData);
+        employeeId = newEmployee.id;
         toast.success("Employee created successfully");
       }
+
+      // Update branches
+      await setEmployeeBranches.mutateAsync({
+        employeeId,
+        branches: selectedBranches,
+        primaryBranch: primaryBranch || selectedBranches[0],
+      });
 
       setOpen(false);
       onSuccess?.();
@@ -111,7 +161,24 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     }
   };
 
-  const isLoading = createEmployee.isPending || updateEmployee.isPending;
+  const isLoading = createEmployee.isPending || updateEmployee.isPending || setEmployeeBranches.isPending;
+
+  const toggleBranch = (branch: BranchType) => {
+    setSelectedBranches(prev => {
+      if (prev.includes(branch)) {
+        const newBranches = prev.filter(b => b !== branch);
+        if (primaryBranch === branch) {
+          setPrimaryBranch(newBranches[0]);
+        }
+        return newBranches;
+      } else {
+        if (prev.length === 0) {
+          setPrimaryBranch(branch);
+        }
+        return [...prev, branch];
+      }
+    });
+  };
 
   const TabButton = ({ value, icon: Icon, label }: { value: string; icon: typeof User; label: string }) => (
     <TabsTrigger 
@@ -148,9 +215,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid grid-cols-4 mb-4">
+            <TabsList className="grid grid-cols-5 mb-4">
               <TabButton value="personal" icon={User} label="Personal" />
-              <TabButton value="employment" icon={Building} label="Employment" />
+              <TabButton value="employment" icon={Building} label="Work" />
+              <TabButton value="branches" icon={MapPin} label="Branches" />
               <TabButton value="banking" icon={CreditCard} label="Banking" />
               <TabButton value="notes" icon={FileText} label="Notes" />
             </TabsList>
@@ -220,7 +288,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="ni_number">National Insurance Number</Label>
+                  <Label htmlFor="ni_number" className="flex items-center gap-1">
+                    National Insurance Number {isNewEmployee && <span className="text-destructive">*</span>}
+                  </Label>
                   <Input
                     id="ni_number"
                     value={formData.ni_number}
@@ -336,16 +406,81 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
               </TabsContent>
 
+              {/* Branches Tab */}
+              <TabsContent value="branches" className="space-y-4 mt-0">
+                <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    📍 Select the branch(es) where this employee works. {isNewEmployee && <span className="text-destructive font-medium">At least one branch is required.</span>}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {BRANCHES.map((branch) => (
+                    <div
+                      key={branch}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-lg border transition-all cursor-pointer",
+                        selectedBranches.includes(branch)
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      )}
+                      onClick={() => toggleBranch(branch)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={selectedBranches.includes(branch)}
+                          onCheckedChange={() => toggleBranch(branch)}
+                        />
+                        <span className="text-xl">{BRANCH_EMOJI[branch]}</span>
+                        <span className="font-medium">{branch}</span>
+                      </div>
+                      
+                      {selectedBranches.includes(branch) && selectedBranches.length > 1 && (
+                        <Button
+                          type="button"
+                          variant={primaryBranch === branch ? "default" : "outline"}
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPrimaryBranch(branch);
+                          }}
+                        >
+                          {primaryBranch === branch ? "Primary" : "Set Primary"}
+                        </Button>
+                      )}
+                      
+                      {selectedBranches.includes(branch) && selectedBranches.length === 1 && (
+                        <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-1 rounded">Primary</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {selectedBranches.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBranches.length === 1 
+                      ? `Works at ${selectedBranches[0]}`
+                      : `Works at ${selectedBranches.length} branches. Primary: ${primaryBranch || selectedBranches[0]}`
+                    }
+                  </p>
+                )}
+              </TabsContent>
+
               {/* Banking Tab */}
               <TabsContent value="banking" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    🔒 Banking details are stored securely and only visible to administrators.
+                    🔒 Banking details are stored securely. {isNewEmployee && <span className="text-destructive font-medium">Required for new employees.</span>}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Bank details will only be included in the first payroll export of each month.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sort_code">Sort Code</Label>
+                  <Label htmlFor="sort_code" className="flex items-center gap-1">
+                    Sort Code {isNewEmployee && <span className="text-destructive">*</span>}
+                  </Label>
                   <Input
                     id="sort_code"
                     value={formData.sort_code}
@@ -367,7 +502,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bank_account_no">Account Number</Label>
+                  <Label htmlFor="bank_account_no" className="flex items-center gap-1">
+                    Account Number {isNewEmployee && <span className="text-destructive">*</span>}
+                  </Label>
                   <Input
                     id="bank_account_no"
                     value={formData.bank_account_no}

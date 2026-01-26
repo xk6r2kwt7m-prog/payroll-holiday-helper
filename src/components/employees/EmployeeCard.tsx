@@ -1,4 +1,4 @@
-import { Edit2, Trash2, Eye, Calendar, CreditCard, MoreHorizontal } from "lucide-react";
+import { Edit2, Trash2, Eye, Calendar, CreditCard, MoreHorizontal, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
+import { useEmployeeBranches, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +48,7 @@ interface EmployeeCardProps {
 }
 
 export function EmployeeCard({ employee, isAdmin, onDelete, onViewDetails, index }: EmployeeCardProps) {
+  const { data: branches = [] } = useEmployeeBranches(employee.id);
   const hasStartDate = !!employee.start_date;
   const hasEndDate = !!employee.end_date;
   const hasBankDetails = !!(employee.bank_account_no && employee.sort_code);
@@ -140,6 +142,25 @@ export function EmployeeCard({ employee, isAdmin, onDelete, onViewDetails, index
           </p>
         </div>
       </div>
+
+      {/* Branches */}
+      {branches.length > 0 && (
+        <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+          {branches.map((b) => (
+            <span
+              key={b.id}
+              className={cn(
+                "text-xs px-1.5 py-0.5 rounded-md bg-muted",
+                b.is_primary && "bg-primary/10 text-primary font-medium"
+              )}
+              title={b.is_primary ? "Primary branch" : undefined}
+            >
+              {BRANCH_EMOJI[b.branch]} {b.branch}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Quick Info Icons */}
       <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
