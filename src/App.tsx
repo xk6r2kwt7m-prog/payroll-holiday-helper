@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Employees from "./pages/Employees";
 import Payroll from "./pages/Payroll";
+import PayrollCalendar from "./pages/PayrollCalendar";
 import Holidays from "./pages/Holidays";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
@@ -45,6 +46,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Payroll />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payroll/calendar"
+              element={
+                <ProtectedRoute>
+                  <PayrollCalendar />
                 </ProtectedRoute>
               }
             />

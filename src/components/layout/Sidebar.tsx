@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
+  CalendarDays,
   DollarSign,
   Settings,
   ChevronLeft,
@@ -19,6 +20,7 @@ const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Users, label: "Employees", path: "/employees" },
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
+  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
