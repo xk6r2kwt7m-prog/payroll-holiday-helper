@@ -1,13 +1,16 @@
-import { useState } from "react";
-import { Search, Users, UserPlus, Filter } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Users, UserPlus, Filter, CheckSquare, Square } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useEmployees, useDeleteEmployee, type Employee } from "@/hooks/useEmployees";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { EmployeeCard } from "@/components/employees/EmployeeCard";
 import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet";
+import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -15,15 +18,28 @@ type Department = "FOH" | "BOH" | "CPU";
 type StatusFilter = "all" | "active" | "starter" | "leaver";
 
 const Employees = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState<Department | "all">("all");
+  const [departmentFilter, setDepartmentFilter] = useState<Department | "all">(
+    (searchParams.get("dept") as Department) || "all"
+  );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   
   const { data: employees = [], isLoading, error } = useEmployees();
   const deleteEmployee = useDeleteEmployee();
   const { isAdmin } = useAuth();
+
+  // Update filter from URL params
+  useEffect(() => {
+    const dept = searchParams.get("dept") as Department;
+    if (dept && ["FOH", "BOH", "CPU"].includes(dept)) {
+      setDepartmentFilter(dept);
+    }
+  }, [searchParams]);
 
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
@@ -43,6 +59,9 @@ const Employees = () => {
   const leaverCount = employees.filter(e => e.status === "leaver").length;
   const starterCount = employees.filter(e => e.status === "starter").length;
 
+  const selectedEmployees = employees.filter(e => selectedIds.has(e.id));
+  const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every(e => selectedIds.has(e.id));
+
   const handleDelete = async (employee: Employee) => {
     if (confirm(`Are you sure you want to delete ${employee.forename} ${employee.surname}? This action cannot be undone.`)) {
       try {
@@ -57,6 +76,43 @@ const Employees = () => {
   const handleViewDetails = (employee: Employee) => {
     setSelectedEmployee(employee);
     setDetailSheetOpen(true);
+  };
+
+  const toggleSelection = (employeeId: string) => {
+    const newSelection = new Set(selectedIds);
+    if (newSelection.has(employeeId)) {
+      newSelection.delete(employeeId);
+    } else {
+      newSelection.add(employeeId);
+    }
+    setSelectedIds(newSelection);
+    setIsSelectionMode(newSelection.size > 0);
+  };
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds(new Set());
+      setIsSelectionMode(false);
+    } else {
+      const newSelection = new Set(filteredEmployees.map(e => e.id));
+      setSelectedIds(newSelection);
+      setIsSelectionMode(true);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const handleDepartmentChange = (dept: Department | "all") => {
+    setDepartmentFilter(dept);
+    if (dept === "all") {
+      searchParams.delete("dept");
+    } else {
+      searchParams.set("dept", dept);
+    }
+    setSearchParams(searchParams);
   };
 
   if (error) {
@@ -90,7 +146,34 @@ const Employees = () => {
               {employees.length} total • {activeCount} active • {starterCount} starters • {leaverCount} leavers
             </p>
           </div>
-          {isAdmin && <EmployeeFormDialog />}
+          <div className="flex items-center gap-2">
+            {isAdmin && filteredEmployees.length > 0 && (
+              <Button
+                variant={isSelectionMode ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (isSelectionMode) {
+                    clearSelection();
+                  } else {
+                    setIsSelectionMode(true);
+                  }
+                }}
+              >
+                {isSelectionMode ? (
+                  <>
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    {selectedIds.size} selected
+                  </>
+                ) : (
+                  <>
+                    <Square className="h-4 w-4 mr-2" />
+                    Select
+                  </>
+                )}
+              </Button>
+            )}
+            {isAdmin && <EmployeeFormDialog />}
+          </div>
         </div>
 
         {/* Search & Filters */}
@@ -107,24 +190,38 @@ const Employees = () => {
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Tabs value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v as Department | "all")}>
-              <TabsList className="h-9">
-                <TabsTrigger value="all" className="text-xs">All Depts</TabsTrigger>
-                <TabsTrigger value="FOH" className="text-xs">🍽️ FOH</TabsTrigger>
-                <TabsTrigger value="BOH" className="text-xs">👨‍🍳 BOH</TabsTrigger>
-                <TabsTrigger value="CPU" className="text-xs">🏭 CPU</TabsTrigger>
-              </TabsList>
-            </Tabs>
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Tabs value={departmentFilter} onValueChange={(v) => handleDepartmentChange(v as Department | "all")}>
+                <TabsList className="h-9">
+                  <TabsTrigger value="all" className="text-xs">All Depts</TabsTrigger>
+                  <TabsTrigger value="FOH" className="text-xs">🍽️ FOH</TabsTrigger>
+                  <TabsTrigger value="BOH" className="text-xs">👨‍🍳 BOH</TabsTrigger>
+                  <TabsTrigger value="CPU" className="text-xs">🏭 CPU</TabsTrigger>
+                </TabsList>
+              </Tabs>
 
-            <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-              <TabsList className="h-9">
-                <TabsTrigger value="all" className="text-xs">All Status</TabsTrigger>
-                <TabsTrigger value="active" className="text-xs">✅ Active</TabsTrigger>
-                <TabsTrigger value="starter" className="text-xs">🆕 Starters</TabsTrigger>
-                <TabsTrigger value="leaver" className="text-xs">👋 Leavers</TabsTrigger>
-              </TabsList>
-            </Tabs>
+              <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                <TabsList className="h-9">
+                  <TabsTrigger value="all" className="text-xs">All Status</TabsTrigger>
+                  <TabsTrigger value="active" className="text-xs">✅ Active</TabsTrigger>
+                  <TabsTrigger value="starter" className="text-xs">🆕 Starters</TabsTrigger>
+                  <TabsTrigger value="leaver" className="text-xs">👋 Leavers</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* Select All */}
+            {isSelectionMode && filteredEmployees.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleSelectAll}
+                className="text-xs"
+              >
+                {allFilteredSelected ? "Deselect All" : `Select All (${filteredEmployees.length})`}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -178,7 +275,7 @@ const Employees = () => {
               variant="link" 
               onClick={() => {
                 setSearchQuery("");
-                setDepartmentFilter("all");
+                handleDepartmentChange("all");
                 setStatusFilter("all");
               }}
               className="mt-2"
@@ -192,14 +289,29 @@ const Employees = () => {
         {!isLoading && filteredEmployees.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredEmployees.map((employee, index) => (
-              <EmployeeCard
-                key={employee.id}
-                employee={employee}
-                isAdmin={isAdmin}
-                onDelete={handleDelete}
-                onViewDetails={handleViewDetails}
-                index={index}
-              />
+              <div key={employee.id} className="relative">
+                {isSelectionMode && (
+                  <div className="absolute top-3 left-3 z-10">
+                    <Checkbox
+                      checked={selectedIds.has(employee.id)}
+                      onCheckedChange={() => toggleSelection(employee.id)}
+                      className="h-5 w-5 bg-background border-2"
+                    />
+                  </div>
+                )}
+                <div 
+                  className={selectedIds.has(employee.id) ? "ring-2 ring-primary rounded-xl" : ""}
+                  onClick={isSelectionMode ? () => toggleSelection(employee.id) : undefined}
+                >
+                  <EmployeeCard
+                    employee={employee}
+                    isAdmin={isAdmin && !isSelectionMode}
+                    onDelete={handleDelete}
+                    onViewDetails={handleViewDetails}
+                    index={index}
+                  />
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -211,6 +323,14 @@ const Employees = () => {
           onOpenChange={setDetailSheetOpen}
           isAdmin={isAdmin}
         />
+
+        {/* Bulk Actions Bar */}
+        {isAdmin && (
+          <BulkActionsBar
+            selectedEmployees={selectedEmployees}
+            onClearSelection={clearSelection}
+          />
+        )}
       </div>
     </AppLayout>
   );

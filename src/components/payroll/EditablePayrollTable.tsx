@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
-import { Edit2, Save, X, Download } from "lucide-react";
+import { useState } from "react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -12,6 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useBulkUpdatePayrollEntries, useMarkBankDetailsExported } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, calculateHolidayAccrual } from "@/hooks/useHolidays";
@@ -73,11 +80,33 @@ export function EditablePayrollTable({
     hourly_rate: "",
     service_charge: "",
   });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   const bulkUpdate = useBulkUpdatePayrollEntries();
   const markExported = useMarkBankDetailsExported();
 
   const canEdit = periodStatus === "draft" && isAdmin;
+  const allSelected = entries.length > 0 && entries.every(e => selectedIds.has(e.id));
+  const someSelected = selectedIds.size > 0;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(entries.map(e => e.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelection = new Set(selectedIds);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedIds(newSelection);
+  };
 
   const startEditing = (entry: PayrollEntry) => {
     setEditingId(entry.id);
@@ -127,8 +156,79 @@ export function EditablePayrollTable({
     }
   };
 
+  const handleBulkZeroHours = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setIsBulkUpdating(true);
+    try {
+      const updates = entries
+        .filter(e => selectedIds.has(e.id))
+        .map(entry => {
+          const hourlyRate = entry.hourly_rate;
+          const serviceCharge = entry.service_charge || 0;
+          const perfBonus = entry.performance_bonus || 0;
+          const specBonus = entry.special_bonus || 0;
+          const totalPay = perfBonus + specBonus;
+          
+          return {
+            id: entry.id,
+            updates: {
+              timesheet_hours: 0,
+              holiday_accrued_hours: 0,
+              total_pay: totalPay,
+            },
+          };
+        });
+      
+      await bulkUpdate.mutateAsync(updates);
+      toast.success(`Set ${selectedIds.size} entries to 0 hours`);
+      setSelectedIds(new Set());
+    } catch {
+      toast.error("Failed to update entries");
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
+  const handleBulkCopyRates = async () => {
+    if (selectedIds.size === 0) return;
+    
+    setIsBulkUpdating(true);
+    try {
+      const updates = entries
+        .filter(e => selectedIds.has(e.id))
+        .map(entry => {
+          const emp = entry.employees;
+          const hourlyRate = emp?.hourly_rate || entry.hourly_rate;
+          const serviceCharge = emp?.service_charge || entry.service_charge || 0;
+          const hours = entry.timesheet_hours;
+          const perfBonus = entry.performance_bonus || 0;
+          const specBonus = entry.special_bonus || 0;
+          const basePay = hours * hourlyRate;
+          const servicePay = hours * serviceCharge;
+          const totalPay = basePay + servicePay + perfBonus + specBonus;
+          
+          return {
+            id: entry.id,
+            updates: {
+              hourly_rate: hourlyRate,
+              service_charge: serviceCharge,
+              total_pay: totalPay,
+            },
+          };
+        });
+      
+      await bulkUpdate.mutateAsync(updates);
+      toast.success(`Copied employee rates to ${selectedIds.size} entries`);
+      setSelectedIds(new Set());
+    } catch {
+      toast.error("Failed to update entries");
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
   const handleExportWithBank = async () => {
-    // Get entries that haven't had bank details exported
     const unexportedIds = entries
       .filter(e => !e.bank_details_exported && e.employees?.bank_account_no)
       .map(e => e.id);
@@ -147,19 +247,44 @@ export function EditablePayrollTable({
     total: acc.total + Number(e.total_pay),
   }), { hours: 0, bonuses: 0, holiday: 0, total: 0 });
 
-  // Check if any entries need bank details exported (first time this month)
   const hasUnexportedBankDetails = entries.some(e => !e.bank_details_exported && e.employees?.bank_account_no);
 
   return (
     <div className="rounded-xl bg-card shadow-card overflow-hidden">
-      <div className="border-b border-border px-6 py-4 flex items-center justify-between">
+      <div className="border-b border-border px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-card-foreground">Payroll Details</h3>
           <p className="text-sm text-muted-foreground">
             {canEdit ? "Click edit to modify hours and bonuses" : "View timesheet hours and payments"}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* Bulk Actions */}
+          {canEdit && someSelected && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="sm" disabled={isBulkUpdating}>
+                  {isBulkUpdating ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CopyCheck className="h-4 w-4 mr-2" />
+                  )}
+                  Bulk ({selectedIds.size})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleBulkZeroHours}>
+                  <ArrowDown className="h-4 w-4 mr-2" />
+                  Set Hours to 0
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleBulkCopyRates}>
+                  <CopyCheck className="h-4 w-4 mr-2" />
+                  Copy Rates from Employee
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
           <Button variant="outline" size="sm" onClick={() => onExport(false)}>
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -177,6 +302,14 @@ export function EditablePayrollTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
+              {canEdit && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-[200px]">Employee</TableHead>
               <TableHead>Dept</TableHead>
               <TableHead className="text-right">Rate</TableHead>
@@ -193,10 +326,27 @@ export function EditablePayrollTable({
             {entries.map((entry) => {
               const isEditing = editingId === entry.id;
               const emp = entry.employees;
+              const isSelected = selectedIds.has(entry.id);
               
               return (
-                <TableRow key={entry.id} className={cn(isEditing && "bg-primary/5")}>
-                  <TableCell>
+                <TableRow 
+                  key={entry.id} 
+                  className={cn(
+                    isEditing && "bg-primary/5",
+                    isSelected && "bg-primary/10",
+                    "cursor-pointer hover:bg-muted/50 transition-colors"
+                  )}
+                  onClick={canEdit && !isEditing ? () => toggleSelect(entry.id) : undefined}
+                >
+                  {canEdit && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelect(entry.id)}
+                      />
+                    </TableCell>
+                  )}
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -223,7 +373,7 @@ export function EditablePayrollTable({
                   
                   {isEditing ? (
                     <>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Input
                           type="number"
                           step="0.01"
@@ -232,7 +382,7 @@ export function EditablePayrollTable({
                           className="w-20 h-8 text-right"
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Input
                           type="number"
                           step="0.01"
@@ -241,7 +391,7 @@ export function EditablePayrollTable({
                           className="w-20 h-8 text-right"
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Input
                           type="number"
                           step="0.01"
@@ -251,7 +401,7 @@ export function EditablePayrollTable({
                           autoFocus
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Input
                           type="number"
                           step="0.01"
@@ -260,7 +410,7 @@ export function EditablePayrollTable({
                           className="w-20 h-8 text-right"
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <Input
                           type="number"
                           step="0.01"
@@ -280,7 +430,7 @@ export function EditablePayrollTable({
                           (parseFloat(editingData.special_bonus) || 0)
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex gap-1">
                           <Button
                             size="icon"
@@ -326,7 +476,7 @@ export function EditablePayrollTable({
                         {formatCurrency(Number(entry.total_pay))}
                       </TableCell>
                       {canEdit && (
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <Button
                             size="icon"
                             variant="ghost"
@@ -345,6 +495,7 @@ export function EditablePayrollTable({
           </TableBody>
           <tfoot>
             <TableRow className="border-t-2 border-border bg-muted/50">
+              {canEdit && <TableCell />}
               <TableCell colSpan={4} className="font-semibold">TOTAL</TableCell>
               <TableCell className="text-right font-semibold">{formatHours(totals.hours)}</TableCell>
               <TableCell colSpan={2} className="text-right font-semibold text-success">
