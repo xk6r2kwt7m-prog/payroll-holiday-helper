@@ -8,8 +8,12 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -22,6 +26,7 @@ const navItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { user, isAdmin, signOut } = useAuth();
 
   return (
     <aside
@@ -44,6 +49,23 @@ export function Sidebar() {
             )}
           </div>
         </div>
+
+        {/* User Info */}
+        {!collapsed && user && (
+          <div className="border-b border-sidebar-border px-4 py-3 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
+                {user.email}
+              </p>
+              {isAdmin && (
+                <Shield className="h-4 w-4 text-sidebar-primary flex-shrink-0" />
+              )}
+            </div>
+            <p className="text-xs text-sidebar-foreground/60">
+              {isAdmin ? "Administrator" : "Viewer"}
+            </p>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
@@ -69,8 +91,19 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Collapse Button */}
-        <div className="border-t border-sidebar-border p-3">
+        {/* Footer */}
+        <div className="border-t border-sidebar-border p-3 space-y-2">
+          <Button
+            variant="ghost"
+            onClick={signOut}
+            className={cn(
+              "w-full justify-start text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            <LogOut className="h-5 w-5" />
+            {!collapsed && <span className="ml-3">Sign Out</span>}
+          </Button>
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="flex w-full items-center justify-center rounded-lg py-2 text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground"
