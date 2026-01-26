@@ -1,9 +1,22 @@
-import { Calendar, DollarSign, Clock, Scale } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Filter, Search, Users } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { useHolidayPayments, formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
-import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
+import { EmployeeHolidayCard } from "@/components/holidays/EmployeeHolidayCard";
+import { HolidayComparisonTable } from "@/components/holidays/HolidayComparisonTable";
+import { 
+  useAllHolidayPayments, 
+  useAllPayrollEntriesWithHoliday,
+  formatCurrency, 
+  formatHours, 
+  UK_HOLIDAY_LAW,
+  calculateAnnualEntitlement 
+} from "@/hooks/useHolidays";
+import { usePayrollPeriods } from "@/hooks/usePayroll";
 import {
   Accordion,
   AccordionContent,
@@ -11,24 +24,155 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+type ViewMode = "cards" | "table";
+type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
+
 const Holidays = () => {
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+
   const { data: periods = [] } = usePayrollPeriods();
-  const latestPeriod = periods[0];
-  const { data: holidayPayments = [] } = useHolidayPayments(latestPeriod?.id);
-  const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
+  const { data: holidayPayments = [], isLoading: paymentsLoading } = useAllHolidayPayments();
+  const { data: payrollEntries = [], isLoading: entriesLoading } = useAllPayrollEntriesWithHoliday();
 
-  const totalHolidayPay = holidayPayments.reduce((sum, h) => sum + Number(h.total), 0);
-  const totalHolidayHours = holidayPayments.reduce((sum, h) => sum + Number(h.hours), 0);
-  const avgRate = holidayPayments.length > 0 
-    ? holidayPayments.reduce((sum, h) => sum + Number(h.rate), 0) / holidayPayments.length 
-    : 0;
-  const totalAccruedThisPeriod = entries.reduce((sum, e) => sum + Number(e.holiday_accrued_hours), 0);
+  const isLoading = paymentsLoading || entriesLoading;
 
-  const roundHolidayHours = (hours: number): number => {
-    const wholeHours = Math.floor(hours);
-    const fraction = hours - wholeHours;
-    return fraction >= 0.5 ? wholeHours + 1 : wholeHours;
-  };
+  // Calculate per-employee holiday summaries
+  const employeeSummaries = useMemo(() => {
+    const summaryMap = new Map<string, {
+      employeeId: string;
+      employeeName: string;
+      department: string;
+      weeklyHours: number;
+      totalAccrued: number;
+      totalTaken: number;
+      totalPaid: number;
+      periodBreakdown: Map<string, { periodId: string; periodName: string; accrued: number; taken: number; paid: number }>;
+    }>();
+
+    // Process payroll entries for accrued hours
+    payrollEntries.forEach((entry: any) => {
+      if (!entry.employees || !entry.payroll_periods) return;
+      
+      // Filter by selected period if not "all"
+      if (selectedPeriod !== "all" && entry.payroll_period_id !== selectedPeriod) return;
+      
+      const empId = entry.employee_id;
+      const empName = `${entry.employees.forename} ${entry.employees.surname}`;
+      const dept = entry.employees.department;
+      
+      if (!summaryMap.has(empId)) {
+        summaryMap.set(empId, {
+          employeeId: empId,
+          employeeName: empName,
+          department: dept,
+          weeklyHours: UK_HOLIDAY_LAW.STANDARD_WEEK_HOURS,
+          totalAccrued: 0,
+          totalTaken: 0,
+          totalPaid: 0,
+          periodBreakdown: new Map(),
+        });
+      }
+      
+      const summary = summaryMap.get(empId)!;
+      const accrued = Number(entry.holiday_accrued_hours) || 0;
+      summary.totalAccrued += accrued;
+      
+      // Add to period breakdown
+      const periodId = entry.payroll_period_id;
+      const periodName = entry.payroll_periods.period_name;
+      if (!summary.periodBreakdown.has(periodId)) {
+        summary.periodBreakdown.set(periodId, {
+          periodId,
+          periodName,
+          accrued: 0,
+          taken: 0,
+          paid: 0,
+        });
+      }
+      summary.periodBreakdown.get(periodId)!.accrued += accrued;
+    });
+
+    // Process holiday payments for taken hours and payments
+    holidayPayments.forEach((payment: any) => {
+      if (!payment.employees || !payment.payroll_periods) return;
+      
+      // Filter by selected period if not "all"
+      if (selectedPeriod !== "all" && payment.payroll_period_id !== selectedPeriod) return;
+      
+      const empId = payment.employee_id;
+      if (!empId) return;
+      
+      const empName = `${payment.employees.forename} ${payment.employees.surname}`;
+      const dept = payment.employees.department;
+      
+      if (!summaryMap.has(empId)) {
+        summaryMap.set(empId, {
+          employeeId: empId,
+          employeeName: empName,
+          department: dept,
+          weeklyHours: UK_HOLIDAY_LAW.STANDARD_WEEK_HOURS,
+          totalAccrued: 0,
+          totalTaken: 0,
+          totalPaid: 0,
+          periodBreakdown: new Map(),
+        });
+      }
+      
+      const summary = summaryMap.get(empId)!;
+      const hours = Number(payment.hours) || 0;
+      const total = Number(payment.total) || 0;
+      summary.totalTaken += hours;
+      summary.totalPaid += total;
+      
+      // Add to period breakdown
+      const periodId = payment.payroll_period_id;
+      const periodName = payment.payroll_periods.period_name;
+      if (!summary.periodBreakdown.has(periodId)) {
+        summary.periodBreakdown.set(periodId, {
+          periodId,
+          periodName,
+          accrued: 0,
+          taken: 0,
+          paid: 0,
+        });
+      }
+      const breakdown = summary.periodBreakdown.get(periodId)!;
+      breakdown.taken += hours;
+      breakdown.paid += total;
+    });
+
+    // Convert to array and calculate balances & entitlements
+    return Array.from(summaryMap.values()).map(s => ({
+      ...s,
+      balance: s.totalAccrued - s.totalTaken,
+      entitlement: calculateAnnualEntitlement(s.weeklyHours),
+      periodBreakdown: Array.from(s.periodBreakdown.values()),
+    }));
+  }, [payrollEntries, holidayPayments, selectedPeriod]);
+
+  // Filter summaries
+  const filteredSummaries = useMemo(() => {
+    return employeeSummaries.filter(s => {
+      const matchesSearch = s.employeeName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDept = departmentFilter === "all" || s.department === departmentFilter;
+      return matchesSearch && matchesDept;
+    });
+  }, [employeeSummaries, searchQuery, departmentFilter]);
+
+  // Calculate totals
+  const totals = useMemo(() => {
+    return filteredSummaries.reduce((acc, s) => ({
+      accrued: acc.accrued + s.totalAccrued,
+      taken: acc.taken + s.totalTaken,
+      paid: acc.paid + s.totalPaid,
+      balance: acc.balance + s.balance,
+    }), { accrued: 0, taken: 0, paid: 0, balance: 0 });
+  }, [filteredSummaries]);
+
+  const overdrawnCount = filteredSummaries.filter(s => s.totalTaken > s.totalAccrued).length;
 
   return (
     <AppLayout>
@@ -36,42 +180,196 @@ const Holidays = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-in-left">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Holiday Payments</h1>
-            <p className="text-muted-foreground">
-              {latestPeriod ? `Period: ${latestPeriod.period_name}` : "No payroll periods yet"}
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                <Calendar className="h-5 w-5 text-primary" />
+              </div>
+              Holiday Tracking
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              {employeeSummaries.length} employees • {periods.length} payroll periods
             </p>
+          </div>
+          
+          {/* View Toggle */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === "cards" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("cards")}
+            >
+              <LayoutGrid className="h-4 w-4 mr-1" />
+              Cards
+            </Button>
+            <Button
+              variant={viewMode === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("table")}
+            >
+              <TableIcon className="h-4 w-4 mr-1" />
+              Table
+            </Button>
           </div>
         </div>
 
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in">
           <StatCard
-            title="Total Holiday Pay"
-            value={formatCurrency(totalHolidayPay)}
-            subtitle={`${holidayPayments.length} employees paid`}
+            title="Total Holiday Paid"
+            value={formatCurrency(totals.paid)}
+            subtitle={`${filteredSummaries.length} employees`}
             icon={<DollarSign className="h-5 w-5" />}
             variant="primary"
           />
           <StatCard
-            title="Holiday Hours Paid"
-            value={formatHours(totalHolidayHours)}
-            subtitle="Hours this period"
-            icon={<Clock className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Accrued This Period"
-            value={formatHours(totalAccruedThisPeriod)}
-            subtitle={`${(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% of hours worked`}
-            icon={<Calendar className="h-5 w-5" />}
+            title="Hours Accrued"
+            value={formatHours(totals.accrued)}
+            subtitle="Total across all employees"
+            icon={<TrendingUpIcon className="h-5 w-5" />}
             variant="accent"
           />
           <StatCard
-            title="Avg. Rate"
-            value={formatCurrency(avgRate)}
-            subtitle="Per hour"
-            icon={<DollarSign className="h-5 w-5" />}
+            title="Hours Taken"
+            value={formatHours(totals.taken)}
+            subtitle={`${overdrawnCount} overdrawn`}
+            icon={<Clock className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Net Balance"
+            value={`${totals.balance >= 0 ? "+" : ""}${formatHours(totals.balance)}`}
+            subtitle="Accrued minus taken"
+            icon={<Scale className="h-5 w-5" />}
+            variant={totals.balance >= 0 ? "accent" : "primary"}
           />
         </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 animate-fade-in">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search employees..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <Select value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v as DepartmentFilter)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Depts</SelectItem>
+              <SelectItem value="FOH">🍽️ FOH</SelectItem>
+              <SelectItem value="BOH">👨‍🍳 BOH</SelectItem>
+              <SelectItem value="CPU">🏭 CPU</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Payroll Period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Periods</SelectItem>
+              {periods.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.period_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Results info */}
+        {(searchQuery || departmentFilter !== "all" || selectedPeriod !== "all") && (
+          <p className="text-sm text-muted-foreground animate-fade-in">
+            Showing {filteredSummaries.length} of {employeeSummaries.length} employees
+          </p>
+        )}
+
+        {/* Loading */}
+        {isLoading && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="rounded-xl bg-card p-5 shadow-card animate-pulse">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="h-12 w-12 rounded-full bg-muted" />
+                  <div className="flex-1">
+                    <div className="h-5 w-32 bg-muted rounded mb-2" />
+                    <div className="h-4 w-20 bg-muted rounded" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="h-16 bg-muted rounded" />
+                  <div className="h-16 bg-muted rounded" />
+                  <div className="h-16 bg-muted rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && filteredSummaries.length === 0 && (
+          <div className="rounded-xl bg-card shadow-card p-12 text-center animate-fade-in">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
+              <Users className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-card-foreground mb-2">No holiday data found</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              {employeeSummaries.length === 0 
+                ? "Import payroll data to start tracking holiday accruals and payments."
+                : "No employees match your current filters."}
+            </p>
+            {(searchQuery || departmentFilter !== "all") && (
+              <Button 
+                variant="link" 
+                onClick={() => {
+                  setSearchQuery("");
+                  setDepartmentFilter("all");
+                }}
+                className="mt-2"
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Content */}
+        {!isLoading && filteredSummaries.length > 0 && (
+          viewMode === "cards" ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredSummaries.map((summary, index) => (
+                <EmployeeHolidayCard
+                  key={summary.employeeId}
+                  employeeName={summary.employeeName}
+                  department={summary.department}
+                  totalAccrued={summary.totalAccrued}
+                  totalTaken={summary.totalTaken}
+                  totalPaid={summary.totalPaid}
+                  balance={summary.balance}
+                  entitlement={summary.entitlement}
+                  periodBreakdown={summary.periodBreakdown}
+                  index={index}
+                />
+              ))}
+            </div>
+          ) : (
+            <HolidayComparisonTable
+              data={filteredSummaries.map(s => ({
+                employeeId: s.employeeId,
+                employeeName: s.employeeName,
+                department: s.department,
+                totalAccrued: s.totalAccrued,
+                totalTaken: s.totalTaken,
+                totalPaid: s.totalPaid,
+                balance: s.balance,
+                entitlement: s.entitlement,
+              }))}
+            />
+          )
+        )}
 
         {/* UK Holiday Law Info Card */}
         <div className="rounded-xl bg-primary/5 border border-primary/20 p-6 animate-fade-in">
@@ -132,165 +430,19 @@ const Holidays = () => {
             </div>
           </div>
         </div>
-
-        {/* Holiday Accrual Table */}
-        {entries.length > 0 && (
-          <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
-            <div className="border-b border-border px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-card-foreground">Holiday Accrual This Period</h3>
-                  <p className="text-sm text-muted-foreground">12.07% of hours worked per UK law</p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
-                  <Clock className="h-5 w-5 text-success" />
-                </div>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Employee
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Dept
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Hours Worked
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Holiday Accrued
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Rounded
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {entries.slice(0, 10).map((entry: any) => (
-                    <tr key={entry.id} className="transition-colors hover:bg-muted/30">
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                              {entry.employees?.forename?.[0]}{entry.employees?.surname?.[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-card-foreground">
-                            {entry.employees?.forename} {entry.employees?.surname}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                        {entry.employees?.department}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                        {formatHours(Number(entry.timesheet_hours))}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-success">
-                        {formatHours(Number(entry.holiday_accrued_hours))} hrs
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-card-foreground">
-                        {roundHolidayHours(Number(entry.holiday_accrued_hours))} hrs
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Holiday Payments Table */}
-        {holidayPayments.length > 0 && (
-          <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
-            <div className="border-b border-border px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-card-foreground">Holiday Payments Made</h3>
-                  <p className="text-sm text-muted-foreground">Payments for holiday taken this period</p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
-                  <Calendar className="h-5 w-5 text-accent" />
-                </div>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Employee
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Rate
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Hours
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {holidayPayments.map((holiday: any) => (
-                    <tr key={holiday.id} className="transition-colors hover:bg-muted/30">
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                              {holiday.employee_name?.[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium text-card-foreground">
-                            {holiday.employee_name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                        {formatCurrency(Number(holiday.rate))}/hr
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-muted-foreground">
-                        {holiday.hours}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-card-foreground">
-                        {formatCurrency(Number(holiday.total))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-border bg-muted/50">
-                    <td className="px-6 py-4 font-semibold text-card-foreground">TOTAL</td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      Avg: {formatCurrency(avgRate)}/hr
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-card-foreground">
-                      {formatHours(totalHolidayHours)}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-primary">
-                      {formatCurrency(totalHolidayPay)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {entries.length === 0 && (
-          <div className="rounded-xl bg-card shadow-card p-8 text-center animate-fade-in">
-            <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No holiday data yet. Import payroll to see holiday accruals.</p>
-          </div>
-        )}
       </div>
     </AppLayout>
   );
 };
+
+// Helper component for the icon
+function TrendingUpIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <polyline points="23,6 13.5,15.5 8.5,10.5 1,18" />
+      <polyline points="17,6 23,6 23,12" />
+    </svg>
+  );
+}
 
 export default Holidays;

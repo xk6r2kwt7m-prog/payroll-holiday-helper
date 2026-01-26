@@ -23,6 +23,12 @@ export function useHolidayPayments(periodId?: string) {
             forename,
             surname,
             department
+          ),
+          payroll_periods (
+            id,
+            period_name,
+            start_date,
+            end_date
           )
         `)
         .order("total", { ascending: false });
@@ -32,6 +38,38 @@ export function useHolidayPayments(periodId?: string) {
       }
       
       const { data, error } = await query;
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Get all holiday payments for all employees across all periods
+export function useAllHolidayPayments() {
+  return useQuery({
+    queryKey: ["holiday_payments", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("holiday_payments")
+        .select(`
+          *,
+          employees (
+            id,
+            forename,
+            surname,
+            department,
+            hourly_rate,
+            start_date
+          ),
+          payroll_periods (
+            id,
+            period_name,
+            start_date,
+            end_date
+          )
+        `)
+        .order("created_at", { ascending: false });
       
       if (error) throw error;
       return data;
@@ -61,6 +99,44 @@ export function useHolidayBalances(employeeId?: string) {
       }
       
       const { data, error } = await query;
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Get all payroll entries with holiday accrual data
+export function useAllPayrollEntriesWithHoliday() {
+  return useQuery({
+    queryKey: ["payroll_entries", "holiday_summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payroll_entries")
+        .select(`
+          id,
+          employee_id,
+          payroll_period_id,
+          timesheet_hours,
+          holiday_accrued_hours,
+          hourly_rate,
+          employees (
+            id,
+            forename,
+            surname,
+            department,
+            start_date,
+            hourly_rate
+          ),
+          payroll_periods (
+            id,
+            period_name,
+            start_date,
+            end_date,
+            status
+          )
+        `)
+        .order("created_at", { ascending: false });
       
       if (error) throw error;
       return data;
@@ -109,6 +185,26 @@ export function useUpdateHolidayBalance() {
   });
 }
 
+export function useCreateHolidayBalance() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (balance: HolidayBalanceInsert) => {
+      const { data, error } = await supabase
+        .from("holiday_balances")
+        .insert(balance)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["holiday_balances"] });
+    },
+  });
+}
+
 // UK Holiday Law Constants
 export const UK_HOLIDAY_LAW = {
   STATUTORY_WEEKS: 5.6,
@@ -119,10 +215,16 @@ export const UK_HOLIDAY_LAW = {
   MAX_CARRYOVER_AGREED: 8,
   MAX_CARRYOVER_FAMILY_LEAVE: 28,
   MAX_CARRYOVER_SICKNESS: 20,
+  STANDARD_WEEK_HOURS: 40,
 };
 
 export const calculateHolidayAccrual = (hoursWorked: number): number => {
   return hoursWorked * UK_HOLIDAY_LAW.ACCRUAL_RATE;
+};
+
+// Calculate annual entitlement based on weekly hours
+export const calculateAnnualEntitlement = (weeklyHours: number): number => {
+  return weeklyHours * UK_HOLIDAY_LAW.STATUTORY_WEEKS;
 };
 
 export const formatCurrency = (amount: number, currency: string = "£"): string => {
@@ -132,3 +234,21 @@ export const formatCurrency = (amount: number, currency: string = "£"): string 
 export const formatHours = (hours: number): string => {
   return Number(hours).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
+
+// Calculate employee holiday summary
+export interface EmployeeHolidaySummary {
+  employeeId: string;
+  employeeName: string;
+  department: string;
+  totalAccrued: number;
+  totalTaken: number;
+  totalPaid: number;
+  balance: number;
+  periodBreakdown: {
+    periodId: string;
+    periodName: string;
+    accrued: number;
+    taken: number;
+    paid: number;
+  }[];
+}
