@@ -89,7 +89,8 @@ export function useHolidayBalances(employeeId?: string) {
             id,
             forename,
             surname,
-            department
+            department,
+            status
           )
         `)
         .order("leave_year_start", { ascending: false });
@@ -99,6 +100,72 @@ export function useHolidayBalances(employeeId?: string) {
       }
       
       const { data, error } = await query;
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Get holiday balances for a specific leave year
+export function useHolidayBalancesByYear(year: number) {
+  const leaveYearStart = `${year}-01-01`;
+  const leaveYearEnd = `${year}-12-31`;
+  
+  return useQuery({
+    queryKey: ["holiday_balances", "year", year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("holiday_balances")
+        .select(`
+          *,
+          employees (
+            id,
+            forename,
+            surname,
+            department,
+            status,
+            hourly_rate
+          )
+        `)
+        .eq("leave_year_start", leaveYearStart)
+        .eq("leave_year_end", leaveYearEnd)
+        .order("hours_accrued", { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Get holiday payments for a specific leave year (by holiday_taken_date)
+export function useHolidayPaymentsByYear(year: number) {
+  const leaveYearStart = `${year}-01-01`;
+  const leaveYearEnd = `${year}-12-31`;
+  
+  return useQuery({
+    queryKey: ["holiday_payments", "year", year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("holiday_payments")
+        .select(`
+          *,
+          employees (
+            id,
+            forename,
+            surname,
+            department
+          ),
+          payroll_periods (
+            id,
+            period_name,
+            start_date,
+            end_date
+          )
+        `)
+        .eq("leave_year_start", leaveYearStart)
+        .eq("leave_year_end", leaveYearEnd)
+        .order("holiday_taken_date", { ascending: false });
       
       if (error) throw error;
       return data;
