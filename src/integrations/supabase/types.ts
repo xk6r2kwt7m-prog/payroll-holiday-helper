@@ -53,6 +53,57 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          auto_calculate_overtime: boolean | null
+          company_email: string | null
+          company_name: string
+          created_at: string
+          default_pay_day: string | null
+          email_notifications: boolean | null
+          holiday_request_alerts: boolean | null
+          id: string
+          pay_period: string | null
+          payroll_reminders: boolean | null
+          session_timeout: boolean | null
+          two_factor_auth: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          auto_calculate_overtime?: boolean | null
+          company_email?: string | null
+          company_name?: string
+          created_at?: string
+          default_pay_day?: string | null
+          email_notifications?: boolean | null
+          holiday_request_alerts?: boolean | null
+          id?: string
+          pay_period?: string | null
+          payroll_reminders?: boolean | null
+          session_timeout?: boolean | null
+          two_factor_auth?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          auto_calculate_overtime?: boolean | null
+          company_email?: string | null
+          company_name?: string
+          created_at?: string
+          default_pay_day?: string | null
+          email_notifications?: boolean | null
+          holiday_request_alerts?: boolean | null
+          id?: string
+          pay_period?: string | null
+          payroll_reminders?: boolean | null
+          session_timeout?: boolean | null
+          two_factor_auth?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employee_branches: {
         Row: {
           branch: Database["public"]["Enums"]["branch_type"]
