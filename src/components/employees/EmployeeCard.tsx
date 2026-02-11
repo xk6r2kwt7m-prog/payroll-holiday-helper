@@ -56,15 +56,15 @@ export function EmployeeCard({ employee, isAdmin, onDelete, onViewDetails, index
   return (
     <div
       className={cn(
-        "group rounded-xl bg-card p-5 shadow-card transition-all duration-300",
-        "hover:shadow-elevated hover:-translate-y-1 hover:border-primary/20 border border-transparent",
-        "animate-fade-in"
+        "group rounded-xl bg-card p-4 sm:p-5 shadow-card transition-all duration-200",
+        "hover:shadow-elevated sm:hover:-translate-y-1 hover:border-primary/20 border border-transparent",
+        "animate-fade-in active:scale-[0.98] sm:active:scale-100"
       )}
-      style={{ animationDelay: `${index * 50}ms` }}
+      style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <Avatar className="h-14 w-14 ring-2 ring-background shadow-md transition-transform group-hover:scale-105">
+        <Avatar className="h-11 w-11 sm:h-14 sm:w-14 ring-2 ring-background shadow-md transition-transform group-hover:scale-105">
           <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-lg">
             {employee.forename[0]}{employee.surname[0]}
           </AvatarFallback>
