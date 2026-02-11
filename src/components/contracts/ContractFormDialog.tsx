@@ -94,11 +94,18 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     setSelectedEmployeeId(employeeId);
     const emp = activeEmployees.find((e) => e.id === employeeId);
     if (emp) {
+      // Auto-detect contract type from department
+      const autoType: ContractType = emp.department === "FOH" ? "foh" : "kitchen";
+      setContractType(autoType);
+
       setVariables((prev) => ({
         ...prev,
         employeeName: `${emp.forename} ${emp.surname}`,
         hourlyRate: emp.hourly_rate?.toString() || "",
-        jobTitle: prev.jobTitle || getDefaultJobTitle(contractType),
+        jobTitle: getDefaultJobTitle(autoType),
+        effectiveDate: emp.start_date || new Date().toISOString().split("T")[0],
+        noticePeriod: autoType === "kitchen" ? "1 month" : "two weeks",
+        probationPeriod: autoType === "kitchen" ? "1 month" : "2 months",
       }));
     }
   };
