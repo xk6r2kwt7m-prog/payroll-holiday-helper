@@ -17,6 +17,7 @@ import { Download, Trash2, Search, FileText, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUploadDialog } from "@/components/employees/DocumentUploadDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ContractSigningActions } from "./ContractSigningActions";
 
 const deptStyles: Record<string, string> = {
   FOH: "bg-accent/10 text-accent",
@@ -184,6 +185,11 @@ export function SignedContractsList() {
               </div>
 
               <div className="flex items-center gap-1 shrink-0">
+                <ContractSigningActions
+                  documentId={contract.id}
+                  employeeId={contract.employees?.id || ""}
+                  employeeName={`${contract.employees?.forename} ${contract.employees?.surname}`}
+                />
                 <Button
                   variant="ghost"
                   size="icon"
