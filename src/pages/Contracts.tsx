@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FilePlus, FileCheck } from "lucide-react";
+import { FilePlus, FileCheck, FileText } from "lucide-react";
 import { ContractFormDialog } from "@/components/contracts/ContractFormDialog";
 import { SignedContractsList } from "@/components/contracts/SignedContractsList";
 
@@ -11,17 +11,23 @@ export default function Contracts() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Contracts</h1>
-            <p className="text-muted-foreground">
-              Generate new employment contracts and manage signed copies
-            </p>
+      <div className="space-y-5">
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-slide-in-left">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Contracts</h1>
+              <p className="text-sm text-muted-foreground">
+                Generate and manage employment contracts
+              </p>
+            </div>
           </div>
-          <Button onClick={() => setGenerateOpen(true)}>
+          <Button onClick={() => setGenerateOpen(true)} className="gradient-primary w-full sm:w-auto">
             <FilePlus className="h-4 w-4" />
-            Generate New Contract
+            New Contract
           </Button>
         </div>
 
