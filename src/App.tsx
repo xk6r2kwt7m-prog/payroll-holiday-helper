@@ -11,6 +11,7 @@ import Payroll from "./pages/Payroll";
 import PayrollCalendar from "./pages/PayrollCalendar";
 import Holidays from "./pages/Holidays";
 import Settings from "./pages/Settings";
+import Contracts from "./pages/Contracts";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -70,6 +71,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/contracts"
+              element={
+                <ProtectedRoute>
+                  <Contracts />
                 </ProtectedRoute>
               }
             />

@@ -11,6 +11,7 @@ import {
   ChevronRight,
   LogOut,
   Shield,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,6 +23,7 @@ const navItems = [
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },
+  { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
