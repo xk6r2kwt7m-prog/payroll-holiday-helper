@@ -13,6 +13,7 @@ import Holidays from "./pages/Holidays";
 import Settings from "./pages/Settings";
 import Contracts from "./pages/Contracts";
 import Auth from "./pages/Auth";
+import SignContract from "./pages/SignContract";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -82,6 +83,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/sign/:token" element={<SignContract />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

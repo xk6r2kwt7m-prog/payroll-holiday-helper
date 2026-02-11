@@ -104,6 +104,60 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_signatures: {
+        Row: {
+          consent_text: string
+          created_at: string
+          employee_document_id: string
+          employee_id: string
+          id: string
+          ip_address: string | null
+          signed_at: string
+          signer_name: string
+          signer_type: string
+          user_agent: string | null
+        }
+        Insert: {
+          consent_text: string
+          created_at?: string
+          employee_document_id: string
+          employee_id: string
+          id?: string
+          ip_address?: string | null
+          signed_at?: string
+          signer_name: string
+          signer_type: string
+          user_agent?: string | null
+        }
+        Update: {
+          consent_text?: string
+          created_at?: string
+          employee_document_id?: string
+          employee_id?: string
+          id?: string
+          ip_address?: string | null
+          signed_at?: string
+          signer_name?: string
+          signer_type?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_signatures_employee_document_id_fkey"
+            columns: ["employee_document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_signatures_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_branches: {
         Row: {
           branch: Database["public"]["Enums"]["branch_type"]
@@ -605,6 +659,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      signing_tokens: {
+        Row: {
+          created_at: string
+          employee_document_id: string
+          employee_id: string
+          expires_at: string
+          id: string
+          signer_type: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          employee_document_id: string
+          employee_id: string
+          expires_at: string
+          id?: string
+          signer_type: string
+          token?: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          employee_document_id?: string
+          employee_id?: string
+          expires_at?: string
+          id?: string
+          signer_type?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signing_tokens_employee_document_id_fkey"
+            columns: ["employee_document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signing_tokens_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
