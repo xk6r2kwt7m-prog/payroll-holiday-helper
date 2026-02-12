@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, ChevronRight } from "lucide-react";
+import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,14 +10,17 @@ import { EmployeeHolidayCard } from "@/components/holidays/EmployeeHolidayCard";
 import { HolidayComparisonTable } from "@/components/holidays/HolidayComparisonTable";
 import { LeaveYearBalanceCard } from "@/components/holidays/LeaveYearBalanceCard";
 import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPaymentDialog";
-import { 
-  useHolidayBalancesByYear,
+import { HolidayAlerts } from "@/components/holidays/HolidayAlerts";
+import { DepartmentHolidaySummary } from "@/components/holidays/DepartmentHolidaySummary";
+import { HolidayPaymentHistory } from "@/components/holidays/HolidayPaymentHistory";
+import { EmployeeHolidayDetailSheet } from "@/components/holidays/EmployeeHolidayDetailSheet";
+import {
   useHolidayPaymentsByYear,
   useAllPayrollEntriesWithHoliday,
-  formatCurrency, 
-  formatHours, 
+  formatCurrency,
+  formatHours,
   UK_HOLIDAY_LAW,
-  calculateAnnualEntitlement 
+  calculateAnnualEntitlement,
 } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import {
@@ -30,97 +33,71 @@ import {
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2025" | "2026";
+type SubTab = "overview" | "alerts" | "history" | "departments";
+
+interface EmployeeSummary {
+  employeeId: string;
+  employeeName: string;
+  department: string;
+  hoursAccrued: number;
+  hoursTaken: number;
+  hoursCarriedOver: number;
+  totalPaid: number;
+  balance: number;
+  periodBreakdown: { periodId: string; periodName: string; accrued: number; taken: number; paid: number }[];
+}
 
 const Holidays = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
-  const [selectedYear, setSelectedYear] = useState<LeaveYear>("2026");
+  const [selectedYear, setSelectedYear] = useState<LeaveYear>("2025");
+  const [subTab, setSubTab] = useState<SubTab>("overview");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
 
   const { data: periods = [] } = usePayrollPeriods();
-  
-  // 2025 data - imported balances
-  const { data: balances2025 = [], isLoading: loading2025 } = useHolidayBalancesByYear(2025);
+
+  // Holiday payments by year
   const { data: payments2025 = [] } = useHolidayPaymentsByYear(2025);
-  
-  // 2026 data - from payroll entries + any existing balances
-  const { data: balances2026 = [], isLoading: loading2026 } = useHolidayBalancesByYear(2026);
   const { data: payments2026 = [] } = useHolidayPaymentsByYear(2026);
+
+  // All payroll entries for accrual calculation
   const { data: payrollEntries = [], isLoading: entriesLoading } = useAllPayrollEntriesWithHoliday();
 
-  const isLoading = loading2025 || loading2026 || entriesLoading;
+  // Build summaries from payroll entries (accrual) + holiday payments (taken)
+  const buildSummaries = (year: number, payments: any[]): EmployeeSummary[] => {
+    const summaryMap = new Map<string, EmployeeSummary>();
 
-  // Calculate 2025 summaries from imported balances
-  const summaries2025 = useMemo(() => {
-    return balances2025
-      .filter((b: any) => b.employees && b.employees.status !== 'leaver')
-      .map((balance: any) => {
-        const emp = balance.employees;
-        // Find any holiday payments for this employee in 2025
-        const empPayments = payments2025.filter((p: any) => p.employee_id === balance.employee_id);
-        const totalPaid = empPayments.reduce((sum: number, p: any) => sum + Number(p.total || 0), 0);
-        
-        return {
-          employeeId: balance.employee_id,
-          employeeName: `${emp.forename} ${emp.surname}`,
-          department: emp.department,
-          hoursAccrued: Number(balance.hours_accrued) || 0,
-          hoursTaken: Number(balance.hours_taken) || 0,
-          hoursCarriedOver: Number(balance.hours_carried_over) || 0,
-          totalPaid,
-          balance: (Number(balance.hours_accrued) || 0) + (Number(balance.hours_carried_over) || 0) - (Number(balance.hours_taken) || 0),
-        };
-      });
-  }, [balances2025, payments2025]);
-
-  // Calculate 2026 summaries from payroll entries (accrued) + any payments
-  const summaries2026 = useMemo(() => {
-    const summaryMap = new Map<string, {
-      employeeId: string;
-      employeeName: string;
-      department: string;
-      hoursAccrued: number;
-      hoursTaken: number;
-      hoursCarriedOver: number;
-      totalPaid: number;
-      periodBreakdown: { periodId: string; periodName: string; accrued: number; taken: number; paid: number }[];
-    }>();
-
-    // Process payroll entries for 2026 accrued hours
+    // Process payroll entries for accrued hours
     payrollEntries.forEach((entry: any) => {
       if (!entry.employees || !entry.payroll_periods) return;
-      if (entry.employees.status === 'leaver') return;
-      
-      // Check if this period is in 2026
-      const periodStart = new Date(entry.payroll_periods.start_date);
-      if (periodStart.getFullYear() !== 2026) return;
-      
+      // Include leavers - they still have holiday data
+      const periodEnd = new Date(entry.payroll_periods.end_date);
+      // Match periods to leave year: period end date falls in the target year
+      if (periodEnd.getFullYear() !== year) return;
+
       const empId = entry.employee_id;
       const empName = `${entry.employees.forename} ${entry.employees.surname}`;
       const dept = entry.employees.department;
-      
+
       if (!summaryMap.has(empId)) {
-        // Check if there's a 2025 balance to carry over
-        const balance2025 = summaries2025.find(s => s.employeeId === empId);
-        const carryOver = balance2025 ? balance2025.balance : 0;
-        
         summaryMap.set(empId, {
           employeeId: empId,
           employeeName: empName,
           department: dept,
           hoursAccrued: 0,
           hoursTaken: 0,
-          hoursCarriedOver: Math.max(0, carryOver), // Only carry positive balances
+          hoursCarriedOver: 0,
           totalPaid: 0,
+          balance: 0,
           periodBreakdown: [],
         });
       }
-      
+
       const summary = summaryMap.get(empId)!;
       const accrued = Number(entry.holiday_accrued_hours) || 0;
       summary.hoursAccrued += accrued;
-      
-      // Add to period breakdown
+
       const existingPeriod = summary.periodBreakdown.find(p => p.periodId === entry.payroll_period_id);
       if (existingPeriod) {
         existingPeriod.accrued += accrued;
@@ -135,55 +112,76 @@ const Holidays = () => {
       }
     });
 
-    // Add holiday payments for 2026
-    payments2026.forEach((payment: any) => {
-      if (!payment.employees) return;
-      
+    // Add holiday payments (hours taken + paid)
+    payments.forEach((payment: any) => {
       const empId = payment.employee_id;
       if (!empId) return;
-      
+
       if (!summaryMap.has(empId)) {
         const emp = payment.employees;
-        // Check if there's a 2025 balance to carry over
-        const balance2025 = summaries2025.find(s => s.employeeId === empId);
-        const carryOver = balance2025 ? balance2025.balance : 0;
-        
+        if (!emp) return;
         summaryMap.set(empId, {
           employeeId: empId,
-          employeeName: `${emp.forename} ${emp.surname}`,
+          employeeName: payment.employee_name || `${emp.forename} ${emp.surname}`,
           department: emp.department,
           hoursAccrued: 0,
           hoursTaken: 0,
-          hoursCarriedOver: Math.max(0, carryOver),
+          hoursCarriedOver: 0,
           totalPaid: 0,
+          balance: 0,
           periodBreakdown: [],
         });
       }
-      
+
       const summary = summaryMap.get(empId)!;
       const hours = Number(payment.hours) || 0;
       const total = Number(payment.total) || 0;
       summary.hoursTaken += hours;
       summary.totalPaid += total;
-      
-      // Add to period breakdown if period exists
+
+      // Update period breakdown
       if (payment.payroll_periods) {
         const existingPeriod = summary.periodBreakdown.find(p => p.periodId === payment.payroll_period_id);
         if (existingPeriod) {
           existingPeriod.taken += hours;
           existingPeriod.paid += total;
+        } else {
+          summary.periodBreakdown.push({
+            periodId: payment.payroll_period_id,
+            periodName: payment.payroll_periods.period_name,
+            accrued: 0,
+            taken: hours,
+            paid: total,
+          });
         }
       }
     });
 
+    // Calculate balances
     return Array.from(summaryMap.values()).map(s => ({
       ...s,
       balance: s.hoursAccrued + s.hoursCarriedOver - s.hoursTaken,
     }));
+  };
+
+  const summaries2025 = useMemo(() => buildSummaries(2025, payments2025), [payrollEntries, payments2025]);
+
+  // 2026 summaries with carry-over from 2025
+  const summaries2026 = useMemo(() => {
+    const base = buildSummaries(2026, payments2026);
+    return base.map(s => {
+      const prev = summaries2025.find(p => p.employeeId === s.employeeId);
+      const carryOver = prev ? Math.max(0, prev.balance) : 0;
+      return {
+        ...s,
+        hoursCarriedOver: carryOver,
+        balance: s.hoursAccrued + carryOver - s.hoursTaken,
+      };
+    });
   }, [payrollEntries, payments2026, summaries2025]);
 
-  // Get current year's summaries
   const currentSummaries = selectedYear === "2025" ? summaries2025 : summaries2026;
+  const currentPayments = selectedYear === "2025" ? payments2025 : payments2026;
 
   // Filter summaries
   const filteredSummaries = useMemo(() => {
@@ -194,18 +192,92 @@ const Holidays = () => {
     });
   }, [currentSummaries, searchQuery, departmentFilter]);
 
-  // Calculate totals
+  // Totals
   const totals = useMemo(() => {
     return filteredSummaries.reduce((acc, s) => ({
       accrued: acc.accrued + s.hoursAccrued,
       taken: acc.taken + s.hoursTaken,
-      carryOver: acc.carryOver + (s.hoursCarriedOver || 0),
-      paid: acc.paid + (s.totalPaid || 0),
+      carryOver: acc.carryOver + s.hoursCarriedOver,
+      paid: acc.paid + s.totalPaid,
       balance: acc.balance + s.balance,
     }), { accrued: 0, taken: 0, carryOver: 0, paid: 0, balance: 0 });
   }, [filteredSummaries]);
 
-  const overdrawnCount = filteredSummaries.filter(s => s.hoursTaken > s.hoursAccrued + (s.hoursCarriedOver || 0)).length;
+  const overdrawnCount = filteredSummaries.filter(s => s.hoursTaken > s.hoursAccrued + s.hoursCarriedOver).length;
+
+  // Alerts
+  const alerts = useMemo(() => {
+    return currentSummaries
+      .map(s => {
+        const total = s.hoursAccrued + s.hoursCarriedOver;
+        const usagePercent = total > 0 ? (s.hoursTaken / total) * 100 : 0;
+        const now = new Date();
+        const expectedUsagePercent = (now.getMonth() / 12) * 100;
+
+        if (s.hoursTaken > total) {
+          return { ...s, usagePercent, expectedUsagePercent, alertType: "overdrawn" as const };
+        }
+        if (usagePercent > 85) {
+          return { ...s, usagePercent, expectedUsagePercent, alertType: "at_risk" as const };
+        }
+        if (total > 40 && usagePercent < expectedUsagePercent * 0.4 && s.hoursAccrued > 50) {
+          return { ...s, usagePercent, expectedUsagePercent, alertType: "low_usage" as const };
+        }
+        return null;
+      })
+      .filter(Boolean) as any[];
+  }, [currentSummaries]);
+
+  // Department summaries
+  const departmentSummaries = useMemo(() => {
+    const deptMap = new Map<string, { department: string; employeeCount: number; totalAccrued: number; totalTaken: number; totalPaid: number; usageSum: number; overdrawnCount: number }>();
+
+    currentSummaries.forEach(s => {
+      if (!deptMap.has(s.department)) {
+        deptMap.set(s.department, { department: s.department, employeeCount: 0, totalAccrued: 0, totalTaken: 0, totalPaid: 0, usageSum: 0, overdrawnCount: 0 });
+      }
+      const d = deptMap.get(s.department)!;
+      d.employeeCount++;
+      d.totalAccrued += s.hoursAccrued;
+      d.totalTaken += s.hoursTaken;
+      d.totalPaid += s.totalPaid;
+      const total = s.hoursAccrued + s.hoursCarriedOver;
+      d.usageSum += total > 0 ? (s.hoursTaken / total) * 100 : 0;
+      if (s.hoursTaken > total) d.overdrawnCount++;
+    });
+
+    return Array.from(deptMap.values()).map(d => ({
+      ...d,
+      avgUsagePercent: d.employeeCount > 0 ? d.usageSum / d.employeeCount : 0,
+    }));
+  }, [currentSummaries]);
+
+  // Payment history for table
+  const paymentHistory = useMemo(() => {
+    return currentPayments.map((p: any) => ({
+      id: p.id,
+      employeeName: p.employee_name,
+      employeeId: p.employee_id,
+      department: p.employees?.department || "—",
+      hours: Number(p.hours),
+      rate: Number(p.rate),
+      total: Number(p.total),
+      holidayDate: p.holiday_taken_date,
+      periodName: p.payroll_periods?.period_name || "—",
+      notes: p.notes,
+    }));
+  }, [currentPayments]);
+
+  // Selected employee for detail sheet
+  const selectedEmployee = useMemo(() => {
+    if (!selectedEmployeeId) return null;
+    return currentSummaries.find(s => s.employeeId === selectedEmployeeId) || null;
+  }, [selectedEmployeeId, currentSummaries]);
+
+  const selectedEmployeePayments = useMemo(() => {
+    if (!selectedEmployeeId) return [];
+    return paymentHistory.filter(p => p.employeeId === selectedEmployeeId);
+  }, [selectedEmployeeId, paymentHistory]);
 
   return (
     <AppLayout>
@@ -217,96 +289,116 @@ const Holidays = () => {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
-              Holiday Entitlement
+              Holiday Management
             </h1>
             <p className="text-muted-foreground mt-1">
-              Track accrued, taken, and remaining holiday by leave year
+              Real-time holiday tracking · Accrual · Entitlement · UK Compliant
             </p>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <AddHolidayPaymentDialog />
           </div>
         </div>
 
-        {/* Leave Year Tabs */}
-        <Tabs value={selectedYear} onValueChange={(v) => setSelectedYear(v as LeaveYear)} className="animate-fade-in">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <TabsList className="grid w-full sm:w-auto grid-cols-2">
-              <TabsTrigger value="2025" className="gap-2">
-                <Calendar className="h-4 w-4" />
-                2025
-              </TabsTrigger>
-              <TabsTrigger value="2026" className="gap-2">
-                <Calendar className="h-4 w-4" />
-                2026
-              </TabsTrigger>
-            </TabsList>
-            
-            {/* View Toggle */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant={viewMode === "cards" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("cards")}
-              >
-                <LayoutGrid className="h-4 w-4 mr-1" />
-                Cards
-              </Button>
-              <Button
-                variant={viewMode === "table" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("table")}
-              >
-                <TableIcon className="h-4 w-4 mr-1" />
-                Table
-              </Button>
+        {/* Leave Year Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
+          <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <TabsList className="grid w-full sm:w-auto grid-cols-2">
+                <TabsTrigger value="2025" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  2025
+                </TabsTrigger>
+                <TabsTrigger value="2026" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  2026
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="flex items-center gap-2">
+                <Button variant={viewMode === "cards" ? "default" : "outline"} size="sm" onClick={() => setViewMode("cards")}>
+                  <LayoutGrid className="h-4 w-4 mr-1" /> Cards
+                </Button>
+                <Button variant={viewMode === "table" ? "default" : "outline"} size="sm" onClick={() => setViewMode("table")}>
+                  <TableIcon className="h-4 w-4 mr-1" /> Table
+                </Button>
+              </div>
             </div>
-          </div>
+          </Tabs>
+        </div>
 
-          {/* Stats */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mt-6">
-            <StatCard
-              title="Hours Accrued"
-              value={formatHours(totals.accrued)}
-              subtitle={selectedYear === "2026" && totals.carryOver > 0 ? `+${formatHours(totals.carryOver)} carried over` : `${filteredSummaries.length} employees`}
-              icon={<TrendingUpIcon className="h-5 w-5" />}
-              variant="accent"
-            />
-            <StatCard
-              title="Hours Taken"
-              value={formatHours(totals.taken)}
-              subtitle={`${overdrawnCount} overdrawn`}
-              icon={<Clock className="h-5 w-5" />}
-            />
-            <StatCard
-              title="Remaining Balance"
-              value={`${totals.balance >= 0 ? "" : ""}${formatHours(totals.balance)}`}
-              subtitle="Accrued minus taken"
-              icon={<Scale className="h-5 w-5" />}
-              variant={totals.balance >= 0 ? "primary" : "accent"}
-            />
-            <StatCard
-              title="Total Paid"
-              value={formatCurrency(totals.paid)}
-              subtitle={`${selectedYear} leave year`}
-              icon={<DollarSign className="h-5 w-5" />}
-              variant="primary"
-            />
-          </div>
+        {/* Stats */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 animate-fade-in">
+          <StatCard
+            title="Hours Accrued"
+            value={formatHours(totals.accrued)}
+            subtitle={`${filteredSummaries.length} employees`}
+            icon={<TrendingUpIcon className="h-5 w-5" />}
+            variant="accent"
+          />
+          <StatCard
+            title="Hours Taken"
+            value={formatHours(totals.taken)}
+            subtitle={`${overdrawnCount} overdrawn`}
+            icon={<Clock className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Remaining Balance"
+            value={formatHours(totals.balance)}
+            subtitle="Accrued minus taken"
+            icon={<Scale className="h-5 w-5" />}
+            variant={totals.balance >= 0 ? "primary" : "accent"}
+          />
+          <StatCard
+            title="Total Paid"
+            value={formatCurrency(totals.paid)}
+            subtitle={`${selectedYear} leave year`}
+            icon={<DollarSign className="h-5 w-5" />}
+            variant="primary"
+          />
+          <StatCard
+            title="Alerts"
+            value={alerts.length.toString()}
+            subtitle={overdrawnCount > 0 ? `${overdrawnCount} overdrawn` : "All clear"}
+            icon={<AlertTriangle className="h-5 w-5" />}
+            variant={alerts.length > 0 ? "warning" : "success"}
+            onClick={() => setSubTab("alerts")}
+          />
+        </div>
 
-          {/* Filters */}
+        {/* Sub-navigation tabs */}
+        <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
+          <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-grid">
+            <TabsTrigger value="overview" className="gap-1.5">
+              <Users className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Alerts</span>
+              {alerts.length > 0 && (
+                <span className="ml-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 leading-none">
+                  {alerts.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-1.5">
+              <History className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Payments</span>
+            </TabsTrigger>
+            <TabsTrigger value="departments" className="gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Departments</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Filters (shared across sub-tabs) */}
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search employees..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+              <Input placeholder="Search employees..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
-            
             <Select value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v as DepartmentFilter)}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Department" />
@@ -320,31 +412,34 @@ const Holidays = () => {
             </Select>
           </div>
 
-          {/* Results info */}
           {(searchQuery || departmentFilter !== "all") && (
             <p className="text-sm text-muted-foreground mt-2">
               Showing {filteredSummaries.length} of {currentSummaries.length} employees
             </p>
           )}
 
-          {/* Tab Content */}
-          <TabsContent value="2025" className="mt-4">
-            {loading2025 ? (
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="mt-4">
+            {entriesLoading ? (
               <LoadingSkeleton />
             ) : filteredSummaries.length === 0 ? (
               <EmptyState hasFilters={!!(searchQuery || departmentFilter !== "all")} onClearFilters={() => { setSearchQuery(""); setDepartmentFilter("all"); }} />
             ) : viewMode === "cards" ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredSummaries.map((summary, index) => (
-                  <LeaveYearBalanceCard
-                    key={summary.employeeId}
-                    employeeName={summary.employeeName}
-                    department={summary.department}
-                    hoursAccrued={summary.hoursAccrued}
-                    hoursTaken={summary.hoursTaken}
-                    hoursCarriedOver={summary.hoursCarriedOver || 0}
-                    index={index}
-                  />
+                  <div key={summary.employeeId} onClick={() => setSelectedEmployeeId(summary.employeeId)} className="cursor-pointer">
+                    <EmployeeHolidayCard
+                      employeeName={summary.employeeName}
+                      department={summary.department}
+                      totalAccrued={summary.hoursAccrued + summary.hoursCarriedOver}
+                      totalTaken={summary.hoursTaken}
+                      totalPaid={summary.totalPaid}
+                      balance={summary.balance}
+                      entitlement={summary.hoursAccrued + summary.hoursCarriedOver}
+                      periodBreakdown={summary.periodBreakdown}
+                      index={index}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -355,50 +450,27 @@ const Holidays = () => {
                   department: s.department,
                   totalAccrued: s.hoursAccrued,
                   totalTaken: s.hoursTaken,
-                  totalPaid: s.totalPaid || 0,
+                  totalPaid: s.totalPaid,
                   balance: s.balance,
-                  entitlement: s.hoursAccrued + (s.hoursCarriedOver || 0),
+                  entitlement: s.hoursAccrued + s.hoursCarriedOver,
                 }))}
               />
             )}
           </TabsContent>
 
-          <TabsContent value="2026" className="mt-4">
-            {isLoading ? (
-              <LoadingSkeleton />
-            ) : filteredSummaries.length === 0 ? (
-              <EmptyState hasFilters={!!(searchQuery || departmentFilter !== "all")} onClearFilters={() => { setSearchQuery(""); setDepartmentFilter("all"); }} />
-            ) : viewMode === "cards" ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredSummaries.map((summary, index) => (
-                  <EmployeeHolidayCard
-                    key={summary.employeeId}
-                    employeeName={summary.employeeName}
-                    department={summary.department}
-                    totalAccrued={summary.hoursAccrued + (summary.hoursCarriedOver || 0)}
-                    totalTaken={summary.hoursTaken}
-                    totalPaid={summary.totalPaid || 0}
-                    balance={summary.balance}
-                    entitlement={calculateAnnualEntitlement(UK_HOLIDAY_LAW.STANDARD_WEEK_HOURS)}
-                    periodBreakdown={(summary as any).periodBreakdown || []}
-                    index={index}
-                  />
-                ))}
-              </div>
-            ) : (
-              <HolidayComparisonTable
-                data={filteredSummaries.map(s => ({
-                  employeeId: s.employeeId,
-                  employeeName: s.employeeName,
-                  department: s.department,
-                  totalAccrued: s.hoursAccrued + (s.hoursCarriedOver || 0),
-                  totalTaken: s.hoursTaken,
-                  totalPaid: s.totalPaid || 0,
-                  balance: s.balance,
-                  entitlement: calculateAnnualEntitlement(UK_HOLIDAY_LAW.STANDARD_WEEK_HOURS),
-                }))}
-              />
-            )}
+          {/* Alerts Tab */}
+          <TabsContent value="alerts" className="mt-4">
+            <HolidayAlerts alerts={alerts} onEmployeeClick={setSelectedEmployeeId} />
+          </TabsContent>
+
+          {/* Payment History Tab */}
+          <TabsContent value="history" className="mt-4">
+            <HolidayPaymentHistory payments={paymentHistory} onEmployeeClick={setSelectedEmployeeId} />
+          </TabsContent>
+
+          {/* Department Summary Tab */}
+          <TabsContent value="departments" className="mt-4">
+            <DepartmentHolidaySummary departments={departmentSummaries} />
           </TabsContent>
         </Tabs>
 
@@ -462,6 +534,28 @@ const Holidays = () => {
           </div>
         </div>
       </div>
+
+      {/* Employee Detail Sheet */}
+      {selectedEmployee && (
+        <EmployeeHolidayDetailSheet
+          open={!!selectedEmployeeId}
+          onOpenChange={(open) => { if (!open) setSelectedEmployeeId(null); }}
+          employeeName={selectedEmployee.employeeName}
+          department={selectedEmployee.department}
+          hoursAccrued={selectedEmployee.hoursAccrued}
+          hoursTaken={selectedEmployee.hoursTaken}
+          totalPaid={selectedEmployee.totalPaid}
+          balance={selectedEmployee.balance}
+          carryOver={selectedEmployee.hoursCarriedOver}
+          payments={selectedEmployeePayments}
+          periodBreakdown={selectedEmployee.periodBreakdown.map(p => ({
+            periodName: p.periodName,
+            accrued: p.accrued,
+            taken: p.taken,
+            paid: p.paid,
+          }))}
+        />
+      )}
     </AppLayout>
   );
 };
@@ -507,7 +601,7 @@ function EmptyState({ hasFilters, onClearFilters }: { hasFilters: boolean; onCle
       </div>
       <h3 className="text-lg font-semibold text-card-foreground mb-2">No holiday data found</h3>
       <p className="text-muted-foreground max-w-md mx-auto">
-        {hasFilters 
+        {hasFilters
           ? "No employees match your current filters."
           : "Import payroll data to start tracking holiday accruals."}
       </p>
