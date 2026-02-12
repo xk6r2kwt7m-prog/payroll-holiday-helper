@@ -7,7 +7,8 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Clock, DollarSign, Users, BarChart3 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Clock, DollarSign, Users, BarChart3, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   ChartContainer,
@@ -31,6 +32,7 @@ import {
 } from "recharts";
 
 const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
+const DEPARTMENTS = ["All", "FOH", "BOH", "CPU"] as const;
 
 const hoursChartConfig: ChartConfig = {
   scheduled: { label: "Scheduled", color: "hsl(168 35% 49%)" },
@@ -54,7 +56,7 @@ const DEPT_COLORS = [
   "hsl(200, 15%, 45%)",
 ];
 
-function useWeekData(weekStart: Date, weekEnd: Date, branch: string) {
+function useWeekData(weekStart: Date, weekEnd: Date, branch: string, deptFilter: string) {
   const startStr = format(weekStart, "yyyy-MM-dd");
   const endStr = format(weekEnd, "yyyy-MM-dd");
   const { data: shifts } = useShifts(startStr, endStr);
@@ -64,7 +66,7 @@ function useWeekData(weekStart: Date, weekEnd: Date, branch: string) {
   return useMemo(() => {
     if (!employees || !shifts) return null;
 
-    const activeEmployees = employees.filter((e) => e.status === "active");
+    const activeEmployees = employees.filter((e) => e.status === "active" && (deptFilter === "All" || e.department === deptFilter));
     let totalScheduled = 0;
     let totalActual = 0;
     let totalScheduledCost = 0;
@@ -185,17 +187,18 @@ function useWeekData(weekStart: Date, weekEnd: Date, branch: string) {
       })).filter(d => d.value > 0),
       empVariance,
     };
-  }, [employees, shifts, timeEntries, branch, weekStart]);
+  }, [employees, shifts, timeEntries, branch, weekStart, deptFilter]);
 }
 
 export default function ScheduleAnalytics() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBranch, setSelectedBranch] = useState<string>("Fitzrovia");
+  const [selectedDept, setSelectedDept] = useState<string>("All");
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
 
-  const data = useWeekData(weekStart, weekEnd, selectedBranch);
+  const data = useWeekData(weekStart, weekEnd, selectedBranch, selectedDept);
 
   const navigate = (dir: number) => setCurrentDate((d) => addDays(d, 7 * dir));
 
@@ -208,11 +211,28 @@ export default function ScheduleAnalytics() {
     <AppLayout>
       <div className="space-y-5">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Schedule Analytics</h1>
-          <p className="text-sm text-muted-foreground">
-            Rostered vs actual hours with cost tracking
-          </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Schedule Analytics</h1>
+            <p className="text-sm text-muted-foreground">
+              Rostered vs actual hours with cost tracking
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedDept} onValueChange={setSelectedDept}>
+              <SelectTrigger className="w-[140px] bg-card">
+                <SelectValue placeholder="Department" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                {DEPARTMENTS.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d === "All" ? "All Departments" : d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Week navigator */}
