@@ -70,6 +70,12 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     }
 
     try {
+      // Determine leave year from holiday date
+      const holidayDateObj = new Date(holidayDate);
+      const leaveYear = holidayDateObj.getFullYear();
+      const leaveYearStart = `${leaveYear}-01-01`;
+      const leaveYearEnd = `${leaveYear}-12-31`;
+
       await createPayment.mutateAsync({
         employee_id: employeeId,
         employee_name: `${employee.forename} ${employee.surname}`,
@@ -78,6 +84,8 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
         rate: parseFloat(rate),
         total,
         holiday_taken_date: holidayDate,
+        leave_year_start: leaveYearStart,
+        leave_year_end: leaveYearEnd,
         notes: notes || null,
       });
 

@@ -257,18 +257,22 @@ export function useCopyPayrollPeriod() {
 
       // Copy entries with zero timesheet hours
       if (sourceEntries && sourceEntries.length > 0) {
-        const newEntries = sourceEntries.map(entry => ({
-          payroll_period_id: newPeriod.id,
-          employee_id: entry.employee_id,
-          hourly_rate: entry.hourly_rate,
-          service_charge: entry.service_charge,
-          timesheet_hours: 0, // Reset timesheet hours
-          performance_bonus: entry.performance_bonus,
-          special_bonus: entry.special_bonus,
-          holiday_accrued_hours: 0, // Will be recalculated
-          total_pay: 0, // Will be recalculated
-          bank_details_exported: false,
-        }));
+        const newEntries = sourceEntries.map(entry => {
+          const perfBonus = entry.performance_bonus || 0;
+          const specBonus = entry.special_bonus || 0;
+          return {
+            payroll_period_id: newPeriod.id,
+            employee_id: entry.employee_id,
+            hourly_rate: entry.hourly_rate,
+            service_charge: entry.service_charge,
+            timesheet_hours: 0, // Reset timesheet hours
+            performance_bonus: entry.performance_bonus,
+            special_bonus: entry.special_bonus,
+            holiday_accrued_hours: 0, // Will be recalculated
+            total_pay: perfBonus + specBonus, // Include carried-over bonuses
+            bank_details_exported: false,
+          };
+        });
 
         const { error: insertError } = await supabase
           .from("payroll_entries")
