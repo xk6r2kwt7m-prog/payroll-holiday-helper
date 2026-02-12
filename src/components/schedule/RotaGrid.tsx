@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { format, isSameDay, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -6,14 +6,18 @@ import { Plus, AlertTriangle, Check, Lock, MapPin } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
 import { BulkScheduleActions } from "./BulkScheduleActions";
+import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
+import { DroppableCell, EmptyDropCell } from "./DroppableCell";
 import { useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
 import { toast } from "sonner";
+import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import type { Employee } from "@/hooks/useEmployees";
 
 interface RotaGridProps {
   weekDays: Date[];
   shifts: any[];
-  allShifts: any[]; // All shifts across all branches for cross-branch detection
+  allShifts: any[];
   employees: Employee[];
   branch: string;
   department: string;
@@ -40,11 +44,17 @@ export function RotaGrid({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
+  const [activeShift, setActiveShift] = useState<any>(null);
 
   const bulkDelete = useBulkDeleteShifts();
   const bulkUpdate = useBulkUpdateShifts();
   const bulkPending = bulkDelete.isPending || bulkUpdate.isPending;
-  // Filter employees by department only (staff can work across branches)
+
+  // Sensors: require a small movement before starting drag to allow clicks
+  const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } });
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
+  const sensors = useSensors(pointerSensor, touchSensor);
+
   const deptEmployees = useMemo(
     () => employees.filter((e) => e.department === department && e.status === "active"),
     [employees, department]
@@ -64,7 +74,6 @@ export function RotaGrid({
   const getOpenShifts = (day: Date) =>
     shiftsForDay(day).filter((s: any) => !s.employee_id);
 
-  // Get cross-branch shifts for an employee on a given day
   const getCrossBranchShift = (employeeId: string, day: Date) =>
     allShifts?.filter(
       (s: any) =>
@@ -73,7 +82,6 @@ export function RotaGrid({
         s.branch !== branch
     ) || [];
 
-  // Calculate total weekly hours for an employee
   const getEmployeeWeeklyHours = (employeeId: string) => {
     let totalMinutes = 0;
     for (const day of weekDays) {
@@ -89,7 +97,6 @@ export function RotaGrid({
     return totalMinutes / 60;
   };
 
-  // Current branch/dept shifts for bulk actions
   const currentShifts = useMemo(
     () => shifts?.filter((s: any) => s.branch === branch && s.department === department) || [],
     [shifts, branch, department]
@@ -123,7 +130,6 @@ export function RotaGrid({
     toast.success(`Updated times for ${ids.length} shifts`);
   };
 
-  // Stats for status bar
   const allBranchShifts = shifts || [];
   const publishedCount = allBranchShifts.filter((s: any) => s.is_published).length;
   const unpublishedCount = allBranchShifts.filter((s: any) => !s.is_published && s.employee_id).length;
@@ -131,6 +137,8 @@ export function RotaGrid({
 
   const handleCellClick = (day: Date, shift?: any) => {
     if (!isAdmin) return;
+    // Don't open dialog if we just finished a drag
+    if (activeShift) return;
     setSelectedDay(day);
     setSelectedShift(shift || null);
     setDialogOpen(true);
@@ -173,6 +181,64 @@ export function RotaGrid({
     ? getDefaultTimes(department as any, getDayAbbr(selectedDay))
     : { start: "11:30", end: "22:30" };
 
+  // Drag-and-drop handlers
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveShift(event.active.data.current?.shift || null);
+  }, []);
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveShift(null);
+
+    if (!over || !active.data.current?.shift) return;
+
+    const shift = active.data.current.shift;
+    const dropId = String(over.id); // format: "employeeId::dateISO" or "open::dateISO"
+
+    const [targetEmployeeId, targetDateISO] = dropId.split("::");
+    if (!targetDateISO) return;
+
+    const targetDate = format(new Date(targetDateISO), "yyyy-MM-dd");
+    const isSameEmployee = shift.employee_id === targetEmployeeId;
+    const isSameDate = shift.shift_date === targetDate;
+
+    // No-op if dropped in same spot
+    if (isSameEmployee && isSameDate) return;
+
+    // Check if target employee already has a shift on that day
+    if (targetEmployeeId !== "open") {
+      const existingShift = shifts?.find(
+        (s: any) =>
+          s.employee_id === targetEmployeeId &&
+          s.shift_date === targetDate &&
+          s.branch === branch &&
+          s.department === department
+      );
+      if (existingShift) {
+        toast.error(`${deptEmployees.find(e => e.id === targetEmployeeId)?.forename || "Employee"} already has a shift on this day`);
+        return;
+      }
+    }
+
+    try {
+      const updates: any = { shift_date: targetDate };
+      if (targetEmployeeId === "open") {
+        updates.employee_id = null;
+        updates.status = "open";
+      } else {
+        updates.employee_id = targetEmployeeId;
+        updates.status = "scheduled";
+      }
+      await onUpdateShift(shift.id, updates);
+      const empName = targetEmployeeId === "open"
+        ? "Open Shifts"
+        : deptEmployees.find(e => e.id === targetEmployeeId)?.forename || "employee";
+      toast.success(`Shift moved to ${empName}`);
+    } catch {
+      toast.error("Failed to move shift");
+    }
+  }, [shifts, branch, department, deptEmployees, onUpdateShift]);
+
   return (
     <>
       {isAdmin && (
@@ -192,184 +258,167 @@ export function RotaGrid({
           />
         </div>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr>
-              <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[140px] sticky left-0 bg-card z-10">
-                Employee
-              </th>
-              {weekDays.map((day) => {
-                const dayShifts = shiftsForDay(day);
-                const minStaff = getMinimumStaff(branch, department as any, getDayAbbr(day));
-                const assignedCount = dayShifts.filter((s: any) => s.employee_id).length;
-                const isUnder = assignedCount < minStaff;
-
-                return (
-                  <th
-                    key={day.toISOString()}
-                    className={cn(
-                      "text-center p-1.5 text-xs font-medium min-w-[110px]",
-                      isToday(day) ? "bg-primary/10" : ""
-                    )}
-                  >
-                    <div className={cn(
-                      "rounded-md py-1",
-                      isToday(day) ? "bg-primary text-primary-foreground" : "text-muted-foreground"
-                    )}>
-                      <div>{format(day, "EEE")}</div>
-                      <div className="text-base font-semibold">{format(day, "d")}</div>
-                    </div>
-                    <div className="mt-1 flex items-center justify-center gap-1">
-                      {isUnder ? (
-                        <span className="text-destructive flex items-center gap-0.5">
-                          <AlertTriangle className="h-3 w-3" />
-                          {assignedCount}/{minStaff}
-                        </span>
-                      ) : (
-                        <span className="text-success flex items-center gap-0.5">
-                          <Check className="h-3 w-3" />
-                          {assignedCount}/{minStaff}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {deptEmployees.map((emp) => {
-              const weeklyHours = getEmployeeWeeklyHours(emp.id);
-              const hourlyRate = Number(emp.hourly_rate) || 0;
-              const weeklyCost = weeklyHours * hourlyRate;
-
-              return (
-                <tr key={emp.id} className="border-t border-border">
-                  <td className="p-2 text-xs font-medium sticky left-0 bg-card z-10">
-                    <div className="truncate">{emp.forename} {emp.surname?.[0]}.</div>
-                    {weeklyHours > 0 && (
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {weeklyHours.toFixed(0)}h · £{weeklyCost.toFixed(0)}
-                      </div>
-                    )}
-                  </td>
-                  {weekDays.map((day) => {
-                    const shift = getShiftForEmployeeDay(emp.id, day);
-                    const crossBranchShifts = getCrossBranchShift(emp.id, day);
-
-                    return (
-                      <td
-                        key={day.toISOString()}
-                        className={cn(
-                          "p-1 text-center border-l border-border",
-                          isToday(day) ? "bg-primary/5" : "",
-                          isAdmin && "cursor-pointer hover:bg-muted/50 transition-colors"
-                        )}
-                        onClick={() => handleCellClick(day, shift)}
-                      >
-                        {shift ? (
-                          <div
-                            className={cn(
-                              "rounded-md px-1.5 py-1 text-[11px] leading-tight relative",
-                              shift.status === "open"
-                                ? "bg-accent/15 text-accent border border-accent/20"
-                                : shift.is_published
-                                  ? "bg-success/15 text-success border border-success/30"
-                                  : "bg-success/10 text-success border border-success/20"
-                            )}
-                          >
-                            <div className="font-medium">
-                              {shift.start_time?.slice(0, 5)}–{shift.end_time?.slice(0, 5)}
-                            </div>
-                            {shift.is_published && (
-                              <div className="flex items-center justify-center gap-0.5 mt-0.5">
-                                <Lock className="h-2.5 w-2.5" />
-                                <span className="text-[9px] font-semibold uppercase tracking-wider">Locked</span>
-                              </div>
-                            )}
-                          </div>
-                        ) : crossBranchShifts.length > 0 ? (
-                          // Show cross-branch shifts in different colour
-                          crossBranchShifts.map((cbs: any) => (
-                            <div
-                              key={cbs.id}
-                              className="rounded-md px-1.5 py-1 text-[11px] leading-tight bg-warning/15 text-warning border border-warning/30 mb-0.5"
-                            >
-                              <div className="font-medium">
-                                {cbs.start_time?.slice(0, 5)}–{cbs.end_time?.slice(0, 5)}
-                              </div>
-                              <div className="flex items-center justify-center gap-0.5 mt-0.5">
-                                <MapPin className="h-2.5 w-2.5" />
-                                <span className="text-[9px] font-medium">{cbs.branch}</span>
-                              </div>
-                              {cbs.is_published && (
-                                <div className="flex items-center justify-center gap-0.5 mt-0.5">
-                                  <Lock className="h-2.5 w-2.5" />
-                                  <span className="text-[9px] font-semibold uppercase tracking-wider">Locked</span>
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        ) : isAdmin ? (
-                          <div className="flex items-center justify-center h-8 opacity-0 hover:opacity-40 transition-opacity">
-                            <Plus className="h-3.5 w-3.5 text-muted-foreground" />
-                          </div>
-                        ) : null}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-
-            {/* Open shifts row */}
-            {weekDays.some((d) => getOpenShifts(d).length > 0) && (
-              <tr className="border-t border-border border-dashed">
-                <td className="p-2 text-xs text-muted-foreground italic sticky left-0 bg-card z-10">
-                  Open Shifts
-                </td>
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr>
+                <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[140px] sticky left-0 bg-card z-10">
+                  Employee
+                </th>
                 {weekDays.map((day) => {
-                  const openShifts = getOpenShifts(day);
+                  const dayShifts = shiftsForDay(day);
+                  const minStaff = getMinimumStaff(branch, department as any, getDayAbbr(day));
+                  const assignedCount = dayShifts.filter((s: any) => s.employee_id).length;
+                  const isUnder = assignedCount < minStaff;
+
                   return (
-                    <td key={day.toISOString()} className="p-1 text-center border-l border-border">
-                      {openShifts.map((s: any) => (
-                        <div
-                          key={s.id}
-                          className="rounded-md px-1.5 py-1 text-[11px] bg-accent/15 text-accent border border-accent/20 mb-0.5 cursor-pointer"
-                          onClick={() => handleCellClick(day, s)}
-                        >
-                          {s.start_time?.slice(0, 5)}–{s.end_time?.slice(0, 5)}
-                        </div>
-                      ))}
-                    </td>
+                    <th
+                      key={day.toISOString()}
+                      className={cn(
+                        "text-center p-1.5 text-xs font-medium min-w-[110px]",
+                        isToday(day) ? "bg-primary/10" : ""
+                      )}
+                    >
+                      <div className={cn(
+                        "rounded-md py-1",
+                        isToday(day) ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+                      )}>
+                        <div>{format(day, "EEE")}</div>
+                        <div className="text-base font-semibold">{format(day, "d")}</div>
+                      </div>
+                      <div className="mt-1 flex items-center justify-center gap-1">
+                        {isUnder ? (
+                          <span className="text-destructive flex items-center gap-0.5">
+                            <AlertTriangle className="h-3 w-3" />
+                            {assignedCount}/{minStaff}
+                          </span>
+                        ) : (
+                          <span className="text-success flex items-center gap-0.5">
+                            <Check className="h-3 w-3" />
+                            {assignedCount}/{minStaff}
+                          </span>
+                        )}
+                      </div>
+                    </th>
                   );
                 })}
               </tr>
-            )}
+            </thead>
+            <tbody>
+              {deptEmployees.map((emp) => {
+                const weeklyHours = getEmployeeWeeklyHours(emp.id);
+                const hourlyRate = Number(emp.hourly_rate) || 0;
+                const weeklyCost = weeklyHours * hourlyRate;
 
-            {/* Quick add row for admin */}
-            {isAdmin && (
-              <tr className="border-t border-border border-dashed">
-                <td className="p-2 text-xs text-muted-foreground sticky left-0 bg-card z-10">
-                  + Add
-                </td>
-                {weekDays.map((day) => (
-                  <td
-                    key={day.toISOString()}
-                    className="p-1 text-center border-l border-border cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleCellClick(day)}
-                  >
-                    <div className="flex items-center justify-center h-6">
-                      <Plus className="h-3.5 w-3.5 text-muted-foreground opacity-40 hover:opacity-100 transition-opacity" />
-                    </div>
+                return (
+                  <tr key={emp.id} className="border-t border-border">
+                    <td className="p-2 text-xs font-medium sticky left-0 bg-card z-10">
+                      <div className="truncate">{emp.forename} {emp.surname?.[0]}.</div>
+                      {weeklyHours > 0 && (
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {weeklyHours.toFixed(0)}h · £{weeklyCost.toFixed(0)}
+                        </div>
+                      )}
+                    </td>
+                    {weekDays.map((day) => {
+                      const shift = getShiftForEmployeeDay(emp.id, day);
+                      const crossBranchShifts = getCrossBranchShift(emp.id, day);
+                      const dropId = `${emp.id}::${day.toISOString()}`;
+
+                      return (
+                        <DroppableCell
+                          key={day.toISOString()}
+                          id={dropId}
+                          isAdmin={isAdmin}
+                          isToday={isToday(day)}
+                          onClick={() => handleCellClick(day, shift)}
+                        >
+                          {shift ? (
+                            <DraggableShiftCell shift={shift} isAdmin={isAdmin} />
+                          ) : crossBranchShifts.length > 0 ? (
+                            crossBranchShifts.map((cbs: any) => (
+                              <CrossBranchShiftCell key={cbs.id} shift={cbs} />
+                            ))
+                          ) : (
+                            <EmptyDropCell isAdmin={isAdmin} />
+                          )}
+                        </DroppableCell>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+
+              {/* Open shifts row */}
+              {weekDays.some((d) => getOpenShifts(d).length > 0) && (
+                <tr className="border-t border-border border-dashed">
+                  <td className="p-2 text-xs text-muted-foreground italic sticky left-0 bg-card z-10">
+                    Open Shifts
                   </td>
-                ))}
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  {weekDays.map((day) => {
+                    const openShifts = getOpenShifts(day);
+                    const dropId = `open::${day.toISOString()}`;
+                    return (
+                      <DroppableCell
+                        key={day.toISOString()}
+                        id={dropId}
+                        isAdmin={isAdmin}
+                        isToday={isToday(day)}
+                      >
+                        {openShifts.map((s: any) => (
+                          <div key={s.id} onClick={() => handleCellClick(day, s)}>
+                            <DraggableShiftCell shift={s} isAdmin={isAdmin} />
+                          </div>
+                        ))}
+                      </DroppableCell>
+                    );
+                  })}
+                </tr>
+              )}
+
+              {/* Quick add row for admin */}
+              {isAdmin && (
+                <tr className="border-t border-border border-dashed">
+                  <td className="p-2 text-xs text-muted-foreground sticky left-0 bg-card z-10">
+                    + Add
+                  </td>
+                  {weekDays.map((day) => (
+                    <td
+                      key={day.toISOString()}
+                      className="p-1 text-center border-l border-border cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleCellClick(day)}
+                    >
+                      <div className="flex items-center justify-center h-6">
+                        <Plus className="h-3.5 w-3.5 text-muted-foreground opacity-40 hover:opacity-100 transition-opacity" />
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Drag overlay — shows a floating copy of the shift being dragged */}
+        <DragOverlay dropAnimation={null}>
+          {activeShift ? (
+            <div className={cn(
+              "rounded-md px-2 py-1.5 text-[11px] leading-tight shadow-xl ring-2 ring-primary/50 scale-105",
+              "bg-card border border-primary/30 text-foreground"
+            )}>
+              <div className="font-semibold">
+                {activeShift.start_time?.slice(0, 5)}–{activeShift.end_time?.slice(0, 5)}
+              </div>
+              {activeShift.employee_id && (
+                <div className="text-[9px] text-muted-foreground mt-0.5">
+                  {deptEmployees.find(e => e.id === activeShift.employee_id)?.forename || "Unassigned"}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Status bar */}
       <div className="flex flex-wrap items-center gap-4 px-3 py-2 text-[11px] text-muted-foreground border-t border-border">
