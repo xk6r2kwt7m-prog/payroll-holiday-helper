@@ -1,18 +1,15 @@
 import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
-import { useShifts, useBranchLocations, useCreateShift, useUpdateShift, useDeleteShift } from "@/hooks/useSchedule";
+import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWeek, useUnpublishWeek } from "@/hooks/useSchedule";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { RotaGrid } from "@/components/schedule/RotaGrid";
 import { DayView } from "@/components/schedule/DayView";
 import { ShiftCellDialog } from "@/components/schedule/ShiftCellDialog";
+import { ScheduleHeader } from "@/components/schedule/ScheduleHeader";
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -26,7 +23,6 @@ export default function Schedule() {
   const [selectedBranch, setSelectedBranch] = useState<string>("Fitzrovia");
   const [selectedDept, setSelectedDept] = useState<string>("FOH");
 
-  // Day view dialog state
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
 
@@ -45,11 +41,21 @@ export default function Schedule() {
   const createShift = useCreateShift();
   const updateShift = useUpdateShift();
   const deleteShift = useDeleteShift();
+  const publishWeek = usePublishWeek();
+  const unpublishWeek = useUnpublishWeek();
 
   const activeEmployees = useMemo(
     () => employees?.filter((e) => e.status === "active") || [],
     [employees]
   );
+
+  // Publish stats for current branch
+  const branchShifts = useMemo(
+    () => shifts?.filter((s: any) => s.branch === selectedBranch) || [],
+    [shifts, selectedBranch]
+  );
+  const publishedCount = branchShifts.filter((s: any) => s.is_published).length;
+  const hasUnpublished = branchShifts.some((s: any) => !s.is_published);
 
   const navigate = (dir: number) => {
     setCurrentDate((d) => addDays(d, viewMode === "week" ? 7 * dir : dir));
@@ -58,10 +64,7 @@ export default function Schedule() {
   const handleCreateShift = async (data: any) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await createShift.mutateAsync({
-        ...data,
-        created_by: user?.id,
-      });
+      await createShift.mutateAsync({ ...data, created_by: user?.id });
       toast.success("Shift added");
     } catch (err: any) {
       toast.error(err.message);
@@ -86,7 +89,34 @@ export default function Schedule() {
     }
   };
 
-  // Day view shifts
+  const handlePublish = async () => {
+    try {
+      await publishWeek.mutateAsync({
+        startDate: format(weekStart, "yyyy-MM-dd"),
+        endDate: format(weekEnd, "yyyy-MM-dd"),
+        branch: selectedBranch,
+      });
+      toast.success(`${selectedBranch} rota published — staff will be notified`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (!confirm("Unpublish this week's rota? Staff will no longer see it.")) return;
+    try {
+      await unpublishWeek.mutateAsync({
+        startDate: format(weekStart, "yyyy-MM-dd"),
+        endDate: format(weekEnd, "yyyy-MM-dd"),
+        branch: selectedBranch,
+      });
+      toast.success("Rota unpublished");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Day view
   const dayShifts = useMemo(
     () =>
       shifts?.filter(
@@ -110,50 +140,22 @@ export default function Schedule() {
   return (
     <AppLayout>
       <div className="space-y-4">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-foreground">Schedule</h1>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex rounded-lg border border-border overflow-hidden">
-              <button
-                onClick={() => setViewMode("day")}
-                className={cn(
-                  "px-3 py-1.5 text-sm font-medium transition-colors",
-                  viewMode === "day" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
-                )}
-              >
-                Day
-              </button>
-              <button
-                onClick={() => setViewMode("week")}
-                className={cn(
-                  "px-3 py-1.5 text-sm font-medium transition-colors",
-                  viewMode === "week" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground"
-                )}
-              >
-                Week
-              </button>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-              Today
-            </Button>
-          </div>
-        </div>
-
-        {/* Date Navigation */}
-        <div className="flex items-center justify-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <h2 className="text-lg font-semibold min-w-[220px] text-center">
-            {viewMode === "week"
-              ? `${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM yyyy")}`
-              : format(currentDate, "EEE d MMM yyyy")}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={() => navigate(1)}>
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-        </div>
+        <ScheduleHeader
+          currentDate={currentDate}
+          viewMode={viewMode}
+          weekStart={weekStart}
+          weekEnd={weekEnd}
+          hasUnpublished={hasUnpublished}
+          publishedCount={publishedCount}
+          totalCount={branchShifts.length}
+          isPublishing={publishWeek.isPending}
+          onViewModeChange={setViewMode}
+          onNavigate={navigate}
+          onToday={() => setCurrentDate(new Date())}
+          onPublish={handlePublish}
+          onUnpublish={handleUnpublish}
+          isAdmin={isAdmin}
+        />
 
         {/* Branch Tabs */}
         <Tabs value={selectedBranch} onValueChange={setSelectedBranch}>
@@ -167,7 +169,6 @@ export default function Schedule() {
 
           {BRANCHES.map((branchVal) => (
             <TabsContent key={branchVal} value={branchVal} className="mt-3 space-y-4">
-              {/* Department Sub-tabs */}
               <Tabs value={selectedDept} onValueChange={setSelectedDept}>
                 <TabsList>
                   {DEPARTMENTS.map((d) => (

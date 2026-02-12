@@ -36,7 +36,7 @@ export function RotaGrid({
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
 
-  // Filter employees for this department
+  // Filter employees by department only (staff can work across branches)
   const deptEmployees = useMemo(
     () => employees.filter((e) => e.department === department && e.status === "active"),
     [employees, department]
