@@ -182,9 +182,10 @@ export default function Schedule() {
                   <TabsContent key={deptVal} value={deptVal} className="mt-2">
                     {viewMode === "week" ? (
                       <div className="border border-border rounded-lg bg-card overflow-hidden">
-                        <RotaGrid
+                      <RotaGrid
                           weekDays={weekDays}
                           shifts={shifts || []}
+                          allShifts={shifts || []}
                           employees={activeEmployees}
                           branch={branchVal}
                           department={deptVal}
