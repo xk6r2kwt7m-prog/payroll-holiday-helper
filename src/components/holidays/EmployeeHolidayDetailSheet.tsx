@@ -55,7 +55,9 @@ export function EmployeeHolidayDetailSheet({
 
   // Expected usage based on time of year (simple linear model)
   const now = new Date();
-  const yearProgress = ((now.getMonth()) / 12) * 100;
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const endOfYear = new Date(now.getFullYear() + 1, 0, 1);
+  const yearProgress = ((now.getTime() - startOfYear.getTime()) / (endOfYear.getTime() - startOfYear.getTime())) * 100;
   const expectedHours = totalEntitlement * (yearProgress / 100);
   const usageVsExpected = expectedHours > 0 ? ((hoursTaken - expectedHours) / expectedHours) * 100 : 0;
 

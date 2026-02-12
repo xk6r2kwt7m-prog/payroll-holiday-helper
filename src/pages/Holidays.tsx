@@ -212,7 +212,9 @@ const Holidays = () => {
         const total = s.hoursAccrued + s.hoursCarriedOver;
         const usagePercent = total > 0 ? (s.hoursTaken / total) * 100 : 0;
         const now = new Date();
-        const expectedUsagePercent = (now.getMonth() / 12) * 100;
+        const startOfYear = new Date(now.getFullYear(), 0, 1);
+        const endOfYear = new Date(now.getFullYear() + 1, 0, 1);
+        const expectedUsagePercent = ((now.getTime() - startOfYear.getTime()) / (endOfYear.getTime() - startOfYear.getTime())) * 100;
 
         if (s.hoursTaken > total) {
           return { ...s, usagePercent, expectedUsagePercent, alertType: "overdrawn" as const };
