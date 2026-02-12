@@ -1,31 +1,36 @@
 import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalIcon } from "lucide-react";
-import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from "date-fns";
-import { useShifts, useBranchLocations, useCreateShift, useDeleteShift } from "@/hooks/useSchedule";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
+import { useShifts, useBranchLocations, useCreateShift, useUpdateShift, useDeleteShift } from "@/hooks/useSchedule";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAuth } from "@/hooks/useAuth";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { RotaGrid } from "@/components/schedule/RotaGrid";
+import { DayView } from "@/components/schedule/DayView";
+import { ShiftCellDialog } from "@/components/schedule/ShiftCellDialog";
+import { getDefaultTimes, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
+import { supabase } from "@/integrations/supabase/client";
 
 type ViewMode = "week" | "day";
+const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
+const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
 
 export default function Schedule() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [selectedBranch, setSelectedBranch] = useState<string>("all");
-  const [showAddShift, setShowAddShift] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string>("Fitzrovia");
+  const [selectedDept, setSelectedDept] = useState<string>("FOH");
+
+  // Day view dialog state
+  const [dayDialogOpen, setDayDialogOpen] = useState(false);
+  const [dayDialogShift, setDayDialogShift] = useState<any>(null);
 
   const { isAdmin } = useAuth();
-  const { data: branches } = useBranchLocations();
   const { data: employees } = useEmployees();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -34,11 +39,11 @@ export default function Schedule() {
 
   const { data: shifts, isLoading } = useShifts(
     format(weekStart, "yyyy-MM-dd"),
-    format(weekEnd, "yyyy-MM-dd"),
-    selectedBranch !== "all" ? selectedBranch : undefined
+    format(weekEnd, "yyyy-MM-dd")
   );
 
   const createShift = useCreateShift();
+  const updateShift = useUpdateShift();
   const deleteShift = useDeleteShift();
 
   const activeEmployees = useMemo(
@@ -50,38 +55,57 @@ export default function Schedule() {
     setCurrentDate((d) => addDays(d, viewMode === "week" ? 7 * dir : dir));
   };
 
-  const shiftsForDay = (day: Date) =>
-    shifts?.filter((s) => isSameDay(new Date(s.shift_date + "T00:00:00"), day)) || [];
-
-  // Add shift form state
-  const [newShift, setNewShift] = useState({
-    employee_id: "",
-    branch: "Fitzrovia" as string,
-    department: "FOH" as string,
-    start_time: "11:30",
-    end_time: "22:00",
-  });
-
-  const handleAddShift = async () => {
-    const targetDate = selectedDay || currentDate;
+  const handleCreateShift = async (data: any) => {
     try {
-      const { data: { user } } = await (await import("@/integrations/supabase/client")).supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       await createShift.mutateAsync({
-        employee_id: newShift.employee_id || null,
-        branch: newShift.branch as any,
-        department: newShift.department as any,
-        shift_date: format(targetDate, "yyyy-MM-dd"),
-        start_time: newShift.start_time,
-        end_time: newShift.end_time,
-        status: newShift.employee_id ? "scheduled" : "open",
+        ...data,
         created_by: user?.id,
       });
       toast.success("Shift added");
-      setShowAddShift(false);
     } catch (err: any) {
       toast.error(err.message);
     }
   };
+
+  const handleUpdateShift = async (id: string, updates: any) => {
+    try {
+      await updateShift.mutateAsync({ id, updates });
+      toast.success("Shift updated");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDeleteShift = (id: string) => {
+    if (confirm("Delete this shift?")) {
+      deleteShift.mutate(id, {
+        onSuccess: () => toast.success("Shift deleted"),
+        onError: (err) => toast.error(err.message),
+      });
+    }
+  };
+
+  // Day view shifts
+  const dayShifts = useMemo(
+    () =>
+      shifts?.filter(
+        (s: any) =>
+          isSameDay(new Date(s.shift_date + "T00:00:00"), currentDate) &&
+          s.branch === selectedBranch &&
+          s.department === selectedDept
+      ) || [],
+    [shifts, currentDate, selectedBranch, selectedDept]
+  );
+
+  const getDayAbbr = (d: Date): DayOfWeek =>
+    DAY_ABBR[d.getDay() === 0 ? 6 : d.getDay() - 1];
+
+  const dayDefaults = getDefaultTimes(selectedDept as any, getDayAbbr(currentDate));
+  const deptEmployees = useMemo(
+    () => activeEmployees.filter((e) => e.department === selectedDept),
+    [activeEmployees, selectedDept]
+  );
 
   return (
     <AppLayout>
@@ -110,104 +134,9 @@ export default function Schedule() {
                 Week
               </button>
             </div>
-            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="All Locations" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {branches?.map((b) => (
-                  <SelectItem key={b.branch} value={b.branch}>
-                    {b.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {isAdmin && (
-              <Dialog open={showAddShift} onOpenChange={setShowAddShift}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-1" /> Add Shift
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Shift</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label>Date</Label>
-                      <Input
-                        type="date"
-                        value={format(selectedDay || currentDate, "yyyy-MM-dd")}
-                        onChange={(e) => setSelectedDay(new Date(e.target.value + "T00:00:00"))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Employee (leave empty for open shift)</Label>
-                      <Select value={newShift.employee_id} onValueChange={(v) => setNewShift((p) => ({ ...p, employee_id: v }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Open Shift" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="open">Open Shift</SelectItem>
-                          {activeEmployees.map((e) => (
-                            <SelectItem key={e.id} value={e.id}>
-                              {e.forename} {e.surname}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Branch</Label>
-                        <Select value={newShift.branch} onValueChange={(v) => setNewShift((p) => ({ ...p, branch: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Fitzrovia">Fitzrovia</SelectItem>
-                            <SelectItem value="Carnaby">Carnaby</SelectItem>
-                            <SelectItem value="Brixton">Brixton</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Department</Label>
-                        <Select value={newShift.department} onValueChange={(v) => setNewShift((p) => ({ ...p, department: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="FOH">FOH</SelectItem>
-                            <SelectItem value="BOH">BOH</SelectItem>
-                            <SelectItem value="CPU">CPU</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label>Start Time</Label>
-                        <Input
-                          type="time"
-                          value={newShift.start_time}
-                          onChange={(e) => setNewShift((p) => ({ ...p, start_time: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <Label>End Time</Label>
-                        <Input
-                          type="time"
-                          value={newShift.end_time}
-                          onChange={(e) => setNewShift((p) => ({ ...p, end_time: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-                    <Button onClick={handleAddShift} disabled={createShift.isPending} className="w-full">
-                      {createShift.isPending ? "Adding..." : "Add Shift"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
+            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+              Today
+            </Button>
           </div>
         </div>
 
@@ -216,7 +145,7 @@ export default function Schedule() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h2 className="text-lg font-semibold min-w-[200px] text-center">
+          <h2 className="text-lg font-semibold min-w-[220px] text-center">
             {viewMode === "week"
               ? `${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM yyyy")}`
               : format(currentDate, "EEE d MMM yyyy")}
@@ -224,118 +153,112 @@ export default function Schedule() {
           <Button variant="ghost" size="icon" onClick={() => navigate(1)}>
             <ChevronRight className="h-5 w-5" />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-            Today
-          </Button>
         </div>
 
-        {/* Week View */}
-        {viewMode === "week" && (
-          <div className="grid grid-cols-7 gap-2">
-            {weekDays.map((day) => {
-              const dayShifts = shiftsForDay(day);
-              return (
-                <div key={day.toISOString()} className="min-h-[120px]">
-                  <div
-                    className={cn(
-                      "text-center text-sm font-medium py-1.5 rounded-t-lg",
-                      isToday(day) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    <div>{format(day, "EEE")}</div>
-                    <div className="text-lg">{format(day, "d")}</div>
-                  </div>
-                  <div className="space-y-1 mt-1">
-                    {dayShifts.map((shift: any) => (
-                      <div
-                        key={shift.id}
-                        className={cn(
-                          "p-1.5 rounded text-xs cursor-pointer transition-colors",
-                          shift.status === "open"
-                            ? "bg-accent/20 text-accent border border-accent/30"
-                            : "bg-success/15 text-success-foreground border border-success/20 bg-success/10"
-                        )}
-                        onClick={() => {
-                          if (isAdmin) {
-                            if (confirm("Delete this shift?")) {
-                              deleteShift.mutate(shift.id);
-                            }
-                          }
-                        }}
-                      >
-                        <div className="font-medium truncate">
-                          {shift.start_time?.slice(0, 5)} – {shift.end_time?.slice(0, 5)}
-                        </div>
-                        <div className="truncate">
-                          {shift.employees
-                            ? `${shift.employees.forename}`
-                            : "Open"}
-                        </div>
-                        {shift.status === "open" && (
-                          <Badge variant="outline" className="mt-0.5 text-[10px] px-1 py-0">
-                            Open
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Branch Tabs */}
+        <Tabs value={selectedBranch} onValueChange={setSelectedBranch}>
+          <TabsList className="w-full justify-start">
+            {BRANCHES.map((b) => (
+              <TabsTrigger key={b} value={b} className="flex-1 sm:flex-none">
+                {b}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {/* Day View */}
-        {viewMode === "day" && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">
-                {format(currentDate, "EEEE d MMMM")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {shiftsForDay(currentDate).length === 0 ? (
-                <p className="text-muted-foreground text-sm py-8 text-center">
-                  No shifts scheduled for this day
-                </p>
-              ) : (
-                shiftsForDay(currentDate).map((shift: any) => (
-                  <div
-                    key={shift.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border bg-card"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
-                        {shift.employees
-                          ? shift.employees.forename[0]
-                          : "?"}
+          {BRANCHES.map((branchVal) => (
+            <TabsContent key={branchVal} value={branchVal} className="mt-3 space-y-4">
+              {/* Department Sub-tabs */}
+              <Tabs value={selectedDept} onValueChange={setSelectedDept}>
+                <TabsList>
+                  {DEPARTMENTS.map((d) => (
+                    <TabsTrigger key={d} value={d}>
+                      {d}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+
+                {DEPARTMENTS.map((deptVal) => (
+                  <TabsContent key={deptVal} value={deptVal} className="mt-2">
+                    {viewMode === "week" ? (
+                      <div className="border border-border rounded-lg bg-card overflow-hidden">
+                        <RotaGrid
+                          weekDays={weekDays}
+                          shifts={shifts || []}
+                          employees={activeEmployees}
+                          branch={branchVal}
+                          department={deptVal}
+                          isAdmin={isAdmin}
+                          onCreateShift={handleCreateShift}
+                          onUpdateShift={handleUpdateShift}
+                          onDeleteShift={handleDeleteShift}
+                          isPending={createShift.isPending || updateShift.isPending}
+                        />
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {shift.employees
-                            ? `${shift.employees.forename} ${shift.employees.surname}`
-                            : "Open Shift"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {shift.start_time?.slice(0, 5)} – {shift.end_time?.slice(0, 5)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {shift.department} · {shift.branch}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge
-                      variant={shift.status === "open" ? "outline" : "secondary"}
-                      className="text-xs"
-                    >
-                      {shift.status === "open" ? "Open" : "Scheduled"}
-                    </Badge>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        )}
+                    ) : (
+                      <>
+                        <DayView
+                          date={currentDate}
+                          shifts={dayShifts}
+                          branch={branchVal}
+                          department={deptVal}
+                          isAdmin={isAdmin}
+                          onAddClick={() => {
+                            setDayDialogShift(null);
+                            setDayDialogOpen(true);
+                          }}
+                          onEditClick={(shift) => {
+                            setDayDialogShift(shift);
+                            setDayDialogOpen(true);
+                          }}
+                          onDeleteClick={handleDeleteShift}
+                        />
+                        <ShiftCellDialog
+                          open={dayDialogOpen}
+                          onOpenChange={setDayDialogOpen}
+                          date={format(currentDate, "EEE d MMM")}
+                          branch={branchVal}
+                          department={deptVal}
+                          employees={deptEmployees}
+                          defaultStart={dayDefaults.start}
+                          defaultEnd={dayDefaults.end}
+                          existingShift={dayDialogShift}
+                          onSave={async (data) => {
+                            if (dayDialogShift) {
+                              await handleUpdateShift(dayDialogShift.id, {
+                                employee_id: data.employee_id,
+                                start_time: data.start_time,
+                                end_time: data.end_time,
+                                notes: data.notes || null,
+                                status: data.employee_id ? "scheduled" : "open",
+                              });
+                            } else {
+                              await handleCreateShift({
+                                shift_date: format(currentDate, "yyyy-MM-dd"),
+                                branch: branchVal,
+                                department: deptVal,
+                                employee_id: data.employee_id,
+                                start_time: data.start_time,
+                                end_time: data.end_time,
+                                notes: data.notes || null,
+                                status: data.employee_id ? "scheduled" : "open",
+                              });
+                            }
+                            setDayDialogOpen(false);
+                          }}
+                          onDelete={(id) => {
+                            handleDeleteShift(id);
+                            setDayDialogOpen(false);
+                          }}
+                          isPending={createShift.isPending || updateShift.isPending}
+                        />
+                      </>
+                    )}
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </TabsContent>
+          ))}
+        </Tabs>
       </div>
     </AppLayout>
   );
