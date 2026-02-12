@@ -26,6 +26,7 @@ const navItems = [
   { icon: CalendarClock, label: "Schedule", path: "/schedule" },
   { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets" },
   { icon: BarChart3, label: "Schedule Report", path: "/schedule/report" },
+  { icon: BarChart3, label: "Analytics", path: "/schedule/analytics" },
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },
