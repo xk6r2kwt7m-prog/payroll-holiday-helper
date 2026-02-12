@@ -708,7 +708,9 @@ export type Database = {
           employee_id: string | null
           end_time: string
           id: string
+          is_published: boolean
           notes: string | null
+          published_at: string | null
           shift_date: string
           start_time: string
           status: Database["public"]["Enums"]["shift_status"]
@@ -722,7 +724,9 @@ export type Database = {
           employee_id?: string | null
           end_time: string
           id?: string
+          is_published?: boolean
           notes?: string | null
+          published_at?: string | null
           shift_date: string
           start_time: string
           status?: Database["public"]["Enums"]["shift_status"]
@@ -736,7 +740,9 @@ export type Database = {
           employee_id?: string | null
           end_time?: string
           id?: string
+          is_published?: boolean
           notes?: string | null
+          published_at?: string | null
           shift_date?: string
           start_time?: string
           status?: Database["public"]["Enums"]["shift_status"]

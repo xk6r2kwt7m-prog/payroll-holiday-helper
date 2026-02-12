@@ -111,3 +111,44 @@ export function useBulkCreateShifts() {
     },
   });
 }
+
+export function usePublishWeek() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ startDate, endDate, branch }: { startDate: string; endDate: string; branch: string }) => {
+      const { data, error } = await supabase
+        .from("shifts")
+        .update({ is_published: true, published_at: new Date().toISOString() } as any)
+        .eq("branch", branch as any)
+        .gte("shift_date", startDate)
+        .lte("shift_date", endDate)
+        .eq("is_published", false)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shifts"] });
+    },
+  });
+}
+
+export function useUnpublishWeek() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ startDate, endDate, branch }: { startDate: string; endDate: string; branch: string }) => {
+      const { data, error } = await supabase
+        .from("shifts")
+        .update({ is_published: false, published_at: null } as any)
+        .eq("branch", branch as any)
+        .gte("shift_date", startDate)
+        .lte("shift_date", endDate)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shifts"] });
+    },
+  });
+}
