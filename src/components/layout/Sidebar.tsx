@@ -12,6 +12,8 @@ import {
   LogOut,
   Shield,
   FileText,
+  CalendarClock,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +22,8 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Users, label: "Employees", path: "/employees" },
+  { icon: CalendarClock, label: "Schedule", path: "/schedule" },
+  { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets" },
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },

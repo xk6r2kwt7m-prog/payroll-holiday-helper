@@ -53,6 +53,42 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_locations: {
+        Row: {
+          address: string | null
+          branch: Database["public"]["Enums"]["branch_type"]
+          created_at: string
+          display_name: string
+          geofence_radius_meters: number
+          id: string
+          latitude: number
+          longitude: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          branch: Database["public"]["Enums"]["branch_type"]
+          created_at?: string
+          display_name: string
+          geofence_radius_meters?: number
+          id?: string
+          latitude: number
+          longitude: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          branch?: Database["public"]["Enums"]["branch_type"]
+          created_at?: string
+          display_name?: string
+          geofence_radius_meters?: number
+          id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       company_settings: {
         Row: {
           address: string | null
@@ -310,6 +346,7 @@ export type Database = {
           status: Database["public"]["Enums"]["employee_status"]
           surname: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           bank_account_no?: string | null
@@ -333,6 +370,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["employee_status"]
           surname: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           bank_account_no?: string | null
@@ -356,6 +394,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["employee_status"]
           surname?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -660,6 +699,59 @@ export type Database = {
         }
         Relationships: []
       }
+      shifts: {
+        Row: {
+          branch: Database["public"]["Enums"]["branch_type"]
+          created_at: string
+          created_by: string | null
+          department: Database["public"]["Enums"]["department_type"]
+          employee_id: string | null
+          end_time: string
+          id: string
+          notes: string | null
+          shift_date: string
+          start_time: string
+          status: Database["public"]["Enums"]["shift_status"]
+          updated_at: string
+        }
+        Insert: {
+          branch: Database["public"]["Enums"]["branch_type"]
+          created_at?: string
+          created_by?: string | null
+          department: Database["public"]["Enums"]["department_type"]
+          employee_id?: string | null
+          end_time: string
+          id?: string
+          notes?: string | null
+          shift_date: string
+          start_time: string
+          status?: Database["public"]["Enums"]["shift_status"]
+          updated_at?: string
+        }
+        Update: {
+          branch?: Database["public"]["Enums"]["branch_type"]
+          created_at?: string
+          created_by?: string | null
+          department?: Database["public"]["Enums"]["department_type"]
+          employee_id?: string | null
+          end_time?: string
+          id?: string
+          notes?: string | null
+          shift_date?: string
+          start_time?: string
+          status?: Database["public"]["Enums"]["shift_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signing_tokens: {
         Row: {
           created_at: string
@@ -708,6 +800,105 @@ export type Database = {
           },
         ]
       }
+      time_entries: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          branch: Database["public"]["Enums"]["branch_type"]
+          break_minutes: number | null
+          clock_in_latitude: number | null
+          clock_in_longitude: number | null
+          clock_in_time: string
+          clock_in_within_geofence: boolean | null
+          clock_out_latitude: number | null
+          clock_out_longitude: number | null
+          clock_out_time: string | null
+          clock_out_within_geofence: boolean | null
+          created_at: string
+          department: Database["public"]["Enums"]["department_type"]
+          employee_id: string
+          id: string
+          manager_override: boolean | null
+          notes: string | null
+          override_reason: string | null
+          scheduled_end: string | null
+          scheduled_start: string | null
+          shift_id: string | null
+          status: Database["public"]["Enums"]["time_entry_status"]
+          total_hours: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          branch: Database["public"]["Enums"]["branch_type"]
+          break_minutes?: number | null
+          clock_in_latitude?: number | null
+          clock_in_longitude?: number | null
+          clock_in_time: string
+          clock_in_within_geofence?: boolean | null
+          clock_out_latitude?: number | null
+          clock_out_longitude?: number | null
+          clock_out_time?: string | null
+          clock_out_within_geofence?: boolean | null
+          created_at?: string
+          department: Database["public"]["Enums"]["department_type"]
+          employee_id: string
+          id?: string
+          manager_override?: boolean | null
+          notes?: string | null
+          override_reason?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          shift_id?: string | null
+          status?: Database["public"]["Enums"]["time_entry_status"]
+          total_hours?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          branch?: Database["public"]["Enums"]["branch_type"]
+          break_minutes?: number | null
+          clock_in_latitude?: number | null
+          clock_in_longitude?: number | null
+          clock_in_time?: string
+          clock_in_within_geofence?: boolean | null
+          clock_out_latitude?: number | null
+          clock_out_longitude?: number | null
+          clock_out_time?: string | null
+          clock_out_within_geofence?: boolean | null
+          created_at?: string
+          department?: Database["public"]["Enums"]["department_type"]
+          employee_id?: string
+          id?: string
+          manager_override?: boolean | null
+          notes?: string | null
+          override_reason?: string | null
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          shift_id?: string | null
+          status?: Database["public"]["Enums"]["time_entry_status"]
+          total_hours?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -749,7 +940,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "manager" | "viewer"
+      app_role: "admin" | "manager" | "viewer" | "staff"
       audit_action:
         | "create"
         | "update"
@@ -772,6 +963,8 @@ export type Database = {
         | "other"
       employee_status: "active" | "leaver" | "starter"
       payroll_status: "draft" | "pending" | "approved" | "rejected"
+      shift_status: "scheduled" | "open" | "cancelled"
+      time_entry_status: "clocked_in" | "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -899,7 +1092,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "manager", "viewer"],
+      app_role: ["admin", "manager", "viewer", "staff"],
       audit_action: [
         "create",
         "update",
@@ -924,6 +1117,8 @@ export const Constants = {
       ],
       employee_status: ["active", "leaver", "starter"],
       payroll_status: ["draft", "pending", "approved", "rejected"],
+      shift_status: ["scheduled", "open", "cancelled"],
+      time_entry_status: ["clocked_in", "pending", "approved", "rejected"],
     },
   },
 } as const
