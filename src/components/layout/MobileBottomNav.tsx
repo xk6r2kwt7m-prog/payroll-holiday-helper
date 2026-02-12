@@ -7,6 +7,8 @@ import {
   MoreHorizontal,
   FileText,
   CalendarDays,
+  CalendarClock,
+  ClipboardCheck,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -17,12 +19,14 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const mainNavItems = [
   { icon: LayoutDashboard, label: "Home", path: "/" },
-  { icon: Users, label: "Team", path: "/employees" },
+  { icon: CalendarClock, label: "Schedule", path: "/schedule" },
+  { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets" },
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
-  { icon: Calendar, label: "Holidays", path: "/holidays" },
 ];
 
 const moreNavItems = [
+  { icon: Users, label: "Employees", path: "/employees" },
+  { icon: Calendar, label: "Holidays", path: "/holidays" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: Settings, label: "Settings", path: "/settings" },
