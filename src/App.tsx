@@ -14,6 +14,7 @@ import Settings from "./pages/Settings";
 import Contracts from "./pages/Contracts";
 import Schedule from "./pages/Schedule";
 import Timesheets from "./pages/Timesheets";
+import ScheduleReport from "./pages/ScheduleReport";
 import StaffPortal from "./pages/StaffPortal";
 import Auth from "./pages/Auth";
 import SignContract from "./pages/SignContract";
@@ -104,6 +105,14 @@ const App = () => (
               }
             />
             <Route path="/staff" element={<ProtectedRoute><StaffPortal /></ProtectedRoute>} />
+            <Route
+              path="/schedule/report"
+              element={
+                <ProtectedRoute>
+                  <ScheduleReport />
+                </ProtectedRoute>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

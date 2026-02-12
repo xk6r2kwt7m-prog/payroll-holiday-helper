@@ -11,6 +11,7 @@ import {
   ClipboardCheck,
   Settings,
   LogOut,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -28,6 +29,7 @@ const moreNavItems = [
   { icon: Users, label: "Employees", path: "/employees" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
+  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
