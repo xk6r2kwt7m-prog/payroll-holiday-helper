@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, AlertTriangle, Check, Lock, MapPin } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
+import { BulkScheduleActions } from "./BulkScheduleActions";
+import { useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
+import { toast } from "sonner";
 import type { Employee } from "@/hooks/useEmployees";
 
 interface RotaGridProps {
@@ -38,6 +41,9 @@ export function RotaGrid({
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
 
+  const bulkDelete = useBulkDeleteShifts();
+  const bulkUpdate = useBulkUpdateShifts();
+  const bulkPending = bulkDelete.isPending || bulkUpdate.isPending;
   // Filter employees by department only (staff can work across branches)
   const deptEmployees = useMemo(
     () => employees.filter((e) => e.department === department && e.status === "active"),
@@ -81,6 +87,40 @@ export function RotaGrid({
       }
     }
     return totalMinutes / 60;
+  };
+
+  // Current branch/dept shifts for bulk actions
+  const currentShifts = useMemo(
+    () => shifts?.filter((s: any) => s.branch === branch && s.department === department) || [],
+    [shifts, branch, department]
+  );
+  const currentAssigned = currentShifts.filter((s: any) => s.employee_id);
+
+  const handleBulkDeleteAll = async () => {
+    const ids = currentShifts.map((s: any) => s.id);
+    if (ids.length === 0) return;
+    await bulkDelete.mutateAsync(ids);
+    toast.success(`Deleted ${ids.length} shifts`);
+  };
+
+  const handleBulkClearAssignments = async () => {
+    const ids = currentAssigned.map((s: any) => s.id);
+    if (ids.length === 0) return;
+    await bulkUpdate.mutateAsync({
+      shiftIds: ids,
+      updates: { employee_id: null, status: "open" as const },
+    });
+    toast.success(`Cleared ${ids.length} assignments`);
+  };
+
+  const handleBulkUpdateTimes = async (startTime: string, endTime: string) => {
+    const ids = currentShifts.map((s: any) => s.id);
+    if (ids.length === 0) return;
+    await bulkUpdate.mutateAsync({
+      shiftIds: ids,
+      updates: { start_time: startTime, end_time: endTime },
+    });
+    toast.success(`Updated times for ${ids.length} shifts`);
   };
 
   // Stats for status bar
@@ -135,6 +175,23 @@ export function RotaGrid({
 
   return (
     <>
+      {isAdmin && (
+        <div className="flex items-center justify-between px-3 py-1.5 border-b border-border">
+          <span className="text-xs text-muted-foreground">
+            {currentShifts.length} shifts · {currentAssigned.length} assigned
+          </span>
+          <BulkScheduleActions
+            branch={branch}
+            department={department}
+            shiftCount={currentShifts.length}
+            assignedCount={currentAssigned.length}
+            onDeleteAll={handleBulkDeleteAll}
+            onClearAssignments={handleBulkClearAssignments}
+            onBulkUpdateTimes={handleBulkUpdateTimes}
+            isPending={bulkPending}
+          />
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>

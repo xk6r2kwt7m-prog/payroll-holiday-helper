@@ -112,6 +112,38 @@ export function useBulkCreateShifts() {
   });
 }
 
+export function useBulkDeleteShifts() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (shiftIds: string[]) => {
+      const { error } = await supabase
+        .from("shifts")
+        .delete()
+        .in("id", shiftIds);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shifts"] });
+    },
+  });
+}
+
+export function useBulkUpdateShifts() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ shiftIds, updates }: { shiftIds: string[]; updates: ShiftUpdate }) => {
+      const { error } = await supabase
+        .from("shifts")
+        .update(updates)
+        .in("id", shiftIds);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shifts"] });
+    },
+  });
+}
+
 export function usePublishWeek() {
   const queryClient = useQueryClient();
   return useMutation({
