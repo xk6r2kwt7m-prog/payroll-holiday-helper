@@ -11,6 +11,7 @@ import Payroll from "./pages/Payroll";
 import PayrollCalendar from "./pages/PayrollCalendar";
 import Holidays from "./pages/Holidays";
 import Settings from "./pages/Settings";
+import Locations from "./pages/Locations";
 import Contracts from "./pages/Contracts";
 import Schedule from "./pages/Schedule";
 import Timesheets from "./pages/Timesheets";
@@ -77,6 +78,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/locations"
+              element={
+                <ProtectedRoute>
+                  <Locations />
                 </ProtectedRoute>
               }
             />

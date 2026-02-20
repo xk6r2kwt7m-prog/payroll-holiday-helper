@@ -502,6 +502,78 @@ export type Database = {
           },
         ]
       }
+      location_settings: {
+        Row: {
+          address: string | null
+          allow_mobile_clock_in: boolean
+          allow_open_shifts: boolean
+          allow_shift_offers: boolean
+          allow_shift_swaps: boolean
+          allow_web_clock_in: boolean
+          auto_approve_timesheets: boolean
+          branch: Database["public"]["Enums"]["branch_type"]
+          created_at: string
+          default_break_minutes: number
+          display_name: string
+          enforce_break_after_hours: number
+          geofence_radius_meters: number
+          id: string
+          minimum_shift_length_minutes: number
+          operating_hours: Json
+          require_geofence: boolean
+          require_gps_on_clock_in: boolean
+          scheduling_suggestion_order: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          allow_mobile_clock_in?: boolean
+          allow_open_shifts?: boolean
+          allow_shift_offers?: boolean
+          allow_shift_swaps?: boolean
+          allow_web_clock_in?: boolean
+          auto_approve_timesheets?: boolean
+          branch: Database["public"]["Enums"]["branch_type"]
+          created_at?: string
+          default_break_minutes?: number
+          display_name: string
+          enforce_break_after_hours?: number
+          geofence_radius_meters?: number
+          id?: string
+          minimum_shift_length_minutes?: number
+          operating_hours?: Json
+          require_geofence?: boolean
+          require_gps_on_clock_in?: boolean
+          scheduling_suggestion_order?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          allow_mobile_clock_in?: boolean
+          allow_open_shifts?: boolean
+          allow_shift_offers?: boolean
+          allow_shift_swaps?: boolean
+          allow_web_clock_in?: boolean
+          auto_approve_timesheets?: boolean
+          branch?: Database["public"]["Enums"]["branch_type"]
+          created_at?: string
+          default_break_minutes?: number
+          display_name?: string
+          enforce_break_after_hours?: number
+          geofence_radius_meters?: number
+          id?: string
+          minimum_shift_length_minutes?: number
+          operating_hours?: Json
+          require_geofence?: boolean
+          require_gps_on_clock_in?: boolean
+          scheduling_suggestion_order?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payroll_entries: {
         Row: {
           bank_details_exported: boolean | null
