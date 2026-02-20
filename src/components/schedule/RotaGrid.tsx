@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, AlertTriangle, Check, Lock, MapPin } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
+import { ShiftDetailPopover } from "./ShiftDetailPopover";
 import { BulkScheduleActions } from "./BulkScheduleActions";
 import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
 import { DroppableCell, EmptyDropCell } from "./DroppableCell";
@@ -45,12 +46,12 @@ export function RotaGrid({
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [activeShift, setActiveShift] = useState<any>(null);
+  const [popoverShiftId, setPopoverShiftId] = useState<string | null>(null);
 
   const bulkDelete = useBulkDeleteShifts();
   const bulkUpdate = useBulkUpdateShifts();
   const bulkPending = bulkDelete.isPending || bulkUpdate.isPending;
 
-  // Sensors: require a small movement before starting drag to allow clicks
   const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } });
   const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
   const sensors = useSensors(pointerSensor, touchSensor);
@@ -137,11 +138,46 @@ export function RotaGrid({
 
   const handleCellClick = (day: Date, shift?: any) => {
     if (!isAdmin) return;
-    // Don't open dialog if we just finished a drag
     if (activeShift) return;
+    // If clicking a shift, show popover instead of dialog
+    if (shift) {
+      setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
+      return;
+    }
     setSelectedDay(day);
-    setSelectedShift(shift || null);
+    setSelectedShift(null);
     setDialogOpen(true);
+  };
+
+  const handleEditFromPopover = (shift: any, day: Date) => {
+    setPopoverShiftId(null);
+    setSelectedDay(day);
+    setSelectedShift(shift);
+    setDialogOpen(true);
+  };
+
+  const handleCopyShift = async (shift: any) => {
+    setPopoverShiftId(null);
+    try {
+      await onCreateShift({
+        shift_date: shift.shift_date,
+        branch,
+        department,
+        employee_id: null,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        notes: shift.notes || null,
+        status: "open",
+      });
+      toast.success("Shift copied as open shift");
+    } catch {
+      toast.error("Failed to copy shift");
+    }
+  };
+
+  const handleDeleteFromPopover = (shiftId: string) => {
+    setPopoverShiftId(null);
+    onDeleteShift(shiftId);
   };
 
   const handleSave = async (data: {
@@ -181,9 +217,9 @@ export function RotaGrid({
     ? getDefaultTimes(department as any, getDayAbbr(selectedDay))
     : { start: "11:30", end: "22:30" };
 
-  // Drag-and-drop handlers
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveShift(event.active.data.current?.shift || null);
+    setPopoverShiftId(null); // close popover on drag
   }, []);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
@@ -193,7 +229,7 @@ export function RotaGrid({
     if (!over || !active.data.current?.shift) return;
 
     const shift = active.data.current.shift;
-    const dropId = String(over.id); // format: "employeeId::dateISO" or "open::dateISO"
+    const dropId = String(over.id);
 
     const [targetEmployeeId, targetDateISO] = dropId.split("::");
     if (!targetDateISO) return;
@@ -202,10 +238,8 @@ export function RotaGrid({
     const isSameEmployee = shift.employee_id === targetEmployeeId;
     const isSameDate = shift.shift_date === targetDate;
 
-    // No-op if dropped in same spot
     if (isSameEmployee && isSameDate) return;
 
-    // Check if target employee already has a shift on that day
     if (targetEmployeeId !== "open") {
       const existingShift = shifts?.find(
         (s: any) =>
@@ -239,6 +273,54 @@ export function RotaGrid({
     }
   }, [shifts, branch, department, deptEmployees, onUpdateShift]);
 
+  // Helper to get employee name
+  const getEmployeeName = (employeeId: string | null) => {
+    if (!employeeId) return "Open Shift";
+    const emp = employees.find(e => e.id === employeeId);
+    return emp ? `${emp.forename} ${emp.surname}` : "Unknown";
+  };
+
+  // Render a shift cell with popover
+  const renderShiftWithPopover = (shift: any, day: Date) => {
+    const empName = getEmployeeName(shift.employee_id);
+    return (
+      <ShiftDetailPopover
+        key={shift.id}
+        shift={shift}
+        employeeName={empName}
+        branch={branch}
+        department={department}
+        isAdmin={isAdmin}
+        open={popoverShiftId === shift.id}
+        onOpenChange={(open) => setPopoverShiftId(open ? shift.id : null)}
+        onEdit={() => handleEditFromPopover(shift, day)}
+        onDelete={() => handleDeleteFromPopover(shift.id)}
+        onCopy={() => handleCopyShift(shift)}
+      >
+        <div>
+          <DraggableShiftCell
+            shift={shift}
+            isAdmin={isAdmin}
+            onView={(e) => {
+              e.stopPropagation();
+              setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
+            }}
+            onCopy={(e) => {
+              e.stopPropagation();
+              handleCopyShift(shift);
+            }}
+            onAdd={(e) => {
+              e.stopPropagation();
+              setSelectedDay(day);
+              setSelectedShift(null);
+              setDialogOpen(true);
+            }}
+          />
+        </div>
+      </ShiftDetailPopover>
+    );
+  };
+
   return (
     <>
       {isAdmin && (
@@ -263,7 +345,7 @@ export function RotaGrid({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[140px] sticky left-0 bg-card z-10">
+                <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[160px] sticky left-0 bg-card z-10">
                   Employee
                 </th>
                 {weekDays.map((day) => {
@@ -276,7 +358,7 @@ export function RotaGrid({
                     <th
                       key={day.toISOString()}
                       className={cn(
-                        "text-center p-1.5 text-xs font-medium min-w-[110px]",
+                        "text-center p-1.5 text-xs font-medium min-w-[120px]",
                         isToday(day) ? "bg-primary/10" : ""
                       )}
                     >
@@ -314,12 +396,20 @@ export function RotaGrid({
                 return (
                   <tr key={emp.id} className="border-t border-border">
                     <td className="p-2 text-xs font-medium sticky left-0 bg-card z-10">
-                      <div className="truncate">{emp.forename} {emp.surname?.[0]}.</div>
-                      {weeklyHours > 0 && (
-                        <div className="text-[10px] text-muted-foreground mt-0.5">
-                          {weeklyHours.toFixed(0)}h · £{weeklyCost.toFixed(0)}
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[11px] font-bold shrink-0">
+                          {emp.forename[0]}{emp.surname?.[0] || ""}
                         </div>
-                      )}
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">{emp.forename} {emp.surname?.[0]}.</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {weeklyHours > 0
+                              ? `${weeklyHours.toFixed(0)}h ${(weeklyHours % 1 * 60).toFixed(0)}m · £${weeklyCost.toFixed(2)}`
+                              : "0h · £0.00"
+                            }
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     {weekDays.map((day) => {
                       const shift = getShiftForEmployeeDay(emp.id, day);
@@ -335,7 +425,7 @@ export function RotaGrid({
                           onClick={() => handleCellClick(day, shift)}
                         >
                           {shift ? (
-                            <DraggableShiftCell shift={shift} isAdmin={isAdmin} />
+                            renderShiftWithPopover(shift, day)
                           ) : crossBranchShifts.length > 0 ? (
                             crossBranchShifts.map((cbs: any) => (
                               <CrossBranchShiftCell key={cbs.id} shift={cbs} />
@@ -354,7 +444,12 @@ export function RotaGrid({
               {weekDays.some((d) => getOpenShifts(d).length > 0) && (
                 <tr className="border-t border-border border-dashed">
                   <td className="p-2 text-xs text-muted-foreground italic sticky left-0 bg-card z-10">
-                    Open Shifts
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[11px] font-bold shrink-0">
+                        ?
+                      </div>
+                      <span>Open Shifts</span>
+                    </div>
                   </td>
                   {weekDays.map((day) => {
                     const openShifts = getOpenShifts(day);
@@ -368,7 +463,7 @@ export function RotaGrid({
                       >
                         {openShifts.map((s: any) => (
                           <div key={s.id} onClick={() => handleCellClick(day, s)}>
-                            <DraggableShiftCell shift={s} isAdmin={isAdmin} />
+                            {renderShiftWithPopover(s, day)}
                           </div>
                         ))}
                       </DroppableCell>
@@ -377,7 +472,7 @@ export function RotaGrid({
                 </tr>
               )}
 
-              {/* Quick add row for admin */}
+              {/* Quick add row */}
               {isAdmin && (
                 <tr className="border-t border-border border-dashed">
                   <td className="p-2 text-xs text-muted-foreground sticky left-0 bg-card z-10">
@@ -400,7 +495,6 @@ export function RotaGrid({
           </table>
         </div>
 
-        {/* Drag overlay — shows a floating copy of the shift being dragged */}
         <DragOverlay dropAnimation={null}>
           {activeShift ? (
             <div className={cn(
