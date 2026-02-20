@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   BarChart3,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -32,6 +33,7 @@ const moreNavItems = [
   { icon: BarChart3, label: "Schedule Report", path: "/schedule/report" },
   { icon: BarChart3, label: "Analytics", path: "/schedule/analytics" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
+  { icon: MapPin, label: "Locations", path: "/locations" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
