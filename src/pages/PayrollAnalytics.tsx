@@ -274,6 +274,7 @@ const PayrollAnalytics = () => {
             <TabsTrigger value="trends">Trends</TabsTrigger>
             <TabsTrigger value="compare">Compare Periods</TabsTrigger>
             <TabsTrigger value="department">By Department</TabsTrigger>
+            <TabsTrigger value="employees">Employee History</TabsTrigger>
           </TabsList>
 
           {/* Trends Tab */}
@@ -595,6 +596,106 @@ const PayrollAnalytics = () => {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Employee History Tab */}
+          <TabsContent value="employees" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Employee Cost History</CardTitle>
+                <CardDescription>Per-employee earnings, rate changes, and holiday accrued across all periods</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  // Build per-employee history across all periods
+                  const employeeMap: Record<string, {
+                    name: string;
+                    department: string;
+                    periods: { name: string; rate: number; hours: number; pay: number; holiday: number; bonuses: number }[];
+                  }> = {};
+
+                  recentPeriods.forEach((period, i) => {
+                    const periodEntries = allEntries[i]?.data || [];
+                    periodEntries.forEach((entry: any) => {
+                      const emp = entry.employees;
+                      if (!emp) return;
+                      const key = entry.employee_id;
+                      if (!employeeMap[key]) {
+                        employeeMap[key] = {
+                          name: `${emp.forename} ${emp.surname}`,
+                          department: emp.department,
+                          periods: [],
+                        };
+                      }
+                      employeeMap[key].periods.push({
+                        name: period.period_name,
+                        rate: Number(entry.hourly_rate),
+                        hours: Number(entry.timesheet_hours),
+                        pay: Number(entry.total_pay),
+                        holiday: Number(entry.holiday_accrued_hours || 0),
+                        bonuses: Number(entry.performance_bonus || 0) + Number(entry.special_bonus || 0),
+                      });
+                    });
+                  });
+
+                  const employees = Object.entries(employeeMap)
+                    .map(([id, data]) => {
+                      const totalEarnings = data.periods.reduce((s, p) => s + p.pay, 0);
+                      const totalHours = data.periods.reduce((s, p) => s + p.hours, 0);
+                      const totalHoliday = data.periods.reduce((s, p) => s + p.holiday, 0);
+                      const totalBonuses = data.periods.reduce((s, p) => s + p.bonuses, 0);
+                      const rates = data.periods.map(p => p.rate);
+                      const rateChanged = new Set(rates).size > 1;
+                      return { id, ...data, totalEarnings, totalHours, totalHoliday, totalBonuses, rateChanged };
+                    })
+                    .sort((a, b) => b.totalEarnings - a.totalEarnings);
+
+                  return (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Employee</TableHead>
+                            <TableHead>Dept</TableHead>
+                            <TableHead className="text-right">Periods</TableHead>
+                            <TableHead className="text-right">Total Hours</TableHead>
+                            <TableHead className="text-right">Total Earnings</TableHead>
+                            <TableHead className="text-right">Total Bonuses</TableHead>
+                            <TableHead className="text-right">Holiday Accrued</TableHead>
+                            <TableHead className="text-right">Rate History</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {employees.map((emp) => (
+                            <TableRow key={emp.id}>
+                              <TableCell className="font-medium">{emp.name}</TableCell>
+                              <TableCell><Badge variant="secondary" className="text-xs">{emp.department}</Badge></TableCell>
+                              <TableCell className="text-right">{emp.periods.length}</TableCell>
+                              <TableCell className="text-right">{formatHours(emp.totalHours)}</TableCell>
+                              <TableCell className="text-right font-semibold">{formatCurrency(emp.totalEarnings)}</TableCell>
+                              <TableCell className="text-right">{emp.totalBonuses > 0 ? formatCurrency(emp.totalBonuses) : "—"}</TableCell>
+                              <TableCell className="text-right">{formatHours(emp.totalHoliday)} hrs</TableCell>
+                              <TableCell className="text-right">
+                                {emp.rateChanged ? (
+                                  <div className="flex items-center justify-end gap-1">
+                                    <span className="h-2 w-2 rounded-full bg-warning inline-block" />
+                                    <span className="text-xs text-muted-foreground">
+                                      {formatCurrency(emp.periods[emp.periods.length - 1]?.rate || 0)} → {formatCurrency(emp.periods[0]?.rate || 0)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">{formatCurrency(emp.periods[0]?.rate || 0)}</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
