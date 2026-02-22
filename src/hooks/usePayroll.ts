@@ -221,13 +221,17 @@ export function useCopyPayrollPeriod() {
       newPeriodName, 
       startDate, 
       endDate, 
-      payDate 
+      payDate,
+      periodWeeks,
+      salesTotal,
     }: { 
       sourcePeriodId: string; 
       newPeriodName: string; 
       startDate: string; 
       endDate: string;
       payDate?: string;
+      periodWeeks?: number;
+      salesTotal?: number;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
@@ -239,6 +243,8 @@ export function useCopyPayrollPeriod() {
           start_date: startDate,
           end_date: endDate,
           pay_date: payDate || null,
+          period_weeks: periodWeeks || 4,
+          sales_total: salesTotal || 0,
           status: "draft" as const,
           imported_by: user?.id,
         })

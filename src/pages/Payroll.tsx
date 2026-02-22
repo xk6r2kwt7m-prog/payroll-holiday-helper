@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Download, DollarSign, Clock, CheckCircle, FileText, AlertCircle, Calendar } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Download, DollarSign, Clock, CheckCircle, FileText, AlertCircle, Calendar, BarChart3 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -154,6 +155,12 @@ const Payroll = () => {
             </p>
           </div>
           <div className="flex gap-3">
+            <Button variant="outline" asChild>
+              <Link to="/payroll/analytics">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Analytics
+              </Link>
+            </Button>
             {isAdmin && <CreatePayrollDialog />}
             {isAdmin && <ImportPayrollDialog />}
           </div>

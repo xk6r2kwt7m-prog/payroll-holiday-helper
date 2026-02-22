@@ -30,6 +30,7 @@ const navItems = [
   { icon: BarChart3, label: "Analytics", path: "/schedule/analytics" },
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
+  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: MapPin, label: "Locations", path: "/locations" },

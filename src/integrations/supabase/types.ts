@@ -698,6 +698,8 @@ export type Database = {
           notes: string | null
           pay_date: string | null
           period_name: string
+          period_weeks: number | null
+          sales_total: number | null
           start_date: string
           status: Database["public"]["Enums"]["payroll_status"]
           timesheet_total: number | null
@@ -716,6 +718,8 @@ export type Database = {
           notes?: string | null
           pay_date?: string | null
           period_name: string
+          period_weeks?: number | null
+          sales_total?: number | null
           start_date: string
           status?: Database["public"]["Enums"]["payroll_status"]
           timesheet_total?: number | null
@@ -734,6 +738,8 @@ export type Database = {
           notes?: string | null
           pay_date?: string | null
           period_name?: string
+          period_weeks?: number | null
+          sales_total?: number | null
           start_date?: string
           status?: Database["public"]["Enums"]["payroll_status"]
           timesheet_total?: number | null
