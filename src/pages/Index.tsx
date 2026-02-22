@@ -1,11 +1,13 @@
-import { Users, DollarSign, Calendar, Clock, FileText } from "lucide-react";
+import { Users, DollarSign, Calendar, Clock, FileText, Percent, TrendingUp } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocumentsWidget";
+import { SmartAlerts } from "@/components/dashboard/SmartAlerts";
+import { PayrollDeadlineWidget } from "@/components/dashboard/PayrollDeadlineWidget";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
-import { useHolidayPayments, formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
-import { Link, useNavigate } from "react-router-dom";
+import { formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -22,17 +24,22 @@ const Index = () => {
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriod = periods[0];
   const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
-  const { data: holidayPayments = [] } = useHolidayPayments(latestPeriod?.id);
 
   const activeEmployees = employees.filter(e => e.status === "active").length;
-  const totalPayroll = entries.reduce((sum, e) => sum + Number(e.total_pay), 0);
-  const totalHours = entries.reduce((sum, e) => sum + Number(e.timesheet_hours), 0);
-  const totalHolidayAccrued = entries.reduce((sum, e) => sum + Number(e.holiday_accrued_hours), 0);
+  const totalPayroll = entries.reduce((sum, e: any) => sum + Number(e.total_pay), 0);
+  const totalHours = entries.reduce((sum, e: any) => sum + Number(e.timesheet_hours), 0);
+  const totalHolidayAccrued = entries.reduce((sum, e: any) => sum + Number(e.holiday_accrued_hours || 0), 0);
+  
+  // Labour % KPI
+  const salesTotal = latestPeriod ? Number((latestPeriod as any).sales_total || 0) : 0;
+  const labourPercent = salesTotal > 0 ? (totalPayroll / salesTotal) * 100 : 0;
+  
+  // Per-week normalisation
+  const periodWeeks = latestPeriod ? Number((latestPeriod as any).period_weeks || 4) : 4;
+  const payPerWeek = periodWeeks > 0 ? totalPayroll / periodWeeks : 0;
 
   const departmentStats = employees.reduce((acc, emp) => {
-    if (!acc[emp.department]) {
-      acc[emp.department] = { count: 0 };
-    }
+    if (!acc[emp.department]) acc[emp.department] = { count: 0 };
     acc[emp.department].count++;
     return acc;
   }, {} as Record<string, { count: number }>);
@@ -48,22 +55,33 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Smart Alerts */}
+        <SmartAlerts employees={employees} periods={periods} entries={entries} />
+
+        {/* KPI Stats Grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <StatCard
-            title="Total Employees"
-            value={employees.length}
-            subtitle={`${activeEmployees} active`}
+            title="Active Staff"
+            value={activeEmployees}
+            subtitle={`${employees.length} total`}
             icon={<Users className="h-5 w-5" />}
             href="/employees"
           />
           <StatCard
             title="Total Payroll"
             value={formatCurrency(totalPayroll)}
-            subtitle={latestPeriod ? latestPeriod.period_name : "No data"}
+            subtitle={`${formatCurrency(payPerWeek)}/week`}
             icon={<DollarSign className="h-5 w-5" />}
             variant="primary"
             href="/payroll"
+          />
+          <StatCard
+            title="Labour %"
+            value={labourPercent > 0 ? `${labourPercent.toFixed(1)}%` : "—"}
+            subtitle={salesTotal > 0 ? `of ${formatCurrency(salesTotal)}` : "No sales data"}
+            icon={<Percent className="h-5 w-5" />}
+            variant={labourPercent > 35 ? "warning" : labourPercent > 0 ? "success" : "default"}
+            href="/payroll/analytics"
           />
           <StatCard
             title="Holiday Accrued"
@@ -76,56 +94,48 @@ const Index = () => {
           <StatCard
             title="Hours Tracked"
             value={formatHours(totalHours)}
-            subtitle="This period"
+            subtitle={`${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)}/week`}
             icon={<Clock className="h-5 w-5" />}
-            href="/payroll"
+            href="/timesheets"
           />
         </div>
 
         {/* Department Summary */}
         <div className="grid gap-4 sm:grid-cols-3 animate-fade-in">
-          {(["FOH", "BOH", "CPU"] as const).map((dept) => (
-            <Link 
-              key={dept} 
-              to={`/employees?dept=${dept}`}
-              className="rounded-xl bg-card p-5 shadow-card transition-all hover:shadow-elevated hover:-translate-y-1 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{dept}</h3>
-                <span className="text-sm text-muted-foreground">
-                  {departmentStats[dept]?.count || 0} staff
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {dept === "FOH" && "🍽️ Front of House"}
-                {dept === "BOH" && "👨‍🍳 Back of House"}
-                {dept === "CPU" && "🏭 Central Production Unit"}
-              </p>
-            </Link>
-          ))}
+          {(["FOH", "BOH", "CPU"] as const).map((dept) => {
+            const deptEntries = entries.filter((e: any) => e.employees?.department === dept);
+            const deptPay = deptEntries.reduce((s: number, e: any) => s + Number(e.total_pay), 0);
+            const deptHours = deptEntries.reduce((s: number, e: any) => s + Number(e.timesheet_hours), 0);
+            return (
+              <Link 
+                key={dept} 
+                to={`/employees?dept=${dept}`}
+                className="rounded-xl bg-card p-5 shadow-card transition-all hover:shadow-elevated hover:-translate-y-1 group cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{dept}</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {departmentStats[dept]?.count || 0} staff
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{formatHours(deptHours)} hrs</span>
+                  <span className="font-medium text-card-foreground">{formatCurrency(deptPay)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {dept === "FOH" && "🍽️ Front of House"}
+                  {dept === "BOH" && "👨‍🍳 Back of House"}
+                  {dept === "CPU" && "🏭 Central Production Unit"}
+                </p>
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Expiring Documents + UK Holiday Law */}
+        {/* Payroll Timeline + Expiring Docs */}
         <div className="grid gap-4 lg:grid-cols-2 animate-fade-in">
+          <PayrollDeadlineWidget periods={periods} />
           <ExpiringDocumentsWidget />
-          
-          {/* UK Holiday Law Info Banner */}
-          <div className="rounded-xl bg-card shadow-card p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="text-2xl">⚖️</div>
-              <h3 className="font-semibold text-card-foreground">UK Holiday Law</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Employees accrue <strong className="text-card-foreground">{(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}%</strong> of hours worked as holiday entitlement.
-            </p>
-            {totalHolidayAccrued > 0 && (
-              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
-                <p className="text-sm text-card-foreground">
-                  This period: <strong className="text-primary">{formatHours(totalHolidayAccrued)} hours</strong> accrued
-                </p>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Recent Payroll Periods */}
@@ -151,6 +161,7 @@ const Index = () => {
                       <p className="font-medium text-card-foreground">{period.period_name}</p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(period.start_date).toLocaleDateString()} - {new Date(period.end_date).toLocaleDateString()}
+                        {(period as any).period_weeks && ` · ${(period as any).period_weeks}w`}
                       </p>
                     </div>
                   </div>
@@ -159,7 +170,7 @@ const Index = () => {
                       {formatCurrency(Number(period.grand_total))}
                     </span>
                     <Badge className={statusStyles[period.status]}>
-                      {period.status.charAt(0).toUpperCase() + period.status.slice(1)}
+                      {period.status === "pending" ? "Pending Review" : period.status.charAt(0).toUpperCase() + period.status.slice(1)}
                     </Badge>
                   </div>
                 </div>
@@ -168,7 +179,7 @@ const Index = () => {
           </div>
         )}
 
-        {/* Top Employees by Pay */}
+        {/* Top Earners */}
         {entries.length > 0 && (
           <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
             <div className="border-b border-border px-6 py-4 flex items-center justify-between">
@@ -176,8 +187,8 @@ const Index = () => {
                 <h3 className="text-lg font-semibold text-card-foreground">Top Earners</h3>
                 <p className="text-sm text-muted-foreground">Highest paid this period</p>
               </div>
-              <Link to="/employees">
-                <Button variant="outline" size="sm">View All</Button>
+              <Link to="/payroll/analytics">
+                <Button variant="outline" size="sm">Analytics</Button>
               </Link>
             </div>
             <div className="divide-y divide-border">

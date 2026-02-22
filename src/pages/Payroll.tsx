@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, DollarSign, Clock, CheckCircle, FileText, AlertCircle, Calendar, BarChart3 } from "lucide-react";
+import { Download, DollarSign, Clock, FileText, Calendar, BarChart3 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
-import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod } from "@/hooks/usePayroll";
+import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
 import { CreatePayrollDialog } from "@/components/payroll/CreatePayrollDialog";
 import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable";
+import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWorkflow";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +36,8 @@ const Payroll = () => {
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
   const approvePeriod = useApprovePayrollPeriod();
+  const submitForReview = useSubmitPayrollForReview();
+  const reopenPeriod = useReopenPayrollPeriod();
   const { isAdmin } = useAuth();
 
   const totalPay = entries.reduce((sum, e: any) => sum + Number(e.total_pay), 0);
@@ -43,15 +46,42 @@ const Payroll = () => {
   const avgRate = entries.length > 0 
     ? entries.reduce((sum, e: any) => sum + Number(e.hourly_rate), 0) / entries.length 
     : 0;
+  const zeroHoursCount = entries.filter((e: any) => Number(e.timesheet_hours) === 0).length;
+
+  // Rate discrepancy detection
+  const rateDiscrepancies = entries.filter((e: any) => {
+    const emp = e.employees;
+    if (!emp) return false;
+    return Number(e.hourly_rate) !== Number(emp.hourly_rate);
+  });
+
+  const handleSubmitForReview = async () => {
+    if (!selectedPeriod) return;
+    try {
+      await submitForReview.mutateAsync(selectedPeriod.id);
+      toast.success("Payroll submitted for review");
+    } catch {
+      toast.error("Failed to submit payroll");
+    }
+  };
 
   const handleApprove = async () => {
     if (!selectedPeriod) return;
-    
     try {
       await approvePeriod.mutateAsync(selectedPeriod.id);
-      toast.success("Payroll approved successfully!");
+      toast.success("Payroll approved and locked");
     } catch {
       toast.error("Failed to approve payroll");
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!selectedPeriod) return;
+    try {
+      await reopenPeriod.mutateAsync(selectedPeriod.id);
+      toast.success("Payroll period reopened as draft");
+    } catch {
+      toast.error("Failed to reopen payroll");
     }
   };
 
@@ -59,14 +89,11 @@ const Payroll = () => {
     if (!selectedPeriod || entries.length === 0) return;
 
     try {
-      // Get current user for audit logging
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Log the export action to audit_log for compliance
-      // Using 'import' action type as closest match for data export operations
-      const { error: auditError } = await supabase.from("audit_log").insert({
+      await supabase.from("audit_log").insert({
         user_id: user?.id || null,
-        action: "import" as const, // Using 'import' as it relates to data transfer operations
+        action: "import" as const,
         table_name: "payroll_entries",
         record_id: selectedPeriod.id,
         new_data: {
@@ -77,42 +104,23 @@ const Payroll = () => {
           export_type: "csv"
         }
       });
-      
-      if (auditError) {
-        console.error("Audit log failed:", auditError);
-      }
 
-      // Generate CSV content
       const headers = [
-        "Employee",
-        "Department",
-        "NI Number",
+        "Employee", "Department", "NI Number",
         ...(includeBankDetails ? ["Sort Code", "Account Number"] : []),
-        "Hourly Rate",
-        "Service Charge",
-        "Hours",
-        "Performance Bonus",
-        "Special Bonus",
-        "Holiday Accrued",
-        "Total Pay",
+        "Hourly Rate", "Service Charge", "Hours", "Performance Bonus",
+        "Special Bonus", "Holiday Accrued", "Total Pay",
       ];
 
       const rows = entries.map((entry: any) => {
         const emp = entry.employees;
-        const row = [
-          `${emp?.forename} ${emp?.surname}`,
-          emp?.department,
-          emp?.ni_number || "",
+        return [
+          `${emp?.forename} ${emp?.surname}`, emp?.department, emp?.ni_number || "",
           ...(includeBankDetails ? [emp?.sort_code || "", emp?.bank_account_no || ""] : []),
-          entry.hourly_rate,
-          entry.service_charge || 0,
-          entry.timesheet_hours,
-          entry.performance_bonus || 0,
-          entry.special_bonus || 0,
-          entry.holiday_accrued_hours || 0,
-          entry.total_pay,
-        ];
-        return row.join(",");
+          entry.hourly_rate, entry.service_charge || 0, entry.timesheet_hours,
+          entry.performance_bonus || 0, entry.special_bonus || 0,
+          entry.holiday_accrued_hours || 0, entry.total_pay,
+        ].join(",");
       });
 
       const csv = [headers.join(","), ...rows].join("\n");
@@ -124,10 +132,7 @@ const Payroll = () => {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast.success(includeBankDetails 
-        ? "Exported with bank details (marked as exported)" 
-        : "Payroll exported"
-      );
+      toast.success(includeBankDetails ? "Exported with bank details" : "Payroll exported");
     } catch (error) {
       console.error("Export failed:", error);
       toast.error("Failed to export payroll");
@@ -150,6 +155,7 @@ const Payroll = () => {
               {selectedPeriod ? (
                 <>
                   {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} - {new Date(selectedPeriod.end_date).toLocaleDateString()}
+                  {(selectedPeriod as any).period_weeks && ` • ${(selectedPeriod as any).period_weeks} weeks`}
                 </>
               ) : "No payroll periods yet"}
             </p>
@@ -216,31 +222,37 @@ const Payroll = () => {
           />
         </div>
 
-        {/* Approval Banner */}
-        {selectedPeriod && selectedPeriod.status === "draft" && isAdmin && (
-          <div className="rounded-xl bg-warning/10 border border-warning/20 p-4 flex items-center justify-between animate-fade-in">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-warning" />
-              <div>
-                <p className="font-medium text-card-foreground">Review Required</p>
-                <p className="text-sm text-muted-foreground">This payroll is in draft status. Edit timesheet hours, then approve when ready.</p>
-              </div>
-            </div>
-            <Button onClick={handleApprove} disabled={approvePeriod.isPending}>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              {approvePeriod.isPending ? "Approving..." : "Approve Payroll"}
-            </Button>
-          </div>
+        {/* Approval Workflow */}
+        {selectedPeriod && (
+          <PayrollApprovalWorkflow
+            period={selectedPeriod}
+            isAdmin={isAdmin}
+            onSubmitForReview={handleSubmitForReview}
+            onApprove={handleApprove}
+            onReopen={handleReopen}
+            isSubmitting={submitForReview.isPending}
+            isApproving={approvePeriod.isPending}
+            isReopening={reopenPeriod.isPending}
+            entryCount={entries.length}
+            zeroHoursCount={zeroHoursCount}
+          />
         )}
 
-        {selectedPeriod && selectedPeriod.status === "approved" && (
-          <div className="rounded-xl bg-success/10 border border-success/20 p-4 flex items-center gap-3 animate-fade-in">
-            <CheckCircle className="h-5 w-5 text-success" />
-            <div>
-              <p className="font-medium text-success">Approved</p>
-              <p className="text-sm text-muted-foreground">
-                This payroll was approved on {selectedPeriod.approved_at ? new Date(selectedPeriod.approved_at).toLocaleDateString() : "N/A"}
+        {/* Rate Discrepancy Warning */}
+        {rateDiscrepancies.length > 0 && (
+          <div className="rounded-xl bg-warning/10 border border-warning/20 p-4 animate-fade-in">
+            <div className="flex items-center gap-3 mb-2">
+              <Badge className="bg-warning text-warning-foreground text-xs">Rate Change</Badge>
+              <p className="font-medium text-card-foreground text-sm">
+                {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s have" : " has"} a different rate in this period vs their master record
               </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {rateDiscrepancies.slice(0, 5).map((e: any) => (
+                <Badge key={e.id} variant="outline" className="text-xs">
+                  {e.employees?.forename} {e.employees?.surname}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
+                </Badge>
+              ))}
             </div>
           </div>
         )}

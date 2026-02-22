@@ -118,6 +118,39 @@ export function useUpdatePayrollPeriod() {
   });
 }
 
+export function useSubmitPayrollForReview() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from("payroll_periods")
+        .update({ status: "pending" as const })
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+
+      // Audit log
+      await supabase.from("audit_log").insert({
+        user_id: user?.id || null,
+        action: "update" as const,
+        table_name: "payroll_periods",
+        record_id: id,
+        new_data: { operation: "submit_for_review", status: "pending" },
+      });
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+    },
+  });
+}
+
 export function useApprovePayrollPeriod() {
   const queryClient = useQueryClient();
   
@@ -137,6 +170,53 @@ export function useApprovePayrollPeriod() {
         .single();
       
       if (error) throw error;
+
+      // Audit log
+      await supabase.from("audit_log").insert({
+        user_id: user?.id || null,
+        action: "approve" as const,
+        table_name: "payroll_periods",
+        record_id: id,
+        new_data: { operation: "approve_and_lock" },
+      });
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+    },
+  });
+}
+
+export function useReopenPayrollPeriod() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data, error } = await supabase
+        .from("payroll_periods")
+        .update({ 
+          status: "draft" as const,
+          approved_by: null,
+          approved_at: null,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+
+      // Audit log - critical for compliance
+      await supabase.from("audit_log").insert({
+        user_id: user?.id || null,
+        action: "update" as const,
+        table_name: "payroll_periods",
+        record_id: id,
+        new_data: { operation: "reopen_period", previous_status: "approved" },
+      });
+
       return data;
     },
     onSuccess: () => {

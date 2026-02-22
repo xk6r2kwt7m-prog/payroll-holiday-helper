@@ -122,7 +122,7 @@ export function EditablePayrollTable({
     }
   };
 
-  const canEdit = periodStatus === "draft" && isAdmin;
+  const canEdit = (periodStatus === "draft") && isAdmin;
   const allSelected = entries.length > 0 && entries.every(e => selectedIds.has(e.id));
   const someSelected = selectedIds.size > 0;
 
@@ -494,7 +494,12 @@ export function EditablePayrollTable({
                   ) : (
                     <>
                       <TableCell className="text-right text-muted-foreground">
-                        {formatCurrency(Number(entry.hourly_rate))}
+                        <span className="flex items-center justify-end gap-1">
+                          {formatCurrency(Number(entry.hourly_rate))}
+                          {emp && Number(entry.hourly_rate) !== Number(emp.hourly_rate) && (
+                            <span title={`Master rate: ${formatCurrency(Number(emp.hourly_rate))}`} className="inline-block h-2 w-2 rounded-full bg-warning shrink-0" />
+                          )}
+                        </span>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
                         {formatCurrency(Number(entry.service_charge || 0))}
