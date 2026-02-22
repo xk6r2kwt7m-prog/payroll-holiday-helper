@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod } from "@/hooks/usePayroll";
-import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import { formatCurrency, formatHours, useHolidayPayments } from "@/hooks/useHolidays";
+import { useEmployees } from "@/hooks/useEmployees";
 import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
 import { CreatePayrollDialog } from "@/components/payroll/CreatePayrollDialog";
 import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable";
@@ -37,6 +38,8 @@ const Payroll = () => {
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
+  const { data: holidayPayments = [] } = useHolidayPayments(selectedPeriod?.id);
+  const { data: allEmployees = [] } = useEmployees();
   const approvePeriod = useApprovePayrollPeriod();
   const submitForReview = useSubmitPayrollForReview();
   const reopenPeriod = useReopenPayrollPeriod();
@@ -154,10 +157,17 @@ const Payroll = () => {
     if (!selectedPeriod || entries.length === 0) return;
     try {
       toast.info("Generating PDF...");
+      // Find starters in this period's entries
+      const starterEmployees = allEmployees.filter(emp => 
+        emp.status === 'starter' && entries.some((e: any) => e.employee_id === emp.id)
+      );
+
       const blob = await pdf(
         <PayrollPDF
           period={selectedPeriod as any}
           entries={entries as any}
+          holidayPayments={holidayPayments as any}
+          starters={starterEmployees as any}
           isCorrection={!!selectedPeriod.notes?.includes("[CORRECTED]")}
           correctionNote={selectedPeriod.notes?.includes("[CORRECTED]") ? selectedPeriod.notes : undefined}
         />

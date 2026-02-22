@@ -12,6 +12,10 @@ const GRAY = "#555";
 const LIGHT_TEAL = "#eef6f4";
 const LIGHT_BG = "#fafaf8";
 const BORDER = "#e0ddd8";
+const AMBER = "#92400e";
+const AMBER_BG = "#fffbeb";
+const AMBER_BORDER = "#fbbf24";
+const RED = "#9b2c2c";
 
 const styles = StyleSheet.create({
   page: {
@@ -136,7 +140,6 @@ const styles = StyleSheet.create({
     color: GRAY,
     marginTop: 2,
   },
-  // Table styles
   table: {
     marginTop: 4,
     marginBottom: 8,
@@ -235,9 +238,73 @@ const styles = StyleSheet.create({
     color: "#e53e3e",
     fontFamily: "Helvetica-Bold",
   },
+  // Starter card styles
+  starterCard: {
+    borderWidth: 0.5,
+    borderColor: AMBER_BORDER,
+    backgroundColor: AMBER_BG,
+    borderRadius: 4,
+    padding: 10,
+    marginBottom: 8,
+  },
+  starterName: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: DARK,
+    marginBottom: 4,
+  },
+  starterGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  starterField: {
+    width: "48%",
+    marginBottom: 4,
+  },
+  starterFieldLabel: {
+    fontSize: 6.5,
+    color: GRAY,
+    letterSpacing: 0.5,
+    marginBottom: 1,
+  },
+  starterFieldValue: {
+    fontSize: 8,
+    color: DARK,
+  },
+  missingValue: {
+    fontSize: 8,
+    color: RED,
+    fontFamily: "Helvetica-Bold",
+  },
+  alertBox: {
+    backgroundColor: "#fff5f5",
+    borderWidth: 0.5,
+    borderColor: "#feb2b2",
+    borderRadius: 3,
+    padding: 6,
+    marginTop: 4,
+  },
+  alertText: {
+    fontSize: 7,
+    color: RED,
+  },
+  noteBox: {
+    backgroundColor: LIGHT_BG,
+    borderWidth: 0.5,
+    borderColor: BORDER,
+    borderRadius: 3,
+    padding: 6,
+    marginTop: 4,
+  },
+  noteText: {
+    fontSize: 7,
+    color: GRAY,
+    fontStyle: "italic",
+  },
 });
 
-// Column widths (percentages)
+// Column widths for main payroll table
 const COL = {
   name: "22%",
   dept: "8%",
@@ -250,6 +317,16 @@ const COL = {
   total: "13%",
 };
 
+// Column widths for holiday payments table
+const HCOL = {
+  name: "25%",
+  date: "15%",
+  hours: "12%",
+  rate: "12%",
+  total: "14%",
+  notes: "22%",
+};
+
 interface PayrollEntry {
   id: string;
   hourly_rate: number;
@@ -259,12 +336,47 @@ interface PayrollEntry {
   special_bonus: number | null;
   holiday_accrued_hours: number | null;
   total_pay: number;
+  notes: string | null;
   employees: {
     forename: string;
     surname: string;
     department: string;
     ni_number: string | null;
   } | null;
+}
+
+interface HolidayPayment {
+  id: string;
+  employee_name: string;
+  hours: number;
+  rate: number;
+  total: number;
+  holiday_taken_date: string | null;
+  notes: string | null;
+  employees: {
+    forename: string;
+    surname: string;
+    department: string;
+  } | null;
+}
+
+interface StarterEmployee {
+  id: string;
+  forename: string;
+  surname: string;
+  department: string;
+  status: string;
+  hourly_rate: number;
+  ni_number: string | null;
+  bank_account_no: string | null;
+  sort_code: string | null;
+  nationality: string | null;
+  passport_no: string | null;
+  settlement_status: string | null;
+  sharing_code: string | null;
+  residence_permit: string | null;
+  start_date: string | null;
+  notes: string | null;
 }
 
 interface PayrollPeriod {
@@ -282,6 +394,8 @@ interface PayrollPeriod {
 interface PayrollPDFProps {
   period: PayrollPeriod;
   entries: PayrollEntry[];
+  holidayPayments?: HolidayPayment[];
+  starters?: StarterEmployee[];
   companyName?: string;
   isCorrection?: boolean;
   correctionNote?: string;
@@ -299,7 +413,15 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd", isCorrection = false, correctionNote }: PayrollPDFProps) {
+export function PayrollPDF({
+  period,
+  entries,
+  holidayPayments = [],
+  starters = [],
+  companyName = "UD Restaurants Ltd",
+  isCorrection = false,
+  correctionNote,
+}: PayrollPDFProps) {
   const sortedEntries = [...entries].sort((a, b) => {
     const deptOrder: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
     const deptA = deptOrder[a.employees?.department || ""] ?? 99;
@@ -320,6 +442,9 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
     }),
     { hours: 0, basePay: 0, servicePay: 0, perfBonus: 0, specBonus: 0, holiday: 0, total: 0 }
   );
+
+  const holidayTotal = holidayPayments.reduce((s, p) => s + Number(p.total), 0);
+  const holidayHoursTotal = holidayPayments.reduce((s, p) => s + Number(p.hours), 0);
 
   const departments = ["FOH", "BOH", "CPU"];
   const deptStats = departments.map((dept) => {
@@ -374,9 +499,22 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
     </View>
   );
 
+  // Helper: determine if a starter has right to work issues
+  const getRTWStatus = (starter: StarterEmployee) => {
+    const hasNI = !!starter.ni_number;
+    const hasPassport = !!starter.passport_no;
+    const hasSettlement = !!starter.settlement_status;
+    const hasResidence = !!starter.residence_permit;
+
+    if (hasNI) return { status: "ok", label: "NI Number on file" };
+    if (hasPassport && (hasSettlement || hasResidence)) return { status: "pending", label: "Awaiting NI — documents on file" };
+    if (hasPassport) return { status: "warning", label: "Passport on file — no settlement/permit details" };
+    return { status: "missing", label: "Missing NI & ID documents" };
+  };
+
   return (
     <Document>
-      {/* Cover Page */}
+      {/* ─── COVER PAGE ─── */}
       <Page size="A4" style={styles.coverPage}>
         <View style={{ marginTop: 140, alignItems: "center" }}>
           <Text style={styles.coverBrand}>{companyName.toUpperCase()}</Text>
@@ -385,8 +523,8 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
           <View style={styles.coverLine} />
 
           {isCorrection && (
-            <View style={[styles.statusBadge, { backgroundColor: "#fed7d7", color: "#9b2c2c", marginBottom: 16 }]}>
-              <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: "#9b2c2c" }}>
+            <View style={[styles.statusBadge, { backgroundColor: "#fed7d7", marginBottom: 16 }]}>
+              <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: RED }}>
                 CORRECTED VERSION
               </Text>
             </View>
@@ -413,23 +551,50 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
           <Text style={styles.coverLabel}>EMPLOYEES</Text>
           <Text style={styles.coverField}>{entries.length}</Text>
 
+          {starters.length > 0 && (
+            <>
+              <Text style={styles.coverLabel}>NEW STARTERS</Text>
+              <Text style={styles.coverField}>{starters.length}</Text>
+            </>
+          )}
+
           <Text style={styles.coverLabel}>TOTAL PAYROLL</Text>
           <Text style={{ ...styles.coverField, fontSize: 16, fontFamily: "Helvetica-Bold" }}>
             {formatCurrency(totals.total)}
           </Text>
+
+          {holidayPayments.length > 0 && (
+            <>
+              <Text style={styles.coverLabel}>HOLIDAY PAY</Text>
+              <Text style={styles.coverField}>{formatCurrency(holidayTotal)}</Text>
+            </>
+          )}
+
+          {/* Contents listing */}
+          <View style={{ marginTop: 40, alignItems: "center" }}>
+            <Text style={{ ...styles.coverLabel, marginTop: 0 }}>CONTENTS</Text>
+            <Text style={{ fontSize: 8, color: GRAY, marginTop: 4 }}>1. Period Summary & Department Breakdown</Text>
+            <Text style={{ fontSize: 8, color: GRAY }}>2. Employee Payroll Detail</Text>
+            {holidayPayments.length > 0 && (
+              <Text style={{ fontSize: 8, color: GRAY }}>3. Holiday Payments</Text>
+            )}
+            {starters.length > 0 && (
+              <Text style={{ fontSize: 8, color: GRAY }}>
+                {holidayPayments.length > 0 ? "4" : "3"}. New Starter Details
+              </Text>
+            )}
+          </View>
         </View>
         <PageFooter />
       </Page>
 
-      {/* Summary Page */}
+      {/* ─── SUMMARY PAGE ─── */}
       <Page size="A4" style={styles.page}>
         <PageHeader />
 
         {isCorrection && correctionNote && (
           <View style={styles.correctionNote}>
-            <Text style={styles.correctionText}>
-              ⚠ CORRECTION: {correctionNote}
-            </Text>
+            <Text style={styles.correctionText}>CORRECTION: {correctionNote}</Text>
           </View>
         )}
 
@@ -462,6 +627,22 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
           </View>
         </View>
 
+        {/* Holiday Pay Summary Card (if any) */}
+        {holidayPayments.length > 0 && (
+          <View style={styles.summaryGrid}>
+            <View style={[styles.summaryCard, { backgroundColor: AMBER_BG, borderWidth: 0.5, borderColor: AMBER_BORDER }]}>
+              <Text style={styles.summaryLabel}>HOLIDAY PAY TOTAL</Text>
+              <Text style={[styles.summaryValue, { color: AMBER }]}>{formatCurrency(holidayTotal)}</Text>
+              <Text style={styles.summarySubtext}>{holidayPayments.length} payments • {holidayHoursTotal.toFixed(1)} hrs</Text>
+            </View>
+            <View style={[styles.summaryCard, { backgroundColor: AMBER_BG, borderWidth: 0.5, borderColor: AMBER_BORDER }]}>
+              <Text style={styles.summaryLabel}>GRAND TOTAL (INC. HOLIDAY)</Text>
+              <Text style={[styles.summaryValue, { color: AMBER }]}>{formatCurrency(totals.total + holidayTotal)}</Text>
+              <Text style={styles.summarySubtext}>Payroll + Holiday Pay</Text>
+            </View>
+          </View>
+        )}
+
         <Text style={styles.sectionTitle}>Department Breakdown</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           {deptStats.map((dept) => (
@@ -492,7 +673,7 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
         <Text style={styles.sectionTitle}>Cost Breakdown</Text>
         <View style={styles.deptSection}>
           <View style={styles.deptStat}>
-            <Text style={styles.deptStatLabel}>Base Pay (hours × rate)</Text>
+            <Text style={styles.deptStatLabel}>Base Pay (hours x rate)</Text>
             <Text style={styles.deptStatValue}>{formatCurrency(totals.basePay)}</Text>
           </View>
           <View style={styles.deptStat}>
@@ -507,16 +688,24 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
             <Text style={styles.deptStatLabel}>Special Bonuses</Text>
             <Text style={styles.deptStatValue}>{formatCurrency(totals.specBonus)}</Text>
           </View>
+          {holidayPayments.length > 0 && (
+            <View style={styles.deptStat}>
+              <Text style={styles.deptStatLabel}>Holiday Pay</Text>
+              <Text style={[styles.deptStatValue, { color: AMBER }]}>{formatCurrency(holidayTotal)}</Text>
+            </View>
+          )}
           <View style={[styles.deptStat, { marginTop: 4, paddingTop: 4, borderTopWidth: 0.5, borderTopColor: BORDER }]}>
             <Text style={{ ...styles.deptStatLabel, fontFamily: "Helvetica-Bold", color: DARK }}>Grand Total</Text>
-            <Text style={{ ...styles.deptStatValue, fontSize: 10 }}>{formatCurrency(totals.total)}</Text>
+            <Text style={{ ...styles.deptStatValue, fontSize: 10 }}>
+              {formatCurrency(totals.total + holidayTotal)}
+            </Text>
           </View>
         </View>
 
         <PageFooter />
       </Page>
 
-      {/* Employee Detail Table */}
+      {/* ─── EMPLOYEE DETAIL TABLE ─── */}
       <Page size="A4" style={styles.page} orientation="landscape">
         <PageHeader />
         <Text style={styles.sectionTitle}>Employee Payroll Detail</Text>
@@ -534,37 +723,64 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
             <Text style={[styles.tableHeaderCell, { width: COL.total, textAlign: "right" }]}>Total Pay</Text>
           </View>
 
-          {sortedEntries.map((entry, idx) => {
-            const emp = entry.employees;
+          {/* Group by department */}
+          {departments.map((dept) => {
+            const deptEntries = sortedEntries.filter((e) => e.employees?.department === dept);
+            if (deptEntries.length === 0) return null;
+
+            const deptTotal = deptEntries.reduce((s, e) => s + Number(e.total_pay), 0);
+            const deptHours = deptEntries.reduce((s, e) => s + Number(e.timesheet_hours), 0);
+
             return (
-              <View key={entry.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]}>
-                <Text style={[styles.tableCellBold, { width: COL.name }]}>
-                  {emp?.surname}, {emp?.forename}
-                </Text>
-                <Text style={[styles.tableCell, { width: COL.dept, textAlign: "center" }]}>
-                  {emp?.department}
-                </Text>
-                <Text style={[styles.tableCell, { width: COL.rate, textAlign: "right" }]}>
-                  {formatCurrency(entry.hourly_rate)}
-                </Text>
-                <Text style={[styles.tableCell, { width: COL.service, textAlign: "right" }]}>
-                  {formatCurrency(Number(entry.service_charge || 0))}
-                </Text>
-                <Text style={[styles.tableCell, { width: COL.hours, textAlign: "right" }]}>
-                  {Number(entry.timesheet_hours).toFixed(2)}
-                </Text>
-                <Text style={[styles.tableCell, { width: COL.perfBonus, textAlign: "right" }]}>
-                  {formatCurrency(Number(entry.performance_bonus || 0))}
-                </Text>
-                <Text style={[styles.tableCell, { width: COL.specBonus, textAlign: "right" }]}>
-                  {formatCurrency(Number(entry.special_bonus || 0))}
-                </Text>
-                <Text style={[styles.tableCell, { width: COL.holiday, textAlign: "right" }]}>
-                  {Number(entry.holiday_accrued_hours || 0).toFixed(2)} hrs
-                </Text>
-                <Text style={[styles.tableCellBold, { width: COL.total, textAlign: "right" }]}>
-                  {formatCurrency(entry.total_pay)}
-                </Text>
+              <View key={dept}>
+                {/* Department header */}
+                <View style={{ flexDirection: "row", backgroundColor: LIGHT_TEAL, paddingVertical: 3, paddingHorizontal: 4, marginTop: 4 }}>
+                  <Text style={{ fontSize: 7.5, fontFamily: "Helvetica-Bold", color: TEAL }}>
+                    {dept} — {deptEntries.length} employees • {deptHours.toFixed(1)} hrs • {formatCurrency(deptTotal)}
+                  </Text>
+                </View>
+
+                {deptEntries.map((entry, idx) => {
+                  const emp = entry.employees;
+                  return (
+                    <View key={entry.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]} wrap={false}>
+                      <View style={{ width: COL.name }}>
+                        <Text style={styles.tableCellBold}>
+                          {emp?.surname}, {emp?.forename}
+                        </Text>
+                        {entry.notes && (
+                          <Text style={{ fontSize: 6, color: GRAY, marginTop: 1 }}>
+                            {entry.notes.length > 60 ? entry.notes.substring(0, 60) + "..." : entry.notes}
+                          </Text>
+                        )}
+                      </View>
+                      <Text style={[styles.tableCell, { width: COL.dept, textAlign: "center" }]}>
+                        {emp?.department}
+                      </Text>
+                      <Text style={[styles.tableCell, { width: COL.rate, textAlign: "right" }]}>
+                        {formatCurrency(entry.hourly_rate)}
+                      </Text>
+                      <Text style={[styles.tableCell, { width: COL.service, textAlign: "right" }]}>
+                        {formatCurrency(Number(entry.service_charge || 0))}
+                      </Text>
+                      <Text style={[styles.tableCell, { width: COL.hours, textAlign: "right" }]}>
+                        {Number(entry.timesheet_hours).toFixed(2)}
+                      </Text>
+                      <Text style={[styles.tableCell, { width: COL.perfBonus, textAlign: "right" }]}>
+                        {formatCurrency(Number(entry.performance_bonus || 0))}
+                      </Text>
+                      <Text style={[styles.tableCell, { width: COL.specBonus, textAlign: "right" }]}>
+                        {formatCurrency(Number(entry.special_bonus || 0))}
+                      </Text>
+                      <Text style={[styles.tableCell, { width: COL.holiday, textAlign: "right" }]}>
+                        {Number(entry.holiday_accrued_hours || 0).toFixed(2)} hrs
+                      </Text>
+                      <Text style={[styles.tableCellBold, { width: COL.total, textAlign: "right" }]}>
+                        {formatCurrency(entry.total_pay)}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             );
           })}
@@ -595,6 +811,220 @@ export function PayrollPDF({ period, entries, companyName = "UD Restaurants Ltd"
 
         <PageFooter />
       </Page>
+
+      {/* ─── HOLIDAY PAYMENTS PAGE (dynamic, only if payments exist) ─── */}
+      {holidayPayments.length > 0 && (
+        <Page size="A4" style={styles.page}>
+          <PageHeader />
+          <Text style={styles.sectionTitle}>Holiday Payments — {period.period_name}</Text>
+          <Text style={{ fontSize: 7.5, color: GRAY, marginBottom: 10 }}>
+            Holiday pay recorded against this payroll period. {holidayPayments.length} payment{holidayPayments.length !== 1 ? "s" : ""} totalling {formatCurrency(holidayTotal)} for {holidayHoursTotal.toFixed(1)} hours.
+          </Text>
+
+          <View style={styles.table}>
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.tableHeaderCell, { width: HCOL.name }]}>Employee</Text>
+              <Text style={[styles.tableHeaderCell, { width: HCOL.date, textAlign: "center" }]}>Holiday Date</Text>
+              <Text style={[styles.tableHeaderCell, { width: HCOL.hours, textAlign: "right" }]}>Hours</Text>
+              <Text style={[styles.tableHeaderCell, { width: HCOL.rate, textAlign: "right" }]}>Rate</Text>
+              <Text style={[styles.tableHeaderCell, { width: HCOL.total, textAlign: "right" }]}>Total</Text>
+              <Text style={[styles.tableHeaderCell, { width: HCOL.notes }]}>Notes</Text>
+            </View>
+
+            {holidayPayments.map((payment, idx) => (
+              <View key={payment.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]} wrap={false}>
+                <Text style={[styles.tableCellBold, { width: HCOL.name }]}>
+                  {payment.employees
+                    ? `${payment.employees.surname}, ${payment.employees.forename}`
+                    : payment.employee_name}
+                </Text>
+                <Text style={[styles.tableCell, { width: HCOL.date, textAlign: "center" }]}>
+                  {payment.holiday_taken_date ? formatDate(payment.holiday_taken_date) : "—"}
+                </Text>
+                <Text style={[styles.tableCell, { width: HCOL.hours, textAlign: "right" }]}>
+                  {Number(payment.hours).toFixed(2)}
+                </Text>
+                <Text style={[styles.tableCell, { width: HCOL.rate, textAlign: "right" }]}>
+                  {formatCurrency(Number(payment.rate))}
+                </Text>
+                <Text style={[styles.tableCellBold, { width: HCOL.total, textAlign: "right" }]}>
+                  {formatCurrency(Number(payment.total))}
+                </Text>
+                <Text style={[styles.tableCell, { width: HCOL.notes }]}>
+                  {payment.notes || "—"}
+                </Text>
+              </View>
+            ))}
+
+            {/* Holiday totals row */}
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalCell, { width: HCOL.name }]}>TOTAL HOLIDAY PAY</Text>
+              <Text style={[styles.totalCell, { width: HCOL.date }]} />
+              <Text style={[styles.totalCell, { width: HCOL.hours, textAlign: "right" }]}>
+                {holidayHoursTotal.toFixed(2)}
+              </Text>
+              <Text style={[styles.totalCell, { width: HCOL.rate }]} />
+              <Text style={[styles.totalCell, { width: HCOL.total, textAlign: "right" }]}>
+                {formatCurrency(holidayTotal)}
+              </Text>
+              <Text style={[styles.totalCell, { width: HCOL.notes }]} />
+            </View>
+          </View>
+
+          <PageFooter />
+        </Page>
+      )}
+
+      {/* ─── NEW STARTERS PAGE (dynamic, only if starters exist) ─── */}
+      {starters.length > 0 && (
+        <Page size="A4" style={styles.page}>
+          <PageHeader />
+          <Text style={styles.sectionTitle}>New Starter Details</Text>
+          <Text style={{ fontSize: 7.5, color: GRAY, marginBottom: 10 }}>
+            {starters.length} new starter{starters.length !== 1 ? "s" : ""} included in this payroll period.
+            Details below are for payroll processing and HMRC compliance.
+          </Text>
+
+          {starters.map((starter) => {
+            const rtwStatus = getRTWStatus(starter);
+            const hasNI = !!starter.ni_number;
+
+            return (
+              <View key={starter.id} style={styles.starterCard} wrap={false}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <Text style={styles.starterName}>
+                    {starter.forename} {starter.surname}
+                  </Text>
+                  <View style={[styles.statusBadge, {
+                    backgroundColor: rtwStatus.status === "ok" ? "#c6f6d5" : rtwStatus.status === "pending" ? AMBER_BG : "#fed7d7",
+                  }]}>
+                    <Text style={{
+                      fontSize: 6.5,
+                      fontFamily: "Helvetica-Bold",
+                      color: rtwStatus.status === "ok" ? "#276749" : rtwStatus.status === "pending" ? AMBER : RED,
+                    }}>
+                      {rtwStatus.status === "ok" ? "RTW OK" : rtwStatus.status === "pending" ? "RTW PENDING" : "RTW MISSING"}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.starterGrid}>
+                  <View style={styles.starterField}>
+                    <Text style={styles.starterFieldLabel}>DEPARTMENT</Text>
+                    <Text style={styles.starterFieldValue}>{starter.department}</Text>
+                  </View>
+                  <View style={styles.starterField}>
+                    <Text style={styles.starterFieldLabel}>HOURLY RATE</Text>
+                    <Text style={styles.starterFieldValue}>{formatCurrency(starter.hourly_rate)}</Text>
+                  </View>
+                  <View style={styles.starterField}>
+                    <Text style={styles.starterFieldLabel}>START DATE</Text>
+                    <Text style={styles.starterFieldValue}>
+                      {starter.start_date ? formatDate(starter.start_date) : "Not set"}
+                    </Text>
+                  </View>
+                  <View style={styles.starterField}>
+                    <Text style={styles.starterFieldLabel}>NI NUMBER</Text>
+                    {hasNI ? (
+                      <Text style={styles.starterFieldValue}>{starter.ni_number}</Text>
+                    ) : (
+                      <Text style={styles.missingValue}>Not provided — see below</Text>
+                    )}
+                  </View>
+                </View>
+
+                {/* Banking Details */}
+                <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: BORDER }}>
+                  <Text style={{ fontSize: 7.5, fontFamily: "Helvetica-Bold", color: DARK, marginBottom: 4 }}>Banking Details</Text>
+                  <View style={styles.starterGrid}>
+                    <View style={styles.starterField}>
+                      <Text style={styles.starterFieldLabel}>SORT CODE</Text>
+                      <Text style={starter.sort_code ? styles.starterFieldValue : styles.missingValue}>
+                        {starter.sort_code || "Missing"}
+                      </Text>
+                    </View>
+                    <View style={styles.starterField}>
+                      <Text style={styles.starterFieldLabel}>ACCOUNT NUMBER</Text>
+                      <Text style={starter.bank_account_no ? styles.starterFieldValue : styles.missingValue}>
+                        {starter.bank_account_no || "Missing"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Right to Work Section */}
+                <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: BORDER }}>
+                  <Text style={{ fontSize: 7.5, fontFamily: "Helvetica-Bold", color: DARK, marginBottom: 4 }}>
+                    Right to Work in the UK
+                  </Text>
+                  <View style={styles.starterGrid}>
+                    <View style={styles.starterField}>
+                      <Text style={styles.starterFieldLabel}>NATIONALITY</Text>
+                      <Text style={starter.nationality ? styles.starterFieldValue : styles.missingValue}>
+                        {starter.nationality || "Not recorded"}
+                      </Text>
+                    </View>
+                    <View style={styles.starterField}>
+                      <Text style={styles.starterFieldLabel}>PASSPORT NUMBER</Text>
+                      <Text style={starter.passport_no ? styles.starterFieldValue : styles.missingValue}>
+                        {starter.passport_no || "Not on file"}
+                      </Text>
+                    </View>
+                    <View style={styles.starterField}>
+                      <Text style={styles.starterFieldLabel}>SETTLEMENT STATUS</Text>
+                      <Text style={starter.settlement_status ? styles.starterFieldValue : styles.missingValue}>
+                        {starter.settlement_status || "Not recorded"}
+                      </Text>
+                    </View>
+                    <View style={styles.starterField}>
+                      <Text style={styles.starterFieldLabel}>SHARE CODE</Text>
+                      <Text style={starter.sharing_code ? styles.starterFieldValue : styles.missingValue}>
+                        {starter.sharing_code || "Not provided"}
+                      </Text>
+                    </View>
+                    {starter.residence_permit && (
+                      <View style={styles.starterField}>
+                        <Text style={styles.starterFieldLabel}>RESIDENCE PERMIT</Text>
+                        <Text style={styles.starterFieldValue}>{starter.residence_permit}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* RTW Status note */}
+                  <View style={rtwStatus.status === "ok" ? styles.noteBox : styles.alertBox}>
+                    <Text style={rtwStatus.status === "ok" ? styles.noteText : styles.alertText}>
+                      {rtwStatus.label}
+                    </Text>
+                  </View>
+
+                  {/* Missing NI explanation */}
+                  {!hasNI && (
+                    <View style={[styles.alertBox, { marginTop: 4 }]}>
+                      <Text style={styles.alertText}>
+                        No National Insurance number on file.
+                        {starter.passport_no
+                          ? ` Passport (${starter.passport_no}) and nationality (${starter.nationality || "unknown"}) recorded as interim identification.`
+                          : " Passport number and nationality must be provided to HMRC until NI number is obtained."}
+                        {" "}Employee should apply for NI via gov.uk or call HMRC on 0300 200 3500.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Notes */}
+                {starter.notes && (
+                  <View style={[styles.noteBox, { marginTop: 6 }]}>
+                    <Text style={{ fontSize: 6.5, fontFamily: "Helvetica-Bold", color: GRAY, marginBottom: 2 }}>ADMIN NOTES</Text>
+                    <Text style={styles.noteText}>{starter.notes}</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+
+          <PageFooter />
+        </Page>
+      )}
     </Document>
   );
 }
