@@ -20,6 +20,7 @@ interface PayrollApprovalWorkflowProps {
     period_name: string;
     approved_at?: string | null;
     approved_by?: string | null;
+    notes?: string | null;
   };
   isAdmin: boolean;
   onSubmitForReview: () => void;
@@ -51,7 +52,8 @@ export function PayrollApprovalWorkflow({
   zeroHoursCount,
 }: PayrollApprovalWorkflowProps) {
   const currentStepIndex = workflowSteps.findIndex(s => s.status === period.status);
-
+  const hasUnmatchedEmployees = period.notes?.includes("⚠ PENDING:");
+  const canSubmitOrApprove = !hasUnmatchedEmployees;
   return (
     <div className="rounded-xl bg-card shadow-card p-5 animate-fade-in">
       {/* Workflow Steps */}
@@ -83,6 +85,24 @@ export function PayrollApprovalWorkflow({
         })}
       </div>
 
+      {/* Unmatched employees warning - blocks approval */}
+      {hasUnmatchedEmployees && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
+            <div>
+              <p className="font-medium text-destructive">Unmatched Employees — Action Required</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {period.notes?.replace("⚠ PENDING: ", "")}
+              </p>
+              <p className="text-sm font-medium text-destructive mt-1">
+                You cannot submit or approve this payroll until all employees are in the database and added to this period.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Status-specific content */}
       {period.status === "draft" && isAdmin && (
         <div className="flex items-center justify-between rounded-lg bg-warning/10 border border-warning/20 p-4">
@@ -97,7 +117,7 @@ export function PayrollApprovalWorkflow({
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button disabled={isSubmitting || entryCount === 0}>
+              <Button disabled={isSubmitting || entryCount === 0 || !canSubmitOrApprove}>
                 <Send className="mr-2 h-4 w-4" />
                 {isSubmitting ? "Submitting..." : "Submit for Review"}
               </Button>
