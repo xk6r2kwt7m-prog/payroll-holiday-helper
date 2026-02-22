@@ -247,17 +247,22 @@ export function useCopyPayrollPeriod() {
 
       if (periodError) throw periodError;
 
-      // Get source entries
+      // Get source entries with employee status
       const { data: sourceEntries, error: entriesError } = await supabase
         .from("payroll_entries")
-        .select("*")
+        .select("*, employees(id, status)")
         .eq("payroll_period_id", sourcePeriodId);
 
       if (entriesError) throw entriesError;
 
-      // Copy entries with zero timesheet hours
+      // Copy entries - exclude leavers (UK best practice: leavers should not carry into subsequent periods)
       if (sourceEntries && sourceEntries.length > 0) {
-        const newEntries = sourceEntries.map(entry => {
+        const activeEntries = sourceEntries.filter((entry: any) => {
+          const empStatus = entry.employees?.status;
+          return empStatus === "active" || empStatus === "starter";
+        });
+
+        const newEntries = activeEntries.map((entry: any) => {
           const perfBonus = entry.performance_bonus || 0;
           const specBonus = entry.special_bonus || 0;
           return {
@@ -274,11 +279,13 @@ export function useCopyPayrollPeriod() {
           };
         });
 
-        const { error: insertError } = await supabase
-          .from("payroll_entries")
-          .insert(newEntries);
+        if (newEntries.length > 0) {
+          const { error: insertError } = await supabase
+            .from("payroll_entries")
+            .insert(newEntries);
 
-        if (insertError) throw insertError;
+          if (insertError) throw insertError;
+        }
       }
 
       return newPeriod;
