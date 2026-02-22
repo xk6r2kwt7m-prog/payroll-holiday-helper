@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, DollarSign, Clock, FileText, Calendar, BarChart3 } from "lucide-react";
+import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -14,6 +14,8 @@ import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWor
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { pdf } from "@react-pdf/renderer";
+import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 
 const statusStyles = {
   draft: "bg-muted text-muted-foreground",
@@ -79,7 +81,16 @@ const Payroll = () => {
     if (!selectedPeriod) return;
     try {
       await reopenPeriod.mutateAsync(selectedPeriod.id);
-      toast.success("Payroll period reopened as draft");
+      // Mark as corrected so the system knows this is a corrected version
+      const existingNotes = selectedPeriod.notes || "";
+      const correctionMark = existingNotes.includes("[CORRECTED]")
+        ? existingNotes
+        : `[CORRECTED] Reopened for correction on ${new Date().toLocaleDateString("en-GB")}. ${existingNotes}`.trim();
+      await supabase
+        .from("payroll_periods")
+        .update({ notes: correctionMark })
+        .eq("id", selectedPeriod.id);
+      toast.success("Payroll period reopened for correction — make your changes and re-approve");
     } catch {
       toast.error("Failed to reopen payroll");
     }
@@ -139,6 +150,40 @@ const Payroll = () => {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    if (!selectedPeriod || entries.length === 0) return;
+    try {
+      toast.info("Generating PDF...");
+      const blob = await pdf(
+        <PayrollPDF
+          period={selectedPeriod as any}
+          entries={entries as any}
+          isCorrection={!!selectedPeriod.notes?.includes("[CORRECTED]")}
+          correctionNote={selectedPeriod.notes?.includes("[CORRECTED]") ? selectedPeriod.notes : undefined}
+        />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `payroll-${selectedPeriod.period_name.replace(/\s+/g, "-")}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from("audit_log").insert({
+        user_id: user?.id || null,
+        action: "import" as const,
+        table_name: "payroll_periods",
+        record_id: selectedPeriod.id,
+        new_data: { operation: "pdf_export", period_name: selectedPeriod.period_name },
+      });
+      toast.success("PDF downloaded");
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -160,7 +205,13 @@ const Payroll = () => {
               ) : "No payroll periods yet"}
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2">
+            {selectedPeriod && entries.length > 0 && (
+              <Button variant="outline" onClick={handleDownloadPDF}>
+                <FileDown className="mr-2 h-4 w-4" />
+                PDF Report
+              </Button>
+            )}
             <Button variant="outline" asChild>
               <Link to="/payroll/analytics">
                 <BarChart3 className="mr-2 h-4 w-4" />
