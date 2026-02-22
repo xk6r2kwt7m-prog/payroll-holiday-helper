@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2 } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,19 @@ import { toast } from "sonner";
 import { useBulkUpdatePayrollEntries, useMarkBankDetailsExported } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, calculateHolidayAccrual } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
+import { AddEmployeeToPeriodDialog } from "./AddEmployeeToPeriodDialog";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PayrollEntry {
   id: string;
@@ -82,9 +95,32 @@ export function EditablePayrollTable({
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
+  const [removeEmployeeName, setRemoveEmployeeName] = useState("");
 
+  const queryClient = useQueryClient();
   const bulkUpdate = useBulkUpdatePayrollEntries();
   const markExported = useMarkBankDetailsExported();
+  
+  const existingEmployeeIds = entries.map(e => e.employee_id);
+
+  const handleRemoveFromPeriod = async () => {
+    if (!removeEntryId) return;
+    try {
+      const { error } = await supabase
+        .from("payroll_entries")
+        .delete()
+        .eq("id", removeEntryId);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      toast.success(`${removeEmployeeName} removed from this payroll period`);
+    } catch {
+      toast.error("Failed to remove employee");
+    } finally {
+      setRemoveEntryId(null);
+      setRemoveEmployeeName("");
+    }
+  };
 
   const canEdit = periodStatus === "draft" && isAdmin;
   const allSelected = entries.length > 0 && entries.every(e => selectedIds.has(e.id));
@@ -259,6 +295,9 @@ export function EditablePayrollTable({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canEdit && (
+            <AddEmployeeToPeriodDialog periodId={periodId} existingEmployeeIds={existingEmployeeIds} />
+          )}
           {/* Bulk Actions */}
           {canEdit && someSelected && (
             <DropdownMenu>
@@ -477,14 +516,28 @@ export function EditablePayrollTable({
                       </TableCell>
                       {canEdit && (
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={() => startEditing(entry)}
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => startEditing(entry)}
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => {
+                                setRemoveEntryId(entry.id);
+                                setRemoveEmployeeName(`${emp?.forename} ${emp?.surname}`);
+                              }}
+                              title="Remove from period"
+                            >
+                              <UserMinus className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       )}
                     </>
@@ -512,6 +565,26 @@ export function EditablePayrollTable({
           </tfoot>
         </Table>
       </div>
+
+      <AlertDialog open={!!removeEntryId} onOpenChange={(open) => !open && setRemoveEntryId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {removeEmployeeName} from this period?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the employee's payroll entry from this period. If they are a leaver, they will not appear in subsequent periods when copying. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveFromPeriod}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

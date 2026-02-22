@@ -58,10 +58,10 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           imported_by: user?.id,
         });
 
-        // Add entries for all active employees
-        const activeEmployees = employees.filter(e => e.status === "active");
-        if (activeEmployees.length > 0) {
-          const entries = activeEmployees.map(emp => ({
+        // Add entries for all active + starter employees (UK best practice)
+        const eligibleEmployees = employees.filter(e => e.status === "active" || e.status === "starter");
+        if (eligibleEmployees.length > 0) {
+          const entries = eligibleEmployees.map(emp => ({
             payroll_period_id: newPeriod.id,
             employee_id: emp.id,
             hourly_rate: emp.hourly_rate,
@@ -75,7 +75,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           await supabase.from("payroll_entries").insert(entries);
         }
 
-        toast.success(`Payroll period created with ${activeEmployees.length} employees.`);
+        toast.success(`Payroll period created with ${eligibleEmployees.length} employees.`);
       }
 
       setOpen(false);
