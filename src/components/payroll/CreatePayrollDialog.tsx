@@ -23,6 +23,8 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [payDate, setPayDate] = useState("");
+  const [periodWeeks, setPeriodWeeks] = useState("4");
+  const [salesTotal, setSalesTotal] = useState("");
 
   const { data: periods = [] } = usePayrollPeriods();
   const { data: employees = [] } = useEmployees();
@@ -43,6 +45,8 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           startDate,
           endDate,
           payDate: payDate || undefined,
+          periodWeeks: parseFloat(periodWeeks) || 4,
+          salesTotal: parseFloat(salesTotal) || 0,
         });
         toast.success("Payroll period created from previous period. Timesheet hours reset to 0.");
       } else {
@@ -54,6 +58,8 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           start_date: startDate,
           end_date: endDate,
           pay_date: payDate || null,
+          period_weeks: parseFloat(periodWeeks) || 4,
+          sales_total: parseFloat(salesTotal) || 0,
           status: "draft",
           imported_by: user?.id,
         });
@@ -86,11 +92,30 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     }
   };
 
+  const autoCalcWeeks = (start: string, end: string) => {
+    if (start && end) {
+      const days = (new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24) + 1;
+      setPeriodWeeks((Math.round((days / 7) * 10) / 10).toString());
+    }
+  };
+
+  const handleStartDateChange = (val: string) => {
+    setStartDate(val);
+    autoCalcWeeks(val, endDate);
+  };
+
+  const handleEndDateChange = (val: string) => {
+    setEndDate(val);
+    autoCalcWeeks(startDate, val);
+  };
+
   const resetForm = () => {
     setPeriodName("");
     setStartDate("");
     setEndDate("");
     setPayDate("");
+    setPeriodWeeks("4");
+    setSalesTotal("");
     setSelectedSourcePeriod("");
     setMode("copy");
   };
@@ -109,8 +134,11 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
       nextEnd.setMonth(nextEnd.getMonth() + 1);
       nextEnd.setDate(nextEnd.getDate() - 1);
 
-      setStartDate(nextStart.toISOString().split('T')[0]);
-      setEndDate(nextEnd.toISOString().split('T')[0]);
+      const sDate = nextStart.toISOString().split('T')[0];
+      const eDate = nextEnd.toISOString().split('T')[0];
+      setStartDate(sDate);
+      setEndDate(eDate);
+      autoCalcWeeks(sDate, eDate);
       
       // Suggest period name
       const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -196,7 +224,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
               <Input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => handleStartDateChange(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -204,7 +232,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
               <Input
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => handleEndDateChange(e.target.value)}
               />
             </div>
           </div>
@@ -217,6 +245,33 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
               onChange={(e) => setPayDate(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">Optional - when employees will be paid</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Period Weeks</Label>
+              <Input
+                type="number"
+                step="0.5"
+                min="1"
+                max="6"
+                value={periodWeeks}
+                onChange={(e) => setPeriodWeeks(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Auto-calculated from dates</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Sales Revenue (£)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={salesTotal}
+                onChange={(e) => setSalesTotal(e.target.value)}
+                placeholder="0.00"
+              />
+              <p className="text-xs text-muted-foreground">For labour % analysis</p>
+            </div>
           </div>
         </div>
 
