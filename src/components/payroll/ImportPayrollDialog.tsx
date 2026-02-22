@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, UserPlus, Eye } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, UserPlus, Eye, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEmployees } from "@/hooks/useEmployees";
+import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateHolidayAccrual } from "@/hooks/useHolidays";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -214,9 +215,26 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const [step, setStep] = useState<"upload" | "preview" | "done">("upload");
   const [aggregated, setAggregated] = useState<AggregatedEmployee[]>([]);
   const [importMessage, setImportMessage] = useState("");
+  const [existingPeriodId, setExistingPeriodId] = useState<string | null>(null);
+  const [useExistingPeriod, setUseExistingPeriod] = useState(false);
 
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
+  const { data: periods = [] } = usePayrollPeriods();
+
+  // Detect existing draft period matching dates
+  useEffect(() => {
+    const match = periods.find(
+      (p) => p.status === "draft" && p.period_name === periodName
+    );
+    if (match) {
+      setExistingPeriodId(match.id);
+      setUseExistingPeriod(true);
+    } else {
+      setExistingPeriodId(null);
+      setUseExistingPeriod(false);
+    }
+  }, [periods, periodName]);
 
   const handleFileChange = useCallback(async (f: File | null) => {
     setFile(f);
@@ -251,28 +269,53 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
       const periodWeeks = Math.round((days / 7) * 10) / 10;
 
-      // Create payroll period with unmatched employee note
+      // Create payroll period with unmatched employee note OR use existing
       const unmatchedNames = aggregated.filter(e => e.unmatched).map(e => e.csvName);
       const periodNotes = unmatchedNames.length > 0
         ? `⚠ PENDING: ${unmatchedNames.length} unmatched employee(s) need adding: ${unmatchedNames.join(", ")}. Add them to the employee database and re-import or manually add to this period.`
         : null;
 
-      const { data: period, error: periodError } = await supabase
-        .from("payroll_periods")
-        .insert({
-          period_name: periodName,
-          start_date: startDate,
-          end_date: endDate,
-          pay_date: payDate || null,
-          period_weeks: periodWeeks,
-          status: "draft" as const,
-          imported_by: user?.id,
-          notes: periodNotes,
-        })
-        .select()
-        .single();
+      let periodId: string;
 
-      if (periodError) throw periodError;
+      if (useExistingPeriod && existingPeriodId) {
+        // Update existing period
+        periodId = existingPeriodId;
+        await supabase
+          .from("payroll_periods")
+          .update({
+            notes: periodNotes,
+            imported_by: user?.id,
+          })
+          .eq("id", periodId);
+
+        // Delete existing entries to replace with fresh import
+        await supabase
+          .from("payroll_entries")
+          .delete()
+          .eq("payroll_period_id", periodId);
+      } else {
+        // Calculate period weeks
+        const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
+        const periodWeeks = Math.round((days / 7) * 10) / 10;
+
+        const { data: period, error: periodError } = await supabase
+          .from("payroll_periods")
+          .insert({
+            period_name: periodName,
+            start_date: startDate,
+            end_date: endDate,
+            pay_date: payDate || null,
+            period_weeks: periodWeeks,
+            status: "draft" as const,
+            imported_by: user?.id,
+            notes: periodNotes,
+          })
+          .select()
+          .single();
+
+        if (periodError) throw periodError;
+        periodId = period.id;
+      }
 
       // Insert matched entries
       let entriesCreated = 0;
@@ -295,7 +338,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         const { error: entryError } = await supabase
           .from("payroll_entries")
           .insert({
-            payroll_period_id: period.id,
+            payroll_period_id: periodId,
             employee_id: emp.matchedId,
             hourly_rate: rate,
             service_charge: sc,
@@ -325,14 +368,14 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           timesheet_total: totalPay,
           grand_total: totalPay,
         })
-        .eq("id", period.id);
+        .eq("id", periodId);
 
       // Audit log
       await supabase.from("audit_log").insert({
         user_id: user?.id || null,
         action: "import" as const,
         table_name: "payroll_periods",
-        record_id: period.id,
+        record_id: periodId,
         new_data: {
           operation: "csv_timesheet_import",
           period_name: periodName,
@@ -344,7 +387,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
       // Create import record
       await supabase.from("payroll_imports").insert({
-        payroll_period_id: period.id,
+        payroll_period_id: periodId,
         file_name: file?.name || "CSV Import",
         imported_by: user?.id,
         import_status: "completed",
@@ -427,6 +470,17 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                 Upload the Schedule vs Timesheet report CSV. Hours will be aggregated per employee across all locations.
               </p>
             </div>
+            {existingPeriodId && (
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-sm flex items-start gap-2">
+                <RefreshCw className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium text-primary">Existing "{periodName}" draft period found</p>
+                  <p className="text-muted-foreground mt-0.5">
+                    Import will <strong>replace all existing entries</strong> in this period with fresh data from the CSV.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -492,7 +546,11 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-sm">
               <p className="text-muted-foreground">
-                Import will create a <strong>Draft</strong> period. Rates and service charges are pulled from each employee's master record. Bonuses default to £0 — edit them in the payroll table after import.
+                {useExistingPeriod
+                  ? <>Import will <strong>update the existing "{periodName}"</strong> draft period, replacing all entries with fresh CSV data.</>
+                  : <>Import will create a new <strong>Draft</strong> period.</>
+                }{" "}
+                Rates and service charges are pulled from each employee's master record. Bonuses default to £0 — edit them in the payroll table after import.
               </p>
             </div>
           </div>
@@ -531,7 +589,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           </Button>
           {step === "preview" && (
             <Button onClick={handleImport} disabled={importing || matchedEntries.length === 0}>
-              {importing ? "Importing..." : `Import ${matchedEntries.length} Employees`}
+              {importing ? "Importing..." : useExistingPeriod ? `Update ${matchedEntries.length} Entries` : `Import ${matchedEntries.length} Employees`}
             </Button>
           )}
         </div>
