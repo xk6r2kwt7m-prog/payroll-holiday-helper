@@ -19,20 +19,12 @@ interface StatCardProps {
   index?: number;
 }
 
-const accentBorder = {
-  default: "border-l-border",
-  primary: "border-l-primary",
-  success: "border-l-success",
-  warning: "border-l-warning",
-  accent: "border-l-accent",
-};
-
-const iconBg = {
+const iconStyles = {
   default: "bg-muted text-muted-foreground",
-  primary: "bg-primary/10 text-primary",
-  success: "bg-success/10 text-success",
-  warning: "bg-warning/10 text-warning",
-  accent: "bg-accent/10 text-accent",
+  primary: "bg-primary/12 text-primary",
+  success: "bg-success/12 text-success",
+  warning: "bg-warning/12 text-warning",
+  accent: "bg-accent/12 text-accent",
 };
 
 function AnimatedValue({ value }: { value: string | number }) {
@@ -68,48 +60,48 @@ export function StatCard({
   const isClickable = href || onClick;
 
   const content = (
-    <div className="flex items-start justify-between gap-3">
-      <div className="space-y-1 min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
         </p>
-        <p className="text-2xl font-bold tracking-tight tabular-nums text-foreground">
+        <div
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+            iconStyles[variant],
+            isClickable && "group-hover:scale-110 transition-transform"
+          )}
+        >
+          {icon}
+        </div>
+      </div>
+      <div>
+        <p className="text-2xl font-bold tracking-tight tabular-nums text-foreground leading-none">
           <AnimatedValue value={value} />
         </p>
         {subtitle && (
-          <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
-        )}
-        {trend && (
-          <div className="flex items-center gap-1 text-xs">
-            <span
-              className={cn(
-                "font-medium",
-                trend.isPositive ? "text-success" : "text-destructive"
-              )}
-            >
-              {trend.isPositive ? "+" : ""}
-              {trend.value}%
-            </span>
-            <span className="text-muted-foreground">vs last month</span>
-          </div>
+          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
         )}
       </div>
-      <div
-        className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-transform",
-          iconBg[variant],
-          isClickable && "group-hover:scale-110"
-        )}
-      >
-        {icon}
-      </div>
+      {trend && (
+        <div className="flex items-center gap-1 text-xs">
+          <span
+            className={cn(
+              "font-medium",
+              trend.isPositive ? "text-success" : "text-destructive"
+            )}
+          >
+            {trend.isPositive ? "+" : ""}{trend.value}%
+          </span>
+          <span className="text-muted-foreground">vs last month</span>
+        </div>
+      )}
     </div>
   );
 
   const cardClasses = cn(
-    "rounded-xl border-l-[3px] bg-card p-4 shadow-card transition-all duration-200 group",
-    accentBorder[variant],
-    isClickable && "cursor-pointer hover:shadow-elevated hover:-translate-y-0.5"
+    "rounded-xl bg-card border border-border p-4 shadow-card transition-all duration-200 group",
+    isClickable && "cursor-pointer hover:shadow-elevated hover:-translate-y-0.5 active:translate-y-0"
   );
 
   const wrapper = (children: ReactNode) => (
@@ -123,24 +115,12 @@ export function StatCard({
   );
 
   if (href) {
-    return wrapper(
-      <Link to={href} className={cardClasses}>
-        {content}
-      </Link>
-    );
+    return wrapper(<Link to={href} className={cardClasses}>{content}</Link>);
   }
 
   if (onClick) {
-    return wrapper(
-      <button onClick={onClick} className={cn(cardClasses, "w-full text-left")}>
-        {content}
-      </button>
-    );
+    return wrapper(<button onClick={onClick} className={cn(cardClasses, "w-full text-left")}>{content}</button>);
   }
 
-  return wrapper(
-    <div className={cardClasses}>
-      {content}
-    </div>
-  );
+  return wrapper(<div className={cardClasses}>{content}</div>);
 }
