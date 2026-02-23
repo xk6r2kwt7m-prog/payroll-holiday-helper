@@ -407,7 +407,7 @@ export function PayrollPDF({
           <View>
             <Text style={styles.topBrand}>{companyName.toUpperCase()}</Text>
             <Text style={styles.topTitle}>
-              {subtitle || `Payroll Report${isCorrection ? " — CORRECTED" : ""}`}
+              {subtitle || "Payroll Report"}
             </Text>
           </View>
         </View>
@@ -417,13 +417,6 @@ export function PayrollPDF({
             {fmtDate(period.start_date)} — {fmtDate(period.end_date)}
             {period.period_weeks ? ` (${period.period_weeks}wk)` : ""}
           </Text>
-          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 4, marginTop: 2 }}>
-            <View style={[styles.statusBadge, { backgroundColor: sts.bg }]}>
-              <Text style={{ fontSize: 6.5, fontFamily: "Helvetica-Bold", color: sts.text }}>
-                {period.status.toUpperCase()}
-              </Text>
-            </View>
-          </View>
         </View>
       </View>
       {/* Confidentiality Banner */}
@@ -449,11 +442,6 @@ export function PayrollPDF({
       <Page size="A4" style={styles.page} orientation="landscape">
         <Header />
 
-        {isCorrection && correctionNote && (
-          <View style={styles.correctionNote}>
-            <Text style={styles.correctionText}>CORRECTION: {correctionNote}</Text>
-          </View>
-        )}
 
         {/* KPI Cards */}
         <View style={styles.kpiRow}>
