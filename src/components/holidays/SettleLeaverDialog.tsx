@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { UserMinus, AlertTriangle, Calculator } from "lucide-react";
+import { UserMinus, AlertTriangle, Calculator, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,6 +35,7 @@ export function SettleLeaverDialog() {
   const [rate, setRate] = useState("");
   const [holidayDate, setHolidayDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [approved, setApproved] = useState(false);
 
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
@@ -103,10 +104,10 @@ export function SettleLeaverDialog() {
 
   const handleEmployeeChange = (id: string) => {
     setEmployeeId(id);
+    setApproved(false);
     const emp = employees.find(e => e.id === id);
     if (emp) {
       setRate(emp.hourly_rate.toString());
-      // Auto-fill balance hours
       const accrued = allEntries
         .filter(e => e.employee_id === id)
         .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
@@ -137,6 +138,10 @@ export function SettleLeaverDialog() {
       toast.error("Please fill in all required fields");
       return;
     }
+    if (!approved) {
+      toast.error("Please approve the settlement before recording");
+      return;
+    }
     const employee = employees.find(e => e.id === employeeId);
     if (!employee) return;
 
@@ -154,7 +159,7 @@ export function SettleLeaverDialog() {
         leave_year_end: `${d.getFullYear()}-12-31`,
         notes: notes || "Leaver settlement",
       });
-      toast.success(`Leaver settlement of ${formatCurrency(total)} recorded`);
+      toast.success(`Leaver settlement of ${formatCurrency(total)} recorded — payroll period updated`);
       setOpen(false);
       resetForm();
     } catch {
@@ -169,6 +174,7 @@ export function SettleLeaverDialog() {
     setRate("");
     setHolidayDate("");
     setNotes("");
+    setApproved(false);
   };
 
   return (
@@ -271,12 +277,12 @@ export function SettleLeaverDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Hours *</Label>
-              <Input type="number" step="0.01" min="0" value={hours} onChange={e => setHours(e.target.value)} required />
+              <Input type="number" step="0.01" min="0" value={hours} onChange={e => { setHours(e.target.value); setApproved(false); }} required />
               <p className="text-[10px] text-muted-foreground">Auto-filled from balance. Override if needed.</p>
             </div>
             <div className="space-y-2">
               <Label>Rate (£) *</Label>
-              <Input type="number" step="0.01" min="0" value={rate} onChange={e => setRate(e.target.value)} required />
+              <Input type="number" step="0.01" min="0" value={rate} onChange={e => { setRate(e.target.value); setApproved(false); }} required />
             </div>
           </div>
 
@@ -289,6 +295,26 @@ export function SettleLeaverDialog() {
             </div>
           )}
 
+          {/* Approval step */}
+          {total > 0 && !approved && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full border-success/30 text-success hover:bg-success/5"
+              onClick={() => setApproved(true)}
+            >
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              I approve this settlement of {formatCurrency(total)}
+            </Button>
+          )}
+          {approved && (
+            <div className="p-2 rounded bg-success/10 border border-success/20 text-xs text-success flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+              <span>Settlement of {formatCurrency(total)} approved — ready to record.</span>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Notes</Label>
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
@@ -296,7 +322,7 @@ export function SettleLeaverDialog() {
 
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={createPayment.isPending} className="bg-destructive hover:bg-destructive/90">
+            <Button type="submit" disabled={createPayment.isPending || !approved} className="bg-destructive hover:bg-destructive/90">
               {createPayment.isPending ? "Settling..." : "Settle & Record"}
             </Button>
           </div>
