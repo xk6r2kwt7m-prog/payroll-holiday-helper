@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check } from "lucide-react";
+import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,11 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     nationality: "",
     passport_no: "",
     employee_ref: "",
+    sharing_code: "",
+    settlement_status: "",
+    residence_permit: "",
+    rtw_confirmed: false,
+    rtw_checked_date: "",
   });
 
   const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
@@ -69,6 +74,11 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         nationality: employee.nationality || "",
         passport_no: employee.passport_no || "",
         employee_ref: employee.employee_ref || "",
+        sharing_code: employee.sharing_code || "",
+        settlement_status: employee.settlement_status || "",
+        residence_permit: employee.residence_permit || "",
+        rtw_confirmed: !!(employee.settlement_status || employee.sharing_code),
+        rtw_checked_date: "",
       });
     } else {
       setFormData({
@@ -87,6 +97,11 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         nationality: "",
         passport_no: "",
         employee_ref: "",
+        sharing_code: "",
+        settlement_status: "",
+        residence_permit: "",
+        rtw_confirmed: false,
+        rtw_checked_date: "",
       });
       setSelectedBranches([]);
       setPrimaryBranch(undefined);
@@ -156,6 +171,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         nationality: formData.nationality.trim() || null,
         passport_no: formData.passport_no.trim() || null,
         employee_ref: formData.employee_ref.trim() || null,
+        sharing_code: formData.sharing_code.trim() || null,
+        settlement_status: formData.settlement_status.trim() || null,
+        residence_permit: formData.residence_permit.trim() || null,
       };
 
       let employeeId: string;
@@ -238,10 +256,11 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid grid-cols-5 mb-4">
+            <TabsList className="grid grid-cols-6 mb-4">
               <TabButton value="personal" icon={User} label="Personal" />
               <TabButton value="employment" icon={Building} label="Work" />
               <TabButton value="branches" icon={MapPin} label="Branches" />
+              <TabButton value="rtw" icon={ShieldCheck} label="RTW" />
               <TabButton value="banking" icon={CreditCard} label="Banking" />
               <TabButton value="notes" icon={FileText} label="Notes" />
             </TabsList>
@@ -501,6 +520,114 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                       : `Works at ${selectedBranches.length} branches. Primary: ${primaryBranch || selectedBranches[0]}`
                     }
                   </p>
+                )}
+              </TabsContent>
+
+              {/* Right to Work Tab */}
+              <TabsContent value="rtw" className="space-y-4 mt-0">
+                <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    🛂 Confirm the employee's right to work in the UK. Use the{" "}
+                    <a 
+                      href="https://www.gov.uk/view-right-to-work" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary underline font-medium"
+                    >
+                      GOV.UK Right to Work checker
+                    </a>{" "}
+                    to verify their share code online.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sharing_code">Share Code</Label>
+                  <Input
+                    id="sharing_code"
+                    value={formData.sharing_code}
+                    onChange={(e) => setFormData({ ...formData, sharing_code: e.target.value.toUpperCase() })}
+                    placeholder="e.g. W46 3FG 27R"
+                    maxLength={11}
+                    className="transition-all focus:ring-2 focus:ring-primary/20 uppercase font-mono"
+                  />
+                  <p className="text-xs text-muted-foreground">9-character code from the employee's share code letter or email</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="settlement_status">Settlement Status</Label>
+                  <Select
+                    value={formData.settlement_status}
+                    onValueChange={(value) => setFormData({ ...formData, settlement_status: value })}
+                  >
+                    <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
+                      <SelectValue placeholder="Select status..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="british_citizen">🇬🇧 British Citizen</SelectItem>
+                      <SelectItem value="settled">✅ Settled Status (ILR)</SelectItem>
+                      <SelectItem value="pre_settled">🔄 Pre-Settled Status</SelectItem>
+                      <SelectItem value="work_visa">📋 Work Visa</SelectItem>
+                      <SelectItem value="student_visa">🎓 Student Visa</SelectItem>
+                      <SelectItem value="other">📝 Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="residence_permit">Visa / Residence Permit Number</Label>
+                  <Input
+                    id="residence_permit"
+                    value={formData.residence_permit}
+                    onChange={(e) => setFormData({ ...formData, residence_permit: e.target.value })}
+                    placeholder="e.g. BRP number or visa ref"
+                    className="transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="rtw_checked_date">RTW Check Date</Label>
+                  <Input
+                    id="rtw_checked_date"
+                    type="date"
+                    value={formData.rtw_checked_date}
+                    onChange={(e) => setFormData({ ...formData, rtw_checked_date: e.target.value })}
+                    className="transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div
+                  className={cn(
+                    "flex items-center gap-3 p-4 rounded-lg border transition-all cursor-pointer",
+                    formData.rtw_confirmed
+                      ? "border-primary bg-primary/10"
+                      : "border-destructive/50 bg-destructive/5"
+                  )}
+                  onClick={() => setFormData({ ...formData, rtw_confirmed: !formData.rtw_confirmed })}
+                >
+                  <div className={cn(
+                    "flex h-5 w-5 items-center justify-center rounded border-2 transition-colors",
+                    formData.rtw_confirmed
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-muted-foreground/30"
+                  )}>
+                    {formData.rtw_confirmed && <Check className="h-3 w-3" />}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">
+                      {formData.rtw_confirmed ? "✅ Right to Work Confirmed" : "⚠️ Right to Work Not Confirmed"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      I confirm I have checked this employee's right to work in the UK
+                    </p>
+                  </div>
+                </div>
+
+                {!formData.rtw_confirmed && (
+                  <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3">
+                    <p className="text-xs text-destructive font-medium">
+                      ⚠️ You must verify right to work before the employee starts. Failure to do so may result in a civil penalty of up to £45,000 per illegal worker.
+                    </p>
+                  </div>
                 )}
               </TabsContent>
 
