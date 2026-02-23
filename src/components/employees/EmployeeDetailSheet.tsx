@@ -1,4 +1,4 @@
-import { X, User, Building, CreditCard, FileText, Calendar, Phone, Globe, Edit2, FolderOpen } from "lucide-react";
+import { X, User, Building, CreditCard, FileText, Calendar, Phone, Globe, Edit2, FolderOpen, StickyNote } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
+import { EmployeeNotesSection } from "./EmployeeNotesSection";
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
@@ -179,6 +180,16 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin }: E
               <p className="text-sm text-card-foreground whitespace-pre-wrap">
                 {employee.notes}
               </p>
+            </Section>
+          )}
+
+          {/* Admin Notes */}
+          {isAdmin && (
+            <Section title="Notes & Reminders" icon={StickyNote}>
+              <EmployeeNotesSection
+                employeeId={employee.id}
+                isAdmin={isAdmin}
+              />
             </Section>
           )}
 
