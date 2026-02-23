@@ -10,6 +10,8 @@ import { EmployeeHolidayCard } from "@/components/holidays/EmployeeHolidayCard";
 import { HolidayComparisonTable } from "@/components/holidays/HolidayComparisonTable";
 import { LeaveYearBalanceCard } from "@/components/holidays/LeaveYearBalanceCard";
 import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPaymentDialog";
+import { SettleLeaverDialog } from "@/components/holidays/SettleLeaverDialog";
+import { AdjustHolidayBalanceDialog } from "@/components/holidays/AdjustHolidayBalanceDialog";
 import { HolidayAlerts } from "@/components/holidays/HolidayAlerts";
 import { DepartmentHolidaySummary } from "@/components/holidays/DepartmentHolidaySummary";
 import { HolidayPaymentHistory } from "@/components/holidays/HolidayPaymentHistory";
@@ -17,6 +19,7 @@ import { EmployeeHolidayDetailSheet } from "@/components/holidays/EmployeeHolida
 import {
   useHolidayPaymentsByYear,
   useAllPayrollEntriesWithHoliday,
+  useAllHolidayAdjustments,
   formatCurrency,
   formatHours,
   UK_HOLIDAY_LAW,
@@ -63,6 +66,9 @@ const Holidays = () => {
 
   // All payroll entries for accrual calculation
   const { data: payrollEntries = [], isLoading: entriesLoading } = useAllPayrollEntriesWithHoliday();
+
+  // All holiday adjustments
+  const { data: adjustments = [] } = useAllHolidayAdjustments();
 
   // Build summaries from payroll entries (accrual) + holiday payments (taken)
   const buildSummaries = (year: number, payments: any[]): EmployeeSummary[] => {
@@ -157,14 +163,33 @@ const Holidays = () => {
       }
     });
 
-    // Calculate balances
-    return Array.from(summaryMap.values()).map(s => ({
-      ...s,
-      balance: s.hoursAccrued + s.hoursCarriedOver - s.hoursTaken,
-    }));
+    // Apply adjustments and calculate balances
+    return Array.from(summaryMap.values()).map(s => {
+      const accrualAdj = adjustments
+        .filter((a: any) => a.employee_id === s.employeeId && a.adjustment_type === "accrued" && a.leave_year_start === `${year}-01-01`)
+        .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
+      const takenAdj = adjustments
+        .filter((a: any) => a.employee_id === s.employeeId && a.adjustment_type === "taken" && a.leave_year_start === `${year}-01-01`)
+        .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
+      const carryAdj = adjustments
+        .filter((a: any) => a.employee_id === s.employeeId && a.adjustment_type === "carried_over" && a.leave_year_start === `${year}-01-01`)
+        .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
+
+      const adjustedAccrued = s.hoursAccrued + accrualAdj;
+      const adjustedTaken = s.hoursTaken + takenAdj;
+      const adjustedCarry = s.hoursCarriedOver + carryAdj;
+
+      return {
+        ...s,
+        hoursAccrued: adjustedAccrued,
+        hoursTaken: adjustedTaken,
+        hoursCarriedOver: adjustedCarry,
+        balance: adjustedAccrued + adjustedCarry - adjustedTaken,
+      };
+    });
   };
 
-  const summaries2025 = useMemo(() => buildSummaries(2025, payments2025), [payrollEntries, payments2025]);
+  const summaries2025 = useMemo(() => buildSummaries(2025, payments2025), [payrollEntries, payments2025, adjustments]);
 
   // 2026 summaries with carry-over from 2025
   const summaries2026 = useMemo(() => {
@@ -178,7 +203,7 @@ const Holidays = () => {
         balance: s.hoursAccrued + carryOver - s.hoursTaken,
       };
     });
-  }, [payrollEntries, payments2026, summaries2025]);
+  }, [payrollEntries, payments2026, summaries2025, adjustments]);
 
   const currentSummaries = selectedYear === "2025" ? summaries2025 : summaries2026;
   const currentPayments = selectedYear === "2025" ? payments2025 : payments2026;
@@ -299,6 +324,7 @@ const Holidays = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <SettleLeaverDialog />
             <AddHolidayPaymentDialog />
           </div>
         </div>
@@ -542,6 +568,7 @@ const Holidays = () => {
         <EmployeeHolidayDetailSheet
           open={!!selectedEmployeeId}
           onOpenChange={(open) => { if (!open) setSelectedEmployeeId(null); }}
+          employeeId={selectedEmployee.employeeId}
           employeeName={selectedEmployee.employeeName}
           department={selectedEmployee.department}
           hoursAccrued={selectedEmployee.hoursAccrued}
@@ -549,6 +576,7 @@ const Holidays = () => {
           totalPaid={selectedEmployee.totalPaid}
           balance={selectedEmployee.balance}
           carryOver={selectedEmployee.hoursCarriedOver}
+          year={parseInt(selectedYear)}
           payments={selectedEmployeePayments}
           periodBreakdown={selectedEmployee.periodBreakdown.map(p => ({
             periodName: p.periodName,

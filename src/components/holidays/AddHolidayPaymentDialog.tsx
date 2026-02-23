@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Calendar, AlertTriangle, User } from "lucide-react";
+import { Plus, Calendar, AlertTriangle, User, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -246,12 +246,26 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 </div>
               </div>
               {isLeaver && employeeSummary.balance > 0 && (
-                <div className="mt-2 p-2 rounded bg-warning/10 border border-warning/20 text-xs text-warning flex items-start gap-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                  <span>
-                    This employee has <strong>{formatHours(employeeSummary.balance)} hrs</strong> of untaken holiday remaining.
-                    Consider paying out the full balance.
-                  </span>
+                <div className="space-y-2">
+                  <div className="p-2 rounded bg-warning/10 border border-warning/20 text-xs text-warning flex items-start gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      This employee has <strong>{formatHours(employeeSummary.balance)} hrs</strong> of untaken holiday remaining.
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-destructive/30 text-destructive hover:bg-destructive/5"
+                    onClick={() => {
+                      setHours(employeeSummary.balance.toFixed(2));
+                      setNotes("Leaver settlement — full holiday balance payout");
+                    }}
+                  >
+                    <UserMinus className="h-3 w-3 mr-1" />
+                    Settle Full Balance ({formatHours(employeeSummary.balance)} hrs)
+                  </Button>
                 </div>
               )}
             </div>

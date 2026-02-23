@@ -1,6 +1,7 @@
-import { Calendar, Clock, TrendingUp, TrendingDown, DollarSign, ArrowRight } from "lucide-react";
+import { Calendar, Clock, TrendingUp, TrendingDown, DollarSign, ArrowRight, Pencil } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   Sheet,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { formatHours, formatCurrency, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
+import { AdjustHolidayBalanceDialog } from "./AdjustHolidayBalanceDialog";
 
 interface HolidayPaymentRecord {
   id: string;
@@ -24,6 +26,7 @@ interface HolidayPaymentRecord {
 interface EmployeeHolidayDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  employeeId: string;
   employeeName: string;
   department: string;
   hoursAccrued: number;
@@ -31,6 +34,7 @@ interface EmployeeHolidayDetailSheetProps {
   totalPaid: number;
   balance: number;
   carryOver?: number;
+  year?: number;
   payments: HolidayPaymentRecord[];
   periodBreakdown?: { periodName: string; accrued: number; taken: number; paid: number }[];
 }
@@ -38,6 +42,7 @@ interface EmployeeHolidayDetailSheetProps {
 export function EmployeeHolidayDetailSheet({
   open,
   onOpenChange,
+  employeeId,
   employeeName,
   department,
   hoursAccrued,
@@ -45,6 +50,7 @@ export function EmployeeHolidayDetailSheet({
   totalPaid,
   balance,
   carryOver = 0,
+  year = new Date().getFullYear(),
   payments,
   periodBreakdown = [],
 }: EmployeeHolidayDetailSheetProps) {
@@ -73,7 +79,23 @@ export function EmployeeHolidayDetailSheet({
             </Avatar>
             <div>
               <SheetTitle className="text-xl">{employeeName}</SheetTitle>
-              <Badge variant="secondary" className="mt-1">{department}</Badge>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="secondary">{department}</Badge>
+                <AdjustHolidayBalanceDialog
+                  employeeId={employeeId}
+                  employeeName={employeeName}
+                  currentAccrued={hoursAccrued}
+                  currentTaken={hoursTaken}
+                  currentBalance={balance}
+                  year={year}
+                  trigger={
+                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                      <Pencil className="h-3 w-3 mr-1" />
+                      Adjust
+                    </Button>
+                  }
+                />
+              </div>
             </div>
           </div>
         </SheetHeader>

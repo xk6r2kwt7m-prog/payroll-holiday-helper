@@ -398,6 +398,53 @@ export type Database = {
         }
         Relationships: []
       }
+      holiday_adjustments: {
+        Row: {
+          adjusted_by: string | null
+          adjustment_type: string
+          created_at: string
+          employee_id: string
+          hours: number
+          id: string
+          leave_year_end: string
+          leave_year_start: string
+          notes: string | null
+          reason: string
+        }
+        Insert: {
+          adjusted_by?: string | null
+          adjustment_type: string
+          created_at?: string
+          employee_id: string
+          hours: number
+          id?: string
+          leave_year_end: string
+          leave_year_start: string
+          notes?: string | null
+          reason: string
+        }
+        Update: {
+          adjusted_by?: string | null
+          adjustment_type?: string
+          created_at?: string
+          employee_id?: string
+          hours?: number
+          id?: string
+          leave_year_end?: string
+          leave_year_start?: string
+          notes?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holiday_adjustments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holiday_balances: {
         Row: {
           created_at: string
