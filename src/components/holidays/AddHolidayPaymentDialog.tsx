@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Calendar } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Calendar, AlertTriangle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -19,9 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useCreateHolidayPayment } from "@/hooks/useHolidays";
+import { useCreateHolidayPayment, useAllHolidayPayments, formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 interface AddHolidayPaymentDialogProps {
   defaultEmployeeId?: string;
@@ -39,10 +43,56 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
 
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
+  const { data: allPayments = [] } = useAllHolidayPayments();
   const createPayment = useCreateHolidayPayment();
 
-  const activeEmployees = employees.filter(e => e.status !== 'leaver');
+  // Fetch all payroll entries for accrual calculation
+  const { data: allEntries = [] } = useQuery({
+    queryKey: ["payroll_entries", "all_accrual"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payroll_entries")
+        .select("employee_id, holiday_accrued_hours")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Include all employees (active, starter, leaver)
+  const allEmployeesSorted = useMemo(() => {
+    return [...employees].sort((a, b) => {
+      // Active/starter first, leavers last
+      const statusOrder = { active: 0, starter: 1, leaver: 2 };
+      const orderA = statusOrder[a.status] ?? 1;
+      const orderB = statusOrder[b.status] ?? 1;
+      if (orderA !== orderB) return orderA - orderB;
+      return `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`);
+    });
+  }, [employees]);
+
   const selectedEmployee = employees.find(e => e.id === employeeId);
+
+  // Calculate holiday summary for selected employee
+  const employeeSummary = useMemo(() => {
+    if (!employeeId) return null;
+
+    const totalAccrued = allEntries
+      .filter(e => e.employee_id === employeeId)
+      .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
+
+    const totalTaken = allPayments
+      .filter((p: any) => p.employee_id === employeeId)
+      .reduce((sum: number, p: any) => sum + (p.hours || 0), 0);
+
+    const totalPaid = allPayments
+      .filter((p: any) => p.employee_id === employeeId)
+      .reduce((sum: number, p: any) => sum + (p.total || 0), 0);
+
+    const balance = totalAccrued - totalTaken;
+
+    return { totalAccrued, totalTaken, totalPaid, balance };
+  }, [employeeId, allEntries, allPayments]);
 
   // Auto-populate rate when employee selected
   const handleEmployeeChange = (id: string) => {
@@ -54,6 +104,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   };
 
   const total = (parseFloat(hours) || 0) * (parseFloat(rate) || 0);
+  const isLeaver = selectedEmployee?.status === "leaver";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +121,6 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     }
 
     try {
-      // Determine leave year from holiday date
       const holidayDateObj = new Date(holidayDate);
       const leaveYear = holidayDateObj.getFullYear();
       const leaveYearStart = `${leaveYear}-01-01`;
@@ -132,14 +182,80 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 <SelectValue placeholder="Select employee" />
               </SelectTrigger>
               <SelectContent>
-                {activeEmployees.map((emp) => (
+                {allEmployeesSorted.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id}>
-                    {emp.forename} {emp.surname} ({emp.department})
+                    <div className="flex items-center gap-2">
+                      <span>{emp.forename} {emp.surname}</span>
+                      <span className="text-muted-foreground text-xs">({emp.department})</span>
+                      {emp.status === "leaver" && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-destructive/10 text-destructive border-destructive/20">
+                          Leaver
+                        </Badge>
+                      )}
+                      {emp.status === "starter" && (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-accent/10 text-accent border-accent/20">
+                          Starter
+                        </Badge>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Holiday Summary Card */}
+          {employeeId && employeeSummary && (
+            <div className={cn(
+              "rounded-lg border p-3 space-y-2",
+              isLeaver ? "bg-destructive/5 border-destructive/20" : "bg-muted/50 border-border"
+            )}>
+              <div className="flex items-center gap-2 mb-1">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold">
+                  {selectedEmployee?.forename} {selectedEmployee?.surname}
+                </span>
+                {isLeaver && (
+                  <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    Leaver
+                  </Badge>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Accrued:</span>
+                  <span className="font-medium text-success">{formatHours(employeeSummary.totalAccrued)} hrs</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Taken:</span>
+                  <span className="font-medium text-primary">{formatHours(employeeSummary.totalTaken)} hrs</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Balance:</span>
+                  <span className={cn(
+                    "font-bold",
+                    employeeSummary.balance >= 0 ? "text-accent" : "text-destructive"
+                  )}>
+                    {employeeSummary.balance >= 0 ? "+" : ""}{formatHours(employeeSummary.balance)} hrs
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Paid:</span>
+                  <span className="font-medium">{formatCurrency(employeeSummary.totalPaid)}</span>
+                </div>
+              </div>
+              {isLeaver && employeeSummary.balance > 0 && (
+                <div className="mt-2 p-2 rounded bg-warning/10 border border-warning/20 text-xs text-warning flex items-start gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    This employee has <strong>{formatHours(employeeSummary.balance)} hrs</strong> of untaken holiday remaining.
+                    Consider paying out the full balance.
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="holidayDate">Holiday Date *</Label>
