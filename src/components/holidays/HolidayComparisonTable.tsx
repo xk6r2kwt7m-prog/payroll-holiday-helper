@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import { formatCurrency, formatHours, hoursToDays } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
 
 interface EmployeeSummary {
@@ -136,7 +136,8 @@ export function HolidayComparisonTable({ data }: HolidayComparisonTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono text-success">
-                    {formatHours(emp.totalAccrued)} hrs
+                    <div>{formatHours(emp.totalAccrued)} hrs</div>
+                    <div className="text-[10px] text-muted-foreground/70 font-normal">{hoursToDays(emp.totalAccrued)} days</div>
                   </TableCell>
                   <TableCell className="text-right font-mono text-primary">
                     {formatHours(emp.totalTaken)} hrs
