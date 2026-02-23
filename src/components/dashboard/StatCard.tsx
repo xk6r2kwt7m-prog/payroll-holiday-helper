@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 
 interface StatCardProps {
   title: string;
@@ -14,10 +16,11 @@ interface StatCardProps {
   variant?: "default" | "primary" | "success" | "warning" | "accent";
   href?: string;
   onClick?: () => void;
+  index?: number;
 }
 
 const variantStyles = {
-  default: "bg-card",
+  default: "glass-card",
   primary: "bg-primary text-primary-foreground",
   success: "bg-success text-success-foreground",
   warning: "bg-warning text-warning-foreground",
@@ -32,6 +35,26 @@ const iconBgStyles = {
   accent: "bg-accent-foreground/20 text-accent-foreground",
 };
 
+function AnimatedValue({ value, variant }: { value: string | number; variant: string }) {
+  // Try to extract numeric value for animation
+  const numericMatch = typeof value === "string" ? value.match(/^[£$]?([\d,.]+)/) : null;
+  const numericValue = typeof value === "number" ? value : numericMatch ? parseFloat(numericMatch[1].replace(/,/g, "")) : null;
+  const prefix = typeof value === "string" && numericMatch ? value.slice(0, value.indexOf(numericMatch[1])) : "";
+  const suffix = typeof value === "string" && numericMatch ? value.slice(value.indexOf(numericMatch[1]) + numericMatch[1].length) : "";
+  
+  const animated = useAnimatedCounter(numericValue ?? 0);
+  
+  if (numericValue === null) {
+    return <span>{value}</span>;
+  }
+  
+  const formatted = numericValue >= 100
+    ? Math.round(animated).toLocaleString()
+    : animated.toFixed(animated % 1 === 0 && numericValue % 1 === 0 ? 0 : 1);
+  
+  return <span>{prefix}{formatted}{suffix}</span>;
+}
+
 export function StatCard({
   title,
   value,
@@ -41,6 +64,7 @@ export function StatCard({
   variant = "default",
   href,
   onClick,
+  index = 0,
 }: StatCardProps) {
   const isClickable = href || onClick;
   
@@ -55,7 +79,9 @@ export function StatCard({
         >
           {title}
         </p>
-        <p className="text-3xl font-bold tracking-tight">{value}</p>
+        <p className="text-3xl font-bold tracking-tight tabular-nums">
+          <AnimatedValue value={value} variant={variant} />
+        </p>
         {subtitle && (
           <p
             className={cn(
@@ -97,13 +123,23 @@ export function StatCard({
   );
   
   const cardClasses = cn(
-    "rounded-xl p-6 shadow-card transition-all duration-200 animate-fade-in group",
+    "rounded-xl p-6 shadow-card transition-all duration-300 group",
     variantStyles[variant],
     isClickable && "cursor-pointer hover:shadow-elevated hover:-translate-y-1"
   );
   
+  const wrapper = (children: ReactNode) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
+    >
+      {children}
+    </motion.div>
+  );
+  
   if (href) {
-    return (
+    return wrapper(
       <Link to={href} className={cardClasses}>
         {content}
       </Link>
@@ -111,14 +147,14 @@ export function StatCard({
   }
   
   if (onClick) {
-    return (
+    return wrapper(
       <button onClick={onClick} className={cn(cardClasses, "w-full text-left")}>
         {content}
       </button>
     );
   }
   
-  return (
+  return wrapper(
     <div className={cn(cardClasses, "hover:shadow-elevated")}>
       {content}
     </div>

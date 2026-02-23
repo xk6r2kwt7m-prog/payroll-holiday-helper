@@ -23,6 +23,7 @@ import StaffPortal from "./pages/StaffPortal";
 import Auth from "./pages/Auth";
 import SignContract from "./pages/SignContract";
 import NotFound from "./pages/NotFound";
+import { CommandPalette } from "@/components/CommandPalette";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CommandPalette />
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route

@@ -76,6 +76,11 @@
     --shadow-md: 0 4px 6px -1px hsl(180 18% 14% / 0.07), 0 2px 4px -2px hsl(180 18% 14% / 0.05);
     --shadow-lg: 0 10px 15px -3px hsl(180 18% 14% / 0.08), 0 4px 6px -4px hsl(180 18% 14% / 0.05);
     --shadow-card: 0 1px 3px 0 hsl(180 18% 14% / 0.06), 0 1px 2px -1px hsl(180 18% 14% / 0.04);
+    
+    /* Glass */
+    --glass-bg: hsl(0 0% 100% / 0.6);
+    --glass-border: hsl(0 0% 100% / 0.4);
+    --glass-blur: 16px;
   }
 
   .dark {
@@ -121,6 +126,11 @@
     --sidebar-accent-foreground: 42 12% 95%;
     --sidebar-border: 180 18% 15%;
     --sidebar-ring: 173 35% 50%;
+    
+    /* Glass dark */
+    --glass-bg: hsl(180 18% 14% / 0.5);
+    --glass-border: hsl(180 18% 20% / 0.5);
+    --glass-blur: 20px;
   }
 }
 
@@ -164,6 +174,21 @@
   
   .shadow-elevated {
     box-shadow: var(--shadow-lg);
+  }
+  
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+  }
+  
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px hsl(180 18% 14% / 0.08);
   }
 
   /* Safe area for mobile bottom nav */
