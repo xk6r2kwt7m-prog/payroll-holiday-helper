@@ -54,6 +54,11 @@ const NAME_MAP: Record<string, { forename: string; surname: string }> = {
   "kazumi": { forename: "Kazumi", surname: "Ortega" },
   "fatima": { forename: "Fatima", surname: "Ashraf" },
   "varsha": { forename: "Varsha", surname: "Kumari" },
+  "angel": { forename: "Yat Chun", surname: "Wong" },
+  "antonela": { forename: "Tiffany Antonela", surname: "Bucheli Rubio" },
+  "salma laroussi": { forename: "Salma", surname: "Laroussi Beniiche" },
+  "kiara": { forename: "Kiara", surname: "Plaku" },
+  "benjamin": { forename: "Benjamin", surname: "Gray" },
 };
 
 // Section → location mapping for notes
@@ -161,15 +166,24 @@ function aggregateByEmployee(
     let matchedEmp: typeof employees[0] | undefined;
 
     if (mapped) {
-      matchedEmp = employees.find(
-        (e) => e.forename.toLowerCase() === mapped.forename.toLowerCase() && e.surname.toLowerCase() === mapped.surname.toLowerCase()
-      );
+      // Prefer active/starter employees when matching
+      matchedEmp = employees
+        .filter((e) => e.status === "active" || e.status === "starter")
+        .find(
+          (e) => e.forename.toLowerCase() === mapped.forename.toLowerCase() && e.surname.toLowerCase() === mapped.surname.toLowerCase()
+        ) || employees.find(
+          (e) => e.forename.toLowerCase() === mapped.forename.toLowerCase() && e.surname.toLowerCase() === mapped.surname.toLowerCase()
+        );
       matchKey = mapped ? `${mapped.forename} ${mapped.surname}`.toLowerCase() : nameLower;
     } else {
-      // Try direct forename match
-      matchedEmp = employees.find(
-        (e) => e.forename.toLowerCase() === nameLower || `${e.forename} ${e.surname}`.toLowerCase() === nameLower
-      );
+      // Try direct forename match — prefer active/starter
+      matchedEmp = employees
+        .filter((e) => e.status === "active" || e.status === "starter")
+        .find(
+          (e) => e.forename.toLowerCase() === nameLower || `${e.forename} ${e.surname}`.toLowerCase() === nameLower
+        ) || employees.find(
+          (e) => e.forename.toLowerCase() === nameLower || `${e.forename} ${e.surname}`.toLowerCase() === nameLower
+        );
       matchKey = matchedEmp ? `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase() : nameLower;
     }
 
