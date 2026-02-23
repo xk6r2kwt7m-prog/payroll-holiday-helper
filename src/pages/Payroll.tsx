@@ -183,9 +183,9 @@ const Payroll = () => {
     if (!selectedPeriod || entries.length === 0) return;
     try {
       toast.info("Generating PDF...");
-      // Find starters in this period's entries
+      // Find starters AND leavers in this period's entries
       const starterEmployees = allEmployees.filter(emp => 
-        emp.status === 'starter' && entries.some((e: any) => e.employee_id === emp.id)
+        (emp.status === 'starter' || emp.status === 'leaver') && entries.some((e: any) => e.employee_id === emp.id)
       );
 
       const blob = await pdf(
