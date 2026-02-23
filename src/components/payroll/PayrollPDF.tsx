@@ -260,6 +260,7 @@ interface PayrollEntry {
     forename: string;
     surname: string;
     department: string;
+    status: string;
     ni_number: string | null;
   } | null;
 }
@@ -394,14 +395,8 @@ export function PayrollPDF({
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  // Filter starters: only show if their start_date falls within this payroll period
-  const periodStart = new Date(period.start_date);
-  const periodEnd = new Date(period.end_date);
-  const eligibleStarters = starters.filter((s) => {
-    if (!s.start_date) return false;
-    const sd = new Date(s.start_date);
-    return sd >= periodStart && sd <= periodEnd;
-  });
+  // Show all starters that appear in this period's entries
+  const eligibleStarters = starters;
 
   const getRTWStatus = (starter: StarterEmployee) => {
     const hasNI = !!starter.ni_number;
@@ -539,10 +534,15 @@ export function PayrollPDF({
                 </View>
                 {de.map((entry, idx) => {
                   const emp = entry.employees;
+                  const empStatus = emp?.status;
+                  const isStarter = empStatus === "starter";
+                  const isLeaver = empStatus === "leaver";
                   return (
                     <View key={entry.id} style={[styles.tr, idx % 2 === 1 && styles.trAlt]} wrap={false}>
                       <Text style={[styles.tdBold, { width: COL.name }]}>
                         {emp?.surname}, {emp?.forename}
+                        {isStarter ? "  ★ STARTER" : ""}
+                        {isLeaver ? "  ✦ LEAVER" : ""}
                       </Text>
                       <Text style={[styles.td, { width: COL.dept, textAlign: "center" }]}>{emp?.department}</Text>
                       <Text style={[styles.td, { width: COL.rate, textAlign: "right" }]}>{fmt(entry.hourly_rate)}</Text>
@@ -644,31 +644,43 @@ export function PayrollPDF({
         </Page>
       )}
 
-      {/* ─── PAGE 3: New Starters (only if start_date within this period) ─── */}
+      {/* ─── PAGE 3: New Starters & Leavers ─── */}
       {eligibleStarters.length > 0 && (
         <Page size="A4" style={styles.page}>
-          <Header subtitle="New Starter Details" />
+          <Header subtitle="Starters & Leavers" />
 
           <Text style={{ fontSize: 7, color: GRAY, marginBottom: 8 }}>
-            {eligibleStarters.length} new starter{eligibleStarters.length !== 1 ? "s" : ""} — details for payroll processing & HMRC compliance.
+            {eligibleStarters.filter(s => s.status === 'starter').length} starter{eligibleStarters.filter(s => s.status === 'starter').length !== 1 ? "s" : ""} and {eligibleStarters.filter(s => s.status === 'leaver').length} leaver{eligibleStarters.filter(s => s.status === 'leaver').length !== 1 ? "s" : ""} — details for payroll processing & HMRC compliance.
           </Text>
 
           {eligibleStarters.map((starter) => {
             const rtw = getRTWStatus(starter);
             const hasNI = !!starter.ni_number;
             return (
-              <View key={starter.id} style={styles.starterCard} wrap={false}>
+              <View key={starter.id} style={[styles.starterCard, starter.status === 'leaver' ? { borderColor: '#feb2b2', backgroundColor: '#fff5f5' } : {}]} wrap={false}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                   <Text style={styles.starterName}>{starter.forename} {starter.surname}</Text>
-                  <View style={[styles.statusBadge, {
-                    backgroundColor: rtw.status === "ok" ? "#c6f6d5" : rtw.status === "pending" ? AMBER_BG : "#fed7d7",
-                  }]}>
-                    <Text style={{
-                      fontSize: 6, fontFamily: "Helvetica-Bold",
-                      color: rtw.status === "ok" ? "#276749" : rtw.status === "pending" ? AMBER : RED,
-                    }}>
-                      {rtw.status === "ok" ? "RTW OK" : rtw.status === "pending" ? "RTW PENDING" : "RTW MISSING"}
-                    </Text>
+                  <View style={{ flexDirection: "row", gap: 4 }}>
+                    <View style={[styles.statusBadge, {
+                      backgroundColor: starter.status === 'leaver' ? '#fed7d7' : '#fefcbf',
+                    }]}>
+                      <Text style={{
+                        fontSize: 6, fontFamily: "Helvetica-Bold",
+                        color: starter.status === 'leaver' ? RED : AMBER,
+                      }}>
+                        {starter.status === 'leaver' ? 'LEAVER' : 'STARTER'}
+                      </Text>
+                    </View>
+                    <View style={[styles.statusBadge, {
+                      backgroundColor: rtw.status === "ok" ? "#c6f6d5" : rtw.status === "pending" ? AMBER_BG : "#fed7d7",
+                    }]}>
+                      <Text style={{
+                        fontSize: 6, fontFamily: "Helvetica-Bold",
+                        color: rtw.status === "ok" ? "#276749" : rtw.status === "pending" ? AMBER : RED,
+                      }}>
+                        {rtw.status === "ok" ? "RTW OK" : rtw.status === "pending" ? "RTW PENDING" : "RTW MISSING"}
+                      </Text>
+                    </View>
                   </View>
                 </View>
 
