@@ -6,15 +6,29 @@ export type Employee = Tables<"employees">;
 export type EmployeeInsert = TablesInsert<"employees">;
 export type EmployeeUpdate = TablesUpdate<"employees">;
 
-export function useEmployees() {
+export function useEmployees(includeArchived = false) {
   return useQuery({
-    queryKey: ["employees"],
+    queryKey: ["employees", { includeArchived }],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Auto-archive leavers older than 7 days
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from("employees")
+        .update({ archived_at: new Date().toISOString() })
+        .eq("status", "leaver")
+        .is("archived_at", null)
+        .lte("updated_at", sevenDaysAgo);
+
+      let query = supabase
         .from("employees")
         .select("*")
         .order("forename");
+
+      if (!includeArchived) {
+        query = query.is("archived_at", null);
+      }
       
+      const { data, error } = await query;
       if (error) throw error;
       return data as Employee[];
     },

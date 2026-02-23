@@ -376,6 +376,7 @@ export type Database = {
       }
       employees: {
         Row: {
+          archived_at: string | null
           bank_account_no: string | null
           created_at: string
           department: Database["public"]["Enums"]["department_type"]
@@ -400,6 +401,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          archived_at?: string | null
           bank_account_no?: string | null
           created_at?: string
           department: Database["public"]["Enums"]["department_type"]
@@ -424,6 +426,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          archived_at?: string | null
           bank_account_no?: string | null
           created_at?: string
           department?: Database["public"]["Enums"]["department_type"]
