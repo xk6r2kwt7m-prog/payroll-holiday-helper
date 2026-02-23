@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -20,7 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Users, label: "Employees", path: "/employees" },
@@ -82,26 +83,46 @@ export function Sidebar() {
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-0.5 px-3 py-4 overflow-y-auto scrollbar-none">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
-            return (
+            const linkContent = (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                  "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    ? "text-sidebar-primary"
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
                 )}
               >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active"
+                    className="absolute inset-0 rounded-lg bg-sidebar-accent"
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  />
+                )}
+                <item.icon className="relative z-10 h-5 w-5 flex-shrink-0" />
                 {!collapsed && (
-                  <span className="animate-fade-in">{item.label}</span>
+                  <span className="relative z-10 animate-fade-in">{item.label}</span>
                 )}
               </Link>
             );
+
+            if (collapsed) {
+              return (
+                <Tooltip key={item.path} delayDuration={0}>
+                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={12}>
+                    {item.label}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            }
+
+            return <div key={item.path}>{linkContent}</div>;
           })}
         </nav>
 
