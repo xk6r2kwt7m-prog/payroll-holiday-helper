@@ -33,12 +33,13 @@ interface AddHolidayPaymentDialogProps {
 }
 
 export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHolidayPaymentDialogProps) {
+  const todayStr = new Date().toISOString().slice(0, 10);
   const [open, setOpen] = useState(false);
   const [employeeId, setEmployeeId] = useState(defaultEmployeeId || "");
   const [periodId, setPeriodId] = useState("");
   const [hours, setHours] = useState("");
   const [rate, setRate] = useState("");
-  const [holidayDate, setHolidayDate] = useState("");
+  const [holidayDate, setHolidayDate] = useState(todayStr);
   const [notes, setNotes] = useState("");
   const [leaverApproved, setLeaverApproved] = useState(false);
 
@@ -209,7 +210,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     setPeriodId("");
     setHours("");
     setRate("");
-    setHolidayDate("");
+    setHolidayDate(todayStr);
     setNotes("");
     setLeaverApproved(false);
     setOverdrawConfirmed(false);
@@ -219,8 +220,24 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const editablePeriods = periods.filter(p => p.status === "draft" || p.status === "pending");
   const allPeriodsForDisplay = periods;
 
+  // Auto-select latest editable period when dialog opens
+  const latestEditablePeriodId = editablePeriods.length > 0 ? editablePeriods[0].id : "";
+
+  // When dialog opens, set defaults
+  const handleOpenChange = (v: boolean) => {
+    setOpen(v);
+    if (v) {
+      // Set defaults on open
+      setHolidayDate(todayStr);
+      if (!periodId && latestEditablePeriodId) {
+        setPeriodId(latestEditablePeriodId);
+      }
+    }
+    if (!v) resetForm();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="gradient-primary">
           <Plus className="mr-2 h-4 w-4" />
@@ -396,7 +413,17 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="hours">Hours *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="hours">Hours *</Label>
+                {employeeSummary && (
+                  <span className={cn(
+                    "text-xs font-medium",
+                    employeeSummary.balance >= 0 ? "text-success" : "text-destructive"
+                  )}>
+                    Bal: {formatHours(employeeSummary.balance)}h
+                  </span>
+                )}
+              </div>
               <Input
                 id="hours"
                 type="number"
