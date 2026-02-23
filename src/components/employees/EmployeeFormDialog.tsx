@@ -32,7 +32,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     forename: "",
     surname: "",
     department: "FOH" as DepartmentType,
-    status: "active" as EmployeeStatus,
+    status: "starter" as EmployeeStatus,
     hourly_rate: "",
     service_charge: "0",
     ni_number: "",
@@ -55,7 +55,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         forename: employee?.forename || "",
         surname: employee?.surname || "",
         department: (employee?.department || "FOH") as DepartmentType,
-        status: (employee?.status || "active") as EmployeeStatus,
+        status: (employee?.status || "starter") as EmployeeStatus,
         hourly_rate: employee?.hourly_rate?.toString() || "",
         service_charge: employee?.service_charge?.toString() || "0",
         ni_number: employee?.ni_number || "",
@@ -326,24 +326,35 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status" className="flex items-center gap-1">
-                      Status <span className="text-destructive">*</span>
-                    </Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value: EmployeeStatus) => setFormData({ ...formData, status: value })}
-                    >
-                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">✅ Active</SelectItem>
-                        <SelectItem value="starter">🆕 Starter</SelectItem>
-                        <SelectItem value="leaver">👋 Leaver</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {employee ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="status" className="flex items-center gap-1">
+                        Status <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value: EmployeeStatus) => setFormData({ ...formData, status: value })}
+                      >
+                        <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">✅ Active</SelectItem>
+                          <SelectItem value="starter">🆕 Starter</SelectItem>
+                          <SelectItem value="leaver">👋 Leaver</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-1">Status</Label>
+                      <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-input bg-muted/50 text-sm">
+                        <span>🆕</span>
+                        <span>Starter</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">New employees are added as starters</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
