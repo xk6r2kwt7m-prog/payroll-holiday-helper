@@ -383,6 +383,51 @@ export function useCopyPayrollPeriod() {
   });
 }
 
+export function useDeletePayrollPeriod() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Delete entries first (foreign key constraint)
+      const { error: entriesError } = await supabase
+        .from("payroll_entries")
+        .delete()
+        .eq("payroll_period_id", id);
+      if (entriesError) throw entriesError;
+
+      // Delete holiday payments linked to this period
+      const { error: holError } = await supabase
+        .from("holiday_payments")
+        .delete()
+        .eq("payroll_period_id", id);
+      if (holError) throw holError;
+
+      // Delete the period itself
+      const { error } = await supabase
+        .from("payroll_periods")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+
+      // Audit log
+      await supabase.from("audit_log").insert({
+        user_id: user?.id || null,
+        action: "delete" as const,
+        table_name: "payroll_periods",
+        record_id: id,
+        new_data: { operation: "delete_draft_period" },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
+    },
+  });
+}
+
 export function useMarkBankDetailsExported() {
   const queryClient = useQueryClient();
   

@@ -1,4 +1,4 @@
-import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -26,9 +26,11 @@ interface PayrollApprovalWorkflowProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReopen: () => void;
+  onDelete?: () => void;
   isSubmitting: boolean;
   isApproving: boolean;
   isReopening: boolean;
+  isDeleting?: boolean;
   entryCount: number;
   zeroHoursCount: number;
 }
@@ -45,9 +47,11 @@ export function PayrollApprovalWorkflow({
   onSubmitForReview,
   onApprove,
   onReopen,
+  onDelete,
   isSubmitting,
   isApproving,
   isReopening,
+  isDeleting = false,
   entryCount,
   zeroHoursCount,
 }: PayrollApprovalWorkflowProps) {
@@ -115,32 +119,58 @@ export function PayrollApprovalWorkflow({
               </p>
             </div>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button disabled={isSubmitting || entryCount === 0 || !canSubmitOrApprove}>
-                <Send className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Submitting..." : "Submit for Review"}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Submit {period.period_name} for review?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {zeroHoursCount > 0 && (
-                    <span className="block text-warning font-medium mb-2">
-                      ⚠️ {zeroHoursCount} employee{zeroHoursCount > 1 ? "s have" : " has"} 0 hours. Continue anyway?
-                    </span>
-                  )}
-                  Once submitted, entries cannot be edited until the period is reopened. 
-                  This will move the payroll to "Pending Review" status.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onSubmitForReview}>Submit</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="flex gap-2">
+            {onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="default" disabled={isDeleting} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete "{period.period_name}"?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this draft payroll period and all its entries. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete Period
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button disabled={isSubmitting || entryCount === 0 || !canSubmitOrApprove}>
+                  <Send className="mr-2 h-4 w-4" />
+                  {isSubmitting ? "Submitting..." : "Submit for Review"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Submit {period.period_name} for review?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {zeroHoursCount > 0 && (
+                      <span className="block text-warning font-medium mb-2">
+                        ⚠️ {zeroHoursCount} employee{zeroHoursCount > 1 ? "s have" : " has"} 0 hours. Continue anyway?
+                      </span>
+                    )}
+                    Once submitted, entries cannot be edited until the period is reopened. 
+                    This will move the payroll to "Pending Review" status.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={onSubmitForReview}>Submit</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       )}
 

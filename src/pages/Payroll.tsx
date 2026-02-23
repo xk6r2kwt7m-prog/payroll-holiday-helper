@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown } from "lucide-react";
+import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
-import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod } from "@/hooks/usePayroll";
+import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod, useDeletePayrollPeriod } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, useHolidayPayments } from "@/hooks/useHolidays";
 import { useEmployees } from "@/hooks/useEmployees";
 import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
@@ -43,6 +43,7 @@ const Payroll = () => {
   const approvePeriod = useApprovePayrollPeriod();
   const submitForReview = useSubmitPayrollForReview();
   const reopenPeriod = useReopenPayrollPeriod();
+  const deletePeriod = useDeletePayrollPeriod();
   const { isAdmin } = useAuth();
 
   const totalPay = entries.reduce((sum, e: any) => sum + Number(e.total_pay), 0);
@@ -96,6 +97,23 @@ const Payroll = () => {
       toast.success("Payroll period reopened for correction — make your changes and re-approve");
     } catch {
       toast.error("Failed to reopen payroll");
+    }
+  };
+
+  const handleDeletePeriod = async () => {
+    if (!selectedPeriod) return;
+    if (selectedPeriod.status !== "draft") {
+      toast.error("Only draft periods can be deleted");
+      return;
+    }
+    try {
+      const deletedId = selectedPeriod.id;
+      await deletePeriod.mutateAsync(deletedId);
+      const remaining = periods.filter(p => p.id !== deletedId);
+      setSelectedPeriodId(remaining.length > 0 ? remaining[0].id : null);
+      toast.success(`"${selectedPeriod.period_name}" deleted`);
+    } catch {
+      toast.error("Failed to delete payroll period");
     }
   };
 
@@ -291,9 +309,11 @@ const Payroll = () => {
             onSubmitForReview={handleSubmitForReview}
             onApprove={handleApprove}
             onReopen={handleReopen}
+            onDelete={selectedPeriod.status === "draft" ? handleDeletePeriod : undefined}
             isSubmitting={submitForReview.isPending}
             isApproving={approvePeriod.isPending}
             isReopening={reopenPeriod.isPending}
+            isDeleting={deletePeriod.isPending}
             entryCount={entries.length}
             zeroHoursCount={zeroHoursCount}
           />
