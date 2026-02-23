@@ -19,316 +19,234 @@ const RED = "#9b2c2c";
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
-    fontSize: 8.5,
+    padding: 30,
+    fontSize: 7.5,
     fontFamily: "Helvetica",
-    lineHeight: 1.5,
+    lineHeight: 1.4,
     color: DARK,
     backgroundColor: "#fff",
   },
-  coverPage: {
-    padding: 50,
-    fontFamily: "Helvetica",
-    color: DARK,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  coverBrand: {
-    fontSize: 11,
-    letterSpacing: 4,
-    color: TEAL,
-    fontFamily: "Helvetica-Bold",
-    marginBottom: 6,
-  },
-  coverTitle: {
-    fontSize: 20,
-    fontFamily: "Helvetica-Bold",
-    marginBottom: 8,
-    color: DARK,
-  },
-  coverSubtitle: {
-    fontSize: 12,
-    color: GRAY,
-    marginBottom: 24,
-  },
-  coverLine: {
-    width: 60,
-    height: 2,
-    backgroundColor: TEAL,
-    marginBottom: 30,
-  },
-  coverField: {
-    fontSize: 11,
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  coverLabel: {
-    fontSize: 8,
-    color: GRAY,
-    letterSpacing: 1.5,
-    marginBottom: 2,
-    marginTop: 12,
-  },
-  pageHeader: {
+  // Compact header with brand + period info inline
+  topHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-end",
     borderBottomWidth: 1.5,
     borderBottomColor: TEAL,
-    paddingBottom: 8,
-    marginBottom: 16,
+    paddingBottom: 6,
+    marginBottom: 10,
   },
-  pageHeaderBrand: {
-    fontSize: 7,
-    color: TEAL,
+  topBrand: {
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
+    color: TEAL,
     letterSpacing: 1,
   },
-  pageHeaderText: {
+  topTitle: {
+    fontSize: 12,
+    fontFamily: "Helvetica-Bold",
+    color: DARK,
+  },
+  topMeta: {
     fontSize: 7,
     color: GRAY,
+    textAlign: "right",
   },
   footer: {
     position: "absolute",
-    bottom: 25,
-    left: 40,
-    right: 40,
+    bottom: 18,
+    left: 30,
+    right: 30,
     borderTopWidth: 0.5,
     borderTopColor: BORDER,
-    paddingTop: 5,
-    fontSize: 6.5,
+    paddingTop: 4,
+    fontSize: 6,
     color: GRAY,
     flexDirection: "row",
     justifyContent: "space-between",
   },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    marginTop: 14,
-    marginBottom: 8,
+    marginTop: 10,
+    marginBottom: 5,
     color: TEAL,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  summaryGrid: {
+  // Compact KPI row
+  kpiRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 14,
-  },
-  summaryCard: {
-    backgroundColor: LIGHT_TEAL,
-    borderRadius: 4,
-    padding: 10,
-    width: "23%",
-  },
-  summaryLabel: {
-    fontSize: 7,
-    color: GRAY,
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    color: DARK,
-  },
-  summarySubtext: {
-    fontSize: 7,
-    color: GRAY,
-    marginTop: 2,
-  },
-  table: {
-    marginTop: 4,
+    gap: 6,
     marginBottom: 8,
   },
-  tableHeaderRow: {
-    flexDirection: "row",
-    backgroundColor: TEAL,
-    borderRadius: 2,
+  kpiCard: {
+    backgroundColor: LIGHT_TEAL,
+    borderRadius: 3,
     paddingVertical: 5,
-    paddingHorizontal: 4,
+    paddingHorizontal: 7,
+    flex: 1,
   },
-  tableHeaderCell: {
-    fontSize: 7,
-    fontFamily: "Helvetica-Bold",
-    color: "#fff",
-    letterSpacing: 0.3,
+  kpiLabel: {
+    fontSize: 6,
+    color: GRAY,
+    letterSpacing: 0.4,
+    marginBottom: 1,
   },
-  tableRow: {
-    flexDirection: "row",
-    paddingVertical: 5,
-    paddingHorizontal: 4,
-    borderBottomWidth: 0.5,
-    borderBottomColor: BORDER,
-  },
-  tableRowAlt: {
-    backgroundColor: LIGHT_BG,
-  },
-  tableCell: {
-    fontSize: 8,
-    color: DARK,
-  },
-  tableCellBold: {
-    fontSize: 8,
+  kpiValue: {
+    fontSize: 11,
     fontFamily: "Helvetica-Bold",
     color: DARK,
   },
-  totalRow: {
+  kpiSub: {
+    fontSize: 6,
+    color: GRAY,
+  },
+  // Dept row
+  deptRow: {
     flexDirection: "row",
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    backgroundColor: TEAL,
-    borderRadius: 2,
-    marginTop: 2,
+    gap: 6,
+    marginBottom: 8,
   },
-  totalCell: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: "#fff",
-  },
-  deptSection: {
-    marginBottom: 10,
+  deptCard: {
+    flex: 1,
     borderWidth: 0.5,
     borderColor: BORDER,
-    borderRadius: 4,
-    padding: 10,
+    borderRadius: 3,
+    padding: 6,
   },
-  deptTitle: {
-    fontSize: 9,
+  deptName: {
+    fontSize: 8,
     fontFamily: "Helvetica-Bold",
     color: DARK,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   deptStat: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 2,
+    marginBottom: 1,
   },
-  deptStatLabel: {
-    fontSize: 7.5,
-    color: GRAY,
+  deptStatLabel: { fontSize: 6.5, color: GRAY },
+  deptStatValue: { fontSize: 6.5, fontFamily: "Helvetica-Bold", color: DARK },
+  // Table styles
+  table: { marginTop: 2, marginBottom: 4 },
+  thRow: {
+    flexDirection: "row",
+    backgroundColor: TEAL,
+    borderRadius: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 3,
   },
-  deptStatValue: {
-    fontSize: 7.5,
+  th: {
+    fontSize: 6.5,
     fontFamily: "Helvetica-Bold",
-    color: DARK,
+    color: "#fff",
+    letterSpacing: 0.2,
   },
+  tr: {
+    flexDirection: "row",
+    paddingVertical: 3.5,
+    paddingHorizontal: 3,
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
+  },
+  trAlt: { backgroundColor: LIGHT_BG },
+  td: { fontSize: 7, color: DARK },
+  tdBold: { fontSize: 7, fontFamily: "Helvetica-Bold", color: DARK },
+  totalRow: {
+    flexDirection: "row",
+    paddingVertical: 4,
+    paddingHorizontal: 3,
+    backgroundColor: TEAL,
+    borderRadius: 2,
+    marginTop: 1,
+  },
+  totalCell: { fontSize: 7, fontFamily: "Helvetica-Bold", color: "#fff" },
+  // Dept sub-header in table
+  deptSubHeader: {
+    flexDirection: "row",
+    backgroundColor: LIGHT_TEAL,
+    paddingVertical: 2,
+    paddingHorizontal: 3,
+    marginTop: 3,
+  },
+  deptSubText: { fontSize: 6.5, fontFamily: "Helvetica-Bold", color: TEAL },
+  // Status badge
   statusBadge: {
-    fontSize: 8,
+    fontSize: 7,
     fontFamily: "Helvetica-Bold",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
     alignSelf: "flex-start",
   },
+  // Correction
   correctionNote: {
     backgroundColor: "#fff5f5",
     borderWidth: 0.5,
     borderColor: "#e53e3e",
-    borderRadius: 4,
-    padding: 8,
-    marginTop: 8,
-    marginBottom: 8,
+    borderRadius: 3,
+    padding: 5,
+    marginBottom: 6,
   },
-  correctionText: {
-    fontSize: 7.5,
-    color: "#e53e3e",
-    fontFamily: "Helvetica-Bold",
-  },
-  // Starter card styles
+  correctionText: { fontSize: 7, color: "#e53e3e", fontFamily: "Helvetica-Bold" },
+  // Starter styles
   starterCard: {
     borderWidth: 0.5,
     borderColor: AMBER_BORDER,
     backgroundColor: AMBER_BG,
-    borderRadius: 4,
-    padding: 10,
-    marginBottom: 8,
+    borderRadius: 3,
+    padding: 8,
+    marginBottom: 6,
   },
   starterName: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
     color: DARK,
-    marginBottom: 4,
+    marginBottom: 3,
   },
-  starterGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  starterField: {
-    width: "48%",
-    marginBottom: 4,
-  },
-  starterFieldLabel: {
-    fontSize: 6.5,
-    color: GRAY,
-    letterSpacing: 0.5,
-    marginBottom: 1,
-  },
-  starterFieldValue: {
-    fontSize: 8,
-    color: DARK,
-  },
-  missingValue: {
-    fontSize: 8,
-    color: RED,
-    fontFamily: "Helvetica-Bold",
-  },
+  starterGrid: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+  starterField: { width: "48%", marginBottom: 3 },
+  starterFieldLabel: { fontSize: 6, color: GRAY, letterSpacing: 0.4, marginBottom: 1 },
+  starterFieldValue: { fontSize: 7, color: DARK },
+  missingValue: { fontSize: 7, color: RED, fontFamily: "Helvetica-Bold" },
   alertBox: {
     backgroundColor: "#fff5f5",
     borderWidth: 0.5,
     borderColor: "#feb2b2",
-    borderRadius: 3,
-    padding: 6,
-    marginTop: 4,
+    borderRadius: 2,
+    padding: 4,
+    marginTop: 3,
   },
-  alertText: {
-    fontSize: 7,
-    color: RED,
-  },
+  alertText: { fontSize: 6.5, color: RED },
   noteBox: {
     backgroundColor: LIGHT_BG,
     borderWidth: 0.5,
     borderColor: BORDER,
-    borderRadius: 3,
-    padding: 6,
-    marginTop: 4,
+    borderRadius: 2,
+    padding: 4,
+    marginTop: 3,
   },
-  noteText: {
-    fontSize: 7,
-    color: GRAY,
-    fontStyle: "italic",
-  },
+  noteText: { fontSize: 6.5, color: GRAY, fontStyle: "italic" },
 });
 
-// Column widths for main payroll table
+// Column widths — compact, with holiday pay integrated
 const COL = {
-  name: "22%",
-  dept: "8%",
-  rate: "9%",
-  service: "9%",
-  hours: "9%",
-  perfBonus: "10%",
-  specBonus: "10%",
-  holiday: "10%",
-  total: "13%",
-};
-
-// Column widths for holiday payments table
-const HCOL = {
-  name: "25%",
-  date: "15%",
-  hours: "12%",
-  rate: "12%",
-  total: "14%",
-  notes: "22%",
+  name: "18%",
+  dept: "6%",
+  rate: "8%",
+  service: "8%",
+  hours: "8%",
+  perfBonus: "9%",
+  specBonus: "9%",
+  holAccrued: "9%",
+  holPay: "10%",
+  total: "15%",
 };
 
 interface PayrollEntry {
   id: string;
+  employee_id: string;
   hourly_rate: number;
   service_charge: number | null;
   timesheet_hours: number;
@@ -348,6 +266,7 @@ interface PayrollEntry {
 interface HolidayPayment {
   id: string;
   employee_name: string;
+  employee_id: string | null;
   hours: number;
   rate: number;
   total: number;
@@ -401,16 +320,12 @@ interface PayrollPDFProps {
   correctionNote?: string;
 }
 
-function formatCurrency(amount: number): string {
+function fmt(amount: number): string {
   return `£${amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+function fmtDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function PayrollPDF({
@@ -430,6 +345,17 @@ export function PayrollPDF({
     return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
   });
 
+  // Build holiday pay lookup per employee
+  const holidayByEmployee = new Map<string, { hours: number; total: number; details: HolidayPayment[] }>();
+  holidayPayments.forEach((hp) => {
+    const empId = hp.employee_id || "";
+    const existing = holidayByEmployee.get(empId) || { hours: 0, total: 0, details: [] };
+    existing.hours += Number(hp.hours);
+    existing.total += Number(hp.total);
+    existing.details.push(hp);
+    holidayByEmployee.set(empId, existing);
+  });
+
   const totals = entries.reduce(
     (acc, e) => ({
       hours: acc.hours + Number(e.timesheet_hours),
@@ -445,24 +371,25 @@ export function PayrollPDF({
 
   const holidayTotal = holidayPayments.reduce((s, p) => s + Number(p.total), 0);
   const holidayHoursTotal = holidayPayments.reduce((s, p) => s + Number(p.hours), 0);
+  const grandTotal = totals.total + holidayTotal;
 
   const departments = ["FOH", "BOH", "CPU"];
   const deptStats = departments.map((dept) => {
-    const deptEntries = entries.filter((e) => e.employees?.department === dept);
+    const de = entries.filter((e) => e.employees?.department === dept);
     return {
       name: dept,
-      count: deptEntries.length,
-      hours: deptEntries.reduce((s, e) => s + Number(e.timesheet_hours), 0),
-      total: deptEntries.reduce((s, e) => s + Number(e.total_pay), 0),
+      count: de.length,
+      hours: de.reduce((s, e) => s + Number(e.timesheet_hours), 0),
+      total: de.reduce((s, e) => s + Number(e.total_pay), 0),
     };
   }).filter((d) => d.count > 0);
 
-  const avgHourlyRate = entries.length > 0
+  const avgRate = entries.length > 0
     ? entries.reduce((s, e) => s + Number(e.hourly_rate), 0) / entries.length
     : 0;
 
-  const laborPercent = period.sales_total && Number(period.sales_total) > 0
-    ? (totals.total / Number(period.sales_total)) * 100
+  const laborPct = period.sales_total && Number(period.sales_total) > 0
+    ? (grandTotal / Number(period.sales_total)) * 100
     : null;
 
   const statusColors: Record<string, { bg: string; text: string }> = {
@@ -471,126 +398,61 @@ export function PayrollPDF({
     approved: { bg: "#c6f6d5", text: "#276749" },
     rejected: { bg: "#fed7d7", text: "#9b2c2c" },
   };
-  const statusStyle = statusColors[period.status] || statusColors.draft;
+  const sts = statusColors[period.status] || statusColors.draft;
 
-  const generatedAt = new Date().toLocaleString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  const now = new Date().toLocaleString("en-GB", {
+    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  const PageHeader = () => (
-    <View style={styles.pageHeader}>
-      <Text style={styles.pageHeaderBrand}>{companyName.toUpperCase()}</Text>
-      <Text style={styles.pageHeaderText}>
-        Payroll Report — {period.period_name}
-        {isCorrection ? " (CORRECTED)" : ""}
-      </Text>
-    </View>
-  );
-
-  const PageFooter = () => (
-    <View style={styles.footer} fixed>
-      <Text>{companyName} — Confidential</Text>
-      <Text>Generated: {generatedAt}</Text>
-      <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
-    </View>
-  );
-
-  // Helper: determine if a starter has right to work issues
   const getRTWStatus = (starter: StarterEmployee) => {
     const hasNI = !!starter.ni_number;
     const hasPassport = !!starter.passport_no;
     const hasSettlement = !!starter.settlement_status;
     const hasResidence = !!starter.residence_permit;
-
     if (hasNI) return { status: "ok", label: "NI Number on file" };
     if (hasPassport && (hasSettlement || hasResidence)) return { status: "pending", label: "Awaiting NI — documents on file" };
     if (hasPassport) return { status: "warning", label: "Passport on file — no settlement/permit details" };
     return { status: "missing", label: "Missing NI & ID documents" };
   };
 
-  return (
-    <Document>
-      {/* ─── COVER PAGE ─── */}
-      <Page size="A4" style={styles.coverPage}>
-        <View style={{ marginTop: 140, alignItems: "center" }}>
-          <Text style={styles.coverBrand}>{companyName.toUpperCase()}</Text>
-          <Text style={styles.coverTitle}>Payroll Report</Text>
-          <Text style={styles.coverSubtitle}>{period.period_name}</Text>
-          <View style={styles.coverLine} />
-
-          {isCorrection && (
-            <View style={[styles.statusBadge, { backgroundColor: "#fed7d7", marginBottom: 16 }]}>
-              <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold", color: RED }}>
-                CORRECTED VERSION
-              </Text>
-            </View>
-          )}
-
-          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg, marginBottom: 20 }]}>
-            <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: statusStyle.text }}>
+  const Header = () => (
+    <View style={styles.topHeader}>
+      <View>
+        <Text style={styles.topBrand}>{companyName.toUpperCase()}</Text>
+        <Text style={styles.topTitle}>
+          Payroll Report{isCorrection ? " — CORRECTED" : ""}
+        </Text>
+      </View>
+      <View>
+        <Text style={styles.topMeta}>{period.period_name}</Text>
+        <Text style={styles.topMeta}>
+          {fmtDate(period.start_date)} — {fmtDate(period.end_date)}
+          {period.period_weeks ? ` (${period.period_weeks}wk)` : ""}
+        </Text>
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 4, marginTop: 2 }}>
+          <View style={[styles.statusBadge, { backgroundColor: sts.bg }]}>
+            <Text style={{ fontSize: 6.5, fontFamily: "Helvetica-Bold", color: sts.text }}>
               {period.status.toUpperCase()}
             </Text>
           </View>
-
-          <Text style={styles.coverLabel}>PERIOD</Text>
-          <Text style={styles.coverField}>
-            {formatDate(period.start_date)} — {formatDate(period.end_date)}
-          </Text>
-
-          {period.pay_date && (
-            <>
-              <Text style={styles.coverLabel}>PAY DATE</Text>
-              <Text style={styles.coverField}>{formatDate(period.pay_date)}</Text>
-            </>
-          )}
-
-          <Text style={styles.coverLabel}>EMPLOYEES</Text>
-          <Text style={styles.coverField}>{entries.length}</Text>
-
-          {starters.length > 0 && (
-            <>
-              <Text style={styles.coverLabel}>NEW STARTERS</Text>
-              <Text style={styles.coverField}>{starters.length}</Text>
-            </>
-          )}
-
-          <Text style={styles.coverLabel}>TOTAL PAYROLL</Text>
-          <Text style={{ ...styles.coverField, fontSize: 16, fontFamily: "Helvetica-Bold" }}>
-            {formatCurrency(totals.total)}
-          </Text>
-
-          {holidayPayments.length > 0 && (
-            <>
-              <Text style={styles.coverLabel}>HOLIDAY PAY</Text>
-              <Text style={styles.coverField}>{formatCurrency(holidayTotal)}</Text>
-            </>
-          )}
-
-          {/* Contents listing */}
-          <View style={{ marginTop: 40, alignItems: "center" }}>
-            <Text style={{ ...styles.coverLabel, marginTop: 0 }}>CONTENTS</Text>
-            <Text style={{ fontSize: 8, color: GRAY, marginTop: 4 }}>1. Period Summary & Department Breakdown</Text>
-            <Text style={{ fontSize: 8, color: GRAY }}>2. Employee Payroll Detail</Text>
-            {holidayPayments.length > 0 && (
-              <Text style={{ fontSize: 8, color: GRAY }}>3. Holiday Payments</Text>
-            )}
-            {starters.length > 0 && (
-              <Text style={{ fontSize: 8, color: GRAY }}>
-                {holidayPayments.length > 0 ? "4" : "3"}. New Starter Details
-              </Text>
-            )}
-          </View>
         </View>
-        <PageFooter />
-      </Page>
+      </View>
+    </View>
+  );
 
-      {/* ─── SUMMARY PAGE ─── */}
-      <Page size="A4" style={styles.page}>
-        <PageHeader />
+  const Footer = () => (
+    <View style={styles.footer} fixed>
+      <Text>{companyName} — Confidential</Text>
+      <Text>Generated: {now}</Text>
+      <Text render={({ pageNumber, totalPages }) => `${pageNumber}/${totalPages}`} />
+    </View>
+  );
+
+  return (
+    <Document>
+      {/* ─── PAGE 1: Summary + Employee Table ─── */}
+      <Page size="A4" style={styles.page} orientation="landscape">
+        <Header />
 
         {isCorrection && correctionNote && (
           <View style={styles.correctionNote}>
@@ -598,186 +460,111 @@ export function PayrollPDF({
           </View>
         )}
 
-        <Text style={styles.sectionTitle}>Period Summary</Text>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>TOTAL PAYROLL</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(totals.total)}</Text>
-            <Text style={styles.summarySubtext}>{entries.length} employees</Text>
+        {/* KPI Cards */}
+        <View style={styles.kpiRow}>
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>PAYROLL</Text>
+            <Text style={styles.kpiValue}>{fmt(totals.total)}</Text>
+            <Text style={styles.kpiSub}>{entries.length} employees</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>TOTAL HOURS</Text>
-            <Text style={styles.summaryValue}>{totals.hours.toFixed(1)}</Text>
-            <Text style={styles.summarySubtext}>
-              {period.period_weeks ? `${(totals.hours / Number(period.period_weeks)).toFixed(1)} hrs/wk` : ""}
-            </Text>
+          {holidayTotal > 0 && (
+            <View style={[styles.kpiCard, { backgroundColor: AMBER_BG, borderWidth: 0.5, borderColor: AMBER_BORDER }]}>
+              <Text style={styles.kpiLabel}>HOLIDAY PAY</Text>
+              <Text style={[styles.kpiValue, { color: AMBER }]}>{fmt(holidayTotal)}</Text>
+              <Text style={styles.kpiSub}>{holidayHoursTotal.toFixed(1)} hrs</Text>
+            </View>
+          )}
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>GRAND TOTAL</Text>
+            <Text style={styles.kpiValue}>{fmt(grandTotal)}</Text>
+            {period.pay_date && <Text style={styles.kpiSub}>Pay: {fmtDate(period.pay_date)}</Text>}
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>AVG. HOURLY RATE</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(avgHourlyRate)}</Text>
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>HOURS</Text>
+            <Text style={styles.kpiValue}>{totals.hours.toFixed(1)}</Text>
+            <Text style={styles.kpiSub}>Avg rate {fmt(avgRate)}</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>LABOUR %</Text>
-            <Text style={styles.summaryValue}>
-              {laborPercent !== null ? `${laborPercent.toFixed(1)}%` : "N/A"}
-            </Text>
-            {period.sales_total && Number(period.sales_total) > 0 && (
-              <Text style={styles.summarySubtext}>of {formatCurrency(Number(period.sales_total))} sales</Text>
-            )}
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiLabel}>LABOUR %</Text>
+            <Text style={styles.kpiValue}>{laborPct !== null ? `${laborPct.toFixed(1)}%` : "N/A"}</Text>
           </View>
         </View>
 
-        {/* Holiday Pay Summary Card (if any) */}
-        {holidayPayments.length > 0 && (
-          <View style={styles.summaryGrid}>
-            <View style={[styles.summaryCard, { backgroundColor: AMBER_BG, borderWidth: 0.5, borderColor: AMBER_BORDER }]}>
-              <Text style={styles.summaryLabel}>HOLIDAY PAY TOTAL</Text>
-              <Text style={[styles.summaryValue, { color: AMBER }]}>{formatCurrency(holidayTotal)}</Text>
-              <Text style={styles.summarySubtext}>{holidayPayments.length} payments • {holidayHoursTotal.toFixed(1)} hrs</Text>
-            </View>
-            <View style={[styles.summaryCard, { backgroundColor: AMBER_BG, borderWidth: 0.5, borderColor: AMBER_BORDER }]}>
-              <Text style={styles.summaryLabel}>GRAND TOTAL (INC. HOLIDAY)</Text>
-              <Text style={[styles.summaryValue, { color: AMBER }]}>{formatCurrency(totals.total + holidayTotal)}</Text>
-              <Text style={styles.summarySubtext}>Payroll + Holiday Pay</Text>
-            </View>
-          </View>
-        )}
-
-        <Text style={styles.sectionTitle}>Department Breakdown</Text>
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {deptStats.map((dept) => (
-            <View key={dept.name} style={[styles.deptSection, { flex: 1 }]}>
-              <Text style={styles.deptTitle}>{dept.name}</Text>
+        {/* Department summary inline */}
+        <View style={styles.deptRow}>
+          {deptStats.map((d) => (
+            <View key={d.name} style={styles.deptCard}>
+              <Text style={styles.deptName}>{d.name}</Text>
               <View style={styles.deptStat}>
-                <Text style={styles.deptStatLabel}>Employees</Text>
-                <Text style={styles.deptStatValue}>{dept.count}</Text>
+                <Text style={styles.deptStatLabel}>Staff</Text>
+                <Text style={styles.deptStatValue}>{d.count}</Text>
               </View>
               <View style={styles.deptStat}>
                 <Text style={styles.deptStatLabel}>Hours</Text>
-                <Text style={styles.deptStatValue}>{dept.hours.toFixed(1)}</Text>
+                <Text style={styles.deptStatValue}>{d.hours.toFixed(1)}</Text>
               </View>
               <View style={styles.deptStat}>
-                <Text style={styles.deptStatLabel}>Total Pay</Text>
-                <Text style={styles.deptStatValue}>{formatCurrency(dept.total)}</Text>
-              </View>
-              <View style={styles.deptStat}>
-                <Text style={styles.deptStatLabel}>% of Payroll</Text>
-                <Text style={styles.deptStatValue}>
-                  {totals.total > 0 ? `${((dept.total / totals.total) * 100).toFixed(1)}%` : "0%"}
-                </Text>
+                <Text style={styles.deptStatLabel}>Total</Text>
+                <Text style={styles.deptStatValue}>{fmt(d.total)}</Text>
               </View>
             </View>
           ))}
         </View>
 
-        <Text style={styles.sectionTitle}>Cost Breakdown</Text>
-        <View style={styles.deptSection}>
-          <View style={styles.deptStat}>
-            <Text style={styles.deptStatLabel}>Base Pay (hours x rate)</Text>
-            <Text style={styles.deptStatValue}>{formatCurrency(totals.basePay)}</Text>
-          </View>
-          <View style={styles.deptStat}>
-            <Text style={styles.deptStatLabel}>Service Charge</Text>
-            <Text style={styles.deptStatValue}>{formatCurrency(totals.servicePay)}</Text>
-          </View>
-          <View style={styles.deptStat}>
-            <Text style={styles.deptStatLabel}>Performance Bonuses</Text>
-            <Text style={styles.deptStatValue}>{formatCurrency(totals.perfBonus)}</Text>
-          </View>
-          <View style={styles.deptStat}>
-            <Text style={styles.deptStatLabel}>Special Bonuses</Text>
-            <Text style={styles.deptStatValue}>{formatCurrency(totals.specBonus)}</Text>
-          </View>
-          {holidayPayments.length > 0 && (
-            <View style={styles.deptStat}>
-              <Text style={styles.deptStatLabel}>Holiday Pay</Text>
-              <Text style={[styles.deptStatValue, { color: AMBER }]}>{formatCurrency(holidayTotal)}</Text>
-            </View>
-          )}
-          <View style={[styles.deptStat, { marginTop: 4, paddingTop: 4, borderTopWidth: 0.5, borderTopColor: BORDER }]}>
-            <Text style={{ ...styles.deptStatLabel, fontFamily: "Helvetica-Bold", color: DARK }}>Grand Total</Text>
-            <Text style={{ ...styles.deptStatValue, fontSize: 10 }}>
-              {formatCurrency(totals.total + holidayTotal)}
-            </Text>
-          </View>
-        </View>
-
-        <PageFooter />
-      </Page>
-
-      {/* ─── EMPLOYEE DETAIL TABLE ─── */}
-      <Page size="A4" style={styles.page} orientation="landscape">
-        <PageHeader />
-        <Text style={styles.sectionTitle}>Employee Payroll Detail</Text>
-
+        {/* ─── Employee Detail Table with Holiday Pay integrated ─── */}
+        <Text style={styles.sectionTitle}>Employee Detail</Text>
         <View style={styles.table}>
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.tableHeaderCell, { width: COL.name }]}>Employee</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL.dept, textAlign: "center" }]}>Dept</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL.rate, textAlign: "right" }]}>Rate</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL.service, textAlign: "right" }]}>Service</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL.hours, textAlign: "right" }]}>Hours</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL.perfBonus, textAlign: "right" }]}>Perf Bonus</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL.specBonus, textAlign: "right" }]}>Spec Bonus</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL.holiday, textAlign: "right" }]}>Hol. Accrued</Text>
-            <Text style={[styles.tableHeaderCell, { width: COL.total, textAlign: "right" }]}>Total Pay</Text>
+          <View style={styles.thRow}>
+            <Text style={[styles.th, { width: COL.name }]}>Employee</Text>
+            <Text style={[styles.th, { width: COL.dept, textAlign: "center" }]}>Dept</Text>
+            <Text style={[styles.th, { width: COL.rate, textAlign: "right" }]}>Rate</Text>
+            <Text style={[styles.th, { width: COL.service, textAlign: "right" }]}>Service</Text>
+            <Text style={[styles.th, { width: COL.hours, textAlign: "right" }]}>Hours</Text>
+            <Text style={[styles.th, { width: COL.perfBonus, textAlign: "right" }]}>Perf</Text>
+            <Text style={[styles.th, { width: COL.specBonus, textAlign: "right" }]}>Special</Text>
+            <Text style={[styles.th, { width: COL.holAccrued, textAlign: "right" }]}>Hol Acc</Text>
+            <Text style={[styles.th, { width: COL.holPay, textAlign: "right" }]}>Hol Pay</Text>
+            <Text style={[styles.th, { width: COL.total, textAlign: "right" }]}>Total</Text>
           </View>
 
-          {/* Group by department */}
           {departments.map((dept) => {
-            const deptEntries = sortedEntries.filter((e) => e.employees?.department === dept);
-            if (deptEntries.length === 0) return null;
-
-            const deptTotal = deptEntries.reduce((s, e) => s + Number(e.total_pay), 0);
-            const deptHours = deptEntries.reduce((s, e) => s + Number(e.timesheet_hours), 0);
+            const de = sortedEntries.filter((e) => e.employees?.department === dept);
+            if (de.length === 0) return null;
+            const deptTotal = de.reduce((s, e) => s + Number(e.total_pay), 0);
+            const deptHours = de.reduce((s, e) => s + Number(e.timesheet_hours), 0);
+            const deptHolPay = de.reduce((s, e) => {
+              const hp = holidayByEmployee.get(e.employee_id);
+              return s + (hp?.total || 0);
+            }, 0);
 
             return (
               <View key={dept}>
-                {/* Department header */}
-                <View style={{ flexDirection: "row", backgroundColor: LIGHT_TEAL, paddingVertical: 3, paddingHorizontal: 4, marginTop: 4 }}>
-                  <Text style={{ fontSize: 7.5, fontFamily: "Helvetica-Bold", color: TEAL }}>
-                    {dept} — {deptEntries.length} employees • {deptHours.toFixed(1)} hrs • {formatCurrency(deptTotal)}
+                <View style={styles.deptSubHeader}>
+                  <Text style={styles.deptSubText}>
+                    {dept} — {de.length} staff • {deptHours.toFixed(1)} hrs • {fmt(deptTotal)}
+                    {deptHolPay > 0 ? ` + ${fmt(deptHolPay)} hol` : ""}
                   </Text>
                 </View>
-
-                {deptEntries.map((entry, idx) => {
+                {de.map((entry, idx) => {
                   const emp = entry.employees;
+                  const empHol = holidayByEmployee.get(entry.employee_id);
+                  const entryTotalWithHol = Number(entry.total_pay) + (empHol?.total || 0);
                   return (
-                    <View key={entry.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]} wrap={false}>
-                      <View style={{ width: COL.name }}>
-                        <Text style={styles.tableCellBold}>
-                          {emp?.surname}, {emp?.forename}
-                        </Text>
-                        {entry.notes && (
-                          <Text style={{ fontSize: 6, color: GRAY, marginTop: 1 }}>
-                            {entry.notes.length > 60 ? entry.notes.substring(0, 60) + "..." : entry.notes}
-                          </Text>
-                        )}
-                      </View>
-                      <Text style={[styles.tableCell, { width: COL.dept, textAlign: "center" }]}>
-                        {emp?.department}
+                    <View key={entry.id} style={[styles.tr, idx % 2 === 1 && styles.trAlt]} wrap={false}>
+                      <Text style={[styles.tdBold, { width: COL.name }]}>
+                        {emp?.surname}, {emp?.forename}
                       </Text>
-                      <Text style={[styles.tableCell, { width: COL.rate, textAlign: "right" }]}>
-                        {formatCurrency(entry.hourly_rate)}
+                      <Text style={[styles.td, { width: COL.dept, textAlign: "center" }]}>{emp?.department}</Text>
+                      <Text style={[styles.td, { width: COL.rate, textAlign: "right" }]}>{fmt(entry.hourly_rate)}</Text>
+                      <Text style={[styles.td, { width: COL.service, textAlign: "right" }]}>{fmt(Number(entry.service_charge || 0))}</Text>
+                      <Text style={[styles.td, { width: COL.hours, textAlign: "right" }]}>{Number(entry.timesheet_hours).toFixed(2)}</Text>
+                      <Text style={[styles.td, { width: COL.perfBonus, textAlign: "right" }]}>{fmt(Number(entry.performance_bonus || 0))}</Text>
+                      <Text style={[styles.td, { width: COL.specBonus, textAlign: "right" }]}>{fmt(Number(entry.special_bonus || 0))}</Text>
+                      <Text style={[styles.td, { width: COL.holAccrued, textAlign: "right" }]}>{Number(entry.holiday_accrued_hours || 0).toFixed(2)}</Text>
+                      <Text style={[styles.td, { width: COL.holPay, textAlign: "right", color: empHol ? AMBER : DARK }]}>
+                        {empHol ? fmt(empHol.total) : "—"}
                       </Text>
-                      <Text style={[styles.tableCell, { width: COL.service, textAlign: "right" }]}>
-                        {formatCurrency(Number(entry.service_charge || 0))}
-                      </Text>
-                      <Text style={[styles.tableCell, { width: COL.hours, textAlign: "right" }]}>
-                        {Number(entry.timesheet_hours).toFixed(2)}
-                      </Text>
-                      <Text style={[styles.tableCell, { width: COL.perfBonus, textAlign: "right" }]}>
-                        {formatCurrency(Number(entry.performance_bonus || 0))}
-                      </Text>
-                      <Text style={[styles.tableCell, { width: COL.specBonus, textAlign: "right" }]}>
-                        {formatCurrency(Number(entry.special_bonus || 0))}
-                      </Text>
-                      <Text style={[styles.tableCell, { width: COL.holiday, textAlign: "right" }]}>
-                        {Number(entry.holiday_accrued_hours || 0).toFixed(2)} hrs
-                      </Text>
-                      <Text style={[styles.tableCellBold, { width: COL.total, textAlign: "right" }]}>
-                        {formatCurrency(entry.total_pay)}
-                      </Text>
+                      <Text style={[styles.tdBold, { width: COL.total, textAlign: "right" }]}>{fmt(entryTotalWithHol)}</Text>
                     </View>
                   );
                 })}
@@ -785,125 +572,54 @@ export function PayrollPDF({
             );
           })}
 
-          {/* Totals row */}
+          {/* Totals */}
           <View style={styles.totalRow}>
             <Text style={[styles.totalCell, { width: COL.name }]}>TOTALS</Text>
             <Text style={[styles.totalCell, { width: COL.dept }]} />
             <Text style={[styles.totalCell, { width: COL.rate }]} />
             <Text style={[styles.totalCell, { width: COL.service }]} />
-            <Text style={[styles.totalCell, { width: COL.hours, textAlign: "right" }]}>
-              {totals.hours.toFixed(2)}
-            </Text>
-            <Text style={[styles.totalCell, { width: COL.perfBonus, textAlign: "right" }]}>
-              {formatCurrency(totals.perfBonus)}
-            </Text>
-            <Text style={[styles.totalCell, { width: COL.specBonus, textAlign: "right" }]}>
-              {formatCurrency(totals.specBonus)}
-            </Text>
-            <Text style={[styles.totalCell, { width: COL.holiday, textAlign: "right" }]}>
-              {totals.holiday.toFixed(2)} hrs
-            </Text>
-            <Text style={[styles.totalCell, { width: COL.total, textAlign: "right" }]}>
-              {formatCurrency(totals.total)}
-            </Text>
+            <Text style={[styles.totalCell, { width: COL.hours, textAlign: "right" }]}>{totals.hours.toFixed(2)}</Text>
+            <Text style={[styles.totalCell, { width: COL.perfBonus, textAlign: "right" }]}>{fmt(totals.perfBonus)}</Text>
+            <Text style={[styles.totalCell, { width: COL.specBonus, textAlign: "right" }]}>{fmt(totals.specBonus)}</Text>
+            <Text style={[styles.totalCell, { width: COL.holAccrued, textAlign: "right" }]}>{totals.holiday.toFixed(2)}</Text>
+            <Text style={[styles.totalCell, { width: COL.holPay, textAlign: "right" }]}>{fmt(holidayTotal)}</Text>
+            <Text style={[styles.totalCell, { width: COL.total, textAlign: "right" }]}>{fmt(grandTotal)}</Text>
           </View>
         </View>
 
-        <PageFooter />
+        <Footer />
       </Page>
 
-      {/* ─── HOLIDAY PAYMENTS PAGE (dynamic, only if payments exist) ─── */}
-      {holidayPayments.length > 0 && (
-        <Page size="A4" style={styles.page}>
-          <PageHeader />
-          <Text style={styles.sectionTitle}>Holiday Payments — {period.period_name}</Text>
-          <Text style={{ fontSize: 7.5, color: GRAY, marginBottom: 10 }}>
-            Holiday pay recorded against this payroll period. {holidayPayments.length} payment{holidayPayments.length !== 1 ? "s" : ""} totalling {formatCurrency(holidayTotal)} for {holidayHoursTotal.toFixed(1)} hours.
-          </Text>
-
-          <View style={styles.table}>
-            <View style={styles.tableHeaderRow}>
-              <Text style={[styles.tableHeaderCell, { width: HCOL.name }]}>Employee</Text>
-              <Text style={[styles.tableHeaderCell, { width: HCOL.date, textAlign: "center" }]}>Holiday Date</Text>
-              <Text style={[styles.tableHeaderCell, { width: HCOL.hours, textAlign: "right" }]}>Hours</Text>
-              <Text style={[styles.tableHeaderCell, { width: HCOL.rate, textAlign: "right" }]}>Rate</Text>
-              <Text style={[styles.tableHeaderCell, { width: HCOL.total, textAlign: "right" }]}>Total</Text>
-              <Text style={[styles.tableHeaderCell, { width: HCOL.notes }]}>Notes</Text>
-            </View>
-
-            {holidayPayments.map((payment, idx) => (
-              <View key={payment.id} style={[styles.tableRow, idx % 2 === 1 && styles.tableRowAlt]} wrap={false}>
-                <Text style={[styles.tableCellBold, { width: HCOL.name }]}>
-                  {payment.employees
-                    ? `${payment.employees.surname}, ${payment.employees.forename}`
-                    : payment.employee_name}
-                </Text>
-                <Text style={[styles.tableCell, { width: HCOL.date, textAlign: "center" }]}>
-                  {payment.holiday_taken_date ? formatDate(payment.holiday_taken_date) : "—"}
-                </Text>
-                <Text style={[styles.tableCell, { width: HCOL.hours, textAlign: "right" }]}>
-                  {Number(payment.hours).toFixed(2)}
-                </Text>
-                <Text style={[styles.tableCell, { width: HCOL.rate, textAlign: "right" }]}>
-                  {formatCurrency(Number(payment.rate))}
-                </Text>
-                <Text style={[styles.tableCellBold, { width: HCOL.total, textAlign: "right" }]}>
-                  {formatCurrency(Number(payment.total))}
-                </Text>
-                <Text style={[styles.tableCell, { width: HCOL.notes }]}>
-                  {payment.notes || "—"}
-                </Text>
-              </View>
-            ))}
-
-            {/* Holiday totals row */}
-            <View style={styles.totalRow}>
-              <Text style={[styles.totalCell, { width: HCOL.name }]}>TOTAL HOLIDAY PAY</Text>
-              <Text style={[styles.totalCell, { width: HCOL.date }]} />
-              <Text style={[styles.totalCell, { width: HCOL.hours, textAlign: "right" }]}>
-                {holidayHoursTotal.toFixed(2)}
-              </Text>
-              <Text style={[styles.totalCell, { width: HCOL.rate }]} />
-              <Text style={[styles.totalCell, { width: HCOL.total, textAlign: "right" }]}>
-                {formatCurrency(holidayTotal)}
-              </Text>
-              <Text style={[styles.totalCell, { width: HCOL.notes }]} />
-            </View>
-          </View>
-
-          <PageFooter />
-        </Page>
-      )}
-
-      {/* ─── NEW STARTERS PAGE (dynamic, only if starters exist) ─── */}
+      {/* ─── STARTERS PAGE (only if any) ─── */}
       {starters.length > 0 && (
         <Page size="A4" style={styles.page}>
-          <PageHeader />
-          <Text style={styles.sectionTitle}>New Starter Details</Text>
-          <Text style={{ fontSize: 7.5, color: GRAY, marginBottom: 10 }}>
-            {starters.length} new starter{starters.length !== 1 ? "s" : ""} included in this payroll period.
-            Details below are for payroll processing and HMRC compliance.
+          <View style={styles.topHeader}>
+            <View>
+              <Text style={styles.topBrand}>{companyName.toUpperCase()}</Text>
+              <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", color: DARK }}>New Starter Details</Text>
+            </View>
+            <Text style={styles.topMeta}>{period.period_name}</Text>
+          </View>
+
+          <Text style={{ fontSize: 7, color: GRAY, marginBottom: 8 }}>
+            {starters.length} new starter{starters.length !== 1 ? "s" : ""} — details for payroll processing & HMRC compliance.
           </Text>
 
           {starters.map((starter) => {
-            const rtwStatus = getRTWStatus(starter);
+            const rtw = getRTWStatus(starter);
             const hasNI = !!starter.ni_number;
-
             return (
               <View key={starter.id} style={styles.starterCard} wrap={false}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <Text style={styles.starterName}>
-                    {starter.forename} {starter.surname}
-                  </Text>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <Text style={styles.starterName}>{starter.forename} {starter.surname}</Text>
                   <View style={[styles.statusBadge, {
-                    backgroundColor: rtwStatus.status === "ok" ? "#c6f6d5" : rtwStatus.status === "pending" ? AMBER_BG : "#fed7d7",
+                    backgroundColor: rtw.status === "ok" ? "#c6f6d5" : rtw.status === "pending" ? AMBER_BG : "#fed7d7",
                   }]}>
                     <Text style={{
-                      fontSize: 6.5,
-                      fontFamily: "Helvetica-Bold",
-                      color: rtwStatus.status === "ok" ? "#276749" : rtwStatus.status === "pending" ? AMBER : RED,
+                      fontSize: 6, fontFamily: "Helvetica-Bold",
+                      color: rtw.status === "ok" ? "#276749" : rtw.status === "pending" ? AMBER : RED,
                     }}>
-                      {rtwStatus.status === "ok" ? "RTW OK" : rtwStatus.status === "pending" ? "RTW PENDING" : "RTW MISSING"}
+                      {rtw.status === "ok" ? "RTW OK" : rtw.status === "pending" ? "RTW PENDING" : "RTW MISSING"}
                     </Text>
                   </View>
                 </View>
@@ -914,115 +630,55 @@ export function PayrollPDF({
                     <Text style={styles.starterFieldValue}>{starter.department}</Text>
                   </View>
                   <View style={styles.starterField}>
-                    <Text style={styles.starterFieldLabel}>HOURLY RATE</Text>
-                    <Text style={styles.starterFieldValue}>{formatCurrency(starter.hourly_rate)}</Text>
+                    <Text style={styles.starterFieldLabel}>RATE</Text>
+                    <Text style={styles.starterFieldValue}>{fmt(starter.hourly_rate)}</Text>
                   </View>
                   <View style={styles.starterField}>
                     <Text style={styles.starterFieldLabel}>START DATE</Text>
-                    <Text style={styles.starterFieldValue}>
-                      {starter.start_date ? formatDate(starter.start_date) : "Not set"}
-                    </Text>
+                    <Text style={styles.starterFieldValue}>{starter.start_date ? fmtDate(starter.start_date) : "Not set"}</Text>
                   </View>
                   <View style={styles.starterField}>
                     <Text style={styles.starterFieldLabel}>NI NUMBER</Text>
                     {hasNI ? (
                       <Text style={styles.starterFieldValue}>{starter.ni_number}</Text>
                     ) : (
-                      <Text style={styles.missingValue}>Not provided — see below</Text>
+                      <Text style={styles.missingValue}>Missing</Text>
                     )}
                   </View>
-                </View>
-
-                {/* Banking Details */}
-                <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: BORDER }}>
-                  <Text style={{ fontSize: 7.5, fontFamily: "Helvetica-Bold", color: DARK, marginBottom: 4 }}>Banking Details</Text>
-                  <View style={styles.starterGrid}>
-                    <View style={styles.starterField}>
-                      <Text style={styles.starterFieldLabel}>SORT CODE</Text>
-                      <Text style={starter.sort_code ? styles.starterFieldValue : styles.missingValue}>
-                        {starter.sort_code || "Missing"}
-                      </Text>
-                    </View>
-                    <View style={styles.starterField}>
-                      <Text style={styles.starterFieldLabel}>ACCOUNT NUMBER</Text>
-                      <Text style={starter.bank_account_no ? styles.starterFieldValue : styles.missingValue}>
-                        {starter.bank_account_no || "Missing"}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Right to Work Section */}
-                <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: BORDER }}>
-                  <Text style={{ fontSize: 7.5, fontFamily: "Helvetica-Bold", color: DARK, marginBottom: 4 }}>
-                    Right to Work in the UK
-                  </Text>
-                  <View style={styles.starterGrid}>
-                    <View style={styles.starterField}>
-                      <Text style={styles.starterFieldLabel}>NATIONALITY</Text>
-                      <Text style={starter.nationality ? styles.starterFieldValue : styles.missingValue}>
-                        {starter.nationality || "Not recorded"}
-                      </Text>
-                    </View>
-                    <View style={styles.starterField}>
-                      <Text style={styles.starterFieldLabel}>PASSPORT NUMBER</Text>
-                      <Text style={starter.passport_no ? styles.starterFieldValue : styles.missingValue}>
-                        {starter.passport_no || "Not on file"}
-                      </Text>
-                    </View>
-                    <View style={styles.starterField}>
-                      <Text style={styles.starterFieldLabel}>SETTLEMENT STATUS</Text>
-                      <Text style={starter.settlement_status ? styles.starterFieldValue : styles.missingValue}>
-                        {starter.settlement_status || "Not recorded"}
-                      </Text>
-                    </View>
-                    <View style={styles.starterField}>
-                      <Text style={styles.starterFieldLabel}>SHARE CODE</Text>
-                      <Text style={starter.sharing_code ? styles.starterFieldValue : styles.missingValue}>
-                        {starter.sharing_code || "Not provided"}
-                      </Text>
-                    </View>
-                    {starter.residence_permit && (
-                      <View style={styles.starterField}>
-                        <Text style={styles.starterFieldLabel}>RESIDENCE PERMIT</Text>
-                        <Text style={styles.starterFieldValue}>{starter.residence_permit}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* RTW Status note */}
-                  <View style={rtwStatus.status === "ok" ? styles.noteBox : styles.alertBox}>
-                    <Text style={rtwStatus.status === "ok" ? styles.noteText : styles.alertText}>
-                      {rtwStatus.label}
+                  <View style={styles.starterField}>
+                    <Text style={styles.starterFieldLabel}>SORT CODE</Text>
+                    <Text style={starter.sort_code ? styles.starterFieldValue : styles.missingValue}>
+                      {starter.sort_code || "Missing"}
                     </Text>
                   </View>
-
-                  {/* Missing NI explanation */}
-                  {!hasNI && (
-                    <View style={[styles.alertBox, { marginTop: 4 }]}>
-                      <Text style={styles.alertText}>
-                        No National Insurance number on file.
-                        {starter.passport_no
-                          ? ` Passport (${starter.passport_no}) and nationality (${starter.nationality || "unknown"}) recorded as interim identification.`
-                          : " Passport number and nationality must be provided to HMRC until NI number is obtained."}
-                        {" "}Employee should apply for NI via gov.uk or call HMRC on 0300 200 3500.
-                      </Text>
-                    </View>
-                  )}
+                  <View style={styles.starterField}>
+                    <Text style={styles.starterFieldLabel}>ACCOUNT NO</Text>
+                    <Text style={starter.bank_account_no ? styles.starterFieldValue : styles.missingValue}>
+                      {starter.bank_account_no || "Missing"}
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Notes */}
-                {starter.notes && (
-                  <View style={[styles.noteBox, { marginTop: 6 }]}>
-                    <Text style={{ fontSize: 6.5, fontFamily: "Helvetica-Bold", color: GRAY, marginBottom: 2 }}>ADMIN NOTES</Text>
-                    <Text style={styles.noteText}>{starter.notes}</Text>
+                {/* RTW note */}
+                <View style={rtw.status === "ok" ? styles.noteBox : styles.alertBox}>
+                  <Text style={rtw.status === "ok" ? styles.noteText : styles.alertText}>{rtw.label}</Text>
+                </View>
+
+                {!hasNI && (
+                  <View style={[styles.alertBox, { marginTop: 2 }]}>
+                    <Text style={styles.alertText}>
+                      No NI number.
+                      {starter.passport_no
+                        ? ` Passport (${starter.passport_no}), nationality (${starter.nationality || "unknown"}) as interim ID.`
+                        : " Passport & nationality must be provided to HMRC."}
+                    </Text>
                   </View>
                 )}
               </View>
             );
           })}
 
-          <PageFooter />
+          <Footer />
         </Page>
       )}
     </Document>
