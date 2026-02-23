@@ -349,7 +349,7 @@ const Payroll = () => {
             periodId={selectedPeriod.id}
             periodStatus={selectedPeriod.status}
             currentSalesTotal={selectedPeriod.sales_total}
-            totalPayroll={totalPay + holidayTotal}
+            totalPayroll={totalPay}
             managementPayroll={managementPayroll}
             isAdmin={isAdmin}
           />
