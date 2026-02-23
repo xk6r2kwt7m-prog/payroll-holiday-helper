@@ -63,6 +63,7 @@ export function usePayrollEntries(periodId?: string) {
             ni_number
           )
         `)
+        
         .order("total_pay", { ascending: false });
       
       if (periodId) {
@@ -356,12 +357,14 @@ export function useCopyPayrollPeriod() {
             employee_id: entry.employee_id,
             hourly_rate: entry.hourly_rate,
             service_charge: entry.service_charge,
-            timesheet_hours: 0, // Reset timesheet hours
+            timesheet_hours: 0,
+            imported_hours: null,
             performance_bonus: entry.performance_bonus,
             special_bonus: entry.special_bonus,
-            holiday_accrued_hours: 0, // Will be recalculated
-            total_pay: perfBonus + specBonus, // Include carried-over bonuses
+            holiday_accrued_hours: 0,
+            total_pay: perfBonus + specBonus,
             bank_details_exported: false,
+            adjustment_note: null,
           };
         });
 

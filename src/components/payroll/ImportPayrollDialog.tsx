@@ -397,6 +397,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             hourly_rate: rate,
             service_charge: sc,
             timesheet_hours: hours,
+            imported_hours: hours,
             performance_bonus: 0,
             special_bonus: 0,
             holiday_accrued_hours: holidayAccrued,

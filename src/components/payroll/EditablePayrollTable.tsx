@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -19,6 +20,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useBulkUpdatePayrollEntries, useMarkBankDetailsExported } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, calculateHolidayAccrual } from "@/hooks/useHolidays";
@@ -43,6 +57,8 @@ interface PayrollEntry {
   hourly_rate: number;
   service_charge: number | null;
   timesheet_hours: number;
+  imported_hours: number | null;
+  adjustment_note: string | null;
   performance_bonus: number | null;
   special_bonus: number | null;
   holiday_accrued_hours: number | null;
@@ -97,6 +113,11 @@ export function EditablePayrollTable({
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
   const [removeEmployeeName, setRemoveEmployeeName] = useState("");
+
+  // Adjustment note dialog state
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState<{ entry: PayrollEntry; hours: number; hourlyRate: number; serviceCharge: number; perfBonus: number; specBonus: number } | null>(null);
+  const [adjustmentNote, setAdjustmentNote] = useState("");
 
   const queryClient = useQueryClient();
   const bulkUpdate = useBulkUpdatePayrollEntries();
@@ -159,37 +180,68 @@ export function EditablePayrollTable({
     setEditingId(null);
   };
 
-  const saveEditing = async (entry: PayrollEntry) => {
-    const hours = parseFloat(editingData.timesheet_hours) || 0;
-    const hourlyRate = parseFloat(editingData.hourly_rate) || 0;
-    const serviceCharge = parseFloat(editingData.service_charge) || 0;
-    const perfBonus = parseFloat(editingData.performance_bonus) || 0;
-    const specBonus = parseFloat(editingData.special_bonus) || 0;
-    
+  const doSave = async (entry: PayrollEntry, hours: number, hourlyRate: number, serviceCharge: number, perfBonus: number, specBonus: number, note?: string) => {
     const basePay = hours * hourlyRate;
     const servicePay = hours * serviceCharge;
     const totalPay = basePay + servicePay + perfBonus + specBonus;
-    const holidayAccrued = calculateHolidayAccrual(hours);
+    // Holiday accrual uses imported_hours (original) when available
+    const hoursForHoliday = entry.imported_hours ?? hours;
+    const holidayAccrued = calculateHolidayAccrual(hoursForHoliday);
 
     try {
-      await bulkUpdate.mutateAsync([{
-        id: entry.id,
-        updates: {
-          timesheet_hours: hours,
-          hourly_rate: hourlyRate,
-          service_charge: serviceCharge,
-          performance_bonus: perfBonus,
-          special_bonus: specBonus,
-          holiday_accrued_hours: holidayAccrued,
-          total_pay: totalPay,
-        },
-      }]);
+      const updates: Record<string, any> = {
+        timesheet_hours: hours,
+        hourly_rate: hourlyRate,
+        service_charge: serviceCharge,
+        performance_bonus: perfBonus,
+        special_bonus: specBonus,
+        holiday_accrued_hours: holidayAccrued,
+        total_pay: totalPay,
+      };
+
+      // If hours differ from imported, store the note
+      if (note !== undefined) {
+        updates.adjustment_note = note;
+      }
+
+      await bulkUpdate.mutateAsync([{ id: entry.id, updates }]);
       
       setEditingId(null);
       toast.success("Entry updated");
     } catch {
       toast.error("Failed to update entry");
     }
+  };
+
+  const saveEditing = async (entry: PayrollEntry) => {
+    const hours = parseFloat(editingData.timesheet_hours) || 0;
+    const hourlyRate = parseFloat(editingData.hourly_rate) || 0;
+    const serviceCharge = parseFloat(editingData.service_charge) || 0;
+    const perfBonus = parseFloat(editingData.performance_bonus) || 0;
+    const specBonus = parseFloat(editingData.special_bonus) || 0;
+
+    const importedHours = entry.imported_hours;
+    const hoursChanged = importedHours !== null && Math.abs(hours - importedHours) > 0.001;
+
+    if (hoursChanged) {
+      // Prompt for adjustment note
+      setPendingSave({ entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus });
+      setAdjustmentNote(entry.adjustment_note || "");
+      setNoteDialogOpen(true);
+    } else {
+      // No change from imported — clear any previous note if hours match again
+      await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, 
+        importedHours !== null && Math.abs(hours - importedHours) < 0.001 ? null as any : undefined);
+    }
+  };
+
+  const confirmAdjustmentNote = async () => {
+    if (!pendingSave) return;
+    const { entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus } = pendingSave;
+    setNoteDialogOpen(false);
+    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, adjustmentNote || `Hours adjusted from ${entry.imported_hours} to ${hours}`);
+    setPendingSave(null);
+    setAdjustmentNote("");
   };
 
   const handleBulkZeroHours = async () => {
@@ -200,8 +252,6 @@ export function EditablePayrollTable({
       const updates = entries
         .filter(e => selectedIds.has(e.id))
         .map(entry => {
-          const hourlyRate = entry.hourly_rate;
-          const serviceCharge = entry.service_charge || 0;
           const perfBonus = entry.performance_bonus || 0;
           const specBonus = entry.special_bonus || 0;
           const totalPay = perfBonus + specBonus;
@@ -210,7 +260,7 @@ export function EditablePayrollTable({
             id: entry.id,
             updates: {
               timesheet_hours: 0,
-              holiday_accrued_hours: 0,
+              holiday_accrued_hours: calculateHolidayAccrual(entry.imported_hours ?? 0),
               total_pay: totalPay,
             },
           };
@@ -298,7 +348,6 @@ export function EditablePayrollTable({
           {canEdit && (
             <AddEmployeeToPeriodDialog periodId={periodId} existingEmployeeIds={existingEmployeeIds} />
           )}
-          {/* Bulk Actions */}
           {canEdit && someSelected && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -366,6 +415,7 @@ export function EditablePayrollTable({
               const isEditing = editingId === entry.id;
               const emp = entry.employees;
               const isSelected = selectedIds.has(entry.id);
+              const hasAdjustment = entry.imported_hours !== null && Math.abs(entry.timesheet_hours - entry.imported_hours) > 0.001;
               
               return (
                 <TableRow 
@@ -459,7 +509,7 @@ export function EditablePayrollTable({
                         />
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {formatHours(calculateHolidayAccrual(parseFloat(editingData.timesheet_hours) || 0))} hrs
+                        {formatHours(calculateHolidayAccrual(entry.imported_hours ?? (parseFloat(editingData.timesheet_hours) || 0)))} hrs
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(
@@ -505,7 +555,24 @@ export function EditablePayrollTable({
                         {formatCurrency(Number(entry.service_charge || 0))}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatHours(Number(entry.timesheet_hours))}
+                        <TooltipProvider>
+                          <div className="flex items-center justify-end gap-1">
+                            {formatHours(Number(entry.timesheet_hours))}
+                            {hasAdjustment && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <FileText className="h-3.5 w-3.5 text-warning shrink-0 cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[250px]">
+                                  <p className="text-xs font-medium">Adjusted from {formatHours(entry.imported_hours!)} hrs</p>
+                                  {entry.adjustment_note && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{entry.adjustment_note}</p>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-right text-success">
                         {Number(entry.performance_bonus) > 0 ? formatCurrency(Number(entry.performance_bonus)) : "-"}
@@ -570,6 +637,38 @@ export function EditablePayrollTable({
           </tfoot>
         </Table>
       </div>
+
+      {/* Adjustment Note Dialog — internal only, never exported */}
+      <Dialog open={noteDialogOpen} onOpenChange={(open) => {
+        if (!open) {
+          setNoteDialogOpen(false);
+          setPendingSave(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-base">Hours Adjusted</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Hours changed from <strong>{pendingSave?.entry.imported_hours != null ? formatHours(pendingSave.entry.imported_hours) : "—"}</strong> to <strong>{pendingSave ? formatHours(pendingSave.hours) : "—"}</strong>.
+              Add an internal note (this will <strong>not</strong> appear in exports or PDFs).
+            </p>
+          </DialogHeader>
+          <Textarea
+            placeholder="e.g. Special arrangement — agreed extra hours"
+            value={adjustmentNote}
+            onChange={(e) => setAdjustmentNote(e.target.value)}
+            className="min-h-[80px]"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setNoteDialogOpen(false); setPendingSave(null); }}>
+              Cancel
+            </Button>
+            <Button onClick={confirmAdjustmentNote}>
+              Save with Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!removeEntryId} onOpenChange={(open) => !open && setRemoveEntryId(null)}>
         <AlertDialogContent>
