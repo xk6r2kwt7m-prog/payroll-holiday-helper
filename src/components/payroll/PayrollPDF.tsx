@@ -224,15 +224,14 @@ const styles = StyleSheet.create({
 
 // Main table columns — without holiday pay (moved to own page)
 const COL = {
-  name: "20%",
-  dept: "7%",
-  rate: "10%",
-  service: "10%",
-  hours: "10%",
-  perfBonus: "11%",
-  specBonus: "11%",
-  holAccrued: "10%",
-  total: "11%",
+  name: "22%",
+  dept: "8%",
+  rate: "11%",
+  service: "11%",
+  hours: "11%",
+  perfBonus: "12%",
+  specBonus: "12%",
+  total: "13%",
 };
 
 // Holiday page table columns
@@ -522,7 +521,6 @@ export function PayrollPDF({
             <Text style={[styles.th, { width: COL.hours, textAlign: "right" }]}>Hours</Text>
             <Text style={[styles.th, { width: COL.perfBonus, textAlign: "right" }]}>Perf</Text>
             <Text style={[styles.th, { width: COL.specBonus, textAlign: "right" }]}>Special</Text>
-            <Text style={[styles.th, { width: COL.holAccrued, textAlign: "right" }]}>Hol Acc</Text>
             <Text style={[styles.th, { width: COL.total, textAlign: "right" }]}>Total</Text>
           </View>
 
@@ -550,9 +548,8 @@ export function PayrollPDF({
                       <Text style={[styles.td, { width: COL.rate, textAlign: "right" }]}>{fmt(entry.hourly_rate)}</Text>
                       <Text style={[styles.td, { width: COL.service, textAlign: "right" }]}>{fmt(Number(entry.service_charge || 0))}</Text>
                       <Text style={[styles.td, { width: COL.hours, textAlign: "right" }]}>{Number(entry.timesheet_hours).toFixed(2)}</Text>
-                      <Text style={[styles.td, { width: COL.perfBonus, textAlign: "right" }]}>{fmt(Number(entry.performance_bonus || 0))}</Text>
-                      <Text style={[styles.td, { width: COL.specBonus, textAlign: "right" }]}>{fmt(Number(entry.special_bonus || 0))}</Text>
-                      <Text style={[styles.td, { width: COL.holAccrued, textAlign: "right" }]}>{Number(entry.holiday_accrued_hours || 0).toFixed(2)}</Text>
+                      <Text style={[styles.td, { width: COL.perfBonus, textAlign: "right" }]}>{Number(entry.performance_bonus || 0) > 0 ? fmt(Number(entry.performance_bonus)) : ""}</Text>
+                      <Text style={[styles.td, { width: COL.specBonus, textAlign: "right" }]}>{Number(entry.special_bonus || 0) > 0 ? fmt(Number(entry.special_bonus)) : ""}</Text>
                       <Text style={[styles.tdBold, { width: COL.total, textAlign: "right" }]}>{fmt(Number(entry.total_pay))}</Text>
                     </View>
                   );
@@ -568,9 +565,8 @@ export function PayrollPDF({
             <Text style={[styles.totalCell, { width: COL.rate }]} />
             <Text style={[styles.totalCell, { width: COL.service }]} />
             <Text style={[styles.totalCell, { width: COL.hours, textAlign: "right" }]}>{totals.hours.toFixed(2)}</Text>
-            <Text style={[styles.totalCell, { width: COL.perfBonus, textAlign: "right" }]}>{fmt(totals.perfBonus)}</Text>
-            <Text style={[styles.totalCell, { width: COL.specBonus, textAlign: "right" }]}>{fmt(totals.specBonus)}</Text>
-            <Text style={[styles.totalCell, { width: COL.holAccrued, textAlign: "right" }]}>{totals.holiday.toFixed(2)}</Text>
+            <Text style={[styles.totalCell, { width: COL.perfBonus, textAlign: "right" }]}>{totals.perfBonus > 0 ? fmt(totals.perfBonus) : ""}</Text>
+            <Text style={[styles.totalCell, { width: COL.specBonus, textAlign: "right" }]}>{totals.specBonus > 0 ? fmt(totals.specBonus) : ""}</Text>
             <Text style={[styles.totalCell, { width: COL.total, textAlign: "right" }]}>{fmt(totals.total)}</Text>
           </View>
         </View>
