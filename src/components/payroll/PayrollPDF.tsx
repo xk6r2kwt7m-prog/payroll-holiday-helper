@@ -26,7 +26,6 @@ const styles = StyleSheet.create({
     color: DARK,
     backgroundColor: "#fff",
   },
-  // Compact header with brand + period info inline
   topHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -74,7 +73,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  // Compact KPI row
   kpiRow: {
     flexDirection: "row",
     gap: 6,
@@ -102,7 +100,6 @@ const styles = StyleSheet.create({
     fontSize: 6,
     color: GRAY,
   },
-  // Dept row
   deptRow: {
     flexDirection: "row",
     gap: 6,
@@ -128,7 +125,6 @@ const styles = StyleSheet.create({
   },
   deptStatLabel: { fontSize: 6.5, color: GRAY },
   deptStatValue: { fontSize: 6.5, fontFamily: "Helvetica-Bold", color: DARK },
-  // Table styles
   table: { marginTop: 2, marginBottom: 4 },
   thRow: {
     flexDirection: "row",
@@ -162,7 +158,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   totalCell: { fontSize: 7, fontFamily: "Helvetica-Bold", color: "#fff" },
-  // Dept sub-header in table
   deptSubHeader: {
     flexDirection: "row",
     backgroundColor: LIGHT_TEAL,
@@ -171,7 +166,6 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   deptSubText: { fontSize: 6.5, fontFamily: "Helvetica-Bold", color: TEAL },
-  // Status badge
   statusBadge: {
     fontSize: 7,
     fontFamily: "Helvetica-Bold",
@@ -180,7 +174,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: "flex-start",
   },
-  // Correction
   correctionNote: {
     backgroundColor: "#fff5f5",
     borderWidth: 0.5,
@@ -190,7 +183,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   correctionText: { fontSize: 7, color: "#e53e3e", fontFamily: "Helvetica-Bold" },
-  // Starter styles
   starterCard: {
     borderWidth: 0.5,
     borderColor: AMBER_BORDER,
@@ -230,18 +222,28 @@ const styles = StyleSheet.create({
   noteText: { fontSize: 6.5, color: GRAY, fontStyle: "italic" },
 });
 
-// Column widths — compact, with holiday pay integrated
+// Main table columns — without holiday pay (moved to own page)
 const COL = {
-  name: "18%",
-  dept: "6%",
-  rate: "8%",
-  service: "8%",
-  hours: "8%",
-  perfBonus: "9%",
-  specBonus: "9%",
-  holAccrued: "9%",
-  holPay: "10%",
-  total: "15%",
+  name: "20%",
+  dept: "7%",
+  rate: "10%",
+  service: "10%",
+  hours: "10%",
+  perfBonus: "11%",
+  specBonus: "11%",
+  holAccrued: "10%",
+  total: "11%",
+};
+
+// Holiday page table columns
+const HCOL = {
+  name: "24%",
+  dept: "8%",
+  date: "14%",
+  hours: "12%",
+  rate: "12%",
+  total: "14%",
+  notes: "16%",
 };
 
 interface PayrollEntry {
@@ -345,17 +347,6 @@ export function PayrollPDF({
     return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
   });
 
-  // Build holiday pay lookup per employee
-  const holidayByEmployee = new Map<string, { hours: number; total: number; details: HolidayPayment[] }>();
-  holidayPayments.forEach((hp) => {
-    const empId = hp.employee_id || "";
-    const existing = holidayByEmployee.get(empId) || { hours: 0, total: 0, details: [] };
-    existing.hours += Number(hp.hours);
-    existing.total += Number(hp.total);
-    existing.details.push(hp);
-    holidayByEmployee.set(empId, existing);
-  });
-
   const totals = entries.reduce(
     (acc, e) => ({
       hours: acc.hours + Number(e.timesheet_hours),
@@ -404,6 +395,15 @@ export function PayrollPDF({
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
+  // Filter starters: only show if their start_date falls within this payroll period
+  const periodStart = new Date(period.start_date);
+  const periodEnd = new Date(period.end_date);
+  const eligibleStarters = starters.filter((s) => {
+    if (!s.start_date) return false;
+    const sd = new Date(s.start_date);
+    return sd >= periodStart && sd <= periodEnd;
+  });
+
   const getRTWStatus = (starter: StarterEmployee) => {
     const hasNI = !!starter.ni_number;
     const hasPassport = !!starter.passport_no;
@@ -415,12 +415,12 @@ export function PayrollPDF({
     return { status: "missing", label: "Missing NI & ID documents" };
   };
 
-  const Header = () => (
+  const Header = ({ subtitle }: { subtitle?: string }) => (
     <View style={styles.topHeader}>
       <View>
         <Text style={styles.topBrand}>{companyName.toUpperCase()}</Text>
         <Text style={styles.topTitle}>
-          Payroll Report{isCorrection ? " — CORRECTED" : ""}
+          {subtitle || `Payroll Report${isCorrection ? " — CORRECTED" : ""}`}
         </Text>
       </View>
       <View>
@@ -471,7 +471,7 @@ export function PayrollPDF({
             <View style={[styles.kpiCard, { backgroundColor: AMBER_BG, borderWidth: 0.5, borderColor: AMBER_BORDER }]}>
               <Text style={styles.kpiLabel}>HOLIDAY PAY</Text>
               <Text style={[styles.kpiValue, { color: AMBER }]}>{fmt(holidayTotal)}</Text>
-              <Text style={styles.kpiSub}>{holidayHoursTotal.toFixed(1)} hrs</Text>
+              <Text style={styles.kpiSub}>{holidayHoursTotal.toFixed(1)} hrs • see page 2</Text>
             </View>
           )}
           <View style={styles.kpiCard}>
@@ -511,7 +511,7 @@ export function PayrollPDF({
           ))}
         </View>
 
-        {/* ─── Employee Detail Table with Holiday Pay integrated ─── */}
+        {/* ─── Employee Detail Table (no holiday pay column) ─── */}
         <Text style={styles.sectionTitle}>Employee Detail</Text>
         <View style={styles.table}>
           <View style={styles.thRow}>
@@ -523,7 +523,6 @@ export function PayrollPDF({
             <Text style={[styles.th, { width: COL.perfBonus, textAlign: "right" }]}>Perf</Text>
             <Text style={[styles.th, { width: COL.specBonus, textAlign: "right" }]}>Special</Text>
             <Text style={[styles.th, { width: COL.holAccrued, textAlign: "right" }]}>Hol Acc</Text>
-            <Text style={[styles.th, { width: COL.holPay, textAlign: "right" }]}>Hol Pay</Text>
             <Text style={[styles.th, { width: COL.total, textAlign: "right" }]}>Total</Text>
           </View>
 
@@ -532,23 +531,16 @@ export function PayrollPDF({
             if (de.length === 0) return null;
             const deptTotal = de.reduce((s, e) => s + Number(e.total_pay), 0);
             const deptHours = de.reduce((s, e) => s + Number(e.timesheet_hours), 0);
-            const deptHolPay = de.reduce((s, e) => {
-              const hp = holidayByEmployee.get(e.employee_id);
-              return s + (hp?.total || 0);
-            }, 0);
 
             return (
               <View key={dept}>
                 <View style={styles.deptSubHeader}>
                   <Text style={styles.deptSubText}>
                     {dept} — {de.length} staff • {deptHours.toFixed(1)} hrs • {fmt(deptTotal)}
-                    {deptHolPay > 0 ? ` + ${fmt(deptHolPay)} hol` : ""}
                   </Text>
                 </View>
                 {de.map((entry, idx) => {
                   const emp = entry.employees;
-                  const empHol = holidayByEmployee.get(entry.employee_id);
-                  const entryTotalWithHol = Number(entry.total_pay) + (empHol?.total || 0);
                   return (
                     <View key={entry.id} style={[styles.tr, idx % 2 === 1 && styles.trAlt]} wrap={false}>
                       <Text style={[styles.tdBold, { width: COL.name }]}>
@@ -561,10 +553,7 @@ export function PayrollPDF({
                       <Text style={[styles.td, { width: COL.perfBonus, textAlign: "right" }]}>{fmt(Number(entry.performance_bonus || 0))}</Text>
                       <Text style={[styles.td, { width: COL.specBonus, textAlign: "right" }]}>{fmt(Number(entry.special_bonus || 0))}</Text>
                       <Text style={[styles.td, { width: COL.holAccrued, textAlign: "right" }]}>{Number(entry.holiday_accrued_hours || 0).toFixed(2)}</Text>
-                      <Text style={[styles.td, { width: COL.holPay, textAlign: "right", color: empHol ? AMBER : DARK }]}>
-                        {empHol ? fmt(empHol.total) : "—"}
-                      </Text>
-                      <Text style={[styles.tdBold, { width: COL.total, textAlign: "right" }]}>{fmt(entryTotalWithHol)}</Text>
+                      <Text style={[styles.tdBold, { width: COL.total, textAlign: "right" }]}>{fmt(Number(entry.total_pay))}</Text>
                     </View>
                   );
                 })}
@@ -582,30 +571,93 @@ export function PayrollPDF({
             <Text style={[styles.totalCell, { width: COL.perfBonus, textAlign: "right" }]}>{fmt(totals.perfBonus)}</Text>
             <Text style={[styles.totalCell, { width: COL.specBonus, textAlign: "right" }]}>{fmt(totals.specBonus)}</Text>
             <Text style={[styles.totalCell, { width: COL.holAccrued, textAlign: "right" }]}>{totals.holiday.toFixed(2)}</Text>
-            <Text style={[styles.totalCell, { width: COL.holPay, textAlign: "right" }]}>{fmt(holidayTotal)}</Text>
-            <Text style={[styles.totalCell, { width: COL.total, textAlign: "right" }]}>{fmt(grandTotal)}</Text>
+            <Text style={[styles.totalCell, { width: COL.total, textAlign: "right" }]}>{fmt(totals.total)}</Text>
           </View>
         </View>
 
         <Footer />
       </Page>
 
-      {/* ─── STARTERS PAGE (only if any) ─── */}
-      {starters.length > 0 && (
+      {/* ─── PAGE 2: Holiday Payments (only if any) ─── */}
+      {holidayPayments.length > 0 && (
         <Page size="A4" style={styles.page}>
-          <View style={styles.topHeader}>
-            <View>
-              <Text style={styles.topBrand}>{companyName.toUpperCase()}</Text>
-              <Text style={{ fontSize: 10, fontFamily: "Helvetica-Bold", color: DARK }}>New Starter Details</Text>
-            </View>
-            <Text style={styles.topMeta}>{period.period_name}</Text>
-          </View>
+          <Header subtitle="Holiday Payments" />
 
           <Text style={{ fontSize: 7, color: GRAY, marginBottom: 8 }}>
-            {starters.length} new starter{starters.length !== 1 ? "s" : ""} — details for payroll processing & HMRC compliance.
+            {holidayPayments.length} holiday payment{holidayPayments.length !== 1 ? "s" : ""} processed in this period — {holidayHoursTotal.toFixed(1)} hours totalling {fmt(holidayTotal)}.
           </Text>
 
-          {starters.map((starter) => {
+          <View style={styles.table}>
+            <View style={styles.thRow}>
+              <Text style={[styles.th, { width: HCOL.name }]}>Employee</Text>
+              <Text style={[styles.th, { width: HCOL.dept, textAlign: "center" }]}>Dept</Text>
+              <Text style={[styles.th, { width: HCOL.date, textAlign: "center" }]}>Date Taken</Text>
+              <Text style={[styles.th, { width: HCOL.hours, textAlign: "right" }]}>Hours</Text>
+              <Text style={[styles.th, { width: HCOL.rate, textAlign: "right" }]}>Rate</Text>
+              <Text style={[styles.th, { width: HCOL.total, textAlign: "right" }]}>Total</Text>
+              <Text style={[styles.th, { width: HCOL.notes }]}>Notes</Text>
+            </View>
+
+            {holidayPayments.map((hp, idx) => {
+              const emp = hp.employees;
+              return (
+                <View key={hp.id} style={[styles.tr, idx % 2 === 1 && styles.trAlt]} wrap={false}>
+                  <Text style={[styles.tdBold, { width: HCOL.name }]}>
+                    {emp ? `${emp.surname}, ${emp.forename}` : hp.employee_name}
+                  </Text>
+                  <Text style={[styles.td, { width: HCOL.dept, textAlign: "center" }]}>{emp?.department || "—"}</Text>
+                  <Text style={[styles.td, { width: HCOL.date, textAlign: "center" }]}>
+                    {hp.holiday_taken_date ? fmtDate(hp.holiday_taken_date) : "—"}
+                  </Text>
+                  <Text style={[styles.td, { width: HCOL.hours, textAlign: "right" }]}>{Number(hp.hours).toFixed(2)}</Text>
+                  <Text style={[styles.td, { width: HCOL.rate, textAlign: "right" }]}>{fmt(Number(hp.rate))}</Text>
+                  <Text style={[styles.tdBold, { width: HCOL.total, textAlign: "right", color: AMBER }]}>{fmt(Number(hp.total))}</Text>
+                  <Text style={[styles.td, { width: HCOL.notes }]}>{hp.notes || "—"}</Text>
+                </View>
+              );
+            })}
+
+            <View style={styles.totalRow}>
+              <Text style={[styles.totalCell, { width: HCOL.name }]}>TOTAL</Text>
+              <Text style={[styles.totalCell, { width: HCOL.dept }]} />
+              <Text style={[styles.totalCell, { width: HCOL.date }]} />
+              <Text style={[styles.totalCell, { width: HCOL.hours, textAlign: "right" }]}>{holidayHoursTotal.toFixed(2)}</Text>
+              <Text style={[styles.totalCell, { width: HCOL.rate }]} />
+              <Text style={[styles.totalCell, { width: HCOL.total, textAlign: "right" }]}>{fmt(holidayTotal)}</Text>
+              <Text style={[styles.totalCell, { width: HCOL.notes }]} />
+            </View>
+          </View>
+
+          {/* Grand total reminder */}
+          <View style={[styles.kpiRow, { marginTop: 12 }]}>
+            <View style={styles.kpiCard}>
+              <Text style={styles.kpiLabel}>PAYROLL TOTAL</Text>
+              <Text style={styles.kpiValue}>{fmt(totals.total)}</Text>
+            </View>
+            <View style={[styles.kpiCard, { backgroundColor: AMBER_BG, borderWidth: 0.5, borderColor: AMBER_BORDER }]}>
+              <Text style={styles.kpiLabel}>HOLIDAY PAY</Text>
+              <Text style={[styles.kpiValue, { color: AMBER }]}>{fmt(holidayTotal)}</Text>
+            </View>
+            <View style={styles.kpiCard}>
+              <Text style={styles.kpiLabel}>GRAND TOTAL</Text>
+              <Text style={styles.kpiValue}>{fmt(grandTotal)}</Text>
+            </View>
+          </View>
+
+          <Footer />
+        </Page>
+      )}
+
+      {/* ─── PAGE 3: New Starters (only if start_date within this period) ─── */}
+      {eligibleStarters.length > 0 && (
+        <Page size="A4" style={styles.page}>
+          <Header subtitle="New Starter Details" />
+
+          <Text style={{ fontSize: 7, color: GRAY, marginBottom: 8 }}>
+            {eligibleStarters.length} new starter{eligibleStarters.length !== 1 ? "s" : ""} — details for payroll processing & HMRC compliance.
+          </Text>
+
+          {eligibleStarters.map((starter) => {
             const rtw = getRTWStatus(starter);
             const hasNI = !!starter.ni_number;
             return (
@@ -659,7 +711,6 @@ export function PayrollPDF({
                   </View>
                 </View>
 
-                {/* RTW note */}
                 <View style={rtw.status === "ok" ? styles.noteBox : styles.alertBox}>
                   <Text style={rtw.status === "ok" ? styles.noteText : styles.alertText}>{rtw.label}</Text>
                 </View>
