@@ -202,12 +202,30 @@ const Payroll = () => {
           logoUrl={logoUrl}
         />
       ).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `payroll-${selectedPeriod.period_name.replace(/\s+/g, "-")}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+
+      const fileName = `payroll-${selectedPeriod.period_name.replace(/\s+/g, "-")}.pdf`;
+      const file = new File([blob], fileName, { type: "application/pdf" });
+
+      // Mobile: use Web Share API if available, otherwise open in new tab
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile && navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: fileName });
+      } else if (isMobile) {
+        // Open PDF in new tab so mobile users can view/save
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      } else {
+        // Desktop: standard download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
 
       const { data: { user } } = await supabase.auth.getUser();
       await supabase.from("audit_log").insert({
