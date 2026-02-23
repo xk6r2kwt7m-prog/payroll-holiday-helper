@@ -12,6 +12,8 @@ import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
 import { CreatePayrollDialog } from "@/components/payroll/CreatePayrollDialog";
 import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable";
 import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWorkflow";
+import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySection";
+import { PayrollSalesInput } from "@/components/payroll/PayrollSalesInput";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +62,12 @@ const Payroll = () => {
     if (!emp) return false;
     return Number(e.hourly_rate) !== Number(emp.hourly_rate);
   });
+
+  // Management salary (CPU department typically = management, exclude from labour %)
+  const managementPayroll = entries
+    .filter((e: any) => e.employees?.department === "CPU")
+    .reduce((sum: number, e: any) => sum + Number(e.total_pay), 0);
+  const holidayTotal = holidayPayments.reduce((s: number, p: any) => s + Number(p.total), 0);
 
   const handleSubmitForReview = async () => {
     if (!selectedPeriod) return;
@@ -316,6 +324,28 @@ const Payroll = () => {
             isDeleting={deletePeriod.isPending}
             entryCount={entries.length}
             zeroHoursCount={zeroHoursCount}
+          />
+        )}
+
+        {/* Holiday Pay Section */}
+        {selectedPeriod && (
+          <PayrollHolidaySection
+            periodId={selectedPeriod.id}
+            periodStatus={selectedPeriod.status}
+            holidayPayments={holidayPayments as any}
+            isAdmin={isAdmin}
+          />
+        )}
+
+        {/* Sales & Labour Analytics */}
+        {selectedPeriod && entries.length > 0 && (
+          <PayrollSalesInput
+            periodId={selectedPeriod.id}
+            periodStatus={selectedPeriod.status}
+            currentSalesTotal={selectedPeriod.sales_total}
+            totalPayroll={totalPay + holidayTotal}
+            managementPayroll={managementPayroll}
+            isAdmin={isAdmin}
           />
         )}
 
