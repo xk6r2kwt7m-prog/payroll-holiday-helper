@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Calendar, AlertTriangle, User, UserMinus } from "lucide-react";
+import { Plus, Calendar, AlertTriangle, User, UserMinus, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,13 +40,13 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const [rate, setRate] = useState("");
   const [holidayDate, setHolidayDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [leaverApproved, setLeaverApproved] = useState(false);
 
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
   const { data: allPayments = [] } = useAllHolidayPayments();
   const createPayment = useCreateHolidayPayment();
 
-  // Fetch all payroll entries for accrual calculation
   const { data: allEntries = [] } = useQuery({
     queryKey: ["payroll_entries", "all_accrual"],
     queryFn: async () => {
@@ -59,10 +59,19 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     },
   });
 
-  // Include all employees (active, starter, leaver)
+  const { data: adjustments = [] } = useQuery({
+    queryKey: ["holiday_adjustments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("holiday_adjustments")
+        .select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const allEmployeesSorted = useMemo(() => {
     return [...employees].sort((a, b) => {
-      // Active/starter first, leavers last
       const statusOrder = { active: 0, starter: 1, leaver: 2 };
       const orderA = statusOrder[a.status] ?? 1;
       const orderB = statusOrder[b.status] ?? 1;
@@ -72,8 +81,9 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   }, [employees]);
 
   const selectedEmployee = employees.find(e => e.id === employeeId);
+  const isLeaver = selectedEmployee?.status === "leaver";
 
-  // Calculate holiday summary for selected employee
+  // Calculate holiday summary for selected employee (including adjustments)
   const employeeSummary = useMemo(() => {
     if (!employeeId) return null;
 
@@ -81,36 +91,69 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
       .filter(e => e.employee_id === employeeId)
       .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
 
+    const accrualAdj = adjustments
+      .filter((a: any) => a.employee_id === employeeId && a.adjustment_type === "accrued")
+      .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
+
     const totalTaken = allPayments
       .filter((p: any) => p.employee_id === employeeId)
       .reduce((sum: number, p: any) => sum + (p.hours || 0), 0);
+
+    const takenAdj = adjustments
+      .filter((a: any) => a.employee_id === employeeId && a.adjustment_type === "taken")
+      .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
 
     const totalPaid = allPayments
       .filter((p: any) => p.employee_id === employeeId)
       .reduce((sum: number, p: any) => sum + (p.total || 0), 0);
 
-    const balance = totalAccrued - totalTaken;
+    const adjustedAccrued = totalAccrued + accrualAdj;
+    const adjustedTaken = totalTaken + takenAdj;
+    const balance = adjustedAccrued - adjustedTaken;
 
-    return { totalAccrued, totalTaken, totalPaid, balance };
-  }, [employeeId, allEntries, allPayments]);
+    return { totalAccrued: adjustedAccrued, totalTaken: adjustedTaken, totalPaid, balance };
+  }, [employeeId, allEntries, allPayments, adjustments]);
 
-  // Auto-populate rate when employee selected
   const handleEmployeeChange = (id: string) => {
     setEmployeeId(id);
+    setLeaverApproved(false);
     const emp = employees.find(e => e.id === id);
     if (emp) {
       setRate(emp.hourly_rate.toString());
+      // For leavers, auto-fill the remaining balance
+      if (emp.status === "leaver") {
+        const accrued = allEntries
+          .filter(e => e.employee_id === id)
+          .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
+        const accrualAdj = adjustments
+          .filter((a: any) => a.employee_id === id && a.adjustment_type === "accrued")
+          .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
+        const taken = allPayments
+          .filter((p: any) => p.employee_id === id)
+          .reduce((sum: number, p: any) => sum + (p.hours || 0), 0);
+        const takenAdj = adjustments
+          .filter((a: any) => a.employee_id === id && a.adjustment_type === "taken")
+          .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
+        const balance = (accrued + accrualAdj) - (taken + takenAdj);
+        setHours(Math.max(0, balance).toFixed(2));
+        setNotes("Leaver settlement — full holiday balance payout");
+      }
     }
   };
 
   const total = (parseFloat(hours) || 0) * (parseFloat(rate) || 0);
-  const isLeaver = selectedEmployee?.status === "leaver";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!employeeId || !periodId || !hours || !rate || !holidayDate) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // For leavers, require explicit approval
+    if (isLeaver && !leaverApproved) {
+      toast.error("Please review and approve the leaver settlement before recording");
       return;
     }
 
@@ -123,8 +166,6 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     try {
       const holidayDateObj = new Date(holidayDate);
       const leaveYear = holidayDateObj.getFullYear();
-      const leaveYearStart = `${leaveYear}-01-01`;
-      const leaveYearEnd = `${leaveYear}-12-31`;
 
       await createPayment.mutateAsync({
         employee_id: employeeId,
@@ -134,12 +175,12 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
         rate: parseFloat(rate),
         total,
         holiday_taken_date: holidayDate,
-        leave_year_start: leaveYearStart,
-        leave_year_end: leaveYearEnd,
+        leave_year_start: `${leaveYear}-01-01`,
+        leave_year_end: `${leaveYear}-12-31`,
         notes: notes || null,
       });
 
-      toast.success("Holiday payment added successfully");
+      toast.success(`Holiday payment of ${formatCurrency(total)} recorded — payroll period updated`);
       setOpen(false);
       resetForm();
       onSuccess?.();
@@ -156,17 +197,22 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     setRate("");
     setHolidayDate("");
     setNotes("");
+    setLeaverApproved(false);
   };
 
+  // Only show draft/pending periods for flexibility
+  const editablePeriods = periods.filter(p => p.status === "draft" || p.status === "pending");
+  const allPeriodsForDisplay = periods;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       <DialogTrigger asChild>
         <Button className="gradient-primary">
           <Plus className="mr-2 h-4 w-4" />
           Add Holiday Taken
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
@@ -245,27 +291,39 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                   <span className="font-medium">{formatCurrency(employeeSummary.totalPaid)}</span>
                 </div>
               </div>
+
+              {/* Leaver approval section */}
               {isLeaver && employeeSummary.balance > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-2">
                   <div className="p-2 rounded bg-warning/10 border border-warning/20 text-xs text-warning flex items-start gap-1.5">
                     <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                     <span>
-                      This employee has <strong>{formatHours(employeeSummary.balance)} hrs</strong> of untaken holiday remaining.
+                      This leaver has <strong>{formatHours(employeeSummary.balance)} hrs</strong> of untaken holiday remaining.
+                      Hours and rate are pre-filled. Review and approve below.
                     </span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-destructive/30 text-destructive hover:bg-destructive/5"
-                    onClick={() => {
-                      setHours(employeeSummary.balance.toFixed(2));
-                      setNotes("Leaver settlement — full holiday balance payout");
-                    }}
-                  >
-                    <UserMinus className="h-3 w-3 mr-1" />
-                    Settle Full Balance ({formatHours(employeeSummary.balance)} hrs)
-                  </Button>
+                  {!leaverApproved ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-success/30 text-success hover:bg-success/5"
+                      onClick={() => setLeaverApproved(true)}
+                    >
+                      <ShieldCheck className="h-3 w-3 mr-1" />
+                      I approve this settlement ({formatHours(parseFloat(hours) || employeeSummary.balance)} hrs × {formatCurrency(parseFloat(rate) || 0)} = {formatCurrency(total || (employeeSummary.balance * (parseFloat(rate) || 0)))})
+                    </Button>
+                  ) : (
+                    <div className="p-2 rounded bg-success/10 border border-success/20 text-xs text-success flex items-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                      <span>Settlement approved — ready to record.</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {isLeaver && employeeSummary.balance <= 0 && (
+                <div className="mt-2 p-2 rounded bg-success/10 border border-success/20 text-xs text-success">
+                  No remaining balance — employee has used all accrued holiday.
                 </div>
               )}
             </div>
@@ -292,13 +350,33 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 <SelectValue placeholder="Select period" />
               </SelectTrigger>
               <SelectContent>
-                {periods.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.period_name}
-                  </SelectItem>
-                ))}
+                {editablePeriods.length > 0 && (
+                  <>
+                    <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase">Editable Periods</div>
+                    {editablePeriods.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.period_name}
+                        <Badge variant="secondary" className="ml-2 text-[10px]">{p.status}</Badge>
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
+                {allPeriodsForDisplay.filter(p => p.status !== "draft" && p.status !== "pending").length > 0 && (
+                  <>
+                    <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase mt-1">All Periods</div>
+                    {allPeriodsForDisplay.filter(p => p.status !== "draft" && p.status !== "pending").map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.period_name}
+                        <Badge variant="outline" className="ml-2 text-[10px]">{p.status}</Badge>
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              The payroll period's holiday total and grand total will be updated automatically
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -310,7 +388,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 step="0.01"
                 min="0"
                 value={hours}
-                onChange={(e) => setHours(e.target.value)}
+                onChange={(e) => { setHours(e.target.value); if (isLeaver) setLeaverApproved(false); }}
                 placeholder="8.00"
                 required
               />
@@ -323,7 +401,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 step="0.01"
                 min="0"
                 value={rate}
-                onChange={(e) => setRate(e.target.value)}
+                onChange={(e) => { setRate(e.target.value); if (isLeaver) setLeaverApproved(false); }}
                 placeholder="12.21"
                 required
               />
@@ -331,11 +409,16 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
           </div>
 
           {hours && rate && (
-            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <div className={cn(
+              "p-3 rounded-lg border",
+              isLeaver ? "bg-destructive/10 border-destructive/20" : "bg-primary/10 border-primary/20"
+            )}>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Total Payment</span>
-                <span className="text-lg font-bold text-primary">
-                  £{total.toFixed(2)}
+                <span className="text-sm font-medium">
+                  {isLeaver ? "Settlement Amount" : "Total Payment"}
+                </span>
+                <span className={cn("text-lg font-bold", isLeaver ? "text-destructive" : "text-primary")}>
+                  {formatCurrency(total)}
                 </span>
               </div>
             </div>
@@ -356,8 +439,12 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={createPayment.isPending}>
-              {createPayment.isPending ? "Adding..." : "Add Holiday"}
+            <Button
+              type="submit"
+              disabled={createPayment.isPending || (isLeaver && !leaverApproved && (employeeSummary?.balance ?? 0) > 0)}
+              className={isLeaver ? "bg-destructive hover:bg-destructive/90" : ""}
+            >
+              {createPayment.isPending ? "Recording..." : isLeaver ? "Record Settlement" : "Record Holiday"}
             </Button>
           </div>
         </form>

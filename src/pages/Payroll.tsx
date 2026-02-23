@@ -7,6 +7,8 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod, useDeletePayrollPeriod } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, useHolidayPayments } from "@/hooks/useHolidays";
+import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPaymentDialog";
+import { SettleLeaverDialog } from "@/components/holidays/SettleLeaverDialog";
 import { useEmployees } from "@/hooks/useEmployees";
 import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
 import { CreatePayrollDialog } from "@/components/payroll/CreatePayrollDialog";
@@ -254,6 +256,8 @@ const Payroll = () => {
                 Analytics
               </Link>
             </Button>
+            {isAdmin && <SettleLeaverDialog />}
+            {isAdmin && <AddHolidayPaymentDialog />}
             {isAdmin && <CreatePayrollDialog />}
             {isAdmin && <ImportPayrollDialog />}
           </div>

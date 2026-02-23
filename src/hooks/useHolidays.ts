@@ -223,12 +223,44 @@ export function useCreateHolidayPayment() {
         .single();
       
       if (error) throw error;
+
+      // Recalculate and update the payroll period's holidays_total and grand_total
+      await recalcPayrollPeriodTotals(payment.payroll_period_id);
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
     },
   });
+}
+
+// Shared helper: recalculate a payroll period's holidays_total and grand_total
+export async function recalcPayrollPeriodTotals(periodId: string) {
+  // Sum all holiday payments for this period
+  const { data: payments, error: paymentsErr } = await supabase
+    .from("holiday_payments")
+    .select("total")
+    .eq("payroll_period_id", periodId);
+  if (paymentsErr) throw paymentsErr;
+  const holidaysTotal = (payments || []).reduce((s, p) => s + Number(p.total), 0);
+
+  // Sum all payroll entries for this period
+  const { data: entries, error: entriesErr } = await supabase
+    .from("payroll_entries")
+    .select("total_pay")
+    .eq("payroll_period_id", periodId);
+  if (entriesErr) throw entriesErr;
+  const timesheetTotal = (entries || []).reduce((s, e) => s + Number(e.total_pay), 0);
+
+  const grandTotal = timesheetTotal + holidaysTotal;
+
+  const { error: updateErr } = await supabase
+    .from("payroll_periods")
+    .update({ holidays_total: holidaysTotal, grand_total: grandTotal })
+    .eq("id", periodId);
+  if (updateErr) throw updateErr;
 }
 
 export function useUpdateHolidayBalance() {
