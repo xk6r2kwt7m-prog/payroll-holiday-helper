@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Users, UserPlus, Filter, CheckSquare, Square } from "lucide-react";
+import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
@@ -24,12 +24,13 @@ const Employees = () => {
     (searchParams.get("dept") as Department) || "all"
   );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [showArchived, setShowArchived] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   
-  const { data: employees = [], isLoading, error } = useEmployees();
+  const { data: employees = [], isLoading, error } = useEmployees(showArchived);
   const deleteEmployee = useDeleteEmployee();
   const { isAdmin } = useAuth();
 
@@ -41,7 +42,9 @@ const Employees = () => {
     }
   }, [searchParams]);
 
-  const filteredEmployees = employees.filter((emp) => {
+  const activeEmployees = showArchived ? employees : employees.filter(e => !e.archived_at);
+  
+  const filteredEmployees = activeEmployees.filter((emp) => {
     const matchesSearch =
       emp.forename.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.surname.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -147,6 +150,16 @@ const Employees = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button
+                variant={showArchived ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setShowArchived(!showArchived)}
+              >
+                <Archive className="h-4 w-4 mr-2" />
+                {showArchived ? "Hide Archived" : "Show Archived"}
+              </Button>
+            )}
             {isAdmin && filteredEmployees.length > 0 && (
               <Button
                 variant={isSelectionMode ? "secondary" : "outline"}
