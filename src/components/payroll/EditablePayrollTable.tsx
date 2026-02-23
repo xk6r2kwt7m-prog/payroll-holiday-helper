@@ -222,14 +222,22 @@ export function EditablePayrollTable({
 
     const importedHours = entry.imported_hours;
     const hoursChanged = importedHours !== null && Math.abs(hours - importedHours) > 0.001;
+    const emp = entry.employees;
+    const rateChanged = emp && Math.abs(hourlyRate - Number(emp.hourly_rate)) > 0.001;
+    const serviceChanged = emp && Math.abs(serviceCharge - Number(emp.service_charge || 0)) > 0.001;
 
-    if (hoursChanged) {
-      // Prompt for adjustment note
+    if (hoursChanged || rateChanged || serviceChanged) {
+      // Build description of what changed
+      const changes: string[] = [];
+      if (hoursChanged) changes.push(`Hours: ${formatHours(importedHours!)} → ${formatHours(hours)}`);
+      if (rateChanged) changes.push(`Rate: ${formatCurrency(Number(emp!.hourly_rate))} → ${formatCurrency(hourlyRate)}`);
+      if (serviceChanged) changes.push(`Service: ${formatCurrency(Number(emp!.service_charge || 0))} → ${formatCurrency(serviceCharge)}`);
+      
       setPendingSave({ entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus });
-      setAdjustmentNote(entry.adjustment_note || "");
+      setAdjustmentNote(entry.adjustment_note || changes.join("; "));
       setNoteDialogOpen(true);
     } else {
-      // No change from imported — clear any previous note if hours match again
+      // No change from master — clear any previous note if everything matches
       await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, 
         importedHours !== null && Math.abs(hours - importedHours) < 0.001 ? null as any : undefined);
     }
@@ -239,7 +247,7 @@ export function EditablePayrollTable({
     if (!pendingSave) return;
     const { entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus } = pendingSave;
     setNoteDialogOpen(false);
-    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, adjustmentNote || `Hours adjusted from ${entry.imported_hours} to ${hours}`);
+    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, adjustmentNote || "Manual adjustment");
     setPendingSave(null);
     setAdjustmentNote("");
   };
@@ -544,15 +552,40 @@ export function EditablePayrollTable({
                   ) : (
                     <>
                       <TableCell className="text-right text-muted-foreground">
-                        <span className="flex items-center justify-end gap-1">
-                          {formatCurrency(Number(entry.hourly_rate))}
-                          {emp && Number(entry.hourly_rate) !== Number(emp.hourly_rate) && (
-                            <span title={`Master rate: ${formatCurrency(Number(emp.hourly_rate))}`} className="inline-block h-2 w-2 rounded-full bg-warning shrink-0" />
-                          )}
-                        </span>
+                        <TooltipProvider>
+                          <div className="flex items-center justify-end gap-1">
+                            {formatCurrency(Number(entry.hourly_rate))}
+                            {emp && Number(entry.hourly_rate) !== Number(emp.hourly_rate) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <FileText className="h-3.5 w-3.5 text-warning shrink-0 cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[250px]">
+                                  <p className="text-xs font-medium">Rate changed from {formatCurrency(Number(emp.hourly_rate))}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">Employee master rate: {formatCurrency(Number(emp.hourly_rate))}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {formatCurrency(Number(entry.service_charge || 0))}
+                        <TooltipProvider>
+                          <div className="flex items-center justify-end gap-1">
+                            {formatCurrency(Number(entry.service_charge || 0))}
+                            {emp && Number(entry.service_charge || 0) !== Number(emp.service_charge || 0) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <FileText className="h-3.5 w-3.5 text-warning shrink-0 cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[250px]">
+                                  <p className="text-xs font-medium">Service charge changed from {formatCurrency(Number(emp.service_charge || 0))}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">Employee master rate: {formatCurrency(Number(emp.service_charge || 0))}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         <TooltipProvider>
@@ -647,10 +680,10 @@ export function EditablePayrollTable({
       }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="text-base">Hours Adjusted</DialogTitle>
+            <DialogTitle className="text-base">Payroll Adjustment</DialogTitle>
             <p className="text-sm text-muted-foreground">
-              Hours changed from <strong>{pendingSave?.entry.imported_hours != null ? formatHours(pendingSave.entry.imported_hours) : "—"}</strong> to <strong>{pendingSave ? formatHours(pendingSave.hours) : "—"}</strong>.
-              Add an internal note (this will <strong>not</strong> appear in exports or PDFs).
+              Values have been changed from the original/master record.
+              Add an internal note — this will <strong>not</strong> appear in exports or PDFs.
             </p>
           </DialogHeader>
           <Textarea
