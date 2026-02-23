@@ -623,12 +623,14 @@ export type Database = {
       }
       payroll_entries: {
         Row: {
+          adjustment_note: string | null
           bank_details_exported: boolean | null
           created_at: string
           employee_id: string
           holiday_accrued_hours: number | null
           hourly_rate: number
           id: string
+          imported_hours: number | null
           notes: string | null
           payroll_period_id: string
           performance_bonus: number | null
@@ -639,12 +641,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          adjustment_note?: string | null
           bank_details_exported?: boolean | null
           created_at?: string
           employee_id: string
           holiday_accrued_hours?: number | null
           hourly_rate: number
           id?: string
+          imported_hours?: number | null
           notes?: string | null
           payroll_period_id: string
           performance_bonus?: number | null
@@ -655,12 +659,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          adjustment_note?: string | null
           bank_details_exported?: boolean | null
           created_at?: string
           employee_id?: string
           holiday_accrued_hours?: number | null
           hourly_rate?: number
           id?: string
+          imported_hours?: number | null
           notes?: string | null
           payroll_period_id?: string
           performance_bonus?: number | null
