@@ -40,6 +40,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const [hours, setHours] = useState("");
   const [rate, setRate] = useState("");
   const [holidayDate, setHolidayDate] = useState(todayStr);
+  const [summaryYear, setSummaryYear] = useState<string>(new Date().getFullYear().toString());
   const [notes, setNotes] = useState("");
   const [leaverApproved, setLeaverApproved] = useState(false);
 
@@ -84,13 +85,11 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const selectedEmployee = employees.find(e => e.id === employeeId);
   const isLeaver = selectedEmployee?.status === "leaver";
 
-  // Calculate holiday summary for selected employee SCOPED to the leave year of the selected holiday date
+  // Calculate holiday summary scoped to the selected summaryYear
   const employeeSummary = useMemo(() => {
     if (!employeeId) return null;
 
-    // Determine leave year from holidayDate
-    const selectedDate = holidayDate ? new Date(holidayDate) : new Date();
-    const leaveYear = selectedDate.getFullYear();
+    const leaveYear = parseInt(summaryYear);
     const leaveYearStart = `${leaveYear}-01-01`;
     const leaveYearEnd = `${leaveYear}-12-31`;
 
@@ -141,7 +140,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     const balance = adjustedAccrued - adjustedTaken;
 
     return { totalAccrued: adjustedAccrued, totalTaken: adjustedTaken, totalPaid, balance, leaveYear };
-  }, [employeeId, allEntriesWithPeriod, allPayments, adjustments, holidayDate, periods]);
+  }, [employeeId, allEntriesWithPeriod, allPayments, adjustments, summaryYear, periods]);
 
   const handleEmployeeChange = (id: string) => {
     setEmployeeId(id);
@@ -239,6 +238,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     setHours("");
     setRate("");
     setHolidayDate(todayStr);
+    setSummaryYear(new Date().getFullYear().toString());
     setNotes("");
     setLeaverApproved(false);
     setOverdrawConfirmed(false);
@@ -321,9 +321,16 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 <span className="text-sm font-semibold">
                   {selectedEmployee?.forename} {selectedEmployee?.surname}
                 </span>
-                <Badge variant="secondary" className="text-[10px]">
-                  {employeeSummary.leaveYear}
-                </Badge>
+                <Select value={summaryYear} onValueChange={setSummaryYear}>
+                  <SelectTrigger className="h-6 w-[80px] text-[10px] px-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[2024, 2025, 2026].map(y => (
+                      <SelectItem key={y} value={y.toString()} className="text-xs">{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {isLeaver && (
                   <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs">
                     <AlertTriangle className="h-3 w-3 mr-1" />
@@ -398,7 +405,12 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
               id="holidayDate"
               type="date"
               value={holidayDate}
-              onChange={(e) => setHolidayDate(e.target.value)}
+              onChange={(e) => {
+                setHolidayDate(e.target.value);
+                if (e.target.value) {
+                  setSummaryYear(new Date(e.target.value).getFullYear().toString());
+                }
+              }}
               required
             />
             <p className="text-xs text-muted-foreground">
