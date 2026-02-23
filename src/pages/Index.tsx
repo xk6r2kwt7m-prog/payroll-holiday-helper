@@ -72,7 +72,7 @@ const Index = () => {
         <SmartAlerts employees={employees} periods={periods} entries={entries} />
 
         {/* KPI Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Active Staff"
             value={activeEmployees}
@@ -119,7 +119,7 @@ const Index = () => {
         </div>
 
         {/* Department Summary */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
           {(["FOH", "BOH", "CPU"] as const).map((dept, i) => {
             const deptEntries = entries.filter((e: any) => e.employees?.department === dept);
             const deptPay = deptEntries.reduce((s: number, e: any) => s + Number(e.total_pay), 0);
@@ -134,7 +134,7 @@ const Index = () => {
               <Link 
                 key={dept} 
                 to={`/employees?dept=${dept}`}
-                className="rounded-xl glass-card p-5 transition-all hover:shadow-elevated hover:-translate-y-1 group cursor-pointer"
+                className="rounded-xl bg-card border border-border p-4 shadow-card transition-all hover:shadow-elevated hover:-translate-y-0.5 group cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{dept}</h3>
@@ -158,7 +158,7 @@ const Index = () => {
         </div>
 
         {/* Payroll Timeline + Expiring Docs */}
-        <div className="grid gap-4 lg:grid-cols-2 animate-fade-in">
+        <div className="grid gap-3 lg:grid-cols-2 animate-fade-in">
           <PayrollDeadlineWidget periods={periods} />
           <ExpiringDocumentsWidget />
         </div>
