@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, UserPlus, Eye, RefreshCw } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, UserPlus, Eye, RefreshCw, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -217,6 +218,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const [importMessage, setImportMessage] = useState("");
   const [existingPeriodId, setExistingPeriodId] = useState<string | null>(null);
   const [useExistingPeriod, setUseExistingPeriod] = useState(false);
+  const [manualMatches, setManualMatches] = useState<Record<string, string>>({});
 
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
@@ -251,6 +253,44 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       console.error(err);
     }
   }, [employees]);
+
+  const handleManualMatch = (csvName: string, employeeId: string) => {
+    if (employeeId === "__none__") {
+      setManualMatches(prev => {
+        const next = { ...prev };
+        delete next[csvName];
+        return next;
+      });
+      // Revert to unmatched
+      setAggregated(prev => prev.map(emp => {
+        if (emp.csvName === csvName) {
+          return { ...emp, matchedId: undefined, matchedForename: undefined, matchedSurname: undefined, hourlyRate: undefined, serviceCharge: undefined, department: undefined, unmatched: true };
+        }
+        return emp;
+      }));
+      return;
+    }
+
+    const matchedEmp = employees.find(e => e.id === employeeId);
+    if (!matchedEmp) return;
+
+    setManualMatches(prev => ({ ...prev, [csvName]: employeeId }));
+    setAggregated(prev => prev.map(emp => {
+      if (emp.csvName === csvName) {
+        return {
+          ...emp,
+          matchedId: matchedEmp.id,
+          matchedForename: matchedEmp.forename,
+          matchedSurname: matchedEmp.surname,
+          department: matchedEmp.department,
+          hourlyRate: matchedEmp.hourly_rate,
+          serviceCharge: matchedEmp.service_charge ?? 0,
+          unmatched: false,
+        };
+      }
+      return emp;
+    }));
+  };
 
   const unmatchedCount = aggregated.filter((e) => e.unmatched).length;
   const matchedEntries = aggregated.filter((e) => !e.unmatched);
@@ -425,6 +465,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setStep("upload");
     setAggregated([]);
     setImportMessage("");
+    setManualMatches({});
   };
 
   return (
@@ -505,7 +546,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         {emp.unmatched ? (
-                          <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
+                          <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20 shrink-0">
                             Not in DB
                           </Badge>
                         ) : (
@@ -518,6 +559,31 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                           <span className="text-xs text-muted-foreground">← "{emp.csvName}"</span>
                         )}
                       </div>
+                      {emp.unmatched && (
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <Select
+                            value={manualMatches[emp.csvName] || "__none__"}
+                            onValueChange={(val) => handleManualMatch(emp.csvName, val)}
+                          >
+                            <SelectTrigger className="h-7 text-xs w-[220px]">
+                              <SelectValue placeholder="Match to employee…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">— No match —</SelectItem>
+                              {employees
+                                .filter(e => e.status === "active" || e.status === "starter")
+                                .sort((a, b) => a.forename.localeCompare(b.forename))
+                                .map(e => (
+                                  <SelectItem key={e.id} value={e.id}>
+                                    {e.forename} {e.surname} ({e.department})
+                                  </SelectItem>
+                                ))
+                              }
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                       {emp.locations.length > 1 && (
                         <p className="text-xs text-muted-foreground mt-0.5 truncate">
                           {emp.locations.map((l) => `${l.name}: ${l.hours.toFixed(1)}h`).join(" · ")}
