@@ -143,6 +143,15 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
 
   const total = (parseFloat(hours) || 0) * (parseFloat(rate) || 0);
 
+  const [overdrawConfirmed, setOverdrawConfirmed] = useState(false);
+
+  // Check if this payment would overdraw the employee's balance
+  const wouldOverdraw = useMemo(() => {
+    if (!employeeSummary || !hours) return false;
+    const requestedHours = parseFloat(hours) || 0;
+    return employeeSummary.balance - requestedHours < 0;
+  }, [employeeSummary, hours]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -154,6 +163,11 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     // For leavers, require explicit approval
     if (isLeaver && !leaverApproved) {
       toast.error("Please review and approve the leaver settlement before recording");
+      return;
+    }
+
+    // Overdraw protection — require explicit confirmation
+    if (wouldOverdraw && !overdrawConfirmed) {
       return;
     }
 
@@ -198,6 +212,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     setHolidayDate("");
     setNotes("");
     setLeaverApproved(false);
+    setOverdrawConfirmed(false);
   };
 
   // Only show draft/pending periods for flexibility
@@ -388,7 +403,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 step="0.01"
                 min="0"
                 value={hours}
-                onChange={(e) => { setHours(e.target.value); if (isLeaver) setLeaverApproved(false); }}
+                onChange={(e) => { setHours(e.target.value); setOverdrawConfirmed(false); if (isLeaver) setLeaverApproved(false); }}
                 placeholder="8.00"
                 required
               />
@@ -435,13 +450,46 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
             />
           </div>
 
+          {/* Overdraw warning */}
+          {wouldOverdraw && !overdrawConfirmed && employeeSummary && (
+            <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-destructive">Overdraw Warning</p>
+                  <p className="text-muted-foreground text-xs mt-1">
+                    This employee only has <strong>{formatHours(employeeSummary.balance)} hrs</strong> remaining but you are recording <strong>{formatHours(parseFloat(hours) || 0)} hrs</strong>.
+                    This will put them <strong>{formatHours(Math.abs(employeeSummary.balance - (parseFloat(hours) || 0)))} hrs</strong> overdrawn.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
+                onClick={() => setOverdrawConfirmed(true)}
+              >
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                I confirm this overdraw is correct
+              </Button>
+            </div>
+          )}
+
+          {wouldOverdraw && overdrawConfirmed && (
+            <div className="p-2 rounded-lg border border-warning/30 bg-warning/5 text-xs text-warning flex items-center gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+              <span>Overdraw confirmed — ready to record.</span>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={createPayment.isPending || (isLeaver && !leaverApproved && (employeeSummary?.balance ?? 0) > 0)}
+              disabled={createPayment.isPending || (isLeaver && !leaverApproved && (employeeSummary?.balance ?? 0) > 0) || (wouldOverdraw && !overdrawConfirmed)}
               className={isLeaver ? "bg-destructive hover:bg-destructive/90" : ""}
             >
               {createPayment.isPending ? "Recording..." : isLeaver ? "Record Settlement" : "Record Holiday"}
