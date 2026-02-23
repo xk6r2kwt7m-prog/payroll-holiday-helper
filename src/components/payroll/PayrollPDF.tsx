@@ -184,43 +184,26 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   correctionText: { fontSize: 7, color: "#e53e3e", fontFamily: "Helvetica-Bold" },
-  starterCard: {
-    borderWidth: 0.5,
-    borderColor: AMBER_BORDER,
-    backgroundColor: AMBER_BG,
-    borderRadius: 3,
-    padding: 8,
-    marginBottom: 6,
+  starterRow: {
+    flexDirection: "row",
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    alignItems: "center",
   },
-  starterName: {
-    fontSize: 9,
+  starterRowLeaver: { backgroundColor: "#fff5f5", borderLeftWidth: 2, borderLeftColor: RED },
+  starterRowStarter: { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
+  missingValue: { fontSize: 6.5, color: RED, fontFamily: "Helvetica-Bold" },
+  alertInline: { fontSize: 5.5, color: RED, marginTop: 1 },
+  noteInline: { fontSize: 5.5, color: GRAY, fontStyle: "italic", marginTop: 1 },
+  statusBadgeSm: {
+    fontSize: 5.5,
     fontFamily: "Helvetica-Bold",
-    color: DARK,
-    marginBottom: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 1.5,
+    borderRadius: 6,
   },
-  starterGrid: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
-  starterField: { width: "48%", marginBottom: 3 },
-  starterFieldLabel: { fontSize: 6, color: GRAY, letterSpacing: 0.4, marginBottom: 1 },
-  starterFieldValue: { fontSize: 7, color: DARK },
-  missingValue: { fontSize: 7, color: RED, fontFamily: "Helvetica-Bold" },
-  alertBox: {
-    backgroundColor: "#fff5f5",
-    borderWidth: 0.5,
-    borderColor: "#feb2b2",
-    borderRadius: 2,
-    padding: 4,
-    marginTop: 3,
-  },
-  alertText: { fontSize: 6.5, color: RED },
-  noteBox: {
-    backgroundColor: LIGHT_BG,
-    borderWidth: 0.5,
-    borderColor: BORDER,
-    borderRadius: 2,
-    padding: 4,
-    marginTop: 3,
-  },
-  noteText: { fontSize: 6.5, color: GRAY, fontStyle: "italic" },
 });
 
 // Main table columns — without holiday pay (moved to own page)
@@ -666,103 +649,77 @@ export function PayrollPDF({
         </Page>
       )}
 
-      {/* ─── PAGE 3: New Starters & Leavers ─── */}
+      {/* ─── PAGE 3: New Starters & Leavers (compact table) ─── */}
       {eligibleStarters.length > 0 && (
-        <Page size="A4" style={styles.page}>
+        <Page size="A4" orientation="landscape" style={styles.page}>
           <Header subtitle="Starters & Leavers" />
 
-          <Text style={{ fontSize: 7, color: GRAY, marginBottom: 8 }}>
+          <Text style={{ fontSize: 7, color: GRAY, marginBottom: 6 }}>
             {eligibleStarters.filter(s => s.status === 'starter').length} starter{eligibleStarters.filter(s => s.status === 'starter').length !== 1 ? "s" : ""} and {eligibleStarters.filter(s => s.status === 'leaver').length} leaver{eligibleStarters.filter(s => s.status === 'leaver').length !== 1 ? "s" : ""} — details for payroll processing & HMRC compliance.
           </Text>
 
-          {eligibleStarters.map((starter) => {
+          {/* Table header */}
+          <View style={[styles.thRow, { marginBottom: 0 }]}>
+            <Text style={[styles.th, { width: "14%" }]}>NAME</Text>
+            <Text style={[styles.th, { width: "7%" }]}>STATUS</Text>
+            <Text style={[styles.th, { width: "6%" }]}>DEPT</Text>
+            <Text style={[styles.th, { width: "8%" }]}>RATE</Text>
+            <Text style={[styles.th, { width: "10%" }]}>START</Text>
+            <Text style={[styles.th, { width: "10%" }]}>END</Text>
+            <Text style={[styles.th, { width: "10%" }]}>NI NUMBER</Text>
+            <Text style={[styles.th, { width: "9%" }]}>SORT CODE</Text>
+            <Text style={[styles.th, { width: "10%" }]}>ACCOUNT</Text>
+            <Text style={[styles.th, { width: "6%" }]}>RTW</Text>
+            <Text style={[styles.th, { width: "10%" }]}>NOTES</Text>
+          </View>
+
+          {eligibleStarters.map((starter, idx) => {
             const rtw = getRTWStatus(starter);
             const hasNI = !!starter.ni_number;
+            const isLeaver = starter.status === 'leaver';
+            const rowStyle = isLeaver ? styles.starterRowLeaver : styles.starterRowStarter;
+            const notesParts: string[] = [];
+            if (!hasNI && starter.passport_no) notesParts.push(`PP: ${starter.passport_no}`);
+            if (!hasNI && !starter.passport_no) notesParts.push("No NI/PP");
+            if (!starter.sort_code || !starter.bank_account_no) notesParts.push("Bank missing");
+
             return (
-              <View key={starter.id} style={[styles.starterCard, starter.status === 'leaver' ? { borderColor: '#feb2b2', backgroundColor: '#fff5f5' } : {}]} wrap={false}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <Text style={styles.starterName}>{starter.forename} {starter.surname}</Text>
-                  <View style={{ flexDirection: "row", gap: 4 }}>
-                    <View style={[styles.statusBadge, {
-                      backgroundColor: starter.status === 'leaver' ? '#fed7d7' : '#fefcbf',
-                    }]}>
-                      <Text style={{
-                        fontSize: 6, fontFamily: "Helvetica-Bold",
-                        color: starter.status === 'leaver' ? RED : AMBER,
-                      }}>
-                        {starter.status === 'leaver' ? 'LEAVER' : 'STARTER'}
-                      </Text>
-                    </View>
-                    <View style={[styles.statusBadge, {
-                      backgroundColor: rtw.status === "ok" ? "#c6f6d5" : rtw.status === "pending" ? AMBER_BG : "#fed7d7",
-                    }]}>
-                      <Text style={{
-                        fontSize: 6, fontFamily: "Helvetica-Bold",
-                        color: rtw.status === "ok" ? "#276749" : rtw.status === "pending" ? AMBER : RED,
-                      }}>
-                        {rtw.status === "ok" ? "RTW OK" : rtw.status === "pending" ? "RTW PENDING" : "RTW MISSING"}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.starterGrid}>
-                  <View style={styles.starterField}>
-                    <Text style={styles.starterFieldLabel}>DEPARTMENT</Text>
-                    <Text style={styles.starterFieldValue}>{starter.department}</Text>
-                  </View>
-                  <View style={styles.starterField}>
-                    <Text style={styles.starterFieldLabel}>RATE</Text>
-                    <Text style={styles.starterFieldValue}>{fmt(starter.hourly_rate)}</Text>
-                  </View>
-                  <View style={styles.starterField}>
-                    <Text style={styles.starterFieldLabel}>START DATE</Text>
-                    <Text style={styles.starterFieldValue}>{starter.start_date ? fmtDate(starter.start_date) : "Not set"}</Text>
-                  </View>
-                  {starter.status === 'leaver' && (
-                    <View style={styles.starterField}>
-                      <Text style={styles.starterFieldLabel}>END DATE</Text>
-                      <Text style={[styles.starterFieldValue, { color: RED, fontFamily: "Helvetica-Bold" }]}>
-                        {starter.end_date ? fmtDate(starter.end_date) : "Not set"}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={styles.starterField}>
-                    <Text style={styles.starterFieldLabel}>NI NUMBER</Text>
-                    {hasNI ? (
-                      <Text style={styles.starterFieldValue}>{starter.ni_number}</Text>
-                    ) : (
-                      <Text style={styles.missingValue}>Missing</Text>
-                    )}
-                  </View>
-                  <View style={styles.starterField}>
-                    <Text style={styles.starterFieldLabel}>SORT CODE</Text>
-                    <Text style={starter.sort_code ? styles.starterFieldValue : styles.missingValue}>
-                      {starter.sort_code || "Missing"}
-                    </Text>
-                  </View>
-                  <View style={styles.starterField}>
-                    <Text style={styles.starterFieldLabel}>ACCOUNT NO</Text>
-                    <Text style={starter.bank_account_no ? styles.starterFieldValue : styles.missingValue}>
-                      {starter.bank_account_no || "Missing"}
+              <View key={starter.id} style={[styles.starterRow, rowStyle, idx % 2 === 0 ? {} : { backgroundColor: isLeaver ? "#fff0f0" : "#fffdf0" }]} wrap={false}>
+                <Text style={[styles.tdBold, { width: "14%" }]}>{starter.forename} {starter.surname}</Text>
+                <View style={{ width: "7%", flexDirection: "row" }}>
+                  <View style={[styles.statusBadgeSm, { backgroundColor: isLeaver ? '#fed7d7' : '#fefcbf' }]}>
+                    <Text style={{ fontSize: 5.5, fontFamily: "Helvetica-Bold", color: isLeaver ? RED : AMBER }}>
+                      {isLeaver ? 'LEAVER' : 'STARTER'}
                     </Text>
                   </View>
                 </View>
-
-                <View style={rtw.status === "ok" ? styles.noteBox : styles.alertBox}>
-                  <Text style={rtw.status === "ok" ? styles.noteText : styles.alertText}>{rtw.label}</Text>
-                </View>
-
-                {!hasNI && (
-                  <View style={[styles.alertBox, { marginTop: 2 }]}>
-                    <Text style={styles.alertText}>
-                      No NI number.
-                      {starter.passport_no
-                        ? ` Passport (${starter.passport_no}), nationality (${starter.nationality || "unknown"}) as interim ID.`
-                        : " Passport & nationality must be provided to HMRC."}
+                <Text style={[styles.td, { width: "6%" }]}>{starter.department}</Text>
+                <Text style={[styles.td, { width: "8%" }]}>{fmt(starter.hourly_rate)}</Text>
+                <Text style={[styles.td, { width: "10%" }]}>{starter.start_date ? fmtDate(starter.start_date) : "—"}</Text>
+                <Text style={[styles.td, { width: "10%", color: isLeaver && starter.end_date ? RED : DARK }]}>
+                  {isLeaver ? (starter.end_date ? fmtDate(starter.end_date) : "Not set") : "—"}
+                </Text>
+                <Text style={[hasNI ? styles.td : styles.missingValue, { width: "10%" }]}>
+                  {starter.ni_number || "Missing"}
+                </Text>
+                <Text style={[starter.sort_code ? styles.td : styles.missingValue, { width: "9%" }]}>
+                  {starter.sort_code || "Missing"}
+                </Text>
+                <Text style={[starter.bank_account_no ? styles.td : styles.missingValue, { width: "10%" }]}>
+                  {starter.bank_account_no || "Missing"}
+                </Text>
+                <View style={{ width: "6%", flexDirection: "row" }}>
+                  <View style={[styles.statusBadgeSm, {
+                    backgroundColor: rtw.status === "ok" ? "#c6f6d5" : rtw.status === "pending" ? AMBER_BG : "#fed7d7",
+                  }]}>
+                    <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: rtw.status === "ok" ? "#276749" : rtw.status === "pending" ? AMBER : RED }}>
+                      {rtw.status === "ok" ? "OK" : rtw.status === "pending" ? "PEND" : "MISS"}
                     </Text>
                   </View>
-                )}
+                </View>
+                <Text style={[styles.td, { width: "10%", fontSize: 5.5, color: notesParts.length > 0 ? RED : GRAY }]}>
+                  {notesParts.length > 0 ? notesParts.join("; ") : "✓"}
+                </Text>
               </View>
             );
           })}
