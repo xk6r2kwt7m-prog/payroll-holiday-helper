@@ -30,19 +30,18 @@ export function useEmployeeBranches(employeeId?: string) {
   return useQuery({
     queryKey: ["employee_branches", employeeId],
     queryFn: async () => {
-      let query = supabase
+      if (!employeeId) return [] as EmployeeBranch[];
+      
+      const { data, error } = await supabase
         .from("employee_branches")
         .select("*")
+        .eq("employee_id", employeeId)
         .order("is_primary", { ascending: false });
       
-      if (employeeId) {
-        query = query.eq("employee_id", employeeId);
-      }
-      
-      const { data, error } = await query;
       if (error) throw error;
       return data as EmployeeBranch[];
     },
+    enabled: !!employeeId,
   });
 }
 
