@@ -86,6 +86,32 @@ const NAME_MAP: Record<string, string> = {
   "Elsa": "Elsa Perez",
   "Ekaterina": "Ekaterina",
   "Hafiz": "Hafiz Rahim",
+  // 2024 names
+  "maribel": "Maribel",
+  "Durga Chandan": "Durba Chandan",
+  "Benjamin": "Benjamin Gra",
+  "Rochelle": "Rochelle",
+  "miama": "Miama",
+  "David Rios": "David Rios",
+  "Roger Rodriguez": "Roger Rodriguez",
+  "Akshay Jacob Mathew": "Akshay Jacob Mathew",
+  "Eli Sebastian": "Eli Sebastian",
+  "nairoby": "Nairobys De los Santos",
+  "Jess": "Jess",
+  "Dimple": "Dimple",
+  "Chloe Cook": "Chloe Cook",
+  "Endea": "Endea",
+  "Iara Cabrita": "Iara Cabrita",
+  "Jhulia": "Jhulia",
+  "Kate~": "Kate",
+  "Sally Sano": "Sally Poh Ray Sano Lee",
+  "Silvio": "Silvio",
+  "Anna Khoptynska": "Anna Khoptynska",
+  "Catalin Satcau": "Catalin Satcau",
+  "Eve": "Eve",
+  "Mason": "Mason",
+  "Lorna Lorna": "Lorna",
+  "Andre": "Andre",
 };
 
 interface ParsedCSVRow {
@@ -100,7 +126,7 @@ interface AggregatedEmployee {
   csvTotalHours: number;
   dbTotalHours: number;
   dbAccrued: number;
-  expectedAccrual: number; // csvTotalHours * 0.1207
+  expectedAccrual: number;
   accrualDifference: number;
   matched: boolean;
   sections: string[];
@@ -157,6 +183,8 @@ function resolveEmployeeName(csvName: string): string {
 
 export default function HolidayAudit() {
   const [csvData, setCsvData] = useState<ParsedCSVRow[] | null>(null);
+  const [csvYear, setCsvYear] = useState<number>(2025);
+  const [csvFileName, setCsvFileName] = useState<string>("");
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("accrualDiff");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -165,12 +193,14 @@ export default function HolidayAudit() {
   const { data: payrollEntries = [] } = useAllPayrollEntriesWithHoliday();
   const { data: employees = [] } = useEmployees();
 
-  // Aggregate DB data for 2025
+  // Aggregate DB data filtered by detected year
   const dbTotals = useMemo(() => {
+    const yearStart = `${csvYear}-01-01`;
+    const yearEnd = `${csvYear}-12-31`;
     const map = new Map<string, { hours: number; accrued: number; name: string }>();
     for (const entry of payrollEntries) {
       const period = entry.payroll_periods as any;
-      if (!period?.start_date || period.start_date < "2025-01-01" || period.end_date > "2025-12-31") continue;
+      if (!period?.start_date || period.start_date < yearStart || period.end_date > yearEnd) continue;
       const emp = entry.employees as any;
       if (!emp) continue;
       const key = `${emp.forename} ${emp.surname}`;
@@ -180,11 +210,18 @@ export default function HolidayAudit() {
       map.set(key, existing);
     }
     return map;
-  }, [payrollEntries]);
+  }, [payrollEntries, csvYear]);
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setCsvFileName(file.name);
+    // Auto-detect year from filename
+    const yearMatch = file.name.match(/(\d{4})/g);
+    if (yearMatch && yearMatch.length >= 1) {
+      const detectedYear = parseInt(yearMatch[yearMatch.length - 1]);
+      if (detectedYear >= 2020 && detectedYear <= 2030) setCsvYear(detectedYear);
+    }
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
@@ -311,13 +348,20 @@ export default function HolidayAudit() {
   return (
     <AppLayout>
       <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Holiday Audit</h1>
-          <p className="text-sm text-muted-foreground">
-            Upload an external timesheet CSV to cross-reference hours against payroll records and verify accrual accuracy
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Holiday Audit</h1>
+            <p className="text-sm text-muted-foreground">
+              Upload an external timesheet CSV to cross-reference hours against payroll records and verify accrual accuracy
+            </p>
+          </div>
+          {csvData && (
+            <div className="text-right">
+              <Badge variant="outline" className="text-sm">{csvYear} Data</Badge>
+              {csvFileName && <p className="text-xs text-muted-foreground mt-1">{csvFileName}</p>}
+            </div>
+          )}
         </div>
-
         {/* Upload */}
         {!csvData && (
           <Card>
