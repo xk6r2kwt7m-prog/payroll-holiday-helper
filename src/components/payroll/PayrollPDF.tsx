@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     alignItems: "center",
   },
-  starterRowLeaver: { backgroundColor: "#fff5f5", borderLeftWidth: 2, borderLeftColor: RED },
+  starterRowLeaver: { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
   starterRowStarter: { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
   missingValue: { fontSize: 6.5, color: RED, fontFamily: "Helvetica-Bold" },
   alertInline: { fontSize: 5.5, color: RED, marginTop: 1 },
@@ -541,10 +541,10 @@ export function PayrollPDF({
                     <View key={entry.id} style={[
                       styles.tr,
                       idx % 2 === 1 && styles.trAlt,
-                      isLeaver && { backgroundColor: "#fff5f5", borderLeftWidth: 2, borderLeftColor: RED },
+                      isLeaver && { backgroundColor: "#fff5f5", borderLeftWidth: 2, borderLeftColor: AMBER },
                       isStarter && { backgroundColor: "#fffff0", borderLeftWidth: 2, borderLeftColor: AMBER },
                     ]} wrap={false}>
-                      <Text style={[styles.tdBold, { width: COL.name, color: isLeaver ? RED : isStarter ? AMBER : DARK }]}>
+                      <Text style={[styles.tdBold, { width: COL.name }]}>
                         {emp?.surname}, {emp?.forename}
                         {isStarter ? "  ★ STARTER" : ""}
                         {isLeaver ? "  ✦ LEAVER" : ""}
@@ -684,7 +684,7 @@ export function PayrollPDF({
             if (!starter.sort_code || !starter.bank_account_no) notesParts.push("Bank missing");
 
             return (
-              <View key={starter.id} style={[styles.starterRow, rowStyle, idx % 2 === 0 ? {} : { backgroundColor: isLeaver ? "#fff0f0" : "#fffdf0" }]} wrap={false}>
+              <View key={starter.id} style={[styles.starterRow, rowStyle, idx % 2 === 1 ? { backgroundColor: "#fffdf0" } : {}]} wrap={false}>
                 <Text style={[styles.tdBold, { width: "14%" }]}>{starter.forename} {starter.surname}</Text>
                 <View style={{ width: "7%", flexDirection: "row" }}>
                   <View style={[styles.statusBadgeSm, { backgroundColor: isLeaver ? '#fed7d7' : '#fefcbf' }]}>
