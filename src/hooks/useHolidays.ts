@@ -272,6 +272,51 @@ export function useCreateHolidayBalance() {
   });
 }
 
+// Holiday adjustments hook
+export function useHolidayAdjustments(year?: number) {
+  return useQuery({
+    queryKey: ["holiday_adjustments", year],
+    queryFn: async () => {
+      let query = supabase
+        .from("holiday_adjustments")
+        .select(`
+          *,
+          employees (
+            id,
+            forename,
+            surname,
+            department
+          )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (year) {
+        query = query
+          .eq("leave_year_start", `${year}-01-01`)
+          .eq("leave_year_end", `${year}-12-31`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useAllHolidayAdjustments() {
+  return useQuery({
+    queryKey: ["holiday_adjustments", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("holiday_adjustments")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 // UK Holiday Law Constants
 export const UK_HOLIDAY_LAW = {
   STATUTORY_WEEKS: 5.6,
