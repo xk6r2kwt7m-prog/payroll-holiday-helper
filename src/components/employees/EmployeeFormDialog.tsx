@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin } from "lucide-react";
+import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
 import { useEmployeeBranches, useSetEmployeeBranches, BRANCHES, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
@@ -48,40 +48,61 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
   const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
 
-  // Reset form when dialog opens
+  // Reset form only when dialog opens (not on every render)
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    
+    if (employee) {
       setFormData({
-        forename: employee?.forename || "",
-        surname: employee?.surname || "",
-        department: (employee?.department || "FOH") as DepartmentType,
-        status: (employee?.status || "starter") as EmployeeStatus,
-        hourly_rate: employee?.hourly_rate?.toString() || "",
-        service_charge: employee?.service_charge?.toString() || "0",
-        ni_number: employee?.ni_number || "",
-        bank_account_no: employee?.bank_account_no || "",
-        sort_code: employee?.sort_code || "",
-        notes: employee?.notes || "",
-        start_date: employee?.start_date || "",
-        end_date: employee?.end_date || "",
-        nationality: employee?.nationality || "",
-        passport_no: employee?.passport_no || "",
-        employee_ref: employee?.employee_ref || "",
+        forename: employee.forename || "",
+        surname: employee.surname || "",
+        department: (employee.department || "FOH") as DepartmentType,
+        status: (employee.status || "starter") as EmployeeStatus,
+        hourly_rate: employee.hourly_rate?.toString() || "",
+        service_charge: employee.service_charge?.toString() || "0",
+        ni_number: employee.ni_number || "",
+        bank_account_no: employee.bank_account_no || "",
+        sort_code: employee.sort_code || "",
+        notes: employee.notes || "",
+        start_date: employee.start_date || "",
+        end_date: employee.end_date || "",
+        nationality: employee.nationality || "",
+        passport_no: employee.passport_no || "",
+        employee_ref: employee.employee_ref || "",
       });
-      setActiveTab("personal");
+    } else {
+      setFormData({
+        forename: "",
+        surname: "",
+        department: "FOH" as DepartmentType,
+        status: "starter" as EmployeeStatus,
+        hourly_rate: "",
+        service_charge: "0",
+        ni_number: "",
+        bank_account_no: "",
+        sort_code: "",
+        notes: "",
+        start_date: "",
+        end_date: "",
+        nationality: "",
+        passport_no: "",
+        employee_ref: "",
+      });
+      setSelectedBranches([]);
+      setPrimaryBranch(undefined);
     }
-  }, [open, employee]);
+    setActiveTab("personal");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  // Set branches when they load (separate effect to avoid infinite loop)
+  // Set branches when they load for editing (only for existing employees)
   useEffect(() => {
     if (open && employee && existingBranches.length > 0) {
       setSelectedBranches(existingBranches.map(b => b.branch));
       const primary = existingBranches.find(b => b.is_primary);
       setPrimaryBranch(primary?.branch);
-    } else if (open && !employee) {
-      setSelectedBranches([]);
-      setPrimaryBranch(undefined);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, employee?.id, existingBranches.length]);
 
   const createEmployee = useCreateEmployee();
@@ -440,10 +461,14 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                       onClick={() => toggleBranch(branch)}
                     >
                       <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={selectedBranches.includes(branch)}
-                          onCheckedChange={() => toggleBranch(branch)}
-                        />
+                        <div className={cn(
+                          "flex h-5 w-5 items-center justify-center rounded border-2 transition-colors",
+                          selectedBranches.includes(branch)
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-muted-foreground/30"
+                        )}>
+                          {selectedBranches.includes(branch) && <Check className="h-3 w-3" />}
+                        </div>
                         <span className="text-xl">{BRANCH_EMOJI[branch]}</span>
                         <span className="font-medium">{branch}</span>
                       </div>
