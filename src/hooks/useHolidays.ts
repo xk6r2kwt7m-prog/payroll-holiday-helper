@@ -379,6 +379,11 @@ export const formatHours = (hours: number): string => {
   return Number(hours).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
+export const hoursToDays = (hours: number, hoursPerDay: number = 8): string => {
+  const days = hours / hoursPerDay;
+  return days.toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+};
+
 // Calculate employee holiday summary
 export interface EmployeeHolidaySummary {
   employeeId: string;

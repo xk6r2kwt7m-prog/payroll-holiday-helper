@@ -9,7 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { formatHours, formatCurrency, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
+import { formatHours, formatCurrency, UK_HOLIDAY_LAW, hoursToDays } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
 import { AdjustHolidayBalanceDialog } from "./AdjustHolidayBalanceDialog";
 
@@ -106,6 +106,7 @@ export function EmployeeHolidayDetailSheet({
             <div className="rounded-xl bg-success/5 border border-success/10 p-4 text-center">
               <Clock className="h-5 w-5 text-success mx-auto mb-1" />
               <p className="text-2xl font-bold text-success">{formatHours(hoursAccrued)}</p>
+              <p className="text-[10px] text-muted-foreground/70">{hoursToDays(hoursAccrued)} days</p>
               <p className="text-xs text-muted-foreground">Hours Accrued</p>
             </div>
             <div className="rounded-xl bg-primary/5 border border-primary/10 p-4 text-center">

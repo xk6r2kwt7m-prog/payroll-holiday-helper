@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import { formatCurrency, formatHours, hoursToDays } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
 
 interface PeriodBreakdown {
@@ -104,6 +104,7 @@ export function EmployeeHolidayCard({
         <div className="grid grid-cols-3 gap-3 mt-4">
           <div className="text-center p-2 rounded-lg bg-success/5 border border-success/10">
             <p className="text-lg font-bold text-success">{formatHours(totalAccrued)}</p>
+            <p className="text-[10px] text-muted-foreground/70">{hoursToDays(totalAccrued)} days</p>
             <p className="text-xs text-muted-foreground">Accrued</p>
           </div>
           <div className="text-center p-2 rounded-lg bg-primary/5 border border-primary/10">
