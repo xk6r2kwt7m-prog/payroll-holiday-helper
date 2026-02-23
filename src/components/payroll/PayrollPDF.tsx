@@ -541,14 +541,24 @@ export function PayrollPDF({
                     <View key={entry.id} style={[
                       styles.tr,
                       idx % 2 === 1 && styles.trAlt,
-                      isLeaver && { backgroundColor: "#fff5f5", borderLeftWidth: 2, borderLeftColor: AMBER },
-                      isStarter && { backgroundColor: "#fffff0", borderLeftWidth: 2, borderLeftColor: AMBER },
+                      isLeaver && { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
+                      isStarter && { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
                     ]} wrap={false}>
-                      <Text style={[styles.tdBold, { width: COL.name }]}>
-                        {emp?.surname}, {emp?.forename}
-                        {isStarter ? "  ★ STARTER" : ""}
-                        {isLeaver ? "  ✦ LEAVER" : ""}
-                      </Text>
+                      <View style={{ width: COL.name, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Text style={styles.tdBold}>
+                          {emp?.surname}, {emp?.forename}
+                        </Text>
+                        {isStarter && (
+                          <View style={{ backgroundColor: "#fef3c7", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
+                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: AMBER }}>STARTER</Text>
+                          </View>
+                        )}
+                        {isLeaver && (
+                          <View style={{ backgroundColor: "#fef3c7", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
+                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: AMBER }}>LEAVER</Text>
+                          </View>
+                        )}
+                      </View>
                       <Text style={[styles.td, { width: COL.dept, textAlign: "center" }]}>{emp?.department}</Text>
                       <Text style={[styles.td, { width: COL.rate, textAlign: "right" }]}>{fmt(entry.hourly_rate)}</Text>
                       <Text style={[styles.td, { width: COL.service, textAlign: "right" }]}>{fmt(Number(entry.service_charge || 0))}</Text>
