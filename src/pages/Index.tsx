@@ -1,4 +1,5 @@
-import { Users, DollarSign, Calendar, Clock, FileText, Percent, TrendingUp } from "lucide-react";
+import { Users, DollarSign, Calendar, Clock, FileText, Percent, TrendingUp, Search } from "lucide-react";
+import { motion } from "framer-motion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocumentsWidget";
@@ -48,11 +49,23 @@ const Index = () => {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="animate-slide-in-left">
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            {latestPeriod ? `Latest period: ${latestPeriod.period_name}` : "Welcome to Ugly Dumpling Payroll"}
-          </p>
+        <div className="flex items-center justify-between animate-slide-in-left">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">
+              {latestPeriod ? `Latest period: ${latestPeriod.period_name}` : "Welcome to Ugly Dumpling Payroll"}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="hidden sm:flex gap-2 text-muted-foreground"
+            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+          >
+            <Search className="h-4 w-4" />
+            <span>Search</span>
+            <kbd className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
+          </Button>
         </div>
 
         {/* Smart Alerts */}
@@ -66,6 +79,7 @@ const Index = () => {
             subtitle={`${employees.length} total`}
             icon={<Users className="h-5 w-5" />}
             href="/employees"
+            index={0}
           />
           <StatCard
             title="Total Payroll"
@@ -74,6 +88,7 @@ const Index = () => {
             icon={<DollarSign className="h-5 w-5" />}
             variant="primary"
             href="/payroll"
+            index={1}
           />
           <StatCard
             title="Labour %"
@@ -82,6 +97,7 @@ const Index = () => {
             icon={<Percent className="h-5 w-5" />}
             variant={labourPercent > 35 ? "warning" : labourPercent > 0 ? "success" : "default"}
             href="/payroll/analytics"
+            index={2}
           />
           <StatCard
             title="Holiday Accrued"
@@ -90,6 +106,7 @@ const Index = () => {
             icon={<Calendar className="h-5 w-5" />}
             variant="accent"
             href="/holidays"
+            index={3}
           />
           <StatCard
             title="Hours Tracked"
@@ -97,20 +114,27 @@ const Index = () => {
             subtitle={`${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)}/week`}
             icon={<Clock className="h-5 w-5" />}
             href="/timesheets"
+            index={4}
           />
         </div>
 
         {/* Department Summary */}
-        <div className="grid gap-4 sm:grid-cols-3 animate-fade-in">
-          {(["FOH", "BOH", "CPU"] as const).map((dept) => {
+        <div className="grid gap-4 sm:grid-cols-3">
+          {(["FOH", "BOH", "CPU"] as const).map((dept, i) => {
             const deptEntries = entries.filter((e: any) => e.employees?.department === dept);
             const deptPay = deptEntries.reduce((s: number, e: any) => s + Number(e.total_pay), 0);
             const deptHours = deptEntries.reduce((s: number, e: any) => s + Number(e.timesheet_hours), 0);
             return (
+              <motion.div
+                key={dept}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
+              >
               <Link 
                 key={dept} 
                 to={`/employees?dept=${dept}`}
-                className="rounded-xl bg-card p-5 shadow-card transition-all hover:shadow-elevated hover:-translate-y-1 group cursor-pointer"
+                className="rounded-xl glass-card p-5 transition-all hover:shadow-elevated hover:-translate-y-1 group cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">{dept}</h3>
@@ -128,6 +152,7 @@ const Index = () => {
                   {dept === "CPU" && "🏭 Central Production Unit"}
                 </p>
               </Link>
+              </motion.div>
             );
           })}
         </div>

@@ -17,6 +17,7 @@ import {
   ClipboardCheck,
   BarChart3,
   MapPin,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -83,8 +84,27 @@ export function Sidebar() {
           </div>
         )}
 
+        {/* Search trigger */}
+        <div className="px-3 py-2">
+          <button
+            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors hover:bg-sidebar-accent",
+              collapsed && "justify-center"
+            )}
+          >
+            <Search className="h-5 w-5 flex-shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left">Search…</span>
+                <kbd className="rounded bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-mono text-sidebar-foreground/50">⌘K</kbd>
+              </>
+            )}
+          </button>
+        </div>
+
         {/* Navigation */}
-        <nav className="flex-1 space-y-0.5 px-3 py-4 overflow-y-auto scrollbar-none">
+        <nav className="flex-1 space-y-0.5 px-3 py-2 overflow-y-auto scrollbar-none">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const linkContent = (
