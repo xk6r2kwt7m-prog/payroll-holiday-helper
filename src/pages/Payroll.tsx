@@ -185,9 +185,9 @@ const Payroll = () => {
     if (!selectedPeriod || entries.length === 0) return;
     try {
       toast.info("Generating PDF...");
-      // Find all starters AND leavers — show on PDF regardless of payroll entries
+      // Find starters AND leavers in this period's entries
       const starterEmployees = allEmployees.filter(emp => 
-        emp.status === 'starter' || emp.status === 'leaver'
+        (emp.status === 'starter' || emp.status === 'leaver') && entries.some((e: any) => e.employee_id === emp.id)
       );
 
       const logoUrl = `${window.location.origin}/logo.jpeg`;
