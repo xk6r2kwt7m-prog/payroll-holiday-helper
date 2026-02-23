@@ -18,6 +18,7 @@ import Timesheets from "./pages/Timesheets";
 import ScheduleReport from "./pages/ScheduleReport";
 import ScheduleAnalytics from "./pages/ScheduleAnalytics";
 import PayrollAnalytics from "./pages/PayrollAnalytics";
+import HolidayAudit from "./pages/HolidayAudit";
 import StaffPortal from "./pages/StaffPortal";
 import Auth from "./pages/Auth";
 import SignContract from "./pages/SignContract";
@@ -137,6 +138,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <PayrollAnalytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/holidays/audit"
+              element={
+                <ProtectedRoute>
+                  <HolidayAudit />
                 </ProtectedRoute>
               }
             />
