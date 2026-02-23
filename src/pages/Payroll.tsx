@@ -190,6 +190,7 @@ const Payroll = () => {
         (emp.status === 'starter' || emp.status === 'leaver') && entries.some((e: any) => e.employee_id === emp.id)
       );
 
+      const logoUrl = `${window.location.origin}/logo.jpeg`;
       const blob = await pdf(
         <PayrollPDF
           period={selectedPeriod as any}
@@ -198,6 +199,7 @@ const Payroll = () => {
           starters={starterEmployees as any}
           isCorrection={!!selectedPeriod.notes?.includes("[CORRECTED]")}
           correctionNote={selectedPeriod.notes?.includes("[CORRECTED]") ? selectedPeriod.notes : undefined}
+          logoUrl={logoUrl}
         />
       ).toBlob();
       const url = URL.createObjectURL(blob);
