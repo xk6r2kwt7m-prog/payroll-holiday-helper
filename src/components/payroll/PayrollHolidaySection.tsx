@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { Palmtree, Plus, X, Trash2 } from "lucide-react";
+import { Palmtree, Plus, X, Trash2, Pencil, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -65,6 +64,13 @@ export function PayrollHolidaySection({
   const [holidayDate, setHolidayDate] = useState("");
   const [notes, setNotes] = useState("");
 
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editHours, setEditHours] = useState("");
+  const [editRate, setEditRate] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
   const { data: employees = [] } = useEmployees();
   const createPayment = useCreateHolidayPayment();
   const queryClient = useQueryClient();
@@ -121,6 +127,63 @@ export function PayrollHolidaySection({
     }
   };
 
+  const startEdit = (hp: HolidayPaymentRow) => {
+    setEditingId(hp.id);
+    setEditHours(hp.hours.toString());
+    setEditRate(hp.rate.toString());
+    setEditDate(hp.holiday_taken_date || "");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditHours("");
+    setEditRate("");
+    setEditDate("");
+  };
+
+  const saveEdit = async (hp: HolidayPaymentRow) => {
+    const newHours = parseFloat(editHours) || 0;
+    const newRate = parseFloat(editRate) || 0;
+    const newTotal = newHours * newRate;
+
+    if (newHours <= 0 || newRate <= 0) {
+      toast.error("Hours and rate must be greater than 0");
+      return;
+    }
+
+    setEditSaving(true);
+    try {
+      const updates: Record<string, any> = {
+        hours: newHours,
+        rate: newRate,
+        total: newTotal,
+      };
+
+      if (editDate) {
+        updates.holiday_taken_date = editDate;
+        const d = new Date(editDate);
+        updates.leave_year_start = `${d.getFullYear()}-01-01`;
+        updates.leave_year_end = `${d.getFullYear()}-12-31`;
+      }
+
+      const { error } = await supabase
+        .from("holiday_payments")
+        .update(updates)
+        .eq("id", hp.id);
+      if (error) throw error;
+
+      await recalcPayrollPeriodTotals(periodId);
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      toast.success(`Holiday payment updated: ${formatCurrency(newTotal)}`);
+      cancelEdit();
+    } catch {
+      toast.error("Failed to update holiday payment");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const resetForm = () => {
     setEmployeeId("");
     setHours("");
@@ -158,49 +221,120 @@ export function PayrollHolidaySection({
       {holidayPayments.length > 0 && (
         <div className="divide-y divide-border">
           {holidayPayments.map((hp) => (
-            <div key={hp.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-              <div className="flex items-center gap-3">
-                <span className="font-medium text-card-foreground">
-                  {hp.employees
-                    ? `${hp.employees.forename} ${hp.employees.surname}`
-                    : hp.employee_name}
-                </span>
-                <Badge variant="outline" className="text-xs">
-                  {hp.employees?.department || "—"}
-                </Badge>
-                {hp.holiday_taken_date && (
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(hp.holiday_taken_date).toLocaleDateString("en-GB")}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">
-                  {Number(hp.hours).toFixed(1)}h × {formatCurrency(Number(hp.rate))}
-                </span>
-                <span className="font-semibold text-warning">{formatCurrency(Number(hp.total))}</span>
-                {canEdit && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <Trash2 className="h-3 w-3 text-destructive" />
+            <div key={hp.id} className="px-4 py-2.5 text-sm">
+              {editingId === hp.id ? (
+                /* Edit mode */
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-card-foreground text-xs">
+                      Editing: {hp.employees ? `${hp.employees.forename} ${hp.employees.surname}` : hp.employee_name}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">Hours</Label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        className="h-7 text-xs"
+                        value={editHours}
+                        onChange={(e) => setEditHours(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Rate (£)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="h-7 text-xs"
+                        value={editRate}
+                        onChange={(e) => setEditRate(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Date</Label>
+                      <Input
+                        type="date"
+                        className="h-7 text-xs"
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-warning">
+                      New Total: {formatCurrency((parseFloat(editHours) || 0) * (parseFloat(editRate) || 0))}
+                    </span>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={cancelEdit} disabled={editSaving}>
+                        <X className="h-3 w-3 mr-1" />
+                        Cancel
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Remove holiday payment?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This will remove the {formatCurrency(Number(hp.total))} holiday payment.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(hp.id)}>Remove</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
+                      <Button size="sm" className="h-7 text-xs" onClick={() => saveEdit(hp)} disabled={editSaving}>
+                        <Check className="h-3 w-3 mr-1" />
+                        {editSaving ? "Saving..." : "Save"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* View mode */
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-card-foreground">
+                      {hp.employees
+                        ? `${hp.employees.forename} ${hp.employees.surname}`
+                        : hp.employee_name}
+                    </span>
+                    <Badge variant="outline" className="text-xs">
+                      {hp.employees?.department || "—"}
+                    </Badge>
+                    {hp.holiday_taken_date && (
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(hp.holiday_taken_date).toLocaleDateString("en-GB")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      {Number(hp.hours).toFixed(1)}h × {formatCurrency(Number(hp.rate))}
+                    </span>
+                    <span className="font-semibold text-warning">{formatCurrency(Number(hp.total))}</span>
+                    {canEdit && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => startEdit(hp)}
+                          title="Edit payment"
+                        >
+                          <Pencil className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove holiday payment?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will remove the {formatCurrency(Number(hp.total))} holiday payment.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(hp.id)}>Remove</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -261,4 +395,3 @@ export function PayrollHolidaySection({
     </div>
   );
 }
-
