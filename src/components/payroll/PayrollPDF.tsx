@@ -4,6 +4,7 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
 } from "@react-pdf/renderer";
 
 const TEAL = "#5a9e91";
@@ -297,6 +298,7 @@ interface StarterEmployee {
   sharing_code: string | null;
   residence_permit: string | null;
   start_date: string | null;
+  end_date: string | null;
   notes: string | null;
 }
 
@@ -320,6 +322,7 @@ interface PayrollPDFProps {
   companyName?: string;
   isCorrection?: boolean;
   correctionNote?: string;
+  logoUrl?: string;
 }
 
 function fmt(amount: number): string {
@@ -338,6 +341,7 @@ export function PayrollPDF({
   companyName = "UD Restaurants Ltd",
   isCorrection = false,
   correctionNote,
+  logoUrl,
 }: PayrollPDFProps) {
   const sortedEntries = [...entries].sort((a, b) => {
     const deptOrder: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
@@ -410,33 +414,46 @@ export function PayrollPDF({
   };
 
   const Header = ({ subtitle }: { subtitle?: string }) => (
-    <View style={styles.topHeader}>
-      <View>
-        <Text style={styles.topBrand}>{companyName.toUpperCase()}</Text>
-        <Text style={styles.topTitle}>
-          {subtitle || `Payroll Report${isCorrection ? " — CORRECTED" : ""}`}
-        </Text>
-      </View>
-      <View>
-        <Text style={styles.topMeta}>{period.period_name}</Text>
-        <Text style={styles.topMeta}>
-          {fmtDate(period.start_date)} — {fmtDate(period.end_date)}
-          {period.period_weeks ? ` (${period.period_weeks}wk)` : ""}
-        </Text>
-        <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 4, marginTop: 2 }}>
-          <View style={[styles.statusBadge, { backgroundColor: sts.bg }]}>
-            <Text style={{ fontSize: 6.5, fontFamily: "Helvetica-Bold", color: sts.text }}>
-              {period.status.toUpperCase()}
+    <View>
+      <View style={styles.topHeader}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {logoUrl && (
+            <Image src={logoUrl} style={{ width: 40, height: 40, objectFit: "contain" }} />
+          )}
+          <View>
+            <Text style={styles.topBrand}>{companyName.toUpperCase()}</Text>
+            <Text style={styles.topTitle}>
+              {subtitle || `Payroll Report${isCorrection ? " — CORRECTED" : ""}`}
             </Text>
           </View>
         </View>
+        <View>
+          <Text style={styles.topMeta}>{period.period_name}</Text>
+          <Text style={styles.topMeta}>
+            {fmtDate(period.start_date)} — {fmtDate(period.end_date)}
+            {period.period_weeks ? ` (${period.period_weeks}wk)` : ""}
+          </Text>
+          <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 4, marginTop: 2 }}>
+            <View style={[styles.statusBadge, { backgroundColor: sts.bg }]}>
+              <Text style={{ fontSize: 6.5, fontFamily: "Helvetica-Bold", color: sts.text }}>
+                {period.status.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+      {/* Confidentiality Banner */}
+      <View style={{ backgroundColor: "#1e2a2f", paddingVertical: 3, paddingHorizontal: 8, borderRadius: 2, marginBottom: 8 }}>
+        <Text style={{ fontSize: 5.5, color: "#fff", fontFamily: "Helvetica-Bold", textAlign: "center", letterSpacing: 0.5 }}>
+          PRIVATE & CONFIDENTIAL — This document contains sensitive payroll and personal data. It must not be shared with, disclosed to, or accessed by any unauthorised third party.
+        </Text>
       </View>
     </View>
   );
 
   const Footer = () => (
     <View style={styles.footer} fixed>
-      <Text>{companyName} — Confidential</Text>
+      <Text>{companyName} — Private & Confidential</Text>
       <Text>Generated: {now}</Text>
       <Text render={({ pageNumber, totalPages }) => `${pageNumber}/${totalPages}`} />
     </View>
@@ -538,8 +555,13 @@ export function PayrollPDF({
                   const isStarter = empStatus === "starter";
                   const isLeaver = empStatus === "leaver";
                   return (
-                    <View key={entry.id} style={[styles.tr, idx % 2 === 1 && styles.trAlt]} wrap={false}>
-                      <Text style={[styles.tdBold, { width: COL.name }]}>
+                    <View key={entry.id} style={[
+                      styles.tr,
+                      idx % 2 === 1 && styles.trAlt,
+                      isLeaver && { backgroundColor: "#fff5f5", borderLeftWidth: 2, borderLeftColor: RED },
+                      isStarter && { backgroundColor: "#fffff0", borderLeftWidth: 2, borderLeftColor: AMBER },
+                    ]} wrap={false}>
+                      <Text style={[styles.tdBold, { width: COL.name, color: isLeaver ? RED : isStarter ? AMBER : DARK }]}>
                         {emp?.surname}, {emp?.forename}
                         {isStarter ? "  ★ STARTER" : ""}
                         {isLeaver ? "  ✦ LEAVER" : ""}
@@ -697,6 +719,14 @@ export function PayrollPDF({
                     <Text style={styles.starterFieldLabel}>START DATE</Text>
                     <Text style={styles.starterFieldValue}>{starter.start_date ? fmtDate(starter.start_date) : "Not set"}</Text>
                   </View>
+                  {starter.status === 'leaver' && (
+                    <View style={styles.starterField}>
+                      <Text style={styles.starterFieldLabel}>END DATE</Text>
+                      <Text style={[styles.starterFieldValue, { color: RED, fontFamily: "Helvetica-Bold" }]}>
+                        {starter.end_date ? fmtDate(starter.end_date) : "Not set"}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.starterField}>
                     <Text style={styles.starterFieldLabel}>NI NUMBER</Text>
                     {hasNI ? (
