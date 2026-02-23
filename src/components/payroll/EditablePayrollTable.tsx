@@ -563,6 +563,9 @@ export function EditablePayrollTable({
                                 <TooltipContent side="top" className="max-w-[250px]">
                                   <p className="text-xs font-medium">Rate changed from {formatCurrency(Number(emp.hourly_rate))}</p>
                                   <p className="text-xs text-muted-foreground mt-0.5">Employee master rate: {formatCurrency(Number(emp.hourly_rate))}</p>
+                                  {entry.adjustment_note && (
+                                    <p className="text-xs text-muted-foreground mt-0.5 italic">{entry.adjustment_note}</p>
+                                  )}
                                 </TooltipContent>
                               </Tooltip>
                             )}
@@ -581,6 +584,9 @@ export function EditablePayrollTable({
                                 <TooltipContent side="top" className="max-w-[250px]">
                                   <p className="text-xs font-medium">Service charge changed from {formatCurrency(Number(emp.service_charge || 0))}</p>
                                   <p className="text-xs text-muted-foreground mt-0.5">Employee master rate: {formatCurrency(Number(emp.service_charge || 0))}</p>
+                                  {entry.adjustment_note && (
+                                    <p className="text-xs text-muted-foreground mt-0.5 italic">{entry.adjustment_note}</p>
+                                  )}
                                 </TooltipContent>
                               </Tooltip>
                             )}
