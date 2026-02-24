@@ -5,6 +5,8 @@ import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWe
 import { useSaveScheduleTemplate } from "@/hooks/useScheduleTemplates";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { toast } from "sonner";
 import { RotaGrid } from "@/components/schedule/RotaGrid";
 import { DayView } from "@/components/schedule/DayView";
@@ -38,6 +40,8 @@ export default function Schedule() {
   const [copyPrevOpen, setCopyPrevOpen] = useState(false);
 
   const { isAdmin } = useAuth();
+  const { sendNotification } = useNotifications();
+  const { data: companySettings } = useCompanySettings();
   const { data: employees } = useEmployees();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -124,6 +128,22 @@ export default function Schedule() {
         branch: selectedBranch,
       });
       toast.success(`${selectedBranch} rota published — staff will be notified`);
+      // Send notification
+      const adminEmail = companySettings?.company_email;
+      if (adminEmail) {
+        sendNotification({
+          to: adminEmail,
+          subject: `Schedule Published: ${selectedBranch} – ${format(weekStart, "d MMM")} to ${format(weekEnd, "d MMM")}`,
+          type: "shift_update",
+          data: {
+            message: `The ${selectedBranch} rota for ${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")} has been published.`,
+            shift_date: format(weekStart, "yyyy-MM-dd"),
+            start_time: format(weekStart, "d MMM"),
+            end_time: format(weekEnd, "d MMM"),
+            branch: selectedBranch,
+          },
+        });
+      }
     } catch (err: any) {
       toast.error(err.message);
     }
