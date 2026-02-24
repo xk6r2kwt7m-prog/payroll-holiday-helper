@@ -6,6 +6,7 @@ export interface CompanySettings {
   id: string;
   company_name: string;
   company_email: string | null;
+  company_logo_url: string | null;
   address: string | null;
   pay_period: string | null;
   default_pay_day: string | null;

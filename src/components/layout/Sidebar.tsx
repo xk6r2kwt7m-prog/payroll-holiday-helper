@@ -70,7 +70,11 @@ export function Sidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
           <div className="flex items-center gap-3">
-            <img src={ugloIcon} alt="UGLŌ" className="h-10 w-10 rounded-xl" />
+            <img 
+              src={settings?.company_logo_url || ugloIcon} 
+              alt={companyName} 
+              className="h-10 w-10 rounded-xl object-cover" 
+            />
             {!collapsed && (
               <span className="text-lg font-semibold text-sidebar-foreground animate-fade-in truncate">
                 {companyName}
