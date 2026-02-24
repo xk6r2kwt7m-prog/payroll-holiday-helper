@@ -522,21 +522,6 @@ export function RotaGrid({
         </DragOverlay>
       </DndContext>
 
-      {/* Status bar */}
-      <div className="flex flex-wrap items-center gap-4 px-3 py-2 text-[11px] text-muted-foreground border-t border-border">
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-success" />
-          {publishedCount} published
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-muted-foreground" />
-          {unpublishedCount} unpublished
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-accent" />
-          {openShiftCount} open shifts
-        </span>
-      </div>
 
       <ShiftCellDialog
         open={dialogOpen}
