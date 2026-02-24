@@ -17,6 +17,11 @@ const AMBER = "#92400e";
 const AMBER_BG = "#fffbeb";
 const AMBER_BORDER = "#fbbf24";
 const RED = "#9b2c2c";
+const GREEN = "#276749";
+const GREEN_BG = "#f0fff4";
+const GREEN_BORDER = "#48bb78";
+const RED_BG = "#fff5f5";
+const RED_BORDER = "#fc8181";
 
 const styles = StyleSheet.create({
   page: {
@@ -193,8 +198,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     alignItems: "center",
   },
-  starterRowLeaver: { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
-  starterRowStarter: { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
+  starterRowLeaver: { backgroundColor: RED_BG, borderLeftWidth: 2, borderLeftColor: RED_BORDER },
+  starterRowStarter: { backgroundColor: GREEN_BG, borderLeftWidth: 2, borderLeftColor: GREEN_BORDER },
   missingValue: { fontSize: 6.5, color: RED, fontFamily: "Helvetica-Bold" },
   alertInline: { fontSize: 5.5, color: RED, marginTop: 1 },
   noteInline: { fontSize: 5.5, color: GRAY, fontStyle: "italic", marginTop: 1 },
@@ -247,6 +252,8 @@ interface PayrollEntry {
     department: string;
     status: string;
     ni_number: string | null;
+    hourly_rate: number;
+    service_charge: number | null;
   } | null;
 }
 
@@ -526,31 +533,38 @@ export function PayrollPDF({
                   const empStatus = emp?.status;
                   const isStarter = empStatus === "starter";
                   const isLeaver = empStatus === "leaver";
+                  // Compare payroll entry rates vs employee master rates
+                  const rateChanged = emp && Math.abs(Number(entry.hourly_rate) - Number(emp.hourly_rate)) > 0.001;
+                  const serviceChanged = emp && Math.abs(Number(entry.service_charge || 0) - Number(emp.service_charge || 0)) > 0.001;
                   return (
                     <View key={entry.id} style={[
                       styles.tr,
                       idx % 2 === 1 && styles.trAlt,
-                      isLeaver && { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
-                      isStarter && { backgroundColor: AMBER_BG, borderLeftWidth: 2, borderLeftColor: AMBER },
+                      isLeaver && { backgroundColor: RED_BG, borderLeftWidth: 2, borderLeftColor: RED_BORDER },
+                      isStarter && { backgroundColor: GREEN_BG, borderLeftWidth: 2, borderLeftColor: GREEN_BORDER },
                     ]} wrap={false}>
                       <View style={{ width: COL.name, flexDirection: "row", alignItems: "center", gap: 4 }}>
                         <Text style={styles.tdBold}>
                           {emp?.surname}, {emp?.forename}
                         </Text>
                         {isStarter && (
-                          <View style={{ backgroundColor: "#fef3c7", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
-                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: AMBER }}>STARTER</Text>
+                          <View style={{ backgroundColor: "#c6f6d5", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
+                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: GREEN }}>STARTER</Text>
                           </View>
                         )}
                         {isLeaver && (
-                          <View style={{ backgroundColor: "#fef3c7", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
-                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: AMBER }}>LEAVER</Text>
+                          <View style={{ backgroundColor: "#fed7d7", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
+                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: RED }}>LEAVER</Text>
                           </View>
                         )}
                       </View>
                       <Text style={[styles.td, { width: COL.dept, textAlign: "center" }]}>{emp?.department}</Text>
-                      <Text style={[styles.td, { width: COL.rate, textAlign: "right" }]}>{fmt(entry.hourly_rate)}</Text>
-                      <Text style={[styles.td, { width: COL.service, textAlign: "right" }]}>{fmt(Number(entry.service_charge || 0))}</Text>
+                      <Text style={[styles.td, { width: COL.rate, textAlign: "right" }, rateChanged && { color: AMBER, fontFamily: "Helvetica-Bold" }]}>
+                        {fmt(entry.hourly_rate)}{rateChanged ? " ▲" : ""}
+                      </Text>
+                      <Text style={[styles.td, { width: COL.service, textAlign: "right" }, serviceChanged && { color: AMBER, fontFamily: "Helvetica-Bold" }]}>
+                        {fmt(Number(entry.service_charge || 0))}{serviceChanged ? " ▲" : ""}
+                      </Text>
                       <Text style={[styles.td, { width: COL.hours, textAlign: "right" }]}>{Number(entry.timesheet_hours).toFixed(2)}</Text>
                       <Text style={[styles.td, { width: COL.perfBonus, textAlign: "right" }]}>{Number(entry.performance_bonus || 0) > 0 ? fmt(Number(entry.performance_bonus)) : ""}</Text>
                       <Text style={[styles.td, { width: COL.specBonus, textAlign: "right" }]}>{Number(entry.special_bonus || 0) > 0 ? fmt(Number(entry.special_bonus)) : ""}</Text>
@@ -686,8 +700,8 @@ export function PayrollPDF({
               <View key={starter.id} style={[styles.starterRow, rowStyle, idx % 2 === 1 ? { backgroundColor: "#fffdf0" } : {}]} wrap={false}>
                 <Text style={[styles.tdBold, { width: "14%" }]}>{starter.forename} {starter.surname}</Text>
                 <View style={{ width: "7%", flexDirection: "row" }}>
-                  <View style={[styles.statusBadgeSm, { backgroundColor: isLeaver ? '#fed7d7' : '#fefcbf' }]}>
-                    <Text style={{ fontSize: 5.5, fontFamily: "Helvetica-Bold", color: isLeaver ? RED : AMBER }}>
+                  <View style={[styles.statusBadgeSm, { backgroundColor: isLeaver ? '#fed7d7' : '#c6f6d5' }]}>
+                    <Text style={{ fontSize: 5.5, fontFamily: "Helvetica-Bold", color: isLeaver ? RED : GREEN }}>
                       {isLeaver ? 'LEAVER' : 'STARTER'}
                     </Text>
                   </View>
