@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 const navItems = [
@@ -55,6 +56,8 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { user, isAdmin, signOut } = useAuth();
+  const { data: settings } = useCompanySettings();
+  const companyName = settings?.company_name || "UGLŌ";
 
   return (
     <aside
@@ -69,8 +72,8 @@ export function Sidebar() {
           <div className="flex items-center gap-3">
             <img src={ugloIcon} alt="UGLŌ" className="h-10 w-10 rounded-xl" />
             {!collapsed && (
-              <span className="text-lg font-semibold text-sidebar-foreground animate-fade-in">
-                UGLŌ
+              <span className="text-lg font-semibold text-sidebar-foreground animate-fade-in truncate">
+                {companyName}
               </span>
             )}
           </div>
