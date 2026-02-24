@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
-import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWeek, useUnpublishWeek } from "@/hooks/useSchedule";
+import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWeek, useUnpublishWeek, useCopyPreviousWeek, useLoadTemplate } from "@/hooks/useSchedule";
+import { useSaveScheduleTemplate } from "@/hooks/useScheduleTemplates";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -10,6 +11,10 @@ import { RotaGrid } from "@/components/schedule/RotaGrid";
 import { DayView } from "@/components/schedule/DayView";
 import { ShiftCellDialog } from "@/components/schedule/ShiftCellDialog";
 import { ScheduleHeader } from "@/components/schedule/ScheduleHeader";
+import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
+import { SaveTemplateDialog } from "@/components/schedule/SaveTemplateDialog";
+import { LoadTemplateDialog } from "@/components/schedule/LoadTemplateDialog";
+import { ComplianceWarningsBanner, useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,16 +48,30 @@ export default function Schedule() {
   const deleteShift = useDeleteShift();
   const publishWeek = usePublishWeek();
   const unpublishWeek = useUnpublishWeek();
+  const copyPrevWeek = useCopyPreviousWeek();
+  const loadTemplate = useLoadTemplate();
+  const saveTemplate = useSaveScheduleTemplate();
 
   const activeEmployees = useMemo(
     () => employees?.filter((e) => e.status === "active") || [],
     [employees]
   );
 
+  // Compliance warnings
+  const complianceWarnings = useComplianceWarnings(
+    shifts || [],
+    activeEmployees,
+    weekDays
+  );
+
   // Publish stats for current branch
   const branchShifts = useMemo(
     () => shifts?.filter((s: any) => s.branch === selectedBranch) || [],
     [shifts, selectedBranch]
+  );
+  const branchDeptShifts = useMemo(
+    () => branchShifts.filter((s: any) => s.department === selectedDept),
+    [branchShifts, selectedDept]
   );
   const publishedCount = branchShifts.filter((s: any) => s.is_published).length;
   const hasUnpublished = branchShifts.some((s: any) => !s.is_published);
@@ -116,6 +135,57 @@ export default function Schedule() {
     }
   };
 
+  const handleCopyPrevWeek = async (prevStart: string, prevEnd: string) => {
+    try {
+      const result = await copyPrevWeek.mutateAsync({
+        prevStartDate: prevStart,
+        prevEndDate: prevEnd,
+        targetWeekStart: format(weekStart, "yyyy-MM-dd"),
+        branch: selectedBranch,
+        department: selectedDept,
+      });
+      toast.success(`Copied ${(result as any[])?.length || 0} shifts from last week`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleSaveTemplate = async (name: string) => {
+    // Get current week's shifts for this branch+dept, map to template format
+    const currentShifts = branchDeptShifts.map((s: any) => {
+      const shiftDate = new Date(s.shift_date + "T00:00:00");
+      const dayOfWeek = shiftDate.getDay() === 0 ? 6 : shiftDate.getDay() - 1; // 0=Mon
+      return {
+        day_of_week: dayOfWeek,
+        employee_id: s.employee_id,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        notes: s.notes || null,
+      };
+    });
+
+    await saveTemplate.mutateAsync({
+      name,
+      branch: selectedBranch,
+      department: selectedDept,
+      shifts: currentShifts,
+    });
+  };
+
+  const handleLoadTemplate = async (templateId: string) => {
+    try {
+      const result = await loadTemplate.mutateAsync({
+        templateId,
+        targetWeekStart: format(weekStart, "yyyy-MM-dd"),
+        branch: selectedBranch,
+        department: selectedDept,
+      });
+      toast.success(`Loaded ${(result as any[])?.length || 0} shifts from template`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   // Day view
   const dayShifts = useMemo(
     () =>
@@ -156,6 +226,35 @@ export default function Schedule() {
           onUnpublish={handleUnpublish}
           isAdmin={isAdmin}
         />
+
+        {/* Compliance Warnings + Quick Actions toolbar */}
+        {isAdmin && viewMode === "week" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <ComplianceWarningsBanner warnings={complianceWarnings} />
+            <div className="flex-1" />
+            <CopyPreviousWeekDialog
+              currentWeekStart={weekStart}
+              branch={selectedBranch}
+              department={selectedDept}
+              existingShiftCount={branchDeptShifts.length}
+              onCopy={handleCopyPrevWeek}
+              isPending={copyPrevWeek.isPending}
+            />
+            <SaveTemplateDialog
+              branch={selectedBranch}
+              department={selectedDept}
+              shiftCount={branchDeptShifts.length}
+              onSave={handleSaveTemplate}
+              isPending={saveTemplate.isPending}
+            />
+            <LoadTemplateDialog
+              branch={selectedBranch}
+              department={selectedDept}
+              onLoad={handleLoadTemplate}
+              isPending={loadTemplate.isPending}
+            />
+          </div>
+        )}
 
         {/* Branch Tabs */}
         <Tabs value={selectedBranch} onValueChange={setSelectedBranch}>

@@ -184,3 +184,119 @@ export function useUnpublishWeek() {
     },
   });
 }
+
+export function useCopyPreviousWeek() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      prevStartDate,
+      prevEndDate,
+      targetWeekStart,
+      branch,
+      department,
+    }: {
+      prevStartDate: string;
+      prevEndDate: string;
+      targetWeekStart: string;
+      branch: string;
+      department: string;
+    }) => {
+      // Fetch previous week's shifts
+      const { data: prevShifts, error: fetchErr } = await supabase
+        .from("shifts")
+        .select("*")
+        .eq("branch", branch as any)
+        .eq("department", department as any)
+        .gte("shift_date", prevStartDate)
+        .lte("shift_date", prevEndDate);
+      if (fetchErr) throw fetchErr;
+      if (!prevShifts?.length) throw new Error("No shifts found in previous week");
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Map shifts to new week (same day offset)
+      const prevStart = new Date(prevStartDate + "T00:00:00");
+      const targetStart = new Date(targetWeekStart + "T00:00:00");
+
+      const newShifts = prevShifts.map((s: any) => {
+        const shiftDate = new Date(s.shift_date + "T00:00:00");
+        const dayOffset = Math.round((shiftDate.getTime() - prevStart.getTime()) / (24 * 60 * 60 * 1000));
+        const newDate = new Date(targetStart);
+        newDate.setDate(newDate.getDate() + dayOffset);
+
+        return {
+          shift_date: newDate.toISOString().slice(0, 10),
+          branch: s.branch,
+          department: s.department,
+          employee_id: s.employee_id,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          notes: s.notes,
+          status: s.employee_id ? "scheduled" : "open",
+          is_published: false,
+          created_by: user?.id || null,
+        };
+      });
+
+      const { data, error } = await supabase.from("shifts").insert(newShifts as any).select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shifts"] });
+    },
+  });
+}
+
+export function useLoadTemplate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      templateId,
+      targetWeekStart,
+      branch,
+      department,
+    }: {
+      templateId: string;
+      targetWeekStart: string;
+      branch: string;
+      department: string;
+    }) => {
+      // Fetch template shifts
+      const { data: templateShifts, error: fetchErr } = await supabase
+        .from("schedule_template_shifts")
+        .select("*")
+        .eq("template_id", templateId);
+      if (fetchErr) throw fetchErr;
+      if (!templateShifts?.length) throw new Error("Template has no shifts");
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const targetStart = new Date(targetWeekStart + "T00:00:00");
+
+      const newShifts = (templateShifts as any[]).map((ts) => {
+        const newDate = new Date(targetStart);
+        newDate.setDate(newDate.getDate() + ts.day_of_week);
+
+        return {
+          shift_date: newDate.toISOString().slice(0, 10),
+          branch: branch,
+          department: department,
+          employee_id: ts.employee_id,
+          start_time: ts.start_time,
+          end_time: ts.end_time,
+          notes: ts.notes,
+          status: ts.employee_id ? "scheduled" : "open",
+          is_published: false,
+          created_by: user?.id || null,
+        };
+      });
+
+      const { data, error } = await supabase.from("shifts").insert(newShifts as any).select();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shifts"] });
+    },
+  });
+}

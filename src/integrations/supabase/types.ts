@@ -1194,6 +1194,81 @@ export type Database = {
           },
         ]
       }
+      schedule_template_shifts: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          employee_id: string | null
+          end_time: string
+          id: string
+          notes: string | null
+          start_time: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          employee_id?: string | null
+          end_time: string
+          id?: string
+          notes?: string | null
+          start_time: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          employee_id?: string | null
+          end_time?: string
+          id?: string
+          notes?: string | null
+          start_time?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_template_shifts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_template_shifts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schedule_templates: {
+        Row: {
+          branch: string
+          created_at: string
+          created_by: string | null
+          department: string
+          id: string
+          name: string
+        }
+        Insert: {
+          branch: string
+          created_at?: string
+          created_by?: string | null
+          department: string
+          id?: string
+          name: string
+        }
+        Update: {
+          branch?: string
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       shifts: {
         Row: {
           branch: Database["public"]["Enums"]["branch_type"]
