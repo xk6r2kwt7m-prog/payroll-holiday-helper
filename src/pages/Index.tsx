@@ -71,13 +71,13 @@ const Index = () => {
         {/* Smart Alerts */}
         <SmartAlerts employees={employees} periods={periods} entries={entries} />
 
-        {/* KPI Stats Grid */}
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+        {/* KPI Stats Grid — compact 2-col on mobile, 5-col on desktop */}
+        <div className="grid gap-2 grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Active Staff"
             value={activeEmployees}
             subtitle={`${employees.length} total`}
-            icon={<Users className="h-5 w-5" />}
+            icon={<Users className="h-4 w-4" />}
             href="/employees"
             index={0}
           />
@@ -85,7 +85,7 @@ const Index = () => {
             title="Total Payroll"
             value={formatCurrency(totalPayroll)}
             subtitle={`${formatCurrency(payPerWeek)}/week`}
-            icon={<DollarSign className="h-5 w-5" />}
+            icon={<DollarSign className="h-4 w-4" />}
             variant="primary"
             href="/payroll"
             index={1}
@@ -94,7 +94,7 @@ const Index = () => {
             title="Labour %"
             value={labourPercent > 0 ? `${labourPercent.toFixed(1)}%` : "—"}
             subtitle={salesTotal > 0 ? `of ${formatCurrency(salesTotal)}` : "No sales data"}
-            icon={<Percent className="h-5 w-5" />}
+            icon={<Percent className="h-4 w-4" />}
             variant={labourPercent > 35 ? "warning" : labourPercent > 0 ? "success" : "default"}
             href="/payroll/analytics"
             index={2}
@@ -103,7 +103,7 @@ const Index = () => {
             title="Holiday Accrued"
             value={`${formatHours(totalHolidayAccrued)} hrs`}
             subtitle={`${(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% rate`}
-            icon={<Calendar className="h-5 w-5" />}
+            icon={<Calendar className="h-4 w-4" />}
             variant="accent"
             href="/holidays"
             index={3}
@@ -112,7 +112,7 @@ const Index = () => {
             title="Hours Tracked"
             value={formatHours(totalHours)}
             subtitle={`${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)}/week`}
-            icon={<Clock className="h-5 w-5" />}
+            icon={<Clock className="h-4 w-4" />}
             href="/timesheets"
             index={4}
           />
