@@ -228,6 +228,7 @@ export type Database = {
           address: string | null
           auto_calculate_overtime: boolean | null
           company_email: string | null
+          company_logo_url: string | null
           company_name: string
           created_at: string
           default_pay_day: string | null
@@ -244,6 +245,7 @@ export type Database = {
           address?: string | null
           auto_calculate_overtime?: boolean | null
           company_email?: string | null
+          company_logo_url?: string | null
           company_name?: string
           created_at?: string
           default_pay_day?: string | null
@@ -260,6 +262,7 @@ export type Database = {
           address?: string | null
           auto_calculate_overtime?: boolean | null
           company_email?: string | null
+          company_logo_url?: string | null
           company_name?: string
           created_at?: string
           default_pay_day?: string | null
