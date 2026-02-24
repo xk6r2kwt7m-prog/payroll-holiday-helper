@@ -16,6 +16,7 @@ import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable"
 import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWorkflow";
 import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySection";
 import { PayrollSalesInput } from "@/components/payroll/PayrollSalesInput";
+import { PayrollReminders } from "@/components/payroll/PayrollReminders";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -332,6 +333,11 @@ const Payroll = () => {
             variant="success"
           />
         </div>
+
+        {/* Payroll Reminders */}
+        {selectedPeriod && (
+          <PayrollReminders periodId={selectedPeriod.id} />
+        )}
 
         {/* Approval Workflow */}
         {selectedPeriod && (
