@@ -22,7 +22,7 @@ const loginSchema = z.object({
 });
 
 const features = [
-  { icon: Clock, label: "Rota & Scheduling", desc: "Build rotas in minutes with templates & compliance checks" },
+  { icon: Clock, label: "Rota & Scheduling", desc: "Build rotas in minutes with smart templates & compliance checks" },
   { icon: CalendarDays, label: "Holiday Management", desc: "Track entitlements, accruals & balances per leave year" },
   { icon: ChartBar, label: "Payroll Processing", desc: "Accurate UK payroll with timesheets & service charge" },
   { icon: Users, label: "Employee Records", desc: "Contracts, documents & onboarding in one place" },
@@ -94,26 +94,26 @@ const Auth = () => {
           >
             {/* Logo */}
             <div className="flex items-center gap-3 mb-10">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-3xl shadow-lg">
-                🥟
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg">
+                <span className="text-primary-foreground font-black text-xl tracking-tighter">U</span>
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                  Ugly Dumpling
+                  UGLŌ
                 </h1>
                 <p className="text-sm text-muted-foreground font-medium">
-                  Staff Management Hub
+                  Hospitality People Platform
                 </p>
               </div>
             </div>
 
             {/* Tagline */}
             <h2 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-3">
-              Everything your team needs,<br />
-              <span className="text-primary">all in one place.</span>
+              Staff management,<br />
+              <span className="text-primary">beautifully simple.</span>
             </h2>
             <p className="text-muted-foreground mb-10 max-w-md">
-              Rotas, payroll, holidays, compliance — built for hospitality teams that move fast.
+              Rotas, payroll, holidays & compliance — the all-in-one platform built for hospitality teams.
             </p>
 
             {/* Feature grid */}
@@ -144,7 +144,7 @@ const Auth = () => {
 
           {/* Footer */}
           <p className="mt-12 text-xs text-muted-foreground/60">
-            © {new Date().getFullYear()} Ugly Dumpling · Fitzrovia · Carnaby · Brixton
+            © {new Date().getFullYear()} UGLŌ · Hospitality People Platform
           </p>
         </div>
       </div>
@@ -160,11 +160,11 @@ const Auth = () => {
           <div className="rounded-2xl bg-card shadow-elevated border border-border/40 p-8">
             {/* Mobile logo */}
             <div className="flex items-center justify-center gap-3 mb-8 lg:hidden">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-2xl">
-                🥟
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
+                <span className="text-primary-foreground font-black text-lg tracking-tighter">U</span>
               </div>
               <span className="text-2xl font-bold text-card-foreground">
-                Ugly Dumpling
+                UGLŌ
               </span>
             </div>
 
@@ -172,7 +172,7 @@ const Auth = () => {
               Welcome Back
             </h1>
             <p className="text-muted-foreground text-center text-sm mb-6">
-              Sign in to your staff management account
+              Sign in to your account
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
