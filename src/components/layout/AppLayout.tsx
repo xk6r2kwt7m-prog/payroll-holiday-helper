@@ -43,28 +43,28 @@ interface AppLayoutProps {
 }
 
 const primaryNavItems = [
-  { label: "Dashboard", path: "/" },
-  { label: "Employees", path: "/employees" },
-  { label: "Schedule", path: "/schedule" },
-  { label: "Timesheets", path: "/timesheets" },
-  { label: "Payroll", path: "/payroll" },
-  { label: "Holidays", path: "/holidays" },
+  { label: "Dashboard", path: "/", minRole: "staff" as const },
+  { label: "Employees", path: "/employees", minRole: "supervisor" as const },
+  { label: "Schedule", path: "/schedule", minRole: "supervisor" as const },
+  { label: "Timesheets", path: "/timesheets", minRole: "supervisor" as const },
+  { label: "Payroll", path: "/payroll", minRole: "admin" as const },
+  { label: "Holidays", path: "/holidays", minRole: "manager" as const },
 ];
 
 const moreNavItems = [
-  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report" },
-  { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics" },
-  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
-  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics" },
-  { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit" },
-  { icon: UserX, label: "Absences", path: "/absences" },
-  { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
-  { icon: GraduationCap, label: "Training", path: "/training" },
-  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary" },
-  { icon: Megaphone, label: "Announcements", path: "/announcements" },
-  { icon: FileText, label: "Contracts", path: "/contracts" },
-  { icon: MapPin, label: "Locations", path: "/locations" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report", minRole: "manager" as const },
+  { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics", minRole: "manager" as const },
+  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin" as const },
+  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin" as const },
+  { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" as const },
+  { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" as const },
+  { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" as const },
+  { icon: GraduationCap, label: "Training", path: "/training", minRole: "manager" as const },
+  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" as const },
+  { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "manager" as const },
+  { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" as const },
+  { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" as const },
+  { icon: Settings, label: "Settings", path: "/settings", minRole: "admin" as const },
 ];
 
 const pageVariants = {
@@ -75,11 +75,25 @@ const pageVariants = {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isManagerOrAbove, isSupervisorOrAbove, role, signOut } = useAuth();
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || "UGLŌ";
 
-  const isMoreActive = moreNavItems.some((item) => location.pathname === item.path);
+  const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
+  const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
+  const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+
+  const visiblePrimary = primaryNavItems.filter(item => canAccess(item.minRole));
+  const visibleMore = moreNavItems.filter(item => canAccess(item.minRole));
+  const isMoreActive = visibleMore.some((item) => location.pathname === item.path);
+
+  const roleBadgeColors: Record<string, string> = {
+    admin: "text-primary",
+    manager: "text-accent",
+    supervisor: "text-warning",
+    staff: "text-muted-foreground",
+    viewer: "text-muted-foreground",
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -99,7 +113,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Primary nav tabs — centered */}
         <nav className="flex items-center gap-0.5 flex-1 justify-center">
-          {primaryNavItems.map((item) => {
+          {visiblePrimary.map((item) => {
             const isActive =
               item.path === "/"
                 ? location.pathname === "/"
@@ -129,40 +143,42 @@ export function AppLayout({ children }: AppLayoutProps) {
           })}
 
           {/* More dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  "flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                  isMoreActive
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-              >
-                More
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-[220px]">
-              {moreNavItems.map((item) => {
-                const isActive = location.pathname === item.path;
-                return (
-                  <DropdownMenuItem key={item.path} asChild>
-                    <Link
-                      to={item.path}
-                      className={cn(
-                        "gap-2",
-                        isActive && "bg-accent text-accent-foreground"
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                    </Link>
-                  </DropdownMenuItem>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {visibleMore.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={cn(
+                    "flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    isMoreActive
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                >
+                  More
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-[220px]">
+                {visibleMore.map((item) => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <DropdownMenuItem key={item.path} asChild>
+                      <Link
+                        to={item.path}
+                        className={cn(
+                          "gap-2",
+                          isActive && "bg-accent text-accent-foreground"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </nav>
 
         {/* Right side — search, user, sign out */}
@@ -186,7 +202,11 @@ export function AppLayout({ children }: AppLayoutProps) {
           </Tooltip>
 
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            {isAdmin && <Shield className="h-3.5 w-3.5 text-primary" />}
+            {role && (
+              <span className={cn("text-xs font-medium capitalize", roleBadgeColors[role] || "text-muted-foreground")}>
+                {role}
+              </span>
+            )}
             <span className="hidden lg:inline max-w-[120px] truncate">
               {user?.email}
             </span>

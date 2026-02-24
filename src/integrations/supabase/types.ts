@@ -1612,9 +1612,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_manager_or_above: { Args: never; Returns: boolean }
+      is_supervisor_or_above: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "manager" | "viewer" | "staff"
+      app_role: "admin" | "manager" | "viewer" | "staff" | "supervisor"
       audit_action:
         | "create"
         | "update"
@@ -1766,7 +1768,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "manager", "viewer", "staff"],
+      app_role: ["admin", "manager", "viewer", "staff", "supervisor"],
       audit_action: [
         "create",
         "update",

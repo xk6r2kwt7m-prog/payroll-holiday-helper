@@ -42,12 +42,13 @@ const departmentEmoji = {
 interface EmployeeCardProps {
   employee: Employee;
   isAdmin: boolean;
+  canViewSensitive?: boolean;
   onDelete: (employee: Employee) => void;
   onViewDetails: (employee: Employee) => void;
   index: number;
 }
 
-export function EmployeeCard({ employee, isAdmin, onDelete, onViewDetails, index }: EmployeeCardProps) {
+export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDelete, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const hasStartDate = !!employee.start_date;
   const hasEndDate = !!employee.end_date;
@@ -127,21 +128,23 @@ export function EmployeeCard({ employee, isAdmin, onDelete, onViewDetails, index
         )}
       </div>
 
-      {/* Pay Info */}
-      <div className="grid grid-cols-2 gap-3 py-3 border-t border-b border-border">
-        <div>
-          <p className="text-xs text-muted-foreground mb-0.5">Hourly Rate</p>
-          <p className="text-sm font-semibold text-card-foreground">
-            {formatCurrency(Number(employee.hourly_rate))}
-          </p>
+      {/* Pay Info — Admin only */}
+      {canViewSensitive && (
+        <div className="grid grid-cols-2 gap-3 py-3 border-t border-b border-border">
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Hourly Rate</p>
+            <p className="text-sm font-semibold text-card-foreground">
+              {formatCurrency(Number(employee.hourly_rate))}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-0.5">Service Charge</p>
+            <p className="text-sm font-semibold text-card-foreground">
+              {formatCurrency(Number(employee.service_charge || 0))}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-0.5">Service Charge</p>
-          <p className="text-sm font-semibold text-card-foreground">
-            {formatCurrency(Number(employee.service_charge || 0))}
-          </p>
-        </div>
-      </div>
+      )}
 
       {/* Branches */}
       {branches.length > 0 && (
@@ -170,12 +173,12 @@ export function EmployeeCard({ employee, isAdmin, onDelete, onViewDetails, index
             <span>{new Date(employee.start_date!).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })}</span>
           </div>
         )}
-        {hasBankDetails && (
+        {canViewSensitive && hasBankDetails && (
           <div className="flex items-center gap-1" title="Bank details on file">
             <CreditCard className="h-3.5 w-3.5 text-success" />
           </div>
         )}
-        {employee.ni_number && (
+        {canViewSensitive && employee.ni_number && (
           <div className="flex items-center gap-1 font-mono text-[10px]" title="NI Number">
             {employee.ni_number}
           </div>

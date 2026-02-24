@@ -2,10 +2,15 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+export type AppRole = 'admin' | 'manager' | 'supervisor' | 'staff' | 'viewer';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  isManagerOrAbove: boolean;
+  isSupervisorOrAbove: boolean;
+  role: AppRole | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -14,37 +19,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ROLE_HIERARCHY: Record<AppRole, number> = {
+  admin: 4,
+  manager: 3,
+  supervisor: 2,
+  staff: 1,
+  viewer: 0,
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer admin check with setTimeout to prevent deadlock
         if (session?.user) {
           setTimeout(() => {
-            checkAdminRole(session.user.id);
+            fetchRole(session.user.id);
           }, 0);
         } else {
-          setIsAdmin(false);
+          setRole(null);
         }
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkAdminRole(session.user.id);
+        fetchRole(session.user.id);
       }
       setLoading(false);
     });
@@ -52,24 +62,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdminRole = async (userId: string) => {
+  const fetchRole = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .eq('role', 'admin')
         .maybeSingle();
       
       if (!error && data) {
-        setIsAdmin(true);
+        setRole(data.role as AppRole);
       } else {
-        setIsAdmin(false);
+        setRole(null);
       }
     } catch {
-      setIsAdmin(false);
+      setRole(null);
     }
   };
+
+  const isAdmin = role === 'admin';
+  const isManagerOrAbove = role !== null && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager;
+  const isSupervisorOrAbove = role !== null && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.supervisor;
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -101,11 +114,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-    setIsAdmin(false);
+    setRole(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isManagerOrAbove, isSupervisorOrAbove, role, loading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
