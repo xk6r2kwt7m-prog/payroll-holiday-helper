@@ -15,6 +15,8 @@ import {
   ChartBar,
   FileText,
 } from "lucide-react";
+import ugloLogo from "@/assets/uglo-logo.png";
+import ugloIcon from "@/assets/uglo-icon.png";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -94,9 +96,7 @@ const Auth = () => {
           >
             {/* Logo */}
             <div className="flex items-center gap-3 mb-10">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg">
-                <span className="text-primary-foreground font-black text-xl tracking-tighter">U</span>
-              </div>
+              <img src={ugloIcon} alt="UGLŌ" className="h-14 w-14 rounded-2xl shadow-lg" />
               <div>
                 <h1 className="text-2xl font-bold text-foreground tracking-tight">
                   UGLŌ
@@ -160,9 +160,7 @@ const Auth = () => {
           <div className="rounded-2xl bg-card shadow-elevated border border-border/40 p-8">
             {/* Mobile logo */}
             <div className="flex items-center justify-center gap-3 mb-8 lg:hidden">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-                <span className="text-primary-foreground font-black text-lg tracking-tighter">U</span>
-              </div>
+              <img src={ugloIcon} alt="UGLŌ" className="h-12 w-12 rounded-xl" />
               <span className="text-2xl font-bold text-card-foreground">
                 UGLŌ
               </span>
