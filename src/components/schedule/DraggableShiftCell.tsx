@@ -100,11 +100,22 @@ export function DraggableShiftCell({ shift, isAdmin, onView, onCopy, onAdd }: Dr
 
 interface CrossBranchShiftCellProps {
   shift: any;
+  onNavigate?: (branch: string) => void;
 }
 
-export function CrossBranchShiftCell({ shift }: CrossBranchShiftCellProps) {
+export function CrossBranchShiftCell({ shift, onNavigate }: CrossBranchShiftCellProps) {
   return (
-    <div className="rounded-md px-1.5 py-1 text-[11px] leading-tight bg-warning/15 text-warning border border-warning/30 mb-0.5">
+    <div
+      className={cn(
+        "rounded-md px-1.5 py-1 text-[11px] leading-tight bg-warning/15 text-warning border border-warning/30 mb-0.5",
+        onNavigate && "cursor-pointer hover:bg-warning/25 transition-colors"
+      )}
+      onClick={(e) => {
+        e.stopPropagation();
+        onNavigate?.(shift.branch);
+      }}
+      title={onNavigate ? `Click to view at ${shift.branch}` : undefined}
+    >
       <div className="font-medium">
         {shift.start_time?.slice(0, 5)}–{shift.end_time?.slice(0, 5)}
       </div>

@@ -27,6 +27,7 @@ interface RotaGridProps {
   onUpdateShift: (id: string, data: any) => Promise<void>;
   onDeleteShift: (id: string) => void;
   isPending: boolean;
+  onNavigateToBranch?: (branch: string) => void;
 }
 
 export function RotaGrid({
@@ -41,6 +42,7 @@ export function RotaGrid({
   onUpdateShift,
   onDeleteShift,
   isPending,
+  onNavigateToBranch,
 }: RotaGridProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
@@ -241,15 +243,17 @@ export function RotaGrid({
     if (isSameEmployee && isSameDate) return;
 
     if (targetEmployeeId !== "open") {
+      // Only block if employee already has a shift at THIS branch+department on this day
       const existingShift = shifts?.find(
         (s: any) =>
           s.employee_id === targetEmployeeId &&
           s.shift_date === targetDate &&
           s.branch === branch &&
-          s.department === department
+          s.department === department &&
+          s.id !== shift.id
       );
       if (existingShift) {
-        toast.error(`${deptEmployees.find(e => e.id === targetEmployeeId)?.forename || "Employee"} already has a shift on this day`);
+        toast.error(`${deptEmployees.find(e => e.id === targetEmployeeId)?.forename || "Employee"} already has a shift here on this day`);
         return;
       }
     }
@@ -428,7 +432,7 @@ export function RotaGrid({
                             renderShiftWithPopover(shift, day)
                           ) : crossBranchShifts.length > 0 ? (
                             crossBranchShifts.map((cbs: any) => (
-                              <CrossBranchShiftCell key={cbs.id} shift={cbs} />
+                              <CrossBranchShiftCell key={cbs.id} shift={cbs} onNavigate={onNavigateToBranch} />
                             ))
                           ) : (
                             <EmptyDropCell isAdmin={isAdmin} />

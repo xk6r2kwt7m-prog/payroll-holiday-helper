@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 type ViewMode = "week" | "day";
 const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
+const DEPT_WITH_ALL = ["All", ...DEPARTMENTS] as const;
 
 export default function Schedule() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -270,12 +271,43 @@ export default function Schedule() {
             <TabsContent key={branchVal} value={branchVal} className="mt-3 space-y-4">
               <Tabs value={selectedDept} onValueChange={setSelectedDept}>
                 <TabsList>
-                  {DEPARTMENTS.map((d) => (
+                  {DEPT_WITH_ALL.map((d) => (
                     <TabsTrigger key={d} value={d}>
                       {d}
                     </TabsTrigger>
                   ))}
                 </TabsList>
+
+                {/* All Departments stacked view */}
+                <TabsContent value="All" className="mt-2 space-y-4">
+                  {viewMode === "week" ? (
+                    DEPARTMENTS.map((deptVal) => (
+                      <div key={deptVal} className="border border-border rounded-lg bg-card overflow-hidden">
+                        <div className="px-3 py-2 bg-muted/50 border-b border-border">
+                          <h3 className="text-sm font-semibold text-foreground">{deptVal}</h3>
+                        </div>
+                        <RotaGrid
+                          weekDays={weekDays}
+                          shifts={shifts || []}
+                          allShifts={shifts || []}
+                          employees={activeEmployees}
+                          branch={branchVal}
+                          department={deptVal}
+                          isAdmin={isAdmin}
+                          onCreateShift={handleCreateShift}
+                          onUpdateShift={handleUpdateShift}
+                          onDeleteShift={handleDeleteShift}
+                          isPending={createShift.isPending || updateShift.isPending}
+                          onNavigateToBranch={(b) => setSelectedBranch(b)}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-muted-foreground italic p-4">
+                      Switch to week view to see all departments, or select a specific department for day view.
+                    </div>
+                  )}
+                </TabsContent>
 
                 {DEPARTMENTS.map((deptVal) => (
                   <TabsContent key={deptVal} value={deptVal} className="mt-2">
@@ -293,6 +325,7 @@ export default function Schedule() {
                           onUpdateShift={handleUpdateShift}
                           onDeleteShift={handleDeleteShift}
                           isPending={createShift.isPending || updateShift.isPending}
+                          onNavigateToBranch={(b) => setSelectedBranch(b)}
                         />
                       </div>
                     ) : (
