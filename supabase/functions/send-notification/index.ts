@@ -103,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
     const html = buildHtml(type, data || {});
 
     const { error } = await resend.emails.send({
-      from: "UGLO HR <onboarding@resend.dev>",
+      from: "UGLO HR <notifications@hr.uglyops.com>",
       to: [to],
       subject,
       html,
