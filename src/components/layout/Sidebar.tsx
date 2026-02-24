@@ -20,6 +20,9 @@ import {
   Search,
   UserX,
   UserPlus,
+  GraduationCap,
+  Megaphone,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,6 +42,9 @@ const navItems = [
   { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit" },
   { icon: UserX, label: "Absences", path: "/absences" },
   { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
+  { icon: GraduationCap, label: "Training", path: "/training" },
+  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary" },
+  { icon: Megaphone, label: "Announcements", path: "/announcements" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: MapPin, label: "Locations", path: "/locations" },
   { icon: Settings, label: "Settings", path: "/settings" },

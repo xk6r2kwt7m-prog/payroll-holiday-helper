@@ -7,8 +7,9 @@ import { useActiveClockIn, useClockInOut, useMyTimeEntries } from "@/hooks/useTi
 import { useShifts, useBranchLocations } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { Clock, MapPin, LogOut, Calendar, CheckCircle2, AlertCircle } from "lucide-react";
+import { Clock, MapPin, LogOut, Calendar, CheckCircle2, AlertCircle, Megaphone } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -29,6 +30,50 @@ export default function StaffPortal() {
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const { data: myShifts } = useShifts(weekStart, weekEnd);
+  const qc = useQueryClient();
+
+  // Fetch published announcements
+  const { data: announcements = [] } = useQuery({
+    queryKey: ["staff_announcements_portal"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("staff_announcements" as any)
+        .select("*")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  // Fetch my read receipts
+  const { data: myReadReceipts = [] } = useQuery({
+    queryKey: ["my_read_receipts", employeeId],
+    queryFn: async () => {
+      if (!employeeId) return [];
+      const { data, error } = await supabase
+        .from("announcement_read_receipts" as any)
+        .select("announcement_id")
+        .eq("employee_id", employeeId);
+      if (error) throw error;
+      return (data || []).map((r: any) => r.announcement_id);
+    },
+    enabled: !!employeeId,
+  });
+
+  const markAsRead = useMutation({
+    mutationFn: async (announcementId: string) => {
+      if (!employeeId) return;
+      const { error } = await supabase
+        .from("announcement_read_receipts" as any)
+        .insert({ announcement_id: announcementId, employee_id: employeeId } as any);
+      if (error && !error.message.includes("duplicate")) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my_read_receipts"] });
+    },
+  });
 
   // Get employee record
   useEffect(() => {
@@ -287,6 +332,40 @@ export default function StaffPortal() {
             )}
           </CardContent>
         </Card>
+        {/* Announcements */}
+        {announcements.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Megaphone className="h-4 w-4" /> Announcements
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {announcements.map((ann: any) => {
+                  const isRead = myReadReceipts.includes(ann.id);
+                  return (
+                    <div key={ann.id} className={cn("p-3 rounded-lg border", isRead ? "bg-muted/30 border-border" : "bg-primary/5 border-primary/20")}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{ann.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{ann.content}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">{format(new Date(ann.published_at), "d MMM yyyy")}</p>
+                        </div>
+                        {!isRead && (
+                          <Button size="sm" variant="outline" className="text-xs h-7 shrink-0" onClick={() => markAsRead.mutate(ann.id)}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Read
+                          </Button>
+                        )}
+                        {isRead && <Badge variant="outline" className="text-[10px] text-success shrink-0">Read</Badge>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

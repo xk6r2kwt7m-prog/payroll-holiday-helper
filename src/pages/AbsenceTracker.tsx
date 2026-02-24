@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAbsenceRecords, useAddAbsence, useDeleteAbsence, calculateBradfordFactor, getBradfordLevel } from "@/hooks/useAbsences";
+import { ReturnToWorkSection } from "@/components/absences/ReturnToWorkSection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Calendar, Plus, Trash2, AlertTriangle, TrendingUp, UserX } from "lucide-react";
+import { Calendar, Plus, Trash2, AlertTriangle, TrendingUp, UserX, ClipboardCheck } from "lucide-react";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, isWithinInterval, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -143,6 +144,7 @@ export default function AbsenceTracker() {
             <TabsTrigger value="calendar"><Calendar className="h-4 w-4 mr-1.5" /> Calendar</TabsTrigger>
             <TabsTrigger value="bradford"><TrendingUp className="h-4 w-4 mr-1.5" /> Bradford Factor</TabsTrigger>
             <TabsTrigger value="history"><UserX className="h-4 w-4 mr-1.5" /> History</TabsTrigger>
+            <TabsTrigger value="rtw"><ClipboardCheck className="h-4 w-4 mr-1.5" /> Return to Work</TabsTrigger>
           </TabsList>
 
           {/* CALENDAR TAB */}
@@ -314,6 +316,13 @@ export default function AbsenceTracker() {
                   );
                 })}
               </div>
+            </div>
+          </TabsContent>
+
+          {/* RETURN TO WORK TAB */}
+          <TabsContent value="rtw" className="mt-4">
+            <div className="rounded-xl bg-card border border-border shadow-card p-5">
+              <ReturnToWorkSection absences={absences} />
             </div>
           </TabsContent>
         </Tabs>

@@ -22,6 +22,9 @@ import HolidayAudit from "./pages/HolidayAudit";
 import AbsenceTracker from "./pages/AbsenceTracker";
 import Onboarding from "./pages/Onboarding";
 import StaffPortal from "./pages/StaffPortal";
+import TrainingRecords from "./pages/TrainingRecords";
+import Announcements from "./pages/Announcements";
+import Disciplinary from "./pages/Disciplinary";
 import Auth from "./pages/Auth";
 import SignContract from "./pages/SignContract";
 import NotFound from "./pages/NotFound";
@@ -121,6 +124,9 @@ const App = () => (
               }
             />
             <Route path="/staff" element={<ProtectedRoute><StaffPortal /></ProtectedRoute>} />
+            <Route path="/training" element={<ProtectedRoute><TrainingRecords /></ProtectedRoute>} />
+            <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
+            <Route path="/disciplinary" element={<ProtectedRoute><Disciplinary /></ProtectedRoute>} />
             <Route
               path="/schedule/report"
               element={
