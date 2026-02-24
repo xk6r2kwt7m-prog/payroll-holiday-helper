@@ -112,6 +112,42 @@ export type Database = {
           },
         ]
       }
+      announcement_read_receipts: {
+        Row: {
+          announcement_id: string
+          employee_id: string
+          id: string
+          read_at: string
+        }
+        Insert: {
+          announcement_id: string
+          employee_id: string
+          id?: string
+          read_at?: string
+        }
+        Update: {
+          announcement_id?: string
+          employee_id?: string
+          id?: string
+          read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_read_receipts_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "staff_announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcement_read_receipts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
@@ -285,6 +321,77 @@ export type Database = {
           },
           {
             foreignKeyName: "contract_signatures_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      disciplinary_records: {
+        Row: {
+          appeal_deadline: string | null
+          appeal_outcome: string | null
+          appeal_received: boolean | null
+          category: string
+          created_at: string
+          description: string
+          employee_id: string
+          expiry_date: string | null
+          id: string
+          incident_date: string
+          issued_by: string | null
+          meeting_date: string | null
+          meeting_notes: string | null
+          outcome: string | null
+          record_type: string
+          status: string
+          updated_at: string
+          witnesses: string | null
+        }
+        Insert: {
+          appeal_deadline?: string | null
+          appeal_outcome?: string | null
+          appeal_received?: boolean | null
+          category?: string
+          created_at?: string
+          description: string
+          employee_id: string
+          expiry_date?: string | null
+          id?: string
+          incident_date: string
+          issued_by?: string | null
+          meeting_date?: string | null
+          meeting_notes?: string | null
+          outcome?: string | null
+          record_type?: string
+          status?: string
+          updated_at?: string
+          witnesses?: string | null
+        }
+        Update: {
+          appeal_deadline?: string | null
+          appeal_outcome?: string | null
+          appeal_received?: boolean | null
+          category?: string
+          created_at?: string
+          description?: string
+          employee_id?: string
+          expiry_date?: string | null
+          id?: string
+          incident_date?: string
+          issued_by?: string | null
+          meeting_date?: string | null
+          meeting_notes?: string | null
+          outcome?: string | null
+          record_type?: string
+          status?: string
+          updated_at?: string
+          witnesses?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disciplinary_records_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
@@ -1012,6 +1119,81 @@ export type Database = {
         }
         Relationships: []
       }
+      return_to_work_forms: {
+        Row: {
+          absence_record_id: string
+          adjustments_needed: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          doctor_consulted: boolean | null
+          doctor_note_provided: boolean | null
+          employee_id: string
+          fit_to_return: boolean | null
+          follow_up_date: string | null
+          follow_up_notes: string | null
+          follow_up_required: boolean | null
+          id: string
+          manager_comments: string | null
+          reason_for_absence: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          absence_record_id: string
+          adjustments_needed?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          doctor_consulted?: boolean | null
+          doctor_note_provided?: boolean | null
+          employee_id: string
+          fit_to_return?: boolean | null
+          follow_up_date?: string | null
+          follow_up_notes?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          manager_comments?: string | null
+          reason_for_absence?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          absence_record_id?: string
+          adjustments_needed?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          doctor_consulted?: boolean | null
+          doctor_note_provided?: boolean | null
+          employee_id?: string
+          fit_to_return?: boolean | null
+          follow_up_date?: string | null
+          follow_up_notes?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          manager_comments?: string | null
+          reason_for_absence?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_to_work_forms_absence_record_id_fkey"
+            columns: ["absence_record_id"]
+            isOneToOne: false
+            referencedRelation: "absence_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_to_work_forms_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shifts: {
         Row: {
           branch: Database["public"]["Enums"]["branch_type"]
@@ -1119,6 +1301,48 @@ export type Database = {
           },
         ]
       }
+      staff_announcements: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          priority: string
+          published_at: string | null
+          target_branches: string[] | null
+          target_departments: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          priority?: string
+          published_at?: string | null
+          target_branches?: string[] | null
+          target_departments?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          priority?: string
+          published_at?: string | null
+          target_branches?: string[] | null
+          target_departments?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       time_entries: {
         Row: {
           approved_at: string | null
@@ -1214,6 +1438,59 @@ export type Database = {
             columns: ["shift_id"]
             isOneToOne: false
             referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_records: {
+        Row: {
+          certificate_file_path: string | null
+          certification_name: string
+          certification_type: string
+          created_at: string
+          date_obtained: string
+          employee_id: string
+          expiry_date: string | null
+          id: string
+          notes: string | null
+          provider: string | null
+          recorded_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          certificate_file_path?: string | null
+          certification_name: string
+          certification_type?: string
+          created_at?: string
+          date_obtained: string
+          employee_id: string
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          recorded_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          certificate_file_path?: string | null
+          certification_name?: string
+          certification_type?: string
+          created_at?: string
+          date_obtained?: string
+          employee_id?: string
+          expiry_date?: string | null
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          recorded_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
