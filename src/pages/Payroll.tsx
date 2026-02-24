@@ -18,6 +18,8 @@ import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySectio
 import { PayrollSalesInput } from "@/components/payroll/PayrollSalesInput";
 import { PayrollReminders } from "@/components/payroll/PayrollReminders";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
@@ -50,6 +52,8 @@ const Payroll = () => {
   const reopenPeriod = useReopenPayrollPeriod();
   const deletePeriod = useDeletePayrollPeriod();
   const { isAdmin } = useAuth();
+  const { sendNotification } = useNotifications();
+  const { data: companySettings } = useCompanySettings();
 
   const totalPay = entries.reduce((sum, e: any) => sum + Number(e.total_pay), 0);
   const totalHours = entries.reduce((sum, e: any) => sum + Number(e.timesheet_hours), 0);
@@ -77,6 +81,20 @@ const Payroll = () => {
     try {
       await submitForReview.mutateAsync(selectedPeriod.id);
       toast.success("Payroll submitted for review");
+      // Send notification
+      const adminEmail = companySettings?.company_email;
+      if (adminEmail) {
+        sendNotification({
+          to: adminEmail,
+          subject: `Payroll Submitted: ${selectedPeriod.period_name}`,
+          type: "payroll_reminder",
+          data: {
+            message: `Payroll "${selectedPeriod.period_name}" has been submitted for review.`,
+            period_name: selectedPeriod.period_name,
+            pay_date: selectedPeriod.pay_date || "Not set",
+          },
+        });
+      }
     } catch {
       toast.error("Failed to submit payroll");
     }
@@ -87,6 +105,19 @@ const Payroll = () => {
     try {
       await approvePeriod.mutateAsync(selectedPeriod.id);
       toast.success("Payroll approved and locked");
+      const adminEmail = companySettings?.company_email;
+      if (adminEmail) {
+        sendNotification({
+          to: adminEmail,
+          subject: `Payroll Approved: ${selectedPeriod.period_name}`,
+          type: "payroll_reminder",
+          data: {
+            message: `Payroll "${selectedPeriod.period_name}" has been approved and locked.`,
+            period_name: selectedPeriod.period_name,
+            pay_date: selectedPeriod.pay_date || "Not set",
+          },
+        });
+      }
     } catch {
       toast.error("Failed to approve payroll");
     }

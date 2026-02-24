@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { useCreateHolidayPayment, useAllHolidayPayments, formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -48,7 +50,8 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const { data: periods = [] } = usePayrollPeriods();
   const { data: allPayments = [] } = useAllHolidayPayments();
   const createPayment = useCreateHolidayPayment();
-
+  const { sendNotification } = useNotifications();
+  const { data: companySettings } = useCompanySettings();
   const { data: allEntriesWithPeriod = [] } = useQuery({
     queryKey: ["payroll_entries", "all_accrual_with_period"],
     queryFn: async () => {
@@ -223,6 +226,22 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
       });
 
       toast.success(`Holiday payment of ${formatCurrency(total)} recorded — payroll period updated`);
+      // Send notification
+      const adminEmail = companySettings?.company_email;
+      if (adminEmail) {
+        sendNotification({
+          to: adminEmail,
+          subject: `Holiday Recorded: ${employee.forename} ${employee.surname}`,
+          type: "holiday_request",
+          data: {
+            employee_name: `${employee.forename} ${employee.surname}`,
+            start_date: holidayDate,
+            end_date: holidayDate,
+            hours: hours,
+            notes: notes || "",
+          },
+        });
+      }
       setOpen(false);
       resetForm();
       onSuccess?.();
