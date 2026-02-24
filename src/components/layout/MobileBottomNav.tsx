@@ -13,6 +13,8 @@ import {
   LogOut,
   BarChart3,
   MapPin,
+  UserX,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -32,6 +34,8 @@ const moreNavItems = [
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
   { icon: BarChart3, label: "Schedule Report", path: "/schedule/report" },
   { icon: BarChart3, label: "Analytics", path: "/schedule/analytics" },
+  { icon: UserX, label: "Absences", path: "/absences" },
+  { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: MapPin, label: "Locations", path: "/locations" },
   { icon: Settings, label: "Settings", path: "/settings" },
