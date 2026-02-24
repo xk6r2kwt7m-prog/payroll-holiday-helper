@@ -32,7 +32,8 @@ const Employees = () => {
   
   const { data: employees = [], isLoading, error } = useEmployees(showArchived);
   const deleteEmployee = useDeleteEmployee();
-  const { isAdmin } = useAuth();
+  const { isAdmin, role } = useAuth();
+  const canViewSensitive = isAdmin;
 
   // Update filter from URL params
   useEffect(() => {
@@ -316,9 +317,10 @@ const Employees = () => {
                   className={selectedIds.has(employee.id) ? "ring-2 ring-primary rounded-xl" : ""}
                   onClick={isSelectionMode ? () => toggleSelection(employee.id) : undefined}
                 >
-                  <EmployeeCard
+                <EmployeeCard
                     employee={employee}
                     isAdmin={isAdmin && !isSelectionMode}
+                    canViewSensitive={canViewSensitive}
                     onDelete={handleDelete}
                     onViewDetails={handleViewDetails}
                     index={index}
@@ -335,6 +337,7 @@ const Employees = () => {
           open={detailSheetOpen}
           onOpenChange={setDetailSheetOpen}
           isAdmin={isAdmin}
+          canViewSensitive={canViewSensitive}
         />
 
         {/* Bulk Actions Bar */}

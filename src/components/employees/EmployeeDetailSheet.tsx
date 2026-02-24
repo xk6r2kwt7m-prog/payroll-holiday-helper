@@ -28,6 +28,7 @@ interface EmployeeDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isAdmin: boolean;
+  canViewSensitive?: boolean;
 }
 
 function InfoRow({ label, value, icon: Icon, mono }: { 
@@ -67,7 +68,7 @@ function Section({ title, icon: Icon, children }: {
   );
 }
 
-export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin }: EmployeeDetailSheetProps) {
+export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, canViewSensitive = false }: EmployeeDetailSheetProps) {
   if (!employee) return null;
 
   const formatDate = (date: string | null) => {
@@ -114,23 +115,34 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin }: E
             </div>
           </div>
 
-          {/* Quick stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
-              <p className="text-lg font-bold text-primary">{formatCurrency(Number(employee.hourly_rate))}</p>
-              <p className="text-xs text-muted-foreground">Hourly Rate</p>
+          {/* Quick stats — sensitive ones only for admin */}
+          {canViewSensitive ? (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
+                <p className="text-lg font-bold text-primary">{formatCurrency(Number(employee.hourly_rate))}</p>
+                <p className="text-xs text-muted-foreground">Hourly Rate</p>
+              </div>
+              <div className="rounded-lg bg-accent/5 border border-accent/20 p-3 text-center">
+                <p className="text-lg font-bold text-accent">{formatCurrency(Number(employee.service_charge || 0))}</p>
+                <p className="text-xs text-muted-foreground">Service Charge</p>
+              </div>
+              <div className="rounded-lg bg-muted p-3 text-center">
+                <p className="text-lg font-bold text-card-foreground">
+                  {tenure !== null ? (tenure < 1 ? '<1' : tenure) : '—'}
+                </p>
+                <p className="text-xs text-muted-foreground">Months</p>
+              </div>
             </div>
-            <div className="rounded-lg bg-accent/5 border border-accent/20 p-3 text-center">
-              <p className="text-lg font-bold text-accent">{formatCurrency(Number(employee.service_charge || 0))}</p>
-              <p className="text-xs text-muted-foreground">Service Charge</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              <div className="rounded-lg bg-muted p-3 text-center">
+                <p className="text-lg font-bold text-card-foreground">
+                  {tenure !== null ? (tenure < 1 ? '<1' : tenure) : '—'}
+                </p>
+                <p className="text-xs text-muted-foreground">Months of Service</p>
+              </div>
             </div>
-            <div className="rounded-lg bg-muted p-3 text-center">
-              <p className="text-lg font-bold text-card-foreground">
-                {tenure !== null ? (tenure < 1 ? '<1' : tenure) : '—'}
-              </p>
-              <p className="text-xs text-muted-foreground">Months</p>
-            </div>
-          </div>
+          )}
         </SheetHeader>
 
         <div className="space-y-6 pb-6">
@@ -139,8 +151,8 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin }: E
             <div className="space-y-1">
               <InfoRow label="Full Name" value={`${employee.forename} ${employee.surname}`} />
               <InfoRow label="Nationality" value={employee.nationality} icon={Globe} />
-              <InfoRow label="Passport Number" value={employee.passport_no} mono />
-              <InfoRow label="National Insurance" value={employee.ni_number} mono />
+              {canViewSensitive && <InfoRow label="Passport Number" value={employee.passport_no} mono />}
+              {canViewSensitive && <InfoRow label="National Insurance" value={employee.ni_number} mono />}
             </div>
           </Section>
 
@@ -164,8 +176,8 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin }: E
             </div>
           </Section>
 
-          {/* Banking Details */}
-          {(employee.sort_code || employee.bank_account_no) && (
+          {/* Banking Details — Admin only */}
+          {canViewSensitive && (employee.sort_code || employee.bank_account_no) && (
             <Section title="Banking Details" icon={CreditCard}>
               <div className="space-y-1">
                 <InfoRow label="Sort Code" value={employee.sort_code} mono />
