@@ -205,6 +205,56 @@ export function EditablePayrollTable({
       }
 
       await bulkUpdate.mutateAsync([{ id: entry.id, updates }]);
+
+      // Sync rate/service charge changes back to employee master record
+      const emp = entry.employees;
+      if (emp) {
+        const oldRate = Number(emp.hourly_rate);
+        const oldService = Number(emp.service_charge || 0);
+        const rateChanged = Math.abs(hourlyRate - oldRate) > 0.001;
+        const serviceChanged = Math.abs(serviceCharge - oldService) > 0.001;
+
+        if (rateChanged || serviceChanged) {
+          // Update the employee master record
+          const empUpdates: Record<string, any> = {};
+          if (rateChanged) empUpdates.hourly_rate = hourlyRate;
+          if (serviceChanged) empUpdates.service_charge = serviceCharge;
+
+          await supabase
+            .from("employees")
+            .update(empUpdates)
+            .eq("id", entry.employee_id);
+
+          // Log each change in employee_changes for audit trail
+          const changeLogs = [];
+          if (rateChanged) {
+            changeLogs.push({
+              employee_id: entry.employee_id,
+              change_type: "update",
+              field_name: "hourly_rate",
+              old_value: oldRate.toString(),
+              new_value: hourlyRate.toString(),
+              notes: `Updated via payroll (period: ${periodId})`,
+            });
+          }
+          if (serviceChanged) {
+            changeLogs.push({
+              employee_id: entry.employee_id,
+              change_type: "update",
+              field_name: "service_charge",
+              old_value: oldService.toString(),
+              new_value: serviceCharge.toString(),
+              notes: `Updated via payroll (period: ${periodId})`,
+            });
+          }
+          if (changeLogs.length > 0) {
+            await supabase.from("employee_changes").insert(changeLogs);
+          }
+
+          // Invalidate employee queries so UI reflects new rates
+          queryClient.invalidateQueries({ queryKey: ["employees"] });
+        }
+      }
       
       setEditingId(null);
       toast.success("Entry updated");
