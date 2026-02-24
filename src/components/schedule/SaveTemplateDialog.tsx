@@ -1,15 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save } from "lucide-react";
 
 interface SaveTemplateDialogProps {
   branch: string;
@@ -17,6 +15,8 @@ interface SaveTemplateDialogProps {
   shiftCount: number;
   onSave: (name: string) => Promise<void>;
   isPending: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function SaveTemplateDialog({
@@ -25,9 +25,14 @@ export function SaveTemplateDialog({
   shiftCount,
   onSave,
   isPending,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: SaveTemplateDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [name, setName] = useState("");
+
+  const isOpen = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -37,13 +42,7 @@ export function SaveTemplateDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5" disabled={shiftCount === 0}>
-          <Save className="h-3.5 w-3.5" />
-          Save Template
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
           <DialogTitle>Save as Template</DialogTitle>

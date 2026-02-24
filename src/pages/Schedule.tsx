@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
-import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWeek, useUnpublishWeek, useCopyPreviousWeek, useLoadTemplate } from "@/hooks/useSchedule";
+import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWeek, useUnpublishWeek, useCopyPreviousWeek, useLoadTemplate, useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
 import { useSaveScheduleTemplate } from "@/hooks/useScheduleTemplates";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,9 +10,9 @@ import { RotaGrid } from "@/components/schedule/RotaGrid";
 import { DayView } from "@/components/schedule/DayView";
 import { ShiftCellDialog } from "@/components/schedule/ShiftCellDialog";
 import { ScheduleHeader } from "@/components/schedule/ScheduleHeader";
-import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
 import { SaveTemplateDialog } from "@/components/schedule/SaveTemplateDialog";
 import { LoadTemplateDialog } from "@/components/schedule/LoadTemplateDialog";
+import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
 import { ComplianceWarningsBanner, useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +31,11 @@ export default function Schedule() {
 
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
+
+  // Template dialog states
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [loadTemplateOpen, setLoadTemplateOpen] = useState(false);
+  const [copyPrevOpen, setCopyPrevOpen] = useState(false);
 
   const { isAdmin } = useAuth();
   const { data: employees } = useEmployees();
@@ -53,6 +57,8 @@ export default function Schedule() {
   const copyPrevWeek = useCopyPreviousWeek();
   const loadTemplate = useLoadTemplate();
   const saveTemplate = useSaveScheduleTemplate();
+  const bulkDelete = useBulkDeleteShifts();
+  const bulkUpdate = useBulkUpdateShifts();
 
   const activeEmployees = useMemo(
     () => employees?.filter((e) => e.status === "active") || [],
@@ -187,6 +193,38 @@ export default function Schedule() {
     }
   };
 
+  // Bulk actions for the "More" menu
+  const handleDeleteAllShifts = async () => {
+    if (!confirm(`Delete all ${branchDeptShifts.length} shifts for ${selectedDept} at ${selectedBranch} this week?`)) return;
+    const ids = branchDeptShifts.map((s: any) => s.id);
+    if (ids.length === 0) return;
+    await bulkDelete.mutateAsync(ids);
+    toast.success(`Deleted ${ids.length} shifts`);
+  };
+
+  const handleClearAssignments = async () => {
+    if (!confirm("Clear all employee assignments? This turns them into open shifts.")) return;
+    const assigned = branchDeptShifts.filter((s: any) => s.employee_id);
+    const ids = assigned.map((s: any) => s.id);
+    if (ids.length === 0) return;
+    await bulkUpdate.mutateAsync({
+      shiftIds: ids,
+      updates: { employee_id: null, status: "open" as const },
+    });
+    toast.success(`Cleared ${ids.length} assignments`);
+  };
+
+  const handleRemoveEmptyShifts = async () => {
+    const emptyShifts = branchDeptShifts.filter((s: any) => !s.employee_id);
+    if (emptyShifts.length === 0) {
+      toast.info("No empty shifts to remove");
+      return;
+    }
+    if (!confirm(`Remove ${emptyShifts.length} empty shifts?`)) return;
+    await bulkDelete.mutateAsync(emptyShifts.map((s: any) => s.id));
+    toast.success(`Removed ${emptyShifts.length} empty shifts`);
+  };
+
   // Day view
   const dayShifts = useMemo(
     () =>
@@ -211,10 +249,9 @@ export default function Schedule() {
   return (
     <AppLayout>
       <div className="flex flex-col h-full -m-4 sm:-m-6">
-        {/* Top bar — Branch selector + Schedule header */}
+        {/* Top bar — Branch + Department selector */}
         <div className="border-b border-border bg-card px-4 pt-3 pb-0">
-          {/* Branch tabs as top-level location selector */}
-          <div className="flex items-center gap-4 mb-3">
+          <div className="flex items-center gap-4 mb-2">
             <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               <MapPin className="h-4 w-4 text-primary" />
               <span>Location</span>
@@ -235,7 +272,6 @@ export default function Schedule() {
               ))}
             </div>
             <div className="flex-1" />
-            {/* Department tabs inline */}
             <div className="flex items-center rounded-lg border border-border overflow-hidden">
               {DEPT_WITH_ALL.map((d) => (
                 <button
@@ -253,7 +289,7 @@ export default function Schedule() {
             </div>
           </div>
 
-          {/* Week navigation + actions */}
+          {/* Deputy-style toolbar */}
           <ScheduleHeader
             currentDate={currentDate}
             viewMode={viewMode}
@@ -266,45 +302,33 @@ export default function Schedule() {
             onViewModeChange={setViewMode}
             onNavigate={navigate}
             onToday={() => setCurrentDate(new Date())}
+            onDateSelect={(d) => setCurrentDate(d)}
             onPublish={handlePublish}
             onUnpublish={handleUnpublish}
             isAdmin={isAdmin}
+            onCopyPreviousWeek={() => setCopyPrevOpen(true)}
+            onSaveTemplate={() => setSaveTemplateOpen(true)}
+            onLoadTemplate={() => setLoadTemplateOpen(true)}
+            copyPending={copyPrevWeek.isPending}
+            onDeleteAllShifts={handleDeleteAllShifts}
+            onClearAssignments={handleClearAssignments}
+            onMarkAllEmpty={handleClearAssignments}
+            onRemoveEmptyShifts={handleRemoveEmptyShifts}
+            shiftCount={branchDeptShifts.length}
+            assignedCount={branchDeptShifts.filter((s: any) => s.employee_id).length}
           />
 
-          {/* Quick actions toolbar */}
-          {isAdmin && viewMode === "week" && selectedDept !== "All" && (
-            <div className="flex flex-wrap items-center gap-2 py-2">
+          {/* Compliance warnings inline */}
+          {complianceWarnings.length > 0 && (
+            <div className="pb-2">
               <ComplianceWarningsBanner warnings={complianceWarnings} />
-              <div className="flex-1" />
-              <CopyPreviousWeekDialog
-                currentWeekStart={weekStart}
-                branch={selectedBranch}
-                department={selectedDept}
-                existingShiftCount={branchDeptShifts.length}
-                onCopy={handleCopyPrevWeek}
-                isPending={copyPrevWeek.isPending}
-              />
-              <SaveTemplateDialog
-                branch={selectedBranch}
-                department={selectedDept}
-                shiftCount={branchDeptShifts.length}
-                onSave={handleSaveTemplate}
-                isPending={saveTemplate.isPending}
-              />
-              <LoadTemplateDialog
-                branch={selectedBranch}
-                department={selectedDept}
-                onLoad={handleLoadTemplate}
-                isPending={loadTemplate.isPending}
-              />
             </div>
           )}
         </div>
 
-        {/* Main schedule area — fills remaining space */}
+        {/* Main schedule area */}
         <div className="flex-1 overflow-auto">
           {selectedDept === "All" ? (
-            /* All Departments stacked view */
             viewMode === "week" ? (
               <div className="divide-y divide-border">
                 {DEPARTMENTS.map((deptVal) => (
@@ -335,7 +359,6 @@ export default function Schedule() {
               </div>
             )
           ) : (
-            /* Single department view */
             viewMode === "week" ? (
               <RotaGrid
                 weekDays={weekDays}
@@ -433,6 +456,35 @@ export default function Schedule() {
           </span>
         </div>
       </div>
+
+      {/* Dialogs triggered from toolbar dropdowns */}
+      <CopyPreviousWeekDialog
+        currentWeekStart={weekStart}
+        branch={selectedBranch}
+        department={selectedDept}
+        existingShiftCount={branchDeptShifts.length}
+        onCopy={handleCopyPrevWeek}
+        isPending={copyPrevWeek.isPending}
+        open={copyPrevOpen}
+        onOpenChange={setCopyPrevOpen}
+      />
+      <SaveTemplateDialog
+        branch={selectedBranch}
+        department={selectedDept}
+        shiftCount={branchDeptShifts.length}
+        onSave={handleSaveTemplate}
+        isPending={saveTemplate.isPending}
+        open={saveTemplateOpen}
+        onOpenChange={setSaveTemplateOpen}
+      />
+      <LoadTemplateDialog
+        branch={selectedBranch}
+        department={selectedDept}
+        onLoad={handleLoadTemplate}
+        isPending={loadTemplate.isPending}
+        open={loadTemplateOpen}
+        onOpenChange={setLoadTemplateOpen}
+      />
     </AppLayout>
   );
 }

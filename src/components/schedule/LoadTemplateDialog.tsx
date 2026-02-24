@@ -4,19 +4,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { FolderOpen, Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { useScheduleTemplates, useDeleteScheduleTemplate } from "@/hooks/useScheduleTemplates";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 
 interface LoadTemplateDialogProps {
   branch: string;
   department: string;
   onLoad: (templateId: string) => Promise<void>;
   isPending: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function LoadTemplateDialog({
@@ -24,8 +24,13 @@ export function LoadTemplateDialog({
   department,
   onLoad,
   isPending,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: LoadTemplateDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = controlledOpen ?? internalOpen;
+  const setOpen = controlledOnOpenChange ?? setInternalOpen;
+
   const { data: templates, isLoading } = useScheduleTemplates(branch, department);
   const deleteTemplate = useDeleteScheduleTemplate();
 
@@ -35,13 +40,7 @@ export function LoadTemplateDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <FolderOpen className="h-3.5 w-3.5" />
-          Load Template
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>Load Template</DialogTitle>
