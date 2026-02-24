@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import ugloIcon from "@/assets/uglo-icon.png";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -66,12 +67,10 @@ export function Sidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-primary text-2xl">
-              🥟
-            </div>
+            <img src={ugloIcon} alt="UGLŌ" className="h-10 w-10 rounded-xl" />
             {!collapsed && (
               <span className="text-lg font-semibold text-sidebar-foreground animate-fade-in">
-                Ugly Dumpling
+                UGLŌ
               </span>
             )}
           </div>
