@@ -19,6 +19,8 @@ import ScheduleReport from "./pages/ScheduleReport";
 import ScheduleAnalytics from "./pages/ScheduleAnalytics";
 import PayrollAnalytics from "./pages/PayrollAnalytics";
 import HolidayAudit from "./pages/HolidayAudit";
+import AbsenceTracker from "./pages/AbsenceTracker";
+import Onboarding from "./pages/Onboarding";
 import StaffPortal from "./pages/StaffPortal";
 import Auth from "./pages/Auth";
 import SignContract from "./pages/SignContract";
@@ -150,6 +152,14 @@ const App = () => (
                   <HolidayAudit />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/absences"
+              element={<ProtectedRoute><AbsenceTracker /></ProtectedRoute>}
+            />
+            <Route
+              path="/onboarding"
+              element={<ProtectedRoute><Onboarding /></ProtectedRoute>}
             />
             <Route path="*" element={<NotFound />} />
           </Routes>

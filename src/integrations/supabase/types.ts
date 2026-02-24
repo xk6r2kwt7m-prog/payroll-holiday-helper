@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      absence_records: {
+        Row: {
+          absence_type: string
+          created_at: string
+          employee_id: string
+          end_date: string
+          hours: number
+          id: string
+          notes: string | null
+          recorded_by: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          absence_type?: string
+          created_at?: string
+          employee_id: string
+          end_date: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          recorded_by?: string | null
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          absence_type?: string
+          created_at?: string
+          employee_id?: string
+          end_date?: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          recorded_by?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "absence_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_notes: {
         Row: {
           created_at: string
@@ -672,6 +719,87 @@ export type Database = {
           scheduling_suggestion_order?: string
           timezone?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      onboarding_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          notes: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_progress_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_progress_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_templates: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          title?: string
         }
         Relationships: []
       }

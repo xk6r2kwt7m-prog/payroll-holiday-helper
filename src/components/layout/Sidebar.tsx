@@ -18,6 +18,8 @@ import {
   BarChart3,
   MapPin,
   Search,
+  UserX,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +37,8 @@ const navItems = [
   { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },
   { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit" },
+  { icon: UserX, label: "Absences", path: "/absences" },
+  { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: MapPin, label: "Locations", path: "/locations" },
   { icon: Settings, label: "Settings", path: "/settings" },
