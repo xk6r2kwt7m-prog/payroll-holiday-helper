@@ -138,7 +138,9 @@ export function RotaGrid({
   const unpublishedCount = allBranchShifts.filter((s: any) => !s.is_published && s.employee_id).length;
   const openShiftCount = allBranchShifts.filter((s: any) => !s.employee_id).length;
 
-  const handleCellClick = (day: Date, shift?: any) => {
+  const [defaultEmployeeId, setDefaultEmployeeId] = useState<string | null>(null);
+
+  const handleCellClick = (day: Date, shift?: any, employeeId?: string | null) => {
     if (!isAdmin) return;
     if (activeShift) return;
     // If clicking a shift, show popover instead of dialog
@@ -148,6 +150,7 @@ export function RotaGrid({
     }
     setSelectedDay(day);
     setSelectedShift(null);
+    setDefaultEmployeeId(employeeId || null);
     setDialogOpen(true);
   };
 
@@ -317,6 +320,7 @@ export function RotaGrid({
               e.stopPropagation();
               setSelectedDay(day);
               setSelectedShift(null);
+              setDefaultEmployeeId(shift.employee_id || null);
               setDialogOpen(true);
             }}
           />
@@ -426,7 +430,7 @@ export function RotaGrid({
                           id={dropId}
                           isAdmin={isAdmin}
                           isToday={isToday(day)}
-                          onClick={() => handleCellClick(day, shift)}
+                          onClick={() => handleCellClick(day, shift, emp.id)}
                         >
                           {shift ? (
                             renderShiftWithPopover(shift, day)
@@ -543,10 +547,49 @@ export function RotaGrid({
         employees={deptEmployees}
         defaultStart={defaultTimes.start}
         defaultEnd={defaultTimes.end}
+        defaultEmployeeId={defaultEmployeeId}
         existingShift={selectedShift}
         onSave={handleSave}
         onDelete={(id) => {
           onDeleteShift(id);
+          setDialogOpen(false);
+        }}
+        onRepeat={async (mode) => {
+          if (!selectedDay || (!selectedShift && !defaultEmployeeId)) return;
+          const shiftData = selectedShift || {
+            employee_id: defaultEmployeeId,
+            start_time: defaultTimes.start,
+            end_time: defaultTimes.end,
+          };
+          const dayIndex = selectedDay.getDay() === 0 ? 6 : selectedDay.getDay() - 1;
+          let targetDays: Date[] = [];
+          if (mode === "tomorrow") {
+            const tomorrow = new Date(selectedDay);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            targetDays = [tomorrow];
+          } else if (mode === "rest_of_week") {
+            for (let i = dayIndex + 1; i < 7; i++) {
+              targetDays.push(weekDays[i]);
+            }
+          }
+          for (const day of targetDays) {
+            if (!day) continue;
+            try {
+              await onCreateShift({
+                shift_date: format(day, "yyyy-MM-dd"),
+                branch,
+                department,
+                employee_id: shiftData.employee_id,
+                start_time: shiftData.start_time,
+                end_time: shiftData.end_time,
+                notes: shiftData.notes || null,
+                status: shiftData.employee_id ? "scheduled" : "open",
+              });
+            } catch {}
+          }
+          if (targetDays.length > 0) {
+            toast.success(`Shift repeated to ${targetDays.length} day${targetDays.length > 1 ? "s" : ""}`);
+          }
           setDialogOpen(false);
         }}
         isPending={isPending}

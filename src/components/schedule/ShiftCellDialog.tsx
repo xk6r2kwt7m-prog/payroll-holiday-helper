@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect, useMemo } from "react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Calendar, Clock, MapPin, Coffee, MessageSquare, Trash2, MoreHorizontal, ChevronDown, Repeat, CalendarDays } from "lucide-react";
 import type { Employee } from "@/hooks/useEmployees";
 
 interface ShiftCellDialogProps {
@@ -16,7 +16,7 @@ interface ShiftCellDialogProps {
   employees: Employee[];
   defaultStart: string;
   defaultEnd: string;
-  // For editing existing shifts
+  defaultEmployeeId?: string | null;
   existingShift?: {
     id: string;
     employee_id: string | null;
@@ -24,15 +24,17 @@ interface ShiftCellDialogProps {
     end_time: string;
     status: string;
     notes: string | null;
+    is_published?: boolean;
   };
   onSave: (data: {
     employee_id: string | null;
     start_time: string;
     end_time: string;
     notes: string;
+    break_minutes?: number;
   }) => void;
   onDelete?: (id: string) => void;
-  onApprove?: (id: string) => void;
+  onRepeat?: (mode: string) => void;
   isPending?: boolean;
 }
 
@@ -45,16 +47,18 @@ export function ShiftCellDialog({
   employees,
   defaultStart,
   defaultEnd,
+  defaultEmployeeId,
   existingShift,
   onSave,
   onDelete,
-  onApprove,
+  onRepeat,
   isPending,
 }: ShiftCellDialogProps) {
   const [employeeId, setEmployeeId] = useState<string>("open");
   const [startTime, setStartTime] = useState(defaultStart);
   const [endTime, setEndTime] = useState(defaultEnd);
   const [notes, setNotes] = useState("");
+  const [breakMinutes, setBreakMinutes] = useState(30);
 
   useEffect(() => {
     if (existingShift) {
@@ -63,12 +67,13 @@ export function ShiftCellDialog({
       setEndTime(existingShift.end_time?.slice(0, 5) || defaultEnd);
       setNotes(existingShift.notes || "");
     } else {
-      setEmployeeId("open");
+      setEmployeeId(defaultEmployeeId || "open");
       setStartTime(defaultStart);
       setEndTime(defaultEnd);
       setNotes("");
+      setBreakMinutes(30);
     }
-  }, [existingShift, defaultStart, defaultEnd, open]);
+  }, [existingShift, defaultStart, defaultEnd, defaultEmployeeId, open]);
 
   const handleSave = () => {
     onSave({
@@ -76,28 +81,61 @@ export function ShiftCellDialog({
       start_time: startTime,
       end_time: endTime,
       notes,
+      break_minutes: breakMinutes,
     });
   };
 
   const isEditing = !!existingShift;
 
+  // Calculate total hours
+  const totalInfo = useMemo(() => {
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    let totalMinutes = (eh * 60 + em) - (sh * 60 + sm);
+    if (totalMinutes < 0) totalMinutes += 24 * 60;
+    const paidMinutes = Math.max(0, totalMinutes - breakMinutes);
+    const hours = paidMinutes / 60;
+    const emp = employees.find(e => e.id === employeeId);
+    const rate = Number(emp?.hourly_rate) || 0;
+    const cost = hours * rate;
+    return {
+      totalMinutes,
+      paidMinutes,
+      hours,
+      cost,
+      hoursStr: `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`,
+    };
+  }, [startTime, endTime, breakMinutes, employeeId, employees]);
+
+  // Get selected employee
+  const selectedEmployee = employees.find(e => e.id === employeeId);
+  const displayName = selectedEmployee
+    ? `${selectedEmployee.forename} ${selectedEmployee.surname}`
+    : "Open Shift";
+  const initials = selectedEmployee
+    ? `${selectedEmployee.forename[0]}${selectedEmployee.surname?.[0] || ""}`
+    : "?";
+
+  // Format time for display
+  const formatTimeDisplay = (time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    return `${h12.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")} ${ampm}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle className="text-base">
-            {isEditing ? "Edit Shift" : "Add Shift"} — {date}
-          </DialogTitle>
-          <p className="text-xs text-muted-foreground">
-            {branch} · {department}
-          </p>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label className="text-xs">Employee</Label>
+      <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden">
+        {/* Header — employee name + avatar */}
+        <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+          <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
             <Select value={employeeId} onValueChange={setEmployeeId}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Open Shift" />
+              <SelectTrigger className="h-auto border-0 p-0 shadow-none text-base font-semibold text-foreground [&>svg]:ml-1 [&>svg]:h-4 [&>svg]:w-4 focus:ring-0">
+                <SelectValue placeholder="Select employee" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="open">Open Shift</SelectItem>
@@ -109,59 +147,131 @@ export function ShiftCellDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Start</Label>
+        </div>
+
+        {/* Details rows — Deputy style */}
+        <div className="px-5 py-3 space-y-3">
+          {/* Date */}
+          <div className="flex items-center gap-3 text-sm">
+            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-foreground">{date}</span>
+          </div>
+
+          {/* Time */}
+          <div className="flex items-center gap-3 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-2">
               <Input
                 type="time"
-                className="h-9"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
+                className="h-8 w-[120px] text-sm"
               />
-            </div>
-            <div>
-              <Label className="text-xs">End</Label>
+              <span className="text-muted-foreground">—</span>
               <Input
                 type="time"
-                className="h-9"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
+                className="h-8 w-[120px] text-sm"
               />
             </div>
           </div>
-          <div>
-            <Label className="text-xs">Notes</Label>
+
+          {/* Location + Department */}
+          <div className="flex items-center gap-3 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+              <span className="text-foreground">{department} ({branch})</span>
+            </div>
+          </div>
+
+          {/* Break */}
+          <div className="flex items-center gap-3 text-sm">
+            <Coffee className="h-4 w-4 text-muted-foreground shrink-0" />
+            <Select
+              value={String(breakMinutes)}
+              onValueChange={(v) => setBreakMinutes(Number(v))}
+            >
+              <SelectTrigger className="h-8 w-auto min-w-[180px] text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">No break</SelectItem>
+                <SelectItem value="15">15 mins break (unpaid)</SelectItem>
+                <SelectItem value="20">20 mins break (unpaid)</SelectItem>
+                <SelectItem value="30">30 mins break (unpaid)</SelectItem>
+                <SelectItem value="45">45 mins break (unpaid)</SelectItem>
+                <SelectItem value="60">60 mins break (unpaid)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Shift note */}
+          <div className="flex items-start gap-3 text-sm">
+            <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0 mt-2" />
             <Input
-              className="h-9"
-              placeholder="Optional notes..."
+              placeholder="Add shift note"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
+              className="h-8 text-sm"
             />
           </div>
-          <div className="flex gap-2 pt-1">
-            <Button onClick={handleSave} disabled={isPending} className="flex-1" size="sm">
-              {isPending ? "Saving..." : isEditing ? "Update" : "Add Shift"}
+        </div>
+
+        {/* Footer — Total + actions */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-muted/30">
+          <div className="text-sm text-foreground">
+            <span className="text-muted-foreground">Total </span>
+            <span className="font-semibold">{totalInfo.hoursStr}</span>
+            {totalInfo.cost > 0 && (
+              <span className="text-muted-foreground ml-1">· £{totalInfo.cost.toFixed(2)}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {/* More menu — repeat, delete */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[220px]">
+                <DropdownMenuItem onClick={() => onRepeat?.("tomorrow")} className="gap-2">
+                  <Repeat className="h-3.5 w-3.5" />
+                  Repeat for tomorrow
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onRepeat?.("rest_of_week")} className="gap-2">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Repeat for rest of the week
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onRepeat?.("specific_days")} className="gap-2">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Repeat for specific days
+                </DropdownMenuItem>
+                {isEditing && onDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => onDelete(existingShift!.id)}
+                      className="gap-2 text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete shift
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              onClick={handleSave}
+              disabled={isPending}
+              size="sm"
+              className="px-6"
+            >
+              {isPending ? "Saving..." : "Save"}
             </Button>
-            {isEditing && existingShift?.status === "scheduled" && onApprove && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onApprove(existingShift.id)}
-                className="text-success border-success/30"
-              >
-                Approve
-              </Button>
-            )}
-            {isEditing && onDelete && (
-              <Button
-                variant="destructive"
-                size="icon"
-                className="h-9 w-9"
-                onClick={() => onDelete(existingShift!.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
           </div>
         </div>
       </DialogContent>
