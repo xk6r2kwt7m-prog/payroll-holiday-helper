@@ -1,4 +1,5 @@
-import { Calendar, Clock, TrendingUp, TrendingDown, DollarSign, ArrowRight, Pencil } from "lucide-react";
+import { useState } from "react";
+import { Calendar, Clock, TrendingUp, TrendingDown, DollarSign, ArrowRight, Pencil, ChevronDown, ChevronUp, History } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,14 @@ interface HolidayPaymentRecord {
   notes: string | null;
 }
 
+interface YearSummary {
+  hoursAccrued: number;
+  hoursTaken: number;
+  totalPaid: number;
+  balance: number;
+  hoursCarriedOver: number;
+}
+
 interface EmployeeHolidayDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,6 +46,7 @@ interface EmployeeHolidayDetailSheetProps {
   year?: number;
   payments: HolidayPaymentRecord[];
   periodBreakdown?: { periodName: string; accrued: number; taken: number; paid: number }[];
+  allYearSummaries?: Record<string, YearSummary>;
 }
 
 export function EmployeeHolidayDetailSheet({
@@ -53,7 +63,9 @@ export function EmployeeHolidayDetailSheet({
   year = new Date().getFullYear(),
   payments,
   periodBreakdown = [],
+  allYearSummaries = {},
 }: EmployeeHolidayDetailSheetProps) {
+  const [showYearHistory, setShowYearHistory] = useState(false);
   const totalEntitlement = hoursAccrued + carryOver;
   const usagePercent = totalEntitlement > 0 ? (hoursTaken / totalEntitlement) * 100 : 0;
   const isOverdrawn = hoursTaken > totalEntitlement;
@@ -66,6 +78,9 @@ export function EmployeeHolidayDetailSheet({
   const yearProgress = ((now.getTime() - startOfYear.getTime()) / (endOfYear.getTime() - startOfYear.getTime())) * 100;
   const expectedHours = totalEntitlement * (yearProgress / 100);
   const usageVsExpected = expectedHours > 0 ? ((hoursTaken - expectedHours) / expectedHours) * 100 : 0;
+
+  const sortedYears = Object.keys(allYearSummaries).sort();
+  const hasMultipleYears = sortedYears.length > 1;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -81,6 +96,7 @@ export function EmployeeHolidayDetailSheet({
               <SheetTitle className="text-xl">{employeeName}</SheetTitle>
               <div className="flex items-center gap-2 mt-1">
                 <Badge variant="secondary">{department}</Badge>
+                <Badge variant="outline" className="text-xs">{year}</Badge>
                 <AdjustHolidayBalanceDialog
                   employeeId={employeeId}
                   employeeName={employeeName}
@@ -176,6 +192,137 @@ export function EmployeeHolidayDetailSheet({
               </div>
             )}
           </div>
+
+          {/* Year-over-Year History */}
+          {hasMultipleYears && (
+            <div className="rounded-xl bg-card border border-border overflow-hidden">
+              <button
+                onClick={() => setShowYearHistory(!showYearHistory)}
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+              >
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  <History className="h-4 w-4 text-primary" />
+                  Year-over-Year History
+                </h4>
+                {showYearHistory ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+
+              {showYearHistory && (
+                <div className="px-4 pb-4 space-y-3">
+                  {/* Comparison table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-2 text-xs font-medium text-muted-foreground">Year</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-foreground">Accrued</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-foreground">Taken</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-foreground">Paid</th>
+                          <th className="text-right py-2 text-xs font-medium text-muted-foreground">Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedYears.map((yr) => {
+                          const s = allYearSummaries[yr];
+                          const isCurrentYear = yr === String(year);
+                          return (
+                            <tr
+                              key={yr}
+                              className={cn(
+                                "border-b border-border last:border-0",
+                                isCurrentYear && "bg-primary/5"
+                              )}
+                            >
+                              <td className="py-2.5">
+                                <span className={cn("font-medium", isCurrentYear && "text-primary")}>
+                                  {yr}
+                                </span>
+                                {isCurrentYear && (
+                                  <Badge variant="outline" className="ml-1.5 text-[9px] py-0 px-1">current</Badge>
+                                )}
+                              </td>
+                              <td className="text-right py-2.5 text-success font-medium">{formatHours(s.hoursAccrued)}</td>
+                              <td className="text-right py-2.5">{formatHours(s.hoursTaken)}</td>
+                              <td className="text-right py-2.5 text-muted-foreground">{formatCurrency(s.totalPaid)}</td>
+                              <td className={cn(
+                                "text-right py-2.5 font-semibold",
+                                s.balance >= 0 ? "text-success" : "text-destructive"
+                              )}>
+                                {formatHours(s.balance)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-border">
+                          <td className="py-2.5 font-semibold text-xs text-muted-foreground">TOTAL</td>
+                          <td className="text-right py-2.5 font-semibold text-success text-xs">
+                            {formatHours(sortedYears.reduce((sum, yr) => sum + allYearSummaries[yr].hoursAccrued, 0))}
+                          </td>
+                          <td className="text-right py-2.5 font-semibold text-xs">
+                            {formatHours(sortedYears.reduce((sum, yr) => sum + allYearSummaries[yr].hoursTaken, 0))}
+                          </td>
+                          <td className="text-right py-2.5 font-semibold text-muted-foreground text-xs">
+                            {formatCurrency(sortedYears.reduce((sum, yr) => sum + allYearSummaries[yr].totalPaid, 0))}
+                          </td>
+                          <td className="text-right py-2.5 font-semibold text-xs">
+                            {(() => {
+                              const totalBalance = sortedYears.reduce((sum, yr) => sum + allYearSummaries[yr].balance, 0);
+                              return (
+                                <span className={totalBalance >= 0 ? "text-success" : "text-destructive"}>
+                                  {formatHours(totalBalance)}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {/* Visual bar comparison */}
+                  <div className="space-y-2 pt-2">
+                    {sortedYears.map((yr) => {
+                      const s = allYearSummaries[yr];
+                      const maxHours = Math.max(...sortedYears.map(y => Math.max(allYearSummaries[y].hoursAccrued, allYearSummaries[y].hoursTaken)));
+                      const accrualWidth = maxHours > 0 ? (s.hoursAccrued / maxHours) * 100 : 0;
+                      const takenWidth = maxHours > 0 ? (s.hoursTaken / maxHours) * 100 : 0;
+                      return (
+                        <div key={yr} className="space-y-1">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground">{yr}</span>
+                            <span>{formatHours(s.hoursAccrued)} accrued / {formatHours(s.hoursTaken)} taken</span>
+                          </div>
+                          <div className="relative h-4 rounded-full bg-muted/50 overflow-hidden">
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full bg-success/30"
+                              style={{ width: `${accrualWidth}%` }}
+                            />
+                            <div
+                              className={cn(
+                                "absolute inset-y-0 left-0 rounded-full",
+                                s.hoursTaken > s.hoursAccrued ? "bg-destructive/60" : "bg-primary/60"
+                              )}
+                              style={{ width: `${takenWidth}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="flex gap-4 text-[10px] text-muted-foreground pt-1">
+                      <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-success/30" /> Accrued</span>
+                      <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-primary/60" /> Taken</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Accrual by Period */}
           {periodBreakdown.length > 0 && (

@@ -35,7 +35,7 @@ import {
 
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
-type LeaveYear = "2025" | "2026";
+type LeaveYear = "2024" | "2025" | "2026";
 type SubTab = "overview" | "alerts" | "history" | "departments";
 
 interface EmployeeSummary {
@@ -61,6 +61,7 @@ const Holidays = () => {
   const { data: periods = [] } = usePayrollPeriods();
 
   // Holiday payments by year
+  const { data: payments2024 = [] } = useHolidayPaymentsByYear(2024);
   const { data: payments2025 = [] } = useHolidayPaymentsByYear(2025);
   const { data: payments2026 = [] } = useHolidayPaymentsByYear(2026);
 
@@ -189,7 +190,19 @@ const Holidays = () => {
     });
   };
 
-  const summaries2025 = useMemo(() => buildSummaries(2025, payments2025), [payrollEntries, payments2025, adjustments]);
+  const summaries2024 = useMemo(() => buildSummaries(2024, payments2024), [payrollEntries, payments2024, adjustments]);
+  const summaries2025 = useMemo(() => {
+    const base = buildSummaries(2025, payments2025);
+    return base.map(s => {
+      const prev = summaries2024.find(p => p.employeeId === s.employeeId);
+      const carryOver = prev ? Math.max(0, prev.balance) : 0;
+      return {
+        ...s,
+        hoursCarriedOver: s.hoursCarriedOver + carryOver,
+        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
+      };
+    });
+  }, [payrollEntries, payments2025, summaries2024, adjustments]);
 
   // 2026 summaries with carry-over from 2025
   const summaries2026 = useMemo(() => {
@@ -205,8 +218,9 @@ const Holidays = () => {
     });
   }, [payrollEntries, payments2026, summaries2025, adjustments]);
 
-  const currentSummaries = selectedYear === "2025" ? summaries2025 : summaries2026;
-  const currentPayments = selectedYear === "2025" ? payments2025 : payments2026;
+  const allYearSummaries = { "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
+  const currentSummaries = allYearSummaries[selectedYear];
+  const currentPayments = selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
 
   // Filter summaries
   const filteredSummaries = useMemo(() => {
@@ -333,7 +347,11 @@ const Holidays = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
           <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <TabsList className="grid w-full sm:w-auto grid-cols-2">
+              <TabsList className="grid w-full sm:w-auto grid-cols-3">
+                <TabsTrigger value="2024" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  2024
+                </TabsTrigger>
                 <TabsTrigger value="2025" className="gap-2">
                   <Calendar className="h-4 w-4" />
                   2025
@@ -584,6 +602,21 @@ const Holidays = () => {
             taken: p.taken,
             paid: p.paid,
           }))}
+          allYearSummaries={
+            Object.entries(allYearSummaries).reduce((acc, [year, summaries]) => {
+              const empSummary = summaries.find(s => s.employeeId === selectedEmployee.employeeId);
+              if (empSummary) {
+                acc[year] = {
+                  hoursAccrued: empSummary.hoursAccrued,
+                  hoursTaken: empSummary.hoursTaken,
+                  totalPaid: empSummary.totalPaid,
+                  balance: empSummary.balance,
+                  hoursCarriedOver: empSummary.hoursCarriedOver,
+                };
+              }
+              return acc;
+            }, {} as Record<string, { hoursAccrued: number; hoursTaken: number; totalPaid: number; balance: number; hoursCarriedOver: number }>)
+          }
         />
       )}
     </AppLayout>
