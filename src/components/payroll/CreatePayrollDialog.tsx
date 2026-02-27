@@ -31,9 +31,29 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
   const createPeriod = useCreatePayrollPeriod();
   const copyPeriod = useCopyPayrollPeriod();
 
+  const checkOverlap = (start: string, end: string): string | null => {
+    if (!start || !end) return null;
+    const newStart = new Date(start);
+    const newEnd = new Date(end);
+    for (const p of periods) {
+      const pStart = new Date(p.start_date);
+      const pEnd = new Date(p.end_date);
+      if (newStart <= pEnd && newEnd >= pStart) {
+        return `Dates overlap with "${p.period_name}" (${p.start_date} to ${p.end_date}). Overlapping periods are not allowed.`;
+      }
+    }
+    return null;
+  };
+
   const handleCreate = async () => {
     if (!periodName || !startDate || !endDate) {
       toast.error("Please fill in period name, start date, and end date");
+      return;
+    }
+
+    const overlapError = checkOverlap(startDate, endDate);
+    if (overlapError) {
+      toast.error(overlapError);
       return;
     }
 
