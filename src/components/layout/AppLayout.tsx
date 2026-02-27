@@ -56,6 +56,7 @@ const moreNavItems = [
   { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics", minRole: "manager" as const },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin" as const },
   { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin" as const },
+  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", minRole: "admin" as const },
   { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" as const },
   { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" as const },
   { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" as const },

@@ -35,6 +35,7 @@ const pages = [
   { icon: DollarSign, label: "Payroll", path: "/payroll", group: "Pages" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", group: "Pages" },
   { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", group: "Pages" },
+  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", group: "Pages" },
   { icon: Calendar, label: "Holidays", path: "/holidays", group: "Pages" },
   { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit", group: "Pages" },
   { icon: FileText, label: "Contracts", path: "/contracts", group: "Pages" },
