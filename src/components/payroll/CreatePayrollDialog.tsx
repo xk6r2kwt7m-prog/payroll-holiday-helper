@@ -266,6 +266,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
             </div>
           )}
 
+          <div className="space-y-2">
             <Label>Pay Date</Label>
             <Input
               type="date"
