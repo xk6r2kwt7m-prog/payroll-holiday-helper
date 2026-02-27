@@ -168,6 +168,10 @@ const App = () => (
               path="/onboarding"
               element={<ProtectedRoute><Onboarding /></ProtectedRoute>}
             />
+            <Route
+              path="/payroll/comparison"
+              element={<ProtectedRoute><PayrollComparison /></ProtectedRoute>}
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
