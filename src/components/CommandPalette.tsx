@@ -22,6 +22,7 @@ import {
   MapPin,
   Settings,
   Search,
+  AlertTriangle,
 } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
 
