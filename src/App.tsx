@@ -26,6 +26,7 @@ import TrainingRecords from "./pages/TrainingRecords";
 import Announcements from "./pages/Announcements";
 import Disciplinary from "./pages/Disciplinary";
 import PayrollComparison from "./pages/PayrollComparison";
+import PayrollOverpayments from "./pages/PayrollOverpayments";
 import Auth from "./pages/Auth";
 import SignContract from "./pages/SignContract";
 import NotFound from "./pages/NotFound";
