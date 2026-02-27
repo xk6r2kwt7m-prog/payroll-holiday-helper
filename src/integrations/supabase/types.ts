@@ -1029,6 +1029,88 @@ export type Database = {
           },
         ]
       }
+      payroll_overpayments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          estimated_overlap_hours: number
+          estimated_overpayment: number
+          hourly_rate: number
+          id: string
+          notes: string | null
+          overlap_end_date: string
+          overlap_start_date: string
+          payroll_period_id: string
+          recovered_amount: number | null
+          recovered_in_period_id: string | null
+          recovery_method: string | null
+          recovery_status: string
+          service_charge: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          estimated_overlap_hours?: number
+          estimated_overpayment?: number
+          hourly_rate: number
+          id?: string
+          notes?: string | null
+          overlap_end_date: string
+          overlap_start_date: string
+          payroll_period_id: string
+          recovered_amount?: number | null
+          recovered_in_period_id?: string | null
+          recovery_method?: string | null
+          recovery_status?: string
+          service_charge?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          estimated_overlap_hours?: number
+          estimated_overpayment?: number
+          hourly_rate?: number
+          id?: string
+          notes?: string | null
+          overlap_end_date?: string
+          overlap_start_date?: string
+          payroll_period_id?: string
+          recovered_amount?: number | null
+          recovered_in_period_id?: string | null
+          recovery_method?: string | null
+          recovery_status?: string
+          service_charge?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_overpayments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_overpayments_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_overpayments_recovered_in_period_id_fkey"
+            columns: ["recovered_in_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_periods: {
         Row: {
           approved_at: string | null
