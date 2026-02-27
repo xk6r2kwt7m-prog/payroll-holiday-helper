@@ -26,6 +26,7 @@ import TrainingRecords from "./pages/TrainingRecords";
 import Announcements from "./pages/Announcements";
 import Disciplinary from "./pages/Disciplinary";
 import PayrollComparison from "./pages/PayrollComparison";
+import PayrollOverpayments from "./pages/PayrollOverpayments";
 import Auth from "./pages/Auth";
 import SignContract from "./pages/SignContract";
 import NotFound from "./pages/NotFound";
@@ -171,6 +172,10 @@ const App = () => (
             <Route
               path="/payroll/comparison"
               element={<ProtectedRoute><PayrollComparison /></ProtectedRoute>}
+            />
+            <Route
+              path="/payroll/overpayments"
+              element={<ProtectedRoute><PayrollOverpayments /></ProtectedRoute>}
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
