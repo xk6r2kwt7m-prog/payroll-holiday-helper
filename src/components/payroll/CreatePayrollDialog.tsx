@@ -31,9 +31,29 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
   const createPeriod = useCreatePayrollPeriod();
   const copyPeriod = useCopyPayrollPeriod();
 
+  const checkOverlap = (start: string, end: string): string | null => {
+    if (!start || !end) return null;
+    const newStart = new Date(start);
+    const newEnd = new Date(end);
+    for (const p of periods) {
+      const pStart = new Date(p.start_date);
+      const pEnd = new Date(p.end_date);
+      if (newStart <= pEnd && newEnd >= pStart) {
+        return `Dates overlap with "${p.period_name}" (${p.start_date} to ${p.end_date}). Overlapping periods are not allowed.`;
+      }
+    }
+    return null;
+  };
+
   const handleCreate = async () => {
     if (!periodName || !startDate || !endDate) {
       toast.error("Please fill in period name, start date, and end date");
+      return;
+    }
+
+    const overlapError = checkOverlap(startDate, endDate);
+    if (overlapError) {
+      toast.error(overlapError);
       return;
     }
 
@@ -237,6 +257,15 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
             </div>
           </div>
 
+          {startDate && endDate && checkOverlap(startDate, endDate) && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 flex items-start gap-2">
+              <span className="text-destructive font-bold text-lg leading-none">⚠</span>
+              <p className="text-sm text-destructive font-medium">
+                {checkOverlap(startDate, endDate)}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Pay Date</Label>
             <Input
@@ -281,7 +310,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           </Button>
           <Button 
             onClick={handleCreate} 
-            disabled={isLoading || !periodName || !startDate || !endDate || (mode === "copy" && !selectedSourcePeriod)}
+            disabled={isLoading || !periodName || !startDate || !endDate || (mode === "copy" && !selectedSourcePeriod) || !!(startDate && endDate && checkOverlap(startDate, endDate))}
           >
             {isLoading ? "Creating..." : "Create Period"}
           </Button>
