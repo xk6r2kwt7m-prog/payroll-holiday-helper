@@ -15,6 +15,10 @@ import {
   MapPin,
   UserX,
   UserPlus,
+  AlertTriangle,
+  GraduationCap,
+  ShieldAlert,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -31,11 +35,17 @@ const mainNavItems = [
 const moreNavItems = [
   { icon: Users, label: "Employees", path: "/employees" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },
-  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
   { icon: BarChart3, label: "Schedule Report", path: "/schedule/report" },
-  { icon: BarChart3, label: "Analytics", path: "/schedule/analytics" },
+  { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics" },
+  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
+  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics" },
+  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments" },
+  { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit" },
   { icon: UserX, label: "Absences", path: "/absences" },
   { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
+  { icon: GraduationCap, label: "Training", path: "/training" },
+  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary" },
+  { icon: Megaphone, label: "Announcements", path: "/announcements" },
   { icon: FileText, label: "Contracts", path: "/contracts" },
   { icon: MapPin, label: "Locations", path: "/locations" },
   { icon: Settings, label: "Settings", path: "/settings" },
