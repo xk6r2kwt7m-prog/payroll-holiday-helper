@@ -24,6 +24,7 @@ import {
   GraduationCap,
   Megaphone,
   ShieldAlert,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,6 +41,7 @@ const navItems = [
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
   { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics" },
+  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments" },
   { icon: Calendar, label: "Holidays", path: "/holidays" },
   { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit" },
   { icon: UserX, label: "Absences", path: "/absences" },
