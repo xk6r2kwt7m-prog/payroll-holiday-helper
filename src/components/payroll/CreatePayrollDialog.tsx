@@ -257,7 +257,15 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
+          {startDate && endDate && checkOverlap(startDate, endDate) && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 flex items-start gap-2">
+              <span className="text-destructive font-bold text-lg leading-none">⚠</span>
+              <p className="text-sm text-destructive font-medium">
+                {checkOverlap(startDate, endDate)}
+              </p>
+            </div>
+          )}
+
             <Label>Pay Date</Label>
             <Input
               type="date"
