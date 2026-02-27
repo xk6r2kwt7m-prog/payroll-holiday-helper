@@ -310,7 +310,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           </Button>
           <Button 
             onClick={handleCreate} 
-            disabled={isLoading || !periodName || !startDate || !endDate || (mode === "copy" && !selectedSourcePeriod)}
+            disabled={isLoading || !periodName || !startDate || !endDate || (mode === "copy" && !selectedSourcePeriod) || !!(startDate && endDate && checkOverlap(startDate, endDate))}
           >
             {isLoading ? "Creating..." : "Create Period"}
           </Button>
