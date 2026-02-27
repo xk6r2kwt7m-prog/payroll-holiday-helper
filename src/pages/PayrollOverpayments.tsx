@@ -130,7 +130,7 @@ const handlePrint = (mode: "admin" | "staff", overpayments: any[]) => {
     <body>
       ${confidentialBanner}
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">
-        <img src="/logo.jpeg" style="height:48px;border-radius:6px;" />
+        <img src="${window.location.origin}/logo.jpeg" style="height:48px;border-radius:6px;" />
         <div>
           <h1 style="margin:0;font-size:20px;">${title}</h1>
           <p style="margin:4px 0 0;color:#666;font-size:13px;">${subtitle}</p>
@@ -157,7 +157,10 @@ const handlePrint = (mode: "admin" | "staff", overpayments: any[]) => {
   if (printWindow) {
     printWindow.document.write(printHtml);
     printWindow.document.close();
+    // Remove any injected Lovable badge elements before printing
     printWindow.onload = () => {
+      const badges = printWindow.document.querySelectorAll('[id*="lovable"], [class*="lovable"], a[href*="lovable"]');
+      badges.forEach(el => el.remove());
       printWindow.print();
     };
   }
