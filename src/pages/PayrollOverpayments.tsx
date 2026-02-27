@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Download, FileText, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { AlertTriangle, Download, FileText, CheckCircle2, Clock, XCircle, Printer } from "lucide-react";
 import { useOverpayments, useUpdateOverpaymentStatus } from "@/hooks/useOverpayments";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -19,6 +19,149 @@ const statusConfig: Record<string, { label: string; icon: React.ReactNode; class
 };
 
 const formatCurrency = (val: number) => `£${val.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const handlePrint = (mode: "admin" | "staff", overpayments: any[]) => {
+  const isStaff = mode === "staff";
+  const today = new Date().toLocaleDateString("en-GB");
+  
+  const activeOverpayments = overpayments.filter(o => Number(o.estimated_overlap_hours) > 0);
+  const totalHours = activeOverpayments.reduce((s, o) => s + Number(o.estimated_overlap_hours), 0);
+  const totalOverpayment = activeOverpayments.reduce((s, o) => s + Number(o.estimated_overpayment), 0);
+
+  const rows = activeOverpayments
+    .sort((a, b) => (a.employees?.surname || "").localeCompare(b.employees?.surname || ""))
+    .map((o, i) => {
+      const name = `${o.employees?.forename} ${o.employees?.surname}`;
+      const dept = o.employees?.department || "";
+      const hours = Number(o.estimated_overlap_hours).toFixed(2);
+      const overpayment = formatCurrency(Number(o.estimated_overpayment));
+      
+      if (isStaff) {
+        return `<tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;">${i + 1}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;font-weight:500;">${name}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:center;">${dept}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:right;font-variant-numeric:tabular-nums;">${hours}h</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:#dc2626;">${overpayment}</td>
+        </tr>`;
+      }
+      
+      const rate = formatCurrency(Number(o.hourly_rate));
+      const sc = formatCurrency(Number(o.service_charge));
+      const status = o.recovery_status.charAt(0).toUpperCase() + o.recovery_status.slice(1).replace("_", " ");
+      const notes = o.notes || "—";
+      
+      return `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;">${i + 1}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;font-weight:500;">${name}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:center;">${dept}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:right;font-variant-numeric:tabular-nums;">${hours}h</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:right;font-variant-numeric:tabular-nums;">${rate}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:right;font-variant-numeric:tabular-nums;">${sc}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:#dc2626;">${overpayment}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;">${status}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #e5e5e5;font-size:11px;max-width:200px;word-wrap:break-word;">${notes}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const staffHeaders = `
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">#</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Employee</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Dept</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Overlap Hours</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Est. Overpayment</th>`;
+
+  const adminHeaders = `
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">#</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Employee</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Dept</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Overlap Hours</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Rate</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">SC</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:right;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Est. Overpayment</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Status</th>
+    <th style="padding:8px 10px;border-bottom:2px solid #333;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;">Notes</th>`;
+
+  const staffTotalCols = `
+    <td style="padding:8px 10px;font-weight:700;" colspan="3">TOTAL</td>
+    <td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${totalHours.toFixed(2)}h</td>
+    <td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:#dc2626;">${formatCurrency(totalOverpayment)}</td>`;
+
+  const adminTotalCols = `
+    <td style="padding:8px 10px;font-weight:700;" colspan="3">TOTAL</td>
+    <td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;">${totalHours.toFixed(2)}h</td>
+    <td colspan="2"></td>
+    <td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums;color:#dc2626;">${formatCurrency(totalOverpayment)}</td>
+    <td colspan="2"></td>`;
+
+  const confidentialBanner = !isStaff
+    ? `<div style="background:#dc2626;color:white;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:16px;">PRIVATE &amp; CONFIDENTIAL — ADMIN ONLY</div>`
+    : "";
+
+  const title = isStaff ? "Payroll Adjustment Notice" : "Payroll Overpayment Evidence — Admin Report";
+  const subtitle = "February 2026 — 1 week overlap (19–25 Jan) with January period";
+
+  const explanation = isStaff
+    ? `<div style="background:#fef9c3;border:1px solid #facc15;border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:13px;">
+        <strong>What happened:</strong> The February 2026 payroll period accidentally included one extra week (19–25 January) 
+        that was already paid in the January payroll. The table below shows the hours worked during that overlap week 
+        and the estimated amount that was overpaid. This will be adjusted in upcoming pay periods.
+      </div>`
+    : `<div style="background:#fef9c3;border:1px solid #facc15;border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:13px;">
+        <strong>Calculation basis:</strong> Exact timesheet hours from Deputy export for 19–25 Jan 2026, 
+        aggregated across all locations per employee. Overpayment = hours × (hourly rate + service charge).
+      </div>`;
+
+  const printHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${title}</title>
+      <style>
+        @media print {
+          body { margin: 0; padding: 20px; }
+          @page { size: landscape; margin: 15mm; }
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #111; }
+        table { width: 100%; border-collapse: collapse; }
+      </style>
+    </head>
+    <body>
+      ${confidentialBanner}
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">
+        <img src="/logo.jpeg" style="height:48px;border-radius:6px;" />
+        <div>
+          <h1 style="margin:0;font-size:20px;">${title}</h1>
+          <p style="margin:4px 0 0;color:#666;font-size:13px;">${subtitle}</p>
+        </div>
+      </div>
+      <p style="color:#888;font-size:11px;margin-bottom:16px;">Printed: ${today} | Employees: ${activeOverpayments.length} | Total overlap: ${totalHours.toFixed(1)}h</p>
+      ${explanation}
+      <table>
+        <thead><tr>${isStaff ? staffHeaders : adminHeaders}</tr></thead>
+        <tbody>
+          ${rows}
+          <tr style="background:#f5f5f5;border-top:2px solid #333;">
+            ${isStaff ? staffTotalCols : adminTotalCols}
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:24px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#888;">
+        <strong>Source:</strong> Deputy timesheet export 19–25 Jan 2026 • Generated by Uglo Payroll System • ${today}
+      </div>
+    </body>
+    </html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  }
+};
 
 const PayrollOverpayments = () => {
   const { data: overpayments = [], isLoading } = useOverpayments();
@@ -80,10 +223,20 @@ const PayrollOverpayments = () => {
               February 2026 — 1 week overlap (19–25 Jan) with January period
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => handlePrint("admin", overpayments)}>
+              <Printer className="h-4 w-4 mr-2" />
+              Print Admin
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handlePrint("staff", overpayments)}>
+              <Printer className="h-4 w-4 mr-2" />
+              Print Staff
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
         </div>
 
         {/* Summary cards */}
@@ -122,10 +275,8 @@ const PayrollOverpayments = () => {
               <div className="text-sm">
                 <p className="font-medium">How this was calculated</p>
                 <p className="text-muted-foreground mt-1">
-                  The February 2026 payroll period was set to start on 19 Jan instead of 26 Jan, creating a 7-day overlap 
-                  with the January period (15 Dec – 25 Jan). Since the February period spans 5 weeks (35 days), the estimated 
-                  overpayment is calculated as <strong>1/5 of each employee's February hours × their effective rate</strong>. 
-                  These are pro-rata estimates — actual overlap may vary by individual work patterns.
+                  Exact timesheet hours from Deputy export for 19–25 Jan 2026, aggregated across all locations per employee.
+                  Overpayment = hours × (hourly rate + service charge).
                 </p>
               </div>
             </div>
@@ -242,7 +393,7 @@ const PayrollOverpayments = () => {
             <p className="text-xs text-muted-foreground">
               <strong>Audit trail:</strong> This record was generated on {new Date().toLocaleDateString("en-GB")} as evidence of 
               payroll overlap between January 2026 (15 Dec – 25 Jan) and February 2026 (19 Jan – 22 Feb). 
-              All figures are pro-rata estimates. Records are immutable once created — status changes are tracked via updated_at timestamps.
+              Hours sourced from Deputy timesheet export. Records are immutable once created — status changes are tracked via updated_at timestamps.
             </p>
           </CardContent>
         </Card>
