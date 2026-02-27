@@ -43,7 +43,7 @@ export const useOverpayments = () => {
         .select(`
           *,
           employees(id, forename, surname, department, status),
-          payroll_periods(id, period_name, start_date, end_date)
+          payroll_periods!payroll_overpayments_payroll_period_id_fkey(id, period_name, start_date, end_date)
         `)
         .order("estimated_overpayment", { ascending: false });
 
