@@ -173,6 +173,10 @@ const App = () => (
               path="/payroll/comparison"
               element={<ProtectedRoute><PayrollComparison /></ProtectedRoute>}
             />
+            <Route
+              path="/payroll/overpayments"
+              element={<ProtectedRoute><PayrollOverpayments /></ProtectedRoute>}
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
