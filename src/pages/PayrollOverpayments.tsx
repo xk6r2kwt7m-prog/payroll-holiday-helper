@@ -157,7 +157,10 @@ const handlePrint = (mode: "admin" | "staff", overpayments: any[]) => {
   if (printWindow) {
     printWindow.document.write(printHtml);
     printWindow.document.close();
+    // Remove any injected Lovable badge elements before printing
     printWindow.onload = () => {
+      const badges = printWindow.document.querySelectorAll('[id*="lovable"], [class*="lovable"], a[href*="lovable"]');
+      badges.forEach(el => el.remove());
       printWindow.print();
     };
   }
