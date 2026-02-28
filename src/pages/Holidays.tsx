@@ -676,6 +676,7 @@ const Holidays = () => {
                       carryOver={summary.hoursCarriedOver}
                       periodBreakdown={summary.periodBreakdown}
                       index={index}
+                      onViewBreakdown={() => openFormulaBreakdown(summary.employeeId)}
                     />
                   </div>
                 ))}
