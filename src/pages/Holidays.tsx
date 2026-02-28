@@ -825,6 +825,13 @@ const Holidays = () => {
           }
         />
       )}
+
+      {/* Formula Breakdown Sheet */}
+      <HolidayFormulaBreakdown
+        open={formulaOpen}
+        onOpenChange={setFormulaOpen}
+        data={formulaBreakdownData}
+      />
     </AppLayout>
   );
 };
