@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ShieldCheck, ShieldAlert, ShieldX, RefreshCw, CheckCircle, AlertTriangle,
-  XCircle, Calculator, Calendar, DollarSign, Users, Loader2, ChevronDown, ChevronUp,
+  XCircle, Calculator, Calendar, DollarSign, Users, Loader2, ChevronDown, ChevronUp, TrendingUp,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -22,6 +22,7 @@ const categoryConfig = {
   holiday: { label: "Holiday Reconciliation", icon: <Calendar className="h-5 w-5" />, description: "Verifies accruals (12.07%), balances, and taken hours match" },
   totals: { label: "Period Totals", icon: <DollarSign className="h-5 w-5" />, description: "Verifies entries + holidays = grand_total on each period" },
   duplicates: { label: "Duplicate Detection", icon: <Users className="h-5 w-5" />, description: "Detects employees in overlapping periods or duplicated entries" },
+  consistency: { label: "Hours Consistency", icon: <TrendingUp className="h-5 w-5" />, description: "Compares weekly hours per employee against their historical average to detect anomalies" },
 };
 
 function HealthScoreRing({ score }: { score: number }) {
@@ -181,6 +182,7 @@ const PayrollAudit = () => {
                 <CategoryCard category="holiday" stats={audit.categories.holiday} />
                 <CategoryCard category="totals" stats={audit.categories.totals} />
                 <CategoryCard category="duplicates" stats={audit.categories.duplicates} />
+                <CategoryCard category="consistency" stats={audit.categories.consistency} />
               </div>
             </div>
 
@@ -239,6 +241,7 @@ const PayrollAudit = () => {
                       <TabsTrigger value="holiday">Holiday</TabsTrigger>
                       <TabsTrigger value="totals">Totals</TabsTrigger>
                       <TabsTrigger value="duplicates">Duplicates</TabsTrigger>
+                      <TabsTrigger value="consistency">Consistency</TabsTrigger>
                     </TabsList>
 
                     <div className="space-y-2 max-h-[600px] overflow-y-auto">

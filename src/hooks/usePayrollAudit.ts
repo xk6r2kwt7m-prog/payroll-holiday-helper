@@ -5,7 +5,7 @@ export type AuditSeverity = "pass" | "warning" | "error";
 
 export interface AuditFinding {
   id: string;
-  category: "calculation" | "holiday" | "totals" | "duplicates";
+  category: "calculation" | "holiday" | "totals" | "duplicates" | "consistency";
   severity: AuditSeverity;
   title: string;
   detail: string;
@@ -30,6 +30,7 @@ export interface AuditResult {
     holiday: { passed: number; warnings: number; errors: number };
     totals: { passed: number; warnings: number; errors: number };
     duplicates: { passed: number; warnings: number; errors: number };
+    consistency: { passed: number; warnings: number; errors: number };
   };
   timestamp: string;
 }
@@ -330,6 +331,87 @@ async function runFullAudit(): Promise<AuditResult> {
   }
 
   // ============================================
+  // 5. HOURS CONSISTENCY CHECK (vs historical average)
+  // ============================================
+  // For each employee in each period, compare their weekly hours to their
+  // historical average weekly hours across all OTHER periods.
+  const WEEKLY_HOURS_WARN_THRESHOLD = 0.40; // 40% deviation = warning
+  const WEEKLY_HOURS_ERROR_THRESHOLD = 0.80; // 80% deviation = error
+  const MIN_HISTORY_PERIODS = 1; // need at least 1 other period to compare
+
+  // Build a map: employeeId -> array of { periodId, weeklyHours, periodName }
+  const employeeHistory: Record<string, { periodId: string; weeklyHours: number; periodName: string; totalHours: number }[]> = {};
+  
+  for (const period of periods || []) {
+    const periodEntries = (entries || []).filter((e: any) => e.payroll_period_id === period.id);
+    const periodWeeks = Number(period.period_weeks) || 4;
+    
+    for (const entry of periodEntries) {
+      const empId = entry.employee_id;
+      const totalHours = Number(entry.timesheet_hours);
+      const weeklyHours = totalHours / periodWeeks;
+      
+      if (!employeeHistory[empId]) employeeHistory[empId] = [];
+      employeeHistory[empId].push({
+        periodId: period.id,
+        weeklyHours,
+        periodName: period.period_name,
+        totalHours,
+      });
+    }
+  }
+
+  // Now compare each entry against the historical average (excluding itself)
+  for (const [empId, history] of Object.entries(employeeHistory)) {
+    if (history.length <= MIN_HISTORY_PERIODS) continue; // not enough data
+
+    for (const current of history) {
+      totalChecks++;
+      const others = history.filter(h => h.periodId !== current.periodId);
+      if (others.length === 0) continue;
+
+      const avgWeekly = others.reduce((s, h) => s + h.weeklyHours, 0) / others.length;
+      
+      if (avgWeekly < 1) continue; // skip if historical average is negligible
+
+      const deviation = Math.abs(current.weeklyHours - avgWeekly) / avgWeekly;
+
+      // Find employee name
+      const empEntry = (entries || []).find((e: any) => e.employee_id === empId);
+      const emp = (empEntry as any)?.employees;
+      const empName = emp ? `${emp.forename} ${emp.surname}` : "Unknown";
+
+      if (deviation >= WEEKLY_HOURS_ERROR_THRESHOLD) {
+        findings.push({
+          id: `consistency-${empId}-${current.periodId}`,
+          category: "consistency",
+          severity: "error",
+          title: `Major hours deviation`,
+          detail: `${empName} in "${current.periodName}": ${current.weeklyHours.toFixed(1)} hrs/wk vs historical avg ${avgWeekly.toFixed(1)} hrs/wk (${(deviation * 100).toFixed(0)}% change)`,
+          employeeName: empName,
+          periodName: current.periodName,
+          expected: avgWeekly,
+          actual: current.weeklyHours,
+          difference: current.weeklyHours - avgWeekly,
+        });
+      } else if (deviation >= WEEKLY_HOURS_WARN_THRESHOLD) {
+        findings.push({
+          id: `consistency-${empId}-${current.periodId}`,
+          category: "consistency",
+          severity: "warning",
+          title: `Unusual hours change`,
+          detail: `${empName} in "${current.periodName}": ${current.weeklyHours.toFixed(1)} hrs/wk vs historical avg ${avgWeekly.toFixed(1)} hrs/wk (${(deviation * 100).toFixed(0)}% change). Could be extra shifts or reduced hours.`,
+          employeeName: empName,
+          periodName: current.periodName,
+          expected: avgWeekly,
+          actual: current.weeklyHours,
+          difference: current.weeklyHours - avgWeekly,
+        });
+      }
+    }
+  }
+
+  // ============================================
   // COMPILE RESULTS
   // ============================================
   const errors = findings.filter(f => f.severity === "error").length;
@@ -350,6 +432,8 @@ async function runFullAudit(): Promise<AuditResult> {
       ? (periods || []).length * 2 
       : cat === "duplicates"
       ? (periods || []).length + (periods || []).length * ((periods || []).length - 1) / 2
+      : cat === "consistency"
+      ? Object.values(employeeHistory).reduce((s, h) => s + (h.length > MIN_HISTORY_PERIODS ? h.length : 0), 0)
       : (balances || []).length * 2;
     return {
       passed: Math.max(0, Number(catTotal) - catErrors - catWarnings),
@@ -372,6 +456,7 @@ async function runFullAudit(): Promise<AuditResult> {
       holiday: categorize("holiday"),
       totals: categorize("totals"),
       duplicates: categorize("duplicates"),
+      consistency: categorize("consistency"),
     },
     timestamp: new Date().toISOString(),
   };
