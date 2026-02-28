@@ -241,6 +241,7 @@ const PayrollAudit = () => {
                       <TabsTrigger value="holiday">Holiday</TabsTrigger>
                       <TabsTrigger value="totals">Totals</TabsTrigger>
                       <TabsTrigger value="duplicates">Duplicates</TabsTrigger>
+                      <TabsTrigger value="consistency">Consistency</TabsTrigger>
                     </TabsList>
 
                     <div className="space-y-2 max-h-[600px] overflow-y-auto">
