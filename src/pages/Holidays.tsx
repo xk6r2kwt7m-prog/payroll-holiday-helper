@@ -523,6 +523,15 @@ const Holidays = () => {
           <TabsContent value="departments" className="mt-4">
             <DepartmentHolidaySummary departments={departmentSummaries} />
           </TabsContent>
+
+          {/* Employee Lookup Tab - cross-year view */}
+          <TabsContent value="lookup" className="mt-4">
+            <EmployeeHolidayLookup
+              allYearSummaries={allYearSummaries}
+              onEmployeeClick={setSelectedEmployeeId}
+            />
+          </TabsContent>
+          </TabsContent>
         </Tabs>
 
         {/* UK Holiday Law Info Card */}
