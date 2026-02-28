@@ -719,6 +719,11 @@ const Holidays = () => {
               onEmployeeClick={setSelectedEmployeeId}
             />
           </TabsContent>
+
+          {/* Integrity Check Tab */}
+          <TabsContent value="integrity" className="mt-4">
+            <HolidayIntegrityCheck rows={integrityRows} isLoading={entriesLoading} />
+          </TabsContent>
         </Tabs>
 
         {/* UK Holiday Law Info Card */}
