@@ -30,6 +30,7 @@ export interface AuditResult {
     holiday: { passed: number; warnings: number; errors: number };
     totals: { passed: number; warnings: number; errors: number };
     duplicates: { passed: number; warnings: number; errors: number };
+    consistency: { passed: number; warnings: number; errors: number };
   };
   timestamp: string;
 }
