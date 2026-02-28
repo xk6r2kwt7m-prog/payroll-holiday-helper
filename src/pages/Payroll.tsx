@@ -17,6 +17,7 @@ import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWor
 import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySection";
 import { PayrollSalesInput } from "@/components/payroll/PayrollSalesInput";
 import { PayrollReminders } from "@/components/payroll/PayrollReminders";
+import { PayrollInlineAnalytics } from "@/components/payroll/PayrollInlineAnalytics";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
@@ -407,6 +408,15 @@ const Payroll = () => {
             totalPayroll={totalPay}
             managementPayroll={managementPayroll}
             isAdmin={isAdmin}
+          />
+        )}
+
+        {/* Inline Period Analytics */}
+        {selectedPeriod && entries.length > 0 && (
+          <PayrollInlineAnalytics
+            currentPeriodId={selectedPeriod.id}
+            entries={entries}
+            holidayPayments={holidayPayments as any}
           />
         )}
 
