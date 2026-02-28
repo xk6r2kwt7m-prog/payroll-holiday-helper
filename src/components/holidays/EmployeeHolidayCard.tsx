@@ -1,4 +1,4 @@
-import { Calendar, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Calculator, Lock } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
