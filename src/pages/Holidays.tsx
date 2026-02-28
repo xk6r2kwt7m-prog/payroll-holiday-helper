@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3 } from "lucide-react";
+import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { HolidayAlerts } from "@/components/holidays/HolidayAlerts";
 import { DepartmentHolidaySummary } from "@/components/holidays/DepartmentHolidaySummary";
 import { HolidayPaymentHistory } from "@/components/holidays/HolidayPaymentHistory";
 import { EmployeeHolidayDetailSheet } from "@/components/holidays/EmployeeHolidayDetailSheet";
+import { EmployeeHolidayLookup } from "@/components/holidays/EmployeeHolidayLookup";
 import {
   useHolidayPaymentsByYear,
   useAllPayrollEntriesWithHoliday,
@@ -36,7 +37,7 @@ import {
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2024" | "2025" | "2026";
-type SubTab = "overview" | "alerts" | "history" | "departments";
+type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup";
 
 interface EmployeeSummary {
   employeeId: string;
@@ -415,10 +416,14 @@ const Holidays = () => {
 
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
-          <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-grid">
+          <TabsList className="grid w-full grid-cols-5 sm:w-auto sm:inline-grid">
             <TabsTrigger value="overview" className="gap-1.5">
               <Users className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="lookup" className="gap-1.5">
+              <UserSearch className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Employee</span>
             </TabsTrigger>
             <TabsTrigger value="alerts" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
@@ -517,6 +522,14 @@ const Holidays = () => {
           {/* Department Summary Tab */}
           <TabsContent value="departments" className="mt-4">
             <DepartmentHolidaySummary departments={departmentSummaries} />
+          </TabsContent>
+
+          {/* Employee Lookup Tab - cross-year view */}
+          <TabsContent value="lookup" className="mt-4">
+            <EmployeeHolidayLookup
+              allYearSummaries={allYearSummaries}
+              onEmployeeClick={setSelectedEmployeeId}
+            />
           </TabsContent>
         </Tabs>
 
