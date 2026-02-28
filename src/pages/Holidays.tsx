@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch, ShieldCheck } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ import { DepartmentHolidaySummary } from "@/components/holidays/DepartmentHolida
 import { HolidayPaymentHistory } from "@/components/holidays/HolidayPaymentHistory";
 import { EmployeeHolidayDetailSheet } from "@/components/holidays/EmployeeHolidayDetailSheet";
 import { EmployeeHolidayLookup } from "@/components/holidays/EmployeeHolidayLookup";
+import { HolidayFormulaBreakdown, type FormulaBreakdownData } from "@/components/holidays/HolidayFormulaBreakdown";
+import { HolidayIntegrityCheck } from "@/components/holidays/HolidayIntegrityCheck";
 import {
   useHolidayPaymentsByYear,
   useAllPayrollEntriesWithHoliday,
@@ -26,6 +28,7 @@ import {
   UK_HOLIDAY_LAW,
   calculateAnnualEntitlement,
 } from "@/hooks/useHolidays";
+import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import {
   Accordion,
@@ -37,7 +40,7 @@ import {
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2024" | "2025" | "2026";
-type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup";
+type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity";
 
 interface EmployeeSummary {
   employeeId: string;
@@ -58,6 +61,8 @@ const Holidays = () => {
   const [selectedYear, setSelectedYear] = useState<LeaveYear>("2025");
   const [subTab, setSubTab] = useState<SubTab>("overview");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [formulaBreakdownData, setFormulaBreakdownData] = useState<FormulaBreakdownData | null>(null);
+  const [formulaOpen, setFormulaOpen] = useState(false);
 
   const { data: periods = [] } = usePayrollPeriods();
 
@@ -65,6 +70,11 @@ const Holidays = () => {
   const { data: payments2024 = [] } = useHolidayPaymentsByYear(2024);
   const { data: payments2025 = [] } = useHolidayPaymentsByYear(2025);
   const { data: payments2026 = [] } = useHolidayPaymentsByYear(2026);
+
+  // Holiday balances for integrity check
+  const { data: balances2024 = [] } = useHolidayBalancesByYear(2024);
+  const { data: balances2025 = [] } = useHolidayBalancesByYear(2025);
+  const { data: balances2026 = [] } = useHolidayBalancesByYear(2026);
 
   // All payroll entries for accrual calculation
   const { data: payrollEntries = [], isLoading: entriesLoading } = useAllPayrollEntriesWithHoliday();
@@ -237,6 +247,150 @@ const Holidays = () => {
   const allYearSummaries = { "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
   const currentSummaries = allYearSummaries[selectedYear];
   const currentPayments = selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
+
+  // Build formula breakdown for a specific employee
+  const openFormulaBreakdown = useCallback((employeeId: string) => {
+    const year = parseInt(selectedYear);
+    const summary = currentSummaries.find(s => s.employeeId === employeeId);
+    if (!summary) return;
+
+    // Build corrected set
+    const correctedBaseNames = new Set<string>();
+    payrollEntries.forEach((entry: any) => {
+      if (!entry.payroll_periods) return;
+      const name: string = entry.payroll_periods.period_name || "";
+      if (name.includes("[Corrected]")) {
+        correctedBaseNames.add(name.replace(" [Corrected]", "").trim());
+      }
+    });
+
+    // Get period details for this employee
+    const periodDetails = payrollEntries
+      .filter((entry: any) => {
+        if (!entry.employees || !entry.payroll_periods || entry.employee_id !== employeeId) return false;
+        const periodEnd = new Date(entry.payroll_periods.end_date);
+        return periodEnd.getFullYear() === year;
+      })
+      .map((entry: any) => {
+        const periodName = entry.payroll_periods.period_name || "";
+        const isCorrected = periodName.includes("[Corrected]");
+        const isExcluded = !isCorrected && correctedBaseNames.has(periodName.trim());
+        return {
+          periodId: entry.payroll_period_id,
+          periodName,
+          hoursWorked: Number(entry.timesheet_hours) || 0,
+          importedHours: entry.imported_hours != null ? Number(entry.imported_hours) : null,
+          accrualRate: UK_HOLIDAY_LAW.ACCRUAL_RATE,
+          accrued: Number(entry.holiday_accrued_hours) || 0,
+          taken: 0,
+          paid: 0,
+          isCorrected,
+          isExcluded,
+        };
+      });
+
+    // Get adjustments for this employee/year
+    const empAdjustments = adjustments
+      .filter((a: any) => a.employee_id === employeeId && a.leave_year_start === `${year}-01-01`)
+      .map((a: any) => ({
+        type: a.adjustment_type,
+        hours: Number(a.hours),
+        reason: a.reason,
+        date: new Date(a.created_at).toLocaleDateString("en-GB"),
+      }));
+
+    const prevYear = year - 1;
+    const prevSummary = allYearSummaries[String(prevYear) as LeaveYear]?.find((s: any) => s.employeeId === employeeId);
+    const carryOver = summary.hoursCarriedOver;
+
+    setFormulaBreakdownData({
+      employeeName: summary.employeeName,
+      department: summary.department,
+      year,
+      periodDetails,
+      adjustments: empAdjustments,
+      totalAccrued: summary.hoursAccrued,
+      totalTaken: summary.hoursTaken,
+      totalPaid: summary.totalPaid,
+      carryOver,
+      balance: summary.balance,
+      carryOverSource: prevSummary ? `${prevYear} ending balance` : `Manual/historical data`,
+    });
+    setFormulaOpen(true);
+  }, [selectedYear, currentSummaries, payrollEntries, adjustments, allYearSummaries]);
+
+  // Integrity check data
+  const integrityRows = useMemo(() => {
+    const rows: any[] = [];
+    const allBalances = { 2024: balances2024, 2025: balances2025, 2026: balances2026 };
+    
+    // Build corrected set
+    const correctedBaseNames = new Set<string>();
+    payrollEntries.forEach((entry: any) => {
+      if (!entry.payroll_periods) return;
+      const name: string = entry.payroll_periods.period_name || "";
+      if (name.includes("[Corrected]")) {
+        correctedBaseNames.add(name.replace(" [Corrected]", "").trim());
+      }
+    });
+
+    Object.entries(allBalances).forEach(([yearStr, balances]) => {
+      const year = parseInt(yearStr);
+      balances.forEach((bal: any) => {
+        const emp = bal.employees;
+        if (!emp) return;
+
+        const storedAccrued = Number(bal.hours_accrued) || 0;
+
+        // Calculate accrued from payroll entries (excluding superseded periods)
+        const calculated = payrollEntries
+          .filter((entry: any) => {
+            if (!entry.payroll_periods || entry.employee_id !== bal.employee_id) return false;
+            const periodName = entry.payroll_periods.period_name || "";
+            if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
+            const periodEnd = new Date(entry.payroll_periods.end_date);
+            return periodEnd.getFullYear() === year;
+          })
+          .reduce((sum: number, entry: any) => sum + (Number(entry.holiday_accrued_hours) || 0), 0);
+
+        const variance = storedAccrued - calculated;
+        let severity: "ok" | "info" | "warning" | "error" = "ok";
+        let explanation = "Matches payroll data";
+
+        if (Math.abs(variance) > 50) {
+          severity = "error";
+          explanation = "Large variance — likely backfill/historical data or duplicate periods";
+        } else if (Math.abs(variance) > 10) {
+          severity = "warning";
+          explanation = "Moderate variance — check corrected periods or manual adjustments";
+        } else if (Math.abs(variance) > 1) {
+          severity = "info";
+          explanation = "Minor variance — rounding or cross-year period boundary";
+        }
+
+        // Special case: no payroll entries but stored accrued > 0 (historical seed)
+        if (calculated === 0 && storedAccrued > 0) {
+          severity = "info";
+          explanation = "Manually seeded from historical CSV — no payroll entries for this year";
+        }
+
+        if (Math.abs(variance) > 1 || severity !== "ok") {
+          rows.push({
+            employeeName: `${emp.forename} ${emp.surname}`,
+            department: emp.department,
+            year,
+            storedAccrued,
+            calculatedAccrued: calculated,
+            variance,
+            explanation,
+            severity,
+          });
+        }
+      });
+    });
+
+    return rows;
+  }, [balances2024, balances2025, balances2026, payrollEntries]);
 
   // Filter summaries
   const filteredSummaries = useMemo(() => {
@@ -439,7 +593,7 @@ const Holidays = () => {
 
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
-          <TabsList className="grid w-full grid-cols-5 sm:w-auto sm:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 sm:w-auto sm:inline-grid">
             <TabsTrigger value="overview" className="gap-1.5">
               <Users className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Overview</span>
@@ -464,6 +618,15 @@ const Holidays = () => {
             <TabsTrigger value="departments" className="gap-1.5">
               <BarChart3 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Departments</span>
+            </TabsTrigger>
+            <TabsTrigger value="integrity" className="gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Integrity</span>
+              {integrityRows.filter(r => r.severity === "error").length > 0 && (
+                <span className="ml-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 leading-none">
+                  {integrityRows.filter(r => r.severity === "error").length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -513,6 +676,7 @@ const Holidays = () => {
                       carryOver={summary.hoursCarriedOver}
                       periodBreakdown={summary.periodBreakdown}
                       index={index}
+                      onViewBreakdown={() => openFormulaBreakdown(summary.employeeId)}
                     />
                   </div>
                 ))}
@@ -554,6 +718,11 @@ const Holidays = () => {
               allYearSummaries={allYearSummaries}
               onEmployeeClick={setSelectedEmployeeId}
             />
+          </TabsContent>
+
+          {/* Integrity Check Tab */}
+          <TabsContent value="integrity" className="mt-4">
+            <HolidayIntegrityCheck rows={integrityRows} isLoading={entriesLoading} />
           </TabsContent>
         </Tabs>
 
@@ -656,6 +825,13 @@ const Holidays = () => {
           }
         />
       )}
+
+      {/* Formula Breakdown Sheet */}
+      <HolidayFormulaBreakdown
+        open={formulaOpen}
+        onOpenChange={setFormulaOpen}
+        data={formulaBreakdownData}
+      />
     </AppLayout>
   );
 };
