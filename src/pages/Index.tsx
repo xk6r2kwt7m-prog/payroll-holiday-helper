@@ -72,7 +72,7 @@ const Index = () => {
         {/* Smart Alerts */}
         <SmartAlerts employees={employees} periods={periods} entries={entries} />
 
-        {/* KPI Stats Grid — compact 2-col on mobile, 5-col on desktop */}
+        {/* KPI Stats Grid — 2×3 on mobile with full-width bottom card, 5-col on desktop */}
         <div className="grid gap-2 grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Active Staff"
@@ -109,14 +109,16 @@ const Index = () => {
             href="/holidays"
             index={3}
           />
-          <StatCard
-            title="Hours Tracked"
-            value={formatHours(totalHours)}
-            subtitle={`${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)}/week`}
-            icon={<Clock className="h-4 w-4" />}
-            href="/timesheets"
-            index={4}
-          />
+          <div className="col-span-2 lg:col-span-1">
+            <StatCard
+              title="Hours Tracked"
+              value={formatHours(totalHours)}
+              subtitle={`${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)}/week`}
+              icon={<Clock className="h-4 w-4" />}
+              href="/timesheets"
+              index={4}
+            />
+          </div>
         </div>
 
         {/* Department Summary */}
