@@ -1,6 +1,7 @@
-import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2, Trash2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2, Trash2, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePeriodAudit, type AuditFinding } from "@/hooks/usePayrollAudit";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +58,17 @@ export function PayrollApprovalWorkflow({
 }: PayrollApprovalWorkflowProps) {
   const currentStepIndex = workflowSteps.findIndex(s => s.status === period.status);
   const hasUnmatchedEmployees = period.notes?.includes("⚠ PENDING:");
-  const canSubmitOrApprove = !hasUnmatchedEmployees;
+  
+  // Audit gate: run period-level audit for pending/draft periods
+  const shouldAudit = period.status === "draft" || period.status === "pending";
+  const { data: auditFindings = [], isLoading: auditLoading } = usePeriodAudit(
+    shouldAudit ? period.id : undefined,
+    shouldAudit
+  );
+  const auditErrors = auditFindings.filter(f => f.severity === "error");
+  const auditWarnings = auditFindings.filter(f => f.severity === "warning");
+  const hasAuditErrors = auditErrors.length > 0;
+  const canSubmitOrApprove = !hasUnmatchedEmployees && !hasAuditErrors;
   return (
     <div className="rounded-xl bg-card shadow-card p-5 animate-fade-in">
       {/* Workflow Steps */}
@@ -103,6 +114,56 @@ export function PayrollApprovalWorkflow({
                 You cannot submit or approve this payroll until all employees are in the database and added to this period.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audit gate - blocks approval */}
+      {shouldAudit && !auditLoading && auditFindings.length > 0 && (
+        <div className={`rounded-lg ${hasAuditErrors ? "bg-destructive/10 border-destructive/20" : "bg-warning/10 border-warning/20"} border p-4 mb-4`}>
+          <div className="flex items-center gap-3">
+            {hasAuditErrors ? (
+              <ShieldX className="h-5 w-5 text-destructive shrink-0" />
+            ) : (
+              <ShieldAlert className="h-5 w-5 text-warning shrink-0" />
+            )}
+            <div className="flex-1">
+              <p className={`font-medium ${hasAuditErrors ? "text-destructive" : "text-warning"}`}>
+                Audit {hasAuditErrors ? "Failed" : "Warnings"} — {auditErrors.length} error{auditErrors.length !== 1 ? "s" : ""}, {auditWarnings.length} warning{auditWarnings.length !== 1 ? "s" : ""}
+              </p>
+              {hasAuditErrors && (
+                <p className="text-sm font-medium text-destructive mt-1">
+                  You cannot approve this period until all audit errors are resolved.
+                </p>
+              )}
+              <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                {auditFindings.slice(0, 5).map((f) => (
+                  <p key={f.id} className={`text-xs flex items-center gap-1.5 ${f.severity === "error" ? "text-destructive" : "text-warning"}`}>
+                    {f.severity === "error" ? "✗" : "⚠"} {f.title}: {f.detail}
+                  </p>
+                ))}
+                {auditFindings.length > 5 && (
+                  <p className="text-xs text-muted-foreground">...and {auditFindings.length - 5} more issues</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {shouldAudit && auditLoading && (
+        <div className="rounded-lg bg-muted/50 border border-border p-4 mb-4 flex items-center gap-3">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Running pre-approval audit checks...</span>
+        </div>
+      )}
+
+      {shouldAudit && !auditLoading && auditFindings.length === 0 && (
+        <div className="rounded-lg bg-success/10 border border-success/20 p-4 mb-4 flex items-center gap-3">
+          <ShieldCheck className="h-5 w-5 text-success" />
+          <div>
+            <p className="font-medium text-success text-sm">All Audit Checks Passed</p>
+            <p className="text-xs text-muted-foreground">Calculations, holiday accruals, totals, and duplicate checks verified.</p>
           </div>
         </div>
       )}
