@@ -22,6 +22,7 @@ const categoryConfig = {
   holiday: { label: "Holiday Reconciliation", icon: <Calendar className="h-5 w-5" />, description: "Verifies accruals (12.07%), balances, and taken hours match" },
   totals: { label: "Period Totals", icon: <DollarSign className="h-5 w-5" />, description: "Verifies entries + holidays = grand_total on each period" },
   duplicates: { label: "Duplicate Detection", icon: <Users className="h-5 w-5" />, description: "Detects employees in overlapping periods or duplicated entries" },
+  consistency: { label: "Hours Consistency", icon: <TrendingUp className="h-5 w-5" />, description: "Compares weekly hours per employee against their historical average to detect anomalies" },
 };
 
 function HealthScoreRing({ score }: { score: number }) {
