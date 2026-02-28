@@ -23,6 +23,7 @@ interface EmployeeHolidayCardProps {
   totalPaid: number;
   balance: number;
   entitlement: number;
+  carryOver?: number;
   periodBreakdown: PeriodBreakdown[];
   index: number;
 }
