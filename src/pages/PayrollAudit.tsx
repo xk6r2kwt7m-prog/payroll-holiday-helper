@@ -182,6 +182,7 @@ const PayrollAudit = () => {
                 <CategoryCard category="holiday" stats={audit.categories.holiday} />
                 <CategoryCard category="totals" stats={audit.categories.totals} />
                 <CategoryCard category="duplicates" stats={audit.categories.duplicates} />
+                <CategoryCard category="consistency" stats={audit.categories.consistency} />
               </div>
             </div>
 
