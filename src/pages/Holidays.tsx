@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
+import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch, ShieldCheck } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ import { DepartmentHolidaySummary } from "@/components/holidays/DepartmentHolida
 import { HolidayPaymentHistory } from "@/components/holidays/HolidayPaymentHistory";
 import { EmployeeHolidayDetailSheet } from "@/components/holidays/EmployeeHolidayDetailSheet";
 import { EmployeeHolidayLookup } from "@/components/holidays/EmployeeHolidayLookup";
+import { HolidayFormulaBreakdown, type FormulaBreakdownData } from "@/components/holidays/HolidayFormulaBreakdown";
+import { HolidayIntegrityCheck } from "@/components/holidays/HolidayIntegrityCheck";
 import {
   useHolidayPaymentsByYear,
   useAllPayrollEntriesWithHoliday,
@@ -26,6 +28,7 @@ import {
   UK_HOLIDAY_LAW,
   calculateAnnualEntitlement,
 } from "@/hooks/useHolidays";
+import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import {
   Accordion,
@@ -37,7 +40,7 @@ import {
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2024" | "2025" | "2026";
-type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup";
+type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity";
 
 interface EmployeeSummary {
   employeeId: string;
