@@ -16,6 +16,7 @@ import { HolidayAlerts } from "@/components/holidays/HolidayAlerts";
 import { DepartmentHolidaySummary } from "@/components/holidays/DepartmentHolidaySummary";
 import { HolidayPaymentHistory } from "@/components/holidays/HolidayPaymentHistory";
 import { EmployeeHolidayDetailSheet } from "@/components/holidays/EmployeeHolidayDetailSheet";
+import { EmployeeHolidayLookup } from "@/components/holidays/EmployeeHolidayLookup";
 import {
   useHolidayPaymentsByYear,
   useAllPayrollEntriesWithHoliday,
