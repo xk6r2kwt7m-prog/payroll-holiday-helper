@@ -76,10 +76,25 @@ const Holidays = () => {
   const buildSummaries = (year: number, payments: any[]): EmployeeSummary[] => {
     const summaryMap = new Map<string, EmployeeSummary>();
 
+    // Build a set of corrected period base names to exclude originals
+    // e.g. "February 2026 [Corrected]" → exclude "February 2026"
+    const correctedBaseNames = new Set<string>();
+    payrollEntries.forEach((entry: any) => {
+      if (!entry.payroll_periods) return;
+      const name: string = entry.payroll_periods.period_name || "";
+      if (name.includes("[Corrected]")) {
+        correctedBaseNames.add(name.replace(" [Corrected]", "").trim());
+      }
+    });
+
     // Process payroll entries for accrued hours
     payrollEntries.forEach((entry: any) => {
       if (!entry.employees || !entry.payroll_periods) return;
-      // Include leavers - they still have holiday data
+
+      const periodName: string = entry.payroll_periods.period_name || "";
+      // Skip the ORIGINAL period if a [Corrected] version exists
+      if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return;
+
       const periodEnd = new Date(entry.payroll_periods.end_date);
       // Match periods to leave year: period end date falls in the target year
       if (periodEnd.getFullYear() !== year) return;
