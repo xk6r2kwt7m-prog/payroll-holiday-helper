@@ -593,7 +593,7 @@ const Holidays = () => {
 
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
-          <TabsList className="grid w-full grid-cols-5 sm:w-auto sm:inline-grid">
+          <TabsList className="grid w-full grid-cols-6 sm:w-auto sm:inline-grid">
             <TabsTrigger value="overview" className="gap-1.5">
               <Users className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Overview</span>
@@ -618,6 +618,15 @@ const Holidays = () => {
             <TabsTrigger value="departments" className="gap-1.5">
               <BarChart3 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Departments</span>
+            </TabsTrigger>
+            <TabsTrigger value="integrity" className="gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Integrity</span>
+              {integrityRows.filter(r => r.severity === "error").length > 0 && (
+                <span className="ml-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 leading-none">
+                  {integrityRows.filter(r => r.severity === "error").length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
