@@ -61,6 +61,8 @@ const Holidays = () => {
   const [selectedYear, setSelectedYear] = useState<LeaveYear>("2025");
   const [subTab, setSubTab] = useState<SubTab>("overview");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [formulaBreakdownData, setFormulaBreakdownData] = useState<FormulaBreakdownData | null>(null);
+  const [formulaOpen, setFormulaOpen] = useState(false);
 
   const { data: periods = [] } = usePayrollPeriods();
 
