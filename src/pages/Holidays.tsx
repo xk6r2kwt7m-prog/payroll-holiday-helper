@@ -379,6 +379,14 @@ const Holidays = () => {
               </TabsList>
 
               <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setSubTab("lookup")}
+                  className="text-primary border-primary/30 hover:bg-primary/10"
+                >
+                  <Scale className="h-4 w-4 mr-1" /> Check Accruals
+                </Button>
                 <Button variant={viewMode === "cards" ? "default" : "outline"} size="sm" onClick={() => setViewMode("cards")}>
                   <LayoutGrid className="h-4 w-4 mr-1" /> Cards
                 </Button>
