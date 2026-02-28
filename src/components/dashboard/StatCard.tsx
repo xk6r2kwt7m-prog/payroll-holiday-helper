@@ -68,27 +68,27 @@ export function StatCard({
   const isClickable = href || onClick;
 
   const content = (
-    <div className="flex items-center gap-3">
+    <div className="flex items-start gap-2.5">
       {/* Accent bar */}
-      <div className={cn("w-1 self-stretch rounded-full shrink-0", accentBar[variant])} />
+      <div className={cn("w-1 rounded-full shrink-0 mt-0.5", accentBar[variant])} style={{ height: '2.25rem' }} />
       {/* Content */}
-      <div className="flex-1 min-w-0 py-0.5">
+      <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground truncate">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground truncate leading-none">
             {title}
           </p>
-          <span className={cn("shrink-0", iconBg[variant])}>
+          <span className={cn("shrink-0 opacity-60", iconBg[variant])}>
             {icon}
           </span>
         </div>
-        <p className="text-xl font-bold tracking-tight tabular-nums text-foreground leading-tight mt-0.5">
+        <p className="text-lg font-bold tracking-tight tabular-nums text-foreground leading-none mt-1">
           <AnimatedValue value={value} />
         </p>
         {subtitle && (
-          <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">{subtitle}</p>
+          <p className="text-[11px] text-muted-foreground leading-none mt-1 truncate">{subtitle}</p>
         )}
         {trend && (
-          <p className="text-[11px] mt-0.5">
+          <p className="text-[11px] mt-1 leading-none">
             <span className={cn("font-medium", trend.isPositive ? "text-success" : "text-destructive")}>
               {trend.isPositive ? "+" : ""}{trend.value}%
             </span>
