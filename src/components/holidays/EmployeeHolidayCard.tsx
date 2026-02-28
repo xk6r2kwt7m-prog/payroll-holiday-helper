@@ -26,6 +26,7 @@ interface EmployeeHolidayCardProps {
   carryOver?: number;
   periodBreakdown: PeriodBreakdown[];
   index: number;
+  onViewBreakdown?: () => void;
 }
 
 const departmentStyles = {
