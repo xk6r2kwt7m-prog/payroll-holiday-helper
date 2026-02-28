@@ -16,7 +16,6 @@ import {
   Settings,
   LogOut,
   Search,
-  Shield,
   ChevronDown,
   BarChart3,
   MapPin,
@@ -28,6 +27,9 @@ import {
   FileText,
   CalendarDays,
   AlertTriangle,
+  ClipboardList,
+  PieChart,
+  Scale,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -35,6 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -43,30 +46,59 @@ interface AppLayoutProps {
   children: ReactNode;
 }
 
-const primaryNavItems = [
-  { label: "Dashboard", path: "/", minRole: "staff" as const },
-  { label: "Employees", path: "/employees", minRole: "supervisor" as const },
-  { label: "Schedule", path: "/schedule", minRole: "supervisor" as const },
-  { label: "Timesheets", path: "/timesheets", minRole: "supervisor" as const },
-  { label: "Payroll", path: "/payroll", minRole: "admin" as const },
-  { label: "Holidays", path: "/holidays", minRole: "manager" as const },
+interface NavItem {
+  label: string;
+  path: string;
+  minRole: "admin" | "manager" | "supervisor" | "staff" | "viewer";
+  icon?: any;
+  children?: NavItem[];
+}
+
+const primaryNavItems: NavItem[] = [
+  { label: "Dashboard", path: "/", minRole: "staff" },
+  { label: "Employees", path: "/employees", minRole: "supervisor" },
+  {
+    label: "Schedule",
+    path: "/schedule",
+    minRole: "supervisor",
+    children: [
+      { icon: CalendarClock, label: "Rota", path: "/schedule", minRole: "supervisor" },
+      { icon: ClipboardList, label: "Report", path: "/schedule/report", minRole: "manager" },
+      { icon: BarChart3, label: "Analytics", path: "/schedule/analytics", minRole: "manager" },
+    ],
+  },
+  { label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
+  {
+    label: "Payroll",
+    path: "/payroll",
+    minRole: "admin",
+    children: [
+      { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin" },
+      { icon: CalendarDays, label: "Calendar", path: "/payroll/calendar", minRole: "admin" },
+      { icon: PieChart, label: "Analytics", path: "/payroll/analytics", minRole: "admin" },
+      { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", minRole: "admin" },
+    ],
+  },
+  {
+    label: "Holidays",
+    path: "/holidays",
+    minRole: "manager",
+    children: [
+      { icon: Calendar, label: "Holiday Management", path: "/holidays", minRole: "manager" },
+      { icon: Scale, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" },
+    ],
+  },
 ];
 
-const moreNavItems = [
-  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report", minRole: "manager" as const },
-  { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics", minRole: "manager" as const },
-  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin" as const },
-  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin" as const },
-  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", minRole: "admin" as const },
-  { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" as const },
-  { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" as const },
-  { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" as const },
-  { icon: GraduationCap, label: "Training", path: "/training", minRole: "manager" as const },
-  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" as const },
-  { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "manager" as const },
-  { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" as const },
-  { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" as const },
-  { icon: Settings, label: "Settings", path: "/settings", minRole: "admin" as const },
+const moreNavItems: NavItem[] = [
+  { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
+  { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
+  { icon: GraduationCap, label: "Training", path: "/training", minRole: "manager" },
+  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
+  { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "manager" },
+  { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
+  { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
+  { icon: Settings, label: "Settings", path: "/settings", minRole: "admin" },
 ];
 
 const pageVariants = {
@@ -85,9 +117,17 @@ export function AppLayout({ children }: AppLayoutProps) {
   const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
   const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
 
-  const visiblePrimary = primaryNavItems.filter(item => canAccess(item.minRole));
   const visibleMore = moreNavItems.filter(item => canAccess(item.minRole));
   const isMoreActive = visibleMore.some((item) => location.pathname === item.path);
+
+  const isNavActive = (item: NavItem) => {
+    if (item.children) {
+      return item.children.some(child => 
+        child.path === "/" ? location.pathname === "/" : location.pathname === child.path
+      );
+    }
+    return item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
+  };
 
   const roleBadgeColors: Record<string, string> = {
     admin: "text-primary",
@@ -115,25 +155,73 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Primary nav tabs — centered */}
         <nav className="flex items-center gap-0.5 flex-1 justify-center">
-          {visiblePrimary.map((item) => {
-            const isActive =
-              item.path === "/"
-                ? location.pathname === "/"
-                : location.pathname.startsWith(item.path);
+          {primaryNavItems.filter(item => canAccess(item.minRole)).map((item) => {
+            const active = isNavActive(item);
 
+            // Items with children get a dropdown
+            if (item.children) {
+              const visibleChildren = item.children.filter(c => canAccess(c.minRole));
+              if (visibleChildren.length === 0) return null;
+
+              return (
+                <DropdownMenu key={item.path}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={cn(
+                        "relative flex items-center gap-1 px-3.5 py-2 text-sm font-medium rounded-md transition-colors outline-none",
+                        active
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      {item.label}
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                      {active && (
+                        <motion.div
+                          layoutId="topnav-active"
+                          className="absolute bottom-0 left-1 right-1 h-0.5 bg-primary rounded-full"
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="w-[200px]">
+                    {visibleChildren.map((child) => {
+                      const childActive = location.pathname === child.path;
+                      return (
+                        <DropdownMenuItem key={child.path} asChild>
+                          <Link
+                            to={child.path}
+                            className={cn(
+                              "gap-2.5 cursor-pointer",
+                              childActive && "bg-primary/10 text-primary font-medium"
+                            )}
+                          >
+                            {child.icon && <child.icon className="h-4 w-4" />}
+                            {child.label}
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            }
+
+            // Simple nav item
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
                   "relative px-3.5 py-2 text-sm font-medium rounded-md transition-colors",
-                  isActive
+                  active
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 {item.label}
-                {isActive && (
+                {active && (
                   <motion.div
                     layoutId="topnav-active"
                     className="absolute bottom-0 left-1 right-1 h-0.5 bg-primary rounded-full"
@@ -144,13 +232,13 @@ export function AppLayout({ children }: AppLayoutProps) {
             );
           })}
 
-          {/* More dropdown */}
+          {/* More dropdown — remaining items */}
           {visibleMore.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    "flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors outline-none",
                     isMoreActive
                       ? "text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -162,17 +250,17 @@ export function AppLayout({ children }: AppLayoutProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-[220px]">
                 {visibleMore.map((item) => {
-                  const isActive = location.pathname === item.path;
+                  const active = location.pathname === item.path;
                   return (
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
                         className={cn(
                           "gap-2",
-                          isActive && "bg-accent text-accent-foreground"
+                          active && "bg-accent text-accent-foreground"
                         )}
                       >
-                        <item.icon className="h-4 w-4" />
+                        {item.icon && <item.icon className="h-4 w-4" />}
                         {item.label}
                       </Link>
                     </DropdownMenuItem>
@@ -230,7 +318,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
 
-      {/* Main content — fullscreen, no sidebar margin */}
+      {/* Main content */}
       <main className="flex-1 flex flex-col min-h-0">
         <AnimatePresence mode="wait">
           <motion.div

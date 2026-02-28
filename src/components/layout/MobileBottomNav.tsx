@@ -19,6 +19,9 @@ import {
   GraduationCap,
   ShieldAlert,
   Megaphone,
+  PieChart,
+  Scale,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -32,31 +35,63 @@ const mainNavItems = [
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
 ];
 
-const moreNavItems = [
-  { icon: Users, label: "Employees", path: "/employees" },
-  { icon: Calendar, label: "Holidays", path: "/holidays" },
-  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report" },
-  { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics" },
-  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
-  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics" },
-  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments" },
-  { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit" },
-  { icon: UserX, label: "Absences", path: "/absences" },
-  { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
-  { icon: GraduationCap, label: "Training", path: "/training" },
-  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary" },
-  { icon: Megaphone, label: "Announcements", path: "/announcements" },
-  { icon: FileText, label: "Contracts", path: "/contracts" },
-  { icon: MapPin, label: "Locations", path: "/locations" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+interface MoreGroup {
+  title: string;
+  items: { icon: any; label: string; path: string }[];
+}
+
+const moreGroups: MoreGroup[] = [
+  {
+    title: "Schedule",
+    items: [
+      { icon: ClipboardList, label: "Schedule Report", path: "/schedule/report" },
+      { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics" },
+    ],
+  },
+  {
+    title: "Payroll",
+    items: [
+      { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
+      { icon: PieChart, label: "Payroll Analytics", path: "/payroll/analytics" },
+      { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments" },
+    ],
+  },
+  {
+    title: "Holidays",
+    items: [
+      { icon: Calendar, label: "Holidays", path: "/holidays" },
+      { icon: Scale, label: "Holiday Audit", path: "/holidays/audit" },
+    ],
+  },
+  {
+    title: "People",
+    items: [
+      { icon: Users, label: "Employees", path: "/employees" },
+      { icon: UserX, label: "Absences", path: "/absences" },
+      { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
+      { icon: GraduationCap, label: "Training", path: "/training" },
+      { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary" },
+    ],
+  },
+  {
+    title: "Admin",
+    items: [
+      { icon: Megaphone, label: "Announcements", path: "/announcements" },
+      { icon: FileText, label: "Contracts", path: "/contracts" },
+      { icon: MapPin, label: "Locations", path: "/locations" },
+      { icon: Settings, label: "Settings", path: "/settings" },
+    ],
+  },
 ];
+
+const allMorePaths = moreGroups.flatMap(g => g.items.map(i => i.path));
 
 export function MobileBottomNav() {
   const location = useLocation();
   const { signOut } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const isMoreActive = moreNavItems.some(item => location.pathname === item.path);
+  const isMoreActive = allMorePaths.some(p => location.pathname === p);
 
   return (
     <>
@@ -102,39 +137,49 @@ export function MobileBottomNav() {
                 )}
               </button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="rounded-t-2xl pb-safe">
-              <div className="pt-2 pb-4 space-y-1">
+            <SheetContent side="bottom" className="rounded-t-2xl pb-safe max-h-[80vh] overflow-y-auto">
+              <div className="pt-2 pb-4">
                 <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-4" />
-                {moreNavItems.map((item) => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setMoreOpen(false)}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary"
-                          : "text-foreground hover:bg-muted active:bg-muted"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-                <div className="border-t border-border my-2" />
-                <button
-                  onClick={() => {
-                    setMoreOpen(false);
-                    signOut();
-                  }}
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-destructive w-full hover:bg-destructive/5 active:bg-destructive/10"
-                >
-                  <LogOut className="h-5 w-5" />
-                  Sign Out
-                </button>
+
+                {moreGroups.map((group, gi) => (
+                  <div key={group.title} className={cn(gi > 0 && "mt-3")}>
+                    <p className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {group.title}
+                    </p>
+                    {group.items.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setMoreOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-muted active:bg-muted"
+                          )}
+                        >
+                          <item.icon className="h-4.5 w-4.5" />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))}
+
+                <div className="border-t border-border mt-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setMoreOpen(false);
+                      signOut();
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-destructive w-full hover:bg-destructive/5 active:bg-destructive/10"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    Sign Out
+                  </button>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
