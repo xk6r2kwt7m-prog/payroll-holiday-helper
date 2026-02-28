@@ -531,7 +531,6 @@ const Holidays = () => {
               onEmployeeClick={setSelectedEmployeeId}
             />
           </TabsContent>
-          </TabsContent>
         </Tabs>
 
         {/* UK Holiday Law Info Card */}
