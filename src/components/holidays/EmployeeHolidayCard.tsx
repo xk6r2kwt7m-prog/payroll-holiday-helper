@@ -23,6 +23,7 @@ interface EmployeeHolidayCardProps {
   totalPaid: number;
   balance: number;
   entitlement: number;
+  carryOver?: number;
   periodBreakdown: PeriodBreakdown[];
   index: number;
 }
@@ -41,6 +42,7 @@ export function EmployeeHolidayCard({
   totalPaid,
   balance,
   entitlement,
+  carryOver = 0,
   periodBreakdown,
   index,
 }: EmployeeHolidayCardProps) {
@@ -101,12 +103,19 @@ export function EmployeeHolidayCard({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mt-4">
+        <div className={cn("grid gap-3 mt-4", carryOver > 0 ? "grid-cols-4" : "grid-cols-3")}>
           <div className="text-center p-2 rounded-lg bg-success/5 border border-success/10">
             <p className="text-lg font-bold text-success">{formatHours(totalAccrued)}</p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(totalAccrued)} days</p>
             <p className="text-xs text-muted-foreground">Accrued</p>
           </div>
+          {carryOver > 0 && (
+            <div className="text-center p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
+              <p className="text-lg font-bold text-blue-600">{formatHours(carryOver)}</p>
+              <p className="text-[10px] text-muted-foreground/70">{hoursToDays(carryOver)} days</p>
+              <p className="text-xs text-muted-foreground">Carried Over</p>
+            </div>
+          )}
           <div className="text-center p-2 rounded-lg bg-primary/5 border border-primary/10">
             <p className="text-lg font-bold text-primary">{formatHours(totalTaken)}</p>
             <p className="text-xs text-muted-foreground">Taken</p>
