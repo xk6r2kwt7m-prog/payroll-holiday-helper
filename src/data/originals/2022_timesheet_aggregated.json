@@ -1,0 +1,1123 @@
+{
+  "source_file": "schedule_vs_timesheet_vs_sales_report_area_export_01-01-2022_31-12-2022-2.csv",
+  "storage_path": "originals/2022/schedule_vs_timesheet_vs_sales_report_2022_full_year.csv",
+  "year": 2022,
+  "notes": "Hours aggregated across all locations. Timesheet Hours used (not Schedule Hours). '-' in CSV treated as 0.",
+  "grand_total_hours": 47441.23,
+  "location_codes": {
+    "HAM": "Brook Green Market NEW",
+    "RTD": "KITCHEN",
+    "E98": "FOH",
+    "YT5": "Production",
+    "KVQ": "BOH",
+    "UGL": "FOH"
+  },
+  "employees": [
+    {
+      "csv_name": "Ada",
+      "db_match": "Ada Feliz",
+      "db_id": "dd5ef333-83ff-4a1a-b313-5a8096cd3677",
+      "status": "matched",
+      "breakdown": { "RTD": 1049.96, "KVQ": 260.28 },
+      "total_hours": 1310.24,
+      "accrual_1207": 158.22
+    },
+    {
+      "csv_name": "Adriana Baca",
+      "db_match": "Adriana Baca",
+      "db_id": "a0ac9328-fb83-4a8f-b29a-be95a3cc825a",
+      "status": "matched",
+      "breakdown": { "RTD": 4.53, "KVQ": 278.77 },
+      "total_hours": 283.30,
+      "accrual_1207": 34.20
+    },
+    {
+      "csv_name": "Agata",
+      "db_match": "Agata Unknown",
+      "db_id": "c9f67bb1-e618-4618-832c-f2631638acab",
+      "status": "matched",
+      "breakdown": { "RTD": 668.53 },
+      "total_hours": 668.53,
+      "accrual_1207": 80.69
+    },
+    {
+      "csv_name": "Alec Webster",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 53.21 },
+      "total_hours": 53.21,
+      "accrual_1207": 6.42,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Alex Gorgos",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 5.00 },
+      "total_hours": 5.00,
+      "accrual_1207": 0.60,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Amarah",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 3.43 },
+      "total_hours": 3.43,
+      "accrual_1207": 0.41,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Andre crowley",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 5.40 },
+      "total_hours": 5.40,
+      "accrual_1207": 0.65,
+      "suggested_department": "BOH",
+      "notes": "KVQ entry shows '-' for timesheet hours"
+    },
+    {
+      "csv_name": "Andrea Gabriella Aakenes",
+      "db_match": "Andrea Gabriella Aakenes",
+      "db_id": "6d462a3c-11cb-45d6-ae55-89b44c9e09b8",
+      "status": "matched",
+      "breakdown": { "E98": 96.04, "UGL": 22.56 },
+      "total_hours": 118.60,
+      "accrual_1207": 14.32,
+      "notes": "Name truncated in CSV as 'Andrea Gabriella Aak…'"
+    },
+    {
+      "csv_name": "Andrei",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 21.46 },
+      "total_hours": 21.46,
+      "accrual_1207": 2.59,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Andreea",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 277.71, "KVQ": 13.06 },
+      "total_hours": 290.77,
+      "accrual_1207": 35.10,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Anirudh",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 29.69 },
+      "total_hours": 29.69,
+      "accrual_1207": 3.58,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Anish",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "KVQ": 20.17 },
+      "total_hours": 20.17,
+      "accrual_1207": 2.43,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Anny belkys",
+      "db_match": "Anny Matos",
+      "db_id": "b215c3ed-f6ce-43d4-bbbc-4a68e798d768",
+      "status": "matched",
+      "breakdown": { "RTD": 576.98, "KVQ": 87.42 },
+      "total_hours": 664.40,
+      "accrual_1207": 80.19
+    },
+    {
+      "csv_name": "Anya sengupta",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 66.43 },
+      "total_hours": 66.43,
+      "accrual_1207": 8.02,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Arun Kumar",
+      "db_match": null,
+      "status": "ambiguous",
+      "breakdown": { "RTD": 227.57, "KVQ": 7.38 },
+      "total_hours": 234.95,
+      "accrual_1207": 28.36,
+      "notes": "Could be Arun Thota (01f88c84) - surname doesn't match"
+    },
+    {
+      "csv_name": "Aubrey",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 24.68, "KVQ": 17.11 },
+      "total_hours": 41.79,
+      "accrual_1207": 5.04,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Aya",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 3.12, "UGL": 12.45 },
+      "total_hours": 15.57,
+      "accrual_1207": 1.88,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Becky",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 1.55, "UGL": 4.15 },
+      "total_hours": 5.70,
+      "accrual_1207": 0.69,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Ben",
+      "db_match": "Ben Unknown",
+      "db_id": "a579b9a7-00d5-4d19-b311-7b535c26383d",
+      "status": "matched",
+      "breakdown": { "UGL": 39.33 },
+      "total_hours": 39.33,
+      "accrual_1207": 4.75,
+      "notes": "E98 entry shows '-' (0 hours). Only UGL counted."
+    },
+    {
+      "csv_name": "Benjamin",
+      "db_match": "Benjamin Gray",
+      "db_id": "5cd5d83f-b9cc-4a5c-bf21-7796f39a603b",
+      "status": "matched",
+      "breakdown": { "E98": 255.93, "UGL": 15.89 },
+      "total_hours": 271.82,
+      "accrual_1207": 32.81
+    },
+    {
+      "csv_name": "Blanca",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 152.12, "UGL": 108.48 },
+      "total_hours": 260.60,
+      "accrual_1207": 31.46,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Blean Anteneh",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 42.51, "UGL": 40.05 },
+      "total_hours": 82.56,
+      "accrual_1207": 9.97,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Bradley Walker",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 16.12, "UGL": 53.53 },
+      "total_hours": 69.65,
+      "accrual_1207": 8.41,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Bruno Martins",
+      "db_match": "Bruno Martins",
+      "db_id": "b26f08fa-c95b-44db-a9a8-764a2c94cbee",
+      "status": "matched",
+      "breakdown": { "HAM": 101.82, "RTD": 914.92, "E98": 796.53, "KVQ": 29.52, "UGL": 310.36 },
+      "total_hours": 2153.15,
+      "accrual_1207": 259.89,
+      "notes": "Worked across all locations. Primary location RTD KITCHEN."
+    },
+    {
+      "csv_name": "Carolina Nunez",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "HAM": 77.95 },
+      "total_hours": 77.95,
+      "accrual_1207": 9.41,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Chen Jin",
+      "db_match": "Chen Jin",
+      "db_id": "8ba7dcbd-b528-45b3-80dc-645a42e6913c",
+      "status": "matched",
+      "breakdown": { "UGL": 52.83 },
+      "total_hours": 52.83,
+      "accrual_1207": 6.38
+    },
+    {
+      "csv_name": "David Rios",
+      "db_match": "David Rios",
+      "db_id": "f12e329f-84b4-40f1-b17c-30511c2bb4ff",
+      "status": "matched",
+      "breakdown": { "RTD": 11.03, "E98": 358.71, "KVQ": 38.79, "UGL": 936.19 },
+      "total_hours": 1344.72,
+      "accrual_1207": 162.31
+    },
+    {
+      "csv_name": "Devaughn-Rhys Sibanda",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "HAM": 6.50, "KVQ": 28.01 },
+      "total_hours": 34.51,
+      "accrual_1207": 4.17,
+      "suggested_department": "BOH",
+      "notes": "Name truncated in CSV as 'Devaughn-Rhys Siband…'"
+    },
+    {
+      "csv_name": "Dimitrios Papachristou",
+      "db_match": "Dimitrios Papachristou",
+      "db_id": "9bb455e9-a760-45f8-a02f-f403f314c1ca",
+      "status": "matched",
+      "breakdown": { "HAM": 356.80, "RTD": 162.95, "KVQ": 1379.40 },
+      "total_hours": 1899.15,
+      "accrual_1207": 229.23,
+      "notes": "Name appears as 'DIMITRIOS PAPACHRIST…' in CSV"
+    },
+    {
+      "csv_name": "Durga Chandan",
+      "db_match": "Durba Chandan",
+      "db_id": "2aed166a-11a5-4a6b-a4a2-49209f80447d",
+      "status": "matched",
+      "breakdown": { "E98": 18.99, "UGL": 197.85 },
+      "total_hours": 216.84,
+      "accrual_1207": 26.17,
+      "notes": "CSV says 'Durga', DB says 'Durba' - same person"
+    },
+    {
+      "csv_name": "Elie Derhy",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 14.22, "UGL": 16.84 },
+      "total_hours": 31.06,
+      "accrual_1207": 3.75,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Ellie",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "KVQ": 3.32 },
+      "total_hours": 3.32,
+      "accrual_1207": 0.40,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Emilia Orlinska",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 78.75 },
+      "total_hours": 78.75,
+      "accrual_1207": 9.51,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Endea",
+      "db_match": "Endea Stratcham",
+      "db_id": "b857d6db-ebf8-4b9c-ad79-c821328856e7",
+      "status": "matched",
+      "breakdown": { "UGL": 448.01 },
+      "total_hours": 448.01,
+      "accrual_1207": 54.07
+    },
+    {
+      "csv_name": "Gabrielle Prah",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 19.74, "UGL": 16.15 },
+      "total_hours": 35.89,
+      "accrual_1207": 4.33,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Glenn Taniegra",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 302.35 },
+      "total_hours": 302.35,
+      "accrual_1207": 36.51,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Greta",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 17.68 },
+      "total_hours": 17.68,
+      "accrual_1207": 2.13,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Hafiz Abdur Rahim",
+      "db_match": "Hafiz Rahim",
+      "db_id": "34c79b6d-fbfb-4bae-8b61-6e140df8ecd4",
+      "status": "matched",
+      "breakdown": { "KVQ": 670.59 },
+      "total_hours": 670.59,
+      "accrual_1207": 80.94
+    },
+    {
+      "csv_name": "Hannah Lauber",
+      "db_match": "Hannah Lauber",
+      "db_id": "bbdc61f6-08e2-4c18-8db4-afaa4ed20c84",
+      "status": "matched",
+      "breakdown": { "E98": 176.70, "UGL": 5.75 },
+      "total_hours": 182.45,
+      "accrual_1207": 22.02
+    },
+    {
+      "csv_name": "Heidy",
+      "db_match": "Heidy Ramos",
+      "db_id": "6bfc558d-d22b-4731-9b12-11dc09f9e617",
+      "status": "matched",
+      "breakdown": { "RTD": 1869.18, "KVQ": 98.64 },
+      "total_hours": 1967.82,
+      "accrual_1207": 237.52
+    },
+    {
+      "csv_name": "Hubert Siotor",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 311.25, "KVQ": 564.69, "UGL": 32.65 },
+      "total_hours": 908.59,
+      "accrual_1207": 109.67,
+      "suggested_department": "BOH",
+      "notes": "Primary location KVQ BOH"
+    },
+    {
+      "csv_name": "Isabel",
+      "db_match": "Isabel Belobradic-Gonzales",
+      "db_id": "afb34ca8-4563-4f3b-87b5-458cc8cb3796",
+      "status": "matched",
+      "breakdown": { "E98": 13.45, "UGL": 117.36 },
+      "total_hours": 130.81,
+      "accrual_1207": 15.79
+    },
+    {
+      "csv_name": "Jason Geraldo Batista",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "KVQ": 18.16 },
+      "total_hours": 18.16,
+      "accrual_1207": 2.19,
+      "suggested_department": "BOH",
+      "notes": "Name truncated in CSV as 'Jason Geraldo Batist…'"
+    },
+    {
+      "csv_name": "Jc Marinel Navea",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 3.50, "UGL": 168.89 },
+      "total_hours": 172.39,
+      "accrual_1207": 20.81,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Jean Carlos Garcia",
+      "db_match": "Jean Carlos Garcia",
+      "db_id": "7b822ec5-a436-4b97-bf80-211a6512922e",
+      "status": "matched",
+      "breakdown": { "RTD": 1202.20, "KVQ": 86.16 },
+      "total_hours": 1288.36,
+      "accrual_1207": 155.51,
+      "notes": "Name truncated in CSV as 'Jean Carlos Garcia…'"
+    },
+    {
+      "csv_name": "Jermaine Browne",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 23.68, "KVQ": 11.85 },
+      "total_hours": 35.53,
+      "accrual_1207": 4.29,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Jess",
+      "db_match": "Jess Cham",
+      "db_id": "839e1828-6f50-47cf-b990-773dc770db7d",
+      "status": "matched",
+      "breakdown": { "YT5": 1643.45 },
+      "total_hours": 1643.45,
+      "accrual_1207": 198.36
+    },
+    {
+      "csv_name": "Jhuli Macias",
+      "db_match": "Jhuli Vallejos",
+      "db_id": "ba84eaaa-59b3-47a7-976a-649bae11d86d",
+      "status": "matched",
+      "breakdown": { "RTD": 717.19, "KVQ": 315.65 },
+      "total_hours": 1032.84,
+      "accrual_1207": 124.66,
+      "notes": "CSV shows surname as 'Macias', DB as 'Vallejos'"
+    },
+    {
+      "csv_name": "Jithendra Meda",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 13.60 },
+      "total_hours": 13.60,
+      "accrual_1207": 1.64,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Jose Miguel Cardoso",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 26.62 },
+      "total_hours": 26.62,
+      "accrual_1207": 3.21,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Josef Smid",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 156.09 },
+      "total_hours": 156.09,
+      "accrual_1207": 18.84,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Joselin Chala",
+      "db_match": "Jocelyne Chala",
+      "db_id": "1fe0a79c-a84e-43cc-8a00-57ab8d16e1bf",
+      "status": "matched",
+      "breakdown": { "RTD": 18.12, "KVQ": 39.83 },
+      "total_hours": 57.95,
+      "accrual_1207": 6.99,
+      "notes": "CSV says 'Joselin', DB says 'Jocelyne' - same person"
+    },
+    {
+      "csv_name": "Juan Palacios",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "HAM": 75.87, "RTD": 4.07 },
+      "total_hours": 79.94,
+      "accrual_1207": 9.65,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Karina Kavdanska",
+      "db_match": "Karina Kavdanska",
+      "db_id": "177d6175-6b01-4d6c-b1af-363fccac1a8b",
+      "status": "matched",
+      "breakdown": { "E98": 690.84, "UGL": 38.37 },
+      "total_hours": 729.21,
+      "accrual_1207": 88.02
+    },
+    {
+      "csv_name": "Katerina",
+      "db_match": null,
+      "status": "ambiguous",
+      "breakdown": { "E98": 101.35, "UGL": 52.59 },
+      "total_hours": 153.94,
+      "accrual_1207": 18.58,
+      "notes": "Could be Ekaterina Pirogova (42aaec85) - needs confirmation"
+    },
+    {
+      "csv_name": "Kerry Abrahams",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 29.20, "UGL": 13.75 },
+      "total_hours": 42.95,
+      "accrual_1207": 5.19,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Kiki",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 338.45 },
+      "total_hours": 338.45,
+      "accrual_1207": 40.85,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Kimaya Francis",
+      "db_match": "Kimaya Francis",
+      "db_id": "905fff22-931e-4f44-8aa4-7bd990e99097",
+      "status": "matched",
+      "breakdown": { "UGL": 95.74 },
+      "total_hours": 95.74,
+      "accrual_1207": 11.56
+    },
+    {
+      "csv_name": "kitty",
+      "db_match": "Kitty Oil Lan",
+      "db_id": "695376b1-8312-4174-a7e4-78be041bd17b",
+      "status": "matched",
+      "breakdown": { "YT5": 962.58 },
+      "total_hours": 962.58,
+      "accrual_1207": 116.18
+    },
+    {
+      "csv_name": "Kiyana Sheahan",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 2.33 },
+      "total_hours": 2.33,
+      "accrual_1207": 0.28,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Leonor Ferreira",
+      "db_match": "Leonor Ferreira",
+      "db_id": "edbb7998-2d38-49f9-ac5a-d90a3087bf9d",
+      "status": "matched",
+      "breakdown": { "RTD": 329.41, "KVQ": 520.05 },
+      "total_hours": 849.46,
+      "accrual_1207": 102.53
+    },
+    {
+      "csv_name": "Lina Rashid",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 4.00 },
+      "total_hours": 4.00,
+      "accrual_1207": 0.48,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Ling chak",
+      "db_match": "Ling Chak",
+      "db_id": "6ec882be-057f-44d4-99dd-aa7ca4637c95",
+      "status": "matched",
+      "breakdown": { "YT5": 1175.79 },
+      "total_hours": 1175.79,
+      "accrual_1207": 141.92
+    },
+    {
+      "csv_name": "Lissette",
+      "db_match": "Lissette Paredes",
+      "db_id": "c333cad8-c565-444d-bee5-9d869e97c2bb",
+      "status": "matched",
+      "breakdown": { "E98": 1589.83, "UGL": 120.17 },
+      "total_hours": 1710.00,
+      "accrual_1207": 206.40
+    },
+    {
+      "csv_name": "Lorna Lorna",
+      "db_match": "Lorna Lau",
+      "db_id": "c52e2171-dc27-497d-b52a-4a1c6d92fd82",
+      "status": "matched",
+      "breakdown": { "YT5": 331.04 },
+      "total_hours": 331.04,
+      "accrual_1207": 39.96
+    },
+    {
+      "csv_name": "Lucas Bunting-Dos Santos",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 19.61, "KVQ": 4.42 },
+      "total_hours": 24.03,
+      "accrual_1207": 2.90,
+      "suggested_department": "BOH",
+      "notes": "Name truncated in CSV as 'Lucas Bunting- Dos…'"
+    },
+    {
+      "csv_name": "Lucy",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 37.07 },
+      "total_hours": 37.07,
+      "accrual_1207": 4.47,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Marc Boltman",
+      "db_match": "Marc Boltman",
+      "db_id": "953cab0c-32cc-4f60-b513-93b2ff003b47",
+      "status": "matched",
+      "breakdown": { "RTD": 16.12, "KVQ": 617.43 },
+      "total_hours": 633.55,
+      "accrual_1207": 76.49
+    },
+    {
+      "csv_name": "Marie",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 8.13 },
+      "total_hours": 8.13,
+      "accrual_1207": 0.98,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Mario Tiburcio Marte",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "HAM": 101.72, "RTD": 38.29, "KVQ": 416.10 },
+      "total_hours": 556.11,
+      "accrual_1207": 67.12,
+      "suggested_department": "BOH",
+      "notes": "Primary location KVQ BOH"
+    },
+    {
+      "csv_name": "Mary Tuah",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 3.50 },
+      "total_hours": 3.50,
+      "accrual_1207": 0.42,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Melanny",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 1189.13, "UGL": 400.58 },
+      "total_hours": 1589.71,
+      "accrual_1207": 191.98,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Mildred Suarez",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 4.84, "UGL": 22.01 },
+      "total_hours": 26.85,
+      "accrual_1207": 3.24,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Milton Tavares",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "HAM": 66.66, "KVQ": 446.91 },
+      "total_hours": 513.57,
+      "accrual_1207": 61.99,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Mya Paige Thomas",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 294.72 },
+      "total_hours": 294.72,
+      "accrual_1207": 35.57,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Mylo",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 16.06 },
+      "total_hours": 16.06,
+      "accrual_1207": 1.94,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Olga Chala",
+      "db_match": null,
+      "status": "ambiguous",
+      "breakdown": { "RTD": 5.15, "KVQ": 499.19 },
+      "total_hours": 504.34,
+      "accrual_1207": 60.87,
+      "notes": "DB has 'Olga Quilumba' (dc262367) - could be same person with different surname"
+    },
+    {
+      "csv_name": "Olha Bendikow",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "YT5": 5.85 },
+      "total_hours": 5.85,
+      "accrual_1207": 0.71,
+      "suggested_department": "CPU"
+    },
+    {
+      "csv_name": "Peace Imwensi",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 46.88 },
+      "total_hours": 46.88,
+      "accrual_1207": 5.66,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Petra",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 49.46 },
+      "total_hours": 49.46,
+      "accrual_1207": 5.97,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Raie",
+      "db_match": null,
+      "status": "ambiguous",
+      "breakdown": { "E98": 55.80, "UGL": 67.90 },
+      "total_hours": 123.70,
+      "accrual_1207": 14.93,
+      "notes": "Could be Raissa Fernandes (434c6f89) - needs confirmation"
+    },
+    {
+      "csv_name": "Rajitha",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 22.34, "KVQ": 292.42 },
+      "total_hours": 314.76,
+      "accrual_1207": 38.00,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Rebecca",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 419.56, "UGL": 24.91 },
+      "total_hours": 444.47,
+      "accrual_1207": 53.65,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Rey Kendel Smith",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "HAM": 23.13, "RTD": 5.52, "KVQ": 158.23 },
+      "total_hours": 186.88,
+      "accrual_1207": 22.56,
+      "suggested_department": "BOH",
+      "notes": "Primary location KVQ BOH"
+    },
+    {
+      "csv_name": "Riri",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "KVQ": 14.45 },
+      "total_hours": 14.45,
+      "accrual_1207": 1.74,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Rochelle",
+      "db_match": "Rochelle Jayaraj",
+      "db_id": "5563d38c-e331-4e16-af94-218811c8ba53",
+      "status": "matched",
+      "breakdown": { "E98": 834.72, "UGL": 476.70 },
+      "total_hours": 1311.42,
+      "accrual_1207": 158.30
+    },
+    {
+      "csv_name": "Roger Rodriguez",
+      "db_match": "Roger Rodriguez",
+      "db_id": "bbf989f5-c406-402d-b431-1a73f8373cf2",
+      "status": "matched",
+      "breakdown": { "RTD": 128.02, "KVQ": 292.60 },
+      "total_hours": 420.62,
+      "accrual_1207": 50.77
+    },
+    {
+      "csv_name": "Ronnel Paul Anderson",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 24.27, "KVQ": 35.47 },
+      "total_hours": 59.74,
+      "accrual_1207": 7.21,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Rose",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 193.39, "KVQ": 721.76 },
+      "total_hours": 915.15,
+      "accrual_1207": 110.46,
+      "suggested_department": "BOH",
+      "notes": "Primary location KVQ BOH"
+    },
+    {
+      "csv_name": "Sai",
+      "db_match": "Saicharan Manepalli",
+      "db_id": "0a979906-6e14-493b-ba3f-df550ca846a8",
+      "status": "matched",
+      "breakdown": { "RTD": 1208.25, "KVQ": 146.94 },
+      "total_hours": 1355.19,
+      "accrual_1207": 163.57
+    },
+    {
+      "csv_name": "Samira Islam",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "KVQ": 49.12 },
+      "total_hours": 49.12,
+      "accrual_1207": 5.93,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Samy Karabadja",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 31.93 },
+      "total_hours": 31.93,
+      "accrual_1207": 3.86,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Sau Yi Liu",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "YT5": 518.32 },
+      "total_hours": 518.32,
+      "accrual_1207": 62.56,
+      "suggested_department": "CPU"
+    },
+    {
+      "csv_name": "Savannah",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 125.38, "UGL": 448.44 },
+      "total_hours": 573.82,
+      "accrual_1207": 69.26,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Sergio Castillo",
+      "db_match": "Sergio Castillo",
+      "db_id": "b80d872f-34bc-4ce9-926d-dc030805e21e",
+      "status": "matched",
+      "breakdown": { "E98": 233.89, "UGL": 1879.38 },
+      "total_hours": 2113.27,
+      "accrual_1207": 255.07
+    },
+    {
+      "csv_name": "Setareh",
+      "db_match": "Setareh Saeedfar",
+      "db_id": "3f1d6d5e-b7d3-409c-be32-5922a597e17b",
+      "status": "matched",
+      "breakdown": { "KVQ": 764.19 },
+      "total_hours": 764.19,
+      "accrual_1207": 92.24
+    },
+    {
+      "csv_name": "Shahmina Akthar",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "KVQ": 33.81 },
+      "total_hours": 33.81,
+      "accrual_1207": 4.08,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Shania",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 13.88, "UGL": 411.84 },
+      "total_hours": 425.72,
+      "accrual_1207": 51.39,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Shivani",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "HAM": 23.41, "RTD": 122.97, "KVQ": 573.19 },
+      "total_hours": 719.57,
+      "accrual_1207": 86.87,
+      "suggested_department": "BOH",
+      "notes": "Primary location KVQ BOH. Worked across 3 locations."
+    },
+    {
+      "csv_name": "Shuangyue Zhao",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 216.93 },
+      "total_hours": 216.93,
+      "accrual_1207": 26.18,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Shy",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 5.75 },
+      "total_hours": 5.75,
+      "accrual_1207": 0.69,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Sofia",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 108.14, "UGL": 7.58 },
+      "total_hours": 115.72,
+      "accrual_1207": 13.97,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Sofia Ferreira",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 40.16 },
+      "total_hours": 40.16,
+      "accrual_1207": 4.85,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Sofiane Kessira",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 15.38 },
+      "total_hours": 15.38,
+      "accrual_1207": 1.86,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Sophia",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 10.67 },
+      "total_hours": 10.67,
+      "accrual_1207": 1.29,
+      "suggested_department": "FOH",
+      "notes": "E98 entry shows '-' (0 hours). Only UGL counted."
+    },
+    {
+      "csv_name": "Stewart",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 31.67, "KVQ": 17.76 },
+      "total_hours": 49.43,
+      "accrual_1207": 5.97,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Summer Cham",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "YT5": 1049.86 },
+      "total_hours": 1049.86,
+      "accrual_1207": 126.72,
+      "suggested_department": "CPU"
+    },
+    {
+      "csv_name": "Taby",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "YT5": 58.21 },
+      "total_hours": 58.21,
+      "accrual_1207": 7.03,
+      "suggested_department": "CPU"
+    },
+    {
+      "csv_name": "Tamar",
+      "db_match": "Tamar Rios",
+      "db_id": "a14818a3-b7d5-434e-b354-68d135a8d08a",
+      "status": "matched",
+      "breakdown": { "E98": 1909.86, "UGL": 70.94 },
+      "total_hours": 1980.80,
+      "accrual_1207": 239.08
+    },
+    {
+      "csv_name": "Tammy Khong",
+      "db_match": "Tammy Khong",
+      "db_id": "82240a77-702c-4772-9a54-385a71fa8de8",
+      "status": "matched",
+      "breakdown": { "YT5": 455.92 },
+      "total_hours": 455.92,
+      "accrual_1207": 55.03
+    },
+    {
+      "csv_name": "Tas",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 81.93 },
+      "total_hours": 81.93,
+      "accrual_1207": 9.89,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Thobani Moyo",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 27.25, "KVQ": 7.50 },
+      "total_hours": 34.75,
+      "accrual_1207": 4.19,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Tia",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 10.46 },
+      "total_hours": 10.46,
+      "accrual_1207": 1.26,
+      "suggested_department": "FOH",
+      "notes": "UGL entry shows '-' (0 hours). Only E98 counted."
+    },
+    {
+      "csv_name": "Tiana",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 155.35, "KVQ": 60.21 },
+      "total_hours": 215.56,
+      "accrual_1207": 26.02,
+      "suggested_department": "BOH"
+    },
+    {
+      "csv_name": "Victoria Baumer",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 24.12, "UGL": 73.79 },
+      "total_hours": 97.91,
+      "accrual_1207": 11.82,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Waverley Clare",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "E98": 149.08, "UGL": 15.28 },
+      "total_hours": 164.36,
+      "accrual_1207": 19.84,
+      "suggested_department": "FOH"
+    },
+    {
+      "csv_name": "Wing Lee",
+      "db_match": "Wing Lee",
+      "db_id": "d117cd81-332e-478b-a290-509eed4440bb",
+      "status": "matched",
+      "breakdown": { "YT5": 1916.80 },
+      "total_hours": 1916.80,
+      "accrual_1207": 231.36
+    },
+    {
+      "csv_name": "Yaramasu Sairupalava",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "RTD": 50.25, "KVQ": 127.96 },
+      "total_hours": 178.21,
+      "accrual_1207": 21.51,
+      "suggested_department": "BOH",
+      "notes": "Name truncated in CSV as 'Yaramasu Sairupalava…'"
+    },
+    {
+      "csv_name": "Zinat Valizada",
+      "db_match": null,
+      "status": "not_in_db",
+      "breakdown": { "UGL": 16.97 },
+      "total_hours": 16.97,
+      "accrual_1207": 2.05,
+      "suggested_department": "FOH"
+    }
+  ],
+  "summary": {
+    "total_employees": 117,
+    "matched_to_db": 43,
+    "ambiguous": 4,
+    "not_in_db": 70,
+    "skipped_zero_hours": 3,
+    "location_totals": {
+      "HAM_Brook_Green_Market_NEW": 833.86,
+      "RTD_KITCHEN": 10544.66,
+      "E98_FOH": 10063.52,
+      "YT5_Production": 8117.82,
+      "KVQ_BOH": 9768.51,
+      "UGL_FOH": 8112.86
+    }
+  }
+}
