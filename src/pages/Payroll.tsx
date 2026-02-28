@@ -411,6 +411,15 @@ const Payroll = () => {
           />
         )}
 
+        {/* Inline Period Analytics */}
+        {selectedPeriod && entries.length > 0 && (
+          <PayrollInlineAnalytics
+            currentPeriodId={selectedPeriod.id}
+            entries={entries}
+            holidayPayments={holidayPayments as any}
+          />
+        )}
+
         {/* Rate Discrepancy Warning */}
         {rateDiscrepancies.length > 0 && (
           <div className="rounded-xl bg-warning/10 border border-warning/20 p-4 animate-fade-in">
