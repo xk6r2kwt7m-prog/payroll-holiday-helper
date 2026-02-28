@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ShieldCheck, ShieldAlert, ShieldX, RefreshCw, CheckCircle, AlertTriangle,
-  XCircle, Calculator, Calendar, DollarSign, Users, Loader2, ChevronDown, ChevronUp,
+  XCircle, Calculator, Calendar, DollarSign, Users, Loader2, ChevronDown, ChevronUp, TrendingUp,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
