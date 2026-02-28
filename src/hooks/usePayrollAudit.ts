@@ -5,7 +5,7 @@ export type AuditSeverity = "pass" | "warning" | "error";
 
 export interface AuditFinding {
   id: string;
-  category: "calculation" | "holiday" | "totals" | "duplicates";
+  category: "calculation" | "holiday" | "totals" | "duplicates" | "consistency";
   severity: AuditSeverity;
   title: string;
   detail: string;
