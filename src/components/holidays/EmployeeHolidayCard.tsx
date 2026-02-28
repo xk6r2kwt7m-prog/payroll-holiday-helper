@@ -46,6 +46,7 @@ export function EmployeeHolidayCard({
   carryOver = 0,
   periodBreakdown,
   index,
+  onViewBreakdown,
 }: EmployeeHolidayCardProps) {
   const [expanded, setExpanded] = useState(false);
   
