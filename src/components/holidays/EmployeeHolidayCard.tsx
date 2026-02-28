@@ -151,10 +151,26 @@ export function EmployeeHolidayCard({
           </p>
         </div>
 
-        {/* Total Paid */}
+        {/* Total Paid + Breakdown */}
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-          <span className="text-sm text-muted-foreground">Total Paid</span>
-          <span className="font-semibold text-card-foreground">{formatCurrency(totalPaid)}</span>
+          <div className="flex items-center gap-2">
+            <Lock className="h-3 w-3 text-muted-foreground/50" />
+            <span className="text-sm text-muted-foreground">Total Paid</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-card-foreground">{formatCurrency(totalPaid)}</span>
+            {onViewBreakdown && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] text-primary hover:text-primary"
+                onClick={(e) => { e.stopPropagation(); onViewBreakdown(); }}
+              >
+                <Calculator className="h-3 w-3 mr-0.5" />
+                Formula
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
