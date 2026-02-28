@@ -158,7 +158,8 @@ const Index = () => {
           })}
         </div>
 
-        {/* Payroll Timeline + Expiring Docs */}
+        {/* Audit Health + Payroll Timeline + Expiring Docs */}
+        <AuditHealthWidget />
         <div className="grid gap-3 lg:grid-cols-2 animate-fade-in">
           <PayrollDeadlineWidget periods={periods} />
           <ExpiringDocumentsWidget />
