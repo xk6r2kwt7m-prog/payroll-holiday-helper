@@ -248,6 +248,150 @@ const Holidays = () => {
   const currentSummaries = allYearSummaries[selectedYear];
   const currentPayments = selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
 
+  // Build formula breakdown for a specific employee
+  const openFormulaBreakdown = useCallback((employeeId: string) => {
+    const year = parseInt(selectedYear);
+    const summary = currentSummaries.find(s => s.employeeId === employeeId);
+    if (!summary) return;
+
+    // Build corrected set
+    const correctedBaseNames = new Set<string>();
+    payrollEntries.forEach((entry: any) => {
+      if (!entry.payroll_periods) return;
+      const name: string = entry.payroll_periods.period_name || "";
+      if (name.includes("[Corrected]")) {
+        correctedBaseNames.add(name.replace(" [Corrected]", "").trim());
+      }
+    });
+
+    // Get period details for this employee
+    const periodDetails = payrollEntries
+      .filter((entry: any) => {
+        if (!entry.employees || !entry.payroll_periods || entry.employee_id !== employeeId) return false;
+        const periodEnd = new Date(entry.payroll_periods.end_date);
+        return periodEnd.getFullYear() === year;
+      })
+      .map((entry: any) => {
+        const periodName = entry.payroll_periods.period_name || "";
+        const isCorrected = periodName.includes("[Corrected]");
+        const isExcluded = !isCorrected && correctedBaseNames.has(periodName.trim());
+        return {
+          periodId: entry.payroll_period_id,
+          periodName,
+          hoursWorked: Number(entry.timesheet_hours) || 0,
+          importedHours: entry.imported_hours != null ? Number(entry.imported_hours) : null,
+          accrualRate: UK_HOLIDAY_LAW.ACCRUAL_RATE,
+          accrued: Number(entry.holiday_accrued_hours) || 0,
+          taken: 0,
+          paid: 0,
+          isCorrected,
+          isExcluded,
+        };
+      });
+
+    // Get adjustments for this employee/year
+    const empAdjustments = adjustments
+      .filter((a: any) => a.employee_id === employeeId && a.leave_year_start === `${year}-01-01`)
+      .map((a: any) => ({
+        type: a.adjustment_type,
+        hours: Number(a.hours),
+        reason: a.reason,
+        date: new Date(a.created_at).toLocaleDateString("en-GB"),
+      }));
+
+    const prevYear = year - 1;
+    const prevSummary = allYearSummaries[String(prevYear) as LeaveYear]?.find((s: any) => s.employeeId === employeeId);
+    const carryOver = summary.hoursCarriedOver;
+
+    setFormulaBreakdownData({
+      employeeName: summary.employeeName,
+      department: summary.department,
+      year,
+      periodDetails,
+      adjustments: empAdjustments,
+      totalAccrued: summary.hoursAccrued,
+      totalTaken: summary.hoursTaken,
+      totalPaid: summary.totalPaid,
+      carryOver,
+      balance: summary.balance,
+      carryOverSource: prevSummary ? `${prevYear} ending balance` : `Manual/historical data`,
+    });
+    setFormulaOpen(true);
+  }, [selectedYear, currentSummaries, payrollEntries, adjustments, allYearSummaries]);
+
+  // Integrity check data
+  const integrityRows = useMemo(() => {
+    const rows: any[] = [];
+    const allBalances = { 2024: balances2024, 2025: balances2025, 2026: balances2026 };
+    
+    // Build corrected set
+    const correctedBaseNames = new Set<string>();
+    payrollEntries.forEach((entry: any) => {
+      if (!entry.payroll_periods) return;
+      const name: string = entry.payroll_periods.period_name || "";
+      if (name.includes("[Corrected]")) {
+        correctedBaseNames.add(name.replace(" [Corrected]", "").trim());
+      }
+    });
+
+    Object.entries(allBalances).forEach(([yearStr, balances]) => {
+      const year = parseInt(yearStr);
+      balances.forEach((bal: any) => {
+        const emp = bal.employees;
+        if (!emp) return;
+
+        const storedAccrued = Number(bal.hours_accrued) || 0;
+
+        // Calculate accrued from payroll entries (excluding superseded periods)
+        const calculated = payrollEntries
+          .filter((entry: any) => {
+            if (!entry.payroll_periods || entry.employee_id !== bal.employee_id) return false;
+            const periodName = entry.payroll_periods.period_name || "";
+            if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
+            const periodEnd = new Date(entry.payroll_periods.end_date);
+            return periodEnd.getFullYear() === year;
+          })
+          .reduce((sum: number, entry: any) => sum + (Number(entry.holiday_accrued_hours) || 0), 0);
+
+        const variance = storedAccrued - calculated;
+        let severity: "ok" | "info" | "warning" | "error" = "ok";
+        let explanation = "Matches payroll data";
+
+        if (Math.abs(variance) > 50) {
+          severity = "error";
+          explanation = "Large variance — likely backfill/historical data or duplicate periods";
+        } else if (Math.abs(variance) > 10) {
+          severity = "warning";
+          explanation = "Moderate variance — check corrected periods or manual adjustments";
+        } else if (Math.abs(variance) > 1) {
+          severity = "info";
+          explanation = "Minor variance — rounding or cross-year period boundary";
+        }
+
+        // Special case: no payroll entries but stored accrued > 0 (historical seed)
+        if (calculated === 0 && storedAccrued > 0) {
+          severity = "info";
+          explanation = "Manually seeded from historical CSV — no payroll entries for this year";
+        }
+
+        if (Math.abs(variance) > 1 || severity !== "ok") {
+          rows.push({
+            employeeName: `${emp.forename} ${emp.surname}`,
+            department: emp.department,
+            year,
+            storedAccrued,
+            calculatedAccrued: calculated,
+            variance,
+            explanation,
+            severity,
+          });
+        }
+      });
+    });
+
+    return rows;
+  }, [balances2024, balances2025, balances2026, payrollEntries]);
+
   // Filter summaries
   const filteredSummaries = useMemo(() => {
     return currentSummaries.filter(s => {
