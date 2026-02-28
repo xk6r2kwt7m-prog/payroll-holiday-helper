@@ -1,6 +1,7 @@
-import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2, Trash2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2, Trash2, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePeriodAudit, type AuditFinding } from "@/hooks/usePayrollAudit";
 import {
   AlertDialog,
   AlertDialogAction,
