@@ -5,6 +5,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocumentsWidget";
 import { SmartAlerts } from "@/components/dashboard/SmartAlerts";
 import { PayrollDeadlineWidget } from "@/components/dashboard/PayrollDeadlineWidget";
+import { AuditHealthWidget } from "@/components/dashboard/AuditHealthWidget";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
