@@ -42,6 +42,7 @@ export function EmployeeHolidayCard({
   totalPaid,
   balance,
   entitlement,
+  carryOver = 0,
   periodBreakdown,
   index,
 }: EmployeeHolidayCardProps) {
