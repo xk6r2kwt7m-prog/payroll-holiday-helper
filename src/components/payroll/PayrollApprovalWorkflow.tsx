@@ -58,7 +58,17 @@ export function PayrollApprovalWorkflow({
 }: PayrollApprovalWorkflowProps) {
   const currentStepIndex = workflowSteps.findIndex(s => s.status === period.status);
   const hasUnmatchedEmployees = period.notes?.includes("⚠ PENDING:");
-  const canSubmitOrApprove = !hasUnmatchedEmployees;
+  
+  // Audit gate: run period-level audit for pending/draft periods
+  const shouldAudit = period.status === "draft" || period.status === "pending";
+  const { data: auditFindings = [], isLoading: auditLoading } = usePeriodAudit(
+    shouldAudit ? period.id : undefined,
+    shouldAudit
+  );
+  const auditErrors = auditFindings.filter(f => f.severity === "error");
+  const auditWarnings = auditFindings.filter(f => f.severity === "warning");
+  const hasAuditErrors = auditErrors.length > 0;
+  const canSubmitOrApprove = !hasUnmatchedEmployees && !hasAuditErrors;
   return (
     <div className="rounded-xl bg-card shadow-card p-5 animate-fade-in">
       {/* Workflow Steps */}
