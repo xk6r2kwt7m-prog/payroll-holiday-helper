@@ -497,11 +497,12 @@ const Holidays = () => {
                     <EmployeeHolidayCard
                       employeeName={summary.employeeName}
                       department={summary.department}
-                      totalAccrued={summary.hoursAccrued + summary.hoursCarriedOver}
+                      totalAccrued={summary.hoursAccrued}
                       totalTaken={summary.hoursTaken}
                       totalPaid={summary.totalPaid}
                       balance={summary.balance}
                       entitlement={summary.hoursAccrued + summary.hoursCarriedOver}
+                      carryOver={summary.hoursCarriedOver}
                       periodBreakdown={summary.periodBreakdown}
                       index={index}
                     />
