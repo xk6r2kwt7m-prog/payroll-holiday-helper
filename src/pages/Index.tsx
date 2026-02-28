@@ -73,7 +73,7 @@ const Index = () => {
         <SmartAlerts employees={employees} periods={periods} entries={entries} />
 
         {/* KPI Stats Grid — 2×3 on mobile with full-width bottom card, 5-col on desktop */}
-        <div className="grid gap-2 grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-1.5 grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Active Staff"
             value={activeEmployees}

@@ -100,8 +100,8 @@ export function StatCard({
   );
 
   const cardClasses = cn(
-    "rounded-xl bg-card border border-border px-3 py-3 shadow-card transition-all duration-200 group h-full",
-    isClickable && "cursor-pointer hover:shadow-elevated hover:-translate-y-0.5 active:translate-y-0"
+    "rounded-lg bg-card border border-border px-3 py-2.5 shadow-sm transition-all duration-200 group",
+    isClickable && "cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
   );
 
   const wrapper = (children: ReactNode) => (
