@@ -129,6 +129,7 @@ export interface ReferenceLetterData {
   signerName: string;
   signerTitle: string;
   companyName: string;
+  legalName?: string;
   companyAddress?: string;
   companyEmail?: string;
   logoUrl?: string;
@@ -166,7 +167,10 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
             <Image src={data.logoUrl} style={styles.logo} />
           )}
           <View>
-            <Text style={styles.companyName}>{data.companyName.toUpperCase()}</Text>
+            <Text style={styles.companyName}>{(data.legalName || data.companyName).toUpperCase()}</Text>
+            {data.legalName && data.companyName && data.legalName !== data.companyName && (
+              <Text style={styles.companyDetail}>Trading as {data.companyName}</Text>
+            )}
             {data.companyAddress && (
               <Text style={styles.companyDetail}>{data.companyAddress}</Text>
             )}
@@ -207,11 +211,11 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
         {/* Printed name & title */}
         <Text style={styles.signatureName}>{data.signerName}</Text>
         <Text style={styles.signatureTitle}>{data.signerTitle}</Text>
-        <Text style={styles.signatureCompany}>{data.companyName}</Text>
+        <Text style={styles.signatureCompany}>{data.legalName || data.companyName}</Text>
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text>{data.companyName} — Confidential</Text>
+          <Text>{data.legalName || data.companyName} — Confidential</Text>
           <Text>Generated: {now}</Text>
         </View>
       </Page>

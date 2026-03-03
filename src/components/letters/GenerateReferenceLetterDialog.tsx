@@ -81,6 +81,7 @@ export function GenerateReferenceLetterDialog({
       signerName: signerName || "Management",
       signerTitle: signerTitle || "Operations Manager",
       companyName,
+      legalName: "UD Restaurants Ltd",
       companyAddress,
       companyEmail,
       logoUrl: settings?.company_logo_url || undefined,
