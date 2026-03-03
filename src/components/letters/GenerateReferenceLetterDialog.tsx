@@ -87,7 +87,7 @@ export function GenerateReferenceLetterDialog({
       companyEmail,
       logoUrl: settings?.company_logo_url || undefined,
       letterDate,
-      signatureText: signatureText.trim() || undefined,
+      signatureImageUrl: signatureDataUrl || undefined,
     };
   };
 
