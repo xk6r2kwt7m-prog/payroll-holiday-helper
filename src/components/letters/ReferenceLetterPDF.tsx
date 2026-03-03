@@ -5,136 +5,167 @@ import {
   View,
   StyleSheet,
   Image,
-  Font,
 } from "@react-pdf/renderer";
 
-const TEAL = "#5a9e91";
-const DARK = "#1e2a2f";
-const GRAY = "#555";
-const LIGHT_GRAY = "#999";
+/* ── Colour palette ── */
+const BRAND = "#4a8c7f";
+const DARK = "#1a2630";
+const BODY = "#333";
+const SUBTLE = "#6b7280";
+const RULE = "#d1d5db";
+const ACCENT_BG = "#f0f6f4";
 
-Font.register({
-  family: "GreatVibes",
-  src: "https://fonts.gstatic.com/s/greatvibes/v18/RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq.ttf",
-});
-
-const styles = StyleSheet.create({
+/* ── Styles ── */
+const s = StyleSheet.create({
   page: {
-    padding: 50,
-    paddingBottom: 70,
+    paddingTop: 0,
+    paddingBottom: 64,
+    paddingHorizontal: 0,
     fontSize: 10,
     fontFamily: "Helvetica",
-    lineHeight: 1.65,
-    color: DARK,
+    lineHeight: 1.7,
+    color: BODY,
   },
-  /* ── Header ── */
-  header: {
+
+  /* ── Branded header band ── */
+  headerBand: {
+    backgroundColor: ACCENT_BG,
+    paddingVertical: 24,
+    paddingHorizontal: 56,
+    borderBottomWidth: 2,
+    borderBottomColor: BRAND,
+    marginBottom: 24,
+  },
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    marginBottom: 6,
+    gap: 16,
   },
   logo: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     objectFit: "contain",
   },
-  companyName: {
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    color: TEAL,
-    letterSpacing: 1.2,
+  headerTextBlock: {
+    flex: 1,
   },
-  companyDetail: {
+  legalName: {
+    fontSize: 15,
+    fontFamily: "Helvetica-Bold",
+    color: DARK,
+    letterSpacing: 0.8,
+  },
+  tradingAs: {
+    fontSize: 8,
+    color: SUBTLE,
+    marginTop: 2,
+    fontFamily: "Helvetica-Oblique",
+  },
+  headerMeta: {
     fontSize: 7.5,
-    color: GRAY,
+    color: SUBTLE,
     marginTop: 1,
   },
-  headerLine: {
-    height: 1.5,
-    backgroundColor: TEAL,
-    marginBottom: 22,
-    marginTop: 8,
+
+  /* ── Content area ── */
+  content: {
+    paddingHorizontal: 56,
   },
-  /* ── Date & Title ── */
+
+  /* ── Date ── */
   date: {
     fontSize: 9.5,
-    color: GRAY,
-    marginBottom: 18,
+    color: SUBTLE,
     textAlign: "right",
+    marginBottom: 20,
+  },
+
+  /* ── Title ── */
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 22,
+  },
+  titleAccent: {
+    width: 4,
+    height: 18,
+    backgroundColor: BRAND,
+    marginRight: 10,
+    borderRadius: 2,
   },
   title: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "Helvetica-Bold",
-    textAlign: "center",
-    marginBottom: 20,
     color: DARK,
     textTransform: "uppercase",
-    letterSpacing: 1.5,
+    letterSpacing: 2,
   },
+
   /* ── Body ── */
   salutation: {
-    marginBottom: 12,
+    marginBottom: 14,
+    color: DARK,
   },
   paragraph: {
     marginBottom: 10,
     textAlign: "justify",
+    lineHeight: 1.75,
   },
-  /* ── Closing & Signature Block ── */
+
+  /* ── Closing + Signature ── */
   closing: {
-    marginTop: 22,
-    marginBottom: 4,
+    marginTop: 24,
+    marginBottom: 6,
+    color: DARK,
   },
-  signatureBlock: {
+  signatureArea: {
+    marginTop: 16,
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 24,
-    marginTop: 14,
+    gap: 20,
   },
-  signatureTextBlock: {
+  signatureLeft: {
     flex: 1,
   },
   signatureImage: {
-    width: 150,
-    height: 55,
+    width: 140,
+    height: 50,
     objectFit: "contain",
   },
   signatureLine: {
     borderBottomWidth: 0.5,
-    borderBottomColor: GRAY,
-    width: 180,
-    marginBottom: 5,
+    borderBottomColor: RULE,
+    width: 200,
+    marginBottom: 6,
   },
-  signatureName: {
+  signerName: {
     fontFamily: "Helvetica-Bold",
     fontSize: 10,
+    color: DARK,
   },
-  signatureTitle: {
-    fontSize: 9,
-    color: GRAY,
+  signerDetail: {
+    fontSize: 8.5,
+    color: SUBTLE,
     marginTop: 1,
   },
-  signatureCompany: {
-    fontSize: 9,
-    color: GRAY,
-    marginTop: 1,
-  },
+
   /* ── Footer ── */
   footer: {
     position: "absolute",
-    bottom: 28,
-    left: 50,
-    right: 50,
+    bottom: 24,
+    left: 56,
+    right: 56,
     borderTopWidth: 0.5,
-    borderTopColor: "#ddd",
+    borderTopColor: RULE,
     paddingTop: 6,
-    fontSize: 7,
-    color: LIGHT_GRAY,
     flexDirection: "row",
     justifyContent: "space-between",
+    fontSize: 6.5,
+    color: SUBTLE,
   },
 });
 
+/* ── Types ── */
 export interface ReferenceLetterData {
   employeeName: string;
   jobTitle: string;
@@ -152,18 +183,12 @@ export interface ReferenceLetterData {
   signatureImageUrl?: string;
 }
 
+/* ── Component ── */
 export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
-  const letterDate = data.letterDate
-    ? new Date(data.letterDate).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : new Date().toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+  const fmtDate = (d?: string) =>
+    d
+      ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+      : new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 
   const now = new Date().toLocaleString("en-GB", {
     day: "numeric",
@@ -173,68 +198,70 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
     minute: "2-digit",
   });
 
+  const entity = data.legalName || data.companyName;
+  const showTrading = data.legalName && data.companyName && data.legalName !== data.companyName;
+
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          {data.logoUrl && (
-            <Image src={data.logoUrl} style={styles.logo} />
-          )}
-          <View>
-            <Text style={styles.companyName}>
-              {(data.legalName || data.companyName).toUpperCase()}
-            </Text>
-            {data.legalName && data.companyName && data.legalName !== data.companyName && (
-              <Text style={styles.companyDetail}>Trading as {data.companyName}</Text>
-            )}
-            {data.companyAddress && (
-              <Text style={styles.companyDetail}>{data.companyAddress}</Text>
-            )}
-            {data.companyEmail && (
-              <Text style={styles.companyDetail}>{data.companyEmail}</Text>
+      <Page size="A4" style={s.page}>
+        {/* ═══ HEADER BAND ═══ */}
+        <View style={s.headerBand}>
+          <View style={s.headerRow}>
+            {data.logoUrl && <Image src={data.logoUrl} style={s.logo} />}
+            <View style={s.headerTextBlock}>
+              <Text style={s.legalName}>{entity.toUpperCase()}</Text>
+              {showTrading && (
+                <Text style={s.tradingAs}>Trading as {data.companyName}</Text>
+              )}
+              {data.companyAddress && (
+                <Text style={s.headerMeta}>{data.companyAddress}</Text>
+              )}
+              {data.companyEmail && (
+                <Text style={s.headerMeta}>{data.companyEmail}</Text>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* ═══ CONTENT ═══ */}
+        <View style={s.content}>
+          {/* Date */}
+          <Text style={s.date}>{fmtDate(data.letterDate)}</Text>
+
+          {/* Title with accent bar */}
+          <View style={s.titleRow}>
+            <View style={s.titleAccent} />
+            <Text style={s.title}>Reference Letter</Text>
+          </View>
+
+          {/* Salutation */}
+          <Text style={s.salutation}>To Whom It May Concern,</Text>
+
+          {/* Body */}
+          {data.bodyParagraphs.map((p, i) => (
+            <Text key={i} style={s.paragraph}>{p}</Text>
+          ))}
+
+          {/* Closing */}
+          <Text style={s.closing}>Yours faithfully,</Text>
+
+          {/* Signature block — stays together */}
+          <View style={s.signatureArea} wrap={false}>
+            <View style={s.signatureLeft}>
+              <View style={s.signatureLine} />
+              <Text style={s.signerName}>{data.signerName}</Text>
+              <Text style={s.signerDetail}>{data.signerTitle}</Text>
+              <Text style={s.signerDetail}>{entity}</Text>
+            </View>
+            {data.signatureImageUrl && (
+              <Image src={data.signatureImageUrl} style={s.signatureImage} />
             )}
           </View>
         </View>
-        <View style={styles.headerLine} />
 
-        {/* ── Date ── */}
-        <Text style={styles.date}>{letterDate}</Text>
-
-        {/* ── Title ── */}
-        <Text style={styles.title}>Reference Letter</Text>
-
-        {/* ── Salutation ── */}
-        <Text style={styles.salutation}>To Whom It May Concern,</Text>
-
-        {/* ── Body ── */}
-        {data.bodyParagraphs.map((paragraph, i) => (
-          <Text key={i} style={styles.paragraph}>
-            {paragraph}
-          </Text>
-        ))}
-
-        {/* ── Closing ── */}
-        <Text style={styles.closing}>Yours faithfully,</Text>
-
-        {/* ── Signature block: name/title on left, handwritten sig on right ── */}
-        <View style={styles.signatureBlock} wrap={false}>
-          <View style={styles.signatureTextBlock}>
-            <View style={styles.signatureLine} />
-            <Text style={styles.signatureName}>{data.signerName}</Text>
-            <Text style={styles.signatureTitle}>{data.signerTitle}</Text>
-            <Text style={styles.signatureCompany}>
-              {data.legalName || data.companyName}
-            </Text>
-          </View>
-          {data.signatureImageUrl && (
-            <Image src={data.signatureImageUrl} style={styles.signatureImage} />
-          )}
-        </View>
-
-        {/* ── Footer ── */}
-        <View style={styles.footer} fixed>
-          <Text>{data.legalName || data.companyName} — Confidential</Text>
+        {/* ═══ FOOTER ═══ */}
+        <View style={s.footer} fixed>
+          <Text>{entity} — Confidential</Text>
           <Text>Generated: {now}</Text>
         </View>
       </Page>
