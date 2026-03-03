@@ -19,11 +19,11 @@ const ACCENT_BG = "#f0f6f4";
 const s = StyleSheet.create({
   page: {
     paddingTop: 0,
-    paddingBottom: 64,
+    paddingBottom: 50,
     paddingHorizontal: 0,
-    fontSize: 10,
+    fontSize: 9.5,
     fontFamily: "Helvetica",
-    lineHeight: 1.7,
+    lineHeight: 1.6,
     color: BODY,
   },
 
