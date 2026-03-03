@@ -134,7 +134,7 @@ export interface ReferenceLetterData {
   companyEmail?: string;
   logoUrl?: string;
   letterDate?: string;
-  signatureText?: string;
+  signatureImageUrl?: string;
 }
 
 export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
