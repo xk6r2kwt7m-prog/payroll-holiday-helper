@@ -19,22 +19,22 @@ const ACCENT_BG = "#f0f6f4";
 const s = StyleSheet.create({
   page: {
     paddingTop: 0,
-    paddingBottom: 64,
+    paddingBottom: 50,
     paddingHorizontal: 0,
-    fontSize: 10,
+    fontSize: 9.5,
     fontFamily: "Helvetica",
-    lineHeight: 1.7,
+    lineHeight: 1.6,
     color: BODY,
   },
 
   /* ── Branded header band ── */
   headerBand: {
     backgroundColor: ACCENT_BG,
-    paddingVertical: 24,
-    paddingHorizontal: 56,
+    paddingVertical: 18,
+    paddingHorizontal: 50,
     borderBottomWidth: 2,
     borderBottomColor: BRAND,
-    marginBottom: 24,
+    marginBottom: 18,
   },
   headerRow: {
     flexDirection: "row",
@@ -69,7 +69,7 @@ const s = StyleSheet.create({
 
   /* ── Content area ── */
   content: {
-    paddingHorizontal: 56,
+    paddingHorizontal: 50,
   },
 
   /* ── Date ── */
@@ -107,9 +107,9 @@ const s = StyleSheet.create({
     color: DARK,
   },
   paragraph: {
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: "justify",
-    lineHeight: 1.75,
+    lineHeight: 1.65,
   },
 
   /* ── Closing + Signature ── */
@@ -159,7 +159,7 @@ const s = StyleSheet.create({
     borderTopColor: RULE,
     paddingTop: 6,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     fontSize: 6.5,
     color: SUBTLE,
   },
@@ -261,7 +261,6 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
 
         {/* ═══ FOOTER ═══ */}
         <View style={s.footer} fixed>
-          <Text>{entity} — Confidential</Text>
           <Text>Generated: {now}</Text>
         </View>
       </Page>
