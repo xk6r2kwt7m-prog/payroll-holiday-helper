@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { ReferenceLetterPDF, type ReferenceLetterData } from "./ReferenceLetterPDF";
+import { SignaturePad } from "./SignaturePad";
 
 interface GenerateReferenceLetterDialogProps {
   employeeId: string;
@@ -42,7 +43,7 @@ export function GenerateReferenceLetterDialog({
   const [letterBody, setLetterBody] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signerTitle, setSignerTitle] = useState("");
-  const [signatureText, setSignatureText] = useState("");
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [letterDate, setLetterDate] = useState(new Date().toISOString().split("T")[0]);
   const [saving, setSaving] = useState(false);
 
@@ -86,7 +87,7 @@ export function GenerateReferenceLetterDialog({
       companyEmail,
       logoUrl: settings?.company_logo_url || undefined,
       letterDate,
-      signatureText: signatureText.trim() || undefined,
+      signatureImageUrl: signatureDataUrl || undefined,
     };
   };
 
@@ -219,26 +220,7 @@ export function GenerateReferenceLetterDialog({
           {/* Signature */}
           <div className="space-y-2">
             <Label>Your Signature</Label>
-            <div className="relative">
-              <Input
-                value={signatureText}
-                onChange={(e) => setSignatureText(e.target.value)}
-                placeholder="Type your name to sign..."
-                className="text-lg h-14 font-serif italic"
-                style={{ fontFamily: "'Dancing Script', 'Georgia', cursive" }}
-              />
-            </div>
-            {signatureText && (
-              <div className="rounded-lg border border-border bg-muted/30 p-4 text-center">
-                <p className="text-xs text-muted-foreground mb-2">Signature preview</p>
-                <p className="text-2xl italic text-card-foreground" style={{ fontFamily: "'Dancing Script', 'Georgia', cursive" }}>
-                  {signatureText}
-                </p>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Type your name as you'd like it to appear as a handwritten signature on the PDF.
-            </p>
+            <SignaturePad onSignatureChange={setSignatureDataUrl} />
           </div>
 
           {/* Actions */}
