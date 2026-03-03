@@ -211,11 +211,11 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
         {/* Printed name & title */}
         <Text style={styles.signatureName}>{data.signerName}</Text>
         <Text style={styles.signatureTitle}>{data.signerTitle}</Text>
-        <Text style={styles.signatureCompany}>{data.companyName}</Text>
+        <Text style={styles.signatureCompany}>{data.legalName || data.companyName}</Text>
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text>{data.companyName} — Confidential</Text>
+          <Text>{data.legalName || data.companyName} — Confidential</Text>
           <Text>Generated: {now}</Text>
         </View>
       </Page>
