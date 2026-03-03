@@ -201,8 +201,8 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
         <Text style={styles.closing}>Yours faithfully,</Text>
 
         {/* Handwritten signature */}
-        {data.signatureText ? (
-          <Text style={styles.signatureHandwriting}>{data.signatureText}</Text>
+        {data.signatureImageUrl ? (
+          <Image src={data.signatureImageUrl} style={styles.signatureImage} />
         ) : (
           <View style={{ marginTop: 20 }} />
         )}
