@@ -19,132 +19,132 @@ const ACCENT_BG = "#f0f6f4";
 const s = StyleSheet.create({
   page: {
     paddingTop: 0,
-    paddingBottom: 50,
+    paddingBottom: 40,
     paddingHorizontal: 0,
-    fontSize: 9.5,
+    fontSize: 9,
     fontFamily: "Helvetica",
-    lineHeight: 1.6,
+    lineHeight: 1.55,
     color: BODY,
   },
 
   /* ── Branded header band ── */
   headerBand: {
     backgroundColor: ACCENT_BG,
-    paddingVertical: 18,
-    paddingHorizontal: 50,
+    paddingVertical: 14,
+    paddingHorizontal: 48,
     borderBottomWidth: 2,
     borderBottomColor: BRAND,
-    marginBottom: 18,
+    marginBottom: 14,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 14,
   },
   logo: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     objectFit: "contain",
   },
   headerTextBlock: {
     flex: 1,
   },
   legalName: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Helvetica-Bold",
     color: DARK,
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
   },
   tradingAs: {
-    fontSize: 8,
+    fontSize: 7.5,
     color: SUBTLE,
-    marginTop: 2,
+    marginTop: 1,
     fontFamily: "Helvetica-Oblique",
   },
   headerMeta: {
-    fontSize: 7.5,
+    fontSize: 7,
     color: SUBTLE,
     marginTop: 1,
   },
 
   /* ── Content area ── */
   content: {
-    paddingHorizontal: 50,
+    paddingHorizontal: 48,
   },
 
   /* ── Date ── */
   date: {
-    fontSize: 9.5,
+    fontSize: 9,
     color: SUBTLE,
     textAlign: "right",
-    marginBottom: 20,
+    marginBottom: 16,
   },
 
   /* ── Title ── */
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 22,
+    marginBottom: 16,
   },
   titleAccent: {
-    width: 4,
-    height: 18,
+    width: 3,
+    height: 16,
     backgroundColor: BRAND,
-    marginRight: 10,
-    borderRadius: 2,
+    marginRight: 8,
+    borderRadius: 1,
   },
   title: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Helvetica-Bold",
     color: DARK,
     textTransform: "uppercase",
-    letterSpacing: 2,
+    letterSpacing: 1.5,
   },
 
   /* ── Body ── */
   salutation: {
-    marginBottom: 14,
+    marginBottom: 10,
     color: DARK,
   },
   paragraph: {
-    marginBottom: 8,
+    marginBottom: 6,
     textAlign: "justify",
-    lineHeight: 1.65,
+    lineHeight: 1.6,
   },
 
   /* ── Closing + Signature ── */
   closing: {
-    marginTop: 24,
-    marginBottom: 6,
+    marginTop: 18,
+    marginBottom: 4,
     color: DARK,
   },
   signatureArea: {
-    marginTop: 16,
+    marginTop: 12,
     flexDirection: "row",
     alignItems: "flex-end",
-    gap: 20,
+    gap: 16,
   },
   signatureLeft: {
     flex: 1,
   },
   signatureImage: {
-    width: 140,
-    height: 50,
+    width: 120,
+    height: 44,
     objectFit: "contain",
   },
   signatureLine: {
     borderBottomWidth: 0.5,
     borderBottomColor: RULE,
-    width: 200,
-    marginBottom: 6,
+    width: 180,
+    marginBottom: 4,
   },
   signerName: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 10,
+    fontSize: 9.5,
     color: DARK,
   },
   signerDetail: {
-    fontSize: 8.5,
+    fontSize: 8,
     color: SUBTLE,
     marginTop: 1,
   },
@@ -152,15 +152,15 @@ const s = StyleSheet.create({
   /* ── Footer ── */
   footer: {
     position: "absolute",
-    bottom: 24,
-    left: 56,
-    right: 56,
+    bottom: 18,
+    left: 48,
+    right: 48,
     borderTopWidth: 0.5,
     borderTopColor: RULE,
-    paddingTop: 6,
+    paddingTop: 4,
     flexDirection: "row",
     justifyContent: "flex-end",
-    fontSize: 6.5,
+    fontSize: 6,
     color: SUBTLE,
   },
 });
@@ -203,7 +203,7 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
 
   return (
     <Document>
-      <Page size="A4" style={s.page}>
+      <Page size="A4" style={s.page} wrap={false}>
         {/* ═══ HEADER BAND ═══ */}
         <View style={s.headerBand}>
           <View style={s.headerRow}>
@@ -225,28 +225,22 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
 
         {/* ═══ CONTENT ═══ */}
         <View style={s.content}>
-          {/* Date */}
           <Text style={s.date}>{fmtDate(data.letterDate)}</Text>
 
-          {/* Title with accent bar */}
           <View style={s.titleRow}>
             <View style={s.titleAccent} />
             <Text style={s.title}>Reference Letter</Text>
           </View>
 
-          {/* Salutation */}
           <Text style={s.salutation}>To Whom It May Concern,</Text>
 
-          {/* Body */}
           {data.bodyParagraphs.map((p, i) => (
             <Text key={i} style={s.paragraph}>{p}</Text>
           ))}
 
-          {/* Closing */}
           <Text style={s.closing}>Yours faithfully,</Text>
 
-          {/* Signature block — stays together */}
-          <View style={s.signatureArea} wrap={false}>
+          <View style={s.signatureArea}>
             <View style={s.signatureLeft}>
               <View style={s.signatureLine} />
               <Text style={s.signerName}>{data.signerName}</Text>
