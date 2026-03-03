@@ -69,7 +69,7 @@ const s = StyleSheet.create({
 
   /* ── Content area ── */
   content: {
-    paddingHorizontal: 56,
+    paddingHorizontal: 50,
   },
 
   /* ── Date ── */
