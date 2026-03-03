@@ -129,6 +129,7 @@ export interface ReferenceLetterData {
   signerName: string;
   signerTitle: string;
   companyName: string;
+  legalName?: string;
   companyAddress?: string;
   companyEmail?: string;
   logoUrl?: string;
