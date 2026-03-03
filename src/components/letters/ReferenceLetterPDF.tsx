@@ -107,9 +107,9 @@ const s = StyleSheet.create({
     color: DARK,
   },
   paragraph: {
-    marginBottom: 10,
+    marginBottom: 8,
     textAlign: "justify",
-    lineHeight: 1.75,
+    lineHeight: 1.65,
   },
 
   /* ── Closing + Signature ── */
