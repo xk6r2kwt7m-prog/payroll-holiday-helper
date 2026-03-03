@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { ReferenceLetterPDF, type ReferenceLetterData } from "./ReferenceLetterPDF";
+import { SignaturePad } from "./SignaturePad";
 
 interface GenerateReferenceLetterDialogProps {
   employeeId: string;
