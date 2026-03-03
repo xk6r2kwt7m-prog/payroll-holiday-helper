@@ -30,11 +30,11 @@ const s = StyleSheet.create({
   /* ── Branded header band ── */
   headerBand: {
     backgroundColor: ACCENT_BG,
-    paddingVertical: 24,
-    paddingHorizontal: 56,
+    paddingVertical: 18,
+    paddingHorizontal: 50,
     borderBottomWidth: 2,
     borderBottomColor: BRAND,
-    marginBottom: 24,
+    marginBottom: 18,
   },
   headerRow: {
     flexDirection: "row",
