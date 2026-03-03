@@ -79,12 +79,12 @@ const styles = StyleSheet.create({
     marginTop: 30,
     marginBottom: 6,
   },
-  signatureHandwriting: {
-    fontFamily: "GreatVibes",
-    fontSize: 26,
-    color: "#1a1a2e",
+  signatureImage: {
+    width: 180,
+    height: 60,
     marginTop: 20,
     marginBottom: 4,
+    objectFit: "contain" as const,
   },
   signatureLine: {
     borderBottomWidth: 0.5,
