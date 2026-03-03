@@ -261,7 +261,6 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
 
         {/* ═══ FOOTER ═══ */}
         <View style={s.footer} fixed>
-          <Text>{entity} — Confidential</Text>
           <Text>Generated: {now}</Text>
         </View>
       </Page>
