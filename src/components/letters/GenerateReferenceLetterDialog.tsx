@@ -220,26 +220,7 @@ export function GenerateReferenceLetterDialog({
           {/* Signature */}
           <div className="space-y-2">
             <Label>Your Signature</Label>
-            <div className="relative">
-              <Input
-                value={signatureText}
-                onChange={(e) => setSignatureText(e.target.value)}
-                placeholder="Type your name to sign..."
-                className="text-lg h-14 font-serif italic"
-                style={{ fontFamily: "'Dancing Script', 'Georgia', cursive" }}
-              />
-            </div>
-            {signatureText && (
-              <div className="rounded-lg border border-border bg-muted/30 p-4 text-center">
-                <p className="text-xs text-muted-foreground mb-2">Signature preview</p>
-                <p className="text-2xl italic text-card-foreground" style={{ fontFamily: "'Dancing Script', 'Georgia', cursive" }}>
-                  {signatureText}
-                </p>
-              </div>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Type your name as you'd like it to appear as a handwritten signature on the PDF.
-            </p>
+            <SignaturePad onSignatureChange={setSignatureDataUrl} />
           </div>
 
           {/* Actions */}
