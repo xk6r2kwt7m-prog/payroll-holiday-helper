@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { EmployeeNotesSection } from "./EmployeeNotesSection";
+import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateReferenceLetterDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
