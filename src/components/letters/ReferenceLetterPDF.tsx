@@ -167,7 +167,10 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
             <Image src={data.logoUrl} style={styles.logo} />
           )}
           <View>
-            <Text style={styles.companyName}>{data.companyName.toUpperCase()}</Text>
+            <Text style={styles.companyName}>{(data.legalName || data.companyName).toUpperCase()}</Text>
+            {data.legalName && data.companyName && data.legalName !== data.companyName && (
+              <Text style={styles.companyDetail}>Trading as {data.companyName}</Text>
+            )}
             {data.companyAddress && (
               <Text style={styles.companyDetail}>{data.companyAddress}</Text>
             )}
