@@ -11,8 +11,8 @@ import {
 const TEAL = "#5a9e91";
 const DARK = "#1e2a2f";
 const GRAY = "#555";
+const LIGHT_GRAY = "#999";
 
-// Register a cursive Google Font for signatures
 Font.register({
   family: "GreatVibes",
   src: "https://fonts.gstatic.com/s/greatvibes/v18/RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq.ttf",
@@ -20,101 +20,116 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    padding: 60,
-    fontSize: 10.5,
+    padding: 50,
+    paddingBottom: 70,
+    fontSize: 10,
     fontFamily: "Helvetica",
-    lineHeight: 1.7,
+    lineHeight: 1.65,
     color: DARK,
   },
+  /* ── Header ── */
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
+    gap: 14,
+    marginBottom: 6,
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: 48,
+    height: 48,
     objectFit: "contain",
   },
   companyName: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: "Helvetica-Bold",
     color: TEAL,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   companyDetail: {
-    fontSize: 8,
+    fontSize: 7.5,
     color: GRAY,
+    marginTop: 1,
   },
   headerLine: {
-    height: 2,
+    height: 1.5,
     backgroundColor: TEAL,
-    marginBottom: 30,
+    marginBottom: 22,
     marginTop: 8,
   },
+  /* ── Date & Title ── */
   date: {
-    fontSize: 10,
+    fontSize: 9.5,
     color: GRAY,
-    marginBottom: 24,
+    marginBottom: 18,
     textAlign: "right",
   },
   title: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 20,
     color: DARK,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
+  /* ── Body ── */
   salutation: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   paragraph: {
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: "justify",
   },
+  /* ── Closing & Signature Block ── */
   closing: {
-    marginTop: 30,
-    marginBottom: 6,
+    marginTop: 22,
+    marginBottom: 4,
+  },
+  signatureBlock: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 24,
+    marginTop: 14,
+  },
+  signatureTextBlock: {
+    flex: 1,
   },
   signatureImage: {
-    width: 180,
-    height: 60,
-    marginTop: 20,
-    marginBottom: 4,
-    objectFit: "contain" as const,
+    width: 150,
+    height: 55,
+    objectFit: "contain",
   },
   signatureLine: {
     borderBottomWidth: 0.5,
     borderBottomColor: GRAY,
-    width: 200,
-    marginTop: 2,
-    marginBottom: 6,
+    width: 180,
+    marginBottom: 5,
   },
   signatureName: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 10.5,
+    fontSize: 10,
   },
   signatureTitle: {
-    fontSize: 9.5,
+    fontSize: 9,
     color: GRAY,
+    marginTop: 1,
   },
   signatureCompany: {
-    fontSize: 9.5,
+    fontSize: 9,
     color: GRAY,
+    marginTop: 1,
   },
+  /* ── Footer ── */
   footer: {
     position: "absolute",
-    bottom: 30,
-    left: 60,
-    right: 60,
+    bottom: 28,
+    left: 50,
+    right: 50,
     borderTopWidth: 0.5,
-    borderTopColor: "#ccc",
+    borderTopColor: "#ddd",
     paddingTop: 6,
     fontSize: 7,
-    color: GRAY,
+    color: LIGHT_GRAY,
     flexDirection: "row",
     justifyContent: "space-between",
   },
@@ -161,13 +176,15 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header with logo */}
+        {/* ── Header ── */}
         <View style={styles.header}>
           {data.logoUrl && (
             <Image src={data.logoUrl} style={styles.logo} />
           )}
           <View>
-            <Text style={styles.companyName}>{(data.legalName || data.companyName).toUpperCase()}</Text>
+            <Text style={styles.companyName}>
+              {(data.legalName || data.companyName).toUpperCase()}
+            </Text>
             {data.legalName && data.companyName && data.legalName !== data.companyName && (
               <Text style={styles.companyDetail}>Trading as {data.companyName}</Text>
             )}
@@ -181,39 +198,41 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
         </View>
         <View style={styles.headerLine} />
 
-        {/* Date */}
+        {/* ── Date ── */}
         <Text style={styles.date}>{letterDate}</Text>
 
-        {/* Title */}
+        {/* ── Title ── */}
         <Text style={styles.title}>Reference Letter</Text>
 
-        {/* Salutation */}
+        {/* ── Salutation ── */}
         <Text style={styles.salutation}>To Whom It May Concern,</Text>
 
-        {/* Body paragraphs */}
+        {/* ── Body ── */}
         {data.bodyParagraphs.map((paragraph, i) => (
           <Text key={i} style={styles.paragraph}>
             {paragraph}
           </Text>
         ))}
 
-        {/* Closing */}
+        {/* ── Closing ── */}
         <Text style={styles.closing}>Yours faithfully,</Text>
 
-        {/* Handwritten signature */}
-        {data.signatureImageUrl ? (
-          <Image src={data.signatureImageUrl} style={styles.signatureImage} />
-        ) : (
-          <View style={{ marginTop: 20 }} />
-        )}
-        <View style={styles.signatureLine} />
+        {/* ── Signature block: name/title on left, handwritten sig on right ── */}
+        <View style={styles.signatureBlock} wrap={false}>
+          <View style={styles.signatureTextBlock}>
+            <View style={styles.signatureLine} />
+            <Text style={styles.signatureName}>{data.signerName}</Text>
+            <Text style={styles.signatureTitle}>{data.signerTitle}</Text>
+            <Text style={styles.signatureCompany}>
+              {data.legalName || data.companyName}
+            </Text>
+          </View>
+          {data.signatureImageUrl && (
+            <Image src={data.signatureImageUrl} style={styles.signatureImage} />
+          )}
+        </View>
 
-        {/* Printed name & title */}
-        <Text style={styles.signatureName}>{data.signerName}</Text>
-        <Text style={styles.signatureTitle}>{data.signerTitle}</Text>
-        <Text style={styles.signatureCompany}>{data.legalName || data.companyName}</Text>
-
-        {/* Footer */}
+        {/* ── Footer ── */}
         <View style={styles.footer} fixed>
           <Text>{data.legalName || data.companyName} — Confidential</Text>
           <Text>Generated: {now}</Text>
