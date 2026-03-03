@@ -224,7 +224,14 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
 
         {/* Actions */}
         {isAdmin && (
-          <div className="sticky bottom-0 bg-background border-t border-border p-4 -mx-6 -mb-6">
+          <div className="sticky bottom-0 bg-background border-t border-border p-4 -mx-6 -mb-6 space-y-2">
+            <GenerateReferenceLetterDialog
+              employeeId={employee.id}
+              employeeName={`${employee.forename} ${employee.surname}`}
+              defaultJobTitle=""
+              defaultStartDate={employee.start_date || ""}
+              defaultEndDate={employee.end_date || ""}
+            />
             <EmployeeFormDialog
               employee={employee}
               trigger={
