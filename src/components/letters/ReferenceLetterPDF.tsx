@@ -159,7 +159,7 @@ const s = StyleSheet.create({
     borderTopColor: RULE,
     paddingTop: 6,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     fontSize: 6.5,
     color: SUBTLE,
   },
