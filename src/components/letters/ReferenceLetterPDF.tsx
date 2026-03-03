@@ -5,11 +5,18 @@ import {
   View,
   StyleSheet,
   Image,
+  Font,
 } from "@react-pdf/renderer";
 
 const TEAL = "#5a9e91";
 const DARK = "#1e2a2f";
 const GRAY = "#555";
+
+// Register a cursive Google Font for signatures
+Font.register({
+  family: "GreatVibes",
+  src: "https://fonts.gstatic.com/s/greatvibes/v18/RWmMoKWR9v4ksMfaWd_JN-XCg6UKDXlq.ttf",
+});
 
 const styles = StyleSheet.create({
   page: {
@@ -72,9 +79,23 @@ const styles = StyleSheet.create({
     marginTop: 30,
     marginBottom: 6,
   },
+  signatureHandwriting: {
+    fontFamily: "GreatVibes",
+    fontSize: 26,
+    color: "#1a1a2e",
+    marginTop: 20,
+    marginBottom: 4,
+  },
+  signatureLine: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: GRAY,
+    width: 200,
+    marginTop: 2,
+    marginBottom: 6,
+  },
   signatureName: {
     fontFamily: "Helvetica-Bold",
-    marginTop: 40,
+    fontSize: 10.5,
   },
   signatureTitle: {
     fontSize: 9.5,
@@ -97,20 +118,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  confidential: {
-    backgroundColor: DARK,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 2,
-    marginBottom: 20,
-  },
-  confidentialText: {
-    fontSize: 6,
-    color: "#fff",
-    fontFamily: "Helvetica-Bold",
-    textAlign: "center",
-    letterSpacing: 0.5,
-  },
 });
 
 export interface ReferenceLetterData {
@@ -126,6 +133,7 @@ export interface ReferenceLetterData {
   companyEmail?: string;
   logoUrl?: string;
   letterDate?: string;
+  signatureText?: string;
 }
 
 export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
@@ -188,7 +196,15 @@ export function ReferenceLetterPDF({ data }: { data: ReferenceLetterData }) {
         {/* Closing */}
         <Text style={styles.closing}>Yours faithfully,</Text>
 
-        {/* Signature */}
+        {/* Handwritten signature */}
+        {data.signatureText ? (
+          <Text style={styles.signatureHandwriting}>{data.signatureText}</Text>
+        ) : (
+          <View style={{ marginTop: 20 }} />
+        )}
+        <View style={styles.signatureLine} />
+
+        {/* Printed name & title */}
         <Text style={styles.signatureName}>{data.signerName}</Text>
         <Text style={styles.signatureTitle}>{data.signerTitle}</Text>
         <Text style={styles.signatureCompany}>{data.companyName}</Text>

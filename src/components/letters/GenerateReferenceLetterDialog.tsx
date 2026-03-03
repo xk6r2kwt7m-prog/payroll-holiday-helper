@@ -42,6 +42,7 @@ export function GenerateReferenceLetterDialog({
   const [letterBody, setLetterBody] = useState("");
   const [signerName, setSignerName] = useState("");
   const [signerTitle, setSignerTitle] = useState("");
+  const [signatureText, setSignatureText] = useState("");
   const [letterDate, setLetterDate] = useState(new Date().toISOString().split("T")[0]);
   const [saving, setSaving] = useState(false);
 
