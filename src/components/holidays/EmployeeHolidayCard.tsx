@@ -118,6 +118,7 @@ export function EmployeeHolidayCard({
           </div>
           <div className="text-center p-2 rounded-lg bg-primary/5 border border-primary/10">
             <p className="text-lg font-bold text-primary">{formatHours(totalTaken)}</p>
+            <p className="text-[10px] text-muted-foreground/70">{hoursToDays(totalTaken)} days</p>
             <p className="text-xs text-muted-foreground">Taken</p>
           </div>
           <div className={cn(
@@ -129,6 +130,7 @@ export function EmployeeHolidayCard({
             <p className={cn("text-lg font-bold", balance >= 0 ? "text-accent" : "text-destructive")}>
               {formatHours(balance)}
             </p>
+            <p className="text-[10px] text-muted-foreground/70">{hoursToDays(balance)} days</p>
             <p className="text-xs text-muted-foreground">Balance</p>
           </div>
         </div>
