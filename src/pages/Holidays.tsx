@@ -404,7 +404,7 @@ const Holidays = () => {
     });
 
     return rows;
-  }, [balances2024, balances2025, balances2026, payrollEntries]);
+  }, [balances2023, balances2024, balances2025, balances2026, payrollEntries]);
 
   // Filter summaries
   const filteredSummaries = useMemo(() => {
