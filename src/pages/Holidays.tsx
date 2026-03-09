@@ -39,7 +39,7 @@ import {
 
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
-type LeaveYear = "2024" | "2025" | "2026";
+type LeaveYear = "2023" | "2024" | "2025" | "2026";
 type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity";
 
 interface EmployeeSummary {
@@ -67,11 +67,13 @@ const Holidays = () => {
   const { data: periods = [] } = usePayrollPeriods();
 
   // Holiday payments by year
+  const { data: payments2023 = [] } = useHolidayPaymentsByYear(2023);
   const { data: payments2024 = [] } = useHolidayPaymentsByYear(2024);
   const { data: payments2025 = [] } = useHolidayPaymentsByYear(2025);
   const { data: payments2026 = [] } = useHolidayPaymentsByYear(2026);
 
   // Holiday balances for integrity check
+  const { data: balances2023 = [] } = useHolidayBalancesByYear(2023);
   const { data: balances2024 = [] } = useHolidayBalancesByYear(2024);
   const { data: balances2025 = [] } = useHolidayBalancesByYear(2025);
   const { data: balances2026 = [] } = useHolidayBalancesByYear(2026);
@@ -216,7 +218,19 @@ const Holidays = () => {
     });
   };
 
-  const summaries2024 = useMemo(() => buildSummaries(2024, payments2024), [payrollEntries, payments2024, adjustments]);
+  const summaries2023 = useMemo(() => buildSummaries(2023, payments2023), [payrollEntries, payments2023, adjustments]);
+  const summaries2024 = useMemo(() => {
+    const base = buildSummaries(2024, payments2024);
+    return base.map(s => {
+      const prev = summaries2023.find(p => p.employeeId === s.employeeId);
+      const carryOver = prev ? Math.max(0, prev.balance) : 0;
+      return {
+        ...s,
+        hoursCarriedOver: s.hoursCarriedOver + carryOver,
+        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
+      };
+    });
+  }, [payrollEntries, payments2024, summaries2023, adjustments]);
   const summaries2025 = useMemo(() => {
     const base = buildSummaries(2025, payments2025);
     return base.map(s => {
@@ -244,9 +258,9 @@ const Holidays = () => {
     });
   }, [payrollEntries, payments2026, summaries2025, adjustments]);
 
-  const allYearSummaries = { "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
+  const allYearSummaries = { "2023": summaries2023, "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
   const currentSummaries = allYearSummaries[selectedYear];
-  const currentPayments = selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
+  const currentPayments = selectedYear === "2023" ? payments2023 : selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
 
   // Build formula breakdown for a specific employee
   const openFormulaBreakdown = useCallback((employeeId: string) => {
@@ -322,7 +336,7 @@ const Holidays = () => {
   // Integrity check data
   const integrityRows = useMemo(() => {
     const rows: any[] = [];
-    const allBalances = { 2024: balances2024, 2025: balances2025, 2026: balances2026 };
+    const allBalances = { 2023: balances2023, 2024: balances2024, 2025: balances2025, 2026: balances2026 };
     
     // Build corrected set
     const correctedBaseNames = new Set<string>();
@@ -390,7 +404,7 @@ const Holidays = () => {
     });
 
     return rows;
-  }, [balances2024, balances2025, balances2026, payrollEntries]);
+  }, [balances2023, balances2024, balances2025, balances2026, payrollEntries]);
 
   // Filter summaries
   const filteredSummaries = useMemo(() => {
@@ -517,7 +531,11 @@ const Holidays = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
           <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <TabsList className="grid w-full sm:w-auto grid-cols-3">
+              <TabsList className="grid w-full sm:w-auto grid-cols-4">
+                <TabsTrigger value="2023" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  2023
+                </TabsTrigger>
                 <TabsTrigger value="2024" className="gap-2">
                   <Calendar className="h-4 w-4" />
                   2024
