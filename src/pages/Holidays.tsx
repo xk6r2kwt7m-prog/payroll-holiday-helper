@@ -258,9 +258,9 @@ const Holidays = () => {
     });
   }, [payrollEntries, payments2026, summaries2025, adjustments]);
 
-  const allYearSummaries = { "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
+  const allYearSummaries = { "2023": summaries2023, "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
   const currentSummaries = allYearSummaries[selectedYear];
-  const currentPayments = selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
+  const currentPayments = selectedYear === "2023" ? payments2023 : selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
 
   // Build formula breakdown for a specific employee
   const openFormulaBreakdown = useCallback((employeeId: string) => {
