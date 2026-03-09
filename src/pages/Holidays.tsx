@@ -39,7 +39,7 @@ import {
 
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
-type LeaveYear = "2024" | "2025" | "2026";
+type LeaveYear = "2023" | "2024" | "2025" | "2026";
 type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity";
 
 interface EmployeeSummary {
