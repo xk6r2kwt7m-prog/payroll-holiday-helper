@@ -336,7 +336,7 @@ const Holidays = () => {
   // Integrity check data
   const integrityRows = useMemo(() => {
     const rows: any[] = [];
-    const allBalances = { 2024: balances2024, 2025: balances2025, 2026: balances2026 };
+    const allBalances = { 2023: balances2023, 2024: balances2024, 2025: balances2025, 2026: balances2026 };
     
     // Build corrected set
     const correctedBaseNames = new Set<string>();
