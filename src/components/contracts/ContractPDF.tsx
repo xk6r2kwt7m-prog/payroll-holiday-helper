@@ -5,12 +5,8 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
-import type { ContractVariables, ContractType } from "./contractTemplates";
-import {
-  getResponsibilities,
-  getGeneralDuties,
-  getReportingLine,
-} from "./contractTemplates";
+import type { ContractVariables } from "./contractTemplates";
+import { getEmploymentTypeLabel } from "./contractTemplates";
 
 const TEAL = "#5a9e91";
 const DARK = "#1e2a2f";
@@ -25,7 +21,6 @@ const styles = StyleSheet.create({
     lineHeight: 1.6,
     color: DARK,
   },
-  // Cover page
   coverPage: {
     padding: 50,
     fontFamily: "Helvetica",
@@ -40,7 +35,12 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     color: TEAL,
     fontFamily: "Helvetica-Bold",
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  coverTradingAs: {
+    fontSize: 9,
+    color: GRAY,
+    marginBottom: 20,
   },
   coverTitle: {
     fontSize: 22,
@@ -65,7 +65,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 2,
   },
-  // Section headers
   sectionTitle: {
     fontSize: 10.5,
     fontFamily: "Helvetica-Bold",
@@ -74,13 +73,6 @@ const styles = StyleSheet.create({
     color: TEAL,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-  },
-  subTitle: {
-    fontSize: 9.5,
-    fontFamily: "Helvetica-Bold",
-    marginTop: 10,
-    marginBottom: 4,
-    color: DARK,
   },
   paragraph: {
     marginBottom: 6,
@@ -103,7 +95,6 @@ const styles = StyleSheet.create({
   bold: {
     fontFamily: "Helvetica-Bold",
   },
-  // Signature
   signatureSection: {
     marginTop: 30,
   },
@@ -126,7 +117,6 @@ const styles = StyleSheet.create({
   col: {
     width: "45%",
   },
-  // Header bar for content pages
   pageHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -146,7 +136,6 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     letterSpacing: 1,
   },
-  // Footer
   footer: {
     position: "absolute",
     bottom: 30,
@@ -160,24 +149,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  // Info box
   infoBox: {
     backgroundColor: LIGHT_TEAL,
     padding: 10,
     borderRadius: 4,
     marginBottom: 10,
   },
+  divider: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#ccc",
+    marginVertical: 10,
+  },
 });
 
 interface ContractPDFProps {
   variables: ContractVariables;
-  contractType: ContractType;
+  contractType?: string; // kept for backward compat (unused in new template)
 }
 
-export function ContractPDF({ variables, contractType }: ContractPDFProps) {
-  const responsibilities = getResponsibilities(contractType);
-  const generalDuties = getGeneralDuties(contractType);
-  const reportingLine = getReportingLine(contractType);
+export function ContractPDF({ variables }: ContractPDFProps) {
+  const formattedDate = new Date(variables.effectiveDate).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   const PageHeader = () => (
     <View style={styles.pageHeader}>
@@ -195,421 +190,285 @@ export function ContractPDF({ variables, contractType }: ContractPDFProps) {
 
   return (
     <Document>
-      {/* Cover Page */}
+      {/* ─── Cover Page ─── */}
       <Page size="A4" style={styles.coverPage}>
         <View style={{ marginTop: 160, alignItems: "center" }}>
           <Text style={styles.coverBrand}>UD RESTAURANTS LTD</Text>
+          <Text style={styles.coverTradingAs}>Trading as Ugly Dumpling</Text>
           <Text style={styles.coverTitle}>Employment Agreement</Text>
           <View style={styles.coverLine} />
-
-          <Text style={styles.coverLabel}>POSITION</Text>
-          <Text style={styles.coverField}>{variables.jobTitle}</Text>
 
           <Text style={styles.coverLabel}>EMPLOYEE</Text>
           <Text style={styles.coverField}>{variables.employeeName}</Text>
 
-          <Text style={styles.coverLabel}>EFFECTIVE DATE</Text>
-          <Text style={styles.coverField}>
-            {new Date(variables.effectiveDate).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </Text>
+          <Text style={styles.coverLabel}>POSITION</Text>
+          <Text style={styles.coverField}>{variables.jobTitle}</Text>
 
-          <Text style={styles.coverLabel}>LOCATION</Text>
+          <Text style={styles.coverLabel}>EMPLOYMENT TYPE</Text>
+          <Text style={styles.coverField}>{getEmploymentTypeLabel(variables.employmentType)}</Text>
+
+          <Text style={styles.coverLabel}>EFFECTIVE DATE</Text>
+          <Text style={styles.coverField}>{formattedDate}</Text>
+
+          <Text style={styles.coverLabel}>PRIMARY LOCATION</Text>
           <Text style={styles.coverField}>{variables.workLocation}</Text>
         </View>
         <PageFooter />
       </Page>
 
-      {/* Main Contract */}
+      {/* ─── Preamble + Sections 1–6 ─── */}
       <Page size="A4" style={styles.page}>
         <PageHeader />
 
         <Text style={styles.paragraph}>
-          This Employment Agreement (hereinafter referred to as "Agreement") is
-          made and entered into on the date specified on the last page of the
-          Agreement, by and between,
+          This Employment Agreement is made between:
         </Text>
         <Text style={styles.paragraph}>
-          <Text style={styles.bold}>UD RESTAURANTS LTD</Text>, trading as "Ugly Dumpling" with registered office
-          in 1 Newburgh St, London, W1F 7RB (hereinafter referred to as the
-          "Company") and
+          <Text style={styles.bold}>UD Restaurants Ltd</Text>, trading as "Ugly Dumpling", with its registered address at 1 Newburgh Street, London W1F 7RB ("the Company")
+        </Text>
+        <Text style={styles.paragraph}>and</Text>
+        <Text style={styles.paragraph}>
+          <Text style={styles.bold}>{variables.employeeName}</Text>, residing at {variables.homeAddress || "[Address not provided]"} ("the Employee")
         </Text>
         <Text style={styles.paragraph}>
-          <Text style={styles.bold}>THE EMPLOYEE</Text>, residing at {variables.homeAddress} (hereinafter referred
-          to as "Team Member") in accordance with the following terms and
-          conditions.
+          The Company and the Employee together referred to as "the Parties".
         </Text>
-        <Text style={styles.paragraph}>
-          The Company and the Team Member shall hereinafter collectively be
-          referred to as the "Parties" and individually as the "Party".
-        </Text>
-        <Text style={styles.paragraph}>
-          WHEREAS, the purpose of the Company is to develop "Ugly Dumpling"
-          concept in London and turn it into a successful sit-down and takeaway
-          business.
-        </Text>
-        <Text style={styles.paragraph}>It is agreed as follows:</Text>
 
-        <Text style={styles.sectionTitle}>1. Interpretation</Text>
-        <Text style={styles.subTitle}>1.1 Definitions</Text>
+        <View style={styles.divider} />
+
+        {/* 1. POSITION */}
+        <Text style={styles.sectionTitle}>1. Position</Text>
         <Text style={styles.paragraph}>
-          In this Agreement the following words and phrases shall have the
-          meanings given below:
+          The Employee is employed as <Text style={styles.bold}>{variables.jobTitle}</Text>.
         </Text>
-        {[
-          '"APPOINTMENT" means the employment of the Team Member by the Company on the terms of this Agreement;',
-          '"BUSINESS" means the restaurant and food & beverage service business of the Company;',
-          '"EMPLOYMENT ACT" means Employment Rights Act 1996;',
-          '"OPERATIONS MANAGER" means Aderito Barros or appointed replacement if applicable;',
-          '"MANAGING DIRECTOR" Philipp Chaykin or appointed replacement if applicable;',
-          '"REMUNERATION" means the remuneration payable under Clause 7.1.',
-        ].map((def, i) => (
+        <Text style={styles.paragraph}>
+          The Employee agrees to perform all duties reasonably required for the role and any additional duties reasonably requested by management consistent with their skills and experience.
+        </Text>
+        <Text style={styles.paragraph}>
+          The Employee agrees to act with honesty, professionalism, and integrity at all times while representing the Company.
+        </Text>
+
+        {/* 2. PLACE OF WORK */}
+        <Text style={styles.sectionTitle}>2. Place of Work</Text>
+        <Text style={styles.paragraph}>
+          The Employee's primary place of work will be:
+        </Text>
+        <View style={styles.infoBox}>
+          <Text style={styles.bold}>{variables.workLocation}</Text>
+        </View>
+        <Text style={styles.paragraph}>
+          Due to the nature of the Company's operations, the Employee may be required to work at any Company location within Greater London where reasonably required by the business.
+        </Text>
+
+        {/* 3. PROBATION PERIOD */}
+        <Text style={styles.sectionTitle}>3. Probation Period</Text>
+        <Text style={styles.paragraph}>
+          Employment is subject to a probation period of <Text style={styles.bold}>{variables.probationPeriod}</Text>.
+        </Text>
+        <Text style={styles.paragraph}>
+          During this period the Company will assess performance, reliability, and suitability for the role.
+        </Text>
+        <Text style={styles.paragraph}>
+          The Company may terminate employment during probation with one week's notice.
+        </Text>
+
+        {/* 4. HOURS OF WORK */}
+        <Text style={styles.sectionTitle}>4. Hours of Work</Text>
+        <Text style={styles.paragraph}>
+          The Employee's hours will vary depending on the operational needs of the business.
+        </Text>
+        <Text style={styles.paragraph}>
+          Working hours will be organised through the Company's rota system.
+        </Text>
+        <Text style={styles.paragraph}>
+          Average weekly hours are expected to be approximately:
+        </Text>
+        <View style={styles.infoBox}>
+          <Text style={styles.bold}>{variables.weeklyHours} hours per week</Text>
+        </View>
+        <Text style={styles.paragraph}>
+          Due to the nature of hospitality operations, shifts may vary week to week.
+        </Text>
+
+        {/* 5. ROTA AND SHIFT CHANGES */}
+        <Text style={styles.sectionTitle}>5. Rota and Shift Changes</Text>
+        <Text style={styles.paragraph}>
+          The Company operates a rota system to allocate shifts. Employees are responsible for checking the rota regularly and attending all scheduled shifts.
+        </Text>
+        <Text style={styles.paragraph}>
+          The Company reserves the right to amend rotas where reasonably required to meet operational needs. Employees may occasionally be asked to adjust shifts at short notice due to operational requirements.
+        </Text>
+
+        {/* 6. COMMUNICATION */}
+        <Text style={styles.sectionTitle}>6. Communication</Text>
+        <Text style={styles.paragraph}>
+          Employees are responsible for regularly checking the Company's communication channels including email, rota software, and internal messaging platforms.
+        </Text>
+        <Text style={styles.paragraph}>
+          Important updates regarding shifts, operations, and company policies may be communicated through these systems. Failure to check communications may result in missed instructions or shifts.
+        </Text>
+
+        <PageFooter />
+      </Page>
+
+      {/* ─── Sections 7–12 ─── */}
+      <Page size="A4" style={styles.page}>
+        <PageHeader />
+
+        {/* 7. SALARY */}
+        <Text style={styles.sectionTitle}>7. Salary</Text>
+        <View style={styles.infoBox}>
+          <Text style={styles.paragraph}>
+            The Employee will be paid <Text style={styles.bold}>£{variables.hourlyRate} per hour</Text>.
+          </Text>
+        </View>
+        <Text style={styles.paragraph}>
+          Salary will be paid monthly in arrears through the Company's payroll system.
+        </Text>
+        <Text style={styles.paragraph}>
+          Salary will be subject to deductions required by law including income tax and National Insurance.
+        </Text>
+        <Text style={styles.paragraph}>
+          Any service charge or tips may be distributed separately according to Company policy.
+        </Text>
+
+        {/* 8. HOLIDAY ENTITLEMENT */}
+        <Text style={styles.sectionTitle}>8. Holiday Entitlement</Text>
+        <Text style={styles.paragraph}>
+          The Employee is entitled to statutory holiday entitlement in accordance with UK law.
+        </Text>
+        <Text style={styles.paragraph}>
+          This is equivalent to 5.6 weeks of paid holiday per year or accrued proportionally depending on hours worked.
+        </Text>
+        <Text style={styles.paragraph}>
+          Holiday must be requested in advance and approved by management.
+        </Text>
+
+        {/* 9. SICKNESS */}
+        <Text style={styles.sectionTitle}>9. Sickness</Text>
+        <Text style={styles.paragraph}>
+          Employees must notify the Company as soon as possible if they are unable to attend work due to illness.
+        </Text>
+        <Text style={styles.paragraph}>
+          Notification must be made before the start of the scheduled shift whenever possible.
+        </Text>
+        <Text style={styles.paragraph}>
+          If absence exceeds three consecutive days, a medical certificate may be required.
+        </Text>
+
+        {/* 10. ATTENDANCE */}
+        <Text style={styles.sectionTitle}>10. Attendance</Text>
+        <Text style={styles.paragraph}>
+          Employees are expected to attend all scheduled shifts.
+        </Text>
+        <Text style={styles.paragraph}>
+          Failure to attend a shift without valid reason may be treated as unauthorised absence and may result in disciplinary action.
+        </Text>
+
+        {/* 11. CONFIDENTIALITY */}
+        <Text style={styles.sectionTitle}>11. Confidentiality</Text>
+        <Text style={styles.paragraph}>
+          Employees must not disclose confidential information relating to the Company including:
+        </Text>
+        {["recipes", "financial information", "operational procedures", "customer data", "business strategies"].map((item, i) => (
           <View key={i} style={styles.bullet}>
             <Text style={styles.bulletDot}>•</Text>
-            <Text style={styles.bulletText}>{def}</Text>
+            <Text style={styles.bulletText}>{item}</Text>
+          </View>
+        ))}
+        <Text style={styles.paragraph}>
+          This obligation continues after employment ends.
+        </Text>
+
+        {/* 12. SECONDARY EMPLOYMENT */}
+        <Text style={styles.sectionTitle}>12. Secondary Employment</Text>
+        <Text style={styles.paragraph}>
+          Employees must obtain written permission from the Company before undertaking other employment that could interfere with their duties or create a conflict of interest.
+        </Text>
+
+        <PageFooter />
+      </Page>
+
+      {/* ─── Sections 13–17 + Signatures ─── */}
+      <Page size="A4" style={styles.page}>
+        <PageHeader />
+
+        {/* 13. DEDUCTIONS FROM WAGES */}
+        <Text style={styles.sectionTitle}>13. Deductions from Wages</Text>
+        <Text style={styles.paragraph}>
+          The Company reserves the right to deduct from wages any sums owed to the Company including:
+        </Text>
+        {["salary overpayments", "training costs", "uniform costs", "losses caused by negligence"].map((item, i) => (
+          <View key={i} style={styles.bullet}>
+            <Text style={styles.bulletDot}>•</Text>
+            <Text style={styles.bulletText}>{item}</Text>
           </View>
         ))}
 
-        <Text style={styles.sectionTitle}>2. Appointment</Text>
-        <View style={styles.infoBox}>
-          <Text style={styles.paragraph}>
-            Upon and subject to the terms of the Appointment, the Company will from
-            the Effective Date employ the Employee as <Text style={styles.bold}>{variables.jobTitle}</Text>,{" "}
-            {reportingLine}.
-          </Text>
-        </View>
+        {/* 14. DATA PROTECTION */}
+        <Text style={styles.sectionTitle}>14. Data Protection</Text>
         <Text style={styles.paragraph}>
-          The responsibilities of the Team Member include, but are not limited
-          to:
+          The Company will process employee data in accordance with the UK GDPR and Data Protection Act 2018.
         </Text>
 
-        {contractType === "foh" && (
-          <>
-            <Text style={styles.subTitle}>Overall Duties</Text>
-            {generalDuties.map((duty, i) => (
-              <View key={i} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{duty}</Text>
-              </View>
-            ))}
-            <Text style={styles.subTitle}>Role Specifics</Text>
-          </>
-        )}
-        {contractType === "kitchen" && (
-          <Text style={styles.subTitle}>Key Responsibilities</Text>
-        )}
-        {responsibilities.map((resp, i) => (
+        {/* 15. DISCIPLINARY PROCEDURE */}
+        <Text style={styles.sectionTitle}>15. Disciplinary Procedure</Text>
+        <Text style={styles.paragraph}>
+          Employees must comply with Company policies and procedures. Serious misconduct may result in disciplinary action including dismissal.
+        </Text>
+        <Text style={styles.paragraph}>
+          Examples of gross misconduct include but are not limited to:
+        </Text>
+        {["theft", "violence", "harassment", "serious insubordination", "working while intoxicated", "breach of food safety regulations"].map((item, i) => (
           <View key={i} style={styles.bullet}>
             <Text style={styles.bulletDot}>•</Text>
-            <Text style={styles.bulletText}>{resp}</Text>
+            <Text style={styles.bulletText}>{item}</Text>
           </View>
         ))}
-        {contractType === "kitchen" && (
-          <>
-            <Text style={styles.subTitle}>General Duties</Text>
-            {generalDuties.map((duty, i) => (
-              <View key={i} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{duty}</Text>
-              </View>
-            ))}
-          </>
-        )}
-        <PageFooter />
-      </Page>
 
-      {/* Terms Page */}
-      <Page size="A4" style={styles.page}>
-        <PageHeader />
-
-        <Text style={styles.sectionTitle}>3. Term of the Agreement</Text>
+        {/* 16. TERMINATION */}
+        <Text style={styles.sectionTitle}>16. Termination</Text>
         <Text style={styles.paragraph}>
-          This Agreement shall be valid and binding from The Effective Date and
-          shall remain in force on the permanent basis unless otherwise agreed
-          during employment or terminated while observing the provisions of the
-          Employment Act.
+          After probation either party may terminate employment by providing notice of:
         </Text>
-
-        <Text style={styles.sectionTitle}>4. Duties During the Appointment</Text>
-        <Text style={styles.paragraph}>
-          4.1 The Team Member will (unless prevented by illness or injury)
-          devote the whole of their working time, attention and abilities during
-          the Appointment to the Business and will not without the prior written
-          consent of the Operations Manager or the Managing Director, as the
-          case may be, accept any other appointment, work for or be directly or
-          indirectly engaged in or concerned with the conduct of any other
-          business.
-        </Text>
-        <Text style={styles.paragraph}>
-          4.2 During the Appointment the Team Member will loyally and diligently
-          perform such duties and exercise such powers for the Business as
-          required; promote and protect the interests of the Business; keep the
-          management properly informed; comply with reasonable and lawful
-          directions; and comply with internal codes of conduct, policies and
-          health and safety obligations.
-        </Text>
-        <Text style={styles.paragraph}>
-          4.3 The Team Member shall not engage in activities that would be
-          unsuitable with their capacity as personnel of the Company.
-        </Text>
-        <Text style={styles.paragraph}>
-          4.4 The Team Member shall ensure that their conduct abides by
-          statutory and regulatory obligations under applicable UK laws.
-        </Text>
-        <Text style={styles.paragraph}>
-          4.5 Unless they have prior written consent, the Team Member will not
-          directly or indirectly receive or retain any payment or benefit in
-          respect of any business transacted by or on behalf of the Business.
-        </Text>
-        <Text style={styles.paragraph}>
-          4.6 The Team Member agrees to the Company holding and processing
-          personal data in compliance with UK GDPR and Data Protection Act 2018.
-        </Text>
-
-        <Text style={styles.sectionTitle}>5. Place of Performance</Text>
         <View style={styles.infoBox}>
-          <Text style={styles.paragraph}>
-            The Team Member shall perform their duties at: <Text style={styles.bold}>{variables.workLocation}</Text>.
-          </Text>
+          <Text style={styles.bold}>{variables.noticePeriod}</Text>
         </View>
         <Text style={styles.paragraph}>
-          However, the Team Member hereby accepts that they may be required to
-          work in another location within Greater London at the sole discretion
-          of the Company.
+          The Company reserves the right to make payment in lieu of notice where appropriate.
         </Text>
 
-        <Text style={styles.sectionTitle}>6. Hours of Work</Text>
+        {/* 17. ENTIRE AGREEMENT */}
+        <Text style={styles.sectionTitle}>17. Entire Agreement</Text>
         <Text style={styles.paragraph}>
-          The Team Member shall work on days and during hours to be mutually
-          agreed between the Parties, taking into account the operational needs
-          of the Business and in accordance with the Employment Rights Act 1996.
-          The expected average working hours shall be approximately{" "}
-          <Text style={styles.bold}>{variables.weeklyHours} hours per week</Text>.
-        </Text>
-        <Text style={styles.paragraph}>
-          Due to the nature of the hospitality industry, working hours may vary
-          from week to week depending on business demands.
-        </Text>
-        <PageFooter />
-      </Page>
-
-      {/* Salary, Holiday, Termination */}
-      <Page size="A4" style={styles.page}>
-        <PageHeader />
-
-        <Text style={styles.sectionTitle}>7. Salary and Other Benefits</Text>
-        <Text style={styles.subTitle}>7.1 Salary</Text>
-        <View style={styles.infoBox}>
-          <Text style={styles.paragraph}>
-            The Company will pay to the Team Member a salary from the Effective
-            Date in the amount of <Text style={styles.bold}>£{variables.hourlyRate} per hour</Text> (including
-            service charge, which is paid separately and is not used to meet
-            minimum wage obligations).
-          </Text>
-        </View>
-        <Text style={styles.paragraph}>
-          The Salary will be payable by equal monthly instalments in arrears and
-          will be subject to such deductions as may be required by law.
-        </Text>
-        <Text style={styles.paragraph}>
-          Any increase in salary is related to both Company and individual
-          performance and is at the sole discretion of the Company.
-        </Text>
-        <Text style={styles.paragraph}>
-          The Team Member acknowledges and agrees that their salary is a
-          confidential matter.
+          This agreement constitutes the entire agreement between the Parties and supersedes any previous discussions or agreements.
         </Text>
 
-        <Text style={styles.subTitle}>7.2 National Insurance</Text>
-        <Text style={styles.paragraph}>
-          The Company shall be responsible to withhold, where appropriate, and
-          pay both the Company and the Team Member national insurance
-          contributions.
-        </Text>
-
-        <Text style={styles.sectionTitle}>8. Sickness or Injury</Text>
-        <Text style={styles.paragraph}>
-          In the event of absence or lateness, the Team Member must notify the
-          Company without delay. If absence exceeds 3 working days, a medical
-          report must be provided.
-        </Text>
-
-        <Text style={styles.sectionTitle}>9. Holidays</Text>
-        <Text style={styles.paragraph}>
-          The Team Member shall be entitled to annual paid leave calculated based
-          on {variables.weeklyHours} hours of work per week. The Team Member
-          shall accrue annual holidays on the basis of 1/12th of the annual
-          entitlement for each complete month of work in the holiday year.
-        </Text>
-        <Text style={styles.paragraph}>
-          Holiday shall be taken at times mutually convenient to the Company and
-          the Team Member, according to the Employment Act and Company policy.
-        </Text>
-        <Text style={styles.paragraph}>
-          On termination, the Team Member will be entitled to payment for
-          accrued but untaken holiday. If holiday has been taken in excess, the
-          Company may deduct accordingly.
-        </Text>
-
-        <Text style={styles.sectionTitle}>10. Termination</Text>
-        <View style={styles.infoBox}>
-          <Text style={styles.paragraph}>
-            10.1 Each Party may terminate the Agreement by serving{" "}
-            <Text style={styles.bold}>{variables.noticePeriod}</Text> prior written termination notice. A probation period of{" "}
-            <Text style={styles.bold}>{variables.probationPeriod}</Text> will be in place. During this period, both parties can terminate with reduced notice.
-          </Text>
-        </View>
-        <Text style={styles.paragraph}>
-          10.2 Upon termination, the Team Member will hand over all Company
-          property and not retain copies.
-        </Text>
-        <Text style={styles.paragraph}>
-          10.3 After termination, the Team Member will not make adverse or untrue
-          statements about the Company.
-        </Text>
-        <PageFooter />
-      </Page>
-
-      {/* Confidentiality, Non-Compete, Signatures */}
-      <Page size="A4" style={styles.page}>
-        <PageHeader />
-
-        <Text style={styles.sectionTitle}>
-          11. Confidentiality and Intellectual Property
-        </Text>
-        <Text style={styles.paragraph}>
-          The Team Member shall keep all Confidential Information in strict
-          confidence at all times, both during employment and after termination,
-          and will not disclose it to any third party or use it for any purpose
-          other than carrying out their work for the Company. This includes food
-          recipes, client information, marketing plans, financial matters, and
-          employee information.
-        </Text>
-        <Text style={styles.paragraph}>
-          This restriction shall not apply to information that becomes public
-          knowledge or was known prior to disclosure.
-        </Text>
-        <Text style={styles.paragraph}>
-          Breach of confidentiality may result in immediate termination.
-        </Text>
-
-        <Text style={styles.sectionTitle}>12. Non-Compete</Text>
-        <Text style={styles.paragraph}>
-          12.1 The Team Member undertakes to use their full working capacity
-          exclusively for the Company. Additional work requires explicit written
-          approval.
-        </Text>
-        <Text style={styles.paragraph}>
-          12.2 The Team Member undertakes that during employment and for two
-          years after termination, they shall not be engaged in any directly
-          competitive business within Greater London.
-        </Text>
-
+        {/* ─── SIGNATURES ─── */}
         <View style={styles.signatureSection}>
-          <Text style={styles.paragraph}>
-            IN WITNESS WHEREOF, the Parties hereto have executed this Agreement.
-          </Text>
-
-          <Text style={{ ...styles.paragraph, marginTop: 10 }}>
-            Date: ___________________
-          </Text>
+          <View style={styles.divider} />
+          <Text style={{ ...styles.sectionTitle, color: DARK }}>Signatures</Text>
 
           <View style={styles.twoCol}>
             <View style={styles.col}>
-              <Text style={styles.bold}>UD RESTAURANTS LTD</Text>
-              <Text>By: Aderito P. Barros</Text>
-              <Text>Title: Operations Manager</Text>
+              <Text style={styles.bold}>Employer</Text>
+              <Text>UD Restaurants Ltd</Text>
               <View style={styles.signatureLine} />
               <Text style={styles.signatureLabel}>Signature</Text>
             </View>
             <View style={styles.col}>
-              <Text style={styles.bold}>Team Member</Text>
+              <Text style={styles.bold}>Employee</Text>
               <Text>{variables.employeeName}</Text>
               <View style={styles.signatureLine} />
               <Text style={styles.signatureLabel}>Signature</Text>
             </View>
           </View>
+
+          <Text style={{ ...styles.paragraph, marginTop: 20 }}>
+            Date: ___________________
+          </Text>
         </View>
-        <PageFooter />
-      </Page>
 
-      {/* Additional Clauses */}
-      <Page size="A4" style={styles.page}>
-        <PageHeader />
-
-        <Text style={styles.sectionTitle}>Pension Enrolment</Text>
-        <Text style={styles.paragraph}>
-          You will be automatically enrolled into a qualifying workplace pension
-          scheme if eligible, in accordance with the Pensions Act 2008.
-        </Text>
-
-        <Text style={styles.sectionTitle}>
-          Grievance and Disciplinary Procedures
-        </Text>
-        <Text style={styles.paragraph}>
-          You are subject to the Company's grievance and disciplinary procedures,
-          updated as necessary in accordance with UK employment law.
-        </Text>
-
-        <Text style={styles.sectionTitle}>Right to Work</Text>
-        <Text style={styles.paragraph}>
-          Your employment is subject to confirmation that you have the legal
-          right to work in the United Kingdom.
-        </Text>
-
-        <Text style={styles.sectionTitle}>
-          Holiday Entitlement (Clarification)
-        </Text>
-        <Text style={styles.paragraph}>
-          This includes your statutory entitlement under the Working Time
-          Regulations 1998, currently 5.6 weeks' paid leave (inclusive of public
-          holidays), pro rata.
-        </Text>
-
-        {contractType === "kitchen" && (
-          <>
-            <Text style={styles.sectionTitle}>Uniform and Dress Code</Text>
-            <Text style={styles.paragraph}>
-              You are required to wear the uniform provided by the Company while
-              on duty and to maintain its cleanliness and presentation.
-            </Text>
-
-            <Text style={styles.sectionTitle}>
-              Training and Certification
-            </Text>
-            <Text style={styles.paragraph}>
-              You agree to undertake any reasonable training required for the
-              role, including food hygiene, safety, allergen management, and
-              first aid.
-            </Text>
-
-            <Text style={styles.sectionTitle}>Performance Reviews</Text>
-            <Text style={styles.paragraph}>
-              You will be subject to regular performance reviews and development
-              meetings.
-            </Text>
-
-            <Text style={styles.sectionTitle}>
-              Service Charge and Minimum Wage Guarantee
-            </Text>
-            <Text style={styles.paragraph}>
-              Your basic rate of pay will always meet or exceed the National
-              Minimum Wage as set by UK law.
-            </Text>
-
-            <Text style={styles.sectionTitle}>
-              Notice Period Post-Probation
-            </Text>
-            <Text style={styles.paragraph}>
-              Following successful completion of the probation period, the
-              notice period required from either party shall remain{" "}
-              {variables.noticePeriod}, unless otherwise agreed in writing.
-            </Text>
-          </>
-        )}
         <PageFooter />
       </Page>
     </Document>
