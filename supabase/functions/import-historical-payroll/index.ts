@@ -78,7 +78,7 @@ const NAME_MAP: Record<string, { forename: string; surname: string }> = {
   "wing|lee": { forename: "Wing", surname: "Lee" },
   "ling|chak": { forename: "Ling", surname: "Chak" },
   "kitty|oil lan": { forename: "Kitty", surname: "Oil Lan" },
-  "mei li (tammy)|khong": { forename: "Kitty", surname: "Oil Lan" }, // Tammy mapped to Kitty? No, Tammy is different
+  "mei li (tammy)|khong": { forename: "Tammy", surname: "Khong" },
   "lorna|lau": { forename: "Lorna", surname: "Lau" },
   "arun|": { forename: "Arun", surname: "Thota" },
   "arun|thota": { forename: "Arun", surname: "Thota" },
