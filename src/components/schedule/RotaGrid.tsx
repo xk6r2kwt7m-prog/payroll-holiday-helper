@@ -352,8 +352,8 @@ export function RotaGrid({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr>
-                <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[160px] sticky left-0 bg-card z-10">
+              <tr className="border-b-2 border-border">
+                <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[170px] sticky left-0 bg-card z-10">
                   Employee
                 </th>
                 {weekDays.map((day) => {
