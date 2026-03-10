@@ -1,4 +1,4 @@
-import { Users, DollarSign, Calendar, Clock, FileText, Percent, Search, CreditCard, Shield, TrendingUp, ChevronRight, ArrowRight, Utensils, ChefHat, Factory } from "lucide-react";
+import { Users, DollarSign, Calendar, Clock, FileText, Percent, Search, CreditCard, Shield, TrendingUp, ChevronRight, ArrowRight, Utensils, ChefHat, Factory, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocumentsWidget";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
+import { useAllEmployeeBranches, BRANCHES, BRANCH_EMOJI } from "@/hooks/useBranches";
 
 const Index = () => {
   const { data: employees = [] } = useEmployees();
