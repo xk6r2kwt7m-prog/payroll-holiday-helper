@@ -1,4 +1,4 @@
-import { Users, DollarSign, Calendar, Clock, FileText, Percent, Search, CreditCard, Shield, TrendingUp, ChevronRight, ArrowRight, Utensils, ChefHat, Factory } from "lucide-react";
+import { Users, DollarSign, Calendar, Clock, FileText, Percent, Search, CreditCard, Shield, TrendingUp, ChevronRight, ArrowRight, Utensils, ChefHat, Factory, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocumentsWidget";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
+import { useAllEmployeeBranches, BRANCHES, BRANCH_EMOJI } from "@/hooks/useBranches";
 
 const Index = () => {
   const { data: employees = [] } = useEmployees();
@@ -19,6 +20,7 @@ const Index = () => {
   const latestPeriod = periods[0];
   const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
   const { data: audit } = usePayrollAudit();
+  const { data: employeeBranches = [] } = useAllEmployeeBranches();
   const navigate = useNavigate();
 
   const activeEmployees = employees.filter(e => e.status === "active").length;
@@ -308,19 +310,21 @@ const Index = () => {
                       </div>
                     </div>
 
-                    {/* Metrics — clearly separated */}
-                    <div className="grid grid-cols-3 divide-x divide-border">
-                      <div className="text-center px-2 py-2">
-                        <p className="text-2xl font-bold text-foreground tabular-nums leading-none">{count}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mt-2">Staff</p>
+                    {/* Metrics — stacked rows for clarity */}
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Staff</span>
+                        <span className="text-lg font-bold text-foreground tabular-nums">{count}</span>
                       </div>
-                      <div className="text-center px-2 py-2">
-                        <p className="text-2xl font-bold text-foreground tabular-nums leading-none">{formatHours(deptHours)}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mt-2">Hours</p>
+                      <div className="h-px bg-border" />
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Hours</span>
+                        <span className="text-lg font-bold text-foreground tabular-nums">{formatHours(deptHours)}</span>
                       </div>
-                      <div className="text-center px-2 py-2">
-                        <p className="text-lg font-bold text-foreground tabular-nums leading-none mt-0.5">{formatCurrency(deptPay)}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mt-2">Cost</p>
+                      <div className="h-px bg-border" />
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cost</span>
+                        <span className="text-lg font-bold text-foreground tabular-nums">{formatCurrency(deptPay)}</span>
                       </div>
                     </div>
                   </Link>
@@ -394,7 +398,60 @@ const Index = () => {
           </div>
         </motion.section>
 
-        {/* ─── 4. OPERATIONS ─── */}
+        {/* ─── 3b. LOCATION OVERVIEW ─── */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.25 }}
+        >
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Locations</h2>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            {BRANCHES.map((branch) => {
+              // Find employees assigned to this branch
+              const branchEmployeeIds = employeeBranches
+                .filter(eb => eb.branch === branch)
+                .map(eb => eb.employee_id);
+              const branchEmployees = employees.filter(e => e.status === "active" && branchEmployeeIds.includes(e.id));
+              const staffCount = branchEmployees.length;
+
+              // Payroll entries for branch employees
+              const branchEntries = entries.filter((e: any) => branchEmployeeIds.includes(e.employee_id));
+              const branchHours = branchEntries.reduce((s: number, e: any) => s + Number(e.timesheet_hours), 0);
+              const branchCost = branchEntries.reduce((s: number, e: any) => s + Number(e.total_pay), 0);
+
+              return (
+                <Link
+                  key={branch}
+                  to={`/locations`}
+                  className="rounded-xl bg-card border border-border p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group"
+                >
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-lg">
+                      {BRANCH_EMOJI[branch]}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground text-sm tracking-tight">{branch}</h3>
+                      <p className="text-[11px] text-muted-foreground leading-none mt-0.5">{staffCount} active staff</p>
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Hours</span>
+                      <span className="text-lg font-bold text-foreground tabular-nums">{formatHours(branchHours)}</span>
+                    </div>
+                    <div className="h-px bg-border" />
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cost</span>
+                      <span className="text-lg font-bold text-foreground tabular-nums">{formatCurrency(branchCost)}</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </motion.section>
+
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
