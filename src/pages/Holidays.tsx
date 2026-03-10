@@ -39,7 +39,7 @@ import {
 
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
-type LeaveYear = "2023" | "2024" | "2025" | "2026";
+type LeaveYear = "2022" | "2023" | "2024" | "2025" | "2026";
 type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity";
 
 interface EmployeeSummary {
@@ -531,7 +531,11 @@ const Holidays = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
           <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <TabsList className="grid w-full sm:w-auto grid-cols-4">
+              <TabsList className="grid w-full sm:w-auto grid-cols-5">
+                <TabsTrigger value="2022" className="gap-2">
+                  <Calendar className="h-4 w-4" />
+                  2022
+                </TabsTrigger>
                 <TabsTrigger value="2023" className="gap-2">
                   <Calendar className="h-4 w-4" />
                   2023
