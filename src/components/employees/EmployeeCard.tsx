@@ -57,28 +57,24 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
   return (
     <div
       className={cn(
-        "group rounded-xl bg-card p-4 sm:p-5 shadow-card transition-all duration-200",
-        "hover:shadow-elevated sm:hover:-translate-y-1 hover:border-primary/20 border border-transparent",
-        "animate-fade-in active:scale-[0.98] sm:active:scale-100"
+        "group rounded-xl bg-card p-5 shadow-sm transition-all duration-200",
+        "hover:shadow-md sm:hover:-translate-y-0.5 hover:border-primary/20 border border-border",
+        "animate-fade-in"
       )}
       style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <Avatar className="h-11 w-11 sm:h-14 sm:w-14 ring-2 ring-background shadow-md transition-transform group-hover:scale-105">
-          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-lg">
+        <Avatar className="h-12 w-12 ring-2 ring-background shadow-sm">
+          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-base">
             {employee.forename[0]}{employee.surname[0]}
           </AvatarFallback>
         </Avatar>
         
         <div className="flex items-center gap-2">
-          <span className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium",
-            departmentStyles[employee.department]
-          )}>
-            <span>{departmentEmoji[employee.department]}</span>
-            {employee.department}
-          </span>
+          <Badge variant="outline" className={cn("text-[11px] font-medium", statusStyles[employee.status])}>
+            {statusLabels[employee.status]}
+          </Badge>
           
           {isAdmin && (
             <DropdownMenu>
@@ -110,36 +106,39 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
         </div>
       </div>
 
-      {/* Name & Status */}
-      <div className="space-y-2 mb-4">
+      {/* Name & Department */}
+      <div className="space-y-1.5 mb-4">
+        <h3 className="font-bold text-foreground text-lg leading-tight truncate">
+          {employee.forename} {employee.surname}
+        </h3>
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-card-foreground text-lg truncate">
-            {employee.forename} {employee.surname}
-          </h3>
-          <Badge variant="outline" className={cn("text-xs", statusStyles[employee.status])}>
-            {statusLabels[employee.status]}
-          </Badge>
+          <span className={cn(
+            "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
+            departmentStyles[employee.department]
+          )}>
+            <span>{departmentEmoji[employee.department]}</span>
+            {employee.department}
+          </span>
+          {employee.employee_ref && (
+            <span className="text-xs text-muted-foreground font-mono">
+              #{employee.employee_ref}
+            </span>
+          )}
         </div>
-        
-        {employee.employee_ref && (
-          <p className="text-xs text-muted-foreground font-mono">
-            #{employee.employee_ref}
-          </p>
-        )}
       </div>
 
       {/* Pay Info — Admin only */}
       {canViewSensitive && (
-        <div className="grid grid-cols-2 gap-3 py-3 border-t border-b border-border">
+        <div className="grid grid-cols-2 gap-4 py-3 border-t border-border">
           <div>
-            <p className="text-xs text-muted-foreground mb-0.5">Hourly Rate</p>
-            <p className="text-sm font-semibold text-card-foreground">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Hourly Rate</p>
+            <p className="text-sm font-bold text-foreground">
               {formatCurrency(Number(employee.hourly_rate))}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-0.5">Service Charge</p>
-            <p className="text-sm font-semibold text-card-foreground">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Service Charge</p>
+            <p className="text-sm font-bold text-foreground">
               {formatCurrency(Number(employee.service_charge || 0))}
             </p>
           </div>
@@ -194,9 +193,9 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex-1 transition-all hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                className="flex-1 text-xs"
               >
-                <Edit2 className="h-4 w-4 mr-1.5" />
+                <Edit2 className="h-3.5 w-3.5 mr-1.5" />
                 Edit
               </Button>
             }
@@ -205,9 +204,9 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
             variant="outline"
             size="sm"
             onClick={() => onViewDetails(employee)}
-            className="transition-all hover:bg-accent hover:text-accent-foreground hover:border-accent"
+            className="text-xs"
           >
-            <Eye className="h-4 w-4" />
+            <Eye className="h-3.5 w-3.5" />
           </Button>
         </div>
       )}

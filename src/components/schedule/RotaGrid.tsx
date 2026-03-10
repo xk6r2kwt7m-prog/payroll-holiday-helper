@@ -352,8 +352,8 @@ export function RotaGrid({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr>
-                <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[160px] sticky left-0 bg-card z-10">
+              <tr className="border-b-2 border-border">
+                <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[170px] sticky left-0 bg-card z-10">
                   Employee
                 </th>
                 {weekDays.map((day) => {
@@ -366,8 +366,8 @@ export function RotaGrid({
                     <th
                       key={day.toISOString()}
                       className={cn(
-                        "text-center p-1.5 text-xs font-medium min-w-[120px]",
-                        isToday(day) ? "bg-primary/10" : ""
+                        "text-center p-2 text-xs font-medium min-w-[130px]",
+                        isToday(day) ? "bg-primary/5" : ""
                       )}
                     >
                       <div className={cn(
@@ -402,8 +402,8 @@ export function RotaGrid({
                 const weeklyCost = weeklyHours * hourlyRate;
 
                 return (
-                  <tr key={emp.id} className="border-t border-border">
-                    <td className="p-2 text-xs font-medium sticky left-0 bg-card z-10">
+                  <tr key={emp.id} className="border-t border-border hover:bg-muted/20 transition-colors">
+                    <td className="p-3 text-xs font-medium sticky left-0 bg-card z-10">
                       <div className="flex items-center gap-2">
                         <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[11px] font-bold shrink-0">
                           {emp.forename[0]}{emp.surname?.[0] || ""}
