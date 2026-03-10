@@ -285,7 +285,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                           : "border-border bg-card text-foreground hover:border-primary/30"
                       }`}
                     >
-                      {opt.value === "foh" ? "🍽️" : "👨‍🍳"} {opt.label}
+                      {opt.emoji} {opt.label}
                     </button>
                   ))}
                 </div>
