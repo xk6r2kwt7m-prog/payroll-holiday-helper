@@ -403,7 +403,7 @@ export function RotaGrid({
 
                 return (
                   <tr key={emp.id} className="border-t border-border hover:bg-muted/20 transition-colors">
-                    <td className="p-2 text-xs font-medium sticky left-0 bg-card z-10">
+                    <td className="p-3 text-xs font-medium sticky left-0 bg-card z-10">
                       <div className="flex items-center gap-2">
                         <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[11px] font-bold shrink-0">
                           {emp.forename[0]}{emp.surname?.[0] || ""}
