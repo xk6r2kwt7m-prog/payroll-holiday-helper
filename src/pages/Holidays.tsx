@@ -67,12 +67,14 @@ const Holidays = () => {
   const { data: periods = [] } = usePayrollPeriods();
 
   // Holiday payments by year
+  const { data: payments2022 = [] } = useHolidayPaymentsByYear(2022);
   const { data: payments2023 = [] } = useHolidayPaymentsByYear(2023);
   const { data: payments2024 = [] } = useHolidayPaymentsByYear(2024);
   const { data: payments2025 = [] } = useHolidayPaymentsByYear(2025);
   const { data: payments2026 = [] } = useHolidayPaymentsByYear(2026);
 
   // Holiday balances for integrity check
+  const { data: balances2022 = [] } = useHolidayBalancesByYear(2022);
   const { data: balances2023 = [] } = useHolidayBalancesByYear(2023);
   const { data: balances2024 = [] } = useHolidayBalancesByYear(2024);
   const { data: balances2025 = [] } = useHolidayBalancesByYear(2025);
