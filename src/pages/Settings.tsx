@@ -280,6 +280,10 @@ const Settings = () => {
             )}
           </Button>
         </div>
+
+        {/* Historical Data Import */}
+        <Separator />
+        <HistoricalImport />
       </div>
     </AppLayout>
   );
