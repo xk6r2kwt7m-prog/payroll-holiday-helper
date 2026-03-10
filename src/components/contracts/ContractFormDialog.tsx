@@ -338,7 +338,16 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1.5 block">Job Title *</Label>
-                      <Input value={variables.jobTitle} onChange={(e) => updateField("jobTitle", e.target.value)} className="bg-card" />
+                      <Select value={variables.jobTitle} onValueChange={(v) => updateField("jobTitle", v)}>
+                        <SelectTrigger className="bg-card">
+                          <SelectValue placeholder="Select job title..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(JOB_TITLES[contractType] || []).map((title) => (
+                            <SelectItem key={title} value={title}>{title}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div>
