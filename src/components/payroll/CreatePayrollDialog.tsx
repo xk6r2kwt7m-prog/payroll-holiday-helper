@@ -112,21 +112,35 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     }
   };
 
-  const autoCalcWeeks = (start: string, end: string) => {
-    if (start && end) {
-      const days = (new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24) + 1;
-      setPeriodWeeks((Math.round((days / 7) * 10) / 10).toString());
-    }
+  const getLastThursday = (year: number, month: number): string => {
+    const lastDay = new Date(year, month + 1, 0);
+    const dayOfWeek = lastDay.getDay();
+    const diff = (dayOfWeek + 7 - 4) % 7;
+    const lastThursday = new Date(lastDay);
+    lastThursday.setDate(lastDay.getDate() - diff);
+    return lastThursday.toISOString().split('T')[0];
+  };
+
+  const deriveFromDates = (start: string, end: string) => {
+    if (!start || !end) return;
+    const s = new Date(start);
+    const e = new Date(end);
+    const days = (e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24) + 1;
+    setPeriodWeeks((Math.round((days / 7) * 10) / 10).toString());
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+    setPeriodName(`${monthNames[e.getMonth()]} ${e.getFullYear()}`);
+    setPayDate(getLastThursday(e.getFullYear(), e.getMonth()));
   };
 
   const handleStartDateChange = (val: string) => {
     setStartDate(val);
-    autoCalcWeeks(val, endDate);
+    deriveFromDates(val, endDate);
   };
 
   const handleEndDateChange = (val: string) => {
     setEndDate(val);
-    autoCalcWeeks(startDate, val);
+    deriveFromDates(startDate, val);
   };
 
   const resetForm = () => {
@@ -142,7 +156,6 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
 
   const isLoading = createPeriod.isPending || copyPeriod.isPending;
 
-  // Auto-suggest next month dates when copying
   const handleSourceChange = (periodId: string) => {
     setSelectedSourcePeriod(periodId);
     const source = periods.find(p => p.id === periodId);
@@ -150,22 +163,25 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
       const sourceEnd = new Date(source.end_date);
       const nextStart = new Date(sourceEnd);
       nextStart.setDate(nextStart.getDate() + 1);
+      
+      // Find next cut-off Sunday (end of ~4 week period)
       const nextEnd = new Date(nextStart);
       nextEnd.setMonth(nextEnd.getMonth() + 1);
       nextEnd.setDate(nextEnd.getDate() - 1);
+      // Adjust to nearest Sunday
+      const dow = nextEnd.getDay();
+      if (dow !== 0) {
+        nextEnd.setDate(nextEnd.getDate() - dow);
+      }
 
       const sDate = nextStart.toISOString().split('T')[0];
       const eDate = nextEnd.toISOString().split('T')[0];
       setStartDate(sDate);
       setEndDate(eDate);
-      autoCalcWeeks(sDate, eDate);
-      
-      // Suggest period name
-      const monthNames = ["January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"];
-      setPeriodName(`${monthNames[nextStart.getMonth()]} ${nextStart.getFullYear()}`);
+      deriveFromDates(sDate, eDate);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
