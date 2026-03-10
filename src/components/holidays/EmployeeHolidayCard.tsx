@@ -59,9 +59,9 @@ export function EmployeeHolidayCard({
   return (
     <div
       className={cn(
-        "rounded-xl bg-card shadow-card border border-transparent overflow-hidden",
+        "rounded-xl bg-card shadow-sm border border-border overflow-hidden",
         "transition-all duration-300 animate-fade-in",
-        "hover:shadow-elevated hover:border-primary/20"
+        "hover:shadow-md hover:border-primary/20"
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >
