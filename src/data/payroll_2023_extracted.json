@@ -820,8 +820,33 @@
     { "employee": "Tamar Rios", "period": "November 2023", "from": 10.50, "to": 11.00 },
     { "employee": "Endea Stratcham", "period": "October 2023", "from": 10.00, "to": 10.50 }
   ],
+  "rate_changes_q1": [
+    { "employee": "Tamar Molina Rios", "period": "February 2023", "note": "pay increase £10.5", "from": 10.00, "to": 10.50 },
+    { "employee": "Durba Chandan", "period": "January 2023", "note": "pay increase £10", "from": null, "to": 10.00 },
+    { "employee": "Rochelle Jayaraj", "period": "February 2023", "note": "pay increase £10", "from": 9.50, "to": 10.00 },
+    { "employee": "Bruno Martins", "period": "January 2023", "note": "pay rise 10", "from": null, "to": 10.00 },
+    { "employee": "Wai Pink (Jess) Cham", "period": "February 2023", "note": "pay increase to NMW", "from": 9.50, "to": 10.42 },
+    { "employee": "Kitty Oil Lan", "period": "February 2023", "note": "pay increase to NMW", "from": 9.50, "to": 10.42 },
+    { "employee": "Adalgisa Vargas Feliz", "period": "February 2023", "note": "pay increase to NMW", "from": 10.00, "to": 10.42 },
+    { "employee": "Ling Chak", "period": "February 2023", "note": "pay increase to NMW", "from": 9.50, "to": 10.42 },
+    { "employee": "Mei Li (Tammy) Khong", "period": "February 2023", "note": "pay increase to NMW", "from": 10.00, "to": 10.42 },
+    { "employee": "Endea Stractchan", "period": "March 2023", "note": "pay rise 10", "from": 9.00, "to": 10.00 },
+    { "employee": "Durba Chandan", "period": "March 2023", "note": "Pay rise NMW", "from": 10.00, "to": 10.42 },
+    { "employee": "Lorna Lau", "period": "March 2023", "note": "Pay rise NMW", "from": 10.00, "to": 10.42 },
+    { "employee": "Setareh Saeedfar", "period": "March 2023", "note": "payrise 12.5", "from": 10.70, "to": 12.50 },
+    { "employee": "Adriana Baca", "period": "March 2023", "note": "Pay rise NMW", "from": 10.00, "to": 10.42 },
+    { "employee": "Heidy Ramos", "period": "March 2023", "note": "service charge increase to 2", "from_sc": 1.00, "to_sc": 2.00 },
+    { "employee": "Hannah Lauber", "period": "March 2023", "note": "ss increase to 1", "from_sc": 0.50, "to_sc": 1.00 },
+    { "employee": "Roger Rodriguez", "period": "March 2023", "note": "Pay rise NMW", "from": 10.00, "to": 10.42 },
+    { "employee": "Hafiz Abdur Rahim", "period": "March 2023", "note": "pay rise NMW", "from": 9.50, "to": 10.42 },
+    { "employee": "Olga Chala Quilumba", "period": "March 2023", "note": "Pay rise NMW", "from": 10.00, "to": 10.42 },
+    { "employee": "Anny Belkys Matos", "period": "March 2023", "note": "pay rise NMW (implied)", "from": 9.50, "to": 10.42 },
+    { "employee": "Arun", "period": "March 2023", "note": "Pay rise NMW", "from": 9.50, "to": 10.42 },
+    { "employee": "Saicharan Manapalli", "period": "March 2023", "note": "NMW (implied)", "from": 10.00, "to": 10.42 }
+  ],
   "annual_summary": {
-    "total_payroll_all_periods": "Sum of 9 months: £382,163.17 (payroll) + £6,192.28 (incentives) + £30,568.48 (holidays) = £420,477.93 (grand total)",
-    "note": "Missing Jan-Mar 2023 payroll. User to provide remaining 3 months."
+    "total_payroll_all_periods": "Sum of 12 months: £505,119.20 (payroll) + £7,572.28 (incentives) + £43,014.24 (holidays) = £557,259.72 (grand total)",
+    "periods_covered": "January 2023 – December 2023 (complete year)",
+    "note": "All 12 monthly payroll files extracted. Data is complete for full-year 2023."
   }
 }
