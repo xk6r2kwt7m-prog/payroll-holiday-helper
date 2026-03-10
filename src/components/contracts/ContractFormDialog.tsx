@@ -41,6 +41,7 @@ import type { ContractVariables, ContractType, EmploymentType } from "./contract
 import {
   CONTRACT_TYPE_OPTIONS,
   EMPLOYMENT_TYPE_OPTIONS,
+  JOB_TITLES,
   WORK_LOCATIONS,
   getDefaultJobTitle,
   getEmploymentTypeLabel,

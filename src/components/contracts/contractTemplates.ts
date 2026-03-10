@@ -23,16 +23,58 @@ export function getEmploymentTypeLabel(type: EmploymentType): string {
   return EMPLOYMENT_TYPE_OPTIONS.find((o) => o.value === type)?.label || type;
 }
 
-// Keep ContractType for backward compat in form (FOH vs Kitchen selection)
-export type ContractType = "foh" | "kitchen";
+// Department selection for contract form
+export type ContractType = "foh" | "kitchen" | "management" | "supervisor";
 
-export const CONTRACT_TYPE_OPTIONS: { value: ContractType; label: string }[] = [
-  { value: "foh", label: "Front of House (FOH)" },
-  { value: "kitchen", label: "Kitchen / Back of House (BOH)" },
+export const CONTRACT_TYPE_OPTIONS: { value: ContractType; label: string; emoji: string }[] = [
+  { value: "foh", label: "Front of House (FOH)", emoji: "🍽️" },
+  { value: "kitchen", label: "Kitchen / Back of House (BOH)", emoji: "👨‍🍳" },
+  { value: "management", label: "Management", emoji: "👔" },
+  { value: "supervisor", label: "Supervisor", emoji: "📋" },
 ];
 
+// Pre-built job titles grouped by department
+export const JOB_TITLES: Record<ContractType, string[]> = {
+  foh: [
+    "Front of House Team Member",
+    "Waiter",
+    "Waitress",
+    "Wrapper",
+    "Wrapper Team Member",
+    "Host / Hostess",
+    "Runner",
+    "Barista",
+    "Bar Staff",
+    "Cashier",
+  ],
+  kitchen: [
+    "Kitchen Team Member",
+    "Chef",
+    "Line Chef",
+    "Sous Chef",
+    "Kitchen Porter",
+    "Prep Chef",
+    "Commis Chef",
+    "Pastry Chef",
+  ],
+  management: [
+    "Restaurant Manager",
+    "Assistant Manager",
+    "Kitchen Manager",
+    "General Manager",
+    "Area Manager",
+    "Operations Manager",
+  ],
+  supervisor: [
+    "FOH Supervisor",
+    "Kitchen Supervisor",
+    "Shift Supervisor",
+    "Team Leader",
+  ],
+};
+
 export function getDefaultJobTitle(type: ContractType) {
-  return type === "foh" ? "Front of House Team Member" : "Kitchen Team Member";
+  return JOB_TITLES[type]?.[0] || "Team Member";
 }
 
 export const WORK_LOCATIONS = [
