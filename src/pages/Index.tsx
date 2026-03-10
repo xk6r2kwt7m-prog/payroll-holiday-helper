@@ -310,19 +310,21 @@ const Index = () => {
                       </div>
                     </div>
 
-                    {/* Metrics — clearly separated */}
-                    <div className="grid grid-cols-3 divide-x divide-border">
-                      <div className="text-center px-2 py-2">
-                        <p className="text-2xl font-bold text-foreground tabular-nums leading-none">{count}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mt-2">Staff</p>
+                    {/* Metrics — stacked rows for clarity */}
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Staff</span>
+                        <span className="text-lg font-bold text-foreground tabular-nums">{count}</span>
                       </div>
-                      <div className="text-center px-2 py-2">
-                        <p className="text-2xl font-bold text-foreground tabular-nums leading-none">{formatHours(deptHours)}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mt-2">Hours</p>
+                      <div className="h-px bg-border" />
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Hours</span>
+                        <span className="text-lg font-bold text-foreground tabular-nums">{formatHours(deptHours)}</span>
                       </div>
-                      <div className="text-center px-2 py-2">
-                        <p className="text-lg font-bold text-foreground tabular-nums leading-none mt-0.5">{formatCurrency(deptPay)}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mt-2">Cost</p>
+                      <div className="h-px bg-border" />
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cost</span>
+                        <span className="text-lg font-bold text-foreground tabular-nums">{formatCurrency(deptPay)}</span>
                       </div>
                     </div>
                   </Link>
