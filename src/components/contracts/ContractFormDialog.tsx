@@ -23,7 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useUploadDocument } from "@/hooks/useEmployeeDocuments";
 import { useGenerateSigningLink } from "@/hooks/useContractSigning";
-import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,28 +30,27 @@ import {
   CheckCircle2,
   Clock,
   Copy,
-  Download,
   FileText,
   Link2,
   Loader2,
   MapPin,
-  Send,
   ShieldCheck,
   User,
 } from "lucide-react";
-import type { ContractVariables, ContractType } from "./contractTemplates";
-import { CONTRACT_TYPE_OPTIONS, getDefaultJobTitle } from "./contractTemplates";
+import type { ContractVariables, ContractType, EmploymentType } from "./contractTemplates";
+import {
+  CONTRACT_TYPE_OPTIONS,
+  EMPLOYMENT_TYPE_OPTIONS,
+  WORK_LOCATIONS,
+  getDefaultJobTitle,
+  getEmploymentTypeLabel,
+} from "./contractTemplates";
 import { ContractPDF } from "./ContractPDF";
 
 interface ContractFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const WORK_LOCATIONS = [
-  "30 Rathbone Place, W1T 1JJ, London",
-  "1 Newburgh St, London, W1F 7RB",
-];
 
 type Step = "fill" | "confirm" | "sign";
 
@@ -76,9 +74,9 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     noticePeriod: "two weeks",
     probationPeriod: "2 months",
     workLocation: WORK_LOCATIONS[0],
+    employmentType: "variable_hours",
   });
 
-  // After contract is saved
   const [savedDocumentId, setSavedDocumentId] = useState<string | null>(null);
   const [employeeSignLink, setEmployeeSignLink] = useState<string | null>(null);
   const [employerSignLink, setEmployerSignLink] = useState<string | null>(null);
@@ -94,7 +92,6 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     setSelectedEmployeeId(employeeId);
     const emp = activeEmployees.find((e) => e.id === employeeId);
     if (emp) {
-      // Auto-detect contract type from department
       const autoType: ContractType = emp.department === "FOH" ? "foh" : "kitchen";
       setContractType(autoType);
 
@@ -104,8 +101,8 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
         hourlyRate: emp.hourly_rate?.toString() || "",
         jobTitle: getDefaultJobTitle(autoType),
         effectiveDate: emp.start_date || new Date().toISOString().split("T")[0],
-        noticePeriod: autoType === "kitchen" ? "1 month" : "two weeks",
-        probationPeriod: autoType === "kitchen" ? "1 month" : "2 months",
+        noticePeriod: "two weeks",
+        probationPeriod: "2 months",
       }));
     }
   };
@@ -115,8 +112,6 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     setVariables((prev) => ({
       ...prev,
       jobTitle: getDefaultJobTitle(type),
-      noticePeriod: type === "kitchen" ? "1 month" : "two weeks",
-      probationPeriod: type === "kitchen" ? "1 month" : "2 months",
     }));
   };
 
@@ -139,21 +134,18 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
   const handleConfirmAndSave = async () => {
     setGenerating(true);
     try {
-      // 1. Generate PDF blob
       const blob = await pdf(
         <ContractPDF variables={variables} contractType={contractType} />
       ).toBlob();
 
-      // 2. Create File object
       const fileName = `Employment_Contract_${variables.employeeName.replace(/\s+/g, "_")}.pdf`;
       const file = new File([blob], fileName, { type: "application/pdf" });
 
-      // 3. Upload as employee document
       const result = await uploadDocument.mutateAsync({
         employeeId: selectedEmployeeId,
         file,
         documentType: "contract",
-        documentName: `${contractType === "foh" ? "FOH" : "Kitchen"} Contract — ${variables.employeeName}`,
+        documentName: `Employment Contract — ${variables.employeeName}`,
       });
 
       setSavedDocumentId(result.id);
@@ -205,7 +197,6 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
 
   const handleClose = () => {
     onOpenChange(false);
-    // Reset after animation
     setTimeout(() => {
       setStep("fill");
       setSavedDocumentId(null);
@@ -222,6 +213,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
         noticePeriod: "two weeks",
         probationPeriod: "2 months",
         workLocation: WORK_LOCATIONS[0],
+        employmentType: "variable_hours",
       });
     }, 300);
   };
@@ -240,12 +232,12 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                 <FileText className="h-4 w-4 text-primary" />
               )}
             </div>
-            {step === "fill" && "New Contract"}
+            {step === "fill" && "New Employment Contract"}
             {step === "confirm" && "Confirm Details"}
             {step === "sign" && "Send for Signing"}
           </DialogTitle>
           <DialogDescription>
-            {step === "fill" && "Fill in the employment details below."}
+            {step === "fill" && "Fill in the employment details below to generate a UK-compliant contract."}
             {step === "confirm" && "Review the contract details before generating."}
             {step === "sign" && "Generate signing links for the employee and yourself."}
           </DialogDescription>
@@ -272,11 +264,11 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
           {/* STEP 1: Fill Details */}
           {step === "fill" && (
             <>
-              {/* Contract Type */}
+              {/* Department & Type */}
               <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Briefcase className="h-4 w-4 text-primary" />
-                  Contract Type
+                  Department & Type
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {CONTRACT_TYPE_OPTIONS.map((opt) => (
@@ -293,6 +285,24 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                       {opt.value === "foh" ? "🍽️" : "👨‍🍳"} {opt.label}
                     </button>
                   ))}
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Employment Type</Label>
+                  <Select
+                    value={variables.employmentType}
+                    onValueChange={(v) => updateField("employmentType", v)}
+                  >
+                    <SelectTrigger className="bg-card">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -353,7 +363,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-1.5 block">Weekly Hours</Label>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Average Weekly Hours</Label>
                     <Input value={variables.weeklyHours} onChange={(e) => updateField("weeklyHours", e.target.value)} placeholder="40" className="bg-card" />
                   </div>
                   <div>
@@ -382,7 +392,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-1.5 block">Work Location</Label>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Primary Work Location</Label>
                     <Select value={variables.workLocation} onValueChange={(v) => updateField("workLocation", v)}>
                       <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -423,8 +433,10 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                   <Briefcase className="h-4 w-4 text-primary" /> Contract Terms
                 </h3>
                 <div className="grid grid-cols-2 gap-y-2 text-sm">
-                  <span className="text-muted-foreground">Type</span>
+                  <span className="text-muted-foreground">Department</span>
                   <span className="font-medium text-foreground">{contractType === "foh" ? "🍽️ Front of House" : "👨‍🍳 Kitchen"}</span>
+                  <span className="text-muted-foreground">Employment Type</span>
+                  <span className="font-medium text-foreground">{getEmploymentTypeLabel(variables.employmentType)}</span>
                   <span className="text-muted-foreground">Start Date</span>
                   <span className="font-medium text-foreground">
                     {new Date(variables.effectiveDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
@@ -449,7 +461,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
 
               <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground">
                 <ShieldCheck className="h-4 w-4 text-primary inline mr-1" />
-                Clicking "Generate & Save" will create the PDF contract and store it securely. You'll then be able to send it for signing.
+                Clicking "Generate & Save" will create the PDF contract (17 sections, UK-compliant) and store it securely. You'll then be able to send it for signing.
               </div>
             </div>
           )}
