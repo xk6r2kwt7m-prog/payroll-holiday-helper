@@ -113,9 +113,8 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
   };
 
   const getLastThursday = (year: number, month: number): string => {
-    // month is 0-indexed
     const lastDay = new Date(year, month + 1, 0);
-    const dayOfWeek = lastDay.getDay(); // 0=Sun, 4=Thu
+    const dayOfWeek = lastDay.getDay();
     const diff = (dayOfWeek + 7 - 4) % 7;
     const lastThursday = new Date(lastDay);
     lastThursday.setDate(lastDay.getDate() - diff);
@@ -128,15 +127,61 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     const e = new Date(end);
     const days = (e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24) + 1;
     setPeriodWeeks((Math.round((days / 7) * 10) / 10).toString());
-
-    // Period name from end date month
     const monthNames = ["January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"];
     setPeriodName(`${monthNames[e.getMonth()]} ${e.getFullYear()}`);
-
-    // Pay date = last Thursday of end date's month
     setPayDate(getLastThursday(e.getFullYear(), e.getMonth()));
   };
+
+  const handleStartDateChange = (val: string) => {
+    setStartDate(val);
+    deriveFromDates(val, endDate);
+  };
+
+  const handleEndDateChange = (val: string) => {
+    setEndDate(val);
+    deriveFromDates(startDate, val);
+  };
+
+  const resetForm = () => {
+    setPeriodName("");
+    setStartDate("");
+    setEndDate("");
+    setPayDate("");
+    setPeriodWeeks("4");
+    setSalesTotal("");
+    setSelectedSourcePeriod("");
+    setMode("copy");
+  };
+
+  const isLoading = createPeriod.isPending || copyPeriod.isPending;
+
+  const handleSourceChange = (periodId: string) => {
+    setSelectedSourcePeriod(periodId);
+    const source = periods.find(p => p.id === periodId);
+    if (source) {
+      const sourceEnd = new Date(source.end_date);
+      const nextStart = new Date(sourceEnd);
+      nextStart.setDate(nextStart.getDate() + 1);
+      
+      // Find next cut-off Sunday (end of ~4 week period)
+      const nextEnd = new Date(nextStart);
+      nextEnd.setMonth(nextEnd.getMonth() + 1);
+      nextEnd.setDate(nextEnd.getDate() - 1);
+      // Adjust to nearest Sunday
+      const dow = nextEnd.getDay();
+      if (dow !== 0) {
+        nextEnd.setDate(nextEnd.getDate() - dow);
+      }
+
+      const sDate = nextStart.toISOString().split('T')[0];
+      const eDate = nextEnd.toISOString().split('T')[0];
+      setStartDate(sDate);
+      setEndDate(eDate);
+      deriveFromDates(sDate, eDate);
+    }
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
