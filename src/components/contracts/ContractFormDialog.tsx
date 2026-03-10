@@ -446,7 +446,9 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                 </h3>
                 <div className="grid grid-cols-2 gap-y-2 text-sm">
                   <span className="text-muted-foreground">Department</span>
-                  <span className="font-medium text-foreground">{contractType === "foh" ? "🍽️ Front of House" : "👨‍🍳 Kitchen"}</span>
+                  <span className="font-medium text-foreground">
+                    {CONTRACT_TYPE_OPTIONS.find(o => o.value === contractType)?.emoji} {CONTRACT_TYPE_OPTIONS.find(o => o.value === contractType)?.label}
+                  </span>
                   <span className="text-muted-foreground">Employment Type</span>
                   <span className="font-medium text-foreground">{getEmploymentTypeLabel(variables.employmentType)}</span>
                   <span className="text-muted-foreground">Start Date</span>
