@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  Eye,
   FileText,
   Link2,
   Loader2,
@@ -41,6 +42,7 @@ import type { ContractVariables, ContractType, EmploymentType } from "./contract
 import {
   CONTRACT_TYPE_OPTIONS,
   EMPLOYMENT_TYPE_OPTIONS,
+  JOB_TITLES,
   WORK_LOCATIONS,
   getDefaultJobTitle,
   getEmploymentTypeLabel,
@@ -92,7 +94,8 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     setSelectedEmployeeId(employeeId);
     const emp = activeEmployees.find((e) => e.id === employeeId);
     if (emp) {
-      const autoType: ContractType = emp.department === "FOH" ? "foh" : "kitchen";
+      const deptMap: Record<string, ContractType> = { FOH: "foh", BOH: "kitchen", CPU: "kitchen" };
+      const autoType: ContractType = deptMap[emp.department] || "foh";
       setContractType(autoType);
 
       setVariables((prev) => ({
@@ -282,7 +285,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                           : "border-border bg-card text-foreground hover:border-primary/30"
                       }`}
                     >
-                      {opt.value === "foh" ? "🍽️" : "👨‍🍳"} {opt.label}
+                      {opt.emoji} {opt.label}
                     </button>
                   ))}
                 </div>
@@ -335,7 +338,16 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1.5 block">Job Title *</Label>
-                      <Input value={variables.jobTitle} onChange={(e) => updateField("jobTitle", e.target.value)} className="bg-card" />
+                      <Select value={variables.jobTitle} onValueChange={(v) => updateField("jobTitle", v)}>
+                        <SelectTrigger className="bg-card">
+                          <SelectValue placeholder="Select job title..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(JOB_TITLES[contractType] || []).map((title) => (
+                            <SelectItem key={title} value={title}>{title}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div>
@@ -434,7 +446,9 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                 </h3>
                 <div className="grid grid-cols-2 gap-y-2 text-sm">
                   <span className="text-muted-foreground">Department</span>
-                  <span className="font-medium text-foreground">{contractType === "foh" ? "🍽️ Front of House" : "👨‍🍳 Kitchen"}</span>
+                  <span className="font-medium text-foreground">
+                    {CONTRACT_TYPE_OPTIONS.find(o => o.value === contractType)?.emoji} {CONTRACT_TYPE_OPTIONS.find(o => o.value === contractType)?.label}
+                  </span>
                   <span className="text-muted-foreground">Employment Type</span>
                   <span className="font-medium text-foreground">{getEmploymentTypeLabel(variables.employmentType)}</span>
                   <span className="text-muted-foreground">Start Date</span>
@@ -457,6 +471,23 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                   <MapPin className="h-4 w-4 text-primary" /> Work Location
                 </h3>
                 <p className="text-sm text-foreground">{variables.workLocation}</p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={async () => {
+                    const blob = await pdf(
+                      <ContractPDF variables={variables} contractType={contractType} />
+                    ).toBlob();
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                  }}
+                >
+                  <Eye className="h-4 w-4" />
+                  Preview Contract
+                </Button>
               </div>
 
               <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground">
