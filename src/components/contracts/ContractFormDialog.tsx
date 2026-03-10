@@ -473,6 +473,23 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                 <p className="text-sm text-foreground">{variables.workLocation}</p>
               </div>
 
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={async () => {
+                    const blob = await pdf(
+                      <ContractPDF variables={variables} contractType={contractType} />
+                    ).toBlob();
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                  }}
+                >
+                  <Eye className="h-4 w-4" />
+                  Preview Contract
+                </Button>
+              </div>
+
               <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground">
                 <ShieldCheck className="h-4 w-4 text-primary inline mr-1" />
                 Clicking "Generate & Save" will create the PDF contract (17 sections, UK-compliant) and store it securely. You'll then be able to send it for signing.
