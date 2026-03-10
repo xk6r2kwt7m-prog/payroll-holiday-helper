@@ -67,12 +67,14 @@ const Holidays = () => {
   const { data: periods = [] } = usePayrollPeriods();
 
   // Holiday payments by year
+  const { data: payments2022 = [] } = useHolidayPaymentsByYear(2022);
   const { data: payments2023 = [] } = useHolidayPaymentsByYear(2023);
   const { data: payments2024 = [] } = useHolidayPaymentsByYear(2024);
   const { data: payments2025 = [] } = useHolidayPaymentsByYear(2025);
   const { data: payments2026 = [] } = useHolidayPaymentsByYear(2026);
 
   // Holiday balances for integrity check
+  const { data: balances2022 = [] } = useHolidayBalancesByYear(2022);
   const { data: balances2023 = [] } = useHolidayBalancesByYear(2023);
   const { data: balances2024 = [] } = useHolidayBalancesByYear(2024);
   const { data: balances2025 = [] } = useHolidayBalancesByYear(2025);
@@ -218,7 +220,19 @@ const Holidays = () => {
     });
   };
 
-  const summaries2023 = useMemo(() => buildSummaries(2023, payments2023), [payrollEntries, payments2023, adjustments]);
+  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022), [payrollEntries, payments2022, adjustments]);
+  const summaries2023 = useMemo(() => {
+    const base = buildSummaries(2023, payments2023);
+    return base.map(s => {
+      const prev = summaries2022.find(p => p.employeeId === s.employeeId);
+      const carryOver = prev ? Math.max(0, prev.balance) : 0;
+      return {
+        ...s,
+        hoursCarriedOver: s.hoursCarriedOver + carryOver,
+        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
+      };
+    });
+  }, [payrollEntries, payments2023, summaries2022, adjustments]);
   const summaries2024 = useMemo(() => {
     const base = buildSummaries(2024, payments2024);
     return base.map(s => {
@@ -258,9 +272,9 @@ const Holidays = () => {
     });
   }, [payrollEntries, payments2026, summaries2025, adjustments]);
 
-  const allYearSummaries = { "2023": summaries2023, "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
-  const currentSummaries = allYearSummaries[selectedYear];
-  const currentPayments = selectedYear === "2023" ? payments2023 : selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
+  const allYearSummaries = { "2022": summaries2022, "2023": summaries2023, "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
+  const currentSummaries = allYearSummaries[selectedYear] || [];
+  const currentPayments = selectedYear === "2022" ? payments2022 : selectedYear === "2023" ? payments2023 : selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
 
   // Build formula breakdown for a specific employee
   const openFormulaBreakdown = useCallback((employeeId: string) => {
