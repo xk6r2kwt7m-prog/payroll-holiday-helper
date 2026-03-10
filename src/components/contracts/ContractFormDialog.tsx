@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  Eye,
   FileText,
   Link2,
   Loader2,
