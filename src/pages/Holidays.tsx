@@ -220,7 +220,19 @@ const Holidays = () => {
     });
   };
 
-  const summaries2023 = useMemo(() => buildSummaries(2023, payments2023), [payrollEntries, payments2023, adjustments]);
+  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022), [payrollEntries, payments2022, adjustments]);
+  const summaries2023 = useMemo(() => {
+    const base = buildSummaries(2023, payments2023);
+    return base.map(s => {
+      const prev = summaries2022.find(p => p.employeeId === s.employeeId);
+      const carryOver = prev ? Math.max(0, prev.balance) : 0;
+      return {
+        ...s,
+        hoursCarriedOver: s.hoursCarriedOver + carryOver,
+        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
+      };
+    });
+  }, [payrollEntries, payments2023, summaries2022, adjustments]);
   const summaries2024 = useMemo(() => {
     const base = buildSummaries(2024, payments2024);
     return base.map(s => {
