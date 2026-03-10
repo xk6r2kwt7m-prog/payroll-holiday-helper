@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Building2, Bell, Shield, CreditCard, Loader2, Users } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
+import { HistoricalImport } from "@/components/settings/HistoricalImport";
 
 const Settings = () => {
   const { data: settings, isLoading } = useCompanySettings();
@@ -279,6 +280,10 @@ const Settings = () => {
             )}
           </Button>
         </div>
+
+        {/* Historical Data Import */}
+        <Separator />
+        <HistoricalImport />
       </div>
     </AppLayout>
   );
