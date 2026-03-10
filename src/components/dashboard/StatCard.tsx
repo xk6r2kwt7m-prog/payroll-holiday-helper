@@ -19,20 +19,12 @@ interface StatCardProps {
   index?: number;
 }
 
-const accentBar: Record<string, string> = {
-  default: "bg-muted-foreground/30",
-  primary: "bg-primary",
-  success: "bg-success",
-  warning: "bg-warning",
-  accent: "bg-accent",
-};
-
-const iconBg: Record<string, string> = {
-  default: "text-muted-foreground",
-  primary: "text-primary",
-  success: "text-success",
-  warning: "text-warning",
-  accent: "text-accent",
+const iconBgMap: Record<string, string> = {
+  default: "bg-muted text-muted-foreground",
+  primary: "bg-primary/10 text-primary",
+  success: "bg-success/10 text-success",
+  warning: "bg-warning/10 text-warning",
+  accent: "bg-accent/10 text-accent",
 };
 
 function AnimatedValue({ value }: { value: string | number }) {
@@ -68,27 +60,22 @@ export function StatCard({
   const isClickable = href || onClick;
 
   const content = (
-    <div className="flex items-start gap-2.5">
-      {/* Accent bar */}
-      <div className={cn("w-1 rounded-full shrink-0 mt-0.5", accentBar[variant])} style={{ height: '2.25rem' }} />
-      {/* Content */}
+    <div className="flex items-start gap-3">
+      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", iconBgMap[variant])}>
+        {icon}
+      </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground truncate leading-none">
-            {title}
-          </p>
-          <span className={cn("shrink-0 opacity-60", iconBg[variant])}>
-            {icon}
-          </span>
-        </div>
-        <p className="text-lg font-bold tracking-tight tabular-nums text-foreground leading-none mt-1">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider leading-none">
+          {title}
+        </p>
+        <p className="text-xl font-bold tracking-tight tabular-nums text-foreground leading-none mt-1.5">
           <AnimatedValue value={value} />
         </p>
         {subtitle && (
-          <p className="text-[11px] text-muted-foreground leading-none mt-1 truncate">{subtitle}</p>
+          <p className="text-[11px] text-muted-foreground leading-none mt-1.5 truncate">{subtitle}</p>
         )}
         {trend && (
-          <p className="text-[11px] mt-1 leading-none">
+          <p className="text-[11px] mt-1.5 leading-none">
             <span className={cn("font-medium", trend.isPositive ? "text-success" : "text-destructive")}>
               {trend.isPositive ? "+" : ""}{trend.value}%
             </span>
@@ -100,7 +87,7 @@ export function StatCard({
   );
 
   const cardClasses = cn(
-    "rounded-lg bg-card border border-border px-3 py-2.5 shadow-sm transition-all duration-200 group",
+    "rounded-xl bg-card border border-border px-4 py-4 shadow-sm transition-all duration-200 group",
     isClickable && "cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
   );
 

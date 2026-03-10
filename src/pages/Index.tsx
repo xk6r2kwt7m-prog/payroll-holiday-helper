@@ -98,9 +98,9 @@ const Index = () => {
   }, [employees, periods, entries]);
 
   const severityConfig = {
-    critical: { bg: "bg-destructive/8 border-destructive/20", iconBg: "bg-destructive/15 text-destructive", dot: "bg-destructive" },
-    warning: { bg: "bg-warning/8 border-warning/20", iconBg: "bg-warning/15 text-warning", dot: "bg-warning" },
-    info: { bg: "bg-primary/8 border-primary/20", iconBg: "bg-primary/15 text-primary", dot: "bg-primary" },
+    critical: { bg: "bg-destructive/5 border-destructive/15", iconBg: "bg-destructive/10 text-destructive", dot: "bg-destructive" },
+    warning: { bg: "bg-warning/5 border-warning/15", iconBg: "bg-warning/10 text-warning", dot: "bg-warning" },
+    info: { bg: "bg-primary/5 border-primary/15", iconBg: "bg-primary/10 text-primary", dot: "bg-primary" },
   };
 
   // Department data
@@ -125,12 +125,12 @@ const Index = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               {latestPeriod ? `Period: ${latestPeriod.period_name}` : "Welcome to Ugly Dumpling Payroll"}
             </p>
           </div>
@@ -146,49 +146,13 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* ─── 1. ALERTS ─── */}
-        {alerts.length > 0 && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="grid gap-2 sm:grid-cols-3">
-              {alerts.map((alert) => {
-                const cfg = severityConfig[alert.severity];
-                return (
-                  <button
-                    key={alert.id}
-                    onClick={() => navigate(alert.href)}
-                    className={cn(
-                      "text-left rounded-lg border p-3 transition-all hover:shadow-md hover:-translate-y-0.5 group",
-                      cfg.bg
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", cfg.iconBg)}>
-                        {alert.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground leading-tight">{alert.title}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{alert.description}</p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </motion.section>
-        )}
-
-        {/* ─── 2. KEY METRICS ─── */}
+        {/* ─── 1. KPI METRICS ─── */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
         >
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {[
               {
                 label: "Active Staff",
@@ -196,6 +160,7 @@ const Index = () => {
                 sub: `${employees.length} total incl. leavers`,
                 icon: <Users className="h-5 w-5" />,
                 color: "text-foreground",
+                iconBg: "bg-muted",
                 href: "/employees",
               },
               {
@@ -204,6 +169,7 @@ const Index = () => {
                 sub: `${formatCurrency(payPerWeek)} / week`,
                 icon: <DollarSign className="h-5 w-5" />,
                 color: "text-primary",
+                iconBg: "bg-primary/10",
                 href: "/payroll",
               },
               {
@@ -212,6 +178,7 @@ const Index = () => {
                 sub: salesTotal > 0 ? `of ${formatCurrency(salesTotal)} sales` : "No sales data",
                 icon: <Percent className="h-5 w-5" />,
                 color: labourPercent > 35 ? "text-warning" : "text-success",
+                iconBg: labourPercent > 35 ? "bg-warning/10" : "bg-success/10",
                 href: "/payroll/analytics",
               },
               {
@@ -220,6 +187,7 @@ const Index = () => {
                 sub: `${(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% accrual rate`,
                 icon: <Calendar className="h-5 w-5" />,
                 color: "text-accent",
+                iconBg: "bg-accent/10",
                 href: "/holidays",
               },
               {
@@ -228,6 +196,7 @@ const Index = () => {
                 sub: `${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)} / week`,
                 icon: <Clock className="h-5 w-5" />,
                 color: "text-muted-foreground",
+                iconBg: "bg-muted",
                 href: "/timesheets",
               },
             ].map((kpi, i) => (
@@ -235,91 +204,126 @@ const Index = () => {
                 key={kpi.label}
                 to={kpi.href}
                 className={cn(
-                  "rounded-xl bg-card border border-border p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 group",
+                  "rounded-xl bg-card border border-border p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 group",
                   i === 4 && "col-span-2 sm:col-span-1"
                 )}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className={cn("opacity-70", kpi.color)}>{kpi.icon}</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", kpi.iconBg)}>
+                    <span className={cn(kpi.color)}>{kpi.icon}</span>
+                  </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <p className="text-2xl font-bold text-foreground tracking-tight leading-none">{kpi.value}</p>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mt-1.5">{kpi.label}</p>
-                <p className="text-[11px] text-muted-foreground/70 mt-0.5 truncate">{kpi.sub}</p>
+                <p className="text-xs font-medium text-muted-foreground mt-2 uppercase tracking-wider">{kpi.label}</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-0.5 truncate">{kpi.sub}</p>
               </Link>
             ))}
           </div>
         </motion.section>
 
-        {/* ─── 3. DEPARTMENT OVERVIEW ─── */}
+        {/* ─── 2. ALERTS ─── */}
+        {alerts.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+          >
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Action Required</h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {alerts.map((alert) => {
+                const cfg = severityConfig[alert.severity];
+                return (
+                  <button
+                    key={alert.id}
+                    onClick={() => navigate(alert.href)}
+                    className={cn(
+                      "text-left rounded-xl border p-4 transition-all hover:shadow-md hover:-translate-y-0.5 group",
+                      cfg.bg
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", cfg.iconBg)}>
+                        {alert.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground leading-tight">{alert.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{alert.description}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.section>
+        )}
+
+        {/* ─── 3. DEPARTMENT OVERVIEW + AUDIT SCORE ─── */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.2 }}
+          className="grid gap-4 lg:grid-cols-12"
         >
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Department Overview</h2>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-            {(["FOH", "BOH", "CPU"] as const).map((dept) => {
-              const cfg = deptConfig[dept];
-              const Icon = cfg.icon;
-              const deptEntries = entries.filter((e: any) => e.employees?.department === dept);
-              const deptPay = deptEntries.reduce((s: number, e: any) => s + Number(e.total_pay), 0);
-              const deptHours = deptEntries.reduce((s: number, e: any) => s + Number(e.timesheet_hours), 0);
-              const count = departmentStats[dept]?.count || 0;
+          {/* Department Overview — 8 cols */}
+          <div className="lg:col-span-8">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Department Overview</h2>
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+              {(["FOH", "BOH", "CPU"] as const).map((dept) => {
+                const cfg = deptConfig[dept];
+                const Icon = cfg.icon;
+                const deptEntries = entries.filter((e: any) => e.employees?.department === dept);
+                const deptPay = deptEntries.reduce((s: number, e: any) => s + Number(e.total_pay), 0);
+                const deptHours = deptEntries.reduce((s: number, e: any) => s + Number(e.timesheet_hours), 0);
+                const count = departmentStats[dept]?.count || 0;
 
-              return (
-                <Link
-                  key={dept}
-                  to={`/employees?dept=${dept}`}
-                  className="rounded-xl bg-card border border-border p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 group"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg bg-muted", cfg.color)}>
-                      <Icon className="h-4.5 w-4.5" />
+                return (
+                  <Link
+                    key={dept}
+                    to={`/employees?dept=${dept}`}
+                    className="rounded-xl bg-card border border-border p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 group"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg bg-muted", cfg.color)}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground text-sm">{dept}</h3>
+                        <p className="text-[11px] text-muted-foreground">{cfg.label}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground text-sm">{dept}</h3>
-                      <p className="text-[11px] text-muted-foreground">{cfg.label}</p>
+                    <div className="grid grid-cols-3 gap-3 text-center pt-3 border-t border-border">
+                      <div>
+                        <p className="text-xl font-bold text-foreground">{count}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Staff</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold text-foreground">{formatHours(deptHours)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Hours</p>
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold text-foreground">{formatCurrency(deptPay)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Cost</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <p className="text-lg font-bold text-foreground">{count}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Staff</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-foreground">{formatHours(deptHours)}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Hours</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-foreground">{formatCurrency(deptPay)}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost</p>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </motion.section>
 
-        {/* ─── 4. AUDIT SCORE + 5. OPERATIONS (side by side on desktop) ─── */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-          className="grid gap-3 lg:grid-cols-12"
-        >
           {/* Audit Score — 4 cols */}
           <div className="lg:col-span-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Payroll Audit</h2>
             <Link
               to="/payroll/audit"
-              className="block rounded-xl bg-card border border-border p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 h-full"
+              className="block rounded-xl bg-card border border-border p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 h-full"
             >
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">Payroll Audit</h2>
               {auditScore !== null ? (
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center justify-center h-full py-2">
                   {/* Circular gauge */}
-                  <div className="relative w-28 h-28 mb-3">
+                  <div className="relative w-28 h-28 mb-4">
                     <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
                       <circle cx="60" cy="60" r="52" fill="none" strokeWidth="8" className="stroke-muted" />
                       <circle
@@ -350,16 +354,23 @@ const Index = () => {
                   ) : (
                     <p className="text-xs text-success font-medium">All checks passing</p>
                   )}
-                  <p className="text-[10px] text-muted-foreground mt-1">Click to view details →</p>
+                  <p className="text-[10px] text-muted-foreground mt-2">Click to view details →</p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-6">Loading audit…</p>
               )}
             </Link>
           </div>
+        </motion.section>
 
-          {/* Operations — 8 cols */}
-          <div className="lg:col-span-8 grid gap-3 sm:grid-cols-2">
+        {/* ─── 4. OPERATIONS ─── */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Operations</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
             <PayrollDeadlineWidget periods={periods} />
             <ExpiringDocumentsWidget />
           </div>
@@ -373,8 +384,8 @@ const Index = () => {
             transition={{ duration: 0.3, delay: 0.4 }}
           >
             <div className="rounded-xl bg-card border border-border shadow-sm overflow-hidden">
-              <div className="border-b border-border px-5 py-3.5 flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recent Payroll</h2>
+              <div className="border-b border-border px-5 py-4 flex items-center justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Payroll</h2>
                 <Link to="/payroll">
                   <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">View All</Button>
                 </Link>
@@ -384,10 +395,10 @@ const Index = () => {
                   <Link
                     key={period.id}
                     to="/payroll"
-                    className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors"
+                    className="flex items-center justify-between px-5 py-3.5 hover:bg-muted/30 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                         <FileText className="h-4 w-4 text-primary" />
                       </div>
                       <div>
