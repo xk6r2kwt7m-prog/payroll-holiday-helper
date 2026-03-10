@@ -20,6 +20,7 @@ const Index = () => {
   const latestPeriod = periods[0];
   const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
   const { data: audit } = usePayrollAudit();
+  const { data: employeeBranches = [] } = useAllEmployeeBranches();
   const navigate = useNavigate();
 
   const activeEmployees = employees.filter(e => e.status === "active").length;
