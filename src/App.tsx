@@ -30,6 +30,7 @@ import PayrollComparison from "./pages/PayrollComparison";
 import PayrollOverpayments from "./pages/PayrollOverpayments";
 import PayrollAudit from "./pages/PayrollAudit";
 import Auth from "./pages/Auth";
+import CompanyOnboarding from "./pages/CompanyOnboarding";
 import SignContract from "./pages/SignContract";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
