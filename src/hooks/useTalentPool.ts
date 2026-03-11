@@ -140,7 +140,7 @@ export function useOwnTalentProfile() {
 export function useUpsertTalentProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (profile: Partial<TalentProfile> & { employee_id: string; tenant_id: string }) => {
+    mutationFn: async (profile: Record<string, any> & { employee_id: string; tenant_id: string }) => {
       // Check existing
       const { data: existing } = await supabase
         .from("talent_profiles")
@@ -151,7 +151,7 @@ export function useUpsertTalentProfile() {
       if (existing) {
         const { data, error } = await supabase
           .from("talent_profiles")
-          .update(profile)
+          .update(profile as any)
           .eq("id", existing.id)
           .select()
           .single();
