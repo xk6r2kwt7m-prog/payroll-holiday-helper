@@ -231,7 +231,7 @@ export function HolidayFormulaBreakdown({ open, onOpenChange, data }: HolidayFor
 
           {/* Data provenance */}
           <div className="text-[10px] text-muted-foreground/60 space-y-0.5">
-            <p>• Accrual rate: {(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% per UK Working Time Regulations 1998</p>
+            <p>• Accrual rate: {((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2)}% ({leaveRules?.countryName ?? "UK"} regulations)</p>
             <p>• Source priority: imported_hours (if available) → timesheet_hours</p>
             <p>• Corrected periods replace originals — no double-counting</p>
             <p>• Carry-over chains propagate year-to-year from closing balances</p>

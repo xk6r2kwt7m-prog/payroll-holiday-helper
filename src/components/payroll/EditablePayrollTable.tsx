@@ -186,8 +186,9 @@ export function EditablePayrollTable({
     const servicePay = hours * serviceCharge;
     const totalPay = basePay + servicePay + perfBonus + specBonus;
     // Holiday accrual uses imported_hours (original) when available
+    // Uses tenant-resolved accrual rate (falls through to country default)
     const hoursForHoliday = entry.imported_hours ?? hours;
-    const holidayAccrued = calculateHolidayAccrual(hoursForHoliday);
+    const holidayAccrued = calculateAccrual(hoursForHoliday, leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision);
 
     try {
       const updates: Record<string, any> = {

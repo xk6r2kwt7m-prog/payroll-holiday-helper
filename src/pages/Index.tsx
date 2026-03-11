@@ -200,7 +200,7 @@ const Index = () => {
               {
                 label: "Holiday Accrued",
                 value: `${formatHours(totalHolidayAccrued)} hrs`,
-                sub: `${(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% accrual rate`,
+                sub: `${((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2)}% accrual rate`,
                 icon: <Calendar className="h-5 w-5" />,
                 color: "text-accent",
                 iconBg: "bg-accent/10",

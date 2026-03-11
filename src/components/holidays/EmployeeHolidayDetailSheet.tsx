@@ -378,11 +378,11 @@ export function EmployeeHolidayDetailSheet({
             )}
           </div>
 
-          {/* UK Law Info */}
+          {/* Leave Law Info */}
           <div className="rounded-lg bg-muted/50 border border-border p-3 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">UK Holiday Law</p>
-            <p>Accrual rate: {(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% of hours worked</p>
-            <p>Statutory entitlement: {UK_HOLIDAY_LAW.STATUTORY_WEEKS} weeks per year</p>
+            <p className="font-medium text-foreground mb-1">{leaveRules?.countryName ?? "UK"} Holiday Law</p>
+            <p>Accrual rate: {((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2)}% of hours worked</p>
+            <p>Statutory entitlement: {leaveRules?.statutoryWeeks ?? 5.6} weeks per year</p>
           </div>
         </div>
       </SheetContent>
