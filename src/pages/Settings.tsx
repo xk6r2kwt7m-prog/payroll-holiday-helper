@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Bell, Shield, CreditCard, Loader2, Users } from "lucide-react";
+import { Building2, Bell, Shield, CreditCard, Loader2, Users, Calendar } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
 import { HistoricalImport } from "@/components/settings/HistoricalImport";
+import { LeaveRulesSettings } from "@/components/settings/LeaveRulesSettings";
 
 const Settings = () => {
   const { data: settings, isLoading } = useCompanySettings();
@@ -247,6 +248,20 @@ const Settings = () => {
               />
             </div>
           </div>
+        </div>
+
+        {/* Leave Rules */}
+        <div className="rounded-xl bg-card shadow-card p-6 animate-fade-in">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
+              <Calendar className="h-5 w-5 text-success" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-card-foreground">Leave &amp; Holiday Rules</h3>
+              <p className="text-sm text-muted-foreground">Configure accrual rates, carry-over, workweek, and leave year settings</p>
+            </div>
+          </div>
+          <LeaveRulesSettings />
         </div>
 
         {/* Role Management */}

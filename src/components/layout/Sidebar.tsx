@@ -26,42 +26,59 @@ import {
   ShieldAlert,
   AlertTriangle,
   ShieldCheck,
+  Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenant } from "@/hooks/useTenant";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Users, label: "Employees", path: "/employees" },
-  { icon: CalendarClock, label: "Schedule", path: "/schedule" },
-  { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets" },
-  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report" },
-  { icon: BarChart3, label: "Analytics", path: "/schedule/analytics" },
-  { icon: DollarSign, label: "Payroll", path: "/payroll" },
-  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar" },
-  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics" },
-  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments" },
-  { icon: ShieldCheck, label: "Payroll Audit", path: "/payroll/audit" },
-  { icon: Calendar, label: "Holidays", path: "/holidays" },
-  { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit" },
-  { icon: UserX, label: "Absences", path: "/absences" },
-  { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
-  { icon: GraduationCap, label: "Training", path: "/training" },
-  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary" },
-  { icon: Megaphone, label: "Announcements", path: "/announcements" },
-  { icon: FileText, label: "Contracts", path: "/contracts" },
-  { icon: MapPin, label: "Locations", path: "/locations" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+
+const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
+
+interface SideNavItem {
+  icon: any;
+  label: string;
+  path: string;
+  minRole: string;
+}
+
+const navItems: SideNavItem[] = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/", minRole: "viewer" },
+  { icon: Users, label: "Employees", path: "/employees", minRole: "supervisor" },
+  { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff" },
+  { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
+  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report", minRole: "manager" },
+  { icon: BarChart3, label: "Analytics", path: "/schedule/analytics", minRole: "manager" },
+  { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin" },
+  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin" },
+  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin" },
+  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", minRole: "admin" },
+  { icon: ShieldCheck, label: "Payroll Audit", path: "/payroll/audit", minRole: "admin" },
+  { icon: Calendar, label: "Holidays", path: "/holidays", minRole: "staff" },
+  { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" },
+  { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
+  { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
+  { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
+  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
+  { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
+  { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
+  { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
+  { icon: Settings, label: "Settings", path: "/settings", minRole: "admin" },
 ];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, role, signOut } = useAuth();
+  const { isPlatformAdmin } = useTenant();
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || "UGLŌ";
+
+  const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
+  const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const visibleNavItems = navItems.filter(item => canAccess(item.minRole));
 
   return (
     <aside
@@ -125,7 +142,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-0.5 px-3 py-2 overflow-y-auto scrollbar-none">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path;
             const linkContent = (
               <Link
@@ -165,6 +182,46 @@ export function Sidebar() {
 
             return <div key={item.path}>{linkContent}</div>;
           })}
+
+          {/* Platform Admin link */}
+          {isPlatformAdmin && (
+            (() => {
+              const isActive = location.pathname === "/platform-admin";
+              const linkContent = (
+                <Link
+                  to="/platform-admin"
+                  className={cn(
+                    "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 mt-2 border-t border-sidebar-border pt-3",
+                    isActive
+                      ? "text-sidebar-primary"
+                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                  )}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active"
+                      className="absolute inset-0 rounded-lg bg-sidebar-accent"
+                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                  <Globe className="relative z-10 h-5 w-5 flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="relative z-10 animate-fade-in">Platform Admin</span>
+                  )}
+                </Link>
+              );
+
+              if (collapsed) {
+                return (
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={12}>Platform Admin</TooltipContent>
+                  </Tooltip>
+                );
+              }
+              return linkContent;
+            })()
+          )}
         </nav>
 
         {/* Footer */}
