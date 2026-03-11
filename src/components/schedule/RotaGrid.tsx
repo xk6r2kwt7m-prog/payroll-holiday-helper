@@ -561,24 +561,31 @@ export function RotaGrid({
         department={department}
         isAdmin={isAdmin}
         onEdit={() => {
-          if (mobileSheetShift && mobileSheetDay) {
-            handleEditFromPopover(mobileSheetShift, mobileSheetDay);
-          }
+          const shift = mobileSheetShift;
+          const day = mobileSheetDay;
           setMobileSheetShift(null);
+          setMobileSheetDay(null);
+          if (shift && day) {
+            handleEditFromPopover(shift, day);
+          }
         }}
         onCopy={() => {
-          if (mobileSheetShift) handleCopyShift(mobileSheetShift);
+          const shift = mobileSheetShift;
           setMobileSheetShift(null);
+          setMobileSheetDay(null);
+          if (shift) handleCopyShift(shift);
         }}
         onDelete={() => {
-          if (mobileSheetShift) handleDeleteFromPopover(mobileSheetShift.id);
+          const shift = mobileSheetShift;
           setMobileSheetShift(null);
+          setMobileSheetDay(null);
+          if (shift) handleDeleteFromPopover(shift.id);
         }}
         onMove={() => {
-          if (mobileSheetShift) {
-            setMoveDrawerShift(mobileSheetShift);
-          }
+          const shift = mobileSheetShift;
           setMobileSheetShift(null);
+          setMobileSheetDay(null);
+          if (shift) setMoveDrawerShift(shift);
         }}
       />
 

@@ -117,7 +117,7 @@ export function MobileShiftSheet({
               <Button
                 variant="outline"
                 className="h-14 flex-col gap-1.5"
-                onClick={() => { onOpenChange(false); onEdit(); }}
+                onClick={() => onEdit()}
               >
                 <Pencil className="h-5 w-5" />
                 <span className="text-xs">Edit</span>
@@ -125,7 +125,7 @@ export function MobileShiftSheet({
               <Button
                 variant="outline"
                 className="h-14 flex-col gap-1.5"
-                onClick={() => { onOpenChange(false); onMove?.(); }}
+                onClick={() => onMove?.()}
               >
                 <ArrowRightLeft className="h-5 w-5" />
                 <span className="text-xs">Move</span>
@@ -133,7 +133,7 @@ export function MobileShiftSheet({
               <Button
                 variant="outline"
                 className="h-14 flex-col gap-1.5"
-                onClick={() => { onOpenChange(false); onCopy(); }}
+                onClick={() => onCopy()}
               >
                 <Copy className="h-5 w-5" />
                 <span className="text-xs">Copy</span>
@@ -141,7 +141,7 @@ export function MobileShiftSheet({
               <Button
                 variant="outline"
                 className="h-14 flex-col gap-1.5 text-destructive hover:text-destructive"
-                onClick={() => { onOpenChange(false); onDelete(); }}
+                onClick={() => onDelete()}
               >
                 <Trash2 className="h-5 w-5" />
                 <span className="text-xs">Delete</span>
