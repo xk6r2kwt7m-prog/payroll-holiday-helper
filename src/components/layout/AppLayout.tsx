@@ -338,10 +338,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         </AnimatePresence>
       </main>
 
-      {/* Mobile bottom nav + FAB */}
+      {/* Mobile bottom nav + FAB (hidden on schedule page which has its own controls) */}
       <div className="md:hidden">
         <MobileBottomNav />
-        {isMobile && <FloatingActionButton />}
+        {isMobile && !location.pathname.startsWith("/schedule") && <FloatingActionButton />}
       </div>
     </div>
   );
