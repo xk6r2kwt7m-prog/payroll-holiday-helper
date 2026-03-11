@@ -121,7 +121,7 @@ export function MobileBottomNav() {
   const visibleMoreGroups = moreGroups
     .map(group => ({
       ...group,
-      items: group.items.filter(item => canAccess(item.minRole)),
+      items: group.items.filter(item => canAccess(item.minRole) && isModuleEnabled(item.module)),
     }))
     .filter(group => group.items.length > 0);
 
