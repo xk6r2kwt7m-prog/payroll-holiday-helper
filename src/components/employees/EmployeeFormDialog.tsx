@@ -128,6 +128,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
   const setEmployeeBranches = useSetEmployeeBranches();
+  const { tenantId } = useTenant();
 
   const isNewEmployee = !employee;
 
