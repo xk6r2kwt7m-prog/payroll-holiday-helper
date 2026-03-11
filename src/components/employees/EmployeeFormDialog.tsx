@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck } from "lucide-react";
+import { TalentOptInDialog } from "@/components/talent/TalentOptInDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { useCreateEmployee, useUpdateEmployee, type Employee, type EmployeeInser
 import { useEmployeeBranches, useSetEmployeeBranches, BRANCHES, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/hooks/useTenant";
 
 type DepartmentType = Database["public"]["Enums"]["department_type"];
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
@@ -28,6 +30,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const [activeTab, setActiveTab] = useState("personal");
   const [selectedBranches, setSelectedBranches] = useState<BranchType[]>([]);
   const [primaryBranch, setPrimaryBranch] = useState<BranchType | undefined>();
+  const [talentOptInOpen, setTalentOptInOpen] = useState(false);
+  const [savedEmployeeId, setSavedEmployeeId] = useState<string | null>(null);
+  const [savedEmployeeName, setSavedEmployeeName] = useState("");
   const [formData, setFormData] = useState({
     forename: "",
     surname: "",
@@ -123,6 +128,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
   const setEmployeeBranches = useSetEmployeeBranches();
+  const { tenantId } = useTenant();
 
   const isNewEmployee = !employee;
 
@@ -197,6 +203,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
       setOpen(false);
       onSuccess?.();
+
+      // Trigger talent pool opt-in when status changes to leaver
+      const wasLeaver = employee?.status === "leaver";
+      const isNowLeaver = formData.status === "leaver";
+      if (isNowLeaver && !wasLeaver) {
+        setSavedEmployeeId(employeeId);
+        setSavedEmployeeName(`${formData.forename} ${formData.surname}`);
+        setTalentOptInOpen(true);
+      }
     } catch (error) {
       toast.error(employee ? "Failed to update employee" : "Failed to create employee");
     }
@@ -232,6 +247,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   );
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
@@ -726,5 +742,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         </form>
       </DialogContent>
     </Dialog>
+    {savedEmployeeId && tenantId && (
+      <TalentOptInDialog
+        open={talentOptInOpen}
+        onOpenChange={setTalentOptInOpen}
+        employeeId={savedEmployeeId}
+        employeeName={savedEmployeeName}
+        tenantId={tenantId}
+      />
+    )}
+    </>
   );
 }

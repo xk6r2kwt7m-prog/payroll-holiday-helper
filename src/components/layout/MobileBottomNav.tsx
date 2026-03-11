@@ -22,6 +22,7 @@ import {
   PieChart,
   Scale,
   ClipboardList,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -93,6 +94,7 @@ const moreGroups: MoreGroup[] = [
     title: "Admin",
     items: [
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
+      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
       { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
       { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
       { icon: Settings, label: "Settings", path: "/settings", minRole: "admin" },
