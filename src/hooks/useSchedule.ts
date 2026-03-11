@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { useTenant } from "@/hooks/useTenant";
 
 export type Shift = Tables<"shifts">;
 export type ShiftInsert = TablesInsert<"shifts">;
@@ -47,11 +48,12 @@ export function useShifts(startDate?: string, endDate?: string, branch?: string)
 
 export function useCreateShift() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
-    mutationFn: async (shift: ShiftInsert) => {
+    mutationFn: async (shift: Omit<ShiftInsert, 'tenant_id'>) => {
       const { data, error } = await supabase
         .from("shifts")
-        .insert(shift)
+        .insert({ ...shift, tenant_id: tenantId! } as any)
         .select()
         .single();
       if (error) throw error;
@@ -97,11 +99,13 @@ export function useDeleteShift() {
 
 export function useBulkCreateShifts() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
-    mutationFn: async (shifts: ShiftInsert[]) => {
+    mutationFn: async (shifts: Omit<ShiftInsert, 'tenant_id'>[]) => {
+      const withTenant = shifts.map(s => ({ ...s, tenant_id: tenantId! }));
       const { data, error } = await supabase
         .from("shifts")
-        .insert(shifts)
+        .insert(withTenant as any)
         .select();
       if (error) throw error;
       return data;
@@ -187,6 +191,7 @@ export function useUnpublishWeek() {
 
 export function useCopyPreviousWeek() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async ({
       prevStartDate,
@@ -201,7 +206,6 @@ export function useCopyPreviousWeek() {
       branch: string;
       department: string;
     }) => {
-      // Fetch previous week's shifts
       const { data: prevShifts, error: fetchErr } = await supabase
         .from("shifts")
         .select("*")
@@ -214,7 +218,6 @@ export function useCopyPreviousWeek() {
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Map shifts to new week (same day offset)
       const prevStart = new Date(prevStartDate + "T00:00:00");
       const targetStart = new Date(targetWeekStart + "T00:00:00");
 
@@ -235,6 +238,7 @@ export function useCopyPreviousWeek() {
           status: s.employee_id ? "scheduled" : "open",
           is_published: false,
           created_by: user?.id || null,
+          tenant_id: tenantId!,
         };
       });
 
@@ -250,6 +254,7 @@ export function useCopyPreviousWeek() {
 
 export function useLoadTemplate() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async ({
       templateId,
@@ -262,7 +267,6 @@ export function useLoadTemplate() {
       branch: string;
       department: string;
     }) => {
-      // Fetch template shifts
       const { data: templateShifts, error: fetchErr } = await supabase
         .from("schedule_template_shifts")
         .select("*")
@@ -288,6 +292,7 @@ export function useLoadTemplate() {
           status: ts.employee_id ? "scheduled" : "open",
           is_published: false,
           created_by: user?.id || null,
+          tenant_id: tenantId!,
         };
       });
 

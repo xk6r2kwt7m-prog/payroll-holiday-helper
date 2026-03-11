@@ -22,17 +22,23 @@ export interface CompanySettings {
 }
 
 export function useCompanySettings() {
+  const { tenantId } = useTenant();
+
   return useQuery({
-    queryKey: ["company-settings"],
+    queryKey: ["company-settings", tenantId],
     queryFn: async () => {
+      if (!tenantId) return null;
+
       const { data, error } = await supabase
         .from("company_settings")
         .select("*")
+        .eq("tenant_id", tenantId)
         .maybeSingle();
 
       if (error) throw error;
       return data as CompanySettings | null;
     },
+    enabled: !!tenantId,
   });
 }
 
@@ -43,14 +49,16 @@ export function useUpdateCompanySettings() {
 
   return useMutation({
     mutationFn: async (updates: Partial<CompanySettings>) => {
-      // First check if settings exist
+      if (!tenantId) throw new Error("No tenant context");
+
+      // First check if settings exist for this tenant
       const { data: existing } = await supabase
         .from("company_settings")
         .select("id")
+        .eq("tenant_id", tenantId)
         .maybeSingle();
 
       if (existing) {
-        // Update existing
         const { data, error } = await supabase
           .from("company_settings")
           .update(updates)
@@ -61,10 +69,9 @@ export function useUpdateCompanySettings() {
         if (error) throw error;
         return data;
       } else {
-        // Insert new
         const { data, error } = await supabase
           .from("company_settings")
-          .insert({ ...updates, tenant_id: tenantId! } as any)
+          .insert({ ...updates, tenant_id: tenantId } as any)
           .select()
           .single();
 
