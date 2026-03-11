@@ -23,8 +23,9 @@ import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDi
 import { ComplianceWarningsBanner, useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, getMinimumStaff, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
 import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
+import { MobileManagerBar } from "@/components/schedule/MobileManagerBar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from "@/integrations/supabase/client";
+import { useBulkCreateShifts } from "@/hooks/useSchedule";
 
 type ViewMode = "week" | "day";
 const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
