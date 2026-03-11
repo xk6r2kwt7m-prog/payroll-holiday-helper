@@ -36,6 +36,7 @@ import PlatformAdmin from "./pages/PlatformAdmin";
 import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
 import ResetPassword from "./pages/ResetPassword";
+import TalentPool from "./pages/TalentPool";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 
