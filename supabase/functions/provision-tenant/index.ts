@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
         slug: finalSlug,
         message: "Company workspace created successfully",
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
     console.error("provision-tenant error:", err);
