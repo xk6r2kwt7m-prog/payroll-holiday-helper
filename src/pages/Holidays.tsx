@@ -442,6 +442,58 @@ const Holidays = () => {
 
   const overdrawnCount = filteredSummaries.filter(s => s.hoursTaken > s.hoursAccrued + s.hoursCarriedOver).length;
 
+  // Audit debug data — admin validation panel
+  const auditData = useMemo(() => {
+    const year = parseInt(selectedYear);
+
+    // Count payroll entries contributing to this year
+    const correctedBaseNames = new Set<string>();
+    payrollEntries.forEach((entry: any) => {
+      if (!entry.payroll_periods) return;
+      const name: string = entry.payroll_periods.period_name || "";
+      if (name.includes("[Corrected]")) {
+        correctedBaseNames.add(name.replace(" [Corrected]", "").trim());
+      }
+    });
+
+    const yearEntries = payrollEntries.filter((entry: any) => {
+      if (!entry.employees || !entry.payroll_periods) return false;
+      const periodName = entry.payroll_periods.period_name || "";
+      if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
+      const periodEnd = new Date(entry.payroll_periods.end_date);
+      return periodEnd.getFullYear() === year;
+    });
+
+    const totalWorkedHours = yearEntries.reduce((sum: number, e: any) =>
+      sum + (Number(e.imported_hours) ?? Number(e.timesheet_hours) ?? 0), 0);
+
+    const totalAccruedFromEntries = yearEntries.reduce((sum: number, e: any) =>
+      sum + (Number(e.holiday_accrued_hours) || 0), 0);
+
+    const uniqueEmployeeIds = new Set(yearEntries.map((e: any) => e.employee_id));
+    const uniquePeriodIds = new Set(yearEntries.map((e: any) => e.payroll_period_id));
+
+    return {
+      year,
+      totalPayrollEntries: payrollEntries.length,
+      yearPayrollEntries: yearEntries.length,
+      employeesFromPayroll: uniqueEmployeeIds.size,
+      employeesInSummary: currentSummaries.length,
+      periodsUsed: uniquePeriodIds.size,
+      totalWorkedHours: Math.round(totalWorkedHours * 100) / 100,
+      accrualFromPayrollEntries: Math.round(totalAccruedFromEntries * 100) / 100,
+      accrualRate: leaveRules?.accrualRate ?? 0.1207,
+      expectedAccrual: Math.round(totalWorkedHours * (leaveRules?.accrualRate ?? 0.1207) * 100) / 100,
+      dashboardAccrued: Math.round(totals.accrued * 100) / 100,
+      dashboardTaken: Math.round(totals.taken * 100) / 100,
+      dashboardCarryOver: Math.round(totals.carryOver * 100) / 100,
+      dashboardPaid: Math.round(totals.paid * 100) / 100,
+      dashboardBalance: Math.round(totals.balance * 100) / 100,
+      overdrawnCount,
+      sourceTables: ["payroll_entries", "payroll_periods", "holiday_payments", "holiday_adjustments"],
+    };
+  }, [selectedYear, payrollEntries, currentSummaries, totals, overdrawnCount, leaveRules]);
+
   // Alerts
   const alerts = useMemo(() => {
     return currentSummaries
