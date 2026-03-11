@@ -51,6 +51,8 @@ export function MobileShiftSheet({
     };
   }, [shift]);
 
+  if (!shift) return null;
+
   const shiftDate = new Date(shift.shift_date + "T00:00:00");
 
   return (
