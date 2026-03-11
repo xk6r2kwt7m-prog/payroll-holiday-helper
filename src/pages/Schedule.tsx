@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
 import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWeek, useUnpublishWeek, useCopyPreviousWeek, useLoadTemplate, useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
