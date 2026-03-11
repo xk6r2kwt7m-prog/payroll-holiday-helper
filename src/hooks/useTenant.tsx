@@ -173,6 +173,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         tenantName,
         tenantCountry,
         tenantTimezone,
+        tenantStatus,
         isPlatformAdmin,
         enabledModules,
         loading,
