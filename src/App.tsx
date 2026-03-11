@@ -187,6 +187,10 @@ const App = () => (
               path="/payroll/audit"
               element={<ProtectedRoute><PayrollAudit /></ProtectedRoute>}
             />
+            <Route
+              path="/platform-admin"
+              element={<ProtectedRoute><PlatformAdmin /></ProtectedRoute>}
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TenantProvider>
