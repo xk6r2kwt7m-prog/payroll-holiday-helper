@@ -1,12 +1,10 @@
 import { useMemo, useState, useCallback } from "react";
 import { format, isSameDay, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Plus, AlertTriangle, Check, Lock, MapPin } from "lucide-react";
+import { Plus } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
 import { MobileShiftSheet } from "./MobileShiftSheet";
-import { BulkScheduleActions } from "./BulkScheduleActions";
 import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
 import { DroppableCell, EmptyDropCell } from "./DroppableCell";
 import { useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
