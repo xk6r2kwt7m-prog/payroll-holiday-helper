@@ -485,7 +485,7 @@ export function RotaGrid({
                       >
                         {openShifts.map((s: any) => (
                           <div key={s.id} onClick={() => handleCellClick(day, s)}>
-                            {renderShiftWithPopover(s, day)}
+                            {renderShiftCell(s, day)}
                           </div>
                         ))}
                       </DroppableCell>
