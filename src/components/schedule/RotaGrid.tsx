@@ -587,6 +587,10 @@ export function RotaGrid({
           setMobileSheetDay(null);
           if (shift) setMoveDrawerShift(shift);
         }}
+        onUpdate={async (id, updates) => {
+          await onUpdateShift(id, updates);
+          toast.success("Shift updated");
+        }}
       />
 
       {/* Move shift drawer */}
