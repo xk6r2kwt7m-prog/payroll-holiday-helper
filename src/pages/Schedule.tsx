@@ -599,13 +599,24 @@ export default function Schedule() {
         branch={selectedBranch}
         department={selectedDept}
         existingShifts={shifts || []}
+        initialDay={wizardInitialDay}
+        departments={DEPT_WITH_ALL}
+        onDeptChange={setSelectedDept}
         onCreateShifts={async (newShifts) => {
-          for (const s of newShifts) {
-            await handleCreateShift(s);
+          if (!tenantId) {
+            toast.error("No workspace selected");
+            return;
           }
+          const { data: { user } } = await supabase.auth.getUser();
+          const withTenant = newShifts.map((s) => ({
+            ...s,
+            tenant_id: tenantId,
+            created_by: user?.id || null,
+          }));
+          await bulkCreate.mutateAsync(withTenant as any);
           toast.success(`Created ${newShifts.length} shift${newShifts.length !== 1 ? "s" : ""}`);
         }}
-        isPending={createShift.isPending}
+        isPending={bulkCreate.isPending}
       />
     </AppLayout>
   );
