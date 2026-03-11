@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     console.error("provision-tenant error:", err);
     return new Response(
       JSON.stringify({ error: err.message || "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
