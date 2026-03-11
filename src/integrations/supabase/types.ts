@@ -1033,6 +1033,69 @@ export type Database = {
           },
         ]
       }
+      holiday_ledger: {
+        Row: {
+          amount: number | null
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          entry_date: string
+          entry_type: Database["public"]["Enums"]["holiday_ledger_entry_type"]
+          hours: number
+          id: string
+          leave_year_start: string
+          notes: string | null
+          source_id: string | null
+          source_table: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          entry_date?: string
+          entry_type: Database["public"]["Enums"]["holiday_ledger_entry_type"]
+          hours?: number
+          id?: string
+          leave_year_start: string
+          notes?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          entry_date?: string
+          entry_type?: Database["public"]["Enums"]["holiday_ledger_entry_type"]
+          hours?: number
+          id?: string
+          leave_year_start?: string
+          notes?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holiday_ledger_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holiday_ledger_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holiday_payments: {
         Row: {
           created_at: string
@@ -2407,6 +2470,15 @@ export type Database = {
         | "p60"
         | "other"
       employee_status: "active" | "leaver" | "starter"
+      holiday_ledger_entry_type:
+        | "accrual"
+        | "carry_over_in"
+        | "holiday_taken"
+        | "manual_adjustment"
+        | "correction"
+        | "payout_on_termination"
+        | "carry_over_out"
+        | "expiry"
       payroll_status: "draft" | "pending" | "approved" | "rejected"
       shift_status: "scheduled" | "open" | "cancelled"
       tenant_role:
@@ -2568,6 +2640,16 @@ export const Constants = {
         "other",
       ],
       employee_status: ["active", "leaver", "starter"],
+      holiday_ledger_entry_type: [
+        "accrual",
+        "carry_over_in",
+        "holiday_taken",
+        "manual_adjustment",
+        "correction",
+        "payout_on_termination",
+        "carry_over_out",
+        "expiry",
+      ],
       payroll_status: ["draft", "pending", "approved", "rejected"],
       shift_status: ["scheduled", "open", "cancelled"],
       tenant_role: [
