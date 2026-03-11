@@ -150,9 +150,14 @@ export function RotaGrid({
   const handleCellClick = (day: Date, shift?: any, employeeId?: string | null) => {
     if (!isAdmin) return;
     if (activeShift) return;
-    // If clicking a shift, show popover instead of dialog
+    // If clicking a shift, show mobile bottom sheet or toggle popover
     if (shift) {
-      setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
+      if (isMobile) {
+        setMobileSheetShift(shift);
+        setMobileSheetDay(day);
+      } else {
+        setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
+      }
       return;
     }
     setSelectedDay(day);
