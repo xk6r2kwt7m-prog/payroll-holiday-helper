@@ -18,7 +18,7 @@ export function DroppableCell({ id, children, isAdmin, isToday, onClick }: Dropp
     <td
       ref={setNodeRef}
       className={cn(
-        "p-0.5 sm:p-1 text-center border-l border-border/50 transition-colors align-top",
+        "group/cell p-0.5 sm:p-1 text-center border-l border-border/50 transition-colors align-top",
         isToday && "bg-primary/[0.03]",
         isAdmin && "cursor-pointer",
         isOver && "bg-primary/10 ring-1 ring-inset ring-primary/30"
