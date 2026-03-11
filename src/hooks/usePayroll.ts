@@ -369,6 +369,7 @@ export function useCopyPayrollPeriod() {
             total_pay: perfBonus + specBonus,
             bank_details_exported: false,
             adjustment_note: null,
+            tenant_id: tenantId!,
           };
         });
 

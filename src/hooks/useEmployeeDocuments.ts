@@ -80,6 +80,7 @@ export function useAllExpiringDocuments(daysAhead: number = 30) {
 
 export function useUploadDocument() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async ({

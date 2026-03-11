@@ -146,6 +146,7 @@ export function useRejectTimeEntry() {
 
 export function useManagerOverride() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async ({
       employeeId,

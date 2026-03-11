@@ -63,6 +63,7 @@ export function useAllEmployeeBranches() {
 
 export function useSetEmployeeBranches() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async ({ 
