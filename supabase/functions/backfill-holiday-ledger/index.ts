@@ -20,16 +20,28 @@ Deno.serve(async (req) => {
     const entries: any[] = [];
     const skipped: any[] = [];
 
-    // 1. Accruals from payroll_entries
-    const { data: payrollEntries, error: peErr } = await supabase
-      .from("payroll_entries")
-      .select(`
-        id, employee_id, holiday_accrued_hours, hourly_rate, tenant_id,
-        payroll_periods!inner (start_date, period_name)
-      `)
-      .eq("tenant_id", tenant_id)
-      .gt("holiday_accrued_hours", 0);
-    if (peErr) throw peErr;
+    // 1. Accruals from payroll_entries (paginated to avoid 1000-row cap)
+    let payrollEntries: any[] = [];
+    {
+      const PAGE = 1000;
+      let from = 0;
+      let more = true;
+      while (more) {
+        const { data, error: peErr } = await supabase
+          .from("payroll_entries")
+          .select(`
+            id, employee_id, holiday_accrued_hours, hourly_rate, tenant_id,
+            payroll_periods!inner (start_date, period_name)
+          `)
+          .eq("tenant_id", tenant_id)
+          .gt("holiday_accrued_hours", 0)
+          .range(from, from + PAGE - 1);
+        if (peErr) throw peErr;
+        payrollEntries = payrollEntries.concat(data || []);
+        more = (data?.length || 0) === PAGE;
+        from += PAGE;
+      }
+    }
 
     for (const pe of payrollEntries || []) {
       const periodStart = (pe as any).payroll_periods?.start_date;
