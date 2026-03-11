@@ -232,57 +232,46 @@ const Holidays = () => {
     });
   };
 
-  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022), [payrollEntries, payments2022, adjustments]);
-  const summaries2023 = useMemo(() => {
-    const base = buildSummaries(2023, payments2023);
-    return base.map(s => {
-      const prev = summaries2022.find(p => p.employeeId === s.employeeId);
-      const carryOver = prev ? Math.max(0, prev.balance) : 0;
-      return {
-        ...s,
-        hoursCarriedOver: s.hoursCarriedOver + carryOver,
-        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
-      };
-    });
-  }, [payrollEntries, payments2023, summaries2022, adjustments]);
-  const summaries2024 = useMemo(() => {
-    const base = buildSummaries(2024, payments2024);
-    return base.map(s => {
-      const prev = summaries2023.find(p => p.employeeId === s.employeeId);
-      const carryOver = prev ? Math.max(0, prev.balance) : 0;
-      return {
-        ...s,
-        hoursCarriedOver: s.hoursCarriedOver + carryOver,
-        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
-      };
-    });
-  }, [payrollEntries, payments2024, summaries2023, adjustments]);
-  const summaries2025 = useMemo(() => {
-    const base = buildSummaries(2025, payments2025);
-    return base.map(s => {
-      const prev = summaries2024.find(p => p.employeeId === s.employeeId);
-      const carryOver = prev ? Math.max(0, prev.balance) : 0;
-      return {
-        ...s,
-        hoursCarriedOver: s.hoursCarriedOver + carryOver,
-        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
-      };
-    });
-  }, [payrollEntries, payments2025, summaries2024, adjustments]);
+  // 2022: no prior year carry-over possible, use holiday_balances carry-over only
+  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022, balances2022), [payrollEntries, payments2022, balances2022, adjustments]);
 
-  // 2026 summaries with carry-over from 2025
-  const summaries2026 = useMemo(() => {
-    const base = buildSummaries(2026, payments2026);
+  // Helper: add computed carry-over from prior year for employees NOT already having carry-over from holiday_balances
+  const addComputedCarryOver = (base: EmployeeSummary[], prevSummaries: EmployeeSummary[], balances: any[]): EmployeeSummary[] => {
+    const balanceEmployeeIds = new Set(balances.map((b: any) => b.employee_id));
     return base.map(s => {
-      const prev = summaries2025.find(p => p.employeeId === s.employeeId);
-      const carryOver = prev ? Math.max(0, prev.balance) : 0;
+      // If employee already has carry-over from holiday_balances, keep it
+      if (balanceEmployeeIds.has(s.employeeId) && s.hoursCarriedOver > 0) return s;
+      // Otherwise compute from prior year balance
+      const prev = prevSummaries.find(p => p.employeeId === s.employeeId);
+      const computedCarry = prev ? Math.max(0, prev.balance) : 0;
+      if (computedCarry === 0) return s;
       return {
         ...s,
-        hoursCarriedOver: s.hoursCarriedOver + carryOver,
-        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
+        hoursCarriedOver: s.hoursCarriedOver + computedCarry,
+        balance: s.hoursAccrued + s.hoursCarriedOver + computedCarry - s.hoursTaken,
       };
     });
-  }, [payrollEntries, payments2026, summaries2025, adjustments]);
+  };
+
+  const summaries2023 = useMemo(() => {
+    const base = buildSummaries(2023, payments2023, balances2023);
+    return addComputedCarryOver(base, summaries2022, balances2023);
+  }, [payrollEntries, payments2023, balances2023, summaries2022, adjustments]);
+
+  const summaries2024 = useMemo(() => {
+    const base = buildSummaries(2024, payments2024, balances2024);
+    return addComputedCarryOver(base, summaries2023, balances2024);
+  }, [payrollEntries, payments2024, balances2024, summaries2023, adjustments]);
+
+  const summaries2025 = useMemo(() => {
+    const base = buildSummaries(2025, payments2025, balances2025);
+    return addComputedCarryOver(base, summaries2024, balances2025);
+  }, [payrollEntries, payments2025, balances2025, summaries2024, adjustments]);
+
+  const summaries2026 = useMemo(() => {
+    const base = buildSummaries(2026, payments2026, balances2026);
+    return addComputedCarryOver(base, summaries2025, balances2026);
+  }, [payrollEntries, payments2026, balances2026, summaries2025, adjustments]);
 
   const allYearSummaries = { "2022": summaries2022, "2023": summaries2023, "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
   const currentSummaries = allYearSummaries[selectedYear] || [];
