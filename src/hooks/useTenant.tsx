@@ -75,7 +75,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     // Fetch the tenant details for the selected one
     const { data: membership } = await supabase
       .from("tenant_members")
-      .select("tenant_id, tenants(id, name, country, timezone, enabled_modules)")
+      .select("tenant_id, tenants(id, name, country, timezone, status, enabled_modules)")
       .eq("user_id", user!.id)
       .eq("tenant_id", selectedTenantId)
       .eq("is_active", true)
