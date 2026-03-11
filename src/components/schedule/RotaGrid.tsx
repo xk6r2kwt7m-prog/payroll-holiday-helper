@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
 import { MobileShiftSheet } from "./MobileShiftSheet";
+import { MoveShiftDrawer } from "./MoveShiftDrawer";
 import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
 import { DroppableCell, EmptyDropCell } from "./DroppableCell";
 
@@ -53,8 +54,8 @@ export function RotaGrid({
   const [popoverShiftId, setPopoverShiftId] = useState<string | null>(null);
   const [mobileSheetShift, setMobileSheetShift] = useState<any>(null);
   const [mobileSheetDay, setMobileSheetDay] = useState<Date | null>(null);
+  const [moveDrawerShift, setMoveDrawerShift] = useState<any>(null);
   const isMobile = useIsMobile();
-
 
   const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } });
   const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
@@ -102,14 +103,11 @@ export function RotaGrid({
     return totalMinutes / 60;
   };
 
-
-
   const [defaultEmployeeId, setDefaultEmployeeId] = useState<string | null>(null);
 
   const handleCellClick = (day: Date, shift?: any, employeeId?: string | null) => {
     if (!isAdmin) return;
     if (activeShift) return;
-    // If clicking a shift, show mobile bottom sheet or toggle popover
     if (shift) {
       if (isMobile) {
         setMobileSheetShift(shift);
@@ -156,6 +154,15 @@ export function RotaGrid({
     onDeleteShift(shiftId);
   };
 
+  const handleMoveShift = async (shiftId: string, updates: any) => {
+    try {
+      await onUpdateShift(shiftId, updates);
+      toast.success("Shift moved");
+    } catch {
+      toast.error("Failed to move shift");
+    }
+  };
+
   const handleSave = async (data: {
     employee_id: string | null;
     start_time: string;
@@ -195,7 +202,7 @@ export function RotaGrid({
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveShift(event.active.data.current?.shift || null);
-    setPopoverShiftId(null); // close popover on drag
+    setPopoverShiftId(null);
   }, []);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
@@ -217,7 +224,6 @@ export function RotaGrid({
     if (isSameEmployee && isSameDate) return;
 
     if (targetEmployeeId !== "open") {
-      // Only block if employee already has a shift at THIS branch+department on this day
       const existingShift = shifts?.find(
         (s: any) =>
           s.employee_id === targetEmployeeId &&
@@ -251,14 +257,12 @@ export function RotaGrid({
     }
   }, [shifts, branch, department, deptEmployees, onUpdateShift]);
 
-  // Helper to get employee name
   const getEmployeeName = (employeeId: string | null) => {
     if (!employeeId) return "Open Shift";
     const emp = employees.find(e => e.id === employeeId);
     return emp ? `${emp.forename} ${emp.surname}` : "Unknown";
   };
 
-  // Render a shift cell — tap opens mobile sheet or desktop popover
   const renderShiftCell = (shift: any, day: Date) => {
     return (
       <div key={shift.id}>
@@ -290,7 +294,6 @@ export function RotaGrid({
     );
   };
 
-  // Filter employees based on quickFilter
   const filteredEmployees = useMemo(() => {
     if (quickFilter === "all") return deptEmployees;
     if (quickFilter === "no_shifts") {
@@ -309,7 +312,6 @@ export function RotaGrid({
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                {/* Employee column header */}
                 <th className="text-left px-2 py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-[100px] sm:w-[160px] sticky left-0 bg-card z-10 border-b border-border">
                   <span className="hidden sm:inline">Employee</span>
                   <span className="sm:hidden">Staff</span>
@@ -346,7 +348,6 @@ export function RotaGrid({
                           {format(day, "d")}
                         </span>
                       </div>
-                      {/* Staffing indicator — compact dot */}
                       <div className="mt-1 flex items-center justify-center">
                         {isUnder ? (
                           <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-destructive">
@@ -381,7 +382,6 @@ export function RotaGrid({
                       hasNoShifts && "bg-muted/[0.15]",
                     )}
                   >
-                    {/* Employee name cell */}
                     <td className="px-2 py-2 sticky left-0 bg-card z-10">
                       <div className="flex items-center gap-1.5">
                         <div className={cn(
@@ -409,7 +409,6 @@ export function RotaGrid({
                       </div>
                     </td>
 
-                    {/* Day cells */}
                     {weekDays.map((day) => {
                       const shift = getShiftForEmployeeDay(emp.id, day);
                       const crossBranchShifts = getCrossBranchShift(emp.id, day);
@@ -495,7 +494,6 @@ export function RotaGrid({
         </DragOverlay>
       </DndContext>
 
-
       <ShiftCellDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -576,6 +574,26 @@ export function RotaGrid({
           if (mobileSheetShift) handleDeleteFromPopover(mobileSheetShift.id);
           setMobileSheetShift(null);
         }}
+        onMove={() => {
+          if (mobileSheetShift) {
+            setMoveDrawerShift(mobileSheetShift);
+          }
+          setMobileSheetShift(null);
+        }}
+      />
+
+      {/* Move shift drawer */}
+      <MoveShiftDrawer
+        open={!!moveDrawerShift}
+        onOpenChange={(open) => { if (!open) setMoveDrawerShift(null); }}
+        shift={moveDrawerShift}
+        weekDays={weekDays}
+        employees={employees}
+        department={department}
+        branch={branch}
+        existingShifts={shifts || []}
+        onMove={handleMoveShift}
+        isPending={isPending}
       />
     </>
   );
