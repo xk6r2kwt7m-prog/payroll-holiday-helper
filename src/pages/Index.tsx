@@ -6,7 +6,8 @@ import { PayrollDeadlineWidget } from "@/components/dashboard/PayrollDeadlineWid
 import { usePayrollAudit } from "@/hooks/usePayrollAudit";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
-import { formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
+import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
