@@ -288,12 +288,13 @@ export function useUpdateHolidayBalance() {
 
 export function useCreateHolidayBalance() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
-    mutationFn: async (balance: HolidayBalanceInsert) => {
+    mutationFn: async (balance: Omit<HolidayBalanceInsert, 'tenant_id'>) => {
       const { data, error } = await supabase
         .from("holiday_balances")
-        .insert(balance)
+        .insert({ ...balance, tenant_id: tenantId! })
         .select()
         .single();
       

@@ -55,12 +55,13 @@ export function useEmployee(id: string) {
 
 export function useCreateEmployee() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
-    mutationFn: async (employee: EmployeeInsert) => {
+    mutationFn: async (employee: Omit<EmployeeInsert, 'tenant_id'>) => {
       const { data, error } = await supabase
         .from("employees")
-        .insert(employee)
+        .insert({ ...employee, tenant_id: tenantId! })
         .select()
         .single();
       
