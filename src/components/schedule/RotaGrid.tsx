@@ -410,7 +410,7 @@ export function RotaGrid({
               </tr>
             </thead>
             <tbody>
-              {deptEmployees.map((emp) => {
+              {filteredEmployees.map((emp) => {
                 const weeklyHours = getEmployeeWeeklyHours(emp.id);
                 const hourlyRate = Number(emp.hourly_rate) || 0;
                 const weeklyCost = weeklyHours * hourlyRate;
