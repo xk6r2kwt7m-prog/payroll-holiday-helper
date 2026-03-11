@@ -52,6 +52,7 @@ export default function Schedule() {
   const { sendNotification } = useNotifications();
   const { data: companySettings } = useCompanySettings();
   const { data: employees } = useEmployees();
+  const isMobile = useIsMobile();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
