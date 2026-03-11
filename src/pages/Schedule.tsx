@@ -21,6 +21,8 @@ import { LoadTemplateDialog } from "@/components/schedule/LoadTemplateDialog";
 import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
 import { ComplianceWarningsBanner, useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, getMinimumStaff, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
+import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 
 type ViewMode = "week" | "day";
