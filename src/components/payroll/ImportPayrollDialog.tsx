@@ -403,7 +403,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             holiday_accrued_hours: holidayAccrued,
             total_pay: totalPay,
             notes: locNotes,
-          });
+          } as any);
 
         if (entryError) throw entryError;
         entriesCreated++;
