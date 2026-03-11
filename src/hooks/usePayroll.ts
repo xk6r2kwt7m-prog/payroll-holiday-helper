@@ -331,7 +331,8 @@ export function useCopyPayrollPeriod() {
           sales_total: salesTotal || 0,
           status: "draft" as const,
           imported_by: user?.id,
-        })
+          tenant_id: tenantId!,
+        } as any)
         .select()
         .single();
 
