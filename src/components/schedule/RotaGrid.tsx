@@ -380,7 +380,7 @@ export function RotaGrid({
                     <th
                       key={day.toISOString()}
                       className={cn(
-                        "text-center p-2 text-xs font-medium min-w-[130px]",
+                        "text-center p-1 sm:p-2 text-xs font-medium min-w-[52px] sm:min-w-[110px]",
                         isToday(day) ? "bg-primary/5" : ""
                       )}
                     >
