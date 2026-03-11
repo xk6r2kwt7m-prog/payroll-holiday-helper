@@ -106,6 +106,7 @@ const App = () => (
             <Route path="/locations" element={<ProtectedRoute requiredRole="admin"><Locations /></ProtectedRoute>} />
             <Route path="/locations/:branch" element={<ProtectedRoute requiredRole="admin"><LocationDashboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute requiredRole="admin"><Settings /></ProtectedRoute>} />
+            <Route path="/talent-pool" element={<ProtectedRoute requiredRole="staff"><TalentPool /></ProtectedRoute>} />
 
             {/* Platform admin — platform owner only */}
             <Route path="/platform-admin" element={<ProtectedRoute platformAdminOnly><PlatformAdmin /></ProtectedRoute>} />
