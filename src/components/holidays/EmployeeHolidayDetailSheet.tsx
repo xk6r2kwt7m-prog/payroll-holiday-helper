@@ -14,6 +14,8 @@ import { formatHours, formatCurrency, hoursToDays } from "@/hooks/useHolidays";
 import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 import { AdjustHolidayBalanceDialog } from "./AdjustHolidayBalanceDialog";
+import { HolidayLedgerTab } from "./HolidayLedgerTab";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface HolidayPaymentRecord {
   id: string;
