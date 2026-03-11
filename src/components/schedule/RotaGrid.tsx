@@ -7,7 +7,7 @@ import { ShiftCellDialog } from "./ShiftCellDialog";
 import { MobileShiftSheet } from "./MobileShiftSheet";
 import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
 import { DroppableCell, EmptyDropCell } from "./DroppableCell";
-import { useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
