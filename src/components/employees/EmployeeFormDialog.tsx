@@ -247,6 +247,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   );
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
