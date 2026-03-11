@@ -2,7 +2,9 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { FloatingActionButton } from "./FloatingActionButton";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { cn } from "@/lib/utils";
@@ -110,6 +112,7 @@ const pageVariants = {
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const { user, isAdmin, isManagerOrAbove, isSupervisorOrAbove, role, signOut } = useAuth();
+  const isMobile = useIsMobile();
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || "UGLŌ";
 
@@ -335,9 +338,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         </AnimatePresence>
       </main>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav + FAB */}
       <div className="md:hidden">
         <MobileBottomNav />
+        {isMobile && <FloatingActionButton />}
       </div>
     </div>
   );

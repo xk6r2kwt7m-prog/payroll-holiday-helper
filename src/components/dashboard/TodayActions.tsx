@@ -1,21 +1,21 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  AlertTriangle,
   UserX,
-  Calendar,
   DollarSign,
   CreditCard,
   Shield,
   Clock,
   TrendingUp,
-  UserPlus,
-  GraduationCap,
-  FileText,
   ChevronRight,
+  GraduationCap,
+  UserPlus,
+  FileText,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAbsenceRecords } from "@/hooks/useAbsences";
+import { useTrainingRecords } from "@/hooks/useTrainingRecords";
 import { format } from "date-fns";
 
 interface TodayActionsProps {
@@ -54,10 +54,12 @@ const severityConfig = {
 export function TodayActions({ employees, periods, entries }: TodayActionsProps) {
   const navigate = useNavigate();
   const { data: absences = [] } = useAbsenceRecords();
+  const { data: trainingRecords = [] } = useTrainingRecords();
 
   const actions = useMemo(() => {
     const result: ActionItem[] = [];
     const today = format(new Date(), "yyyy-MM-dd");
+    const now = new Date();
 
     // 1. Absences today
     const todayAbsences = absences.filter(
@@ -91,7 +93,6 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
     const upcomingPay = periods.filter((p) => {
       if (!p.pay_date || p.status === "approved") return false;
       const payDate = new Date(p.pay_date);
-      const now = new Date();
       const days = Math.ceil((payDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       return days >= 0 && days <= 7;
     });
@@ -120,7 +121,59 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
       });
     }
 
-    // 5. Missing NI
+    // 5. Training overdue
+    const overdueTraining = trainingRecords.filter((t) => {
+      if (!t.expiry_date) return false;
+      return new Date(t.expiry_date) < now;
+    });
+    if (overdueTraining.length > 0) {
+      result.push({
+        id: "training-overdue",
+        severity: "critical",
+        icon: <GraduationCap className="h-4 w-4" />,
+        title: `${overdueTraining.length} training expired`,
+        count: overdueTraining.length,
+        href: "/training",
+      });
+    }
+
+    // 6. Training expiring within 30 days
+    const expiringTraining = trainingRecords.filter((t) => {
+      if (!t.expiry_date) return false;
+      const exp = new Date(t.expiry_date);
+      const days = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return days > 0 && days <= 30;
+    });
+    if (expiringTraining.length > 0) {
+      result.push({
+        id: "training-expiring",
+        severity: "warning",
+        icon: <GraduationCap className="h-4 w-4" />,
+        title: `${expiringTraining.length} training expiring soon`,
+        count: expiringTraining.length,
+        href: "/training",
+      });
+    }
+
+    // 7. New employees needing onboarding (started within 14 days, no end_date)
+    const recentStarters = employees.filter((e) => {
+      if (e.status !== "active" || !e.start_date) return false;
+      const startDate = new Date(e.start_date);
+      const daysSinceStart = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      return daysSinceStart >= 0 && daysSinceStart <= 14;
+    });
+    if (recentStarters.length > 0) {
+      result.push({
+        id: "onboarding-new",
+        severity: "info",
+        icon: <UserPlus className="h-4 w-4" />,
+        title: `${recentStarters.length} new starter${recentStarters.length > 1 ? "s" : ""} onboarding`,
+        count: recentStarters.length,
+        href: "/onboarding",
+      });
+    }
+
+    // 8. Missing NI
     const missingNI = employees.filter(
       (e) => e.status === "active" && !e.ni_number
     );
@@ -135,7 +188,7 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
       });
     }
 
-    // 6. Rate discrepancies
+    // 9. Rate discrepancies
     const rateIssues = entries.filter((e: any) => {
       const emp = e.employees;
       return emp && Number(e.hourly_rate) !== Number(emp.hourly_rate);
@@ -151,7 +204,7 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
       });
     }
 
-    // 7. Zero-hour entries
+    // 10. Zero-hour entries
     const zeroHours = entries.filter((e: any) => Number(e.timesheet_hours) === 0);
     if (zeroHours.length > 0 && entries.length > 0) {
       result.push({
@@ -168,7 +221,7 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
       const order = { critical: 0, warning: 1, info: 2 };
       return order[a.severity] - order[b.severity];
     });
-  }, [employees, periods, entries, absences]);
+  }, [employees, periods, entries, absences, trainingRecords]);
 
   if (actions.length === 0) {
     return (

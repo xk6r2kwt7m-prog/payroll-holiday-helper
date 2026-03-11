@@ -83,12 +83,12 @@ const Index = () => {
           <Button
             variant="outline"
             size="sm"
-            className="hidden sm:flex gap-2 text-muted-foreground border-border"
+            className="flex gap-2 text-muted-foreground border-border min-h-[40px]"
             onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
           >
             <Search className="h-3.5 w-3.5" />
             <span className="text-xs">Search</span>
-            <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
+            <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground hidden sm:inline">⌘K</kbd>
           </Button>
         </div>
 
