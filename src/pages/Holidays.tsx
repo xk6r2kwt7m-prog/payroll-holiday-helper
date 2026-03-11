@@ -1048,4 +1048,13 @@ function EmptyState({ hasFilters, onClearFilters }: { hasFilters: boolean; onCle
   );
 }
 
+function AuditRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="rounded-lg bg-muted/50 border border-border p-3">
+      <div className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">{label}</div>
+      <div className={`text-sm font-semibold tabular-nums ${highlight ? "text-destructive" : "text-foreground"}`}>{value}</div>
+    </div>
+  );
+}
+
 export default Holidays;
