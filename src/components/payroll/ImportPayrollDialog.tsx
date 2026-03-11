@@ -363,7 +363,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             status: "draft" as const,
             imported_by: user?.id,
             notes: periodNotes,
-          })
+          } as any)
           .select()
           .single();
 
@@ -403,7 +403,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             holiday_accrued_hours: holidayAccrued,
             total_pay: totalPay,
             notes: locNotes,
-          });
+          } as any);
 
         if (entryError) throw entryError;
         entriesCreated++;
@@ -448,7 +448,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         import_status: "completed",
         records_imported: entriesCreated,
         errors: unmatchedNames.length > 0 ? { unmatched: unmatchedNames } : null,
-      });
+      } as any);
 
       setStep("done");
       setImportMessage(

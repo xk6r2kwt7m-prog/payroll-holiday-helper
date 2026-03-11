@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTenant } from "@/hooks/useTenant";
 
 export interface CompanySettings {
   id: string;
@@ -38,6 +39,7 @@ export function useCompanySettings() {
 export function useUpdateCompanySettings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async (updates: Partial<CompanySettings>) => {
@@ -62,7 +64,7 @@ export function useUpdateCompanySettings() {
         // Insert new
         const { data, error } = await supabase
           .from("company_settings")
-          .insert(updates)
+          .insert({ ...updates, tenant_id: tenantId! } as any)
           .select()
           .single();
 

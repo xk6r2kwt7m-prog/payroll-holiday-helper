@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { TenantProvider } from "@/hooks/useTenant";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Employees from "./pages/Employees";
@@ -42,6 +43,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <TenantProvider>
           <CommandPalette />
           <Routes>
             <Route path="/auth" element={<Auth />} />
@@ -184,6 +186,7 @@ const App = () => (
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
+        </TenantProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

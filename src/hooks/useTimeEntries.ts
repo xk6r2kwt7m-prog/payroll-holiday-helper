@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
+import { useTenant } from "@/hooks/useTenant";
 
 export type TimeEntry = Tables<"time_entries">;
 export type TimeEntryUpdate = TablesUpdate<"time_entries">;
@@ -145,6 +146,7 @@ export function useRejectTimeEntry() {
 
 export function useManagerOverride() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async ({
       employeeId,
@@ -175,7 +177,8 @@ export function useManagerOverride() {
             manager_override: true,
             override_reason: reason,
             status: "clocked_in" as const,
-          })
+            tenant_id: tenantId!,
+          } as any)
           .select()
           .single();
         if (error) throw error;

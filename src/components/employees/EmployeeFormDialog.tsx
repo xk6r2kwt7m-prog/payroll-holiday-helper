@@ -155,7 +155,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     }
 
     try {
-      const employeeData: EmployeeInsert = {
+      const employeeData: Omit<EmployeeInsert, 'tenant_id'> = {
         forename: formData.forename.trim(),
         surname: formData.surname.trim(),
         department: formData.department,

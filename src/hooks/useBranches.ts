@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useTenant } from "@/hooks/useTenant";
 
 export type BranchType = Database["public"]["Enums"]["branch_type"];
 
@@ -62,6 +63,7 @@ export function useAllEmployeeBranches() {
 
 export function useSetEmployeeBranches() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async ({ 
@@ -86,6 +88,7 @@ export function useSetEmployeeBranches() {
         employee_id: employeeId,
         branch,
         is_primary: branch === (primaryBranch || branches[0]),
+        tenant_id: tenantId!,
       }));
       
       const { error } = await supabase

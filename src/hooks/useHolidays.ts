@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { useTenant } from "@/hooks/useTenant";
 
 export type HolidayPayment = Tables<"holiday_payments">;
 export type HolidayPaymentInsert = TablesInsert<"holiday_payments">;
@@ -214,12 +215,13 @@ export function useAllPayrollEntriesWithHoliday() {
 
 export function useCreateHolidayPayment() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
-    mutationFn: async (payment: HolidayPaymentInsert) => {
+    mutationFn: async (payment: Omit<HolidayPaymentInsert, 'tenant_id'>) => {
       const { data, error } = await supabase
         .from("holiday_payments")
-        .insert(payment)
+        .insert({ ...payment, tenant_id: tenantId! })
         .select()
         .single();
       
@@ -287,12 +289,13 @@ export function useUpdateHolidayBalance() {
 
 export function useCreateHolidayBalance() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
-    mutationFn: async (balance: HolidayBalanceInsert) => {
+    mutationFn: async (balance: Omit<HolidayBalanceInsert, 'tenant_id'>) => {
       const { data, error } = await supabase
         .from("holiday_balances")
-        .insert(balance)
+        .insert({ ...balance, tenant_id: tenantId! })
         .select()
         .single();
       

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenant } from "@/hooks/useTenant";
 
 export function useGenerateSigningLink() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async ({
@@ -26,6 +28,7 @@ export function useGenerateSigningLink() {
           employee_id: employeeId,
           signer_type: signerType,
           expires_at: expiresAt.toISOString(),
+          tenant_id: tenantId!,
         })
         .select()
         .single();

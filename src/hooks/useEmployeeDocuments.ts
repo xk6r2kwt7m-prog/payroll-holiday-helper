@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { useTenant } from "@/hooks/useTenant";
 
 export type DocumentType = Database["public"]["Enums"]["document_type"];
 
@@ -79,6 +80,7 @@ export function useAllExpiringDocuments(daysAhead: number = 30) {
 
 export function useUploadDocument() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async ({
@@ -122,7 +124,8 @@ export function useUploadDocument() {
           expires_at: expiresAt || null,
           notes: notes || null,
           uploaded_by: user?.id,
-        })
+          tenant_id: tenantId!,
+        } as any)
         .select()
         .single();
 

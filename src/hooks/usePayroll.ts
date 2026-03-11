@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { useTenant } from "@/hooks/useTenant";
 
 export type PayrollPeriod = Tables<"payroll_periods">;
 export type PayrollPeriodInsert = TablesInsert<"payroll_periods">;
@@ -80,12 +81,13 @@ export function usePayrollEntries(periodId?: string) {
 
 export function useCreatePayrollPeriod() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
-    mutationFn: async (period: PayrollPeriodInsert) => {
+    mutationFn: async (period: Omit<PayrollPeriodInsert, 'tenant_id'>) => {
       const { data, error } = await supabase
         .from("payroll_periods")
-        .insert(period)
+        .insert({ ...period, tenant_id: tenantId! })
         .select()
         .single();
       
@@ -295,6 +297,7 @@ export function useBulkUpdatePayrollEntries() {
 
 export function useCopyPayrollPeriod() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async ({ 
@@ -328,7 +331,8 @@ export function useCopyPayrollPeriod() {
           sales_total: salesTotal || 0,
           status: "draft" as const,
           imported_by: user?.id,
-        })
+          tenant_id: tenantId!,
+        } as any)
         .select()
         .single();
 
@@ -365,6 +369,7 @@ export function useCopyPayrollPeriod() {
             total_pay: perfBonus + specBonus,
             bank_details_exported: false,
             adjustment_note: null,
+            tenant_id: tenantId!,
           };
         });
 
