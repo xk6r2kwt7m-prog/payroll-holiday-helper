@@ -816,6 +816,72 @@ const Holidays = () => {
           <TabsContent value="integrity" className="mt-4">
             <HolidayIntegrityCheck rows={integrityRows} isLoading={entriesLoading} />
           </TabsContent>
+
+          {/* Admin Audit Debug Tab */}
+          <TabsContent value="audit" className="mt-4">
+            <div className="rounded-xl bg-card border border-border shadow-card p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <Bug className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-card-foreground">Holiday Audit — {selectedYear}</h3>
+                  <p className="text-sm text-muted-foreground">Admin validation of calculation sources and totals</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <AuditRow label="Selected Year" value={String(auditData.year)} />
+                <AuditRow label="Total Payroll Entries (all years)" value={auditData.totalPayrollEntries.toLocaleString()} />
+                <AuditRow label={`Payroll Entries for ${selectedYear}`} value={auditData.yearPayrollEntries.toLocaleString()} />
+                <AuditRow label="Payroll Periods Used" value={auditData.periodsUsed.toLocaleString()} />
+                <AuditRow label="Employees (from payroll)" value={auditData.employeesFromPayroll.toLocaleString()} />
+                <AuditRow label="Employees (in summary)" value={auditData.employeesInSummary.toLocaleString()} />
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-semibold text-card-foreground mb-3">Accrual Calculation</h4>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <AuditRow label="Total Worked Hours (source)" value={auditData.totalWorkedHours.toLocaleString()} />
+                  <AuditRow label="Accrual Rate" value={`${(auditData.accrualRate * 100).toFixed(2)}%`} />
+                  <AuditRow label="Expected Accrual (rate × hours)" value={formatHours(auditData.expectedAccrual)} />
+                  <AuditRow
+                    label="Actual Accrual (from DB triggers)"
+                    value={formatHours(auditData.accrualFromPayrollEntries)}
+                    highlight={Math.abs(auditData.accrualFromPayrollEntries - auditData.expectedAccrual) > 5}
+                  />
+                  <AuditRow
+                    label="Dashboard Shows (accrued)"
+                    value={formatHours(auditData.dashboardAccrued)}
+                    highlight={Math.abs(auditData.dashboardAccrued - auditData.accrualFromPayrollEntries) > 1}
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-semibold text-card-foreground mb-3">Dashboard Totals</h4>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <AuditRow label="Hours Accrued" value={formatHours(auditData.dashboardAccrued)} />
+                  <AuditRow label="Hours Carried Over" value={formatHours(auditData.dashboardCarryOver)} />
+                  <AuditRow label="Hours Taken" value={formatHours(auditData.dashboardTaken)} />
+                  <AuditRow label="Total Paid" value={formatCurrency(auditData.dashboardPaid)} />
+                  <AuditRow label="Remaining Balance" value={formatHours(auditData.dashboardBalance)} highlight={auditData.dashboardBalance < 0} />
+                  <AuditRow label="Overdrawn Count" value={String(auditData.overdrawnCount)} highlight={auditData.overdrawnCount > 0} />
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-semibold text-card-foreground mb-2">Source Tables</h4>
+                <div className="flex flex-wrap gap-2">
+                  {auditData.sourceTables.map(t => (
+                    <span key={t} className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 text-xs font-mono text-muted-foreground border border-border">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* UK Holiday Law Info Card */}
