@@ -15,12 +15,17 @@ import {
   ChartBar,
   FileText,
 } from "lucide-react";
-import ugloLogo from "@/assets/uglo-logo.png";
 import ugloIcon from "@/assets/uglo-icon.png";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const signupSchema = z.object({
+  fullName: z.string().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().email("Please enter a valid email address").max(255),
+  password: z.string().min(8, "Password must be at least 8 characters").max(72),
 });
 
 const features = [
@@ -33,17 +38,62 @@ const features = [
 ];
 
 const Auth = () => {
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { user, signIn } = useAuth();
+  const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user) navigate("/");
   }, [user, navigate]);
+
+  const handleLogin = async () => {
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    const { error } = await signIn(email, password);
+    if (error) {
+      toast.error(
+        error.message.includes("Invalid login credentials")
+          ? "Invalid email or password"
+          : error.message
+      );
+    } else {
+      toast.success("Welcome back!");
+      navigate("/");
+    }
+  };
+
+  const handleSignup = async () => {
+    const result = signupSchema.safeParse({ fullName, email, password });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    const { error } = await signUp(email, password, fullName);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Account created! Please check your email to verify your address.");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,27 +101,10 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const result = loginSchema.safeParse({ email, password });
-      if (!result.success) {
-        const fieldErrors: Record<string, string> = {};
-        result.error.errors.forEach((err) => {
-          if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
-        });
-        setErrors(fieldErrors);
-        setLoading(false);
-        return;
-      }
-
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error(
-          error.message.includes("Invalid login credentials")
-            ? "Invalid email or password"
-            : error.message
-        );
+      if (mode === "login") {
+        await handleLogin();
       } else {
-        toast.success("Welcome back!");
-        navigate("/");
+        await handleSignup();
       }
     } catch {
       toast.error("An unexpected error occurred");
@@ -149,7 +182,7 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* Right login panel */}
+      {/* Right login/signup panel */}
       <div className="flex-1 flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -166,14 +199,59 @@ const Auth = () => {
               </span>
             </div>
 
+            {/* Mode tabs */}
+            <div className="flex rounded-lg bg-muted p-1 mb-6">
+              <button
+                type="button"
+                onClick={() => { setMode("login"); setErrors({}); }}
+                className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
+                  mode === "login"
+                    ? "bg-card text-card-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode("signup"); setErrors({}); }}
+                className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
+                  mode === "signup"
+                    ? "bg-card text-card-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Create Account
+              </button>
+            </div>
+
             <h1 className="text-xl font-semibold text-card-foreground text-center mb-1">
-              Welcome Back
+              {mode === "login" ? "Welcome Back" : "Get Started"}
             </h1>
             <p className="text-muted-foreground text-center text-sm mb-6">
-              Sign in to your account
+              {mode === "login"
+                ? "Sign in to your account"
+                : "Create your account, then set up your company"}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Jane Smith"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={errors.fullName ? "border-destructive" : ""}
+                  />
+                  {errors.fullName && (
+                    <p className="text-sm text-destructive">{errors.fullName}</p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -209,12 +287,18 @@ const Auth = () => {
                 className="w-full gradient-primary"
                 disabled={loading}
               >
-                {loading ? "Please wait..." : "Sign In"}
+                {loading
+                  ? "Please wait..."
+                  : mode === "login"
+                  ? "Sign In"
+                  : "Create Account"}
               </Button>
             </form>
 
             <p className="mt-6 text-xs text-muted-foreground text-center">
-              Access is restricted to authorised personnel only.
+              {mode === "login"
+                ? "Don't have an account? Switch to Create Account above."
+                : "Already have an account? Switch to Sign In above."}
             </p>
           </div>
 
