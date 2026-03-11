@@ -214,12 +214,13 @@ export function useAllPayrollEntriesWithHoliday() {
 
 export function useCreateHolidayPayment() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
-    mutationFn: async (payment: HolidayPaymentInsert) => {
+    mutationFn: async (payment: Omit<HolidayPaymentInsert, 'tenant_id'>) => {
       const { data, error } = await supabase
         .from("holiday_payments")
-        .insert(payment)
+        .insert({ ...payment, tenant_id: tenantId! })
         .select()
         .single();
       
