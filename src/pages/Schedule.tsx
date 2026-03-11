@@ -45,6 +45,7 @@ export default function Schedule() {
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [loadTemplateOpen, setLoadTemplateOpen] = useState(false);
   const [copyPrevOpen, setCopyPrevOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
