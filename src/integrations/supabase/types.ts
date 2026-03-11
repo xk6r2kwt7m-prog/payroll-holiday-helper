@@ -2165,6 +2165,7 @@ export type Database = {
           country: string
           created_at: string
           email: string | null
+          enabled_modules: Json
           id: string
           logo_url: string | null
           name: string
@@ -2179,6 +2180,7 @@ export type Database = {
           country?: string
           created_at?: string
           email?: string | null
+          enabled_modules?: Json
           id?: string
           logo_url?: string | null
           name: string
@@ -2193,6 +2195,7 @@ export type Database = {
           country?: string
           created_at?: string
           email?: string | null
+          enabled_modules?: Json
           id?: string
           logo_url?: string | null
           name?: string

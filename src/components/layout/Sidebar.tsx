@@ -27,6 +27,7 @@ import {
   AlertTriangle,
   ShieldCheck,
   Globe,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +35,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { ModuleKey } from "@/components/ProtectedRoute";
 
 const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
 
@@ -42,28 +44,30 @@ interface SideNavItem {
   label: string;
   path: string;
   minRole: string;
+  /** Module that must be enabled for this nav item to show */
+  module?: ModuleKey;
 }
 
 const navItems: SideNavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", minRole: "viewer" },
   { icon: Users, label: "Employees", path: "/employees", minRole: "supervisor" },
-  { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff" },
-  { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
-  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report", minRole: "manager" },
-  { icon: BarChart3, label: "Analytics", path: "/schedule/analytics", minRole: "manager" },
-  { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin" },
-  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin" },
-  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin" },
-  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", minRole: "admin" },
-  { icon: ShieldCheck, label: "Payroll Audit", path: "/payroll/audit", minRole: "admin" },
+  { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff", module: "scheduling" },
+  { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor", module: "scheduling" },
+  { icon: BarChart3, label: "Schedule Report", path: "/schedule/report", minRole: "manager", module: "scheduling" },
+  { icon: BarChart3, label: "Analytics", path: "/schedule/analytics", minRole: "manager", module: "analytics" },
+  { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin", module: "payroll" },
+  { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin", module: "payroll" },
+  { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin", module: "payroll" },
+  { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", minRole: "admin", module: "payroll" },
+  { icon: ShieldCheck, label: "Payroll Audit", path: "/payroll/audit", minRole: "admin", module: "payroll" },
   { icon: Calendar, label: "Holidays", path: "/holidays", minRole: "staff" },
   { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" },
   { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
   { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
-  { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
+  { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff", module: "training" },
   { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
   { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
-  { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
+  { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin", module: "documents" },
   { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
   { icon: Settings, label: "Settings", path: "/settings", minRole: "admin" },
 ];
@@ -72,13 +76,25 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { user, isAdmin, role, signOut } = useAuth();
-  const { isPlatformAdmin } = useTenant();
+  const { isPlatformAdmin, enabledModules, tenantName, availableTenants } = useTenant();
   const { data: settings } = useCompanySettings();
-  const companyName = settings?.company_name || "UGLŌ";
+  const companyName = settings?.company_name || tenantName || "UGLŌ";
 
   const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
   const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
-  const visibleNavItems = navItems.filter(item => canAccess(item.minRole));
+
+  const isModuleEnabled = (module?: ModuleKey) => {
+    if (!module) return true;
+    if (isPlatformAdmin) return true;
+    if (!enabledModules) return true;
+    return enabledModules[module] !== false;
+  };
+
+  const visibleNavItems = navItems.filter(
+    (item) => canAccess(item.minRole) && isModuleEnabled(item.module)
+  );
+
+  const hasMultipleTenants = availableTenants.length > 1;
 
   return (
     <aside
@@ -115,9 +131,19 @@ export function Sidebar() {
                 <Shield className="h-4 w-4 text-sidebar-primary flex-shrink-0" />
               )}
             </div>
-            <p className="text-xs text-sidebar-foreground/60">
-              {isAdmin ? "Administrator" : "Viewer"}
+            <p className="text-xs text-sidebar-foreground/60 capitalize">
+              {role || "Viewer"}
+              {isPlatformAdmin && " · Platform Admin"}
             </p>
+            {hasMultipleTenants && (
+              <Link
+                to="/select-workspace"
+                className="mt-1 flex items-center gap-1 text-xs text-sidebar-primary hover:underline"
+              >
+                <Building2 className="h-3 w-3" />
+                Switch Workspace
+              </Link>
+            )}
           </div>
         )}
 

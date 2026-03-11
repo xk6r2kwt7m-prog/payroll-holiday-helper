@@ -26,7 +26,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAuth, AppRole } from "@/hooks/useAuth";
+import { useTenant } from "@/hooks/useTenant";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import type { ModuleKey } from "@/components/ProtectedRoute";
 
 const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
 
@@ -37,13 +39,14 @@ interface NavDef {
   label: string;
   path: string;
   minRole: MinRole;
+  module?: ModuleKey;
 }
 
 const mainNavItems: NavDef[] = [
   { icon: LayoutDashboard, label: "Home", path: "/", minRole: "viewer" },
   { icon: Users, label: "People", path: "/employees", minRole: "supervisor" },
-  { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff" },
-  { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin" },
+  { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff", module: "scheduling" },
+  { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin", module: "payroll" },
 ];
 
 const peopleRoutes = ["/employees", "/absences", "/onboarding", "/training", "/disciplinary"];
@@ -100,19 +103,25 @@ const moreGroups: MoreGroup[] = [
 export function MobileBottomNav() {
   const location = useLocation();
   const { role, signOut } = useAuth();
+  const { enabledModules, isPlatformAdmin } = useTenant();
   const [moreOpen, setMoreOpen] = useState(false);
 
   const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
   const canAccess = (minRole: MinRole) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const isModuleEnabled = (mod?: ModuleKey) => {
+    if (!mod || isPlatformAdmin) return true;
+    if (!enabledModules) return true;
+    return enabledModules[mod] !== false;
+  };
 
-  // Filter main nav items by role
-  const visibleMainNav = mainNavItems.filter(item => canAccess(item.minRole));
+  // Filter main nav items by role and module
+  const visibleMainNav = mainNavItems.filter(item => canAccess(item.minRole) && isModuleEnabled(item.module));
 
   // Filter more groups by role, removing empty groups
   const visibleMoreGroups = moreGroups
     .map(group => ({
       ...group,
-      items: group.items.filter(item => canAccess(item.minRole)),
+      items: group.items.filter(item => canAccess(item.minRole) && isModuleEnabled(item.module)),
     }))
     .filter(group => group.items.length > 0);
 

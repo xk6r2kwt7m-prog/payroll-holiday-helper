@@ -162,7 +162,7 @@ export default function Schedule() {
     }
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await createShift.mutateAsync({ ...data, tenant_id: tenantId, created_by: user?.id });
+      await createShift.mutateAsync({ ...data, created_by: user?.id });
       toast.success("Shift added");
     } catch (err: any) {
       toast.error(err.message);
@@ -617,7 +617,6 @@ export default function Schedule() {
           const { data: { user } } = await supabase.auth.getUser();
           const withTenant = newShifts.map((s) => ({
             ...s,
-            tenant_id: tenantId,
             created_by: user?.id || null,
           }));
           await bulkCreate.mutateAsync(withTenant as any);
