@@ -461,8 +461,8 @@ const Holidays = () => {
       if (!entry.employees || !entry.payroll_periods) return false;
       const periodName = entry.payroll_periods.period_name || "";
       if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
-      const periodEnd = new Date(entry.payroll_periods.end_date);
-      return periodEnd.getFullYear() === year;
+      const periodStart = new Date(entry.payroll_periods.start_date);
+      return periodStart.getFullYear() === year;
     });
 
     const totalWorkedHours = yearEntries.reduce((sum: number, e: any) =>
@@ -474,12 +474,22 @@ const Holidays = () => {
     const uniqueEmployeeIds = new Set(yearEntries.map((e: any) => e.employee_id));
     const uniquePeriodIds = new Set(yearEntries.map((e: any) => e.payroll_period_id));
 
+    // Data completeness: compare employees with payroll entries vs employees with holiday_balances
+    const currentBalances = { 2022: balances2022, 2023: balances2023, 2024: balances2024, 2025: balances2025, 2026: balances2026 }[year] || [];
+    const balanceEmployeeCount = currentBalances.length;
+    const payrollEmployeeCount = uniqueEmployeeIds.size;
+    const paymentsEmployeeCount = new Set(currentPayments.filter((p: any) => p.employee_id).map((p: any) => p.employee_id)).size;
+    const isBalanceComplete = balanceEmployeeCount >= payrollEmployeeCount * 0.8; // 80% threshold
+
     return {
       year,
       totalPayrollEntries: payrollEntries.length,
       yearPayrollEntries: yearEntries.length,
-      employeesFromPayroll: uniqueEmployeeIds.size,
+      employeesFromPayroll: payrollEmployeeCount,
+      employeesFromPayments: paymentsEmployeeCount,
       employeesInSummary: currentSummaries.length,
+      employeesInBalances: balanceEmployeeCount,
+      isBalanceComplete,
       periodsUsed: uniquePeriodIds.size,
       totalWorkedHours: Math.round(totalWorkedHours * 100) / 100,
       accrualFromPayrollEntries: Math.round(totalAccruedFromEntries * 100) / 100,
@@ -491,9 +501,17 @@ const Holidays = () => {
       dashboardPaid: Math.round(totals.paid * 100) / 100,
       dashboardBalance: Math.round(totals.balance * 100) / 100,
       overdrawnCount,
-      sourceTables: ["payroll_entries", "payroll_periods", "holiday_payments", "holiday_adjustments"],
+      sourceTables: {
+        accrued: "payroll_entries.holiday_accrued_hours → filtered by payroll_periods.start_date",
+        taken: "holiday_payments.hours → filtered by leave_year_start",
+        paid: "holiday_payments.total → filtered by leave_year_start",
+        carryOver: "holiday_balances.hours_carried_over → filtered by leave_year_start (fallback: prior year computed balance)",
+        adjustments: "holiday_adjustments.hours → filtered by leave_year_start",
+        balance: "Computed: accrued + carry_over + adjustments − taken",
+        employeeCount: "Union of employees in payroll_entries and holiday_payments for the year",
+      },
     };
-  }, [selectedYear, payrollEntries, currentSummaries, totals, overdrawnCount, leaveRules]);
+  }, [selectedYear, payrollEntries, currentSummaries, currentPayments, totals, overdrawnCount, leaveRules, balances2022, balances2023, balances2024, balances2025, balances2026]);
 
   // Alerts
   const alerts = useMemo(() => {
