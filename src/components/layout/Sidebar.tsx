@@ -71,9 +71,14 @@ const navItems: SideNavItem[] = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, role, signOut } = useAuth();
+  const { isPlatformAdmin } = useTenant();
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || "UGLŌ";
+
+  const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
+  const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const visibleNavItems = navItems.filter(item => canAccess(item.minRole));
 
   return (
     <aside
