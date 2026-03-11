@@ -593,6 +593,31 @@ export function RotaGrid({
         }}
         isPending={isPending}
       />
+
+      {/* Mobile shift action sheet */}
+      <MobileShiftSheet
+        open={!!mobileSheetShift}
+        onOpenChange={(open) => { if (!open) { setMobileSheetShift(null); setMobileSheetDay(null); } }}
+        shift={mobileSheetShift}
+        employeeName={getEmployeeName(mobileSheetShift?.employee_id)}
+        branch={branch}
+        department={department}
+        isAdmin={isAdmin}
+        onEdit={() => {
+          if (mobileSheetShift && mobileSheetDay) {
+            handleEditFromPopover(mobileSheetShift, mobileSheetDay);
+          }
+          setMobileSheetShift(null);
+        }}
+        onCopy={() => {
+          if (mobileSheetShift) handleCopyShift(mobileSheetShift);
+          setMobileSheetShift(null);
+        }}
+        onDelete={() => {
+          if (mobileSheetShift) handleDeleteFromPopover(mobileSheetShift.id);
+          setMobileSheetShift(null);
+        }}
+      />
     </>
   );
 }
