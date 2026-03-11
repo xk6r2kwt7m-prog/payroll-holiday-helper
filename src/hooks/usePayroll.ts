@@ -297,6 +297,7 @@ export function useBulkUpdatePayrollEntries() {
 
 export function useCopyPayrollPeriod() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async ({ 
