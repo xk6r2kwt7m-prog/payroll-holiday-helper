@@ -353,7 +353,7 @@ export function MobileShiftWizard({
                 {selectedDay && weekDays.findIndex((d) => isSameDay(d, selectedDay)) < weekDays.length - 1 && (
                   <button
                     onClick={() => handleNextAction("next_day")}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border hover:border-primary/30 transition-all active:scale-[0.98]"
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl border border-border hover:border-primary/30 transition-all active:scale-[0.98] min-h-[56px]"
                   >
                     <ChevronRight className="h-5 w-5 text-primary" />
                     <div className="text-left">
