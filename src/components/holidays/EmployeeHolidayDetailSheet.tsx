@@ -10,7 +10,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { formatHours, formatCurrency, UK_HOLIDAY_LAW, hoursToDays } from "@/hooks/useHolidays";
+import { formatHours, formatCurrency, hoursToDays } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 import { AdjustHolidayBalanceDialog } from "./AdjustHolidayBalanceDialog";
 
