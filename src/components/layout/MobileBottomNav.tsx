@@ -103,13 +103,19 @@ const moreGroups: MoreGroup[] = [
 export function MobileBottomNav() {
   const location = useLocation();
   const { role, signOut } = useAuth();
+  const { enabledModules, isPlatformAdmin } = useTenant();
   const [moreOpen, setMoreOpen] = useState(false);
 
   const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
   const canAccess = (minRole: MinRole) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const isModuleEnabled = (mod?: ModuleKey) => {
+    if (!mod || isPlatformAdmin) return true;
+    if (!enabledModules) return true;
+    return enabledModules[mod] !== false;
+  };
 
-  // Filter main nav items by role
-  const visibleMainNav = mainNavItems.filter(item => canAccess(item.minRole));
+  // Filter main nav items by role and module
+  const visibleMainNav = mainNavItems.filter(item => canAccess(item.minRole) && isModuleEnabled(item.module));
 
   // Filter more groups by role, removing empty groups
   const visibleMoreGroups = moreGroups
