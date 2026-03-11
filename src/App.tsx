@@ -48,6 +48,7 @@ const App = () => (
           <CommandPalette />
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/onboard" element={<CompanyOnboarding />} />
             <Route
               path="/"
               element={
