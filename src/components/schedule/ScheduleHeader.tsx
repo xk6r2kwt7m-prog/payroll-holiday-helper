@@ -257,14 +257,16 @@ export function ScheduleHeader({
       </div>
 
       {/* Row 2: Department filter pills + Publish CTA */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
           {departments.map((d) => (
             <button
               key={d}
               onClick={() => onDeptChange(d)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors min-h-[32px]",
+                "rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+                // Mobile: taller touch target
+                isMobile ? "px-3 py-2 min-h-[36px]" : "px-3 py-1.5 min-h-[32px]",
                 selectedDept === d
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
