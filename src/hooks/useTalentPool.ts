@@ -86,10 +86,10 @@ export function useTalentProfiles(filters?: {
     queryKey: ["talent-profiles", tenantId, filters],
     queryFn: async () => {
       // Query profiles visible to this tenant
-      let query = supabase
+      const query = supabase
         .from("talent_profiles")
         .select("*, employees!inner(forename, surname, department, status, start_date, end_date)")
-        .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"]);
+        .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"] as any[]);
 
       if (filters?.country) {
         query = query.contains("preferred_countries", [filters.country]);
