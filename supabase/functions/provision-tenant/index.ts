@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
     if (existing) {
       return new Response(JSON.stringify({ error: "You already belong to a company workspace" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
