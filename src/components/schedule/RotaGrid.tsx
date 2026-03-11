@@ -46,6 +46,7 @@ export function RotaGrid({
   onDeleteShift,
   isPending,
   onNavigateToBranch,
+  quickFilter = "all",
 }: RotaGridProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
