@@ -128,7 +128,7 @@ export function ScheduleHeader({
       : format(currentDate, "EEE d MMM");
 
   return (
-    <div className="space-y-2 pb-2">
+    <div className={cn("space-y-2", isMobile ? "pb-1.5" : "pb-2")}>
       {/* Row 1: Location + Date Nav — always visible */}
       <div className="flex items-center gap-2">
         {/* Location selector */}
