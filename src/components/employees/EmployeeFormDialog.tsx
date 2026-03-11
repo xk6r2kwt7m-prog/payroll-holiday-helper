@@ -203,6 +203,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
       setOpen(false);
       onSuccess?.();
+
+      // Trigger talent pool opt-in when status changes to leaver
+      const wasLeaver = employee?.status === "leaver";
+      const isNowLeaver = formData.status === "leaver";
+      if (isNowLeaver && !wasLeaver) {
+        setSavedEmployeeId(employeeId);
+        setSavedEmployeeName(`${formData.forename} ${formData.surname}`);
+        setTalentOptInOpen(true);
+      }
     } catch (error) {
       toast.error(employee ? "Failed to update employee" : "Failed to create employee");
     }
