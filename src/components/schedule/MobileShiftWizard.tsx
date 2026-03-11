@@ -696,12 +696,12 @@ export function MobileShiftWizard({
         </div>
 
         {!showNextActions && (
-          <DrawerFooter className="pt-2">
+          <DrawerFooter className="pt-2 pb-6">
             {step === "staff" && (
               <Button
                 onClick={() => setStep("time")}
                 disabled={selectedEmployeeIds.length === 0}
-                className="h-12 text-base"
+                className="h-14 text-base font-semibold rounded-xl"
               >
                 <span>Continue with {selectedEmployeeIds.length} staff</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
@@ -710,7 +710,7 @@ export function MobileShiftWizard({
             {step === "time" && (
               <Button
                 onClick={() => setStep("review")}
-                className="h-12 text-base"
+                className="h-14 text-base font-semibold rounded-xl"
               >
                 Review shifts
                 <ChevronRight className="h-4 w-4 ml-1" />
@@ -720,7 +720,7 @@ export function MobileShiftWizard({
               <Button
                 onClick={handleConfirm}
                 disabled={isPending}
-                className="h-12 text-base bg-success hover:bg-success/90 text-success-foreground"
+                className="h-14 text-base font-semibold rounded-xl bg-success hover:bg-success/90 text-success-foreground"
               >
                 {isPending ? "Creating..." : `Create ${selectedEmployeeIds.length} shift${selectedEmployeeIds.length !== 1 ? "s" : ""}`}
                 <Check className="h-4 w-4 ml-1" />
