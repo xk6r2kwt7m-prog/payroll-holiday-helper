@@ -228,6 +228,60 @@ export type Database = {
           },
         ]
       }
+      billing_events: {
+        Row: {
+          amount: number | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          stripe_event_id: string | null
+          subscription_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          stripe_event_id?: string | null
+          subscription_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          stripe_event_id?: string | null
+          subscription_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_events_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_locations: {
         Row: {
           address: string | null
@@ -2062,6 +2116,104 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled_modules: Json
+          features: Json
+          id: string
+          is_active: boolean
+          max_employees: number | null
+          max_locations: number | null
+          name: string
+          price_annual: number
+          price_monthly: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled_modules?: Json
+          features?: Json
+          id?: string
+          is_active?: boolean
+          max_employees?: number | null
+          max_locations?: number | null
+          name: string
+          price_annual?: number
+          price_monthly?: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled_modules?: Json
+          features?: Json
+          id?: string
+          is_active?: boolean
+          max_employees?: number | null
+          max_locations?: number | null
+          name?: string
+          price_annual?: number
+          price_monthly?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenant_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["tenant_role"]
+          status: string
+          tenant_id: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["tenant_role"]
+          status?: string
+          tenant_id: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["tenant_role"]
+          status?: string
+          tenant_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_invitations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_leave_settings: {
         Row: {
           accrual_rate: number | null
@@ -2152,6 +2304,166 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tenant_members_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_onboarding_state: {
+        Row: {
+          completed_at: string | null
+          completed_steps: Json
+          created_at: string
+          current_step: number
+          id: string
+          tenant_id: string
+          updated_at: string
+          wizard_data: Json
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_steps?: Json
+          created_at?: string
+          current_step?: number
+          id?: string
+          tenant_id: string
+          updated_at?: string
+          wizard_data?: Json
+        }
+        Update: {
+          completed_at?: string | null
+          completed_steps?: Json
+          created_at?: string
+          current_step?: number
+          id?: string
+          tenant_id?: string
+          updated_at?: string
+          wizard_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_onboarding_state_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_subscriptions: {
+        Row: {
+          billing_cycle: string
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tenant_id: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tenant_id: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tenant_id?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_templates: {
+        Row: {
+          business_type: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_platform_template: boolean
+          name: string
+          slug: string
+          template_data: Json
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_platform_template?: boolean
+          name: string
+          slug: string
+          template_data?: Json
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_platform_template?: boolean
+          name?: string
+          slug?: string
+          template_data?: Json
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_templates_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2490,7 +2802,12 @@ export type Database = {
         | "supervisor"
         | "employee"
         | "viewer"
-      tenant_status: "active" | "suspended" | "trial" | "cancelled"
+      tenant_status:
+        | "active"
+        | "suspended"
+        | "trial"
+        | "cancelled"
+        | "pending_setup"
       time_entry_status: "clocked_in" | "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -2662,7 +2979,13 @@ export const Constants = {
         "employee",
         "viewer",
       ],
-      tenant_status: ["active", "suspended", "trial", "cancelled"],
+      tenant_status: [
+        "active",
+        "suspended",
+        "trial",
+        "cancelled",
+        "pending_setup",
+      ],
       time_entry_status: ["clocked_in", "pending", "approved", "rejected"],
     },
   },
