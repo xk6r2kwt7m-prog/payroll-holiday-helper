@@ -716,6 +716,10 @@ const Holidays = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5">
+              <Bug className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Audit</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Filters (shared across sub-tabs) */}
