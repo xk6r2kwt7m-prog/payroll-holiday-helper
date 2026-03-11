@@ -45,6 +45,7 @@ export default function Schedule() {
   const [copyPrevOpen, setCopyPrevOpen] = useState(false);
 
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
   const { sendNotification } = useNotifications();
   const { data: companySettings } = useCompanySettings();
   const { data: employees } = useEmployees();
