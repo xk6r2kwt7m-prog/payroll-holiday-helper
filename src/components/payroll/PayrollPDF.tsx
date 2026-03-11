@@ -478,7 +478,7 @@ export function PayrollPDF({
   return (
     <Document>
       {/* ─── PAGE 1: Summary + Employee Table ─── */}
-      <Page size="A4" style={styles.page} orientation="landscape">
+      <Page size="A4" style={styles.page} orientation={rc?.orientation === "portrait" ? "portrait" : "landscape"}>
         <Header />
 
 
