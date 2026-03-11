@@ -581,6 +581,24 @@ export default function Schedule() {
         open={loadTemplateOpen}
         onOpenChange={setLoadTemplateOpen}
       />
+
+      {/* Mobile shift creation wizard */}
+      <MobileShiftWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        weekDays={weekDays}
+        employees={activeEmployees}
+        branch={selectedBranch}
+        department={selectedDept}
+        existingShifts={shifts || []}
+        onCreateShifts={async (newShifts) => {
+          for (const s of newShifts) {
+            await handleCreateShift(s);
+          }
+          toast.success(`Created ${newShifts.length} shift${newShifts.length !== 1 ? "s" : ""}`);
+        }}
+        isPending={createShift.isPending}
+      />
     </AppLayout>
   );
 }
