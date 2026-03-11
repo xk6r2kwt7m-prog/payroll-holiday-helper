@@ -377,8 +377,8 @@ const Holidays = () => {
             if (!entry.payroll_periods || entry.employee_id !== bal.employee_id) return false;
             const periodName = entry.payroll_periods.period_name || "";
             if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
-            const periodEnd = new Date(entry.payroll_periods.end_date);
-            return periodEnd.getFullYear() === year;
+            const periodStart = new Date(entry.payroll_periods.start_date);
+            return periodStart.getFullYear() === year;
           })
           .reduce((sum: number, entry: any) => sum + (Number(entry.holiday_accrued_hours) || 0), 0);
 
