@@ -353,7 +353,7 @@ const Payroll = () => {
         )}
 
         {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
           <StatCard
             title="Total Payroll"
             value={formatCurrency(totalPay)}
@@ -368,14 +368,14 @@ const Payroll = () => {
             icon={<Clock className="h-5 w-5" />}
           />
           <StatCard
-            title="Avg. Hourly Rate"
+            title="Avg. Rate"
             value={formatCurrency(avgRate)}
             icon={<DollarSign className="h-5 w-5" />}
           />
           <StatCard
-            title="Total Bonuses"
+            title="Bonuses"
             value={formatCurrency(totalBonuses)}
-            subtitle="Performance + Special"
+            subtitle="Perf + Special"
             icon={<DollarSign className="h-5 w-5" />}
             variant="success"
           />
