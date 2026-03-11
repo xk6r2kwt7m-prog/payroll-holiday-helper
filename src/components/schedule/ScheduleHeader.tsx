@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar } from "@/components/ui/calendar";
 import {
   DropdownMenu,
@@ -113,7 +113,7 @@ export function ScheduleHeader({
   assignedCount = 0,
 }: ScheduleHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
-
+  const isMobile = useIsMobile();
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
       const week = startOfWeek(date, { weekStartsOn: 1 });
@@ -128,12 +128,15 @@ export function ScheduleHeader({
       : format(currentDate, "EEE d MMM");
 
   return (
-    <div className="space-y-2 pb-2">
+    <div className={cn("space-y-2", isMobile ? "pb-1.5" : "pb-2")}>
       {/* Row 1: Location + Date Nav — always visible */}
       <div className="flex items-center gap-2">
         {/* Location selector */}
         <Select value={selectedBranch} onValueChange={onBranchChange}>
-          <SelectTrigger className="h-10 w-auto min-w-[130px] gap-1.5 text-sm font-semibold border-border">
+          <SelectTrigger className={cn(
+            "h-10 w-auto gap-1.5 text-sm font-semibold border-border",
+            isMobile ? "min-w-[100px]" : "min-w-[130px]"
+          )}>
             <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
             <SelectValue />
           </SelectTrigger>
@@ -254,14 +257,16 @@ export function ScheduleHeader({
       </div>
 
       {/* Row 2: Department filter pills + Publish CTA */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
           {departments.map((d) => (
             <button
               key={d}
               onClick={() => onDeptChange(d)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors min-h-[32px]",
+                "rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+                // Mobile: taller touch target
+                isMobile ? "px-3 py-2 min-h-[36px]" : "px-3 py-1.5 min-h-[32px]",
                 selectedDept === d
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"

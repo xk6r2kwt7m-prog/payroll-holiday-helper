@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
 import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWeek, useUnpublishWeek, useCopyPreviousWeek, useLoadTemplate, useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
@@ -333,7 +334,7 @@ export default function Schedule() {
     <AppLayout>
       <div className="flex flex-col h-full -m-4 sm:-m-6">
         {/* Top control area — stacked mobile-first */}
-        <div className="border-b border-border bg-card px-3 pt-3">
+        <div className={cn("border-b border-border bg-card", isMobile ? "px-2.5 pt-2" : "px-3 pt-3")}>
           <ScheduleHeader
             currentDate={currentDate}
             viewMode={viewMode}
@@ -368,28 +369,32 @@ export default function Schedule() {
             assignedCount={branchDeptShifts.filter((s: any) => s.employee_id).length}
           />
 
-          {/* Coverage + Summary strip */}
-          <ScheduleSummary
-            shifts={shifts || []}
-            weekDays={weekDays}
-            branch={selectedBranch}
-            department={selectedDept === "All" ? "FOH" : selectedDept}
-            employees={activeEmployees}
-            complianceWarningCount={complianceWarnings.length}
-          />
+          {/* Coverage + Summary strip — hidden on mobile to save space */}
+          {!isMobile && (
+            <ScheduleSummary
+              shifts={shifts || []}
+              weekDays={weekDays}
+              branch={selectedBranch}
+              department={selectedDept === "All" ? "FOH" : selectedDept}
+              employees={activeEmployees}
+              complianceWarningCount={complianceWarnings.length}
+            />
+          )}
 
-          {/* Quick filters */}
-          <ScheduleFilters
-            activeFilter={quickFilter}
-            onFilterChange={setQuickFilter}
-            gapCount={filterStats.gapCount}
-            unassignedCount={filterStats.unassignedCount}
-            noShiftCount={filterStats.noShiftCount}
-            unpublishedCount={filterStats.unpublished}
-          />
+          {/* Quick filters — hidden on mobile, info is in manager bar */}
+          {!isMobile && (
+            <ScheduleFilters
+              activeFilter={quickFilter}
+              onFilterChange={setQuickFilter}
+              gapCount={filterStats.gapCount}
+              unassignedCount={filterStats.unassignedCount}
+              noShiftCount={filterStats.noShiftCount}
+              unpublishedCount={filterStats.unpublished}
+            />
+          )}
 
-          {/* Compliance warnings */}
-          {complianceWarnings.length > 0 && (
+          {/* Compliance warnings — collapsed on mobile */}
+          {complianceWarnings.length > 0 && !isMobile && (
             <div className="pb-2">
               <ComplianceWarningsBanner warnings={complianceWarnings} />
             </div>
@@ -521,29 +526,31 @@ export default function Schedule() {
           )}
         </div>
 
-        {/* Bottom status bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-card">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-              {openShiftCount} empty
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              {unpublishedCount} draft
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-success" />
-              {publishedCount} live
-            </span>
-            {complianceWarnings.length > 0 && (
+        {/* Bottom status bar — desktop only */}
+        {!isMobile && (
+          <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-card">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-destructive" />
-                {complianceWarnings.length} warnings
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                {openShiftCount} empty
               </span>
-            )}
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                {unpublishedCount} draft
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-success" />
+                {publishedCount} live
+              </span>
+              {complianceWarnings.length > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-destructive" />
+                  {complianceWarnings.length} warnings
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Publish confirmation drawer */}

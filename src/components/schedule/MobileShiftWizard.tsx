@@ -332,7 +332,7 @@ export function MobileShiftWizard({
               <div className="space-y-2">
                 <button
                   onClick={() => handleNextAction("same_time")}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border hover:border-primary/30 transition-all active:scale-[0.98]"
+                  className="w-full flex items-center gap-3 px-4 py-4 rounded-xl border border-border hover:border-primary/30 transition-all active:scale-[0.98] min-h-[56px]"
                 >
                   <Users className="h-5 w-5 text-primary" />
                   <div className="text-left">
@@ -342,7 +342,7 @@ export function MobileShiftWizard({
                 </button>
                 <button
                   onClick={() => handleNextAction("same_day")}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border hover:border-primary/30 transition-all active:scale-[0.98]"
+                  className="w-full flex items-center gap-3 px-4 py-4 rounded-xl border border-border hover:border-primary/30 transition-all active:scale-[0.98] min-h-[56px]"
                 >
                   <Clock className="h-5 w-5 text-primary" />
                   <div className="text-left">
@@ -353,7 +353,7 @@ export function MobileShiftWizard({
                 {selectedDay && weekDays.findIndex((d) => isSameDay(d, selectedDay)) < weekDays.length - 1 && (
                   <button
                     onClick={() => handleNextAction("next_day")}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border border-border hover:border-primary/30 transition-all active:scale-[0.98]"
+                    className="w-full flex items-center gap-3 px-4 py-4 rounded-xl border border-border hover:border-primary/30 transition-all active:scale-[0.98] min-h-[56px]"
                   >
                     <ChevronRight className="h-5 w-5 text-primary" />
                     <div className="text-left">
@@ -479,7 +479,7 @@ export function MobileShiftWizard({
                     onClick={() => !hasExistingShift && toggleEmployee(emp.id)}
                     disabled={!!hasExistingShift}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all",
+                      "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all min-h-[52px]",
                       hasExistingShift
                         ? "opacity-40 cursor-not-allowed border-border"
                         : isSelected
@@ -488,13 +488,13 @@ export function MobileShiftWizard({
                     )}
                   >
                     <div className={cn(
-                      "h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                      "h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
                       isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
                     )}>
                       {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                     </div>
                     <div className={cn(
-                      "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      "h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
                       isSelected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
                     )}>
                       {emp.forename[0]}{emp.surname?.[0] || ""}
@@ -504,12 +504,9 @@ export function MobileShiftWizard({
                         {emp.forename} {emp.surname}
                       </span>
                       {hasExistingShift && (
-                        <span className="text-xs text-muted-foreground ml-2">Already scheduled</span>
+                        <span className="block text-xs text-muted-foreground">Already scheduled</span>
                       )}
                     </div>
-                    {emp.hourly_rate && (
-                      <span className="text-xs text-muted-foreground">£{Number(emp.hourly_rate).toFixed(2)}/h</span>
-                    )}
                   </button>
                 );
               })}
@@ -531,7 +528,7 @@ export function MobileShiftWizard({
                     <Zap className="h-3 w-3" />
                     Quick pick
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {presets.map((p) => {
                       const isActive = startTime === p.start && endTime === p.end;
                       return (
@@ -539,14 +536,14 @@ export function MobileShiftWizard({
                           key={p.label}
                           onClick={() => handlePresetSelect(p)}
                           className={cn(
-                            "px-3 py-2 rounded-lg text-xs font-medium border transition-all active:scale-95",
+                            "px-3 py-3 rounded-xl text-sm font-medium border transition-all active:scale-[0.97] min-h-[52px]",
                             isActive
-                              ? "border-primary bg-primary/10 text-primary"
+                              ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/20"
                               : "border-border text-muted-foreground hover:border-primary/30"
                           )}
                         >
                           {p.label}
-                          <span className="block text-[10px] opacity-70 mt-0.5">{p.start}–{p.end}</span>
+                          <span className="block text-[11px] opacity-70 mt-0.5 tabular-nums">{p.start}–{p.end}</span>
                         </button>
                       );
                     })}
@@ -699,12 +696,12 @@ export function MobileShiftWizard({
         </div>
 
         {!showNextActions && (
-          <DrawerFooter className="pt-2">
+          <DrawerFooter className="pt-2 pb-6">
             {step === "staff" && (
               <Button
                 onClick={() => setStep("time")}
                 disabled={selectedEmployeeIds.length === 0}
-                className="h-12 text-base"
+                className="h-14 text-base font-semibold rounded-xl"
               >
                 <span>Continue with {selectedEmployeeIds.length} staff</span>
                 <ChevronRight className="h-4 w-4 ml-1" />
@@ -713,7 +710,7 @@ export function MobileShiftWizard({
             {step === "time" && (
               <Button
                 onClick={() => setStep("review")}
-                className="h-12 text-base"
+                className="h-14 text-base font-semibold rounded-xl"
               >
                 Review shifts
                 <ChevronRight className="h-4 w-4 ml-1" />
@@ -723,7 +720,7 @@ export function MobileShiftWizard({
               <Button
                 onClick={handleConfirm}
                 disabled={isPending}
-                className="h-12 text-base bg-success hover:bg-success/90 text-success-foreground"
+                className="h-14 text-base font-semibold rounded-xl bg-success hover:bg-success/90 text-success-foreground"
               >
                 {isPending ? "Creating..." : `Create ${selectedEmployeeIds.length} shift${selectedEmployeeIds.length !== 1 ? "s" : ""}`}
                 <Check className="h-4 w-4 ml-1" />

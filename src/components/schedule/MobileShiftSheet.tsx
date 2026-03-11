@@ -250,35 +250,35 @@ export function MobileShiftSheet({
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
-                  className="h-14 flex-col gap-1.5"
+                  className="h-16 flex-col gap-1.5 rounded-xl"
                   onClick={startEditing}
                 >
                   <Pencil className="h-5 w-5" />
-                  <span className="text-xs">Edit</span>
+                  <span className="text-xs font-medium">Edit</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-14 flex-col gap-1.5"
+                  className="h-16 flex-col gap-1.5 rounded-xl"
                   onClick={() => onMove?.()}
                 >
                   <ArrowRightLeft className="h-5 w-5" />
-                  <span className="text-xs">Move</span>
+                  <span className="text-xs font-medium">Move</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-14 flex-col gap-1.5"
+                  className="h-16 flex-col gap-1.5 rounded-xl"
                   onClick={() => onCopy()}
                 >
                   <Copy className="h-5 w-5" />
-                  <span className="text-xs">Copy</span>
+                  <span className="text-xs font-medium">Copy</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-14 flex-col gap-1.5 text-destructive hover:text-destructive"
+                  className="h-16 flex-col gap-1.5 text-destructive hover:text-destructive rounded-xl"
                   onClick={handleDelete}
                 >
                   <Trash2 className="h-5 w-5" />
-                  <span className="text-xs">Delete</span>
+                  <span className="text-xs font-medium">Delete</span>
                 </Button>
               </div>
             )}

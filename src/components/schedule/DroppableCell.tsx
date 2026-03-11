@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
 import type { ReactNode } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DroppableCellProps {
   id: string;
@@ -13,6 +13,7 @@ interface DroppableCellProps {
 
 export function DroppableCell({ id, children, isAdmin, isToday, onClick }: DroppableCellProps) {
   const { isOver, setNodeRef } = useDroppable({ id });
+  const isMobile = useIsMobile();
 
   return (
     <td
@@ -21,7 +22,10 @@ export function DroppableCell({ id, children, isAdmin, isToday, onClick }: Dropp
         "group/cell p-0.5 sm:p-1 text-center border-l border-border/50 transition-colors align-top",
         isToday && "bg-primary/[0.03]",
         isAdmin && "cursor-pointer",
-        isOver && "bg-primary/10 ring-1 ring-inset ring-primary/30"
+        // Desktop: show drop indicator
+        !isMobile && isOver && "bg-primary/10 ring-1 ring-inset ring-primary/30",
+        // Mobile: active tap highlight
+        isMobile && isAdmin && "active:bg-primary/[0.06]",
       )}
       onClick={onClick}
     >
@@ -35,20 +39,27 @@ interface EmptyDropCellProps {
 }
 
 export function EmptyDropCell({ isAdmin }: EmptyDropCellProps) {
+  const isMobile = useIsMobile();
+
   if (!isAdmin) return null;
+
   return (
     <div className={cn(
       "flex items-center justify-center rounded-lg",
-      "min-h-[36px] sm:min-h-[40px]",
+      // Mobile: taller tap target, completely clean — no icons, no borders
+      "min-h-[44px] sm:min-h-[40px]",
       "transition-all",
-      // Mobile: clean empty cell with subtle tap feedback — no icons, no borders
-      "active:bg-primary/[0.08]",
-      // Desktop: dashed border + icon appear on hover via group
-      "sm:border sm:border-dashed sm:border-transparent",
-      "sm:group-hover/cell:border-border/40 sm:group-hover/cell:bg-primary/[0.04]",
+      isMobile
+        ? "active:bg-primary/[0.08]"
+        : cn(
+            "sm:border sm:border-dashed sm:border-transparent",
+            "sm:group-hover/cell:border-border/40 sm:group-hover/cell:bg-primary/[0.04]",
+          ),
     )}>
-      {/* Plus icon: visible only on desktop cell hover */}
-      <Plus className="h-3.5 w-3.5 text-muted-foreground/40 hidden sm:group-hover/cell:block" />
+      {/* Plus icon: desktop hover only */}
+      {!isMobile && (
+        <span className="h-3.5 w-3.5 text-muted-foreground/40 hidden sm:group-hover/cell:block text-lg leading-none">+</span>
+      )}
     </div>
   );
 }
