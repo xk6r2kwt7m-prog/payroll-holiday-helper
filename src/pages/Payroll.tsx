@@ -44,7 +44,7 @@ const statusLabels = {
 
 const Payroll = () => {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
-  
+  const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
