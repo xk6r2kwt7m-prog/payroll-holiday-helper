@@ -396,6 +396,19 @@ export default function Schedule() {
           )}
         </div>
 
+        {/* Mobile Manager Action Bar */}
+        {isMobile && isAdmin && (
+          <MobileManagerBar
+            onBuildShift={() => { setWizardInitialDay(null); setWizardOpen(true); }}
+            onPublishDay={() => setPublishDrawerOpen(true)}
+            gapCount={filterStats.gapCount}
+            unscheduledCount={filterStats.noShiftCount}
+            hasUnpublished={hasUnpublished}
+            isPublishing={publishWeek.isPending}
+            department={selectedDept}
+          />
+        )}
+
         {/* Main schedule area */}
         <div className="flex-1 overflow-auto">
           {selectedDept === "All" ? (
