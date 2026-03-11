@@ -617,7 +617,6 @@ export default function Schedule() {
           const { data: { user } } = await supabase.auth.getUser();
           const withTenant = newShifts.map((s) => ({
             ...s,
-            tenant_id: tenantId,
             created_by: user?.id || null,
           }));
           await bulkCreate.mutateAsync(withTenant as any);
