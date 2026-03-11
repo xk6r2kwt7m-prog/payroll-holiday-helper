@@ -2167,6 +2167,372 @@ export type Database = {
         }
         Relationships: []
       }
+      talent_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          performed_by: string | null
+          talent_profile_id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          performed_by?: string | null
+          talent_profile_id: string
+          tenant_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          performed_by?: string | null
+          talent_profile_id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_audit_log_talent_profile_id_fkey"
+            columns: ["talent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "talent_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_audit_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_interest_actions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["talent_action_type"]
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          talent_profile_id: string
+          talent_request_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["talent_action_type"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          talent_profile_id: string
+          talent_request_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["talent_action_type"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          talent_profile_id?: string
+          talent_request_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_interest_actions_talent_profile_id_fkey"
+            columns: ["talent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "talent_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_interest_actions_talent_request_id_fkey"
+            columns: ["talent_request_id"]
+            isOneToOne: false
+            referencedRelation: "talent_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_interest_actions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_profiles: {
+        Row: {
+          available_from: string | null
+          contact_visibility: boolean
+          created_at: string
+          employee_id: string
+          employment_type_preference: string[] | null
+          id: string
+          languages: string[] | null
+          open_to_work_flag: boolean
+          opted_in_at: string | null
+          opted_out_at: string | null
+          preferred_countries: string[] | null
+          preferred_locations: string[] | null
+          preferred_regions: string[] | null
+          preferred_roles: string[] | null
+          preferred_work_radius_km: number | null
+          profile_summary: string | null
+          seeking_visibility: Database["public"]["Enums"]["talent_seeking_visibility"]
+          talent_pool_status: Database["public"]["Enums"]["talent_pool_status"]
+          tenant_id: string
+          updated_at: string
+          visibility_mode: Database["public"]["Enums"]["talent_visibility_mode"]
+          willing_to_relocate: boolean | null
+          willing_to_travel: boolean | null
+          work_eligibility_countries: string[] | null
+          years_experience: number | null
+        }
+        Insert: {
+          available_from?: string | null
+          contact_visibility?: boolean
+          created_at?: string
+          employee_id: string
+          employment_type_preference?: string[] | null
+          id?: string
+          languages?: string[] | null
+          open_to_work_flag?: boolean
+          opted_in_at?: string | null
+          opted_out_at?: string | null
+          preferred_countries?: string[] | null
+          preferred_locations?: string[] | null
+          preferred_regions?: string[] | null
+          preferred_roles?: string[] | null
+          preferred_work_radius_km?: number | null
+          profile_summary?: string | null
+          seeking_visibility?: Database["public"]["Enums"]["talent_seeking_visibility"]
+          talent_pool_status?: Database["public"]["Enums"]["talent_pool_status"]
+          tenant_id: string
+          updated_at?: string
+          visibility_mode?: Database["public"]["Enums"]["talent_visibility_mode"]
+          willing_to_relocate?: boolean | null
+          willing_to_travel?: boolean | null
+          work_eligibility_countries?: string[] | null
+          years_experience?: number | null
+        }
+        Update: {
+          available_from?: string | null
+          contact_visibility?: boolean
+          created_at?: string
+          employee_id?: string
+          employment_type_preference?: string[] | null
+          id?: string
+          languages?: string[] | null
+          open_to_work_flag?: boolean
+          opted_in_at?: string | null
+          opted_out_at?: string | null
+          preferred_countries?: string[] | null
+          preferred_locations?: string[] | null
+          preferred_regions?: string[] | null
+          preferred_roles?: string[] | null
+          preferred_work_radius_km?: number | null
+          profile_summary?: string | null
+          seeking_visibility?: Database["public"]["Enums"]["talent_seeking_visibility"]
+          talent_pool_status?: Database["public"]["Enums"]["talent_pool_status"]
+          tenant_id?: string
+          updated_at?: string
+          visibility_mode?: Database["public"]["Enums"]["talent_visibility_mode"]
+          willing_to_relocate?: boolean | null
+          willing_to_travel?: boolean | null
+          work_eligibility_countries?: string[] | null
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_profiles_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_request_matches: {
+        Row: {
+          created_at: string
+          geography_match: boolean | null
+          id: string
+          match_reasoning: string | null
+          match_score: number | null
+          skill_match: boolean | null
+          status: string
+          talent_profile_id: string
+          talent_request_id: string
+          visibility_match: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          geography_match?: boolean | null
+          id?: string
+          match_reasoning?: string | null
+          match_score?: number | null
+          skill_match?: boolean | null
+          status?: string
+          talent_profile_id: string
+          talent_request_id: string
+          visibility_match?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          geography_match?: boolean | null
+          id?: string
+          match_reasoning?: string | null
+          match_score?: number | null
+          skill_match?: boolean | null
+          status?: string
+          talent_profile_id?: string
+          talent_request_id?: string
+          visibility_match?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_request_matches_talent_profile_id_fkey"
+            columns: ["talent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "talent_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_request_matches_talent_request_id_fkey"
+            columns: ["talent_request_id"]
+            isOneToOne: false
+            referencedRelation: "talent_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_requests: {
+        Row: {
+          country: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          employment_type: string | null
+          id: string
+          location: string | null
+          notes: string | null
+          region: string | null
+          required_skills: string[] | null
+          required_training: string[] | null
+          role: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          urgency: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          employment_type?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          region?: string | null
+          required_skills?: string[] | null
+          required_training?: string[] | null
+          role: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          urgency?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          employment_type?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          region?: string | null
+          required_skills?: string[] | null
+          required_training?: string[] | null
+          role?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_visibility_permissions: {
+        Row: {
+          allowed_country: string | null
+          allowed_region: string | null
+          allowed_tenant_id: string | null
+          created_at: string
+          id: string
+          talent_profile_id: string
+          visibility_level: string
+        }
+        Insert: {
+          allowed_country?: string | null
+          allowed_region?: string | null
+          allowed_tenant_id?: string | null
+          created_at?: string
+          id?: string
+          talent_profile_id: string
+          visibility_level?: string
+        }
+        Update: {
+          allowed_country?: string | null
+          allowed_region?: string | null
+          allowed_tenant_id?: string | null
+          created_at?: string
+          id?: string
+          talent_profile_id?: string
+          visibility_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_visibility_permissions_allowed_tenant_id_fkey"
+            columns: ["allowed_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_visibility_permissions_talent_profile_id_fkey"
+            columns: ["talent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "talent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_invitations: {
         Row: {
           accepted_at: string | null
@@ -2796,6 +3162,32 @@ export type Database = {
         | "expiry"
       payroll_status: "draft" | "pending" | "approved" | "rejected"
       shift_status: "scheduled" | "open" | "cancelled"
+      talent_action_type:
+        | "view_profile"
+        | "shortlist"
+        | "express_interest"
+        | "request_contact"
+        | "reject"
+        | "withdraw"
+      talent_pool_status:
+        | "not_available"
+        | "open_to_work"
+        | "available_now"
+        | "available_from_date"
+        | "hidden"
+        | "archived"
+      talent_seeking_visibility:
+        | "not_looking"
+        | "discreetly_open"
+        | "actively_available"
+        | "selected_employers"
+        | "specific_country_region"
+      talent_visibility_mode:
+        | "hidden"
+        | "previous_employer_only"
+        | "selected_companies"
+        | "approved_country_region"
+        | "all_approved"
       tenant_role:
         | "company_admin"
         | "manager"
@@ -2972,6 +3364,36 @@ export const Constants = {
       ],
       payroll_status: ["draft", "pending", "approved", "rejected"],
       shift_status: ["scheduled", "open", "cancelled"],
+      talent_action_type: [
+        "view_profile",
+        "shortlist",
+        "express_interest",
+        "request_contact",
+        "reject",
+        "withdraw",
+      ],
+      talent_pool_status: [
+        "not_available",
+        "open_to_work",
+        "available_now",
+        "available_from_date",
+        "hidden",
+        "archived",
+      ],
+      talent_seeking_visibility: [
+        "not_looking",
+        "discreetly_open",
+        "actively_available",
+        "selected_employers",
+        "specific_country_region",
+      ],
+      talent_visibility_mode: [
+        "hidden",
+        "previous_employer_only",
+        "selected_companies",
+        "approved_country_region",
+        "all_approved",
+      ],
       tenant_role: [
         "company_admin",
         "manager",
