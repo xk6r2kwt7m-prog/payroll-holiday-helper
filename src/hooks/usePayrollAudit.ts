@@ -35,6 +35,9 @@ export interface AuditResult {
   timestamp: string;
 }
 
+// Legacy UK accrual rate — used for auditing ALL periods.
+// Historical records were computed with this rate; changing it would create false audit mismatches.
+// The DB trigger (calculate_holiday_accrual) also hardcodes 0.1207, so stored values match this.
 const ACCRUAL_RATE = 0.1207;
 const TOLERANCE = 0.02; // £0.02 tolerance for rounding
 const HOURS_TOLERANCE = 0.05; // 0.05 hours tolerance

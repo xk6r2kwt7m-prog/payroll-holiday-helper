@@ -6,7 +6,8 @@ import { PayrollDeadlineWidget } from "@/components/dashboard/PayrollDeadlineWid
 import { usePayrollAudit } from "@/hooks/usePayrollAudit";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
-import { formatCurrency, formatHours, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
+import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ const Index = () => {
   const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
   const { data: audit } = usePayrollAudit();
   const { data: employeeBranches = [] } = useAllEmployeeBranches();
+  const { data: leaveRules } = useLeaveRules();
   const navigate = useNavigate();
 
   const activeEmployees = employees.filter(e => e.status === "active").length;
@@ -199,7 +201,7 @@ const Index = () => {
               {
                 label: "Holiday Accrued",
                 value: `${formatHours(totalHolidayAccrued)} hrs`,
-                sub: `${(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% accrual rate`,
+                sub: `${((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2)}% accrual rate`,
                 icon: <Calendar className="h-5 w-5" />,
                 color: "text-accent",
                 iconBg: "bg-accent/10",

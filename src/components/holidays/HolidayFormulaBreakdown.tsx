@@ -3,7 +3,8 @@ import { X, Calculator, Lock, ArrowRight, Database, FileText } from "lucide-reac
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { formatHours, formatCurrency, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
+import { formatHours, formatCurrency } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 
 interface PeriodDetail {
@@ -51,6 +52,7 @@ interface HolidayFormulaBreakdownProps {
 export function HolidayFormulaBreakdown({ open, onOpenChange, data }: HolidayFormulaBreakdownProps) {
   if (!data) return null;
 
+  const { data: leaveRules } = useLeaveRules();
   const accrualPeriods = data.periodDetails.filter(p => !p.isExcluded);
   const excludedPeriods = data.periodDetails.filter(p => p.isExcluded);
   const totalFromPeriods = accrualPeriods.reduce((s, p) => s + p.accrued, 0);
@@ -117,7 +119,7 @@ export function HolidayFormulaBreakdown({ open, onOpenChange, data }: HolidayFor
                     )}
                   </span>
                   <span className="text-right w-16 text-muted-foreground font-mono">
-                    {(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}%
+                    {((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2)}%
                   </span>
                   <span className="text-right w-20 font-mono font-medium text-success">
                     {formatHours(p.accrued)}
@@ -230,7 +232,7 @@ export function HolidayFormulaBreakdown({ open, onOpenChange, data }: HolidayFor
 
           {/* Data provenance */}
           <div className="text-[10px] text-muted-foreground/60 space-y-0.5">
-            <p>• Accrual rate: {(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}% per UK Working Time Regulations 1998</p>
+            <p>• Accrual rate: {((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2)}% ({leaveRules?.countryName ?? "UK"} regulations)</p>
             <p>• Source priority: imported_hours (if available) → timesheet_hours</p>
             <p>• Corrected periods replace originals — no double-counting</p>
             <p>• Carry-over chains propagate year-to-year from closing balances</p>

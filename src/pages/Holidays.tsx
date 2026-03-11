@@ -25,9 +25,8 @@ import {
   useAllHolidayAdjustments,
   formatCurrency,
   formatHours,
-  UK_HOLIDAY_LAW,
-  calculateAnnualEntitlement,
 } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import {
@@ -55,6 +54,7 @@ interface EmployeeSummary {
 }
 
 const Holidays = () => {
+  const { data: leaveRules } = useLeaveRules();
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
@@ -308,7 +308,7 @@ const Holidays = () => {
           periodName,
           hoursWorked: Number(entry.timesheet_hours) || 0,
           importedHours: entry.imported_hours != null ? Number(entry.imported_hours) : null,
-          accrualRate: UK_HOLIDAY_LAW.ACCRUAL_RATE,
+          accrualRate: leaveRules?.accrualRate ?? 0.1207,
           accrued: Number(entry.holiday_accrued_hours) || 0,
           taken: 0,
           paid: 0,
@@ -782,35 +782,35 @@ const Holidays = () => {
                     <div className="space-y-3 text-sm text-muted-foreground pt-2">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="rounded-lg bg-card p-4 border border-border">
-                          <h4 className="font-medium text-card-foreground mb-2">Statutory Entitlement</h4>
+                           <h4 className="font-medium text-card-foreground mb-2">Statutory Entitlement</h4>
                           <ul className="space-y-1 list-disc list-inside">
-                            <li><strong>{UK_HOLIDAY_LAW.STATUTORY_WEEKS} weeks</strong> per year</li>
-                            <li>Capped at <strong>{UK_HOLIDAY_LAW.MAX_STATUTORY_DAYS} days</strong> for 5+ day workers</li>
-                            <li>{UK_HOLIDAY_LAW.NORMAL_LEAVE_WEEKS} weeks normal + {UK_HOLIDAY_LAW.BASIC_LEAVE_WEEKS} weeks basic</li>
+                            <li><strong>{leaveRules?.statutoryWeeks ?? 5.6} weeks</strong> per year</li>
+                            <li>Capped at <strong>{leaveRules?.maxStatutoryDays ?? 28} days</strong> for 5+ day workers</li>
+                            <li>Standard work week: {leaveRules?.standardWeekHours ?? 40} hours</li>
                           </ul>
                         </div>
                         <div className="rounded-lg bg-card p-4 border border-border">
                           <h4 className="font-medium text-card-foreground mb-2">Accrual Rate (Hourly Workers)</h4>
                           <ul className="space-y-1 list-disc list-inside">
-                            <li><strong>{(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}%</strong> of hours worked</li>
-                            <li>Formula: 5.6 ÷ (52 - 5.6) × 100</li>
+                            <li><strong>{((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2)}%</strong> of hours worked</li>
+                            <li>Based on {leaveRules?.countryName ?? "UK"} regulations</li>
                             <li>Applied to irregular/part-year workers</li>
                           </ul>
                         </div>
                         <div className="rounded-lg bg-card p-4 border border-border">
                           <h4 className="font-medium text-card-foreground mb-2">Carryover Limits</h4>
                           <ul className="space-y-1 list-disc list-inside">
-                            <li>Up to <strong>{UK_HOLIDAY_LAW.MAX_CARRYOVER_AGREED} days</strong> if agreed</li>
-                            <li>Up to <strong>{UK_HOLIDAY_LAW.MAX_CARRYOVER_FAMILY_LEAVE} days</strong> for family leave</li>
-                            <li>Up to <strong>{UK_HOLIDAY_LAW.MAX_CARRYOVER_SICKNESS} days</strong> for sickness</li>
+                            <li>Up to <strong>{leaveRules?.maxCarryoverDays ?? 8} days</strong> if agreed</li>
+                            <li>Up to <strong>{leaveRules?.maxCarryoverFamilyLeaveDays ?? 28} days</strong> for family leave</li>
+                            <li>Up to <strong>{leaveRules?.maxCarryoverSicknessDays ?? 20} days</strong> for sickness</li>
                           </ul>
                         </div>
                         <div className="rounded-lg bg-card p-4 border border-border">
                           <h4 className="font-medium text-card-foreground mb-2">Leave Year Tracking</h4>
                           <ul className="space-y-1 list-disc list-inside">
-                            <li>Leave year: Jan 1 - Dec 31</li>
+                            <li>Leave year starts: Month {leaveRules?.leaveYearStartMonth ?? 1}, Day {leaveRules?.leaveYearStartDay ?? 1}</li>
                             <li>Tracked by date holiday was taken</li>
-                            <li>2025 balances carry forward to 2026</li>
+                            <li>Balances carry forward year-to-year</li>
                           </ul>
                         </div>
                       </div>

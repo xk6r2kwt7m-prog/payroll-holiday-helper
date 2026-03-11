@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 
@@ -106,6 +106,35 @@ export function useLeaveRules() {
     },
     enabled: !!tenantCountry,
     staleTime: 5 * 60 * 1000, // Cache for 5 mins — rules rarely change
+  });
+}
+
+/**
+ * Mutation hook for updating tenant leave settings.
+ * Immediately invalidates the leave_rules cache so admins see fresh values.
+ */
+export function useUpdateTenantLeaveSettings() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+
+  return useMutation({
+    mutationFn: async (updates: Record<string, any>) => {
+      if (!tenantId) throw new Error("No tenant selected");
+
+      const { data, error } = await supabase
+        .from("tenant_leave_settings")
+        .update(updates)
+        .eq("tenant_id", tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      // Immediate cache invalidation — no stale data for the admin
+      queryClient.invalidateQueries({ queryKey: ["leave_rules"] });
+    },
   });
 }
 

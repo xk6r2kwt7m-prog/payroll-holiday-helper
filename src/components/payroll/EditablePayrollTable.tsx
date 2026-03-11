@@ -35,7 +35,8 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useBulkUpdatePayrollEntries, useMarkBankDetailsExported } from "@/hooks/usePayroll";
-import { formatCurrency, formatHours, calculateHolidayAccrual } from "@/hooks/useHolidays";
+import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import { useLeaveRules, calculateAccrual } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 import { AddEmployeeToPeriodDialog } from "./AddEmployeeToPeriodDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,6 +102,7 @@ export function EditablePayrollTable({
   isAdmin,
   onExport 
 }: EditablePayrollTableProps) {
+  const { data: leaveRules } = useLeaveRules();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<EditingEntry>({
     timesheet_hours: "",
@@ -185,8 +187,9 @@ export function EditablePayrollTable({
     const servicePay = hours * serviceCharge;
     const totalPay = basePay + servicePay + perfBonus + specBonus;
     // Holiday accrual uses imported_hours (original) when available
+    // Uses tenant-resolved accrual rate (falls through to country default)
     const hoursForHoliday = entry.imported_hours ?? hours;
-    const holidayAccrued = calculateHolidayAccrual(hoursForHoliday);
+    const holidayAccrued = calculateAccrual(hoursForHoliday, leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision);
 
     try {
       const updates: Record<string, any> = {
@@ -318,7 +321,7 @@ export function EditablePayrollTable({
             id: entry.id,
             updates: {
               timesheet_hours: 0,
-              holiday_accrued_hours: calculateHolidayAccrual(entry.imported_hours ?? 0),
+              holiday_accrued_hours: calculateAccrual(entry.imported_hours ?? 0, leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision),
               total_pay: totalPay,
             },
           };
@@ -567,7 +570,7 @@ export function EditablePayrollTable({
                         />
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {formatHours(calculateHolidayAccrual(entry.imported_hours ?? (parseFloat(editingData.timesheet_hours) || 0)))} hrs
+                        {formatHours(calculateAccrual(entry.imported_hours ?? (parseFloat(editingData.timesheet_hours) || 0), leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision))} hrs
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(
