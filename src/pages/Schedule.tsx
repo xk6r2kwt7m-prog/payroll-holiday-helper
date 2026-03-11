@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Plus } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
 import { useShifts, useCreateShift, useUpdateShift, useDeleteShift, usePublishWeek, useUnpublishWeek, useCopyPreviousWeek, useLoadTemplate, useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
@@ -7,6 +8,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useTenant } from "@/hooks/useTenant";
 import { toast } from "sonner";
 import { RotaGrid } from "@/components/schedule/RotaGrid";
 import { DayView } from "@/components/schedule/DayView";
@@ -20,6 +22,8 @@ import { LoadTemplateDialog } from "@/components/schedule/LoadTemplateDialog";
 import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
 import { ComplianceWarningsBanner, useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, getMinimumStaff, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
+import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 
 type ViewMode = "week" | "day";
@@ -42,11 +46,14 @@ export default function Schedule() {
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
   const [loadTemplateOpen, setLoadTemplateOpen] = useState(false);
   const [copyPrevOpen, setCopyPrevOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
   const { sendNotification } = useNotifications();
   const { data: companySettings } = useCompanySettings();
   const { data: employees } = useEmployees();
+  const isMobile = useIsMobile();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -144,9 +151,13 @@ export default function Schedule() {
   };
 
   const handleCreateShift = async (data: any) => {
+    if (!tenantId) {
+      toast.error("Unable to create shift: no workspace selected. Please reload and try again.");
+      return;
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await createShift.mutateAsync({ ...data, created_by: user?.id });
+      await createShift.mutateAsync({ ...data, tenant_id: tenantId, created_by: user?.id });
       toast.success("Shift added");
     } catch (err: any) {
       toast.error(err.message);
@@ -493,24 +504,38 @@ export default function Schedule() {
           )}
         </div>
 
-        {/* Bottom status bar */}
-        <div className="flex flex-wrap items-center gap-4 px-4 py-2 border-t border-border bg-card text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-            {openShiftCount} empty
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-warning" />
-            {unpublishedCount} unpublished
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-success" />
-            {publishedCount} published
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-destructive" />
-            {complianceWarnings.length} warnings
-          </span>
+        {/* Bottom status bar + mobile wizard trigger */}
+        <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-card">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+              {openShiftCount} empty
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              {unpublishedCount} draft
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-success" />
+              {publishedCount} live
+            </span>
+            {complianceWarnings.length > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-destructive" />
+                {complianceWarnings.length} warnings
+              </span>
+            )}
+          </div>
+          {/* Mobile quick-add button */}
+          {isMobile && isAdmin && selectedDept !== "All" && (
+            <button
+              onClick={() => setWizardOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-md active:scale-95 transition-transform"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Build Rota
+            </button>
+          )}
         </div>
       </div>
 
@@ -556,6 +581,24 @@ export default function Schedule() {
         isPending={loadTemplate.isPending}
         open={loadTemplateOpen}
         onOpenChange={setLoadTemplateOpen}
+      />
+
+      {/* Mobile shift creation wizard */}
+      <MobileShiftWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        weekDays={weekDays}
+        employees={activeEmployees}
+        branch={selectedBranch}
+        department={selectedDept}
+        existingShifts={shifts || []}
+        onCreateShifts={async (newShifts) => {
+          for (const s of newShifts) {
+            await handleCreateShift(s);
+          }
+          toast.success(`Created ${newShifts.length} shift${newShifts.length !== 1 ? "s" : ""}`);
+        }}
+        isPending={createShift.isPending}
       />
     </AppLayout>
   );

@@ -9,7 +9,7 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { Pencil, Copy, Trash2, Clock, MapPin, User, FileText } from "lucide-react";
+import { Pencil, Copy, Trash2, Clock, MapPin, FileText, ArrowRightLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -24,6 +24,7 @@ interface MobileShiftSheetProps {
   onEdit: () => void;
   onCopy: () => void;
   onDelete: () => void;
+  onMove?: () => void;
 }
 
 export function MobileShiftSheet({
@@ -37,6 +38,7 @@ export function MobileShiftSheet({
   onEdit,
   onCopy,
   onDelete,
+  onMove,
 }: MobileShiftSheetProps) {
   const totalInfo = useMemo(() => {
     if (!shift) return { hours: 0, hoursStr: "0h 0m" };
@@ -54,6 +56,7 @@ export function MobileShiftSheet({
   if (!shift) return null;
 
   const shiftDate = new Date(shift.shift_date + "T00:00:00");
+  const isPublished = shift.is_published;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -73,10 +76,15 @@ export function MobileShiftSheet({
               </DrawerDescription>
             </div>
             <Badge
-              variant={shift.is_published ? "default" : "secondary"}
-              className="text-[10px] shrink-0"
+              variant={isPublished ? "default" : "secondary"}
+              className={cn(
+                "text-[10px] shrink-0",
+                isPublished
+                  ? "bg-success text-success-foreground"
+                  : "bg-primary/15 text-primary border border-primary/25"
+              )}
             >
-              {shift.is_published ? "Published" : "Draft"}
+              {isPublished ? "Published" : "Draft"}
             </Badge>
           </div>
         </DrawerHeader>
@@ -105,30 +113,38 @@ export function MobileShiftSheet({
         {/* Action buttons — large touch targets */}
         {isAdmin && (
           <DrawerFooter className="pt-2">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
-                className="h-12 flex-col gap-1"
+                className="h-14 flex-col gap-1.5"
                 onClick={() => { onOpenChange(false); onEdit(); }}
               >
-                <Pencil className="h-4 w-4" />
-                <span className="text-[10px]">Edit</span>
+                <Pencil className="h-5 w-5" />
+                <span className="text-xs">Edit</span>
               </Button>
               <Button
                 variant="outline"
-                className="h-12 flex-col gap-1"
+                className="h-14 flex-col gap-1.5"
+                onClick={() => { onOpenChange(false); onMove?.(); }}
+              >
+                <ArrowRightLeft className="h-5 w-5" />
+                <span className="text-xs">Move</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-14 flex-col gap-1.5"
                 onClick={() => { onOpenChange(false); onCopy(); }}
               >
-                <Copy className="h-4 w-4" />
-                <span className="text-[10px]">Copy</span>
+                <Copy className="h-5 w-5" />
+                <span className="text-xs">Copy</span>
               </Button>
               <Button
                 variant="outline"
-                className="h-12 flex-col gap-1 text-destructive hover:text-destructive"
+                className="h-14 flex-col gap-1.5 text-destructive hover:text-destructive"
                 onClick={() => { onOpenChange(false); onDelete(); }}
               >
-                <Trash2 className="h-4 w-4" />
-                <span className="text-[10px]">Delete</span>
+                <Trash2 className="h-5 w-5" />
+                <span className="text-xs">Delete</span>
               </Button>
             </div>
           </DrawerFooter>

@@ -1,6 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
-import { Lock, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 
 interface DraggableShiftCellProps {
   shift: any;
@@ -26,13 +26,6 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
       }
     : undefined;
 
-  // Compute hours for the pill subtitle
-  const [sh, sm] = (shift.start_time || "00:00").split(":").map(Number);
-  const [eh, em] = (shift.end_time || "00:00").split(":").map(Number);
-  let mins = (eh * 60 + em) - (sh * 60 + sm);
-  if (mins < 0) mins += 24 * 60;
-  const hours = mins / 60;
-
   const isOpen = shift.status === "open";
   const isPublished = shift.is_published;
 
@@ -43,14 +36,14 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
       onClick={(e) => { if (onView) { e.stopPropagation(); onView(e); } }}
       className={cn(
         "rounded-lg px-1.5 py-1.5 text-[10px] sm:text-[11px] leading-tight relative select-none",
-        "min-h-[36px] sm:min-h-[40px] flex flex-col items-center justify-center gap-0.5",
+        "min-h-[40px] sm:min-h-[44px] flex flex-col items-center justify-center gap-0.5",
         "transition-all active:scale-95",
-        // Status-based styling
+        // Clear colour differentiation: published = green, unpublished = blue/primary, open = amber dashed
         isOpen
-          ? "bg-accent/10 text-accent border border-dashed border-accent/30"
+          ? "bg-accent/15 text-accent border-2 border-dashed border-accent/40"
           : isPublished
-            ? "bg-success/12 text-success border border-success/25"
-            : "bg-primary/8 text-primary border border-primary/20",
+            ? "bg-success/15 text-success-foreground border-l-[3px] border-l-success border border-success/30 bg-gradient-to-r from-success/15 to-success/5"
+            : "bg-primary/12 text-primary border-l-[3px] border-l-primary border border-primary/25 bg-gradient-to-r from-primary/12 to-primary/5",
         isDragging && "shadow-lg ring-2 ring-primary/40 scale-105 opacity-90",
         isAdmin && "cursor-grab active:cursor-grabbing"
       )}
@@ -64,17 +57,19 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
         {shift.end_time?.slice(0, 5)}
       </div>
 
-      {/* Published indicator — subtle dot instead of lock icon */}
+      {/* Status label — top right */}
       {isPublished && (
         <div className="absolute top-0.5 right-0.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-success" title="Published" />
+          <span className="inline-block px-1 py-px rounded text-[7px] font-bold uppercase bg-success text-success-foreground leading-none">
+            Live
+          </span>
         </div>
       )}
 
       {/* Open shift indicator */}
       {isOpen && (
         <div className="absolute top-0.5 right-0.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" title="Open shift" />
+          <div className="h-2 w-2 rounded-full bg-accent animate-pulse" title="Open shift" />
         </div>
       )}
     </div>
@@ -92,7 +87,7 @@ export function CrossBranchShiftCell({ shift, onNavigate }: CrossBranchShiftCell
       className={cn(
         "rounded-lg px-1.5 py-1.5 text-[10px] leading-tight",
         "bg-warning/8 text-warning/80 border border-warning/20",
-        "min-h-[36px] flex flex-col items-center justify-center gap-0.5",
+        "min-h-[40px] flex flex-col items-center justify-center gap-0.5",
         "transition-all active:scale-95",
         onNavigate && "cursor-pointer"
       )}
