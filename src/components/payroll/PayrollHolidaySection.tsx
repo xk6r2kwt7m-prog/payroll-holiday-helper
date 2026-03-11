@@ -221,7 +221,7 @@ export function PayrollHolidaySection({
       {holidayPayments.length > 0 && (
         <div className="divide-y divide-border">
           {holidayPayments.map((hp) => (
-            <div key={hp.id} className="px-4 py-2.5 text-sm">
+            <div key={hp.id} className="px-3 sm:px-4 py-2.5 text-sm">
               {editingId === hp.id ? (
                 /* Edit mode */
                 <div className="space-y-2">
