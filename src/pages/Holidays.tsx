@@ -266,8 +266,8 @@ const Holidays = () => {
       const carryOver = prev ? Math.max(0, prev.balance) : 0;
       return {
         ...s,
-        hoursCarriedOver: carryOver,
-        balance: s.hoursAccrued + carryOver - s.hoursTaken,
+        hoursCarriedOver: s.hoursCarriedOver + carryOver,
+        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
       };
     });
   }, [payrollEntries, payments2026, summaries2025, adjustments]);
