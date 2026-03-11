@@ -182,6 +182,46 @@ export function Sidebar() {
 
             return <div key={item.path}>{linkContent}</div>;
           })}
+
+          {/* Platform Admin link */}
+          {isPlatformAdmin && (
+            (() => {
+              const isActive = location.pathname === "/platform-admin";
+              const linkContent = (
+                <Link
+                  to="/platform-admin"
+                  className={cn(
+                    "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 mt-2 border-t border-sidebar-border pt-3",
+                    isActive
+                      ? "text-sidebar-primary"
+                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                  )}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active"
+                      className="absolute inset-0 rounded-lg bg-sidebar-accent"
+                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                  <Globe className="relative z-10 h-5 w-5 flex-shrink-0" />
+                  {!collapsed && (
+                    <span className="relative z-10 animate-fade-in">Platform Admin</span>
+                  )}
+                </Link>
+              );
+
+              if (collapsed) {
+                return (
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={12}>Platform Admin</TooltipContent>
+                  </Tooltip>
+                );
+              }
+              return linkContent;
+            })()
+          )}
         </nav>
 
         {/* Footer */}
