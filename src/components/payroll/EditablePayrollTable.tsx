@@ -570,7 +570,7 @@ export function EditablePayrollTable({
                         />
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">
-                        {formatHours(calculateHolidayAccrual(entry.imported_hours ?? (parseFloat(editingData.timesheet_hours) || 0)))} hrs
+                        {formatHours(calculateAccrual(entry.imported_hours ?? (parseFloat(editingData.timesheet_hours) || 0), leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision))} hrs
                       </TableCell>
                       <TableCell className="text-right font-medium">
                         {formatCurrency(

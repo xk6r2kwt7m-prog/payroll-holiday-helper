@@ -54,6 +54,7 @@ interface EmployeeSummary {
 }
 
 const Holidays = () => {
+  const { data: leaveRules } = useLeaveRules();
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");

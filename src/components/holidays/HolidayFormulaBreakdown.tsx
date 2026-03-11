@@ -52,6 +52,7 @@ interface HolidayFormulaBreakdownProps {
 export function HolidayFormulaBreakdown({ open, onOpenChange, data }: HolidayFormulaBreakdownProps) {
   if (!data) return null;
 
+  const { data: leaveRules } = useLeaveRules();
   const accrualPeriods = data.periodDetails.filter(p => !p.isExcluded);
   const excludedPeriods = data.periodDetails.filter(p => p.isExcluded);
   const totalFromPeriods = accrualPeriods.reduce((s, p) => s + p.accrued, 0);
