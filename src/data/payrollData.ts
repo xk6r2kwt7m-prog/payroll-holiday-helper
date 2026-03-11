@@ -65,29 +65,27 @@ export interface StarterEmployee {
   residencePermit?: string;
 }
 
-// UK Holiday Law Constants (Working Time Regulations 1998, updated 2024)
+/**
+ * @deprecated Use useLeaveRules() hook for tenant-aware rules.
+ * Kept as legacy reference data — identical to GB country_leave_rules defaults.
+ */
 export const UK_HOLIDAY_LAW = {
-  // Statutory minimum: 5.6 weeks per year
   STATUTORY_WEEKS: 5.6,
-  // Maximum days capped at 28 for 5+ day workers
   MAX_STATUTORY_DAYS: 28,
-  // Accrual rate for irregular/part-year workers: 12.07%
   ACCRUAL_RATE: 0.1207,
-  // Normal leave (4 weeks) vs basic leave (1.6 weeks)
   NORMAL_LEAVE_WEEKS: 4,
   BASIC_LEAVE_WEEKS: 1.6,
-  // Carryover limits
-  MAX_CARRYOVER_AGREED: 8, // days if agreed
-  MAX_CARRYOVER_FAMILY_LEAVE: 28, // days for maternity/family leave
-  MAX_CARRYOVER_SICKNESS: 20, // days for long-term sickness
+  MAX_CARRYOVER_AGREED: 8,
+  MAX_CARRYOVER_FAMILY_LEAVE: 28,
+  MAX_CARRYOVER_SICKNESS: 20,
 };
 
-// Calculate holiday accrual based on UK law (12.07% of hours worked)
+/** @deprecated Use calculateAccrual() from useLeaveRules instead. */
 export const calculateHolidayAccrual = (hoursWorked: number): number => {
   return hoursWorked * UK_HOLIDAY_LAW.ACCRUAL_RATE;
 };
 
-// Calculate rolled-up holiday pay (12.07% uplift on hourly rate)
+/** @deprecated Use calculateAccrual() from useLeaveRules instead. */
 export const calculateRolledUpHolidayPay = (hourlyRate: number, hoursWorked: number): number => {
   return hourlyRate * hoursWorked * UK_HOLIDAY_LAW.ACCRUAL_RATE;
 };
