@@ -54,6 +54,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setTenantName(tenant?.name || null);
     setTenantCountry(tenant?.country || null);
     setTenantTimezone(tenant?.timezone || null);
+    setTenantStatus(tenant?.status || null);
 
     // Parse enabled_modules from tenant record
     const modules = tenant?.enabled_modules;
