@@ -447,7 +447,7 @@ export function RotaGrid({
                           onClick={() => handleCellClick(day, shift, emp.id)}
                         >
                           {shift ? (
-                            renderShiftWithPopover(shift, day)
+                            renderShiftCell(shift, day)
                           ) : crossBranchShifts.length > 0 ? (
                             crossBranchShifts.map((cbs: any) => (
                               <CrossBranchShiftCell key={cbs.id} shift={cbs} onNavigate={onNavigateToBranch} />
