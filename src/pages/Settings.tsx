@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Bell, Shield, CreditCard, Loader2, Users } from "lucide-react";
+import { Building2, Bell, Shield, CreditCard, Loader2, Users, Calendar } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
 import { HistoricalImport } from "@/components/settings/HistoricalImport";
+import { LeaveRulesSettings } from "@/components/settings/LeaveRulesSettings";
 
 const Settings = () => {
   const { data: settings, isLoading } = useCompanySettings();
