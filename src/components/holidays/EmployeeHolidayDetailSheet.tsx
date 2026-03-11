@@ -51,18 +51,6 @@ interface EmployeeHolidayDetailSheetProps {
 }
 
 export function EmployeeHolidayDetailSheet({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured for forwarding
-  ...props
-}: EmployeeHolidayDetailSheetProps) {
-  const { data: leaveRules } = useLeaveRules();
-  const {
-    open,
-    onOpenChange,
-    employeeId,
-    employeeName,
-    department,
-    hoursAccrued,
-    hoursTaken,
   open,
   onOpenChange,
   employeeId,
@@ -78,6 +66,7 @@ export function EmployeeHolidayDetailSheet({
   periodBreakdown = [],
   allYearSummaries = {},
 }: EmployeeHolidayDetailSheetProps) {
+  const { data: leaveRules } = useLeaveRules();
   const [showYearHistory, setShowYearHistory] = useState(false);
   const totalEntitlement = hoursAccrued + carryOver;
   const usagePercent = totalEntitlement > 0 ? (hoursTaken / totalEntitlement) * 100 : 0;
