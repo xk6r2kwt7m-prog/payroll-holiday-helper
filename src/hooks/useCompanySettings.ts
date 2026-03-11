@@ -39,6 +39,7 @@ export function useCompanySettings() {
 export function useUpdateCompanySettings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async (updates: Partial<CompanySettings>) => {
