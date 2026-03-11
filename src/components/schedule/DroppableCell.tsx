@@ -38,11 +38,15 @@ export function EmptyDropCell({ isAdmin }: EmptyDropCellProps) {
   if (!isAdmin) return null;
   return (
     <div className={cn(
-      "flex items-center justify-center rounded-lg border border-dashed border-border/40",
+      "flex items-center justify-center rounded-lg",
       "min-h-[36px] sm:min-h-[40px]",
-      "transition-all hover:border-primary/40 hover:bg-primary/[0.04] active:bg-primary/[0.08]",
+      "transition-all",
+      // Mobile: clean empty cell, subtle highlight on active/tap
+      "active:bg-primary/[0.08]",
+      // Desktop: show dashed border and + on hover
+      "sm:border sm:border-dashed sm:border-transparent sm:hover:border-border/40 sm:hover:bg-primary/[0.04]",
     )}>
-      <Plus className="h-3.5 w-3.5 text-muted-foreground/40" />
+      <Plus className="h-3.5 w-3.5 text-muted-foreground/40 hidden sm:group-hover/cell:block sm:hidden sm:hover:block opacity-0 sm:opacity-0 sm:hover:opacity-100 transition-opacity" />
     </div>
   );
 }
