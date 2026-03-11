@@ -855,8 +855,18 @@ const Holidays = () => {
                 <AuditRow label={`Payroll Entries for ${selectedYear}`} value={auditData.yearPayrollEntries.toLocaleString()} />
                 <AuditRow label="Payroll Periods Used" value={auditData.periodsUsed.toLocaleString()} />
                 <AuditRow label="Employees (from payroll)" value={auditData.employeesFromPayroll.toLocaleString()} />
+                <AuditRow label="Employees (from payments)" value={auditData.employeesFromPayments.toLocaleString()} />
                 <AuditRow label="Employees (in summary)" value={auditData.employeesInSummary.toLocaleString()} />
+                <AuditRow label="Employees (in holiday_balances)" value={auditData.employeesInBalances.toLocaleString()} highlight={!auditData.isBalanceComplete} />
+                <AuditRow label="Balance Data Complete?" value={auditData.isBalanceComplete ? "✅ Yes" : "⚠️ Partial"} highlight={!auditData.isBalanceComplete} />
               </div>
+
+              {!auditData.isBalanceComplete && (
+                <div className="rounded-lg bg-warning/10 border border-warning/30 p-3 text-sm text-warning">
+                  <strong>⚠️ Partial Data:</strong> holiday_balances has {auditData.employeesInBalances} employees vs {auditData.employeesFromPayroll} in payroll for {selectedYear}.
+                  Dashboard summaries are computed live from payroll_entries and holiday_payments (reliable). Employee-level balance records may be incomplete for carry-over tracking.
+                </div>
+              )}
 
               <div className="border-t border-border pt-4">
                 <h4 className="text-sm font-semibold text-card-foreground mb-3">Accrual Calculation</h4>
@@ -890,12 +900,13 @@ const Holidays = () => {
               </div>
 
               <div className="border-t border-border pt-4">
-                <h4 className="text-sm font-semibold text-card-foreground mb-2">Source Tables</h4>
-                <div className="flex flex-wrap gap-2">
-                  {auditData.sourceTables.map(t => (
-                    <span key={t} className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 text-xs font-mono text-muted-foreground border border-border">
-                      {t}
-                    </span>
+                <h4 className="text-sm font-semibold text-card-foreground mb-2">Source of Truth per Metric</h4>
+                <div className="space-y-1.5">
+                  {Object.entries(auditData.sourceTables).map(([metric, source]) => (
+                    <div key={metric} className="flex gap-2 text-xs">
+                      <span className="font-mono font-medium text-primary min-w-[100px]">{metric}:</span>
+                      <span className="text-muted-foreground">{source}</span>
+                    </div>
                   ))}
                 </div>
               </div>
