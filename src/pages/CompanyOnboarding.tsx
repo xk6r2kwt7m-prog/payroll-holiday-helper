@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenant } from "@/hooks/useTenant";
 import { toast } from "sonner";
 import { z } from "zod";
 import { motion } from "framer-motion";
@@ -28,6 +29,7 @@ const COUNTRIES = [
 
 const CompanyOnboarding = () => {
   const { user } = useAuth();
+  const { tenantId, loading: tenantLoading } = useTenant();
   const navigate = useNavigate();
 
   const [companyName, setCompanyName] = useState("");
@@ -35,6 +37,13 @@ const CompanyOnboarding = () => {
   const [timezone, setTimezone] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // If user already belongs to a tenant, redirect to dashboard
+  useEffect(() => {
+    if (!tenantLoading && tenantId) {
+      navigate("/", { replace: true });
+    }
+  }, [tenantId, tenantLoading, navigate]);
 
   const selectedCountry = COUNTRIES.find((c) => c.code === country);
   const availableTimezones = selectedCountry?.timezones ?? [];
