@@ -7,6 +7,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useTenant } from "@/hooks/useTenant";
 import { toast } from "sonner";
 import { RotaGrid } from "@/components/schedule/RotaGrid";
 import { DayView } from "@/components/schedule/DayView";
