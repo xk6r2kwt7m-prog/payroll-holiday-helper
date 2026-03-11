@@ -35,7 +35,8 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useBulkUpdatePayrollEntries, useMarkBankDetailsExported } from "@/hooks/usePayroll";
-import { formatCurrency, formatHours, calculateHolidayAccrual } from "@/hooks/useHolidays";
+import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import { useLeaveRules, calculateAccrual } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 import { AddEmployeeToPeriodDialog } from "./AddEmployeeToPeriodDialog";
 import { supabase } from "@/integrations/supabase/client";
