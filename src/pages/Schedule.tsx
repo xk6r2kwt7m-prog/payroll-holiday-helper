@@ -26,6 +26,7 @@ import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
 import { MobileManagerBar } from "@/components/schedule/MobileManagerBar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBulkCreateShifts } from "@/hooks/useSchedule";
+import { supabase } from "@/integrations/supabase/client";
 
 type ViewMode = "week" | "day";
 const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
