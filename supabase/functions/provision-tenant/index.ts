@@ -50,8 +50,22 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existing) {
-      return new Response(JSON.stringify({ error: "You already belong to a company workspace" }), {
-        status: 400,
+      // Idempotent response — user already onboarded
+      const { data: memberWithTenant } = await admin
+        .from("tenant_members")
+        .select("tenant_id, role, tenants(name, slug)")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+
+      return new Response(JSON.stringify({
+        tenant_id: memberWithTenant?.tenant_id,
+        slug: (memberWithTenant?.tenants as any)?.slug,
+        message: "User already belongs to a workspace",
+        already_exists: true,
+      }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

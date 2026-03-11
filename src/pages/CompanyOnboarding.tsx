@@ -28,6 +28,7 @@ const COUNTRIES = [
 
 const CompanyOnboarding = () => {
   const { user } = useAuth();
+  const { tenantId, loading: tenantLoading } = useTenant();
   const navigate = useNavigate();
 
   const [companyName, setCompanyName] = useState("");
@@ -35,6 +36,13 @@ const CompanyOnboarding = () => {
   const [timezone, setTimezone] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // If user already belongs to a tenant, redirect to dashboard
+  useEffect(() => {
+    if (!tenantLoading && tenantId) {
+      navigate("/", { replace: true });
+    }
+  }, [tenantId, tenantLoading, navigate]);
 
   const selectedCountry = COUNTRIES.find((c) => c.code === country);
   const availableTimezones = selectedCountry?.timezones ?? [];
