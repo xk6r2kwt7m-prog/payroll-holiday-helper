@@ -87,11 +87,16 @@ const Holidays = () => {
   const { data: adjustments = [] } = useAllHolidayAdjustments();
 
   // Build summaries from payroll entries (accrual) + holiday payments (taken)
-  const buildSummaries = (year: number, payments: any[]): EmployeeSummary[] => {
+  // SOURCE OF TRUTH:
+  //   accrued → payroll_entries.holiday_accrued_hours filtered by payroll_periods.start_date year
+  //   taken   → holiday_payments.hours filtered by leave_year_start year
+  //   paid    → holiday_payments.total filtered by leave_year_start year
+  //   carry   → holiday_balances.hours_carried_over filtered by leave_year_start year (where available)
+  //   balance → accrued + carry + adjustments - taken (computed live, never from stored totals)
+  const buildSummaries = (year: number, payments: any[], balances: any[]): EmployeeSummary[] => {
     const summaryMap = new Map<string, EmployeeSummary>();
 
     // Build a set of corrected period base names to exclude originals
-    // e.g. "February 2026 [Corrected]" → exclude "February 2026"
     const correctedBaseNames = new Set<string>();
     payrollEntries.forEach((entry: any) => {
       if (!entry.payroll_periods) return;
@@ -101,7 +106,7 @@ const Holidays = () => {
       }
     });
 
-    // Process payroll entries for accrued hours
+    // Process payroll entries for accrued hours — filtered by payroll_periods.start_date year
     payrollEntries.forEach((entry: any) => {
       if (!entry.employees || !entry.payroll_periods) return;
 
@@ -109,9 +114,9 @@ const Holidays = () => {
       // Skip the ORIGINAL period if a [Corrected] version exists
       if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return;
 
-      const periodEnd = new Date(entry.payroll_periods.end_date);
-      // Match periods to leave year: period end date falls in the target year
-      if (periodEnd.getFullYear() !== year) return;
+      const periodStart = new Date(entry.payroll_periods.start_date);
+      // Match periods to leave year by START date (source of truth rule)
+      if (periodStart.getFullYear() !== year) return;
 
       const empId = entry.employee_id;
       const empName = `${entry.employees.forename} ${entry.employees.surname}`;
@@ -149,7 +154,7 @@ const Holidays = () => {
       }
     });
 
-    // Add holiday payments (hours taken + paid)
+    // Add holiday payments (hours taken + paid) — filtered by leave_year_start
     payments.forEach((payment: any) => {
       const empId = payment.employee_id;
       if (!empId) return;
@@ -176,7 +181,6 @@ const Holidays = () => {
       summary.hoursTaken += hours;
       summary.totalPaid += total;
 
-      // Update period breakdown
       if (payment.payroll_periods) {
         const existingPeriod = summary.periodBreakdown.find(p => p.periodId === payment.payroll_period_id);
         if (existingPeriod) {
@@ -194,6 +198,12 @@ const Holidays = () => {
       }
     });
 
+    // Merge carry-over from holiday_balances (where available)
+    const balanceMap = new Map<string, number>();
+    balances.forEach((bal: any) => {
+      balanceMap.set(bal.employee_id, Number(bal.hours_carried_over) || 0);
+    });
+
     // Apply adjustments and calculate balances
     return Array.from(summaryMap.values()).map(s => {
       const accrualAdj = adjustments
@@ -208,7 +218,9 @@ const Holidays = () => {
 
       const adjustedAccrued = s.hoursAccrued + accrualAdj;
       const adjustedTaken = s.hoursTaken + takenAdj;
-      const adjustedCarry = s.hoursCarriedOver + carryAdj;
+      // Use holiday_balances carry-over if available, otherwise use computed carry-over (from prior year)
+      const storedCarry = balanceMap.get(s.employeeId) ?? 0;
+      const adjustedCarry = s.hoursCarriedOver + storedCarry + carryAdj;
 
       return {
         ...s,
