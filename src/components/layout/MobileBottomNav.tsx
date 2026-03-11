@@ -45,8 +45,8 @@ interface NavDef {
 const mainNavItems: NavDef[] = [
   { icon: LayoutDashboard, label: "Home", path: "/", minRole: "viewer" },
   { icon: Users, label: "People", path: "/employees", minRole: "supervisor" },
-  { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff" },
-  { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin" },
+  { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff", module: "scheduling" },
+  { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin", module: "payroll" },
 ];
 
 const peopleRoutes = ["/employees", "/absences", "/onboarding", "/training", "/disciplinary"];
