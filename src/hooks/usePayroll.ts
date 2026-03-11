@@ -81,12 +81,13 @@ export function usePayrollEntries(periodId?: string) {
 
 export function useCreatePayrollPeriod() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
-    mutationFn: async (period: PayrollPeriodInsert) => {
+    mutationFn: async (period: Omit<PayrollPeriodInsert, 'tenant_id'>) => {
       const { data, error } = await supabase
         .from("payroll_periods")
-        .insert(period)
+        .insert({ ...period, tenant_id: tenantId! })
         .select()
         .single();
       

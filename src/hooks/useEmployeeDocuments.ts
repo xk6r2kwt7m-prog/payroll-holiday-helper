@@ -123,7 +123,8 @@ export function useUploadDocument() {
           expires_at: expiresAt || null,
           notes: notes || null,
           uploaded_by: user?.id,
-        })
+          tenant_id: tenantId!,
+        } as any)
         .select()
         .single();
 

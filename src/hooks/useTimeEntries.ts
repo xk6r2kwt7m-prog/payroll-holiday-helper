@@ -176,7 +176,8 @@ export function useManagerOverride() {
             manager_override: true,
             override_reason: reason,
             status: "clocked_in" as const,
-          })
+            tenant_id: tenantId!,
+          } as any)
           .select()
           .single();
         if (error) throw error;

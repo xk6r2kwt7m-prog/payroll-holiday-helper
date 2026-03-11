@@ -28,6 +28,7 @@ export function useGenerateSigningLink() {
           employee_id: employeeId,
           signer_type: signerType,
           expires_at: expiresAt.toISOString(),
+          tenant_id: tenantId!,
         })
         .select()
         .single();

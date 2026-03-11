@@ -87,6 +87,7 @@ export function useSetEmployeeBranches() {
         employee_id: employeeId,
         branch,
         is_primary: branch === (primaryBranch || branches[0]),
+        tenant_id: tenantId!,
       }));
       
       const { error } = await supabase
