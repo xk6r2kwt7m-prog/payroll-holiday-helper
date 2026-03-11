@@ -741,5 +741,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         </form>
       </DialogContent>
     </Dialog>
+    {savedEmployeeId && tenantId && (
+      <TalentOptInDialog
+        open={talentOptInOpen}
+        onOpenChange={setTalentOptInOpen}
+        employeeId={savedEmployeeId}
+        employeeName={savedEmployeeName}
+        tenantId={tenantId}
+      />
+    )}
+    </>
   );
 }
