@@ -22,6 +22,7 @@ import {
   PieChart,
   Scale,
   ClipboardList,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
