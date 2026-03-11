@@ -321,7 +321,7 @@ export function EditablePayrollTable({
             id: entry.id,
             updates: {
               timesheet_hours: 0,
-              holiday_accrued_hours: calculateHolidayAccrual(entry.imported_hours ?? 0),
+              holiday_accrued_hours: calculateAccrual(entry.imported_hours ?? 0, leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision),
               total_pay: totalPay,
             },
           };
