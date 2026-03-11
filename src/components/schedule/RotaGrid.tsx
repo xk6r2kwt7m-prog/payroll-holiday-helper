@@ -102,11 +102,6 @@ export function RotaGrid({
     return totalMinutes / 60;
   };
 
-  const currentShifts = useMemo(
-    () => shifts?.filter((s: any) => s.branch === branch && s.department === department) || [],
-    [shifts, branch, department]
-  );
-  const currentAssigned = currentShifts.filter((s: any) => s.employee_id);
 
 
   const [defaultEmployeeId, setDefaultEmployeeId] = useState<string | null>(null);
