@@ -9,9 +9,11 @@ import {
   DrawerTitle,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { ArrowRightLeft, Check } from "lucide-react";
+import { ArrowRightLeft, Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/hooks/useEmployees";
+
+type MoveMode = "move" | "copy";
 
 interface MoveShiftDrawerProps {
   open: boolean;
@@ -23,6 +25,7 @@ interface MoveShiftDrawerProps {
   branch: string;
   existingShifts: any[];
   onMove: (shiftId: string, updates: { shift_date?: string; employee_id?: string | null }) => Promise<void>;
+  onCopy?: (data: { shift_date: string; employee_id: string | null; start_time: string; end_time: string; notes: string | null }) => Promise<void>;
   isPending: boolean;
 }
 
@@ -36,9 +39,10 @@ export function MoveShiftDrawer({
   branch,
   existingShifts,
   onMove,
+  onCopy,
   isPending,
 }: MoveShiftDrawerProps) {
-  const [moveStep, setMoveStep] = useState<"target" | "confirm">("target");
+  const [mode, setMode] = useState<MoveMode>("move");
   const [targetDay, setTargetDay] = useState<Date | null>(null);
   const [targetEmployeeId, setTargetEmployeeId] = useState<string | null>(null);
 
@@ -47,7 +51,7 @@ export function MoveShiftDrawer({
   const handleClose = () => {
     onOpenChange(false);
     setTimeout(() => {
-      setMoveStep("target");
+      setMode("move");
       setTargetDay(null);
       setTargetEmployeeId(null);
     }, 300);
@@ -55,6 +59,21 @@ export function MoveShiftDrawer({
 
   const handleConfirm = async () => {
     if (!shift) return;
+
+    if (mode === "copy" && onCopy) {
+      const date = targetDay ? format(targetDay, "yyyy-MM-dd") : shift.shift_date;
+      const empId = targetEmployeeId === "open" ? null : (targetEmployeeId || shift.employee_id);
+      await onCopy({
+        shift_date: date,
+        employee_id: empId,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        notes: shift.notes || null,
+      });
+      handleClose();
+      return;
+    }
+
     const updates: any = {};
     if (targetDay) updates.shift_date = format(targetDay, "yyyy-MM-dd");
     if (targetEmployeeId !== null) {
@@ -76,18 +95,45 @@ export function MoveShiftDrawer({
       <DrawerContent className="max-h-[80vh]">
         <DrawerHeader className="pb-2">
           <DrawerTitle className="flex items-center gap-2 text-base">
-            <ArrowRightLeft className="h-4 w-4" />
-            Move Shift
+            {mode === "move" ? <ArrowRightLeft className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {mode === "move" ? "Move Shift" : "Copy Shift"}
           </DrawerTitle>
           <p className="text-xs text-muted-foreground text-left">
             {currentName} · {shift.start_time?.slice(0, 5)}–{shift.end_time?.slice(0, 5)}
           </p>
+          {/* Mode toggle */}
+          <div className="flex gap-1 mt-2">
+            <button
+              onClick={() => setMode("move")}
+              className={cn(
+                "flex-1 py-2 rounded-lg text-xs font-medium transition-colors",
+                mode === "move"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              Move
+            </button>
+            <button
+              onClick={() => setMode("copy")}
+              className={cn(
+                "flex-1 py-2 rounded-lg text-xs font-medium transition-colors",
+                mode === "copy"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              Copy
+            </button>
+          </div>
         </DrawerHeader>
 
         <div className="px-4 pb-4 overflow-y-auto max-h-[50vh] space-y-4">
           {/* Day selection */}
           <div>
-            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Move to day</h4>
+            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              {mode === "move" ? "Move to day" : "Copy to day"}
+            </h4>
             <div className="grid grid-cols-7 gap-1">
               {weekDays.map((day) => {
                 const isCurrent = shift.shift_date === format(day, "yyyy-MM-dd");
@@ -98,7 +144,7 @@ export function MoveShiftDrawer({
                     onClick={() => setTargetDay(isSelected ? null : day)}
                     className={cn(
                       "flex flex-col items-center py-2 rounded-lg border text-center transition-all",
-                      isCurrent
+                      isCurrent && mode === "move"
                         ? "border-muted bg-muted/30 opacity-50"
                         : isSelected
                           ? "border-primary bg-primary/10 ring-1 ring-primary/30"
@@ -145,11 +191,11 @@ export function MoveShiftDrawer({
                 return (
                   <button
                     key={emp.id}
-                    onClick={() => !isCurrent && !hasConflict && setTargetEmployeeId(isSelected ? null : emp.id)}
-                    disabled={isCurrent || hasConflict}
+                    onClick={() => !hasConflict && !(isCurrent && mode === "move") && setTargetEmployeeId(isSelected ? null : emp.id)}
+                    disabled={hasConflict || (isCurrent && mode === "move")}
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all",
-                      isCurrent
+                      (isCurrent && mode === "move")
                         ? "border-muted opacity-40 cursor-not-allowed"
                         : hasConflict
                           ? "border-destructive/20 opacity-40 cursor-not-allowed"
@@ -180,7 +226,7 @@ export function MoveShiftDrawer({
             disabled={isPending || (!targetDay && !targetEmployeeId)}
             className="h-12 text-base"
           >
-            {isPending ? "Moving..." : "Confirm Move"}
+            {isPending ? (mode === "move" ? "Moving..." : "Copying...") : (mode === "move" ? "Confirm Move" : "Confirm Copy")}
             <Check className="h-4 w-4 ml-1" />
           </Button>
         </DrawerFooter>
