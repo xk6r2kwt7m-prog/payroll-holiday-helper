@@ -3,7 +3,8 @@ import { X, Calculator, Lock, ArrowRight, Database, FileText } from "lucide-reac
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { formatHours, formatCurrency, UK_HOLIDAY_LAW } from "@/hooks/useHolidays";
+import { formatHours, formatCurrency } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 
 interface PeriodDetail {
