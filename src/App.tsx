@@ -108,6 +108,14 @@ const App = () => (
               }
             />
             <Route
+              path="/locations/:branch"
+              element={
+                <ProtectedRoute>
+                  <LocationDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/contracts"
               element={
                 <ProtectedRoute>
