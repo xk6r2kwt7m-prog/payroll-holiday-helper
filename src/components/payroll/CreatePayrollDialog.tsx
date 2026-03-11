@@ -98,7 +98,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
             total_pay: 0,
           }));
 
-          await supabase.from("payroll_entries").insert(entries);
+          await supabase.from("payroll_entries").insert(entries as any);
         }
 
         toast.success(`Payroll period created with ${eligibleEmployees.length} employees.`);

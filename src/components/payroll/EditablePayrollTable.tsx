@@ -248,7 +248,7 @@ export function EditablePayrollTable({
             });
           }
           if (changeLogs.length > 0) {
-            await supabase.from("employee_changes").insert(changeLogs);
+            await supabase.from("employee_changes").insert(changeLogs as any);
           }
 
           // Invalidate employee queries so UI reflects new rates

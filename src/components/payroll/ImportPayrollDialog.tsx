@@ -448,7 +448,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         import_status: "completed",
         records_imported: entriesCreated,
         errors: unmatchedNames.length > 0 ? { unmatched: unmatchedNames } : null,
-      });
+      } as any);
 
       setStep("done");
       setImportMessage(

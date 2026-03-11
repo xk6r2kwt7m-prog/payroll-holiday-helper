@@ -130,7 +130,7 @@ export function GenerateReferenceLetterDialog({
         mime_type: "application/pdf",
         notes: `Reference letter for ${jobTitle}. Signed by ${signerName}, ${signerTitle}.`,
         uploaded_by: user?.id,
-      });
+      } as any);
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ["employee_documents", employeeId] });

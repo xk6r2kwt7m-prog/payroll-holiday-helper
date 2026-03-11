@@ -56,7 +56,7 @@ export function AddEmployeeToPeriodDialog({ periodId, existingEmployeeIds }: Add
         performance_bonus: 0,
         special_bonus: 0,
         total_pay: 0,
-      });
+      } as any);
 
       toast.success(`${emp.forename} ${emp.surname} added to this payroll period`);
       setSelectedEmployeeId("");

@@ -75,7 +75,7 @@ export function AdjustHolidayBalanceDialog({
         notes: notes || null,
         leave_year_start: `${year}-01-01`,
         leave_year_end: `${year}-12-31`,
-      });
+      } as any);
 
       if (error) throw error;
 

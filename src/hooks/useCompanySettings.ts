@@ -64,7 +64,7 @@ export function useUpdateCompanySettings() {
         // Insert new
         const { data, error } = await supabase
           .from("company_settings")
-          .insert(updates)
+          .insert({ ...updates, tenant_id: tenantId! } as any)
           .select()
           .single();
 
