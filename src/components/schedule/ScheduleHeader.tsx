@@ -133,7 +133,10 @@ export function ScheduleHeader({
       <div className="flex items-center gap-2">
         {/* Location selector */}
         <Select value={selectedBranch} onValueChange={onBranchChange}>
-          <SelectTrigger className="h-10 w-auto min-w-[130px] gap-1.5 text-sm font-semibold border-border">
+          <SelectTrigger className={cn(
+            "h-10 w-auto gap-1.5 text-sm font-semibold border-border",
+            isMobile ? "min-w-[100px]" : "min-w-[130px]"
+          )}>
             <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
             <SelectValue />
           </SelectTrigger>
