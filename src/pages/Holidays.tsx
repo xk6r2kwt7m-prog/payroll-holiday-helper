@@ -87,11 +87,16 @@ const Holidays = () => {
   const { data: adjustments = [] } = useAllHolidayAdjustments();
 
   // Build summaries from payroll entries (accrual) + holiday payments (taken)
-  const buildSummaries = (year: number, payments: any[]): EmployeeSummary[] => {
+  // SOURCE OF TRUTH:
+  //   accrued → payroll_entries.holiday_accrued_hours filtered by payroll_periods.start_date year
+  //   taken   → holiday_payments.hours filtered by leave_year_start year
+  //   paid    → holiday_payments.total filtered by leave_year_start year
+  //   carry   → holiday_balances.hours_carried_over filtered by leave_year_start year (where available)
+  //   balance → accrued + carry + adjustments - taken (computed live, never from stored totals)
+  const buildSummaries = (year: number, payments: any[], balances: any[]): EmployeeSummary[] => {
     const summaryMap = new Map<string, EmployeeSummary>();
 
     // Build a set of corrected period base names to exclude originals
-    // e.g. "February 2026 [Corrected]" → exclude "February 2026"
     const correctedBaseNames = new Set<string>();
     payrollEntries.forEach((entry: any) => {
       if (!entry.payroll_periods) return;
@@ -101,7 +106,7 @@ const Holidays = () => {
       }
     });
 
-    // Process payroll entries for accrued hours
+    // Process payroll entries for accrued hours — filtered by payroll_periods.start_date year
     payrollEntries.forEach((entry: any) => {
       if (!entry.employees || !entry.payroll_periods) return;
 
@@ -109,9 +114,9 @@ const Holidays = () => {
       // Skip the ORIGINAL period if a [Corrected] version exists
       if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return;
 
-      const periodEnd = new Date(entry.payroll_periods.end_date);
-      // Match periods to leave year: period end date falls in the target year
-      if (periodEnd.getFullYear() !== year) return;
+      const periodStart = new Date(entry.payroll_periods.start_date);
+      // Match periods to leave year by START date (source of truth rule)
+      if (periodStart.getFullYear() !== year) return;
 
       const empId = entry.employee_id;
       const empName = `${entry.employees.forename} ${entry.employees.surname}`;
@@ -149,7 +154,7 @@ const Holidays = () => {
       }
     });
 
-    // Add holiday payments (hours taken + paid)
+    // Add holiday payments (hours taken + paid) — filtered by leave_year_start
     payments.forEach((payment: any) => {
       const empId = payment.employee_id;
       if (!empId) return;
@@ -176,7 +181,6 @@ const Holidays = () => {
       summary.hoursTaken += hours;
       summary.totalPaid += total;
 
-      // Update period breakdown
       if (payment.payroll_periods) {
         const existingPeriod = summary.periodBreakdown.find(p => p.periodId === payment.payroll_period_id);
         if (existingPeriod) {
@@ -194,6 +198,12 @@ const Holidays = () => {
       }
     });
 
+    // Merge carry-over from holiday_balances (where available)
+    const balanceMap = new Map<string, number>();
+    balances.forEach((bal: any) => {
+      balanceMap.set(bal.employee_id, Number(bal.hours_carried_over) || 0);
+    });
+
     // Apply adjustments and calculate balances
     return Array.from(summaryMap.values()).map(s => {
       const accrualAdj = adjustments
@@ -208,7 +218,9 @@ const Holidays = () => {
 
       const adjustedAccrued = s.hoursAccrued + accrualAdj;
       const adjustedTaken = s.hoursTaken + takenAdj;
-      const adjustedCarry = s.hoursCarriedOver + carryAdj;
+      // Use holiday_balances carry-over if available, otherwise use computed carry-over (from prior year)
+      const storedCarry = balanceMap.get(s.employeeId) ?? 0;
+      const adjustedCarry = s.hoursCarriedOver + storedCarry + carryAdj;
 
       return {
         ...s,
@@ -220,57 +232,46 @@ const Holidays = () => {
     });
   };
 
-  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022), [payrollEntries, payments2022, adjustments]);
-  const summaries2023 = useMemo(() => {
-    const base = buildSummaries(2023, payments2023);
-    return base.map(s => {
-      const prev = summaries2022.find(p => p.employeeId === s.employeeId);
-      const carryOver = prev ? Math.max(0, prev.balance) : 0;
-      return {
-        ...s,
-        hoursCarriedOver: s.hoursCarriedOver + carryOver,
-        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
-      };
-    });
-  }, [payrollEntries, payments2023, summaries2022, adjustments]);
-  const summaries2024 = useMemo(() => {
-    const base = buildSummaries(2024, payments2024);
-    return base.map(s => {
-      const prev = summaries2023.find(p => p.employeeId === s.employeeId);
-      const carryOver = prev ? Math.max(0, prev.balance) : 0;
-      return {
-        ...s,
-        hoursCarriedOver: s.hoursCarriedOver + carryOver,
-        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
-      };
-    });
-  }, [payrollEntries, payments2024, summaries2023, adjustments]);
-  const summaries2025 = useMemo(() => {
-    const base = buildSummaries(2025, payments2025);
-    return base.map(s => {
-      const prev = summaries2024.find(p => p.employeeId === s.employeeId);
-      const carryOver = prev ? Math.max(0, prev.balance) : 0;
-      return {
-        ...s,
-        hoursCarriedOver: s.hoursCarriedOver + carryOver,
-        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
-      };
-    });
-  }, [payrollEntries, payments2025, summaries2024, adjustments]);
+  // 2022: no prior year carry-over possible, use holiday_balances carry-over only
+  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022, balances2022), [payrollEntries, payments2022, balances2022, adjustments]);
 
-  // 2026 summaries with carry-over from 2025
-  const summaries2026 = useMemo(() => {
-    const base = buildSummaries(2026, payments2026);
+  // Helper: add computed carry-over from prior year for employees NOT already having carry-over from holiday_balances
+  const addComputedCarryOver = (base: EmployeeSummary[], prevSummaries: EmployeeSummary[], balances: any[]): EmployeeSummary[] => {
+    const balanceEmployeeIds = new Set(balances.map((b: any) => b.employee_id));
     return base.map(s => {
-      const prev = summaries2025.find(p => p.employeeId === s.employeeId);
-      const carryOver = prev ? Math.max(0, prev.balance) : 0;
+      // If employee already has carry-over from holiday_balances, keep it
+      if (balanceEmployeeIds.has(s.employeeId) && s.hoursCarriedOver > 0) return s;
+      // Otherwise compute from prior year balance
+      const prev = prevSummaries.find(p => p.employeeId === s.employeeId);
+      const computedCarry = prev ? Math.max(0, prev.balance) : 0;
+      if (computedCarry === 0) return s;
       return {
         ...s,
-        hoursCarriedOver: s.hoursCarriedOver + carryOver,
-        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
+        hoursCarriedOver: s.hoursCarriedOver + computedCarry,
+        balance: s.hoursAccrued + s.hoursCarriedOver + computedCarry - s.hoursTaken,
       };
     });
-  }, [payrollEntries, payments2026, summaries2025, adjustments]);
+  };
+
+  const summaries2023 = useMemo(() => {
+    const base = buildSummaries(2023, payments2023, balances2023);
+    return addComputedCarryOver(base, summaries2022, balances2023);
+  }, [payrollEntries, payments2023, balances2023, summaries2022, adjustments]);
+
+  const summaries2024 = useMemo(() => {
+    const base = buildSummaries(2024, payments2024, balances2024);
+    return addComputedCarryOver(base, summaries2023, balances2024);
+  }, [payrollEntries, payments2024, balances2024, summaries2023, adjustments]);
+
+  const summaries2025 = useMemo(() => {
+    const base = buildSummaries(2025, payments2025, balances2025);
+    return addComputedCarryOver(base, summaries2024, balances2025);
+  }, [payrollEntries, payments2025, balances2025, summaries2024, adjustments]);
+
+  const summaries2026 = useMemo(() => {
+    const base = buildSummaries(2026, payments2026, balances2026);
+    return addComputedCarryOver(base, summaries2025, balances2026);
+  }, [payrollEntries, payments2026, balances2026, summaries2025, adjustments]);
 
   const allYearSummaries = { "2022": summaries2022, "2023": summaries2023, "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
   const currentSummaries = allYearSummaries[selectedYear] || [];
@@ -296,8 +297,8 @@ const Holidays = () => {
     const periodDetails = payrollEntries
       .filter((entry: any) => {
         if (!entry.employees || !entry.payroll_periods || entry.employee_id !== employeeId) return false;
-        const periodEnd = new Date(entry.payroll_periods.end_date);
-        return periodEnd.getFullYear() === year;
+        const periodStart = new Date(entry.payroll_periods.start_date);
+        return periodStart.getFullYear() === year;
       })
       .map((entry: any) => {
         const periodName = entry.payroll_periods.period_name || "";
@@ -376,8 +377,8 @@ const Holidays = () => {
             if (!entry.payroll_periods || entry.employee_id !== bal.employee_id) return false;
             const periodName = entry.payroll_periods.period_name || "";
             if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
-            const periodEnd = new Date(entry.payroll_periods.end_date);
-            return periodEnd.getFullYear() === year;
+            const periodStart = new Date(entry.payroll_periods.start_date);
+            return periodStart.getFullYear() === year;
           })
           .reduce((sum: number, entry: any) => sum + (Number(entry.holiday_accrued_hours) || 0), 0);
 
@@ -460,8 +461,8 @@ const Holidays = () => {
       if (!entry.employees || !entry.payroll_periods) return false;
       const periodName = entry.payroll_periods.period_name || "";
       if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
-      const periodEnd = new Date(entry.payroll_periods.end_date);
-      return periodEnd.getFullYear() === year;
+      const periodStart = new Date(entry.payroll_periods.start_date);
+      return periodStart.getFullYear() === year;
     });
 
     const totalWorkedHours = yearEntries.reduce((sum: number, e: any) =>
@@ -473,12 +474,22 @@ const Holidays = () => {
     const uniqueEmployeeIds = new Set(yearEntries.map((e: any) => e.employee_id));
     const uniquePeriodIds = new Set(yearEntries.map((e: any) => e.payroll_period_id));
 
+    // Data completeness: compare employees with payroll entries vs employees with holiday_balances
+    const currentBalances = { 2022: balances2022, 2023: balances2023, 2024: balances2024, 2025: balances2025, 2026: balances2026 }[year] || [];
+    const balanceEmployeeCount = currentBalances.length;
+    const payrollEmployeeCount = uniqueEmployeeIds.size;
+    const paymentsEmployeeCount = new Set(currentPayments.filter((p: any) => p.employee_id).map((p: any) => p.employee_id)).size;
+    const isBalanceComplete = balanceEmployeeCount >= payrollEmployeeCount * 0.8; // 80% threshold
+
     return {
       year,
       totalPayrollEntries: payrollEntries.length,
       yearPayrollEntries: yearEntries.length,
-      employeesFromPayroll: uniqueEmployeeIds.size,
+      employeesFromPayroll: payrollEmployeeCount,
+      employeesFromPayments: paymentsEmployeeCount,
       employeesInSummary: currentSummaries.length,
+      employeesInBalances: balanceEmployeeCount,
+      isBalanceComplete,
       periodsUsed: uniquePeriodIds.size,
       totalWorkedHours: Math.round(totalWorkedHours * 100) / 100,
       accrualFromPayrollEntries: Math.round(totalAccruedFromEntries * 100) / 100,
@@ -490,9 +501,17 @@ const Holidays = () => {
       dashboardPaid: Math.round(totals.paid * 100) / 100,
       dashboardBalance: Math.round(totals.balance * 100) / 100,
       overdrawnCount,
-      sourceTables: ["payroll_entries", "payroll_periods", "holiday_payments", "holiday_adjustments"],
+      sourceTables: {
+        accrued: "payroll_entries.holiday_accrued_hours → filtered by payroll_periods.start_date",
+        taken: "holiday_payments.hours → filtered by leave_year_start",
+        paid: "holiday_payments.total → filtered by leave_year_start",
+        carryOver: "holiday_balances.hours_carried_over → filtered by leave_year_start (fallback: prior year computed balance)",
+        adjustments: "holiday_adjustments.hours → filtered by leave_year_start",
+        balance: "Computed: accrued + carry_over + adjustments − taken",
+        employeeCount: "Union of employees in payroll_entries and holiday_payments for the year",
+      },
     };
-  }, [selectedYear, payrollEntries, currentSummaries, totals, overdrawnCount, leaveRules]);
+  }, [selectedYear, payrollEntries, currentSummaries, currentPayments, totals, overdrawnCount, leaveRules, balances2022, balances2023, balances2024, balances2025, balances2026]);
 
   // Alerts
   const alerts = useMemo(() => {
@@ -679,6 +698,21 @@ const Holidays = () => {
           />
         </div>
 
+        {/* Admin warning for partial data */}
+        {!auditData.isBalanceComplete && (
+          <div className="rounded-lg bg-warning/10 border border-warning/30 px-4 py-3 flex items-start gap-3 animate-fade-in">
+            <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <strong className="text-foreground">Partial historical data for {selectedYear}</strong>
+              <p className="text-muted-foreground mt-0.5">
+                holiday_balances covers {auditData.employeesInBalances} of {auditData.employeesFromPayroll} employees.
+                Dashboard totals are computed live from payroll entries and holiday payments (reliable).
+                Carry-over values for employees without balance records are derived from prior-year computed balances.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
           <TabsList className="grid w-full grid-cols-7 sm:w-auto sm:inline-grid">
@@ -836,8 +870,18 @@ const Holidays = () => {
                 <AuditRow label={`Payroll Entries for ${selectedYear}`} value={auditData.yearPayrollEntries.toLocaleString()} />
                 <AuditRow label="Payroll Periods Used" value={auditData.periodsUsed.toLocaleString()} />
                 <AuditRow label="Employees (from payroll)" value={auditData.employeesFromPayroll.toLocaleString()} />
+                <AuditRow label="Employees (from payments)" value={auditData.employeesFromPayments.toLocaleString()} />
                 <AuditRow label="Employees (in summary)" value={auditData.employeesInSummary.toLocaleString()} />
+                <AuditRow label="Employees (in holiday_balances)" value={auditData.employeesInBalances.toLocaleString()} highlight={!auditData.isBalanceComplete} />
+                <AuditRow label="Balance Data Complete?" value={auditData.isBalanceComplete ? "✅ Yes" : "⚠️ Partial"} highlight={!auditData.isBalanceComplete} />
               </div>
+
+              {!auditData.isBalanceComplete && (
+                <div className="rounded-lg bg-warning/10 border border-warning/30 p-3 text-sm text-warning">
+                  <strong>⚠️ Partial Data:</strong> holiday_balances has {auditData.employeesInBalances} employees vs {auditData.employeesFromPayroll} in payroll for {selectedYear}.
+                  Dashboard summaries are computed live from payroll_entries and holiday_payments (reliable). Employee-level balance records may be incomplete for carry-over tracking.
+                </div>
+              )}
 
               <div className="border-t border-border pt-4">
                 <h4 className="text-sm font-semibold text-card-foreground mb-3">Accrual Calculation</h4>
@@ -871,12 +915,13 @@ const Holidays = () => {
               </div>
 
               <div className="border-t border-border pt-4">
-                <h4 className="text-sm font-semibold text-card-foreground mb-2">Source Tables</h4>
-                <div className="flex flex-wrap gap-2">
-                  {auditData.sourceTables.map(t => (
-                    <span key={t} className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 text-xs font-mono text-muted-foreground border border-border">
-                      {t}
-                    </span>
+                <h4 className="text-sm font-semibold text-card-foreground mb-2">Source of Truth per Metric</h4>
+                <div className="space-y-1.5">
+                  {Object.entries(auditData.sourceTables).map(([metric, source]) => (
+                    <div key={metric} className="flex gap-2 text-xs">
+                      <span className="font-mono font-medium text-primary min-w-[100px]">{metric}:</span>
+                      <span className="text-muted-foreground">{source}</span>
+                    </div>
                   ))}
                 </div>
               </div>
