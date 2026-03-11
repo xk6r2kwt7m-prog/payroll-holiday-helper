@@ -1,6 +1,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import { MapPin } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DraggableShiftCellProps {
   shift: any;
@@ -12,10 +13,13 @@ interface DraggableShiftCellProps {
 }
 
 export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCellProps) {
+  const isMobile = useIsMobile();
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: shift.id,
     data: { shift },
-    disabled: !isAdmin,
+    // Disable drag on mobile — use tap workflows instead
+    disabled: !isAdmin || isMobile,
   });
 
   const style = transform
@@ -35,9 +39,11 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
       style={style}
       onClick={(e) => { if (onView) { e.stopPropagation(); onView(e); } }}
       className={cn(
-        "rounded-lg px-1.5 py-1.5 text-[10px] sm:text-[11px] leading-tight relative select-none",
-        "min-h-[40px] sm:min-h-[44px] flex flex-col items-center justify-center gap-0.5",
-        "transition-all active:scale-95",
+        "rounded-lg text-[10px] sm:text-[11px] leading-tight relative select-none",
+        "transition-all active:scale-[0.97]",
+        // Mobile: taller touch target, more padding
+        "min-h-[44px] sm:min-h-[44px] flex flex-col items-center justify-center gap-0.5",
+        "px-1 py-2 sm:px-1.5 sm:py-1.5",
         // Clear colour differentiation: published = green, unpublished = blue/primary, open = amber dashed
         isOpen
           ? "bg-accent/15 text-accent border-2 border-dashed border-accent/40"
@@ -45,9 +51,11 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
             ? "bg-success/15 text-success-foreground border-l-[3px] border-l-success border border-success/30 bg-gradient-to-r from-success/15 to-success/5"
             : "bg-primary/12 text-primary border-l-[3px] border-l-primary border border-primary/25 bg-gradient-to-r from-primary/12 to-primary/5",
         isDragging && "shadow-lg ring-2 ring-primary/40 scale-105 opacity-90",
-        isAdmin && "cursor-grab active:cursor-grabbing"
+        // Desktop: drag cursor. Mobile: tap cursor
+        isAdmin && !isMobile && "cursor-grab active:cursor-grabbing",
+        isAdmin && isMobile && "cursor-pointer",
       )}
-      {...(isAdmin ? { ...listeners, ...attributes } : {})}
+      {...(isAdmin && !isMobile ? { ...listeners, ...attributes } : {})}
     >
       {/* Time — primary info */}
       <div className="font-semibold tabular-nums whitespace-nowrap">
@@ -87,7 +95,7 @@ export function CrossBranchShiftCell({ shift, onNavigate }: CrossBranchShiftCell
       className={cn(
         "rounded-lg px-1.5 py-1.5 text-[10px] leading-tight",
         "bg-warning/8 text-warning/80 border border-warning/20",
-        "min-h-[40px] flex flex-col items-center justify-center gap-0.5",
+        "min-h-[44px] flex flex-col items-center justify-center gap-0.5",
         "transition-all active:scale-95",
         onNavigate && "cursor-pointer"
       )}

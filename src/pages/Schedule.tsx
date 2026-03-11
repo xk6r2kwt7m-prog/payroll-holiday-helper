@@ -525,29 +525,31 @@ export default function Schedule() {
           )}
         </div>
 
-        {/* Bottom status bar */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-card">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-              {openShiftCount} empty
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              {unpublishedCount} draft
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-success" />
-              {publishedCount} live
-            </span>
-            {complianceWarnings.length > 0 && (
+        {/* Bottom status bar — desktop only */}
+        {!isMobile && (
+          <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-card">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-destructive" />
-                {complianceWarnings.length} warnings
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                {openShiftCount} empty
               </span>
-            )}
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary" />
+                {unpublishedCount} draft
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-success" />
+                {publishedCount} live
+              </span>
+              {complianceWarnings.length > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-destructive" />
+                  {complianceWarnings.length} warnings
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Publish confirmation drawer */}

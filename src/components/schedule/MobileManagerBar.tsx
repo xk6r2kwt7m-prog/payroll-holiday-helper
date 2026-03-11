@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Copy, Send, Filter, AlertTriangle, UserX } from "lucide-react";
+import { Plus, Send, AlertTriangle, UserX } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MobileManagerBarProps {
@@ -16,7 +16,6 @@ interface MobileManagerBarProps {
 
 export function MobileManagerBar({
   onBuildShift,
-  onCopyDay,
   onPublishDay,
   gapCount,
   unscheduledCount,
@@ -25,15 +24,15 @@ export function MobileManagerBar({
   department,
 }: MobileManagerBarProps) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border overflow-x-auto no-scrollbar">
-      {/* Primary CTA */}
+    <div className="flex items-center gap-2 px-3 py-2.5 bg-card border-b border-border overflow-x-auto no-scrollbar">
+      {/* Primary CTA — large thumb target */}
       <Button
         size="sm"
         onClick={onBuildShift}
-        className="h-9 gap-1.5 text-xs shrink-0 rounded-full px-4 shadow-sm"
+        className="h-11 gap-1.5 text-sm shrink-0 rounded-full px-5 shadow-sm font-semibold"
         disabled={department === "All"}
       >
-        <Plus className="h-3.5 w-3.5" />
+        <Plus className="h-4 w-4" />
         Build Shift
       </Button>
 
@@ -44,21 +43,24 @@ export function MobileManagerBar({
           size="sm"
           onClick={onPublishDay}
           disabled={isPublishing}
-          className="h-9 gap-1.5 text-xs shrink-0 rounded-full px-3"
+          className="h-11 gap-1.5 text-sm shrink-0 rounded-full px-4"
         >
-          <Send className="h-3 w-3" />
+          <Send className="h-3.5 w-3.5" />
           Publish
         </Button>
       )}
+
+      {/* Spacer pushes badges right */}
+      <div className="flex-1" />
 
       {/* Gap indicator */}
       {gapCount > 0 && (
         <Badge
           variant="outline"
-          className="h-7 gap-1 text-[10px] shrink-0 border-destructive/30 text-destructive bg-destructive/5"
+          className="h-8 gap-1 text-xs shrink-0 border-destructive/30 text-destructive bg-destructive/5 px-2.5"
         >
-          <AlertTriangle className="h-3 w-3" />
-          {gapCount} gap{gapCount !== 1 ? "s" : ""}
+          <AlertTriangle className="h-3.5 w-3.5" />
+          {gapCount}
         </Badge>
       )}
 
@@ -66,10 +68,10 @@ export function MobileManagerBar({
       {unscheduledCount > 0 && (
         <Badge
           variant="outline"
-          className="h-7 gap-1 text-[10px] shrink-0 border-accent/30 text-accent bg-accent/5"
+          className="h-8 gap-1 text-xs shrink-0 border-accent/30 text-accent bg-accent/5 px-2.5"
         >
-          <UserX className="h-3 w-3" />
-          {unscheduledCount} free
+          <UserX className="h-3.5 w-3.5" />
+          {unscheduledCount}
         </Badge>
       )}
     </div>
