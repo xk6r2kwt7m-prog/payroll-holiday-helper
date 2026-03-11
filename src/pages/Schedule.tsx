@@ -23,7 +23,9 @@ import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDi
 import { ComplianceWarningsBanner, useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, getMinimumStaff, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
 import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
+import { MobileManagerBar } from "@/components/schedule/MobileManagerBar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useBulkCreateShifts } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
 
 type ViewMode = "week" | "day";
@@ -47,6 +49,7 @@ export default function Schedule() {
   const [loadTemplateOpen, setLoadTemplateOpen] = useState(false);
   const [copyPrevOpen, setCopyPrevOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardInitialDay, setWizardInitialDay] = useState<Date | null>(null);
 
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
@@ -74,6 +77,7 @@ export default function Schedule() {
   const saveTemplate = useSaveScheduleTemplate();
   const bulkDelete = useBulkDeleteShifts();
   const bulkUpdate = useBulkUpdateShifts();
+  const bulkCreate = useBulkCreateShifts();
 
   const activeEmployees = useMemo(
     () => employees?.filter((e) => e.status === "active") || [],
@@ -392,6 +396,19 @@ export default function Schedule() {
           )}
         </div>
 
+        {/* Mobile Manager Action Bar */}
+        {isMobile && isAdmin && (
+          <MobileManagerBar
+            onBuildShift={() => { setWizardInitialDay(null); setWizardOpen(true); }}
+            onPublishDay={() => setPublishDrawerOpen(true)}
+            gapCount={filterStats.gapCount}
+            unscheduledCount={filterStats.noShiftCount}
+            hasUnpublished={hasUnpublished}
+            isPublishing={publishWeek.isPending}
+            department={selectedDept}
+          />
+        )}
+
         {/* Main schedule area */}
         <div className="flex-1 overflow-auto">
           {selectedDept === "All" ? (
@@ -504,7 +521,7 @@ export default function Schedule() {
           )}
         </div>
 
-        {/* Bottom status bar + mobile wizard trigger */}
+        {/* Bottom status bar */}
         <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-card">
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -526,16 +543,6 @@ export default function Schedule() {
               </span>
             )}
           </div>
-          {/* Mobile quick-add button */}
-          {isMobile && isAdmin && selectedDept !== "All" && (
-            <button
-              onClick={() => setWizardOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-md active:scale-95 transition-transform"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Build Rota
-            </button>
-          )}
         </div>
       </div>
 
@@ -592,13 +599,24 @@ export default function Schedule() {
         branch={selectedBranch}
         department={selectedDept}
         existingShifts={shifts || []}
+        initialDay={wizardInitialDay}
+        departments={DEPT_WITH_ALL}
+        onDeptChange={setSelectedDept}
         onCreateShifts={async (newShifts) => {
-          for (const s of newShifts) {
-            await handleCreateShift(s);
+          if (!tenantId) {
+            toast.error("No workspace selected");
+            return;
           }
+          const { data: { user } } = await supabase.auth.getUser();
+          const withTenant = newShifts.map((s) => ({
+            ...s,
+            tenant_id: tenantId,
+            created_by: user?.id || null,
+          }));
+          await bulkCreate.mutateAsync(withTenant as any);
           toast.success(`Created ${newShifts.length} shift${newShifts.length !== 1 ? "s" : ""}`);
         }}
-        isPending={createShift.isPending}
+        isPending={bulkCreate.isPending}
       />
     </AppLayout>
   );
