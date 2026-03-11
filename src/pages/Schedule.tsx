@@ -368,28 +368,32 @@ export default function Schedule() {
             assignedCount={branchDeptShifts.filter((s: any) => s.employee_id).length}
           />
 
-          {/* Coverage + Summary strip */}
-          <ScheduleSummary
-            shifts={shifts || []}
-            weekDays={weekDays}
-            branch={selectedBranch}
-            department={selectedDept === "All" ? "FOH" : selectedDept}
-            employees={activeEmployees}
-            complianceWarningCount={complianceWarnings.length}
-          />
+          {/* Coverage + Summary strip — hidden on mobile to save space */}
+          {!isMobile && (
+            <ScheduleSummary
+              shifts={shifts || []}
+              weekDays={weekDays}
+              branch={selectedBranch}
+              department={selectedDept === "All" ? "FOH" : selectedDept}
+              employees={activeEmployees}
+              complianceWarningCount={complianceWarnings.length}
+            />
+          )}
 
-          {/* Quick filters */}
-          <ScheduleFilters
-            activeFilter={quickFilter}
-            onFilterChange={setQuickFilter}
-            gapCount={filterStats.gapCount}
-            unassignedCount={filterStats.unassignedCount}
-            noShiftCount={filterStats.noShiftCount}
-            unpublishedCount={filterStats.unpublished}
-          />
+          {/* Quick filters — hidden on mobile, info is in manager bar */}
+          {!isMobile && (
+            <ScheduleFilters
+              activeFilter={quickFilter}
+              onFilterChange={setQuickFilter}
+              gapCount={filterStats.gapCount}
+              unassignedCount={filterStats.unassignedCount}
+              noShiftCount={filterStats.noShiftCount}
+              unpublishedCount={filterStats.unpublished}
+            />
+          )}
 
-          {/* Compliance warnings */}
-          {complianceWarnings.length > 0 && (
+          {/* Compliance warnings — collapsed on mobile */}
+          {complianceWarnings.length > 0 && !isMobile && (
             <div className="pb-2">
               <ComplianceWarningsBanner warnings={complianceWarnings} />
             </div>
