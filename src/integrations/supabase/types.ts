@@ -856,6 +856,69 @@ export type Database = {
           },
         ]
       }
+      holiday_balance_audit_log: {
+        Row: {
+          accrued_delta: number | null
+          carried_over_delta: number | null
+          created_at: string
+          employee_id: string
+          id: string
+          leave_year_end: string
+          leave_year_start: string
+          new_hours_accrued: number | null
+          new_hours_carried_over: number | null
+          new_hours_taken: number | null
+          old_hours_accrued: number | null
+          old_hours_carried_over: number | null
+          old_hours_taken: number | null
+          old_updated_at: string | null
+          reason: string
+          source_table: string
+          taken_delta: number | null
+          tenant_id: string
+        }
+        Insert: {
+          accrued_delta?: number | null
+          carried_over_delta?: number | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          leave_year_end: string
+          leave_year_start: string
+          new_hours_accrued?: number | null
+          new_hours_carried_over?: number | null
+          new_hours_taken?: number | null
+          old_hours_accrued?: number | null
+          old_hours_carried_over?: number | null
+          old_hours_taken?: number | null
+          old_updated_at?: string | null
+          reason: string
+          source_table?: string
+          taken_delta?: number | null
+          tenant_id: string
+        }
+        Update: {
+          accrued_delta?: number | null
+          carried_over_delta?: number | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          leave_year_end?: string
+          leave_year_start?: string
+          new_hours_accrued?: number | null
+          new_hours_carried_over?: number | null
+          new_hours_taken?: number | null
+          old_hours_accrued?: number | null
+          old_hours_carried_over?: number | null
+          old_hours_taken?: number | null
+          old_updated_at?: string | null
+          reason?: string
+          source_table?: string
+          taken_delta?: number | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       holiday_balances: {
         Row: {
           created_at: string
