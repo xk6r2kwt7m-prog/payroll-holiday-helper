@@ -118,7 +118,7 @@ export function HolidayFormulaBreakdown({ open, onOpenChange, data }: HolidayFor
                     )}
                   </span>
                   <span className="text-right w-16 text-muted-foreground font-mono">
-                    {(UK_HOLIDAY_LAW.ACCRUAL_RATE * 100).toFixed(2)}%
+                    {((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2)}%
                   </span>
                   <span className="text-right w-20 font-mono font-medium text-success">
                     {formatHours(p.accrued)}
