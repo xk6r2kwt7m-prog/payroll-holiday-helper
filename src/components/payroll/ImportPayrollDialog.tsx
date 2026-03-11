@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
-import { calculateHolidayAccrual } from "@/hooks/useHolidays";
+import { calculateAccrual } from "@/hooks/useLeaveRules";
 import type { Database } from "@/integrations/supabase/types";
 
 type DepartmentType = Database["public"]["Enums"]["department_type"];
@@ -382,7 +382,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         const basePay = hours * rate;
         const servicePay = hours * sc;
         const totalPay = basePay + servicePay;
-        const holidayAccrued = calculateHolidayAccrual(hours);
+        const holidayAccrued = calculateAccrual(hours, 0.1207); // DB trigger overrides; this is a preview value
 
         // Location breakdown notes
         const locNotes = emp.locations.length > 1
