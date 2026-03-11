@@ -102,6 +102,7 @@ export function EditablePayrollTable({
   isAdmin,
   onExport 
 }: EditablePayrollTableProps) {
+  const { data: leaveRules } = useLeaveRules();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<EditingEntry>({
     timesheet_hours: "",
