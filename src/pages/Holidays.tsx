@@ -25,9 +25,8 @@ import {
   useAllHolidayAdjustments,
   formatCurrency,
   formatHours,
-  UK_HOLIDAY_LAW,
-  calculateAnnualEntitlement,
 } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import {
