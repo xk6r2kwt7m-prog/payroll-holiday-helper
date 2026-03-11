@@ -69,7 +69,7 @@ export function PayrollSalesInput({
         </div>
       </div>
 
-      <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+      <div className="px-3 pb-3 sm:px-4 sm:pb-4 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 items-end">
         <div className="space-y-1">
           <Label className="text-xs">Sales Revenue (£)</Label>
           <div className="flex gap-2">

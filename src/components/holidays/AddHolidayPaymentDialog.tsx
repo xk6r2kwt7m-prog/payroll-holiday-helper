@@ -286,9 +286,9 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button className="gradient-primary">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Holiday Taken
+        <Button size="sm" className="gradient-primary h-9 text-xs sm:text-sm">
+          <Plus className="h-4 w-4 sm:mr-1.5 shrink-0" />
+          <span className="hidden xs:inline">Add Holiday</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
