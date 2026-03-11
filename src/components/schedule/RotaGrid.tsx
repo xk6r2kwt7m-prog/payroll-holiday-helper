@@ -5,15 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, AlertTriangle, Check, Lock, MapPin } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
-import { ShiftDetailPopover } from "./ShiftDetailPopover";
+import { MobileShiftSheet } from "./MobileShiftSheet";
 import { BulkScheduleActions } from "./BulkScheduleActions";
 import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
 import { DroppableCell, EmptyDropCell } from "./DroppableCell";
 import { useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import type { Employee } from "@/hooks/useEmployees";
+import type { QuickFilter } from "./ScheduleFilters";
 
 interface RotaGridProps {
   weekDays: Date[];
