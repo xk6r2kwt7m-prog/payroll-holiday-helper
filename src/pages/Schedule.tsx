@@ -521,7 +521,7 @@ export default function Schedule() {
           )}
         </div>
 
-        {/* Bottom status bar + mobile wizard trigger */}
+        {/* Bottom status bar */}
         <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-card">
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -543,16 +543,6 @@ export default function Schedule() {
               </span>
             )}
           </div>
-          {/* Mobile quick-add button */}
-          {isMobile && isAdmin && selectedDept !== "All" && (
-            <button
-              onClick={() => setWizardOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-md active:scale-95 transition-transform"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Build Rota
-            </button>
-          )}
         </div>
       </div>
 
