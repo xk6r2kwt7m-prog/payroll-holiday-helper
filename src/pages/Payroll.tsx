@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
+import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
 
 const statusStyles = {
   draft: "bg-muted text-muted-foreground",
