@@ -297,8 +297,8 @@ const Holidays = () => {
     const periodDetails = payrollEntries
       .filter((entry: any) => {
         if (!entry.employees || !entry.payroll_periods || entry.employee_id !== employeeId) return false;
-        const periodEnd = new Date(entry.payroll_periods.end_date);
-        return periodEnd.getFullYear() === year;
+        const periodStart = new Date(entry.payroll_periods.start_date);
+        return periodStart.getFullYear() === year;
       })
       .map((entry: any) => {
         const periodName = entry.payroll_periods.period_name || "";
