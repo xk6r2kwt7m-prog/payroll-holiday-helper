@@ -236,25 +236,25 @@ export function PayrollApprovalWorkflow({
       )}
 
       {period.status === "pending" && isAdmin && (
-        <div className="flex items-center justify-between rounded-lg bg-primary/10 border border-primary/20 p-4">
-          <div className="flex items-center gap-3">
-            <Send className="h-5 w-5 text-primary shrink-0" />
-            <div>
-              <p className="font-medium text-card-foreground">Pending Review</p>
-              <p className="text-sm text-muted-foreground">
-                Review all entries before approving. Once approved, this period is locked.
+        <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 sm:p-4">
+          <div className="flex items-start gap-3 mb-3 sm:mb-0">
+            <Send className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-card-foreground text-sm">Pending Review</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Review all entries before approving.
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2 sm:mt-0">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" disabled={isReopening}>
+                <Button variant="outline" size="sm" disabled={isReopening} className="w-full sm:w-auto min-h-[44px]">
                   <Undo2 className="mr-2 h-4 w-4" />
                   Reopen
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reopen this payroll period?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -270,12 +270,12 @@ export function PayrollApprovalWorkflow({
             </AlertDialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button disabled={isApproving} className="bg-success hover:bg-success/90 text-success-foreground">
+                <Button size="sm" disabled={isApproving} className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto min-h-[44px]">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   {isApproving ? "Approving..." : "Approve & Lock"}
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Approve and lock {period.period_name}?</AlertDialogTitle>
                   <AlertDialogDescription>
