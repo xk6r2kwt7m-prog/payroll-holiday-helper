@@ -30,10 +30,13 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const mainNavItems = [
   { icon: LayoutDashboard, label: "Home", path: "/" },
+  { icon: Users, label: "People", path: "/employees" },
   { icon: CalendarClock, label: "Schedule", path: "/schedule" },
-  { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets" },
   { icon: DollarSign, label: "Payroll", path: "/payroll" },
 ];
+
+// People tab matches multiple routes
+const peopleRoutes = ["/employees", "/absences", "/onboarding", "/training", "/disciplinary"];
 
 interface MoreGroup {
   title: string;
@@ -44,6 +47,7 @@ const moreGroups: MoreGroup[] = [
   {
     title: "Schedule",
     items: [
+      { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets" },
       { icon: ClipboardList, label: "Schedule Report", path: "/schedule/report" },
       { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics" },
     ],
@@ -66,7 +70,6 @@ const moreGroups: MoreGroup[] = [
   {
     title: "People",
     items: [
-      { icon: Users, label: "Employees", path: "/employees" },
       { icon: UserX, label: "Absences", path: "/absences" },
       { icon: UserPlus, label: "Onboarding", path: "/onboarding" },
       { icon: GraduationCap, label: "Training", path: "/training" },
@@ -93,18 +96,26 @@ export function MobileBottomNav() {
 
   const isMoreActive = allMorePaths.some(p => location.pathname === p);
 
+  const isNavActive = (item: typeof mainNavItems[0]) => {
+    if (item.path === "/employees") {
+      return peopleRoutes.some(r => location.pathname === r);
+    }
+    if (item.path === "/") return location.pathname === "/";
+    return location.pathname.startsWith(item.path);
+  };
+
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border pb-safe">
-        <div className="flex items-center justify-around px-2 h-16">
+        <div className="flex items-center justify-around px-1 h-16">
           {mainNavItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = isNavActive(item);
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors min-h-[48px]",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground active:text-foreground"
@@ -124,7 +135,7 @@ export function MobileBottomNav() {
             <SheetTrigger asChild>
               <button
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors min-h-[48px]",
                   isMoreActive
                     ? "text-primary"
                     : "text-muted-foreground active:text-foreground"
@@ -154,13 +165,13 @@ export function MobileBottomNav() {
                           to={item.path}
                           onClick={() => setMoreOpen(false)}
                           className={cn(
-                            "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
+                            "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors min-h-[48px]",
                             isActive
                               ? "bg-primary/10 text-primary"
                               : "text-foreground hover:bg-muted active:bg-muted"
                           )}
                         >
-                          <item.icon className="h-4.5 w-4.5" />
+                          <item.icon className="h-5 w-5" />
                           {item.label}
                         </Link>
                       );
@@ -174,7 +185,7 @@ export function MobileBottomNav() {
                       setMoreOpen(false);
                       signOut();
                     }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-destructive w-full hover:bg-destructive/5 active:bg-destructive/10"
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-destructive w-full hover:bg-destructive/5 active:bg-destructive/10 min-h-[48px]"
                   >
                     <LogOut className="h-5 w-5" />
                     Sign Out
