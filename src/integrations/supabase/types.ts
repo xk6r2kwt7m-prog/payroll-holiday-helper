@@ -973,6 +973,66 @@ export type Database = {
           },
         ]
       }
+      holiday_integrity_log: {
+        Row: {
+          check_type: string
+          details: Json | null
+          employee_id: string | null
+          employee_name: string | null
+          id: string
+          leave_year: number
+          resolved_at: string | null
+          resolved_by: string | null
+          run_at: string
+          severity: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          check_type: string
+          details?: Json | null
+          employee_id?: string | null
+          employee_name?: string | null
+          id?: string
+          leave_year: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          run_at?: string
+          severity?: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          check_type?: string
+          details?: Json | null
+          employee_id?: string | null
+          employee_name?: string | null
+          id?: string
+          leave_year?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          run_at?: string
+          severity?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holiday_integrity_log_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "holiday_integrity_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holiday_payments: {
         Row: {
           created_at: string
