@@ -32,6 +32,7 @@ import PayrollAudit from "./pages/PayrollAudit";
 import Auth from "./pages/Auth";
 import CompanyOnboarding from "./pages/CompanyOnboarding";
 import SignContract from "./pages/SignContract";
+import PlatformAdmin from "./pages/PlatformAdmin";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 
