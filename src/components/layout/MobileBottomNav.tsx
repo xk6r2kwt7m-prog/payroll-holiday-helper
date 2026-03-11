@@ -26,7 +26,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useAuth, AppRole } from "@/hooks/useAuth";
+import { useTenant } from "@/hooks/useTenant";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import type { ModuleKey } from "@/components/ProtectedRoute";
 
 const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
 
