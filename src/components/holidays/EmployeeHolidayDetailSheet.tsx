@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Clock, TrendingUp, TrendingDown, DollarSign, ArrowRight, Pencil, ChevronDown, ChevronUp, History } from "lucide-react";
+import { Calendar, Clock, TrendingUp, TrendingDown, DollarSign, ArrowRight, Pencil, ChevronDown, ChevronUp, History, BookOpen } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
