@@ -681,7 +681,7 @@ const Holidays = () => {
 
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
-          <TabsList className="grid w-full grid-cols-6 sm:w-auto sm:inline-grid">
+          <TabsList className="grid w-full grid-cols-7 sm:w-auto sm:inline-grid">
             <TabsTrigger value="overview" className="gap-1.5">
               <Users className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Overview</span>
