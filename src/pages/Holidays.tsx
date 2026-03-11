@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch, ShieldCheck } from "lucide-react";
+import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch, ShieldCheck, Bug } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ import {
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2022" | "2023" | "2024" | "2025" | "2026";
-type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity";
+type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity" | "audit";
 
 interface EmployeeSummary {
   employeeId: string;
@@ -266,8 +266,8 @@ const Holidays = () => {
       const carryOver = prev ? Math.max(0, prev.balance) : 0;
       return {
         ...s,
-        hoursCarriedOver: carryOver,
-        balance: s.hoursAccrued + carryOver - s.hoursTaken,
+        hoursCarriedOver: s.hoursCarriedOver + carryOver,
+        balance: s.hoursAccrued + s.hoursCarriedOver + carryOver - s.hoursTaken,
       };
     });
   }, [payrollEntries, payments2026, summaries2025, adjustments]);
@@ -441,6 +441,58 @@ const Holidays = () => {
   }, [filteredSummaries]);
 
   const overdrawnCount = filteredSummaries.filter(s => s.hoursTaken > s.hoursAccrued + s.hoursCarriedOver).length;
+
+  // Audit debug data — admin validation panel
+  const auditData = useMemo(() => {
+    const year = parseInt(selectedYear);
+
+    // Count payroll entries contributing to this year
+    const correctedBaseNames = new Set<string>();
+    payrollEntries.forEach((entry: any) => {
+      if (!entry.payroll_periods) return;
+      const name: string = entry.payroll_periods.period_name || "";
+      if (name.includes("[Corrected]")) {
+        correctedBaseNames.add(name.replace(" [Corrected]", "").trim());
+      }
+    });
+
+    const yearEntries = payrollEntries.filter((entry: any) => {
+      if (!entry.employees || !entry.payroll_periods) return false;
+      const periodName = entry.payroll_periods.period_name || "";
+      if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
+      const periodEnd = new Date(entry.payroll_periods.end_date);
+      return periodEnd.getFullYear() === year;
+    });
+
+    const totalWorkedHours = yearEntries.reduce((sum: number, e: any) =>
+      sum + (Number(e.imported_hours) ?? Number(e.timesheet_hours) ?? 0), 0);
+
+    const totalAccruedFromEntries = yearEntries.reduce((sum: number, e: any) =>
+      sum + (Number(e.holiday_accrued_hours) || 0), 0);
+
+    const uniqueEmployeeIds = new Set(yearEntries.map((e: any) => e.employee_id));
+    const uniquePeriodIds = new Set(yearEntries.map((e: any) => e.payroll_period_id));
+
+    return {
+      year,
+      totalPayrollEntries: payrollEntries.length,
+      yearPayrollEntries: yearEntries.length,
+      employeesFromPayroll: uniqueEmployeeIds.size,
+      employeesInSummary: currentSummaries.length,
+      periodsUsed: uniquePeriodIds.size,
+      totalWorkedHours: Math.round(totalWorkedHours * 100) / 100,
+      accrualFromPayrollEntries: Math.round(totalAccruedFromEntries * 100) / 100,
+      accrualRate: leaveRules?.accrualRate ?? 0.1207,
+      expectedAccrual: Math.round(totalWorkedHours * (leaveRules?.accrualRate ?? 0.1207) * 100) / 100,
+      dashboardAccrued: Math.round(totals.accrued * 100) / 100,
+      dashboardTaken: Math.round(totals.taken * 100) / 100,
+      dashboardCarryOver: Math.round(totals.carryOver * 100) / 100,
+      dashboardPaid: Math.round(totals.paid * 100) / 100,
+      dashboardBalance: Math.round(totals.balance * 100) / 100,
+      overdrawnCount,
+      sourceTables: ["payroll_entries", "payroll_periods", "holiday_payments", "holiday_adjustments"],
+    };
+  }, [selectedYear, payrollEntries, currentSummaries, totals, overdrawnCount, leaveRules]);
 
   // Alerts
   const alerts = useMemo(() => {
@@ -629,7 +681,7 @@ const Holidays = () => {
 
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
-          <TabsList className="grid w-full grid-cols-6 sm:w-auto sm:inline-grid">
+          <TabsList className="grid w-full grid-cols-7 sm:w-auto sm:inline-grid">
             <TabsTrigger value="overview" className="gap-1.5">
               <Users className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Overview</span>
@@ -663,6 +715,10 @@ const Holidays = () => {
                   {integrityRows.filter(r => r.severity === "error").length}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5">
+              <Bug className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Audit</span>
             </TabsTrigger>
           </TabsList>
 
@@ -759,6 +815,72 @@ const Holidays = () => {
           {/* Integrity Check Tab */}
           <TabsContent value="integrity" className="mt-4">
             <HolidayIntegrityCheck rows={integrityRows} isLoading={entriesLoading} />
+          </TabsContent>
+
+          {/* Admin Audit Debug Tab */}
+          <TabsContent value="audit" className="mt-4">
+            <div className="rounded-xl bg-card border border-border shadow-card p-6 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <Bug className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-card-foreground">Holiday Audit — {selectedYear}</h3>
+                  <p className="text-sm text-muted-foreground">Admin validation of calculation sources and totals</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <AuditRow label="Selected Year" value={String(auditData.year)} />
+                <AuditRow label="Total Payroll Entries (all years)" value={auditData.totalPayrollEntries.toLocaleString()} />
+                <AuditRow label={`Payroll Entries for ${selectedYear}`} value={auditData.yearPayrollEntries.toLocaleString()} />
+                <AuditRow label="Payroll Periods Used" value={auditData.periodsUsed.toLocaleString()} />
+                <AuditRow label="Employees (from payroll)" value={auditData.employeesFromPayroll.toLocaleString()} />
+                <AuditRow label="Employees (in summary)" value={auditData.employeesInSummary.toLocaleString()} />
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-semibold text-card-foreground mb-3">Accrual Calculation</h4>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <AuditRow label="Total Worked Hours (source)" value={auditData.totalWorkedHours.toLocaleString()} />
+                  <AuditRow label="Accrual Rate" value={`${(auditData.accrualRate * 100).toFixed(2)}%`} />
+                  <AuditRow label="Expected Accrual (rate × hours)" value={formatHours(auditData.expectedAccrual)} />
+                  <AuditRow
+                    label="Actual Accrual (from DB triggers)"
+                    value={formatHours(auditData.accrualFromPayrollEntries)}
+                    highlight={Math.abs(auditData.accrualFromPayrollEntries - auditData.expectedAccrual) > 5}
+                  />
+                  <AuditRow
+                    label="Dashboard Shows (accrued)"
+                    value={formatHours(auditData.dashboardAccrued)}
+                    highlight={Math.abs(auditData.dashboardAccrued - auditData.accrualFromPayrollEntries) > 1}
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-semibold text-card-foreground mb-3">Dashboard Totals</h4>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <AuditRow label="Hours Accrued" value={formatHours(auditData.dashboardAccrued)} />
+                  <AuditRow label="Hours Carried Over" value={formatHours(auditData.dashboardCarryOver)} />
+                  <AuditRow label="Hours Taken" value={formatHours(auditData.dashboardTaken)} />
+                  <AuditRow label="Total Paid" value={formatCurrency(auditData.dashboardPaid)} />
+                  <AuditRow label="Remaining Balance" value={formatHours(auditData.dashboardBalance)} highlight={auditData.dashboardBalance < 0} />
+                  <AuditRow label="Overdrawn Count" value={String(auditData.overdrawnCount)} highlight={auditData.overdrawnCount > 0} />
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h4 className="text-sm font-semibold text-card-foreground mb-2">Source Tables</h4>
+                <div className="flex flex-wrap gap-2">
+                  {auditData.sourceTables.map(t => (
+                    <span key={t} className="inline-flex items-center rounded-md bg-muted px-2.5 py-1 text-xs font-mono text-muted-foreground border border-border">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -922,6 +1044,15 @@ function EmptyState({ hasFilters, onClearFilters }: { hasFilters: boolean; onCle
           Clear filters
         </Button>
       )}
+    </div>
+  );
+}
+
+function AuditRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="rounded-lg bg-muted/50 border border-border p-3">
+      <div className="text-[11px] text-muted-foreground uppercase tracking-wide mb-1">{label}</div>
+      <div className={`text-sm font-semibold tabular-nums ${highlight ? "text-destructive" : "text-foreground"}`}>{value}</div>
     </div>
   );
 }
