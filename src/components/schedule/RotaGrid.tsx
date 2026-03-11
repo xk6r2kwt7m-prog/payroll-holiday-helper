@@ -604,6 +604,19 @@ export function RotaGrid({
         branch={branch}
         existingShifts={shifts || []}
         onMove={handleMoveShift}
+        onCopy={async (data) => {
+          await onCreateShift({
+            shift_date: data.shift_date,
+            branch,
+            department,
+            employee_id: data.employee_id,
+            start_time: data.start_time,
+            end_time: data.end_time,
+            notes: data.notes,
+            status: data.employee_id ? "scheduled" : "open",
+          });
+          toast.success("Shift copied");
+        }}
         isPending={isPending}
       />
     </>
