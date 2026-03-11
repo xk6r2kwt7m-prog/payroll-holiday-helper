@@ -113,7 +113,7 @@ export function ScheduleHeader({
   assignedCount = 0,
 }: ScheduleHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
-
+  const isMobile = useIsMobile();
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
       const week = startOfWeek(date, { weekStartsOn: 1 });
