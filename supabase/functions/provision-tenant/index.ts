@@ -123,6 +123,11 @@ Deno.serve(async (req) => {
 
     if (settingsErr) throw settingsErr;
 
+    // 5. Create default tenant_leave_settings
+    await admin
+      .from("tenant_leave_settings")
+      .insert({ tenant_id: tenant.id });
+
     return new Response(
       JSON.stringify({
         tenant_id: tenant.id,
