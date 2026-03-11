@@ -110,6 +110,35 @@ export function useLeaveRules() {
 }
 
 /**
+ * Mutation hook for updating tenant leave settings.
+ * Immediately invalidates the leave_rules cache so admins see fresh values.
+ */
+export function useUpdateTenantLeaveSettings() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+
+  return useMutation({
+    mutationFn: async (updates: Record<string, any>) => {
+      if (!tenantId) throw new Error("No tenant selected");
+
+      const { data, error } = await supabase
+        .from("tenant_leave_settings")
+        .update(updates)
+        .eq("tenant_id", tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      // Immediate cache invalidation — no stale data for the admin
+      queryClient.invalidateQueries({ queryKey: ["leave_rules"] });
+    },
+  });
+}
+
+/**
  * Calculate holiday accrual using resolved rules.
  */
 export function calculateAccrual(hoursWorked: number, accrualRate: number, precision = 2): number {
