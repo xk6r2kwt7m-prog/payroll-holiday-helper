@@ -353,12 +353,24 @@ export function PayrollPDF({
   isCorrection = false,
   correctionNote,
   logoUrl,
+  reportConfig,
 }: PayrollPDFProps) {
+  const rc = reportConfig;
+  const hideAmounts = rc?.financial?.hideFinancialAmounts ?? false;
+
+  // Sorting based on config
   const sortedEntries = [...entries].sort((a, b) => {
-    const deptOrder: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
-    const deptA = deptOrder[a.employees?.department || ""] ?? 99;
-    const deptB = deptOrder[b.employees?.department || ""] ?? 99;
-    if (deptA !== deptB) return deptA - deptB;
+    if (!rc || rc.sortBy === "department" || rc.sortBy === "alphabetical") {
+      const deptOrder: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
+      const deptA = deptOrder[a.employees?.department || ""] ?? 99;
+      const deptB = deptOrder[b.employees?.department || ""] ?? 99;
+      if (rc?.sortBy === "department" && deptA !== deptB) return deptA - deptB;
+      if (!rc || rc.sortBy === "alphabetical") {
+        if (deptA !== deptB) return deptA - deptB;
+      }
+      return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+    }
+    if (rc.sortBy === "hourly_rate") return Number(b.hourly_rate) - Number(a.hourly_rate);
     return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
   });
 
