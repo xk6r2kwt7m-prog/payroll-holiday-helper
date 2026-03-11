@@ -95,6 +95,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setTenantName(null);
       setTenantCountry(null);
       setTenantTimezone(null);
+      setTenantStatus(null);
       setIsPlatformAdmin(false);
       setEnabledModules(null);
       setLoading(false);
