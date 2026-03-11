@@ -146,9 +146,13 @@ export default function Schedule() {
   };
 
   const handleCreateShift = async (data: any) => {
+    if (!tenantId) {
+      toast.error("Unable to create shift: no workspace selected. Please reload and try again.");
+      return;
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await createShift.mutateAsync({ ...data, created_by: user?.id });
+      await createShift.mutateAsync({ ...data, tenant_id: tenantId, created_by: user?.id });
       toast.success("Shift added");
     } catch (err: any) {
       toast.error(err.message);
