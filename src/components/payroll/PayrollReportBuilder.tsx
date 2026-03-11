@@ -154,13 +154,13 @@ export function PayrollReportBuilder({
 
       // Audit log
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from("audit_log").insert({
+      await supabase.from("audit_log").insert([{
         user_id: user?.id || null,
         action: "import" as const,
         table_name: "payroll_periods",
         record_id: period.id,
         new_data: { operation: "pdf_export", period_name: period.period_name, report_config: config },
-      });
+      }]);
 
       toast.success("PDF downloaded");
       onOpenChange(false);

@@ -305,6 +305,25 @@ interface PayrollPeriod {
   notes: string | null;
 }
 
+interface PayrollReportConfig {
+  sortBy: string;
+  groupBy: string;
+  columns: Record<string, boolean>;
+  financial: {
+    includeBonuses: boolean;
+    includeServiceCharge: boolean;
+    includeAdjustments: boolean;
+    showGrossTotals: boolean;
+    showSummaryTotals: boolean;
+    hideFinancialAmounts: boolean;
+  };
+  orientation: string;
+  layoutStyle: string;
+  showLogo: boolean;
+  showNotes: boolean;
+  showAuditFooter: boolean;
+}
+
 interface PayrollPDFProps {
   period: PayrollPeriod;
   entries: PayrollEntry[];
@@ -314,6 +333,7 @@ interface PayrollPDFProps {
   isCorrection?: boolean;
   correctionNote?: string;
   logoUrl?: string;
+  reportConfig?: PayrollReportConfig;
 }
 
 function fmt(amount: number): string {
