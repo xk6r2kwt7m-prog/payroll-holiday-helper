@@ -4,6 +4,7 @@ import { useTenant } from "@/hooks/useTenant";
 
 export function useGenerateSigningLink() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async ({
