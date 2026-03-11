@@ -486,6 +486,19 @@ const Payroll = () => {
             onExport={handleExport}
           />
         )}
+
+        {/* Report Builder Modal */}
+        {selectedPeriod && (
+          <PayrollReportBuilder
+            open={reportBuilderOpen}
+            onOpenChange={setReportBuilderOpen}
+            period={selectedPeriod}
+            entries={entries as any}
+            holidayPayments={holidayPayments as any}
+            allEmployees={allEmployees}
+            companyName={companySettings?.company_name}
+          />
+        )}
       </div>
     </AppLayout>
   );
