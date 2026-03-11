@@ -353,7 +353,10 @@ export function useAllHolidayAdjustments() {
   });
 }
 
-// UK Holiday Law Constants
+/**
+ * @deprecated Use useLeaveRules() hook instead for tenant-aware rules.
+ * Kept for backward compatibility — resolves to identical values for GB tenants.
+ */
 export const UK_HOLIDAY_LAW = {
   STATUTORY_WEEKS: 5.6,
   MAX_STATUTORY_DAYS: 28,
@@ -366,11 +369,16 @@ export const UK_HOLIDAY_LAW = {
   STANDARD_WEEK_HOURS: 40,
 };
 
+/**
+ * @deprecated Use calculateAccrual() from useLeaveRules instead.
+ */
 export const calculateHolidayAccrual = (hoursWorked: number): number => {
   return hoursWorked * UK_HOLIDAY_LAW.ACCRUAL_RATE;
 };
 
-// Calculate annual entitlement based on weekly hours
+/**
+ * @deprecated Use calculateAnnualEntitlement() from useLeaveRules instead.
+ */
 export const calculateAnnualEntitlement = (weeklyHours: number): number => {
   return weeklyHours * UK_HOLIDAY_LAW.STATUTORY_WEEKS;
 };
