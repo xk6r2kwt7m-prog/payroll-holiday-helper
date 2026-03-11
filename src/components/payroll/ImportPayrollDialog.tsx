@@ -363,7 +363,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             status: "draft" as const,
             imported_by: user?.id,
             notes: periodNotes,
-          })
+          } as any)
           .select()
           .single();
 
