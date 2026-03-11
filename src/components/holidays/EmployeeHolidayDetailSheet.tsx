@@ -70,6 +70,7 @@ export function EmployeeHolidayDetailSheet({
 }: EmployeeHolidayDetailSheetProps) {
   const { data: leaveRules } = useLeaveRules();
   const [showYearHistory, setShowYearHistory] = useState(false);
+  const [activeTab, setActiveTab] = useState("summary");
   const totalEntitlement = hoursAccrued + carryOver;
   const usagePercent = totalEntitlement > 0 ? (hoursTaken / totalEntitlement) * 100 : 0;
   const isOverdrawn = hoursTaken > totalEntitlement;
