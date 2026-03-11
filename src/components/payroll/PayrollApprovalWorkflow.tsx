@@ -70,26 +70,26 @@ export function PayrollApprovalWorkflow({
   const hasAuditErrors = auditErrors.length > 0;
   const canSubmitOrApprove = !hasUnmatchedEmployees && !hasAuditErrors;
   return (
-    <div className="rounded-xl bg-card shadow-card p-5 animate-fade-in">
+    <div className="rounded-xl bg-card shadow-card p-4 sm:p-5 animate-fade-in overflow-hidden">
       {/* Workflow Steps */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-4 overflow-x-auto no-scrollbar">
         {workflowSteps.map((step, i) => {
           const isActive = step.status === period.status;
           const isPast = i < currentStepIndex;
           return (
-            <div key={step.status} className="flex items-center gap-2">
+            <div key={step.status} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {i > 0 && (
-                <div className={`h-px w-8 ${isPast ? "bg-success" : "bg-border"}`} />
+                <div className={`h-px w-4 sm:w-8 ${isPast ? "bg-success" : "bg-border"}`} />
               )}
-              <div className="flex items-center gap-2">
-                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
+              <div className="flex items-center gap-1.5">
+                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium shrink-0 ${
                   isPast ? "bg-success text-success-foreground" :
                   isActive ? "bg-primary text-primary-foreground" :
                   "bg-muted text-muted-foreground"
                 }`}>
                   {isPast ? <CheckCircle className="h-3.5 w-3.5" /> : i + 1}
                 </div>
-                <span className={`text-xs font-medium hidden sm:inline ${
+                <span className={`text-xs font-medium whitespace-nowrap ${
                   isActive ? "text-foreground" : "text-muted-foreground"
                 }`}>
                   {step.label}
@@ -170,26 +170,26 @@ export function PayrollApprovalWorkflow({
 
       {/* Status-specific content */}
       {period.status === "draft" && isAdmin && (
-        <div className="flex items-center justify-between rounded-lg bg-warning/10 border border-warning/20 p-4">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-warning shrink-0" />
-            <div>
-              <p className="font-medium text-card-foreground">Draft – Editable</p>
-              <p className="text-sm text-muted-foreground">
-                {entryCount} employees · {zeroHoursCount > 0 ? `${zeroHoursCount} with 0 hours` : "All hours entered"}
+        <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 sm:p-4">
+          <div className="flex items-start gap-3 mb-3 sm:mb-0">
+            <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-card-foreground text-sm">Draft – Editable</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {entryCount} employees · {zeroHoursCount > 0 ? `${zeroHoursCount} with 0 hrs` : "All hours entered"}
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2 sm:mt-0">
             {onDelete && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="default" disabled={isDeleting} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Button variant="outline" size="sm" disabled={isDeleting} className="text-destructive border-destructive/30 hover:bg-destructive/10 w-full sm:w-auto min-h-[44px]">
                     <Trash2 className="mr-2 h-4 w-4" />
                     {isDeleting ? "Deleting..." : "Delete"}
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete "{period.period_name}"?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -207,12 +207,12 @@ export function PayrollApprovalWorkflow({
             )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button disabled={isSubmitting || entryCount === 0 || !canSubmitOrApprove}>
+                <Button size="sm" disabled={isSubmitting || entryCount === 0 || !canSubmitOrApprove} className="w-full sm:w-auto min-h-[44px]">
                   <Send className="mr-2 h-4 w-4" />
                   {isSubmitting ? "Submitting..." : "Submit for Review"}
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Submit {period.period_name} for review?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -236,25 +236,25 @@ export function PayrollApprovalWorkflow({
       )}
 
       {period.status === "pending" && isAdmin && (
-        <div className="flex items-center justify-between rounded-lg bg-primary/10 border border-primary/20 p-4">
-          <div className="flex items-center gap-3">
-            <Send className="h-5 w-5 text-primary shrink-0" />
-            <div>
-              <p className="font-medium text-card-foreground">Pending Review</p>
-              <p className="text-sm text-muted-foreground">
-                Review all entries before approving. Once approved, this period is locked.
+        <div className="rounded-lg bg-primary/10 border border-primary/20 p-3 sm:p-4">
+          <div className="flex items-start gap-3 mb-3 sm:mb-0">
+            <Send className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-card-foreground text-sm">Pending Review</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Review all entries before approving.
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2 sm:mt-0">
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" disabled={isReopening}>
+                <Button variant="outline" size="sm" disabled={isReopening} className="w-full sm:w-auto min-h-[44px]">
                   <Undo2 className="mr-2 h-4 w-4" />
                   Reopen
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reopen this payroll period?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -270,12 +270,12 @@ export function PayrollApprovalWorkflow({
             </AlertDialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button disabled={isApproving} className="bg-success hover:bg-success/90 text-success-foreground">
+                <Button size="sm" disabled={isApproving} className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto min-h-[44px]">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   {isApproving ? "Approving..." : "Approve & Lock"}
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Approve and lock {period.period_name}?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -298,63 +298,67 @@ export function PayrollApprovalWorkflow({
       )}
 
       {period.status === "approved" && (
-        <div className="flex items-center justify-between rounded-lg bg-success/10 border border-success/20 p-4">
-          <div className="flex items-center gap-3">
-            <Lock className="h-5 w-5 text-success shrink-0" />
-            <div>
-              <p className="font-medium text-success">Approved & Locked</p>
-              <p className="text-sm text-muted-foreground">
+        <div className="rounded-lg bg-success/10 border border-success/20 p-3 sm:p-4">
+          <div className="flex items-start gap-3">
+            <Lock className="h-5 w-5 text-success shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-success text-sm">Approved & Locked</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {period.approved_at 
-                  ? `Approved on ${new Date(period.approved_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}` 
+                  ? `Approved ${new Date(period.approved_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` 
                   : "This period is locked and read-only"}
               </p>
             </div>
           </div>
           {isAdmin && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" disabled={isReopening}>
-                  <Undo2 className="mr-2 h-4 w-4" />
-                  Reopen
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>⚠️ Reopen approved period?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    <strong className="text-destructive">This is a controlled action.</strong> Reopening an approved 
-                    period will move it back to draft status, allowing edits. This is recorded in the audit log 
-                    for compliance purposes (UK payroll record-keeping).
-                    <br /><br />
-                    Only proceed if corrections are genuinely required.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={onReopen} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Reopen Period
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <div className="mt-2 flex sm:justify-end">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" disabled={isReopening} className="w-full sm:w-auto min-h-[44px]">
+                    <Undo2 className="mr-2 h-4 w-4" />
+                    Reopen
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>⚠️ Reopen approved period?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      <strong className="text-destructive">This is a controlled action.</strong> Reopening an approved 
+                      period will move it back to draft status, allowing edits. This is recorded in the audit log 
+                      for compliance purposes (UK payroll record-keeping).
+                      <br /><br />
+                      Only proceed if corrections are genuinely required.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onReopen} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Reopen Period
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           )}
         </div>
       )}
 
       {period.status === "rejected" && (
-        <div className="flex items-center justify-between rounded-lg bg-destructive/10 border border-destructive/20 p-4">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
-            <div>
-              <p className="font-medium text-destructive">Rejected</p>
-              <p className="text-sm text-muted-foreground">This period was rejected. Reopen to make corrections.</p>
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 sm:p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-destructive text-sm">Rejected</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">This period was rejected. Reopen to make corrections.</p>
             </div>
           </div>
           {isAdmin && (
-            <Button variant="outline" onClick={onReopen} disabled={isReopening}>
-              <Undo2 className="mr-2 h-4 w-4" />
-              Reopen as Draft
-            </Button>
+            <div className="mt-2 flex sm:justify-end">
+              <Button variant="outline" size="sm" onClick={onReopen} disabled={isReopening} className="w-full sm:w-auto min-h-[44px]">
+                <Undo2 className="mr-2 h-4 w-4" />
+                Reopen as Draft
+              </Button>
+            </div>
           )}
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -277,68 +278,82 @@ const Payroll = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full min-w-0 overflow-hidden">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-in-left">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <DollarSign className="h-5 w-5 text-primary" />
-              </div>
-              Payroll
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              {selectedPeriod ? (
-                <>
-                  {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} - {new Date(selectedPeriod.end_date).toLocaleDateString()}
-                  {(selectedPeriod as any).period_weeks && ` • ${(selectedPeriod as any).period_weeks} weeks`}
-                </>
-              ) : "No payroll periods yet"}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {selectedPeriod && entries.length > 0 && (
-              <Button variant="outline" onClick={handleDownloadPDF}>
-                <FileDown className="mr-2 h-4 w-4" />
-                PDF Report
+        <div className="flex flex-col gap-3 animate-slide-in-left">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2.5">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                </div>
+                Payroll
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
+                {selectedPeriod ? (
+                  <>
+                    {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} – {new Date(selectedPeriod.end_date).toLocaleDateString()}
+                  </>
+                ) : "No payroll periods yet"}
+              </p>
+            </div>
+            {/* Primary actions – always visible */}
+            <div className="flex gap-1.5 shrink-0">
+              {selectedPeriod && entries.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="h-9 px-2.5 sm:px-3">
+                  <FileDown className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              )}
+              <Button variant="outline" size="sm" asChild className="h-9 px-2.5 sm:px-3">
+                <Link to="/payroll/analytics">
+                  <BarChart3 className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Analytics</span>
+                </Link>
               </Button>
-            )}
-            <Button variant="outline" asChild>
-              <Link to="/payroll/analytics">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Analytics
-              </Link>
-            </Button>
-            {isAdmin && <SettleLeaverDialog />}
-            {isAdmin && <AddHolidayPaymentDialog />}
-            {isAdmin && <CreatePayrollDialog />}
-            {isAdmin && <ImportPayrollDialog />}
+            </div>
           </div>
+          {/* Admin actions – wrap naturally */}
+          {isAdmin && (
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              <SettleLeaverDialog />
+              <AddHolidayPaymentDialog />
+              <CreatePayrollDialog />
+              <ImportPayrollDialog />
+            </div>
+          )}
         </div>
 
-        {/* Period Selector */}
+        {/* Period Selector – horizontal scroll on mobile */}
         {periods.length > 0 && (
-          <div className="flex flex-wrap gap-2 animate-fade-in">
-            {periods.slice(0, 6).map((period) => (
-              <Button
-                key={period.id}
-                variant={selectedPeriod?.id === period.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedPeriodId(period.id)}
-                className="gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                {period.period_name}
-                <Badge variant="secondary" className={statusStyles[period.status]}>
-                  {statusLabels[period.status]}
-                </Badge>
-              </Button>
-            ))}
+          <div className="-mx-4 sm:mx-0 px-4 sm:px-0 animate-fade-in">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
+              {periods.slice(0, 6).map((period) => (
+                <button
+                  key={period.id}
+                  onClick={() => setSelectedPeriodId(period.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 shrink-0 rounded-lg border px-3 py-2 text-xs sm:text-sm font-medium transition-colors min-h-[40px]",
+                    selectedPeriod?.id === period.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-card-foreground border-border hover:bg-muted"
+                  )}
+                >
+                  <span className="truncate max-w-[120px]">{period.period_name}</span>
+                  <span className={cn(
+                    "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                    statusStyles[period.status]
+                  )}>
+                    {statusLabels[period.status]}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
         {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
           <StatCard
             title="Total Payroll"
             value={formatCurrency(totalPay)}
@@ -353,14 +368,14 @@ const Payroll = () => {
             icon={<Clock className="h-5 w-5" />}
           />
           <StatCard
-            title="Avg. Hourly Rate"
+            title="Avg. Rate"
             value={formatCurrency(avgRate)}
             icon={<DollarSign className="h-5 w-5" />}
           />
           <StatCard
-            title="Total Bonuses"
+            title="Bonuses"
             value={formatCurrency(totalBonuses)}
-            subtitle="Performance + Special"
+            subtitle="Perf + Special"
             icon={<DollarSign className="h-5 w-5" />}
             variant="success"
           />
@@ -422,17 +437,17 @@ const Payroll = () => {
 
         {/* Rate Discrepancy Warning */}
         {rateDiscrepancies.length > 0 && (
-          <div className="rounded-xl bg-warning/10 border border-warning/20 p-4 animate-fade-in">
-            <div className="flex items-center gap-3 mb-2">
-              <Badge className="bg-warning text-warning-foreground text-xs">Rate Change</Badge>
-              <p className="font-medium text-card-foreground text-sm">
-                {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s have" : " has"} a different rate in this period vs their master record
+          <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
+            <div className="flex items-start gap-2.5 mb-2">
+              <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">Rate Change</Badge>
+              <p className="font-medium text-card-foreground text-xs sm:text-sm">
+                {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s" : ""} with rate differences
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {rateDiscrepancies.slice(0, 5).map((e: any) => (
-                <Badge key={e.id} variant="outline" className="text-xs">
-                  {e.employees?.forename} {e.employees?.surname}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
+                <Badge key={e.id} variant="outline" className="text-[10px] sm:text-xs">
+                  {e.employees?.forename}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
                 </Badge>
               ))}
             </div>

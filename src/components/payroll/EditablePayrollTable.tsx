@@ -398,25 +398,27 @@ export function EditablePayrollTable({
 
   return (
     <div className="rounded-xl bg-card shadow-card overflow-hidden">
-      <div className="border-b border-border px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold text-card-foreground">Payroll Details</h3>
-          <p className="text-sm text-muted-foreground">
-            {canEdit ? "Click edit to modify hours and bonuses" : "View timesheet hours and payments"}
-          </p>
+      <div className="border-b border-border px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-semibold text-card-foreground">Payroll Details</h3>
+            <p className="text-xs text-muted-foreground">
+              {canEdit ? "Tap edit to modify" : "View hours and payments"}
+            </p>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           {canEdit && (
             <AddEmployeeToPeriodDialog periodId={periodId} existingEmployeeIds={existingEmployeeIds} />
           )}
           {canEdit && someSelected && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="sm" disabled={isBulkUpdating}>
+                <Button variant="secondary" size="sm" disabled={isBulkUpdating} className="h-8 text-xs">
                   {isBulkUpdating ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                   ) : (
-                    <CopyCheck className="h-4 w-4 mr-2" />
+                    <CopyCheck className="h-3.5 w-3.5 mr-1.5" />
                   )}
                   Bulk ({selectedIds.size})
                 </Button>
@@ -434,14 +436,14 @@ export function EditablePayrollTable({
             </DropdownMenu>
           )}
           
-          <Button variant="outline" size="sm" onClick={() => onExport(false)}>
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={() => onExport(false)} className="h-8 text-xs">
+            <Download className="h-3.5 w-3.5 mr-1.5" />
             Export
           </Button>
           {hasUnexportedBankDetails && (
-            <Button variant="default" size="sm" onClick={handleExportWithBank}>
-              <Download className="h-4 w-4 mr-2" />
-              Export with Bank Details
+            <Button variant="default" size="sm" onClick={handleExportWithBank} className="h-8 text-xs">
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+              + Bank
             </Button>
           )}
         </div>
