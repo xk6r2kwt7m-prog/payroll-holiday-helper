@@ -307,7 +307,7 @@ const Holidays = () => {
           periodName,
           hoursWorked: Number(entry.timesheet_hours) || 0,
           importedHours: entry.imported_hours != null ? Number(entry.imported_hours) : null,
-          accrualRate: UK_HOLIDAY_LAW.ACCRUAL_RATE,
+          accrualRate: leaveRules?.accrualRate ?? 0.1207,
           accrued: Number(entry.holiday_accrued_hours) || 0,
           taken: 0,
           paid: 0,
