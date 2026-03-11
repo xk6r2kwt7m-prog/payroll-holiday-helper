@@ -112,6 +112,7 @@ const pageVariants = {
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const { user, isAdmin, isManagerOrAbove, isSupervisorOrAbove, role, signOut } = useAuth();
+  const isMobile = useIsMobile();
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || "UGLŌ";
 
