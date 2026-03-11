@@ -38,9 +38,8 @@ export function MobileShiftSheet({
   onCopy,
   onDelete,
 }: MobileShiftSheetProps) {
-  if (!shift) return null;
-
   const totalInfo = useMemo(() => {
+    if (!shift) return { hours: 0, hoursStr: "0h 0m" };
     const [sh, sm] = (shift.start_time || "00:00").split(":").map(Number);
     const [eh, em] = (shift.end_time || "00:00").split(":").map(Number);
     let totalMinutes = (eh * 60 + em) - (sh * 60 + sm);
