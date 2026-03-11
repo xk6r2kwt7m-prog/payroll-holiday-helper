@@ -77,6 +77,7 @@ export default function Schedule() {
   const saveTemplate = useSaveScheduleTemplate();
   const bulkDelete = useBulkDeleteShifts();
   const bulkUpdate = useBulkUpdateShifts();
+  const bulkCreate = useBulkCreateShifts();
 
   const activeEmployees = useMemo(
     () => employees?.filter((e) => e.status === "active") || [],
