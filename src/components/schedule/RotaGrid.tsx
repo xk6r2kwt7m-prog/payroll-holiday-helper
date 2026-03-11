@@ -55,9 +55,6 @@ export function RotaGrid({
   const [mobileSheetDay, setMobileSheetDay] = useState<Date | null>(null);
   const isMobile = useIsMobile();
 
-  const bulkDelete = useBulkDeleteShifts();
-  const bulkUpdate = useBulkUpdateShifts();
-  const bulkPending = bulkDelete.isPending || bulkUpdate.isPending;
 
   const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 8 } });
   const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } });
