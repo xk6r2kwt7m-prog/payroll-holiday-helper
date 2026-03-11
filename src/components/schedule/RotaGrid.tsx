@@ -386,10 +386,14 @@ export function RotaGrid({
                       hasNoShifts && "bg-muted/[0.15]",
                     )}
                   >
-                    <td className="px-2 py-2 sticky left-0 bg-card z-10">
+                    <td className={cn(
+                      "py-1.5 sticky left-0 bg-card z-10",
+                      isMobile ? "px-1.5" : "px-2 py-2"
+                    )}>
                       <div className="flex items-center gap-1.5">
                         <div className={cn(
-                          "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                          "rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                          isMobile ? "h-6 w-6" : "h-7 w-7",
                           hasNoShifts
                             ? "bg-muted text-muted-foreground"
                             : "bg-primary/10 text-primary"
@@ -400,12 +404,13 @@ export function RotaGrid({
                           <div className="truncate text-[11px] sm:text-xs font-medium text-foreground leading-tight">
                             {emp.forename}
                           </div>
+                          {/* Mobile: show only hours. Desktop: hours + cost */}
                           <div className="text-[9px] text-muted-foreground leading-tight mt-0.5 tabular-nums">
                             {weeklyHours > 0
                               ? `${Math.floor(weeklyHours)}h${Math.round((weeklyHours % 1) * 60) > 0 ? ` ${Math.round((weeklyHours % 1) * 60)}m` : ""}`
                               : "—"
                             }
-                            {weeklyCost > 0 && (
+                            {!isMobile && weeklyCost > 0 && (
                               <span className="hidden sm:inline"> · £{weeklyCost.toFixed(0)}</span>
                             )}
                           </div>
