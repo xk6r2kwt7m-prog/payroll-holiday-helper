@@ -34,6 +34,8 @@ import CompanyOnboarding from "./pages/CompanyOnboarding";
 import SignContract from "./pages/SignContract";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import LocationDashboard from "./pages/LocationDashboard";
+import SelectWorkspace from "./pages/SelectWorkspace";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 
@@ -49,157 +51,64 @@ const App = () => (
           <TenantProvider>
           <CommandPalette />
           <Routes>
+            {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/onboard" element={<CompanyOnboarding />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employees"
-              element={
-                <ProtectedRoute>
-                  <Employees />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/payroll"
-              element={
-                <ProtectedRoute>
-                  <Payroll />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/payroll/calendar"
-              element={
-                <ProtectedRoute>
-                  <PayrollCalendar />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/holidays"
-              element={
-                <ProtectedRoute>
-                  <Holidays />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/locations"
-              element={
-                <ProtectedRoute>
-                  <Locations />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/locations/:branch"
-              element={
-                <ProtectedRoute>
-                  <LocationDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/contracts"
-              element={
-                <ProtectedRoute>
-                  <Contracts />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/select-workspace" element={<SelectWorkspace />} />
             <Route path="/sign/:token" element={<SignContract />} />
-            <Route
-              path="/schedule"
-              element={
-                <ProtectedRoute>
-                  <Schedule />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/timesheets"
-              element={
-                <ProtectedRoute>
-                  <Timesheets />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/staff" element={<ProtectedRoute><StaffPortal /></ProtectedRoute>} />
-            <Route path="/training" element={<ProtectedRoute><TrainingRecords /></ProtectedRoute>} />
-            <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
-            <Route path="/disciplinary" element={<ProtectedRoute><Disciplinary /></ProtectedRoute>} />
-            <Route
-              path="/schedule/report"
-              element={
-                <ProtectedRoute>
-                  <ScheduleReport />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/schedule/analytics"
-              element={
-                <ProtectedRoute>
-                  <ScheduleAnalytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/payroll/analytics"
-              element={
-                <ProtectedRoute>
-                  <PayrollAnalytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/holidays/audit"
-              element={
-                <ProtectedRoute>
-                  <HolidayAudit />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/absences"
-              element={<ProtectedRoute><AbsenceTracker /></ProtectedRoute>}
-            />
-            <Route
-              path="/onboarding"
-              element={<ProtectedRoute><Onboarding /></ProtectedRoute>}
-            />
-            <Route
-              path="/payroll/comparison"
-              element={<ProtectedRoute><PayrollComparison /></ProtectedRoute>}
-            />
-            <Route
-              path="/payroll/overpayments"
-              element={<ProtectedRoute><PayrollOverpayments /></ProtectedRoute>}
-            />
-            <Route
-              path="/payroll/audit"
-              element={<ProtectedRoute><PayrollAudit /></ProtectedRoute>}
-            />
-            <Route
-              path="/platform-admin"
-              element={<ProtectedRoute><PlatformAdmin /></ProtectedRoute>}
-            />
+
+            {/* Dashboard — all authenticated users */}
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+
+            {/* Staff portal — staff+ */}
+            <Route path="/staff" element={<ProtectedRoute requiredRole="staff"><StaffPortal /></ProtectedRoute>} />
+
+            {/* Schedule module — staff can view own, manager+ can manage */}
+            <Route path="/schedule" element={<ProtectedRoute requiredRole="staff" requiredModule="scheduling" moduleName="Scheduling"><Schedule /></ProtectedRoute>} />
+            <Route path="/schedule/report" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><ScheduleReport /></ProtectedRoute>} />
+            <Route path="/schedule/analytics" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><ScheduleAnalytics /></ProtectedRoute>} />
+
+            {/* Timesheets — supervisor+ */}
+            <Route path="/timesheets" element={<ProtectedRoute requiredRole="supervisor" requiredModule="scheduling" moduleName="Scheduling"><Timesheets /></ProtectedRoute>} />
+
+            {/* Employees — supervisor+ can view */}
+            <Route path="/employees" element={<ProtectedRoute requiredRole="supervisor"><Employees /></ProtectedRoute>} />
+
+            {/* Payroll module — admin only */}
+            <Route path="/payroll" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><Payroll /></ProtectedRoute>} />
+            <Route path="/payroll/calendar" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollCalendar /></ProtectedRoute>} />
+            <Route path="/payroll/analytics" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollAnalytics /></ProtectedRoute>} />
+            <Route path="/payroll/comparison" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollComparison /></ProtectedRoute>} />
+            <Route path="/payroll/overpayments" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollOverpayments /></ProtectedRoute>} />
+            <Route path="/payroll/audit" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollAudit /></ProtectedRoute>} />
+
+            {/* Holidays — staff can see own, admin for audit */}
+            <Route path="/holidays" element={<ProtectedRoute requiredRole="staff"><Holidays /></ProtectedRoute>} />
+            <Route path="/holidays/audit" element={<ProtectedRoute requiredRole="admin"><HolidayAudit /></ProtectedRoute>} />
+
+            {/* Absences — manager+ */}
+            <Route path="/absences" element={<ProtectedRoute requiredRole="manager"><AbsenceTracker /></ProtectedRoute>} />
+
+            {/* Onboarding — manager+ */}
+            <Route path="/onboarding" element={<ProtectedRoute requiredRole="manager"><Onboarding /></ProtectedRoute>} />
+
+            {/* Training — staff+ */}
+            <Route path="/training" element={<ProtectedRoute requiredRole="staff" requiredModule="training" moduleName="Training"><TrainingRecords /></ProtectedRoute>} />
+
+            {/* Announcements — staff+ */}
+            <Route path="/announcements" element={<ProtectedRoute requiredRole="staff"><Announcements /></ProtectedRoute>} />
+
+            {/* Admin-only sections */}
+            <Route path="/disciplinary" element={<ProtectedRoute requiredRole="admin"><Disciplinary /></ProtectedRoute>} />
+            <Route path="/contracts" element={<ProtectedRoute requiredRole="admin" requiredModule="documents" moduleName="Documents"><Contracts /></ProtectedRoute>} />
+            <Route path="/locations" element={<ProtectedRoute requiredRole="admin"><Locations /></ProtectedRoute>} />
+            <Route path="/locations/:branch" element={<ProtectedRoute requiredRole="admin"><LocationDashboard /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute requiredRole="admin"><Settings /></ProtectedRoute>} />
+
+            {/* Platform admin — platform owner only */}
+            <Route path="/platform-admin" element={<ProtectedRoute platformAdminOnly><PlatformAdmin /></ProtectedRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TenantProvider>
