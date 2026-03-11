@@ -108,37 +108,6 @@ export function RotaGrid({
   );
   const currentAssigned = currentShifts.filter((s: any) => s.employee_id);
 
-  const handleBulkDeleteAll = async () => {
-    const ids = currentShifts.map((s: any) => s.id);
-    if (ids.length === 0) return;
-    await bulkDelete.mutateAsync(ids);
-    toast.success(`Deleted ${ids.length} shifts`);
-  };
-
-  const handleBulkClearAssignments = async () => {
-    const ids = currentAssigned.map((s: any) => s.id);
-    if (ids.length === 0) return;
-    await bulkUpdate.mutateAsync({
-      shiftIds: ids,
-      updates: { employee_id: null, status: "open" as const },
-    });
-    toast.success(`Cleared ${ids.length} assignments`);
-  };
-
-  const handleBulkUpdateTimes = async (startTime: string, endTime: string) => {
-    const ids = currentShifts.map((s: any) => s.id);
-    if (ids.length === 0) return;
-    await bulkUpdate.mutateAsync({
-      shiftIds: ids,
-      updates: { start_time: startTime, end_time: endTime },
-    });
-    toast.success(`Updated times for ${ids.length} shifts`);
-  };
-
-  const allBranchShifts = shifts || [];
-  const publishedCount = allBranchShifts.filter((s: any) => s.is_published).length;
-  const unpublishedCount = allBranchShifts.filter((s: any) => !s.is_published && s.employee_id).length;
-  const openShiftCount = allBranchShifts.filter((s: any) => !s.employee_id).length;
 
   const [defaultEmployeeId, setDefaultEmployeeId] = useState<string | null>(null);
 
