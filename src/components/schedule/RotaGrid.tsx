@@ -299,47 +299,49 @@ export function RotaGrid({
     return emp ? `${emp.forename} ${emp.surname}` : "Unknown";
   };
 
-  // Render a shift cell with popover
-  const renderShiftWithPopover = (shift: any, day: Date) => {
-    const empName = getEmployeeName(shift.employee_id);
+  // Render a shift cell — tap opens mobile sheet or desktop popover
+  const renderShiftCell = (shift: any, day: Date) => {
     return (
-      <ShiftDetailPopover
-        key={shift.id}
-        shift={shift}
-        employeeName={empName}
-        branch={branch}
-        department={department}
-        isAdmin={isAdmin}
-        open={popoverShiftId === shift.id}
-        onOpenChange={(open) => setPopoverShiftId(open ? shift.id : null)}
-        onEdit={() => handleEditFromPopover(shift, day)}
-        onDelete={() => handleDeleteFromPopover(shift.id)}
-        onCopy={() => handleCopyShift(shift)}
-      >
-        <div>
-          <DraggableShiftCell
-            shift={shift}
-            isAdmin={isAdmin}
-            onView={(e) => {
-              e.stopPropagation();
+      <div key={shift.id}>
+        <DraggableShiftCell
+          shift={shift}
+          isAdmin={isAdmin}
+          onView={(e) => {
+            e.stopPropagation();
+            if (isMobile) {
+              setMobileSheetShift(shift);
+              setMobileSheetDay(day);
+            } else {
               setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
-            }}
-            onCopy={(e) => {
-              e.stopPropagation();
-              handleCopyShift(shift);
-            }}
-            onAdd={(e) => {
-              e.stopPropagation();
-              setSelectedDay(day);
-              setSelectedShift(null);
-              setDefaultEmployeeId(shift.employee_id || null);
-              setDialogOpen(true);
-            }}
-          />
-        </div>
-      </ShiftDetailPopover>
+            }
+          }}
+          onCopy={(e) => {
+            e.stopPropagation();
+            handleCopyShift(shift);
+          }}
+          onAdd={(e) => {
+            e.stopPropagation();
+            setSelectedDay(day);
+            setSelectedShift(null);
+            setDefaultEmployeeId(shift.employee_id || null);
+            setDialogOpen(true);
+          }}
+        />
+      </div>
     );
   };
+
+  // Filter employees based on quickFilter
+  const filteredEmployees = useMemo(() => {
+    if (quickFilter === "all") return deptEmployees;
+    if (quickFilter === "no_shifts") {
+      return deptEmployees.filter((emp) => {
+        const hasShift = weekDays.some((day) => !!getShiftForEmployeeDay(emp.id, day));
+        return !hasShift;
+      });
+    }
+    return deptEmployees;
+  }, [deptEmployees, quickFilter, weekDays]);
 
   return (
     <>
