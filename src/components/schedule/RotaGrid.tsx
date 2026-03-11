@@ -330,7 +330,8 @@ export function RotaGrid({
                     <th
                       key={day.toISOString()}
                       className={cn(
-                        "text-center px-0.5 py-1.5 sm:py-2 min-w-[44px] sm:min-w-[100px] border-b",
+                        "text-center px-0.5 py-1.5 sm:py-2 border-b",
+                        isMobile ? "min-w-[48px]" : "min-w-[44px] sm:min-w-[100px]",
                         today ? "border-primary/40" : "border-border",
                       )}
                     >
