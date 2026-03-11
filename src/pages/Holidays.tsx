@@ -698,6 +698,21 @@ const Holidays = () => {
           />
         </div>
 
+        {/* Admin warning for partial data */}
+        {!auditData.isBalanceComplete && (
+          <div className="rounded-lg bg-warning/10 border border-warning/30 px-4 py-3 flex items-start gap-3 animate-fade-in">
+            <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <strong className="text-foreground">Partial historical data for {selectedYear}</strong>
+              <p className="text-muted-foreground mt-0.5">
+                holiday_balances covers {auditData.employeesInBalances} of {auditData.employeesFromPayroll} employees.
+                Dashboard totals are computed live from payroll entries and holiday payments (reliable).
+                Carry-over values for employees without balance records are derived from prior-year computed balances.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
           <TabsList className="grid w-full grid-cols-7 sm:w-auto sm:inline-grid">
