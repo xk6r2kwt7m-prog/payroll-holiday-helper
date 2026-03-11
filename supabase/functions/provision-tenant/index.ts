@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     if (!company_name || !country || !timezone) {
       return new Response(JSON.stringify({ error: "company_name, country, and timezone are required" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
