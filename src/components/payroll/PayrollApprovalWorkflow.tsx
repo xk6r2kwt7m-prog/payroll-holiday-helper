@@ -170,26 +170,26 @@ export function PayrollApprovalWorkflow({
 
       {/* Status-specific content */}
       {period.status === "draft" && isAdmin && (
-        <div className="flex items-center justify-between rounded-lg bg-warning/10 border border-warning/20 p-4">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-warning shrink-0" />
-            <div>
-              <p className="font-medium text-card-foreground">Draft – Editable</p>
-              <p className="text-sm text-muted-foreground">
-                {entryCount} employees · {zeroHoursCount > 0 ? `${zeroHoursCount} with 0 hours` : "All hours entered"}
+        <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 sm:p-4">
+          <div className="flex items-start gap-3 mb-3 sm:mb-0">
+            <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-card-foreground text-sm">Draft – Editable</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {entryCount} employees · {zeroHoursCount > 0 ? `${zeroHoursCount} with 0 hrs` : "All hours entered"}
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2 sm:mt-0">
             {onDelete && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="default" disabled={isDeleting} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Button variant="outline" size="sm" disabled={isDeleting} className="text-destructive border-destructive/30 hover:bg-destructive/10 w-full sm:w-auto min-h-[44px]">
                     <Trash2 className="mr-2 h-4 w-4" />
                     {isDeleting ? "Deleting..." : "Delete"}
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete "{period.period_name}"?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -207,12 +207,12 @@ export function PayrollApprovalWorkflow({
             )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button disabled={isSubmitting || entryCount === 0 || !canSubmitOrApprove}>
+                <Button size="sm" disabled={isSubmitting || entryCount === 0 || !canSubmitOrApprove} className="w-full sm:w-auto min-h-[44px]">
                   <Send className="mr-2 h-4 w-4" />
                   {isSubmitting ? "Submitting..." : "Submit for Review"}
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Submit {period.period_name} for review?</AlertDialogTitle>
                   <AlertDialogDescription>
