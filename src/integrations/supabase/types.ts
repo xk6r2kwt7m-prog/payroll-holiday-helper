@@ -404,6 +404,72 @@ export type Database = {
           },
         ]
       }
+      country_leave_rules: {
+        Row: {
+          accrual_rate: number
+          country_code: string
+          country_name: string
+          created_at: string
+          default_leave_year_start_day: number
+          default_leave_year_start_month: number
+          id: string
+          max_carryover_days: number
+          max_carryover_family_leave_days: number
+          max_carryover_sickness_days: number
+          max_statutory_days: number
+          notes: string | null
+          public_holiday_count: number
+          public_holidays_included: boolean
+          standard_day_hours: number
+          standard_week_hours: number
+          statutory_weeks: number
+          updated_at: string
+          workdays_per_week: number
+        }
+        Insert: {
+          accrual_rate?: number
+          country_code: string
+          country_name: string
+          created_at?: string
+          default_leave_year_start_day?: number
+          default_leave_year_start_month?: number
+          id?: string
+          max_carryover_days?: number
+          max_carryover_family_leave_days?: number
+          max_carryover_sickness_days?: number
+          max_statutory_days?: number
+          notes?: string | null
+          public_holiday_count?: number
+          public_holidays_included?: boolean
+          standard_day_hours?: number
+          standard_week_hours?: number
+          statutory_weeks?: number
+          updated_at?: string
+          workdays_per_week?: number
+        }
+        Update: {
+          accrual_rate?: number
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          default_leave_year_start_day?: number
+          default_leave_year_start_month?: number
+          id?: string
+          max_carryover_days?: number
+          max_carryover_family_leave_days?: number
+          max_carryover_sickness_days?: number
+          max_statutory_days?: number
+          notes?: string | null
+          public_holiday_count?: number
+          public_holidays_included?: boolean
+          standard_day_hours?: number
+          standard_week_hours?: number
+          statutory_weeks?: number
+          updated_at?: string
+          workdays_per_week?: number
+        }
+        Relationships: []
+      }
       disciplinary_records: {
         Row: {
           appeal_deadline: string | null
@@ -1805,6 +1871,65 @@ export type Database = {
             foreignKeyName: "staff_announcements_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_leave_settings: {
+        Row: {
+          accrual_rate: number | null
+          auto_calculate_accrual: boolean
+          created_at: string
+          id: string
+          include_service_charge_in_holiday: boolean
+          leave_year_start_day: number | null
+          leave_year_start_month: number | null
+          max_carryover_days: number | null
+          rounding_precision: number
+          standard_day_hours: number | null
+          standard_week_hours: number | null
+          tenant_id: string
+          updated_at: string
+          workdays_per_week: number | null
+        }
+        Insert: {
+          accrual_rate?: number | null
+          auto_calculate_accrual?: boolean
+          created_at?: string
+          id?: string
+          include_service_charge_in_holiday?: boolean
+          leave_year_start_day?: number | null
+          leave_year_start_month?: number | null
+          max_carryover_days?: number | null
+          rounding_precision?: number
+          standard_day_hours?: number | null
+          standard_week_hours?: number | null
+          tenant_id: string
+          updated_at?: string
+          workdays_per_week?: number | null
+        }
+        Update: {
+          accrual_rate?: number | null
+          auto_calculate_accrual?: boolean
+          created_at?: string
+          id?: string
+          include_service_charge_in_holiday?: boolean
+          leave_year_start_day?: number | null
+          leave_year_start_month?: number | null
+          max_carryover_days?: number | null
+          rounding_precision?: number
+          standard_day_hours?: number | null
+          standard_week_hours?: number | null
+          tenant_id?: string
+          updated_at?: string
+          workdays_per_week?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_leave_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
