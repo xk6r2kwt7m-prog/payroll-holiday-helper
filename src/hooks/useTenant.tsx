@@ -16,15 +16,13 @@ interface TenantContextType {
   tenantName: string | null;
   tenantCountry: string | null;
   tenantTimezone: string | null;
+  tenantStatus: string | null;
   isPlatformAdmin: boolean;
   enabledModules: EnabledModules | null;
   loading: boolean;
-  /** True when user has multiple tenants and hasn't chosen one yet */
   showTenantPicker: boolean;
-  /** Available tenant memberships for the picker */
   availableTenants: TenantMembership[];
   setTenantId: (id: string) => void;
-  /** Select a specific tenant from the picker */
   selectTenant: (tenantId: string) => void;
 }
 
