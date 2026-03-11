@@ -1174,6 +1174,24 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_admins: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1503,6 +1521,89 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_members: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["tenant_role"]
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["tenant_role"]
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["tenant_role"]
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_members_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          address: string | null
+          country: string
+          created_at: string
+          email: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          settings: Json
+          slug: string
+          status: Database["public"]["Enums"]["tenant_status"]
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          country?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          settings?: Json
+          slug: string
+          status?: Database["public"]["Enums"]["tenant_status"]
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          country?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          settings?: Json
+          slug?: string
+          status?: Database["public"]["Enums"]["tenant_status"]
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       time_entries: {
         Row: {
           approved_at: string | null
@@ -1693,9 +1794,27 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_tenant_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["tenant_role"]
+          _tenant_id: string
+        }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
       is_manager_or_above: { Args: never; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
       is_supervisor_or_above: { Args: never; Returns: boolean }
+      is_tenant_admin: { Args: { _tenant_id: string }; Returns: boolean }
+      is_tenant_manager_or_above: {
+        Args: { _tenant_id: string }
+        Returns: boolean
+      }
+      is_tenant_member: { Args: { _tenant_id: string }; Returns: boolean }
+      is_tenant_supervisor_or_above: {
+        Args: { _tenant_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "manager" | "viewer" | "staff" | "supervisor"
@@ -1722,6 +1841,13 @@ export type Database = {
       employee_status: "active" | "leaver" | "starter"
       payroll_status: "draft" | "pending" | "approved" | "rejected"
       shift_status: "scheduled" | "open" | "cancelled"
+      tenant_role:
+        | "company_admin"
+        | "manager"
+        | "supervisor"
+        | "employee"
+        | "viewer"
+      tenant_status: "active" | "suspended" | "trial" | "cancelled"
       time_entry_status: "clocked_in" | "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -1876,6 +2002,14 @@ export const Constants = {
       employee_status: ["active", "leaver", "starter"],
       payroll_status: ["draft", "pending", "approved", "rejected"],
       shift_status: ["scheduled", "open", "cancelled"],
+      tenant_role: [
+        "company_admin",
+        "manager",
+        "supervisor",
+        "employee",
+        "viewer",
+      ],
+      tenant_status: ["active", "suspended", "trial", "cancelled"],
       time_entry_status: ["clocked_in", "pending", "approved", "rejected"],
     },
   },
