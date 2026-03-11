@@ -12,13 +12,15 @@ import { RotaGrid } from "@/components/schedule/RotaGrid";
 import { DayView } from "@/components/schedule/DayView";
 import { ShiftCellDialog } from "@/components/schedule/ShiftCellDialog";
 import { ScheduleHeader } from "@/components/schedule/ScheduleHeader";
+import { ScheduleSummary } from "@/components/schedule/ScheduleSummary";
+import { ScheduleFilters, type QuickFilter } from "@/components/schedule/ScheduleFilters";
+import { PublishConfirmDrawer } from "@/components/schedule/PublishConfirmDrawer";
 import { SaveTemplateDialog } from "@/components/schedule/SaveTemplateDialog";
 import { LoadTemplateDialog } from "@/components/schedule/LoadTemplateDialog";
 import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
 import { ComplianceWarningsBanner, useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
-import { getDefaultTimes, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
+import { getDefaultTimes, getMinimumStaff, type DayOfWeek, DAY_ABBR } from "@/components/schedule/shiftDefaults";
 import { supabase } from "@/integrations/supabase/client";
-import { MapPin } from "lucide-react";
 
 type ViewMode = "week" | "day";
 const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
@@ -30,6 +32,8 @@ export default function Schedule() {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [selectedBranch, setSelectedBranch] = useState<string>("Fitzrovia");
   const [selectedDept, setSelectedDept] = useState<string>("FOH");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
+  const [publishDrawerOpen, setPublishDrawerOpen] = useState(false);
 
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
@@ -80,13 +84,60 @@ export default function Schedule() {
     [shifts, selectedBranch]
   );
   const branchDeptShifts = useMemo(
-    () => branchShifts.filter((s: any) => s.department === selectedDept),
+    () => selectedDept === "All"
+      ? branchShifts
+      : branchShifts.filter((s: any) => s.department === selectedDept),
     [branchShifts, selectedDept]
   );
   const publishedCount = branchShifts.filter((s: any) => s.is_published).length;
   const unpublishedCount = branchShifts.filter((s: any) => !s.is_published && s.employee_id).length;
   const openShiftCount = branchShifts.filter((s: any) => !s.employee_id).length;
   const hasUnpublished = branchShifts.some((s: any) => !s.is_published);
+
+  // Filter stats for quick filters
+  const filterStats = useMemo(() => {
+    const deptShifts = branchDeptShifts;
+    const deptEmployees = activeEmployees.filter((e) =>
+      selectedDept === "All" || e.department === selectedDept
+    );
+    const employeesWithShifts = new Set(
+      deptShifts.filter((s: any) => s.employee_id).map((s: any) => s.employee_id)
+    );
+    const noShiftCount = deptEmployees.filter((e) => !employeesWithShifts.has(e.id)).length;
+    const unassignedCount = deptShifts.filter((s: any) => !s.employee_id).length;
+    const unpublished = deptShifts.filter((s: any) => !s.is_published).length;
+
+    // Gap count
+    let gapCount = 0;
+    const dept = selectedDept === "All" ? "FOH" : selectedDept;
+    for (const day of weekDays) {
+      const dayAbbr = DAY_ABBR[day.getDay() === 0 ? 6 : day.getDay() - 1] as DayOfWeek;
+      const dayShifts = deptShifts.filter((s: any) =>
+        isSameDay(new Date(s.shift_date + "T00:00:00"), day)
+      );
+      const assigned = dayShifts.filter((s: any) => s.employee_id).length;
+      const min = getMinimumStaff(selectedBranch, dept as any, dayAbbr);
+      if (assigned < min) gapCount++;
+    }
+
+    return { gapCount, unassignedCount, noShiftCount, unpublished };
+  }, [branchDeptShifts, activeEmployees, selectedDept, selectedBranch, weekDays]);
+
+  // Coverage understaffed days for publish drawer
+  const understaffedDays = useMemo(() => {
+    let count = 0;
+    const dept = selectedDept === "All" ? "FOH" : selectedDept;
+    for (const day of weekDays) {
+      const dayAbbr = DAY_ABBR[day.getDay() === 0 ? 6 : day.getDay() - 1] as DayOfWeek;
+      const dayShifts = branchDeptShifts.filter((s: any) =>
+        isSameDay(new Date(s.shift_date + "T00:00:00"), day)
+      );
+      const assigned = dayShifts.filter((s: any) => s.employee_id).length;
+      const min = getMinimumStaff(selectedBranch, dept as any, dayAbbr);
+      if (assigned < min) count++;
+    }
+    return count;
+  }, [branchDeptShifts, selectedBranch, selectedDept, weekDays]);
 
   const navigate = (dir: number) => {
     setCurrentDate((d) => addDays(d, viewMode === "week" ? 7 * dir : dir));
@@ -128,7 +179,6 @@ export default function Schedule() {
         branch: selectedBranch,
       });
       toast.success(`${selectedBranch} rota published — staff will be notified`);
-      // Send notification
       const adminEmail = companySettings?.company_email;
       if (adminEmail) {
         sendNotification({
@@ -190,7 +240,6 @@ export default function Schedule() {
         notes: s.notes || null,
       };
     });
-
     await saveTemplate.mutateAsync({
       name,
       branch: selectedBranch,
@@ -213,7 +262,6 @@ export default function Schedule() {
     }
   };
 
-  // Bulk actions for the "More" menu
   const handleDeleteAllShifts = async () => {
     if (!confirm(`Delete all ${branchDeptShifts.length} shifts for ${selectedDept} at ${selectedBranch} this week?`)) return;
     const ids = branchDeptShifts.map((s: any) => s.id);
@@ -269,47 +317,8 @@ export default function Schedule() {
   return (
     <AppLayout>
       <div className="flex flex-col h-full -m-4 sm:-m-6">
-        {/* Top bar — Branch + Department selector */}
-        <div className="border-b border-border bg-card px-4 pt-3 pb-0">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-              <MapPin className="h-4 w-4 text-primary" />
-              <span>Location</span>
-            </div>
-            <div className="flex items-center rounded-lg border border-border overflow-hidden">
-              {BRANCHES.map((b) => (
-                <button
-                  key={b}
-                  onClick={() => setSelectedBranch(b)}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                    selectedBranch === b
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card text-muted-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  {b}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1" />
-            <div className="flex items-center rounded-lg border border-border overflow-hidden">
-              {DEPT_WITH_ALL.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setSelectedDept(d)}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                    selectedDept === d
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card text-muted-foreground hover:bg-muted/50"
-                  }`}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Deputy-style toolbar */}
+        {/* Top control area — stacked mobile-first */}
+        <div className="border-b border-border bg-card px-3 pt-3">
           <ScheduleHeader
             currentDate={currentDate}
             viewMode={viewMode}
@@ -323,9 +332,15 @@ export default function Schedule() {
             onNavigate={navigate}
             onToday={() => setCurrentDate(new Date())}
             onDateSelect={(d) => setCurrentDate(d)}
-            onPublish={handlePublish}
+            onPublish={() => setPublishDrawerOpen(true)}
             onUnpublish={handleUnpublish}
             isAdmin={isAdmin}
+            branches={BRANCHES}
+            selectedBranch={selectedBranch}
+            onBranchChange={setSelectedBranch}
+            departments={DEPT_WITH_ALL}
+            selectedDept={selectedDept}
+            onDeptChange={setSelectedDept}
             onCopyPreviousWeek={() => setCopyPrevOpen(true)}
             onSaveTemplate={() => setSaveTemplateOpen(true)}
             onLoadTemplate={() => setLoadTemplateOpen(true)}
@@ -338,7 +353,27 @@ export default function Schedule() {
             assignedCount={branchDeptShifts.filter((s: any) => s.employee_id).length}
           />
 
-          {/* Compliance warnings inline */}
+          {/* Coverage + Summary strip */}
+          <ScheduleSummary
+            shifts={shifts || []}
+            weekDays={weekDays}
+            branch={selectedBranch}
+            department={selectedDept === "All" ? "FOH" : selectedDept}
+            employees={activeEmployees}
+            complianceWarningCount={complianceWarnings.length}
+          />
+
+          {/* Quick filters */}
+          <ScheduleFilters
+            activeFilter={quickFilter}
+            onFilterChange={setQuickFilter}
+            gapCount={filterStats.gapCount}
+            unassignedCount={filterStats.unassignedCount}
+            noShiftCount={filterStats.noShiftCount}
+            unpublishedCount={filterStats.unpublished}
+          />
+
+          {/* Compliance warnings */}
           {complianceWarnings.length > 0 && (
             <div className="pb-2">
               <ComplianceWarningsBanner warnings={complianceWarnings} />
@@ -369,6 +404,7 @@ export default function Schedule() {
                       onDeleteShift={handleDeleteShift}
                       isPending={createShift.isPending || updateShift.isPending}
                       onNavigateToBranch={(b) => setSelectedBranch(b)}
+                      quickFilter={quickFilter}
                     />
                   </div>
                 ))}
@@ -393,6 +429,7 @@ export default function Schedule() {
                 onDeleteShift={handleDeleteShift}
                 isPending={createShift.isPending || updateShift.isPending}
                 onNavigateToBranch={(b) => setSelectedBranch(b)}
+                quickFilter={quickFilter}
               />
             ) : (
               <>
@@ -456,14 +493,14 @@ export default function Schedule() {
           )}
         </div>
 
-        {/* Bottom status bar — Deputy style */}
+        {/* Bottom status bar */}
         <div className="flex flex-wrap items-center gap-4 px-4 py-2 border-t border-border bg-card text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
             {openShiftCount} empty
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            <span className="h-2 w-2 rounded-full bg-warning" />
             {unpublishedCount} unpublished
           </span>
           <span className="flex items-center gap-1.5">
@@ -476,6 +513,21 @@ export default function Schedule() {
           </span>
         </div>
       </div>
+
+      {/* Publish confirmation drawer */}
+      <PublishConfirmDrawer
+        open={publishDrawerOpen}
+        onOpenChange={setPublishDrawerOpen}
+        branch={selectedBranch}
+        weekStart={weekStart}
+        weekEnd={weekEnd}
+        unpublishedCount={unpublishedCount}
+        totalShifts={branchShifts.length}
+        understaffedDays={understaffedDays}
+        complianceWarnings={complianceWarnings.length}
+        isPublishing={publishWeek.isPending}
+        onConfirmPublish={handlePublish}
+      />
 
       {/* Dialogs triggered from toolbar dropdowns */}
       <CopyPreviousWeekDialog

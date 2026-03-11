@@ -5,15 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, AlertTriangle, Check, Lock, MapPin } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
-import { ShiftDetailPopover } from "./ShiftDetailPopover";
+import { MobileShiftSheet } from "./MobileShiftSheet";
 import { BulkScheduleActions } from "./BulkScheduleActions";
 import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
 import { DroppableCell, EmptyDropCell } from "./DroppableCell";
 import { useBulkDeleteShifts, useBulkUpdateShifts } from "@/hooks/useSchedule";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import type { Employee } from "@/hooks/useEmployees";
+import type { QuickFilter } from "./ScheduleFilters";
 
 interface RotaGridProps {
   weekDays: Date[];
@@ -28,6 +30,7 @@ interface RotaGridProps {
   onDeleteShift: (id: string) => void;
   isPending: boolean;
   onNavigateToBranch?: (branch: string) => void;
+  quickFilter?: QuickFilter;
 }
 
 export function RotaGrid({
@@ -43,12 +46,16 @@ export function RotaGrid({
   onDeleteShift,
   isPending,
   onNavigateToBranch,
+  quickFilter = "all",
 }: RotaGridProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [activeShift, setActiveShift] = useState<any>(null);
   const [popoverShiftId, setPopoverShiftId] = useState<string | null>(null);
+  const [mobileSheetShift, setMobileSheetShift] = useState<any>(null);
+  const [mobileSheetDay, setMobileSheetDay] = useState<Date | null>(null);
+  const isMobile = useIsMobile();
 
   const bulkDelete = useBulkDeleteShifts();
   const bulkUpdate = useBulkUpdateShifts();
@@ -143,9 +150,14 @@ export function RotaGrid({
   const handleCellClick = (day: Date, shift?: any, employeeId?: string | null) => {
     if (!isAdmin) return;
     if (activeShift) return;
-    // If clicking a shift, show popover instead of dialog
+    // If clicking a shift, show mobile bottom sheet or toggle popover
     if (shift) {
-      setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
+      if (isMobile) {
+        setMobileSheetShift(shift);
+        setMobileSheetDay(day);
+      } else {
+        setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
+      }
       return;
     }
     setSelectedDay(day);
@@ -287,47 +299,49 @@ export function RotaGrid({
     return emp ? `${emp.forename} ${emp.surname}` : "Unknown";
   };
 
-  // Render a shift cell with popover
-  const renderShiftWithPopover = (shift: any, day: Date) => {
-    const empName = getEmployeeName(shift.employee_id);
+  // Render a shift cell — tap opens mobile sheet or desktop popover
+  const renderShiftCell = (shift: any, day: Date) => {
     return (
-      <ShiftDetailPopover
-        key={shift.id}
-        shift={shift}
-        employeeName={empName}
-        branch={branch}
-        department={department}
-        isAdmin={isAdmin}
-        open={popoverShiftId === shift.id}
-        onOpenChange={(open) => setPopoverShiftId(open ? shift.id : null)}
-        onEdit={() => handleEditFromPopover(shift, day)}
-        onDelete={() => handleDeleteFromPopover(shift.id)}
-        onCopy={() => handleCopyShift(shift)}
-      >
-        <div>
-          <DraggableShiftCell
-            shift={shift}
-            isAdmin={isAdmin}
-            onView={(e) => {
-              e.stopPropagation();
+      <div key={shift.id}>
+        <DraggableShiftCell
+          shift={shift}
+          isAdmin={isAdmin}
+          onView={(e) => {
+            e.stopPropagation();
+            if (isMobile) {
+              setMobileSheetShift(shift);
+              setMobileSheetDay(day);
+            } else {
               setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
-            }}
-            onCopy={(e) => {
-              e.stopPropagation();
-              handleCopyShift(shift);
-            }}
-            onAdd={(e) => {
-              e.stopPropagation();
-              setSelectedDay(day);
-              setSelectedShift(null);
-              setDefaultEmployeeId(shift.employee_id || null);
-              setDialogOpen(true);
-            }}
-          />
-        </div>
-      </ShiftDetailPopover>
+            }
+          }}
+          onCopy={(e) => {
+            e.stopPropagation();
+            handleCopyShift(shift);
+          }}
+          onAdd={(e) => {
+            e.stopPropagation();
+            setSelectedDay(day);
+            setSelectedShift(null);
+            setDefaultEmployeeId(shift.employee_id || null);
+            setDialogOpen(true);
+          }}
+        />
+      </div>
     );
   };
+
+  // Filter employees based on quickFilter
+  const filteredEmployees = useMemo(() => {
+    if (quickFilter === "all") return deptEmployees;
+    if (quickFilter === "no_shifts") {
+      return deptEmployees.filter((emp) => {
+        const hasShift = weekDays.some((day) => !!getShiftForEmployeeDay(emp.id, day));
+        return !hasShift;
+      });
+    }
+    return deptEmployees;
+  }, [deptEmployees, quickFilter, weekDays]);
 
   return (
     <>
@@ -353,7 +367,7 @@ export function RotaGrid({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b-2 border-border">
-                <th className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[170px] sticky left-0 bg-card z-10">
+                <th className="text-left p-2 sm:p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-[120px] sm:w-[170px] sticky left-0 bg-card z-10">
                   Employee
                 </th>
                 {weekDays.map((day) => {
@@ -366,7 +380,7 @@ export function RotaGrid({
                     <th
                       key={day.toISOString()}
                       className={cn(
-                        "text-center p-2 text-xs font-medium min-w-[130px]",
+                        "text-center p-1 sm:p-2 text-xs font-medium min-w-[52px] sm:min-w-[110px]",
                         isToday(day) ? "bg-primary/5" : ""
                       )}
                     >
@@ -396,24 +410,24 @@ export function RotaGrid({
               </tr>
             </thead>
             <tbody>
-              {deptEmployees.map((emp) => {
+              {filteredEmployees.map((emp) => {
                 const weeklyHours = getEmployeeWeeklyHours(emp.id);
                 const hourlyRate = Number(emp.hourly_rate) || 0;
                 const weeklyCost = weeklyHours * hourlyRate;
 
                 return (
                   <tr key={emp.id} className="border-t border-border hover:bg-muted/20 transition-colors">
-                    <td className="p-3 text-xs font-medium sticky left-0 bg-card z-10">
-                      <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[11px] font-bold shrink-0">
+                    <td className="p-2 sm:p-3 text-xs font-medium sticky left-0 bg-card z-10">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] sm:text-[11px] font-bold shrink-0">
                           {emp.forename[0]}{emp.surname?.[0] || ""}
                         </div>
                         <div className="min-w-0">
-                          <div className="truncate font-medium">{emp.forename} {emp.surname?.[0]}.</div>
-                          <div className="text-[10px] text-muted-foreground">
+                          <div className="truncate font-medium text-[11px] sm:text-xs">{emp.forename} {emp.surname?.[0]}.</div>
+                          <div className="text-[9px] sm:text-[10px] text-muted-foreground hidden sm:block">
                             {weeklyHours > 0
-                              ? `${weeklyHours.toFixed(0)}h ${(weeklyHours % 1 * 60).toFixed(0)}m · £${weeklyCost.toFixed(2)}`
-                              : "0h · £0.00"
+                              ? `${weeklyHours.toFixed(0)}h · £${weeklyCost.toFixed(0)}`
+                              : "0h"
                             }
                           </div>
                         </div>
@@ -433,7 +447,7 @@ export function RotaGrid({
                           onClick={() => handleCellClick(day, shift, emp.id)}
                         >
                           {shift ? (
-                            renderShiftWithPopover(shift, day)
+                            renderShiftCell(shift, day)
                           ) : crossBranchShifts.length > 0 ? (
                             crossBranchShifts.map((cbs: any) => (
                               <CrossBranchShiftCell key={cbs.id} shift={cbs} onNavigate={onNavigateToBranch} />
@@ -471,7 +485,7 @@ export function RotaGrid({
                       >
                         {openShifts.map((s: any) => (
                           <div key={s.id} onClick={() => handleCellClick(day, s)}>
-                            {renderShiftWithPopover(s, day)}
+                            {renderShiftCell(s, day)}
                           </div>
                         ))}
                       </DroppableCell>
@@ -578,6 +592,31 @@ export function RotaGrid({
           setDialogOpen(false);
         }}
         isPending={isPending}
+      />
+
+      {/* Mobile shift action sheet */}
+      <MobileShiftSheet
+        open={!!mobileSheetShift}
+        onOpenChange={(open) => { if (!open) { setMobileSheetShift(null); setMobileSheetDay(null); } }}
+        shift={mobileSheetShift}
+        employeeName={getEmployeeName(mobileSheetShift?.employee_id)}
+        branch={branch}
+        department={department}
+        isAdmin={isAdmin}
+        onEdit={() => {
+          if (mobileSheetShift && mobileSheetDay) {
+            handleEditFromPopover(mobileSheetShift, mobileSheetDay);
+          }
+          setMobileSheetShift(null);
+        }}
+        onCopy={() => {
+          if (mobileSheetShift) handleCopyShift(mobileSheetShift);
+          setMobileSheetShift(null);
+        }}
+        onDelete={() => {
+          if (mobileSheetShift) handleDeleteFromPopover(mobileSheetShift.id);
+          setMobileSheetShift(null);
+        }}
       />
     </>
   );
