@@ -174,41 +174,54 @@ export function useHolidayPaymentsByYear(year: number) {
   });
 }
 
-// Get all payroll entries with holiday accrual data
+// Get all payroll entries with holiday accrual data — paginated to avoid 1000-row cap
 export function useAllPayrollEntriesWithHoliday() {
   return useQuery({
     queryKey: ["payroll_entries", "holiday_summary"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payroll_entries")
-        .select(`
-          id,
-          employee_id,
-          payroll_period_id,
-          timesheet_hours,
-          holiday_accrued_hours,
-          hourly_rate,
-          employees (
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("payroll_entries")
+          .select(`
             id,
-            forename,
-            surname,
-            department,
-            start_date,
-            hourly_rate
-          ),
-          payroll_periods (
-            id,
-            period_name,
-            start_date,
-            end_date,
-            status
-          )
-        `)
-        .order("created_at", { ascending: false })
-        .limit(5000);
-      
-      if (error) throw error;
-      return data;
+            employee_id,
+            payroll_period_id,
+            timesheet_hours,
+            imported_hours,
+            holiday_accrued_hours,
+            hourly_rate,
+            employees (
+              id,
+              forename,
+              surname,
+              department,
+              start_date,
+              hourly_rate
+            ),
+            payroll_periods (
+              id,
+              period_name,
+              start_date,
+              end_date,
+              status
+            )
+          `)
+          .order("created_at", { ascending: true })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) throw error;
+
+        allData = allData.concat(data || []);
+        hasMore = (data?.length || 0) === PAGE_SIZE;
+        from += PAGE_SIZE;
+      }
+
+      return allData;
     },
   });
 }
