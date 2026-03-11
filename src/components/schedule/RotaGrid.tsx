@@ -30,6 +30,7 @@ interface RotaGridProps {
   onDeleteShift: (id: string) => void;
   isPending: boolean;
   onNavigateToBranch?: (branch: string) => void;
+  quickFilter?: QuickFilter;
 }
 
 export function RotaGrid({
