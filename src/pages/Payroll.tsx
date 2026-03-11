@@ -437,17 +437,17 @@ const Payroll = () => {
 
         {/* Rate Discrepancy Warning */}
         {rateDiscrepancies.length > 0 && (
-          <div className="rounded-xl bg-warning/10 border border-warning/20 p-4 animate-fade-in">
-            <div className="flex items-center gap-3 mb-2">
-              <Badge className="bg-warning text-warning-foreground text-xs">Rate Change</Badge>
-              <p className="font-medium text-card-foreground text-sm">
-                {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s have" : " has"} a different rate in this period vs their master record
+          <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
+            <div className="flex items-start gap-2.5 mb-2">
+              <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">Rate Change</Badge>
+              <p className="font-medium text-card-foreground text-xs sm:text-sm">
+                {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s" : ""} with rate differences
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {rateDiscrepancies.slice(0, 5).map((e: any) => (
-                <Badge key={e.id} variant="outline" className="text-xs">
-                  {e.employees?.forename} {e.employees?.surname}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
+                <Badge key={e.id} variant="outline" className="text-[10px] sm:text-xs">
+                  {e.employees?.forename}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
                 </Badge>
               ))}
             </div>
