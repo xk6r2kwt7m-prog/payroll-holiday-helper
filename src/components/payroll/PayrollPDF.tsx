@@ -305,6 +305,25 @@ interface PayrollPeriod {
   notes: string | null;
 }
 
+interface PayrollReportConfig {
+  sortBy: string;
+  groupBy: string;
+  columns: Record<string, boolean>;
+  financial: {
+    includeBonuses: boolean;
+    includeServiceCharge: boolean;
+    includeAdjustments: boolean;
+    showGrossTotals: boolean;
+    showSummaryTotals: boolean;
+    hideFinancialAmounts: boolean;
+  };
+  orientation: string;
+  layoutStyle: string;
+  showLogo: boolean;
+  showNotes: boolean;
+  showAuditFooter: boolean;
+}
+
 interface PayrollPDFProps {
   period: PayrollPeriod;
   entries: PayrollEntry[];
@@ -314,6 +333,7 @@ interface PayrollPDFProps {
   isCorrection?: boolean;
   correctionNote?: string;
   logoUrl?: string;
+  reportConfig?: PayrollReportConfig;
 }
 
 function fmt(amount: number): string {
@@ -333,12 +353,24 @@ export function PayrollPDF({
   isCorrection = false,
   correctionNote,
   logoUrl,
+  reportConfig,
 }: PayrollPDFProps) {
+  const rc = reportConfig;
+  const hideAmounts = rc?.financial?.hideFinancialAmounts ?? false;
+
+  // Sorting based on config
   const sortedEntries = [...entries].sort((a, b) => {
-    const deptOrder: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
-    const deptA = deptOrder[a.employees?.department || ""] ?? 99;
-    const deptB = deptOrder[b.employees?.department || ""] ?? 99;
-    if (deptA !== deptB) return deptA - deptB;
+    if (!rc || rc.sortBy === "department" || rc.sortBy === "alphabetical") {
+      const deptOrder: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
+      const deptA = deptOrder[a.employees?.department || ""] ?? 99;
+      const deptB = deptOrder[b.employees?.department || ""] ?? 99;
+      if (rc?.sortBy === "department" && deptA !== deptB) return deptA - deptB;
+      if (!rc || rc.sortBy === "alphabetical") {
+        if (deptA !== deptB) return deptA - deptB;
+      }
+      return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+    }
+    if (rc.sortBy === "hourly_rate") return Number(b.hourly_rate) - Number(a.hourly_rate);
     return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
   });
 
@@ -446,7 +478,7 @@ export function PayrollPDF({
   return (
     <Document>
       {/* ─── PAGE 1: Summary + Employee Table ─── */}
-      <Page size="A4" style={styles.page} orientation="landscape">
+      <Page size="A4" style={styles.page} orientation={rc?.orientation === "portrait" ? "portrait" : "landscape"}>
         <Header />
 
 

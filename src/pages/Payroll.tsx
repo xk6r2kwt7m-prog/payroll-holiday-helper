@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
+import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
 
 const statusStyles = {
   draft: "bg-muted text-muted-foreground",
@@ -43,7 +44,7 @@ const statusLabels = {
 
 const Payroll = () => {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
-  
+  const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
@@ -300,7 +301,7 @@ const Payroll = () => {
             {/* Primary actions – always visible */}
             <div className="flex gap-1.5 shrink-0">
               {selectedPeriod && entries.length > 0 && (
-                <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="h-9 px-2.5 sm:px-3">
+                <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
                   <FileDown className="h-4 w-4 sm:mr-1.5" />
                   <span className="hidden sm:inline">PDF</span>
                 </Button>
@@ -483,6 +484,19 @@ const Payroll = () => {
             periodStatus={selectedPeriod.status}
             isAdmin={isAdmin}
             onExport={handleExport}
+          />
+        )}
+
+        {/* Report Builder Modal */}
+        {selectedPeriod && (
+          <PayrollReportBuilder
+            open={reportBuilderOpen}
+            onOpenChange={setReportBuilderOpen}
+            period={selectedPeriod}
+            entries={entries as any}
+            holidayPayments={holidayPayments as any}
+            allEmployees={allEmployees}
+            companyName={companySettings?.company_name}
           />
         )}
       </div>
