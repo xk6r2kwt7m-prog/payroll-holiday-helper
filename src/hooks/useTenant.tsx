@@ -16,15 +16,13 @@ interface TenantContextType {
   tenantName: string | null;
   tenantCountry: string | null;
   tenantTimezone: string | null;
+  tenantStatus: string | null;
   isPlatformAdmin: boolean;
   enabledModules: EnabledModules | null;
   loading: boolean;
-  /** True when user has multiple tenants and hasn't chosen one yet */
   showTenantPicker: boolean;
-  /** Available tenant memberships for the picker */
   availableTenants: TenantMembership[];
   setTenantId: (id: string) => void;
-  /** Select a specific tenant from the picker */
   selectTenant: (tenantId: string) => void;
 }
 
@@ -44,6 +42,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [tenantName, setTenantName] = useState<string | null>(null);
   const [tenantCountry, setTenantCountry] = useState<string | null>(null);
   const [tenantTimezone, setTenantTimezone] = useState<string | null>(null);
+  const [tenantStatus, setTenantStatus] = useState<string | null>(null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [enabledModules, setEnabledModules] = useState<EnabledModules | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +54,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setTenantName(tenant?.name || null);
     setTenantCountry(tenant?.country || null);
     setTenantTimezone(tenant?.timezone || null);
+    setTenantStatus(tenant?.status || null);
 
     // Parse enabled_modules from tenant record
     const modules = tenant?.enabled_modules;
@@ -75,7 +75,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     // Fetch the tenant details for the selected one
     const { data: membership } = await supabase
       .from("tenant_members")
-      .select("tenant_id, tenants(id, name, country, timezone, enabled_modules)")
+      .select("tenant_id, tenants(id, name, country, timezone, status, enabled_modules)")
       .eq("user_id", user!.id)
       .eq("tenant_id", selectedTenantId)
       .eq("is_active", true)
@@ -95,6 +95,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setTenantName(null);
       setTenantCountry(null);
       setTenantTimezone(null);
+      setTenantStatus(null);
       setIsPlatformAdmin(false);
       setEnabledModules(null);
       setLoading(false);
@@ -118,7 +119,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         // Get ALL active tenant memberships
         const { data: memberships } = await supabase
           .from("tenant_members")
-          .select("tenant_id, role, tenants(id, name, country, timezone, enabled_modules)")
+          .select("tenant_id, role, tenants(id, name, country, timezone, status, enabled_modules)")
           .eq("user_id", user.id)
           .eq("is_active", true);
 
@@ -173,6 +174,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         tenantName,
         tenantCountry,
         tenantTimezone,
+        tenantStatus,
         isPlatformAdmin,
         enabledModules,
         loading,

@@ -4,6 +4,7 @@ import { useAuth, AppRole } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 import { AccessDenied } from "@/components/AccessDenied";
 import { ModuleUnavailable } from "@/components/ModuleUnavailable";
+import { TenantSuspended } from "@/components/TenantSuspended";
 
 const ROLE_LEVEL: Record<AppRole, number> = {
   admin: 4,
@@ -17,13 +18,9 @@ export type ModuleKey = "scheduling" | "payroll" | "training" | "documents" | "a
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  /** Minimum role required to access this route */
   requiredRole?: AppRole;
-  /** Module that must be enabled for the tenant */
   requiredModule?: ModuleKey;
-  /** Human-readable module name for the unavailable message */
   moduleName?: string;
-  /** If true, only platform admins can access (overrides requiredRole) */
   platformAdminOnly?: boolean;
 }
 
@@ -35,7 +32,10 @@ export function ProtectedRoute({
   platformAdminOnly,
 }: ProtectedRouteProps) {
   const { user, role, loading: authLoading } = useAuth();
-  const { tenantId, isPlatformAdmin, enabledModules, loading: tenantLoading, showTenantPicker } = useTenant();
+  const {
+    tenantId, isPlatformAdmin, enabledModules,
+    loading: tenantLoading, showTenantPicker, tenantStatus,
+  } = useTenant();
 
   if (authLoading || tenantLoading) {
     return (
@@ -54,32 +54,36 @@ export function ProtectedRoute({
     return <Navigate to="/auth" replace />;
   }
 
-  // Show tenant picker if user has multiple tenants and none selected yet
   if (showTenantPicker) {
     return <Navigate to="/select-workspace" replace />;
   }
 
-  // User is logged in but doesn't belong to any tenant — send to onboarding
   if (!tenantId && !isPlatformAdmin) {
     return <Navigate to="/onboard" replace />;
   }
 
-  // Platform admin only routes
+  // Tenant suspension check — platform admins bypass
+  if (tenantStatus === "suspended" && !isPlatformAdmin) {
+    return <TenantSuspended />;
+  }
+
+  // Cancelled tenant — same treatment
+  if (tenantStatus === "cancelled" && !isPlatformAdmin) {
+    return <TenantSuspended />;
+  }
+
   if (platformAdminOnly && !isPlatformAdmin) {
     return <AccessDenied />;
   }
 
-  // Role-based access check (skip for platform admins viewing tenant routes)
   if (requiredRole && !isPlatformAdmin) {
     const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
     const requiredLevel = ROLE_LEVEL[requiredRole] ?? 0;
-
     if (userLevel < requiredLevel) {
       return <AccessDenied />;
     }
   }
 
-  // Module-based access check
   if (requiredModule && enabledModules && !isPlatformAdmin) {
     const isModuleEnabled = enabledModules[requiredModule] !== false;
     if (!isModuleEnabled) {
