@@ -70,26 +70,26 @@ export function PayrollApprovalWorkflow({
   const hasAuditErrors = auditErrors.length > 0;
   const canSubmitOrApprove = !hasUnmatchedEmployees && !hasAuditErrors;
   return (
-    <div className="rounded-xl bg-card shadow-card p-5 animate-fade-in">
+    <div className="rounded-xl bg-card shadow-card p-4 sm:p-5 animate-fade-in overflow-hidden">
       {/* Workflow Steps */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-4 overflow-x-auto no-scrollbar">
         {workflowSteps.map((step, i) => {
           const isActive = step.status === period.status;
           const isPast = i < currentStepIndex;
           return (
-            <div key={step.status} className="flex items-center gap-2">
+            <div key={step.status} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {i > 0 && (
-                <div className={`h-px w-8 ${isPast ? "bg-success" : "bg-border"}`} />
+                <div className={`h-px w-4 sm:w-8 ${isPast ? "bg-success" : "bg-border"}`} />
               )}
-              <div className="flex items-center gap-2">
-                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
+              <div className="flex items-center gap-1.5">
+                <div className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium shrink-0 ${
                   isPast ? "bg-success text-success-foreground" :
                   isActive ? "bg-primary text-primary-foreground" :
                   "bg-muted text-muted-foreground"
                 }`}>
                   {isPast ? <CheckCircle className="h-3.5 w-3.5" /> : i + 1}
                 </div>
-                <span className={`text-xs font-medium hidden sm:inline ${
+                <span className={`text-xs font-medium whitespace-nowrap ${
                   isActive ? "text-foreground" : "text-muted-foreground"
                 }`}>
                   {step.label}
