@@ -479,7 +479,7 @@ export function MobileShiftWizard({
                     onClick={() => !hasExistingShift && toggleEmployee(emp.id)}
                     disabled={!!hasExistingShift}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all",
+                      "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all min-h-[52px]",
                       hasExistingShift
                         ? "opacity-40 cursor-not-allowed border-border"
                         : isSelected
@@ -488,13 +488,13 @@ export function MobileShiftWizard({
                     )}
                   >
                     <div className={cn(
-                      "h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                      "h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
                       isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
                     )}>
                       {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                     </div>
                     <div className={cn(
-                      "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                      "h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
                       isSelected ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
                     )}>
                       {emp.forename[0]}{emp.surname?.[0] || ""}
@@ -504,12 +504,9 @@ export function MobileShiftWizard({
                         {emp.forename} {emp.surname}
                       </span>
                       {hasExistingShift && (
-                        <span className="text-xs text-muted-foreground ml-2">Already scheduled</span>
+                        <span className="block text-xs text-muted-foreground">Already scheduled</span>
                       )}
                     </div>
-                    {emp.hourly_rate && (
-                      <span className="text-xs text-muted-foreground">£{Number(emp.hourly_rate).toFixed(2)}/h</span>
-                    )}
                   </button>
                 );
               })}
