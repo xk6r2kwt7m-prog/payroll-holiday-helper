@@ -338,9 +338,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         </AnimatePresence>
       </main>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav + FAB */}
       <div className="md:hidden">
         <MobileBottomNav />
+        {isMobile && <FloatingActionButton />}
       </div>
     </div>
   );
