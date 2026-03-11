@@ -278,7 +278,7 @@ const Payroll = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full min-w-0 overflow-hidden">
+      <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full min-w-0">
         {/* Header */}
         <div className="flex flex-col gap-3 animate-slide-in-left">
           <div className="flex items-start justify-between gap-3">

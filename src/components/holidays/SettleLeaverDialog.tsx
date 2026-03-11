@@ -180,9 +180,9 @@ export function SettleLeaverDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/5">
-          <UserMinus className="mr-2 h-4 w-4" />
-          Settle Leaver
+        <Button variant="outline" size="sm" className="border-destructive/30 text-destructive hover:bg-destructive/5 h-9 text-xs sm:text-sm">
+          <UserMinus className="h-4 w-4 sm:mr-1.5 shrink-0" />
+          <span className="hidden xs:inline">Settle Leaver</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

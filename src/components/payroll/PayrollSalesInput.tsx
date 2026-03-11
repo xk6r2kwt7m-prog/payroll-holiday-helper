@@ -54,22 +54,22 @@ export function PayrollSalesInput({
   };
 
   return (
-    <div className="rounded-xl bg-card shadow-card border border-border animate-fade-in">
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+    <div className="rounded-xl bg-card shadow-card border border-border animate-fade-in min-w-0">
+      <div className="p-3 sm:p-4">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
             <TrendingUp className="h-4 w-4 text-primary" />
           </div>
-          <div>
-            <h3 className="font-semibold text-card-foreground">Sales & Labour Analytics</h3>
-            <p className="text-xs text-muted-foreground">
-              Labour % excludes management salaries for accurate operational cost analysis
+          <div className="min-w-0">
+            <h3 className="font-semibold text-card-foreground text-sm">Sales & Labour</h3>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+              Excl. management for operational cost analysis
             </p>
           </div>
         </div>
       </div>
 
-      <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+      <div className="px-3 pb-3 sm:px-4 sm:pb-4 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 items-end">
         <div className="space-y-1">
           <Label className="text-xs">Sales Revenue (£)</Label>
           <div className="flex gap-2">

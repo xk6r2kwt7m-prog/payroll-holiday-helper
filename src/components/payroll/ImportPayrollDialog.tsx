@@ -486,9 +486,9 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) resetForm(); }}>
       <DialogTrigger asChild>
-        <Button className="gradient-primary">
-          <Upload className="mr-2 h-4 w-4" />
-          Import Payroll
+        <Button size="sm" className="gradient-primary h-9 text-xs sm:text-sm">
+          <Upload className="h-4 w-4 sm:mr-1.5 shrink-0" />
+          <span className="hidden xs:inline">Import</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">

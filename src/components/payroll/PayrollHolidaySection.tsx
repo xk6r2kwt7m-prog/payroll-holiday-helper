@@ -194,25 +194,25 @@ export function PayrollHolidaySection({
   };
 
   return (
-    <div className="rounded-xl bg-card shadow-card border border-border animate-fade-in">
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10">
+    <div className="rounded-xl bg-card shadow-card border border-border animate-fade-in min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 border-b border-border">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10 shrink-0">
             <Palmtree className="h-4 w-4 text-warning" />
           </div>
-          <div>
-            <h3 className="font-semibold text-card-foreground">Holiday Pay This Period</h3>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-card-foreground text-sm">Holiday Pay</h3>
+            <p className="text-xs text-muted-foreground truncate">
               {holidayPayments.length > 0
                 ? `${holidayPayments.length} payment${holidayPayments.length !== 1 ? "s" : ""} — ${formatCurrency(holidayTotal)}`
-                : "No holiday payments recorded yet"}
+                : "No holiday payments yet"}
             </p>
           </div>
         </div>
         {canEdit && !showAddForm && (
-          <Button size="sm" variant="outline" onClick={() => setShowAddForm(true)}>
+          <Button size="sm" variant="outline" onClick={() => setShowAddForm(true)} className="h-8 text-xs shrink-0 self-end sm:self-auto">
             <Plus className="mr-1 h-3 w-3" />
-            Add Holiday Pay
+            Add
           </Button>
         )}
       </div>
@@ -221,7 +221,7 @@ export function PayrollHolidaySection({
       {holidayPayments.length > 0 && (
         <div className="divide-y divide-border">
           {holidayPayments.map((hp) => (
-            <div key={hp.id} className="px-4 py-2.5 text-sm">
+            <div key={hp.id} className="px-3 sm:px-4 py-2.5 text-sm">
               {editingId === hp.id ? (
                 /* Edit mode */
                 <div className="space-y-2">
@@ -279,33 +279,33 @@ export function PayrollHolidaySection({
                 </div>
               ) : (
                 /* View mode */
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium text-card-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-3">
+                  <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                    <span className="font-medium text-card-foreground text-xs sm:text-sm truncate">
                       {hp.employees
                         ? `${hp.employees.forename} ${hp.employees.surname}`
                         : hp.employee_name}
                     </span>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-[10px]">
                       {hp.employees?.department || "—"}
                     </Badge>
                     {hp.holiday_taken_date && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">
                         {new Date(hp.holiday_taken_date).toLocaleDateString("en-GB")}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">
                       {Number(hp.hours).toFixed(1)}h × {formatCurrency(Number(hp.rate))}
                     </span>
-                    <span className="font-semibold text-warning">{formatCurrency(Number(hp.total))}</span>
+                    <span className="font-semibold text-warning text-xs sm:text-sm">{formatCurrency(Number(hp.total))}</span>
                     {canEdit && (
                       <>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-7 w-7"
                           onClick={() => startEdit(hp)}
                           title="Edit payment"
                         >
@@ -313,11 +313,11 @@ export function PayrollHolidaySection({
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
                               <Trash2 className="h-3 w-3 text-destructive" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
                             <AlertDialogHeader>
                               <AlertDialogTitle>Remove holiday payment?</AlertDialogTitle>
                               <AlertDialogDescription>
