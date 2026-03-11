@@ -39,6 +39,7 @@ interface NavDef {
   label: string;
   path: string;
   minRole: MinRole;
+  module?: ModuleKey;
 }
 
 const mainNavItems: NavDef[] = [
