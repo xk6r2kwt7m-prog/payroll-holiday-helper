@@ -333,7 +333,7 @@ export default function Schedule() {
     <AppLayout>
       <div className="flex flex-col h-full -m-4 sm:-m-6">
         {/* Top control area — stacked mobile-first */}
-        <div className="border-b border-border bg-card px-3 pt-3">
+        <div className={cn("border-b border-border bg-card", isMobile ? "px-2.5 pt-2" : "px-3 pt-3")}>
           <ScheduleHeader
             currentDate={currentDate}
             viewMode={viewMode}
