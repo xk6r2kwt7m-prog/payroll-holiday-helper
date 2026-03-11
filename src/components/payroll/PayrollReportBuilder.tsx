@@ -159,7 +159,7 @@ export function PayrollReportBuilder({
         action: "import" as const,
         table_name: "payroll_periods",
         record_id: period.id,
-        new_data: { operation: "pdf_export", period_name: period.period_name, report_config: config },
+        new_data: { operation: "pdf_export", period_name: period.period_name, report_config: JSON.parse(JSON.stringify(config)) },
       }]);
 
       toast.success("PDF downloaded");
