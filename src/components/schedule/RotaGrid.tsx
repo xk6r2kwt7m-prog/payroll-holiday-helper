@@ -312,7 +312,10 @@ export function RotaGrid({
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="text-left px-2 py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider w-[100px] sm:w-[160px] sticky left-0 bg-card z-10 border-b border-border">
+                <th className={cn(
+                  "text-left py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider sticky left-0 bg-card z-10 border-b border-border",
+                  isMobile ? "px-1.5 w-[80px]" : "px-2 w-[100px] sm:w-[160px]"
+                )}>
                   <span className="hidden sm:inline">Employee</span>
                   <span className="sm:hidden">Staff</span>
                 </th>
