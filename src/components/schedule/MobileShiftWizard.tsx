@@ -528,7 +528,7 @@ export function MobileShiftWizard({
                     <Zap className="h-3 w-3" />
                     Quick pick
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {presets.map((p) => {
                       const isActive = startTime === p.start && endTime === p.end;
                       return (
@@ -536,14 +536,14 @@ export function MobileShiftWizard({
                           key={p.label}
                           onClick={() => handlePresetSelect(p)}
                           className={cn(
-                            "px-3 py-2 rounded-lg text-xs font-medium border transition-all active:scale-95",
+                            "px-3 py-3 rounded-xl text-sm font-medium border transition-all active:scale-[0.97] min-h-[52px]",
                             isActive
-                              ? "border-primary bg-primary/10 text-primary"
+                              ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/20"
                               : "border-border text-muted-foreground hover:border-primary/30"
                           )}
                         >
                           {p.label}
-                          <span className="block text-[10px] opacity-70 mt-0.5">{p.start}–{p.end}</span>
+                          <span className="block text-[11px] opacity-70 mt-0.5 tabular-nums">{p.start}–{p.end}</span>
                         </button>
                       );
                     })}
