@@ -194,25 +194,25 @@ export function PayrollHolidaySection({
   };
 
   return (
-    <div className="rounded-xl bg-card shadow-card border border-border animate-fade-in">
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10">
+    <div className="rounded-xl bg-card shadow-card border border-border animate-fade-in min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 sm:p-4 border-b border-border">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10 shrink-0">
             <Palmtree className="h-4 w-4 text-warning" />
           </div>
-          <div>
-            <h3 className="font-semibold text-card-foreground">Holiday Pay This Period</h3>
-            <p className="text-xs text-muted-foreground">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-card-foreground text-sm">Holiday Pay</h3>
+            <p className="text-xs text-muted-foreground truncate">
               {holidayPayments.length > 0
                 ? `${holidayPayments.length} payment${holidayPayments.length !== 1 ? "s" : ""} — ${formatCurrency(holidayTotal)}`
-                : "No holiday payments recorded yet"}
+                : "No holiday payments yet"}
             </p>
           </div>
         </div>
         {canEdit && !showAddForm && (
-          <Button size="sm" variant="outline" onClick={() => setShowAddForm(true)}>
+          <Button size="sm" variant="outline" onClick={() => setShowAddForm(true)} className="h-8 text-xs shrink-0 self-end sm:self-auto">
             <Plus className="mr-1 h-3 w-3" />
-            Add Holiday Pay
+            Add
           </Button>
         )}
       </div>
