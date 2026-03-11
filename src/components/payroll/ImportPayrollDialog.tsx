@@ -382,7 +382,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         const basePay = hours * rate;
         const servicePay = hours * sc;
         const totalPay = basePay + servicePay;
-        const holidayAccrued = calculateHolidayAccrual(hours);
+        const holidayAccrued = calculateAccrual(hours, 0.1207); // DB trigger overrides; this is a preview value
 
         // Location breakdown notes
         const locNotes = emp.locations.length > 1
