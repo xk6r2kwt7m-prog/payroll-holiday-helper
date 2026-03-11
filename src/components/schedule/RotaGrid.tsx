@@ -53,6 +53,9 @@ export function RotaGrid({
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [activeShift, setActiveShift] = useState<any>(null);
   const [popoverShiftId, setPopoverShiftId] = useState<string | null>(null);
+  const [mobileSheetShift, setMobileSheetShift] = useState<any>(null);
+  const [mobileSheetDay, setMobileSheetDay] = useState<Date | null>(null);
+  const isMobile = useIsMobile();
 
   const bulkDelete = useBulkDeleteShifts();
   const bulkUpdate = useBulkUpdateShifts();
