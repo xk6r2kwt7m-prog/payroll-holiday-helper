@@ -14,6 +14,7 @@ import { useCreateEmployee, useUpdateEmployee, type Employee, type EmployeeInser
 import { useEmployeeBranches, useSetEmployeeBranches, BRANCHES, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/hooks/useTenant";
 
 type DepartmentType = Database["public"]["Enums"]["department_type"];
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
