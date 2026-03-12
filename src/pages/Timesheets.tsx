@@ -131,7 +131,7 @@ export default function Timesheets() {
                 <SelectValue placeholder="All Locations" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
+                <SelectItem value="all">{t("timesheets.all_locations")}</SelectItem>
                 {branches?.map((b) => (
                   <SelectItem key={b.branch} value={b.branch}>{b.display_name}</SelectItem>
                 ))}
