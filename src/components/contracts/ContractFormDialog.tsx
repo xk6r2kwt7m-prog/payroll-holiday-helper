@@ -67,6 +67,8 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
   const generateSigningLink = useGenerateSigningLink();
   const companyLegalName = companySettings?.company_name || tenantName || "Your Company";
   const companyAddress = companySettings?.address || "";
+  const { data: locationSettings = [] } = useLocationSettings();
+  const workLocations = locationSettings.map(l => l.address ? `${l.display_name} — ${l.address}` : l.display_name);
 
   const [step, setStep] = useState<Step>("fill");
   const [generating, setGenerating] = useState(false);
