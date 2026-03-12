@@ -23,27 +23,15 @@ import { PayrollInlineAnalytics } from "@/components/payroll/PayrollInlineAnalyt
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useI18n } from "@/hooks/useI18n";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
 
-const statusStyles = {
-  draft: "bg-muted text-muted-foreground",
-  pending: "bg-warning/10 text-warning",
-  approved: "bg-success/10 text-success",
-  rejected: "bg-destructive/10 text-destructive",
-};
-
-const statusLabels = {
-  draft: "Draft",
-  pending: "Pending Review",
-  approved: "Approved",
-  rejected: "Rejected",
-};
-
 const Payroll = () => {
+  const { t } = useI18n();
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
@@ -59,6 +47,20 @@ const Payroll = () => {
   const { sendNotification } = useNotifications();
   const { data: companySettings } = useCompanySettings();
 
+  const statusStyles: Record<string, string> = {
+    draft: "bg-muted text-muted-foreground",
+    pending: "bg-warning/10 text-warning",
+    approved: "bg-success/10 text-success",
+    rejected: "bg-destructive/10 text-destructive",
+  };
+
+  const statusLabels: Record<string, string> = {
+    draft: t("payroll.status_draft"),
+    pending: t("payroll.status_pending"),
+    approved: t("payroll.status_approved"),
+    rejected: t("payroll.status_rejected"),
+  };
+
   const totalPay = entries.reduce((sum, e: any) => sum + Number(e.total_pay), 0);
   const totalHours = entries.reduce((sum, e: any) => sum + Number(e.timesheet_hours), 0);
   const totalBonuses = entries.reduce((sum, e: any) => sum + Number(e.performance_bonus) + Number(e.special_bonus), 0);
@@ -67,14 +69,12 @@ const Payroll = () => {
     : 0;
   const zeroHoursCount = entries.filter((e: any) => Number(e.timesheet_hours) === 0).length;
 
-  // Rate discrepancy detection
   const rateDiscrepancies = entries.filter((e: any) => {
     const emp = e.employees;
     if (!emp) return false;
     return Number(e.hourly_rate) !== Number(emp.hourly_rate);
   });
 
-  // Management salary (CPU department typically = management, exclude from labour %)
   const managementPayroll = entries
     .filter((e: any) => e.employees?.department === "CPU")
     .reduce((sum: number, e: any) => sum + Number(e.total_pay), 0);
@@ -84,8 +84,7 @@ const Payroll = () => {
     if (!selectedPeriod) return;
     try {
       await submitForReview.mutateAsync(selectedPeriod.id);
-      toast.success("Payroll submitted for review");
-      // Send notification
+      toast.success(t("payroll.submitted_review"));
       const adminEmail = companySettings?.company_email;
       if (adminEmail) {
         sendNotification({
@@ -100,7 +99,7 @@ const Payroll = () => {
         });
       }
     } catch {
-      toast.error("Failed to submit payroll");
+      toast.error(t("payroll.failed_submit"));
     }
   };
 
@@ -108,7 +107,7 @@ const Payroll = () => {
     if (!selectedPeriod) return;
     try {
       await approvePeriod.mutateAsync(selectedPeriod.id);
-      toast.success("Payroll approved and locked");
+      toast.success(t("payroll.approved_locked"));
       const adminEmail = companySettings?.company_email;
       if (adminEmail) {
         sendNotification({
@@ -123,7 +122,7 @@ const Payroll = () => {
         });
       }
     } catch {
-      toast.error("Failed to approve payroll");
+      toast.error(t("payroll.failed_approve"));
     }
   };
 
@@ -131,7 +130,6 @@ const Payroll = () => {
     if (!selectedPeriod) return;
     try {
       await reopenPeriod.mutateAsync(selectedPeriod.id);
-      // Mark as corrected so the system knows this is a corrected version
       const existingNotes = selectedPeriod.notes || "";
       const correctionMark = existingNotes.includes("[CORRECTED]")
         ? existingNotes
@@ -140,16 +138,16 @@ const Payroll = () => {
         .from("payroll_periods")
         .update({ notes: correctionMark })
         .eq("id", selectedPeriod.id);
-      toast.success("Payroll period reopened for correction — make your changes and re-approve");
+      toast.success(t("payroll.reopened_correction"));
     } catch {
-      toast.error("Failed to reopen payroll");
+      toast.error(t("payroll.failed_reopen"));
     }
   };
 
   const handleDeletePeriod = async () => {
     if (!selectedPeriod) return;
     if (selectedPeriod.status !== "draft") {
-      toast.error("Only draft periods can be deleted");
+      toast.error(t("payroll.only_draft_delete"));
       return;
     }
     try {
@@ -157,9 +155,9 @@ const Payroll = () => {
       await deletePeriod.mutateAsync(deletedId);
       const remaining = periods.filter(p => p.id !== deletedId);
       setSelectedPeriodId(remaining.length > 0 ? remaining[0].id : null);
-      toast.success(`"${selectedPeriod.period_name}" deleted`);
+      toast.success(t("payroll.deleted_period", { name: selectedPeriod.period_name }));
     } catch {
-      toast.error("Failed to delete payroll period");
+      toast.error(t("payroll.failed_delete"));
     }
   };
 
@@ -210,18 +208,17 @@ const Payroll = () => {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast.success(includeBankDetails ? "Exported with bank details" : "Payroll exported");
+      toast.success(includeBankDetails ? t("payroll.exported_with_bank") : t("payroll.exported"));
     } catch (error) {
       console.error("Export failed:", error);
-      toast.error("Failed to export payroll");
+      toast.error(t("payroll.failed_export"));
     }
   };
 
   const handleDownloadPDF = async () => {
     if (!selectedPeriod || entries.length === 0) return;
     try {
-      toast.info("Generating PDF...");
-      // Find starters AND leavers in this period's entries
+      toast.info(t("payroll.generating_pdf"));
       const starterEmployees = allEmployees.filter(emp => 
         (emp.status === 'starter' || emp.status === 'leaver') && entries.some((e: any) => e.employee_id === emp.id)
       );
@@ -242,17 +239,14 @@ const Payroll = () => {
       const fileName = `payroll-${selectedPeriod.period_name.replace(/\s+/g, "-")}.pdf`;
       const file = new File([blob], fileName, { type: "application/pdf" });
 
-      // Mobile: use Web Share API if available, otherwise open in new tab
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile && navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: fileName });
       } else if (isMobile) {
-        // Open PDF in new tab so mobile users can view/save
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank");
         setTimeout(() => URL.revokeObjectURL(url), 60000);
       } else {
-        // Desktop: standard download
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -271,10 +265,10 @@ const Payroll = () => {
         record_id: selectedPeriod.id,
         new_data: { operation: "pdf_export", period_name: selectedPeriod.period_name },
       });
-      toast.success("PDF downloaded");
+      toast.success(t("payroll.pdf_downloaded"));
     } catch (error) {
       console.error("PDF generation failed:", error);
-      toast.error("Failed to generate PDF");
+      toast.error(t("payroll.failed_pdf"));
     }
   };
 
@@ -289,17 +283,16 @@ const Payroll = () => {
                 <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
-                Payroll
+                {t("payroll.title")}
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
                 {selectedPeriod ? (
                   <>
                     {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} – {new Date(selectedPeriod.end_date).toLocaleDateString()}
                   </>
-                ) : "No payroll periods yet"}
+                ) : t("payroll.no_periods")}
               </p>
             </div>
-            {/* Primary actions – always visible */}
             <div className="flex gap-1.5 shrink-0">
               {selectedPeriod && entries.length > 0 && (
                 <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
@@ -310,12 +303,11 @@ const Payroll = () => {
               <Button variant="outline" size="sm" asChild className="h-9 px-2.5 sm:px-3">
                 <Link to="/payroll/analytics">
                   <BarChart3 className="h-4 w-4 sm:mr-1.5" />
-                  <span className="hidden sm:inline">Analytics</span>
+                  <span className="hidden sm:inline">{t("nav.analytics")}</span>
                 </Link>
               </Button>
             </div>
           </div>
-          {/* Admin actions – wrap naturally */}
           {isAdmin && (
             <div className="flex flex-wrap gap-1.5 sm:gap-2">
               <SettleLeaverDialog />
@@ -326,7 +318,7 @@ const Payroll = () => {
           )}
         </div>
 
-        {/* Period Selector – horizontal scroll on mobile */}
+        {/* Period Selector */}
         {periods.length > 0 && (
           <div className="-mx-4 sm:mx-0 px-4 sm:px-0 animate-fade-in">
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
@@ -358,31 +350,31 @@ const Payroll = () => {
         <SensitiveSection
           sectionKey="payroll-stats-overview"
           category="payroll_summary"
-          title="Payroll Summary"
+          title={t("payroll.payroll_summary")}
         >
           <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
             <StatCard
-              title="Total Payroll"
+              title={t("payroll.total_payroll")}
               value={formatCurrency(totalPay)}
-              subtitle={`${entries.length} employees`}
+              subtitle={t("payroll.employees_count", { count: entries.length })}
               icon={<DollarSign className="h-5 w-5" />}
               variant="primary"
             />
             <StatCard
-              title="Total Hours"
+              title={t("payroll.total_hours")}
               value={formatHours(totalHours)}
-              subtitle="Timesheet hours"
+              subtitle={t("payroll.timesheet_hours_label")}
               icon={<Clock className="h-5 w-5" />}
             />
             <StatCard
-              title="Avg. Rate"
+              title={t("payroll.avg_rate")}
               value={formatCurrency(avgRate)}
               icon={<DollarSign className="h-5 w-5" />}
             />
             <StatCard
-              title="Bonuses"
+              title={t("payroll.bonuses")}
               value={formatCurrency(totalBonuses)}
-              subtitle="Perf + Special"
+              subtitle={t("payroll.perf_special")}
               icon={<DollarSign className="h-5 w-5" />}
               variant="success"
             />
@@ -390,9 +382,7 @@ const Payroll = () => {
         </SensitiveSection>
 
         {/* Payroll Reminders */}
-        {selectedPeriod && (
-          <PayrollReminders periodId={selectedPeriod.id} />
-        )}
+        {selectedPeriod && <PayrollReminders periodId={selectedPeriod.id} />}
 
         {/* Approval Workflow */}
         {selectedPeriod && (
@@ -448,13 +438,13 @@ const Payroll = () => {
           <SensitiveSection
             sectionKey="payroll-rate-discrepancies"
             category="compensation"
-            title="Rate Discrepancies"
+            title={t("payroll.rate_change")}
           >
             <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
               <div className="flex items-start gap-2.5 mb-2">
-                <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">Rate Change</Badge>
+                <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">{t("payroll.rate_change")}</Badge>
                 <p className="font-medium text-card-foreground text-xs sm:text-sm">
-                  {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s" : ""} with rate differences
+                  {t("payroll.rate_differences", { count: rateDiscrepancies.length })}
                 </p>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -471,7 +461,7 @@ const Payroll = () => {
         {/* Loading State */}
         {(loadingPeriods || loadingEntries) && (
           <div className="rounded-xl bg-card shadow-card p-8 text-center">
-            <p className="text-muted-foreground">Loading payroll data...</p>
+            <p className="text-muted-foreground">{t("payroll.loading")}</p>
           </div>
         )}
 
@@ -479,7 +469,7 @@ const Payroll = () => {
         {!loadingPeriods && periods.length === 0 && (
           <div className="rounded-xl bg-card shadow-card p-8 text-center">
             <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">No payroll periods yet. Create a new period or import from a previous system.</p>
+            <p className="text-muted-foreground mb-4">{t("payroll.no_periods_desc")}</p>
             {isAdmin && (
               <div className="flex justify-center gap-3">
                 <CreatePayrollDialog />

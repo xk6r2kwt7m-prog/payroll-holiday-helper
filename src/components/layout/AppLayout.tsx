@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useI18n } from "@/hooks/useI18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { NotificationBell } from "@/components/NotificationBell";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { cn } from "@/lib/utils";
 import {
@@ -273,6 +274,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Right side — language, search, user, sign out */}
         <div className="flex items-center gap-1 shrink-0">
+          <NotificationBell />
           <LanguageSwitcher compact />
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>

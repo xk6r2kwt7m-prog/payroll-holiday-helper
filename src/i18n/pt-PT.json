@@ -639,6 +639,7 @@
   },
   "notifications": {
     "title": "Notificações",
+    "empty": "Sem notificações",
     "no_notifications": "Sem notificações",
     "mark_all_read": "Marcar todas como lidas",
     "shift_published": "Escala publicada",

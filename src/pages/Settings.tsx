@@ -35,43 +35,12 @@ import {
   PeopleLifecycleSettings,
 } from "@/components/settings/AdminConfigSections";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-/* ─── Section definitions ─── */
-interface AdminSection {
-  id: string;
-  icon: any;
-  label: string;
-  group: "organisation" | "operations" | "system";
-}
-
-const SECTIONS: AdminSection[] = [
-  { id: "company", icon: Building2, label: "Company Profile", group: "organisation" },
-  { id: "locations", icon: MapPin, label: "Locations", group: "organisation" },
-  { id: "departments", icon: Briefcase, label: "Departments", group: "organisation" },
-  { id: "roles", icon: Users, label: "Roles & Access", group: "organisation" },
-  { id: "people", icon: Users, label: "People & Lifecycle", group: "organisation" },
-  { id: "scheduling", icon: CalendarClock, label: "Scheduling", group: "operations" },
-  { id: "payroll", icon: CreditCard, label: "Payroll", group: "operations" },
-  { id: "leave", icon: Calendar, label: "Holiday & Leave", group: "operations" },
-  { id: "training", icon: GraduationCap, label: "Training & Docs", group: "operations" },
-  { id: "talent", icon: Sparkles, label: "Talent Pool", group: "operations" },
-  { id: "notifications", icon: Bell, label: "Notifications", group: "operations" },
-  { id: "branding", icon: Palette, label: "Branding", group: "system" },
-  { id: "features", icon: Blocks, label: "Feature Access", group: "system" },
-  { id: "security", icon: Shield, label: "Security", group: "system" },
-  { id: "audit", icon: ClipboardList, label: "Audit Log", group: "system" },
-  { id: "protected", icon: Lock, label: "Protected Systems", group: "system" },
-];
-
-const GROUP_LABELS: Record<string, string> = {
-  organisation: "Organisation",
-  operations: "Operations",
-  system: "System",
-};
-
 const Settings = () => {
+  const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = searchParams.get("section") || "company";
   const isMobile = useIsMobile();
@@ -90,6 +59,39 @@ const Settings = () => {
   const [payrollReminders, setPayrollReminders] = useState(true);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState(true);
+
+  /* ─── Section definitions ─── */
+  interface AdminSection {
+    id: string;
+    icon: any;
+    label: string;
+    group: "organisation" | "operations" | "system";
+  }
+
+  const SECTIONS: AdminSection[] = [
+    { id: "company", icon: Building2, label: t("settings.company_profile"), group: "organisation" },
+    { id: "locations", icon: MapPin, label: t("settings.locations"), group: "organisation" },
+    { id: "departments", icon: Briefcase, label: t("settings.departments"), group: "organisation" },
+    { id: "roles", icon: Users, label: t("settings.roles_access"), group: "organisation" },
+    { id: "people", icon: Users, label: t("settings.people_lifecycle"), group: "organisation" },
+    { id: "scheduling", icon: CalendarClock, label: t("settings.scheduling"), group: "operations" },
+    { id: "payroll", icon: CreditCard, label: t("settings.payroll"), group: "operations" },
+    { id: "leave", icon: Calendar, label: t("settings.holiday_leave"), group: "operations" },
+    { id: "training", icon: GraduationCap, label: t("settings.training_docs"), group: "operations" },
+    { id: "talent", icon: Sparkles, label: t("settings.talent_pool"), group: "operations" },
+    { id: "notifications", icon: Bell, label: t("settings.notifications"), group: "operations" },
+    { id: "branding", icon: Palette, label: t("settings.branding"), group: "system" },
+    { id: "features", icon: Blocks, label: t("settings.feature_access"), group: "system" },
+    { id: "security", icon: Shield, label: t("settings.security"), group: "system" },
+    { id: "audit", icon: ClipboardList, label: t("settings.audit_log"), group: "system" },
+    { id: "protected", icon: Lock, label: t("settings.protected_systems"), group: "system" },
+  ];
+
+  const GROUP_LABELS: Record<string, string> = {
+    organisation: t("settings.organisation"),
+    operations: t("settings.operations"),
+    system: t("settings.system"),
+  };
 
   useEffect(() => {
     if (settings) {
@@ -148,8 +150,8 @@ const Settings = () => {
             <SettingsIcon className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Admin Centre</h1>
-            <p className="text-xs text-muted-foreground">Company configuration and system settings</p>
+            <h1 className="text-xl font-bold text-foreground">{t("settings.title")}</h1>
+            <p className="text-xs text-muted-foreground">{t("settings.subtitle")}</p>
           </div>
         </div>
 
@@ -218,15 +220,15 @@ const Settings = () => {
             {/* ─── COMPANY PROFILE ─── */}
             {activeSection === "company" && (
               <>
-                <ConfigCard title="Company Configuration" description="Legal entity, currency, payroll frequency, and country-specific settings">
+                <ConfigCard title={t("settings.company_config")} description={t("settings.company_config_desc")}>
                   <TenantConfigSection />
                 </ConfigCard>
-                <ConfigCard title="Company Profile" description="Display name, email, and address used on documents">
+                <ConfigCard title={t("settings.company_profile")} description={t("settings.company_profile_desc")}>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Company Name" id="company-name" value={companyName} onChange={setCompanyName} />
-                    <Field label="Company Email" id="company-email" value={companyEmail} onChange={setCompanyEmail} type="email" />
+                    <Field label={t("settings.company_name")} id="company-name" value={companyName} onChange={setCompanyName} />
+                    <Field label={t("settings.company_email")} id="company-email" value={companyEmail} onChange={setCompanyEmail} type="email" />
                   </div>
-                  <Field label="Address" id="address" value={address} onChange={setAddress} />
+                  <Field label={t("settings.address")} id="address" value={address} onChange={setAddress} />
                 </ConfigCard>
                 <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
               </>
@@ -234,14 +236,14 @@ const Settings = () => {
 
             {/* ─── LOCATIONS ─── */}
             {activeSection === "locations" && (
-              <ConfigCard title="Location Management" description="Add, edit, and configure work locations and site-specific rules">
+              <ConfigCard title={t("settings.location_management")} description={t("settings.location_management_desc")}>
                 <LocationManagement />
               </ConfigCard>
             )}
 
             {/* ─── DEPARTMENTS ─── */}
             {activeSection === "departments" && (
-              <ConfigCard title="Departments" description="Add, edit, and manage your team structure">
+              <ConfigCard title={t("settings.departments")} description={t("settings.departments_desc")}>
                 <DepartmentManagement />
               </ConfigCard>
             )}
@@ -249,10 +251,10 @@ const Settings = () => {
             {/* ─── ROLES ─── */}
             {activeSection === "roles" && (
               <>
-                <ConfigCard title="Role Permissions" description="Configure what each role can view and manage">
+                <ConfigCard title={t("settings.role_permissions")} description={t("settings.role_permissions_desc")}>
                   <RolePermissionConfig />
                 </ConfigCard>
-                <ConfigCard title="User Role Assignment" description="Assign roles to team members with linked accounts">
+                <ConfigCard title={t("settings.user_role_assignment")} description={t("settings.user_role_assignment_desc")}>
                   <RoleManagement />
                 </ConfigCard>
               </>
@@ -261,10 +263,10 @@ const Settings = () => {
             {/* ─── PEOPLE & LIFECYCLE ─── */}
             {activeSection === "people" && (
               <>
-                <ConfigCard title="People Preferences" description="Configure employee directory and lifecycle behaviour">
+                <ConfigCard title={t("settings.people_preferences")} description={t("settings.people_preferences_desc")}>
                   <PeopleLifecycleSettings />
                 </ConfigCard>
-                <ConfigCard title="Employee Status Lifecycle" description="Status definitions and current distribution">
+                <ConfigCard title={t("settings.employee_status_lifecycle")} description={t("settings.employee_status_lifecycle_desc")}>
                   <EmployeeStatusConfig />
                 </ConfigCard>
               </>
@@ -272,7 +274,7 @@ const Settings = () => {
 
             {/* ─── SCHEDULING ─── */}
             {activeSection === "scheduling" && (
-              <ConfigCard title="Scheduling Settings" description="Configure shift defaults, presets, and mobile behaviour">
+              <ConfigCard title={t("settings.scheduling_settings")} description={t("settings.scheduling_settings_desc")}>
                 <SchedulingSettings />
               </ConfigCard>
             )}
@@ -280,18 +282,18 @@ const Settings = () => {
             {/* ─── PAYROLL ─── */}
             {activeSection === "payroll" && (
               <>
-                <ConfigCard title="Payroll Preferences" description="Configure payroll display, reminders, and export settings">
+                <ConfigCard title={t("settings.payroll_preferences")} description={t("settings.payroll_preferences_desc")}>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Pay Period" id="pay-period" value={payPeriod} onChange={setPayPeriod} />
-                    <Field label="Default Pay Day" id="pay-day" value={payDay} onChange={setPayDay} />
+                    <Field label={t("settings.pay_period")} id="pay-period" value={payPeriod} onChange={setPayPeriod} />
+                    <Field label={t("settings.default_pay_day")} id="pay-day" value={payDay} onChange={setPayDay} />
                   </div>
-                  <SwitchRow label="Auto-calculate overtime" description="Automatically calculate overtime pay" checked={autoCalculateOvertime} onChange={setAutoCalculateOvertime} />
+                  <SwitchRow label={t("settings.auto_overtime")} description={t("settings.auto_overtime_desc")} checked={autoCalculateOvertime} onChange={setAutoCalculateOvertime} />
                   <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
                 </ConfigCard>
-                <ConfigCard title="Display Preferences" description="Control which columns and elements appear in payroll views">
+                <ConfigCard title={t("settings.display_preferences")} description={t("settings.display_preferences_desc")}>
                   <PayrollDisplaySettings />
                 </ConfigCard>
-                <ProtectedEngineNote label="Payroll Core Engine" description="The payroll calculation engine, total pay formulas, holiday accrual triggers, and closed-period protections cannot be modified. These are platform-level protected rules." />
+                <ProtectedEngineNote label={t("settings.payroll_engine_note")} description={t("settings.payroll_engine_desc")} />
                 <Separator />
                 <HistoricalImport />
               </>
@@ -300,26 +302,26 @@ const Settings = () => {
             {/* ─── LEAVE ─── */}
             {activeSection === "leave" && (
               <>
-                <ConfigCard title="Leave & Holiday Rules" description="Configure accrual rates, carry-over, workweek, and leave year settings">
+                <ConfigCard title={t("settings.leave_rules")} description={t("settings.leave_rules_desc")}>
                   <LeaveRulesSettings />
                 </ConfigCard>
-                <ConfigCard title="Holiday Display Preferences" description="Configure how holiday data is shown across the platform">
+                <ConfigCard title={t("settings.holiday_display")} description={t("settings.holiday_display_desc")}>
                   <HolidayDisplaySettings />
                 </ConfigCard>
-                <ProtectedEngineNote label="Holiday Engine" description="The holiday ledger engine, balance reconciliation, and accrual calculation formula are protected core logic. You can adjust configurable parameters above." />
+                <ProtectedEngineNote label={t("settings.holiday_engine_note")} description={t("settings.holiday_engine_desc")} />
               </>
             )}
 
             {/* ─── TRAINING ─── */}
             {activeSection === "training" && (
-              <ConfigCard title="Training & Documents" description="Certifications, reminders, document categories, and compliance">
+              <ConfigCard title={t("settings.training_docs")} description={t("settings.training_docs_desc")}>
                 <TrainingDocSettings />
               </ConfigCard>
             )}
 
             {/* ─── TALENT POOL ─── */}
             {activeSection === "talent" && (
-              <ConfigCard title="Talent Pool Settings" description="Former staff network and visibility preferences">
+              <ConfigCard title={t("settings.talent_pool")} description={t("settings.talent_pool_desc")}>
                 <TalentPoolSettings />
               </ConfigCard>
             )}
@@ -327,12 +329,12 @@ const Settings = () => {
             {/* ─── NOTIFICATIONS ─── */}
             {activeSection === "notifications" && (
               <>
-                <ConfigCard title="Notifications & Reminders" description="Manage how you receive alerts">
-                  <SwitchRow label="Email notifications" description="Receive updates via email" checked={emailNotifications} onChange={setEmailNotifications} />
+                <ConfigCard title={t("settings.notifications")} description={t("settings.notifications_desc")}>
+                  <SwitchRow label={t("settings.email_notifications")} description={t("settings.email_notifications_desc")} checked={emailNotifications} onChange={setEmailNotifications} />
                   <Separator />
-                  <SwitchRow label="Holiday request alerts" description="Get notified of new requests" checked={holidayRequestAlerts} onChange={setHolidayRequestAlerts} />
+                  <SwitchRow label={t("settings.holiday_alerts")} description={t("settings.holiday_alerts_desc")} checked={holidayRequestAlerts} onChange={setHolidayRequestAlerts} />
                   <Separator />
-                  <SwitchRow label="Payroll reminders" description="Remind before payroll due dates" checked={payrollReminders} onChange={setPayrollReminders} />
+                  <SwitchRow label={t("settings.payroll_reminders")} description={t("settings.payroll_reminders_desc")} checked={payrollReminders} onChange={setPayrollReminders} />
                 </ConfigCard>
                 <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
               </>
@@ -340,7 +342,7 @@ const Settings = () => {
 
             {/* ─── BRANDING ─── */}
             {activeSection === "branding" && (
-              <ConfigCard title="Branding & Display" description="Customise your company appearance">
+              <ConfigCard title={t("settings.branding")} description={t("settings.branding_desc")}>
                 <BrandingSettings />
               </ConfigCard>
             )}
@@ -348,10 +350,10 @@ const Settings = () => {
             {/* ─── FEATURE ACCESS ─── */}
             {activeSection === "features" && (
               <>
-                <ConfigCard title="Feature Access" description="Modules enabled for your company">
+                <ConfigCard title={t("settings.feature_access")} description={t("settings.feature_access_desc")}>
                   <FeatureAccessSettings />
                 </ConfigCard>
-                <ConfigCard title="Module Pricing" description="Per-module pricing and billing configuration">
+                <ConfigCard title={t("settings.module_pricing")} description={t("settings.module_pricing_desc")}>
                   <ModulePricingConfig />
                 </ConfigCard>
               </>
@@ -360,10 +362,10 @@ const Settings = () => {
             {/* ─── SECURITY ─── */}
             {activeSection === "security" && (
               <>
-                <ConfigCard title="Security" description="Account and data protection settings">
-                  <SwitchRow label="Two-factor authentication" description="Add an extra layer of security" checked={twoFactorAuth} onChange={setTwoFactorAuth} />
+                <ConfigCard title={t("settings.security")} description={t("settings.security_desc")}>
+                  <SwitchRow label={t("settings.two_factor")} description={t("settings.two_factor_desc")} checked={twoFactorAuth} onChange={setTwoFactorAuth} />
                   <Separator />
-                  <SwitchRow label="Session timeout" description="Automatically log out after inactivity" checked={sessionTimeout} onChange={setSessionTimeout} />
+                  <SwitchRow label={t("settings.session_timeout")} description={t("settings.session_timeout_desc")} checked={sessionTimeout} onChange={setSessionTimeout} />
                 </ConfigCard>
                 <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
               </>
@@ -371,14 +373,16 @@ const Settings = () => {
 
             {/* ─── AUDIT LOG ─── */}
             {activeSection === "audit" && (
-              <ConfigCard title="Configuration Audit Log" description="Track admin configuration changes">
+              <ConfigCard title={t("settings.audit_log")} description="">
                 <AdminAuditLog />
               </ConfigCard>
             )}
 
-            {/* ─── PROTECTED ─── */}
+            {/* ─── PROTECTED SYSTEMS ─── */}
             {activeSection === "protected" && (
-              <ProtectedSystemInfo />
+              <ConfigCard title={t("settings.protected_systems")} description="">
+                <ProtectedSystemInfo />
+              </ConfigCard>
             )}
           </div>
         </div>
@@ -387,14 +391,13 @@ const Settings = () => {
   );
 };
 
-/* ─── Reusable Helper Components ─── */
-
+/* ─── Reusable sub-components ─── */
 function ConfigCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-card border border-border p-4 space-y-4">
+    <div className="rounded-xl bg-card border border-border p-4 sm:p-5 shadow-sm space-y-4">
       <div>
-        <h3 className="text-sm font-semibold text-card-foreground">{title}</h3>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>
       {children}
     </div>
@@ -404,17 +407,17 @@ function ConfigCard({ title, description, children }: { title: string; descripti
 function Field({ label, id, value, onChange, type = "text" }: { label: string; id: string; value: string; onChange: (v: string) => void; type?: string }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs">{label}</Label>
-      <Input id={id} type={type} value={value} onChange={(e) => onChange(e.target.value)} className="h-9" />
+      <Label htmlFor={id} className="text-xs font-medium">{label}</Label>
+      <Input id={id} type={type} value={value} onChange={e => onChange(e.target.value)} className="h-9" />
     </div>
   );
 }
 
 function SwitchRow({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex items-center justify-between py-2">
       <div>
-        <p className="text-sm font-medium text-card-foreground">{label}</p>
+        <p className="text-sm font-medium text-foreground">{label}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <Switch checked={checked} onCheckedChange={onChange} />
@@ -423,10 +426,11 @@ function SwitchRow({ label, description, checked, onChange }: { label: string; d
 }
 
 function SaveButton({ onSave, isPending }: { onSave: () => void; isPending: boolean }) {
+  const { t } = useI18n();
   return (
-    <div className="flex justify-end">
-      <Button size="sm" onClick={onSave} disabled={isPending}>
-        {isPending ? <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Saving...</> : "Save Changes"}
+    <div className="flex justify-end pt-2">
+      <Button onClick={onSave} disabled={isPending} size="sm">
+        {isPending ? t("common.saving") : t("settings.save_config")}
       </Button>
     </div>
   );
@@ -434,11 +438,14 @@ function SaveButton({ onSave, isPending }: { onSave: () => void; isPending: bool
 
 function ProtectedEngineNote({ label, description }: { label: string; description: string }) {
   return (
-    <div className="rounded-lg bg-destructive/5 border border-destructive/10 p-3">
-      <div className="flex items-center gap-2 mb-1">
-        <ProtectedBadge label={`${label} Protected`} />
+    <div className="rounded-lg bg-muted/50 border border-border p-3 flex items-start gap-2.5">
+      <Lock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+      <div>
+        <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          {label} <ProtectedBadge />
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
       </div>
-      <p className="text-[11px] text-muted-foreground">{description}</p>
     </div>
   );
 }

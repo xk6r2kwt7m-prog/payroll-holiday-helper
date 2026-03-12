@@ -18,6 +18,7 @@ import { EmployeeCard } from "@/components/employees/EmployeeCard";
 import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet";
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/hooks/useI18n";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -25,28 +26,8 @@ type Department = "FOH" | "BOH" | "CPU";
 type StatusFilter = "active" | "starter" | "leaver" | "archived";
 type SortOption = "alpha" | "newest" | "recent-leavers" | "department";
 
-const STATUS_CONFIG: Record<StatusFilter, { label: string; emoji: string; style: string }> = {
-  active: { label: "Active", emoji: "✅", style: "bg-success/10 text-success border-success/30" },
-  starter: { label: "Starters", emoji: "🆕", style: "bg-primary/10 text-primary border-primary/30" },
-  leaver: { label: "Leavers", emoji: "👋", style: "bg-destructive/10 text-destructive border-destructive/30" },
-  archived: { label: "Archived", emoji: "📦", style: "bg-muted text-muted-foreground border-border" },
-};
-
-const DEPT_CONFIG: Record<string, { label: string; emoji: string }> = {
-  all: { label: "All", emoji: "" },
-  FOH: { label: "FOH", emoji: "🍽️" },
-  BOH: { label: "BOH", emoji: "👨‍🍳" },
-  CPU: { label: "CPU", emoji: "🏭" },
-};
-
-const SORT_OPTIONS: Record<SortOption, string> = {
-  alpha: "A → Z",
-  newest: "Newest Starters",
-  "recent-leavers": "Recent Leavers",
-  department: "Department",
-};
-
 const Employees = () => {
+  const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<Department | "all">(
@@ -58,6 +39,27 @@ const Employees = () => {
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  const STATUS_CONFIG: Record<StatusFilter, { label: string; emoji: string; style: string }> = {
+    active: { label: t("employees.status_active"), emoji: "✅", style: "bg-success/10 text-success border-success/30" },
+    starter: { label: t("employees.status_starters"), emoji: "🆕", style: "bg-primary/10 text-primary border-primary/30" },
+    leaver: { label: t("employees.status_leavers"), emoji: "👋", style: "bg-destructive/10 text-destructive border-destructive/30" },
+    archived: { label: t("employees.status_archived"), emoji: "📦", style: "bg-muted text-muted-foreground border-border" },
+  };
+
+  const DEPT_CONFIG: Record<string, { label: string; emoji: string }> = {
+    all: { label: t("common.all"), emoji: "" },
+    FOH: { label: "FOH", emoji: "🍽️" },
+    BOH: { label: "BOH", emoji: "👨‍🍳" },
+    CPU: { label: "CPU", emoji: "🏭" },
+  };
+
+  const SORT_OPTIONS: Record<SortOption, string> = {
+    alpha: t("employees.sort_alpha"),
+    newest: t("employees.sort_newest"),
+    "recent-leavers": t("employees.sort_leavers"),
+    department: t("employees.sort_department"),
+  };
 
   const includeArchived = statusFilter === "archived";
   const { data: employees = [], isLoading, error } = useEmployees(includeArchived);
@@ -99,7 +101,6 @@ const Employees = () => {
       return matchesSearch && matchesDepartment && matchesStatus;
     });
 
-    // Sort
     result.sort((a, b) => {
       switch (sortBy) {
         case "alpha":
@@ -122,12 +123,12 @@ const Employees = () => {
   const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every(e => selectedIds.has(e.id));
 
   const handleDelete = async (employee: Employee) => {
-    if (confirm(`Are you sure you want to delete ${employee.forename} ${employee.surname}?`)) {
+    if (confirm(t("employees.confirm_delete", { name: `${employee.forename} ${employee.surname}` }))) {
       try {
         await deleteEmployee.mutateAsync(employee.id);
-        toast.success(`${employee.forename} ${employee.surname} has been removed`);
+        toast.success(t("employees.deleted_success", { name: `${employee.forename} ${employee.surname}` }));
       } catch {
-        toast.error("Failed to delete employee");
+        toast.error(t("employees.failed_delete"));
       }
     }
   };
@@ -178,8 +179,8 @@ const Employees = () => {
       <AppLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-destructive mb-2">Failed to load employees</p>
-            <Button variant="outline" onClick={() => window.location.reload()}>Try Again</Button>
+            <p className="text-destructive mb-2">{t("employees.failed_to_load")}</p>
+            <Button variant="outline" onClick={() => window.location.reload()}>{t("common.try_again")}</Button>
           </div>
         </div>
       </AppLayout>
@@ -196,7 +197,7 @@ const Employees = () => {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                 <Users className="h-4 w-4 text-primary" />
               </div>
-              People
+              {t("employees.people")}
             </h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -214,7 +215,7 @@ const Employees = () => {
           </div>
         </div>
 
-        {/* Status Pills — act as primary filter + summary */}
+        {/* Status Pills */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
           {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
             if (status === "archived" && !isAdmin) return null;
@@ -250,9 +251,9 @@ const Employees = () => {
             statusFilter === "leaver" ? "bg-destructive/5 text-destructive border border-destructive/10" : "bg-muted text-muted-foreground border border-border"
           )}>
             <span>{statusFilter === "leaver" ? "👋" : "📦"}</span>
-            <span>Viewing {statusFilter === "leaver" ? "leavers" : "archived staff"} — not part of active team</span>
+            <span>{statusFilter === "leaver" ? t("employees.viewing_leavers") : t("employees.viewing_archived")}</span>
             <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs px-2" onClick={() => setStatusFilter("active")}>
-              Back to Active
+              {t("common.back_to_active")}
             </Button>
           </div>
         )}
@@ -262,7 +263,7 @@ const Employees = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by name, ref, or department..."
+              placeholder={t("employees.search_placeholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 h-10"
@@ -270,7 +271,6 @@ const Employees = () => {
           </div>
 
           <div className="flex items-center gap-2 justify-between">
-            {/* Department chips */}
             <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
               {Object.entries(DEPT_CONFIG).map(([key, config]) => (
                 <button
@@ -288,11 +288,10 @@ const Employees = () => {
               ))}
             </div>
 
-            {/* Sort + Select All */}
             <div className="flex items-center gap-1.5 shrink-0">
               {isSelectionMode && (
                 <Button variant="ghost" size="sm" onClick={toggleSelectAll} className="text-xs h-7 px-2">
-                  {allFilteredSelected ? "Deselect" : "All"}
+                  {allFilteredSelected ? t("common.deselect") : t("common.select_all")}
                 </Button>
               )}
               <DropdownMenu>
@@ -317,7 +316,9 @@ const Employees = () => {
         {/* Results count */}
         {(searchQuery || departmentFilter !== "all") && (
           <p className="text-xs text-muted-foreground">
-            {filteredEmployees.length} result{filteredEmployees.length !== 1 ? "s" : ""}
+            {filteredEmployees.length === 1
+              ? t("common.results", { count: filteredEmployees.length })
+              : t("common.results_plural", { count: filteredEmployees.length })}
           </p>
         )}
 
@@ -344,9 +345,9 @@ const Employees = () => {
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
               <UserPlus className="h-7 w-7 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold text-card-foreground mb-2">No employees yet</h3>
+            <h3 className="text-lg font-semibold text-card-foreground mb-2">{t("employees.no_employees_yet")}</h3>
             <p className="text-muted-foreground mb-6 text-sm max-w-md mx-auto">
-              Add your first employee to start managing your team.
+              {t("employees.add_first_employee")}
             </p>
             {isAdmin && <EmployeeFormDialog />}
           </div>
@@ -356,7 +357,7 @@ const Employees = () => {
         {!isLoading && employees.length > 0 && filteredEmployees.length === 0 && (
           <div className="rounded-xl bg-card shadow-sm p-8 text-center">
             <Filter className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">No employees match your filters</p>
+            <p className="text-muted-foreground text-sm">{t("employees.no_match_filters")}</p>
             <Button
               variant="link"
               size="sm"
@@ -367,7 +368,7 @@ const Employees = () => {
               }}
               className="mt-2"
             >
-              Clear filters
+              {t("common.clear_filters")}
             </Button>
           </div>
         )}

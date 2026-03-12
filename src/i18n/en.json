@@ -639,6 +639,7 @@
   },
   "notifications": {
     "title": "Notifications",
+    "empty": "No notifications yet",
     "no_notifications": "No notifications yet",
     "mark_all_read": "Mark all read",
     "shift_published": "Schedule published",
