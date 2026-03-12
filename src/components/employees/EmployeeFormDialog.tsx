@@ -165,6 +165,14 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check plan employee limit for new employees
+    if (isNewEmployee && planLimits.hasEmployeeLimit && planLimits.maxEmployees !== null) {
+      if (activeEmployeeCount >= planLimits.maxEmployees) {
+        toast.error(`You have reached the employee limit (${planLimits.maxEmployees}) for your plan. Upgrade to continue.`);
+        return;
+      }
+    }
+
     // Validate required fields
     if (!formData.forename.trim() || !formData.surname.trim() || !formData.hourly_rate) {
       toast.error("Please fill in all required fields (name and hourly rate)");
