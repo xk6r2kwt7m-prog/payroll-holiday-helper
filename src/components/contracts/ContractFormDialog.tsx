@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useTenant } from "@/hooks/useTenant";
 import { pdf } from "@react-pdf/renderer";
 import {
   Dialog,
