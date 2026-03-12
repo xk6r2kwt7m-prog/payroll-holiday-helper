@@ -58,31 +58,6 @@ interface NavItem {
   children?: NavItem[];
 }
 
-// Nav items use i18n keys, resolved at render time
-const NAV_KEYS = {
-  dashboard: "nav.dashboard",
-  employees: "nav.employees",
-  schedule: "nav.schedule",
-  rota: "nav.rota",
-  report: "nav.report",
-  analytics: "nav.analytics",
-  timesheets: "nav.timesheets",
-  payroll: "nav.payroll",
-  calendar: "nav.calendar",
-  overpayments: "nav.overpayments",
-  holidays: "nav.holidays",
-  holiday_management: "nav.holiday_management",
-  holiday_audit: "nav.holiday_audit",
-  absences: "nav.absences",
-  onboarding: "nav.onboarding",
-  training: "nav.training",
-  disciplinary: "nav.disciplinary",
-  announcements: "nav.announcements",
-  contracts: "nav.contracts",
-  locations: "nav.locations",
-  settings: "nav.admin_centre",
-} as const;
-
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
