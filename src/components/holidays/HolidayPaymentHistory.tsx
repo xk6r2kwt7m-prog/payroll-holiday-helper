@@ -83,7 +83,13 @@ export function HolidayPaymentHistory({ payments, onEmployeeClick }: HolidayPaym
         <div className="flex gap-4 text-sm">
           <span className="text-muted-foreground">{filtered.length} payments</span>
           <span className="font-medium text-primary">{formatHours(totalHours)} hrs</span>
-          <span className="font-semibold">{formatCurrency(totalPaid)}</span>
+          <SensitiveField
+            fieldKey="holiday-payment-history-total"
+            value={<span className="font-semibold">{formatCurrency(totalPaid)}</span>}
+            category="compensation"
+            size="sm"
+            inline
+          />
         </div>
       </div>
 
