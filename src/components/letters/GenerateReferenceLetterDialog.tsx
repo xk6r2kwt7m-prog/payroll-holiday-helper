@@ -51,7 +51,7 @@ export function GenerateReferenceLetterDialog({
   const { data: settings } = useCompanySettings();
   const queryClient = useQueryClient();
 
-  const companyName = settings?.company_name || "Ugly Dumpling";
+  const companyName = settings?.company_name || "Your Company";
   const companyAddress = settings?.address || "";
   const companyEmail = settings?.company_email || "";
 
