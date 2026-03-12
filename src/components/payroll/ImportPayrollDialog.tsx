@@ -61,7 +61,10 @@ const NAME_MAP: Record<string, { forename: string; surname: string }> = {
   "benjamin": { forename: "Benjamin", surname: "Gray" },
 };
 
-// Section → location mapping for notes
+// LEGACY: Section → location mapping for CSV import parsing.
+// These map timesheet CSV section codes to human-readable location names.
+// Only activated when a CSV with matching section headers is uploaded.
+// New tenants with different CSV formats will not match these mappings.
 const SECTION_LOCATION_MAP: Record<string, string> = {
   "[BOH]BOH - Brixton": "Brixton (BOH)",
   "[FOH]FOH - Brixton": "Brixton (FOH)",
