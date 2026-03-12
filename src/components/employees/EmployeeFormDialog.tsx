@@ -125,6 +125,14 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         residence_permit: "",
         rtw_confirmed: false,
         rtw_checked_date: "",
+        contract_country: "GB",
+        work_country: "",
+        employing_entity: "",
+        pay_type: "hourly",
+        overtime_model: "none",
+        holiday_entitlement_method: "accrual",
+        service_charge_eligible: true,
+      });
       });
       setSelectedBranches([]);
       setPrimaryBranch(undefined);
