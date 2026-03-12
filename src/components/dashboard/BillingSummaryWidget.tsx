@@ -56,9 +56,9 @@ export function BillingSummaryWidget() {
 
       {/* Founding partner banner */}
       {entitlements.isFoundingPartner && entitlements.foundingDaysRemaining !== null && (
-        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
+        <div className="rounded-lg bg-accent/10 border border-accent/20 p-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <Sparkles className="h-4 w-4 text-accent shrink-0" />
             <div className="flex-1">
               <p className="text-xs font-medium text-foreground">
                 All modules unlocked
