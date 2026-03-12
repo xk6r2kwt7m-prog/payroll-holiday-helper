@@ -83,7 +83,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     weeklyHours: "40",
     noticePeriod: "two weeks",
     probationPeriod: "2 months",
-    workLocation: WORK_LOCATIONS[0],
+    workLocation: "",
     employmentType: "variable_hours",
   });
 
