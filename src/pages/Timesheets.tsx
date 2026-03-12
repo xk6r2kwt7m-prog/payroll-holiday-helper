@@ -172,7 +172,7 @@ export default function Timesheets() {
                 )}
                 {flaggedEntries.length > 0 && (
                   <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30">
-                    {flaggedEntries.length} flagged
+                    {flaggedEntries.length} {t("timesheets.flagged")}
                   </Badge>
                 )}
               </CardTitle>
