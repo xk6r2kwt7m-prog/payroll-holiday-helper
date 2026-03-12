@@ -2464,7 +2464,9 @@ export type Database = {
       }
       subscription_plans: {
         Row: {
+          billing_model: string
           created_at: string
+          currency: string
           description: string | null
           enabled_modules: Json
           features: Json
@@ -2475,12 +2477,16 @@ export type Database = {
           name: string
           price_annual: number
           price_monthly: number
+          price_per_employee_annual: number
+          price_per_employee_monthly: number
           slug: string
           sort_order: number
           updated_at: string
         }
         Insert: {
+          billing_model?: string
           created_at?: string
+          currency?: string
           description?: string | null
           enabled_modules?: Json
           features?: Json
@@ -2491,12 +2497,16 @@ export type Database = {
           name: string
           price_annual?: number
           price_monthly?: number
+          price_per_employee_annual?: number
+          price_per_employee_monthly?: number
           slug: string
           sort_order?: number
           updated_at?: string
         }
         Update: {
+          billing_model?: string
           created_at?: string
+          currency?: string
           description?: string | null
           enabled_modules?: Json
           features?: Json
@@ -2507,6 +2517,8 @@ export type Database = {
           name?: string
           price_annual?: number
           price_monthly?: number
+          price_per_employee_annual?: number
+          price_per_employee_monthly?: number
           slug?: string
           sort_order?: number
           updated_at?: string
@@ -3200,6 +3212,8 @@ export type Database = {
           default_pay_model: string | null
           email: string | null
           enabled_modules: Json
+          founding_partner: boolean
+          founding_partner_expires_at: string | null
           id: string
           legal_name: string | null
           logo_url: string | null
@@ -3222,6 +3236,8 @@ export type Database = {
           default_pay_model?: string | null
           email?: string | null
           enabled_modules?: Json
+          founding_partner?: boolean
+          founding_partner_expires_at?: string | null
           id?: string
           legal_name?: string | null
           logo_url?: string | null
@@ -3244,6 +3260,8 @@ export type Database = {
           default_pay_model?: string | null
           email?: string | null
           enabled_modules?: Json
+          founding_partner?: boolean
+          founding_partner_expires_at?: string | null
           id?: string
           legal_name?: string | null
           logo_url?: string | null

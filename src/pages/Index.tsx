@@ -19,6 +19,7 @@ import { useAllEmployeeBranches, useTenantBranches, getBranchEmoji } from "@/hoo
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTenant } from "@/hooks/useTenant";
 import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
+import { BillingSummaryWidget } from "@/components/dashboard/BillingSummaryWidget";
 
 const Index = () => {
   const { tenantName } = useTenant();
@@ -223,9 +224,10 @@ const Index = () => {
           transition={{ duration: 0.35, delay: 0.15 }}
         >
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Operations</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <PayrollDeadlineWidget periods={periods} />
             <ExpiringDocumentsWidget />
+            <BillingSummaryWidget />
           </div>
         </motion.section>
 
