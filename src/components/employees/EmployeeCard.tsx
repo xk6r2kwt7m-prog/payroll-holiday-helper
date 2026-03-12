@@ -1,4 +1,4 @@
-import { Edit2, Trash2, Eye, Calendar, CreditCard, MoreHorizontal, MapPin } from "lucide-react";
+import { Edit2, Trash2, Eye, MoreHorizontal, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,25 +16,25 @@ import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
 import { SensitiveField } from "@/components/ui/sensitive-field";
 
-const statusStyles = {
+const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
   leaver: "bg-destructive/10 text-destructive border-destructive/20",
   starter: "bg-primary/10 text-primary border-primary/20",
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   active: "Active",
   leaver: "Leaver",
   starter: "Starter",
 };
 
-const departmentStyles = {
+const departmentStyles: Record<string, string> = {
   FOH: "bg-accent/10 text-accent",
   BOH: "bg-primary/10 text-primary",
   CPU: "bg-warning/10 text-warning",
 };
 
-const departmentEmoji = {
+const departmentEmoji: Record<string, string> = {
   FOH: "🍽️",
   BOH: "👨‍🍳",
   CPU: "🏭",
@@ -51,178 +51,149 @@ interface EmployeeCardProps {
 
 export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDelete, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
-  const hasStartDate = !!employee.start_date;
-  const hasBankDetails = !!(employee.bank_account_no && employee.sort_code);
 
   return (
     <div
       className={cn(
-        "group rounded-xl bg-card p-5 shadow-sm transition-all duration-200",
+        "group rounded-xl bg-card p-3.5 shadow-sm transition-all duration-200",
         "hover:shadow-md sm:hover:-translate-y-0.5 hover:border-primary/20 border border-border",
-        "animate-fade-in"
+        "animate-fade-in cursor-pointer"
       )}
-      style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
+      style={{ animationDelay: `${Math.min(index, 6) * 30}ms` }}
+      onClick={() => onViewDetails(employee)}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <Avatar className="h-12 w-12 ring-2 ring-background shadow-sm">
-          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-base">
+      {/* Row 1: Avatar + Name + Status + Menu */}
+      <div className="flex items-center gap-3">
+        <Avatar className="h-9 w-9 ring-1 ring-background shadow-sm shrink-0">
+          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-sm">
             {employee.forename[0]}{employee.surname[0]}
           </AvatarFallback>
         </Avatar>
-        
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className={cn("text-[11px] font-medium", statusStyles[employee.status])}>
-            {statusLabels[employee.status]}
-          </Badge>
-          
-          {isAdmin && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onViewDetails(employee)}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => onDelete(employee)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Employee
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
 
-      {/* Name & Department */}
-      <div className="space-y-1.5 mb-4">
-        <h3 className="font-bold text-foreground text-lg leading-tight truncate">
-          {employee.forename} {employee.surname}
-        </h3>
-        <div className="flex items-center gap-2">
-          <span className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-            departmentStyles[employee.department]
-          )}>
-            <span>{departmentEmoji[employee.department]}</span>
-            {employee.department}
-          </span>
-          {employee.employee_ref && (
-            <span className="text-xs text-muted-foreground font-mono">
-              #{employee.employee_ref}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-foreground text-sm leading-tight truncate">
+              {employee.forename} {employee.surname}
+            </h3>
+            {employee.employee_ref && (
+              <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                #{employee.employee_ref}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className={cn(
+              "inline-flex items-center gap-0.5 text-[11px] font-medium",
+              departmentStyles[employee.department]
+            )}>
+              {departmentEmoji[employee.department]} {employee.department}
             </span>
-          )}
+            {branches.length > 0 && (
+              <>
+                <span className="text-border">·</span>
+                <span className="text-[11px] text-muted-foreground flex items-center gap-0.5 truncate">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  {branches.find(b => b.is_primary)?.branch || branches[0]?.branch}
+                </span>
+              </>
+            )}
+          </div>
         </div>
+
+        <Badge variant="outline" className={cn("text-[10px] font-medium px-1.5 py-0 h-5 shrink-0", statusStyles[employee.status])}>
+          {statusLabels[employee.status]}
+        </Badge>
+
+        {isAdmin && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewDetails(employee); }}>
+                <Eye className="h-4 w-4 mr-2" /> View Details
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); onDelete(employee); }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
-      {/* Pay Info — Privacy shielded */}
+      {/* Row 2: Compact protected pay — only for authorized */}
       {canViewSensitive && (
-        <div className="grid grid-cols-2 gap-4 py-3 border-t border-border">
-          <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Hourly Rate</p>
+        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-border">
+          <div className="flex-1">
             <SensitiveField
               fieldKey={`card-${employee.id}-hourly_rate`}
-              value={<span className="text-sm font-bold text-foreground">{formatCurrency(Number(employee.hourly_rate))}</span>}
+              value={<span className="text-xs font-semibold text-foreground">{formatCurrency(Number(employee.hourly_rate))}/hr</span>}
               category="compensation"
               employeeId={employee.id}
+              mask="Rate •••"
               size="sm"
               inline
             />
           </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Service Charge</p>
+          <div className="flex-1">
             <SensitiveField
               fieldKey={`card-${employee.id}-service_charge`}
-              value={<span className="text-sm font-bold text-foreground">{formatCurrency(Number(employee.service_charge || 0))}</span>}
+              value={<span className="text-xs font-semibold text-foreground">SC {formatCurrency(Number(employee.service_charge || 0))}</span>}
               category="compensation"
               employeeId={employee.id}
+              mask="SC •••"
               size="sm"
               inline
             />
           </div>
+          {employee.ni_number && (
+            <SensitiveField
+              fieldKey={`card-${employee.id}-ni`}
+              value={<span className="font-mono text-[10px]">{employee.ni_number}</span>}
+              category="personal_id"
+              employeeId={employee.id}
+              mask="NI •••"
+              size="sm"
+              inline
+            />
+          )}
         </div>
       )}
 
-      {/* Branches */}
-      {branches.length > 0 && (
-        <div className="flex items-center gap-1.5 mt-3 flex-wrap">
-          <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-          {branches.map((b) => (
-            <span
-              key={b.id}
-              className={cn(
-                "text-xs px-1.5 py-0.5 rounded-md bg-muted",
-                b.is_primary && "bg-primary/10 text-primary font-medium"
-              )}
-              title={b.is_primary ? "Primary branch" : undefined}
-            >
-              {BRANCH_EMOJI[b.branch]} {b.branch}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Quick Info Icons */}
-      <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
-        {hasStartDate && (
-          <div className="flex items-center gap-1" title={`Started: ${new Date(employee.start_date!).toLocaleDateString()}`}>
-            <Calendar className="h-3.5 w-3.5" />
-            <span>{new Date(employee.start_date!).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })}</span>
-          </div>
-        )}
-        {canViewSensitive && hasBankDetails && (
-          <div className="flex items-center gap-1" title="Bank details on file">
-            <CreditCard className="h-3.5 w-3.5 text-success" />
-          </div>
-        )}
-        {canViewSensitive && employee.ni_number && (
-          <SensitiveField
-            fieldKey={`card-${employee.id}-ni`}
-            value={<span className="font-mono text-[10px]">{employee.ni_number}</span>}
-            category="personal_id"
-            employeeId={employee.id}
-            mask="NI •••••"
-            size="sm"
-            inline
-          />
-        )}
-      </div>
-
-      {/* Admin Actions */}
+      {/* Row 3: Admin quick actions */}
       {isAdmin && (
-        <div className="flex gap-2 mt-4 pt-3 border-t border-border">
+        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border">
           <EmployeeFormDialog
             employee={employee}
             trigger={
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex-1 text-xs"
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-xs h-8"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Edit2 className="h-3.5 w-3.5 mr-1.5" />
-                Edit
+                <Edit2 className="h-3 w-3 mr-1" /> Edit
               </Button>
             }
           />
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onViewDetails(employee)}
-            className="text-xs"
+            onClick={(e) => { e.stopPropagation(); onViewDetails(employee); }}
+            className="text-xs h-8 px-2.5"
           >
-            <Eye className="h-3.5 w-3.5" />
+            <Eye className="h-3 w-3" />
           </Button>
         </div>
       )}
