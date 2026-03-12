@@ -824,19 +824,27 @@ export type Database = {
         Row: {
           archived_at: string | null
           bank_account_no: string | null
+          contract_country: string | null
           created_at: string
           department: Database["public"]["Enums"]["department_type"]
           employee_ref: string | null
+          employing_entity: string | null
           end_date: string | null
           forename: string
+          holiday_entitlement_method: string | null
           hourly_rate: number
           id: string
           nationality: string | null
           ni_number: string | null
           notes: string | null
+          overtime_model: string | null
           passport_no: string | null
+          pay_amount: number | null
+          pay_type: string | null
+          public_holiday_calendar: string | null
           residence_permit: string | null
           service_charge: number | null
+          service_charge_eligible: boolean | null
           settlement_status: string | null
           sharing_code: string | null
           sort_code: string | null
@@ -846,23 +854,33 @@ export type Database = {
           tenant_id: string
           updated_at: string
           user_id: string | null
+          work_country: string | null
+          work_region: string | null
         }
         Insert: {
           archived_at?: string | null
           bank_account_no?: string | null
+          contract_country?: string | null
           created_at?: string
           department: Database["public"]["Enums"]["department_type"]
           employee_ref?: string | null
+          employing_entity?: string | null
           end_date?: string | null
           forename: string
+          holiday_entitlement_method?: string | null
           hourly_rate: number
           id?: string
           nationality?: string | null
           ni_number?: string | null
           notes?: string | null
+          overtime_model?: string | null
           passport_no?: string | null
+          pay_amount?: number | null
+          pay_type?: string | null
+          public_holiday_calendar?: string | null
           residence_permit?: string | null
           service_charge?: number | null
+          service_charge_eligible?: boolean | null
           settlement_status?: string | null
           sharing_code?: string | null
           sort_code?: string | null
@@ -872,23 +890,33 @@ export type Database = {
           tenant_id: string
           updated_at?: string
           user_id?: string | null
+          work_country?: string | null
+          work_region?: string | null
         }
         Update: {
           archived_at?: string | null
           bank_account_no?: string | null
+          contract_country?: string | null
           created_at?: string
           department?: Database["public"]["Enums"]["department_type"]
           employee_ref?: string | null
+          employing_entity?: string | null
           end_date?: string | null
           forename?: string
+          holiday_entitlement_method?: string | null
           hourly_rate?: number
           id?: string
           nationality?: string | null
           ni_number?: string | null
           notes?: string | null
+          overtime_model?: string | null
           passport_no?: string | null
+          pay_amount?: number | null
+          pay_type?: string | null
+          public_holiday_calendar?: string | null
           residence_permit?: string | null
           service_charge?: number | null
+          service_charge_eligible?: boolean | null
           settlement_status?: string | null
           sharing_code?: string | null
           sort_code?: string | null
@@ -898,6 +926,8 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           user_id?: string | null
+          work_country?: string | null
+          work_region?: string | null
         }
         Relationships: [
           {
@@ -3163,48 +3193,69 @@ export type Database = {
       tenants: {
         Row: {
           address: string | null
+          compliance_notes: string | null
           country: string
           created_at: string
+          currency: string | null
+          default_pay_model: string | null
           email: string | null
           enabled_modules: Json
           id: string
+          legal_name: string | null
           logo_url: string | null
           name: string
+          payroll_frequency: string | null
+          service_charge_enabled: boolean | null
           settings: Json
           slug: string
           status: Database["public"]["Enums"]["tenant_status"]
           timezone: string
           updated_at: string
+          work_countries: string[] | null
         }
         Insert: {
           address?: string | null
+          compliance_notes?: string | null
           country?: string
           created_at?: string
+          currency?: string | null
+          default_pay_model?: string | null
           email?: string | null
           enabled_modules?: Json
           id?: string
+          legal_name?: string | null
           logo_url?: string | null
           name: string
+          payroll_frequency?: string | null
+          service_charge_enabled?: boolean | null
           settings?: Json
           slug: string
           status?: Database["public"]["Enums"]["tenant_status"]
           timezone?: string
           updated_at?: string
+          work_countries?: string[] | null
         }
         Update: {
           address?: string | null
+          compliance_notes?: string | null
           country?: string
           created_at?: string
+          currency?: string | null
+          default_pay_model?: string | null
           email?: string | null
           enabled_modules?: Json
           id?: string
+          legal_name?: string | null
           logo_url?: string | null
           name?: string
+          payroll_frequency?: string | null
+          service_charge_enabled?: boolean | null
           settings?: Json
           slug?: string
           status?: Database["public"]["Enums"]["tenant_status"]
           timezone?: string
           updated_at?: string
+          work_countries?: string[] | null
         }
         Relationships: []
       }
