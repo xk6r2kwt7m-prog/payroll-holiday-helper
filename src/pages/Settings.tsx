@@ -14,6 +14,7 @@ import {
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
 import { RolePermissionConfig } from "@/components/settings/RolePermissionConfig";
+import { TenantConfigSection } from "@/components/settings/TenantConfigSection";
 import { HistoricalImport } from "@/components/settings/HistoricalImport";
 import { LeaveRulesSettings } from "@/components/settings/LeaveRulesSettings";
 import { DepartmentManagement } from "@/components/settings/DepartmentManagement";

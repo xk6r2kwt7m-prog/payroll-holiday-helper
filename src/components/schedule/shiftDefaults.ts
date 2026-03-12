@@ -1,4 +1,5 @@
 // Default operating hours and staffing minimums
+// NOTE: These are generic defaults. Tenant-specific values come from location_settings.
 
 export type DayOfWeek = "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
 
@@ -12,14 +13,12 @@ export interface StaffingMinimum {
   note?: string;
 }
 
-// FOH/BOH typical start time
+// Generic default start times
 export const DEFAULT_FOH_BOH_START = "11:30";
-
-// CPU typical hours
 export const DEFAULT_CPU_START = "09:30";
 export const DEFAULT_CPU_END = "19:00";
 
-// Closing times by day
+// Generic closing times by day (tenants can override via location_settings)
 export const CLOSING_TIMES: Record<DayOfWeek, string> = {
   Mon: "22:30",
   Tue: "22:30",
@@ -32,7 +31,7 @@ export const CLOSING_TIMES: Record<DayOfWeek, string> = {
 
 // Get default shift times for a department + day
 export function getDefaultTimes(
-  department: "FOH" | "BOH" | "CPU",
+  department: string,
   day: DayOfWeek
 ): { start: string; end: string } {
   if (department === "CPU") {
@@ -41,23 +40,16 @@ export function getDefaultTimes(
   return { start: DEFAULT_FOH_BOH_START, end: CLOSING_TIMES[day] };
 }
 
-// Minimum staffing per branch/department/day
+// Default minimum staffing — no longer hardcodes specific branch names.
+// Returns a safe generic default; tenants configure real minimums in location_settings.
 export function getMinimumStaff(
-  branch: string,
-  department: "FOH" | "BOH" | "CPU",
-  day: DayOfWeek
+  _branch: string,
+  department: string,
+  _day: DayOfWeek
 ): number {
   if (department === "BOH") return 2;
   if (department === "CPU") return 2;
-
-  // FOH
-  if (branch === "Brixton") {
-    // Brixton: 1 on Sun/Wed, 2 otherwise
-    if (day === "Sun" || day === "Wed") return 1;
-    return 2;
-  }
-
-  // Fitzrovia & Carnaby: always 2 FOH
+  // Generic FOH default
   return 2;
 }
 
