@@ -5,18 +5,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronLeft, ChevronRight, Check, X, MapPin, AlertTriangle, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X, MapPin, AlertTriangle, Clock, Eye, FileQuestion, Filter } from "lucide-react";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { useTimeEntries, useApproveTimeEntries, useRejectTimeEntry } from "@/hooks/useTimeEntries";
 import { useBranchLocations } from "@/hooks/useSchedule";
+import { useEvidenceFiles } from "@/hooks/useEvidence";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
+import { TimesheetReviewPanel, computeFlags } from "@/components/attendance/TimesheetReviewPanel";
+import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDialog";
 
 export default function Timesheets() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [reviewEntry, setReviewEntry] = useState<any>(null);
+  const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -28,6 +34,7 @@ export default function Timesheets() {
     selectedBranch !== "all" ? selectedBranch : undefined
   );
   const { data: branches } = useBranchLocations();
+  const { data: evidenceFiles = [] } = useEvidenceFiles({});
   const approveEntries = useApproveTimeEntries();
   const rejectEntry = useRejectTimeEntry();
 
@@ -35,6 +42,24 @@ export default function Timesheets() {
     () => entries?.filter((e: any) => e.status === "pending").length || 0,
     [entries]
   );
+
+  const flaggedEntries = useMemo(() => {
+    if (!entries) return [];
+    return entries.filter((e: any) => computeFlags(e).length > 0);
+  }, [entries]);
+
+  const displayEntries = useMemo(() => {
+    if (!entries) return [];
+    if (showFlaggedOnly) return flaggedEntries;
+    return entries;
+  }, [entries, showFlaggedOnly, flaggedEntries]);
+
+  const cleanPendingIds = useMemo(() => {
+    if (!entries) return [];
+    return entries
+      .filter((e: any) => e.status === "pending" && computeFlags(e).length === 0)
+      .map((e: any) => e.id);
+  }, [entries]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -45,6 +70,10 @@ export default function Timesheets() {
   const selectAllPending = () => {
     const pendingIds = entries?.filter((e: any) => e.status === "pending").map((e: any) => e.id) || [];
     setSelectedIds(pendingIds);
+  };
+
+  const selectCleanPending = () => {
+    setSelectedIds(cleanPendingIds);
   };
 
   const handleBulkApprove = async () => {
@@ -82,6 +111,7 @@ export default function Timesheets() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <h1 className="text-2xl font-bold text-foreground">Timesheets</h1>
           <div className="flex items-center gap-2 flex-wrap">
+            <EvidenceRequestDialog />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[130px]">
                 <SelectValue />
@@ -108,6 +138,9 @@ export default function Timesheets() {
           </div>
         </div>
 
+        {/* Dashboard Stats */}
+        <AttendanceDashboard entries={entries || []} evidenceFiles={evidenceFiles} />
+
         {/* Date Navigation */}
         <div className="flex items-center justify-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => setCurrentDate((d) => addDays(d, -7))}>
@@ -127,105 +160,154 @@ export default function Timesheets() {
         {/* Entries list */}
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base">
-                {entries?.length || 0} Entries
+                {displayEntries.length} Entries
                 {pendingCount > 0 && (
                   <Badge variant="outline" className="ml-2 bg-warning/10 text-warning border-warning/30">
                     {pendingCount} pending
                   </Badge>
                 )}
+                {flaggedEntries.length > 0 && (
+                  <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30">
+                    {flaggedEntries.length} flagged
+                  </Badge>
+                )}
               </CardTitle>
-              {pendingCount > 0 && (
-                <Button variant="outline" size="sm" onClick={selectAllPending}>
-                  Select All Pending
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={showFlaggedOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowFlaggedOnly(!showFlaggedOnly)}
+                >
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {showFlaggedOnly ? "Show All" : "Flagged Only"}
                 </Button>
-              )}
+                {cleanPendingIds.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={selectCleanPending}>
+                    <Check className="h-3 w-3 mr-1" />
+                    Select Clean ({cleanPendingIds.length})
+                  </Button>
+                )}
+                {pendingCount > 0 && (
+                  <Button variant="outline" size="sm" onClick={selectAllPending}>
+                    Select All Pending
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
             {isLoading ? (
               <p className="text-muted-foreground text-sm py-8 text-center">Loading...</p>
-            ) : entries?.length === 0 ? (
+            ) : displayEntries.length === 0 ? (
               <p className="text-muted-foreground text-sm py-8 text-center">No timesheet entries found</p>
             ) : (
-              entries?.map((entry: any) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card"
-                >
-                  {entry.status === "pending" && (
-                    <Checkbox
-                      checked={selectedIds.includes(entry.id)}
-                      onCheckedChange={() => toggleSelect(entry.id)}
-                    />
-                  )}
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary flex-shrink-0">
-                    {entry.employees?.forename?.[0] || "?"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {entry.employees?.forename} {entry.employees?.surname}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3 inline mr-1" />
-                      {entry.clock_in_time ? format(new Date(entry.clock_in_time), "HH:mm") : "–"}
-                      {" – "}
-                      {entry.clock_out_time ? format(new Date(entry.clock_out_time), "HH:mm") : "on shift"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {entry.department} · {entry.branch}
-                      {entry.scheduled_start && (
-                        <span className="text-primary ml-1">
-                          ({entry.scheduled_start?.slice(0, 5)} - {entry.scheduled_end?.slice(0, 5)})
-                        </span>
-                      )}
-                    </p>
-                    {entry.manager_override && (
-                      <p className="text-xs text-warning flex items-center gap-1 mt-0.5">
-                        <AlertTriangle className="h-3 w-3" /> Manager override
-                      </p>
+              displayEntries.map((entry: any) => {
+                const flags = computeFlags(entry);
+                const hasFlags = flags.length > 0;
+                return (
+                  <div
+                    key={entry.id}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-lg border bg-card cursor-pointer hover:bg-muted/30 transition-colors",
+                      hasFlags ? "border-warning/30" : "border-border"
                     )}
-                    {(!entry.clock_in_within_geofence || !entry.clock_out_within_geofence) && entry.status !== "clocked_in" && (
-                      <p className="text-xs text-destructive flex items-center gap-1 mt-0.5">
-                        <MapPin className="h-3 w-3" /> Outside geofence
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge variant="outline" className={cn("text-xs", statusColor(entry.status))}>
-                      {entry.status === "clocked_in" ? "On Shift" : entry.status}
-                    </Badge>
-                    {entry.total_hours && (
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {entry.total_hours}h
-                      </span>
-                    )}
+                    onClick={() => setReviewEntry(entry)}
+                  >
                     {entry.status === "pending" && (
-                      <div className="flex gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-success hover:text-success"
-                          onClick={() => {
-                            approveEntries.mutateAsync([entry.id]).then(() => toast.success("Approved"));
-                          }}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => handleReject(entry.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Checkbox
+                        checked={selectedIds.includes(entry.id)}
+                        onCheckedChange={() => toggleSelect(entry.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     )}
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary flex-shrink-0">
+                      {entry.employees?.forename?.[0] || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">
+                        {entry.employees?.forename} {entry.employees?.surname}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        {entry.clock_in_time ? format(new Date(entry.clock_in_time), "HH:mm") : "–"}
+                        {" – "}
+                        {entry.clock_out_time ? format(new Date(entry.clock_out_time), "HH:mm") : "on shift"}
+                        {entry.total_hours && <span className="ml-1 font-medium">({entry.total_hours}h)</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {entry.department} · {entry.branch}
+                        {entry.scheduled_start && (
+                          <span className="text-primary ml-1">
+                            ({entry.scheduled_start?.slice(0, 5)} - {entry.scheduled_end?.slice(0, 5)})
+                          </span>
+                        )}
+                      </p>
+                      {/* Inline flags */}
+                      {hasFlags && (
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          {flags.slice(0, 2).map((f, i) => (
+                            <Badge key={i} variant="outline" className={cn(
+                              "text-[10px] px-1.5 py-0",
+                              f.severity === "error" ? "text-destructive border-destructive/30 bg-destructive/5" : "text-warning border-warning/30 bg-warning/5"
+                            )}>
+                              {f.label.length > 25 ? f.label.slice(0, 25) + "…" : f.label}
+                            </Badge>
+                          ))}
+                          {flags.length > 2 && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                              +{flags.length - 2} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant="outline" className={cn("text-xs", statusColor(entry.status))}>
+                        {entry.status === "clocked_in" ? "On Shift" : entry.status}
+                      </Badge>
+                      {entry.status === "pending" && (
+                        <div className="flex gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-success hover:text-success"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              approveEntries.mutateAsync([entry.id]).then(() => toast.success("Approved"));
+                            }}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReject(entry.id);
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReviewEntry(entry);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -243,6 +325,14 @@ export default function Timesheets() {
             </Button>
           </div>
         )}
+
+        {/* Review Panel */}
+        <TimesheetReviewPanel
+          entry={reviewEntry}
+          open={!!reviewEntry}
+          onClose={() => setReviewEntry(null)}
+          branchLocations={branches}
+        />
       </div>
     </AppLayout>
   );

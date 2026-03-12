@@ -853,6 +853,168 @@ export type Database = {
           },
         ]
       }
+      evidence_files: {
+        Row: {
+          created_at: string
+          employee_id: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          mime_type: string | null
+          notes: string | null
+          original_filename: string
+          related_date: string | null
+          request_id: string | null
+          review_notes: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          tenant_id: string
+          uploaded_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          original_filename: string
+          related_date?: string | null
+          request_id?: string | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          tenant_id: string
+          uploaded_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          original_filename?: string
+          related_date?: string | null
+          request_id?: string | null
+          review_notes?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          tenant_id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_files_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_files_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_files_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evidence_requests: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_date: string | null
+          employee_id: string
+          id: string
+          related_absence_id: string | null
+          related_date: string | null
+          related_time_entry_id: string | null
+          request_type: string
+          requested_by: string | null
+          status: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          employee_id: string
+          id?: string
+          related_absence_id?: string | null
+          related_date?: string | null
+          related_time_entry_id?: string | null
+          request_type?: string
+          requested_by?: string | null
+          status?: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          employee_id?: string
+          id?: string
+          related_absence_id?: string | null
+          related_date?: string | null
+          related_time_entry_id?: string | null
+          request_type?: string
+          requested_by?: string | null
+          status?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_requests_related_absence_id_fkey"
+            columns: ["related_absence_id"]
+            isOneToOne: false
+            referencedRelation: "absence_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_requests_related_time_entry_id_fkey"
+            columns: ["related_time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holiday_adjustments: {
         Row: {
           adjusted_by: string | null
@@ -2990,6 +3152,51 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timesheet_review_actions: {
+        Row: {
+          action_by: string | null
+          action_type: string
+          created_at: string
+          id: string
+          notes: string | null
+          tenant_id: string
+          time_entry_id: string
+        }
+        Insert: {
+          action_by?: string | null
+          action_type: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          tenant_id: string
+          time_entry_id: string
+        }
+        Update: {
+          action_by?: string | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          tenant_id?: string
+          time_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_review_actions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_review_actions_time_entry_id_fkey"
+            columns: ["time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
             referencedColumns: ["id"]
           },
         ]
