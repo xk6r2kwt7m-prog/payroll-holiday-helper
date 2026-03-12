@@ -681,9 +681,9 @@ const Holidays = () => {
             icon={<Clock className="h-5 w-5" />}
           />
           <StatCard
-            title="Remaining Balance"
+            title={t("holidays.total_balance")}
             value={formatHours(totals.balance)}
-            subtitle="Accrued minus taken"
+            subtitle={t("holidays.accrued") + " − " + t("holidays.taken")}
             icon={<Scale className="h-5 w-5" />}
             variant={totals.balance >= 0 ? "primary" : "accent"}
           />
