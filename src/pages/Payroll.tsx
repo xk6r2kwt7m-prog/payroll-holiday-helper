@@ -445,21 +445,27 @@ const Payroll = () => {
 
         {/* Rate Discrepancy Warning */}
         {rateDiscrepancies.length > 0 && (
-          <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
-            <div className="flex items-start gap-2.5 mb-2">
-              <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">Rate Change</Badge>
-              <p className="font-medium text-card-foreground text-xs sm:text-sm">
-                {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s" : ""} with rate differences
-              </p>
+          <SensitiveSection
+            sectionKey="payroll-rate-discrepancies"
+            category="compensation"
+            title="Rate Discrepancies"
+          >
+            <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
+              <div className="flex items-start gap-2.5 mb-2">
+                <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">Rate Change</Badge>
+                <p className="font-medium text-card-foreground text-xs sm:text-sm">
+                  {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s" : ""} with rate differences
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {rateDiscrepancies.slice(0, 5).map((e: any) => (
+                  <Badge key={e.id} variant="outline" className="text-[10px] sm:text-xs">
+                    {e.employees?.forename}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
+                  </Badge>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {rateDiscrepancies.slice(0, 5).map((e: any) => (
-                <Badge key={e.id} variant="outline" className="text-[10px] sm:text-xs">
-                  {e.employees?.forename}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          </SensitiveSection>
         )}
 
         {/* Loading State */}
