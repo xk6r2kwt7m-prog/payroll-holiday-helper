@@ -675,7 +675,7 @@ const Holidays = () => {
             variant="accent"
           />
           <StatCard
-            title="Hours Taken"
+            title={t("holidays.total_taken")}
             value={formatHours(totals.taken)}
             subtitle={`${overdrawnCount} overdrawn`}
             icon={<Clock className="h-5 w-5" />}
