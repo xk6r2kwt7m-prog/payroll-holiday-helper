@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2 } from "lucide-react";
+import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2, Shield } from "lucide-react";
+import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -354,33 +355,39 @@ const Payroll = () => {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
-          <StatCard
-            title="Total Payroll"
-            value={formatCurrency(totalPay)}
-            subtitle={`${entries.length} employees`}
-            icon={<DollarSign className="h-5 w-5" />}
-            variant="primary"
-          />
-          <StatCard
-            title="Total Hours"
-            value={formatHours(totalHours)}
-            subtitle="Timesheet hours"
-            icon={<Clock className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Avg. Rate"
-            value={formatCurrency(avgRate)}
-            icon={<DollarSign className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Bonuses"
-            value={formatCurrency(totalBonuses)}
-            subtitle="Perf + Special"
-            icon={<DollarSign className="h-5 w-5" />}
-            variant="success"
-          />
-        </div>
+        <SensitiveSection
+          sectionKey="payroll-stats-overview"
+          category="payroll_summary"
+          title="Payroll Summary"
+        >
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
+            <StatCard
+              title="Total Payroll"
+              value={formatCurrency(totalPay)}
+              subtitle={`${entries.length} employees`}
+              icon={<DollarSign className="h-5 w-5" />}
+              variant="primary"
+            />
+            <StatCard
+              title="Total Hours"
+              value={formatHours(totalHours)}
+              subtitle="Timesheet hours"
+              icon={<Clock className="h-5 w-5" />}
+            />
+            <StatCard
+              title="Avg. Rate"
+              value={formatCurrency(avgRate)}
+              icon={<DollarSign className="h-5 w-5" />}
+            />
+            <StatCard
+              title="Bonuses"
+              value={formatCurrency(totalBonuses)}
+              subtitle="Perf + Special"
+              icon={<DollarSign className="h-5 w-5" />}
+              variant="success"
+            />
+          </div>
+        </SensitiveSection>
 
         {/* Payroll Reminders */}
         {selectedPeriod && (
@@ -438,21 +445,27 @@ const Payroll = () => {
 
         {/* Rate Discrepancy Warning */}
         {rateDiscrepancies.length > 0 && (
-          <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
-            <div className="flex items-start gap-2.5 mb-2">
-              <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">Rate Change</Badge>
-              <p className="font-medium text-card-foreground text-xs sm:text-sm">
-                {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s" : ""} with rate differences
-              </p>
+          <SensitiveSection
+            sectionKey="payroll-rate-discrepancies"
+            category="compensation"
+            title="Rate Discrepancies"
+          >
+            <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
+              <div className="flex items-start gap-2.5 mb-2">
+                <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">Rate Change</Badge>
+                <p className="font-medium text-card-foreground text-xs sm:text-sm">
+                  {rateDiscrepancies.length} employee{rateDiscrepancies.length > 1 ? "s" : ""} with rate differences
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {rateDiscrepancies.slice(0, 5).map((e: any) => (
+                  <Badge key={e.id} variant="outline" className="text-[10px] sm:text-xs">
+                    {e.employees?.forename}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
+                  </Badge>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {rateDiscrepancies.slice(0, 5).map((e: any) => (
-                <Badge key={e.id} variant="outline" className="text-[10px] sm:text-xs">
-                  {e.employees?.forename}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          </SensitiveSection>
         )}
 
         {/* Loading State */}

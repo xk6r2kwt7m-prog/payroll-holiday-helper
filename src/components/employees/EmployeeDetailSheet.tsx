@@ -1,9 +1,8 @@
-import { X, User, Building, CreditCard, FileText, Calendar, Phone, Globe, Edit2, FolderOpen, StickyNote } from "lucide-react";
+import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { EmployeeNotesSection } from "./EmployeeNotesSection";
@@ -11,6 +10,7 @@ import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateRefe
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
+import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 
 const statusStyles = {
   active: "bg-success/10 text-success border-success/20",
@@ -46,6 +46,35 @@ function InfoRow({ label, value, icon: Icon, mono }: {
       <div className="flex-1 min-w-0">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className={cn("text-sm text-card-foreground", mono && "font-mono")}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function SensitiveInfoRow({ label, value, fieldKey, category, employeeId, icon: Icon, mono }: { 
+  label: string; 
+  value?: string | null; 
+  fieldKey: string;
+  category: "compensation" | "personal_id" | "private_hr" | "payroll_summary";
+  employeeId: string;
+  icon?: typeof User;
+  mono?: boolean;
+}) {
+  if (!value) return null;
+  
+  return (
+    <div className="flex items-start gap-3 py-2">
+      {Icon && <Icon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <SensitiveField
+          fieldKey={fieldKey}
+          value={<span className={cn("text-sm text-card-foreground", mono && "font-mono")}>{value}</span>}
+          category={category}
+          employeeId={employeeId}
+          size="sm"
+          inline
+        />
       </div>
     </div>
   );
@@ -116,24 +145,31 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             </div>
           </div>
 
-          {/* Quick stats — sensitive ones only for admin */}
+          {/* Quick stats — compensation masked */}
           {canViewSensitive ? (
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
-                <p className="text-lg font-bold text-primary">{formatCurrency(Number(employee.hourly_rate))}</p>
-                <p className="text-xs text-muted-foreground">Hourly Rate</p>
+            <SensitiveSection
+              sectionKey={`detail-${employee.id}-pay-stats`}
+              category="compensation"
+              employeeId={employee.id}
+              title="Compensation Overview"
+            >
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
+                  <p className="text-lg font-bold text-primary">{formatCurrency(Number(employee.hourly_rate))}</p>
+                  <p className="text-xs text-muted-foreground">Hourly Rate</p>
+                </div>
+                <div className="rounded-lg bg-accent/5 border border-accent/20 p-3 text-center">
+                  <p className="text-lg font-bold text-accent">{formatCurrency(Number(employee.service_charge || 0))}</p>
+                  <p className="text-xs text-muted-foreground">Service Charge</p>
+                </div>
+                <div className="rounded-lg bg-muted p-3 text-center">
+                  <p className="text-lg font-bold text-card-foreground">
+                    {tenure !== null ? (tenure < 1 ? '<1' : tenure) : '—'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Months</p>
+                </div>
               </div>
-              <div className="rounded-lg bg-accent/5 border border-accent/20 p-3 text-center">
-                <p className="text-lg font-bold text-accent">{formatCurrency(Number(employee.service_charge || 0))}</p>
-                <p className="text-xs text-muted-foreground">Service Charge</p>
-              </div>
-              <div className="rounded-lg bg-muted p-3 text-center">
-                <p className="text-lg font-bold text-card-foreground">
-                  {tenure !== null ? (tenure < 1 ? '<1' : tenure) : '—'}
-                </p>
-                <p className="text-xs text-muted-foreground">Months</p>
-              </div>
-            </div>
+            </SensitiveSection>
           ) : (
             <div className="grid grid-cols-1 gap-3">
               <div className="rounded-lg bg-muted p-3 text-center">
@@ -152,8 +188,26 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             <div className="space-y-1">
               <InfoRow label="Full Name" value={`${employee.forename} ${employee.surname}`} />
               <InfoRow label="Nationality" value={employee.nationality} icon={Globe} />
-              {canViewSensitive && <InfoRow label="Passport Number" value={employee.passport_no} mono />}
-              {canViewSensitive && <InfoRow label="National Insurance" value={employee.ni_number} mono />}
+              {canViewSensitive && (
+                <SensitiveInfoRow
+                  label="Passport Number"
+                  value={employee.passport_no}
+                  fieldKey={`detail-${employee.id}-passport`}
+                  category="personal_id"
+                  employeeId={employee.id}
+                  mono
+                />
+              )}
+              {canViewSensitive && (
+                <SensitiveInfoRow
+                  label="National Insurance"
+                  value={employee.ni_number}
+                  fieldKey={`detail-${employee.id}-ni`}
+                  category="personal_id"
+                  employeeId={employee.id}
+                  mono
+                />
+              )}
             </div>
           </Section>
 
@@ -177,14 +231,21 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             </div>
           </Section>
 
-          {/* Banking Details — Admin only */}
+          {/* Banking Details — Admin only, privacy shielded */}
           {canViewSensitive && (employee.sort_code || employee.bank_account_no) && (
-            <Section title="Banking Details" icon={CreditCard}>
-              <div className="space-y-1">
-                <InfoRow label="Sort Code" value={employee.sort_code} mono />
-                <InfoRow label="Account Number" value={employee.bank_account_no} mono />
-              </div>
-            </Section>
+            <SensitiveSection
+              sectionKey={`detail-${employee.id}-bank`}
+              category="personal_id"
+              employeeId={employee.id}
+              title="Banking Details"
+            >
+              <Section title="Banking Details" icon={CreditCard}>
+                <div className="space-y-1">
+                  <InfoRow label="Sort Code" value={employee.sort_code} mono />
+                  <InfoRow label="Account Number" value={employee.bank_account_no} mono />
+                </div>
+              </Section>
+            </SensitiveSection>
           )}
 
           {/* Notes */}
@@ -196,14 +257,21 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             </Section>
           )}
 
-          {/* Admin Notes */}
+          {/* Admin Notes — privacy shielded */}
           {isAdmin && (
-            <Section title="Notes & Reminders" icon={StickyNote}>
-              <EmployeeNotesSection
-                employeeId={employee.id}
-                isAdmin={isAdmin}
-              />
-            </Section>
+            <SensitiveSection
+              sectionKey={`detail-${employee.id}-hr-notes`}
+              category="private_hr"
+              employeeId={employee.id}
+              title="Notes & Reminders"
+            >
+              <Section title="Notes & Reminders" icon={StickyNote}>
+                <EmployeeNotesSection
+                  employeeId={employee.id}
+                  isAdmin={isAdmin}
+                />
+              </Section>
+            </SensitiveSection>
           )}
 
           {/* Documents */}

@@ -14,6 +14,7 @@ import { formatCurrency } from "@/hooks/useHolidays";
 import { useEmployeeBranches, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
+import { SensitiveField } from "@/components/ui/sensitive-field";
 
 const statusStyles = {
   active: "bg-success/10 text-success border-success/20",
@@ -51,7 +52,6 @@ interface EmployeeCardProps {
 export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDelete, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const hasStartDate = !!employee.start_date;
-  const hasEndDate = !!employee.end_date;
   const hasBankDetails = !!(employee.bank_account_no && employee.sort_code);
 
   return (
@@ -127,20 +127,30 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
         </div>
       </div>
 
-      {/* Pay Info — Admin only */}
+      {/* Pay Info — Privacy shielded */}
       {canViewSensitive && (
         <div className="grid grid-cols-2 gap-4 py-3 border-t border-border">
           <div>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Hourly Rate</p>
-            <p className="text-sm font-bold text-foreground">
-              {formatCurrency(Number(employee.hourly_rate))}
-            </p>
+            <SensitiveField
+              fieldKey={`card-${employee.id}-hourly_rate`}
+              value={<span className="text-sm font-bold text-foreground">{formatCurrency(Number(employee.hourly_rate))}</span>}
+              category="compensation"
+              employeeId={employee.id}
+              size="sm"
+              inline
+            />
           </div>
           <div>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-0.5">Service Charge</p>
-            <p className="text-sm font-bold text-foreground">
-              {formatCurrency(Number(employee.service_charge || 0))}
-            </p>
+            <SensitiveField
+              fieldKey={`card-${employee.id}-service_charge`}
+              value={<span className="text-sm font-bold text-foreground">{formatCurrency(Number(employee.service_charge || 0))}</span>}
+              category="compensation"
+              employeeId={employee.id}
+              size="sm"
+              inline
+            />
           </div>
         </div>
       )}
@@ -178,9 +188,15 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
           </div>
         )}
         {canViewSensitive && employee.ni_number && (
-          <div className="flex items-center gap-1 font-mono text-[10px]" title="NI Number">
-            {employee.ni_number}
-          </div>
+          <SensitiveField
+            fieldKey={`card-${employee.id}-ni`}
+            value={<span className="font-mono text-[10px]">{employee.ni_number}</span>}
+            category="personal_id"
+            employeeId={employee.id}
+            mask="NI •••••"
+            size="sm"
+            inline
+          />
         )}
       </div>
 
