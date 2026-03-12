@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MobileBottomNav } from "./MobileBottomNav";
@@ -6,6 +6,7 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useI18n } from "@/hooks/useI18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { cn } from "@/lib/utils";
@@ -57,31 +58,6 @@ interface NavItem {
   children?: NavItem[];
 }
 
-// Nav items use i18n keys, resolved at render time
-const NAV_KEYS = {
-  dashboard: "nav.dashboard",
-  employees: "nav.employees",
-  schedule: "nav.schedule",
-  rota: "nav.rota",
-  report: "nav.report",
-  analytics: "nav.analytics",
-  timesheets: "nav.timesheets",
-  payroll: "nav.payroll",
-  calendar: "nav.calendar",
-  overpayments: "nav.overpayments",
-  holidays: "nav.holidays",
-  holiday_management: "nav.holiday_management",
-  holiday_audit: "nav.holiday_audit",
-  absences: "nav.absences",
-  onboarding: "nav.onboarding",
-  training: "nav.training",
-  disciplinary: "nav.disciplinary",
-  announcements: "nav.announcements",
-  contracts: "nav.contracts",
-  locations: "nav.locations",
-  settings: "nav.admin_centre",
-} as const;
-
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0 },
@@ -93,11 +69,53 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { user, isAdmin, isManagerOrAbove, isSupervisorOrAbove, role, signOut } = useAuth();
   const isMobile = useIsMobile();
   const { data: settings } = useCompanySettings();
+  const { t } = useI18n();
   const companyName = settings?.company_name || "UGLŌ";
 
   const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
   const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
   const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+
+  const primaryNavItems: NavItem[] = useMemo(() => [
+    { label: t("nav.dashboard"), path: "/", minRole: "viewer", icon: LayoutDashboard },
+    { label: t("nav.employees"), path: "/employees", minRole: "manager", icon: Users },
+    {
+      label: t("nav.schedule"), path: "/schedule", minRole: "supervisor", icon: CalendarClock,
+      children: [
+        { label: t("nav.rota"), path: "/schedule", minRole: "supervisor", icon: CalendarClock },
+        { label: t("nav.report"), path: "/schedule/report", minRole: "manager", icon: ClipboardList },
+        { label: t("nav.analytics"), path: "/schedule/analytics", minRole: "manager", icon: BarChart3 },
+      ],
+    },
+    { label: t("nav.timesheets"), path: "/timesheets", minRole: "manager", icon: ClipboardCheck },
+    {
+      label: t("nav.payroll"), path: "/payroll", minRole: "admin", icon: DollarSign,
+      children: [
+        { label: t("nav.payroll"), path: "/payroll", minRole: "admin", icon: DollarSign },
+        { label: t("nav.calendar"), path: "/payroll/calendar", minRole: "admin", icon: CalendarDays },
+        { label: t("nav.analytics"), path: "/payroll/analytics", minRole: "admin", icon: PieChart },
+        { label: t("nav.overpayments"), path: "/payroll/overpayments", minRole: "admin", icon: AlertTriangle },
+      ],
+    },
+    {
+      label: t("nav.holidays"), path: "/holidays", minRole: "manager", icon: Calendar,
+      children: [
+        { label: t("nav.holiday_management"), path: "/holidays", minRole: "manager", icon: Calendar },
+        { label: t("nav.holiday_audit"), path: "/holidays/audit", minRole: "admin", icon: Scale },
+      ],
+    },
+  ], [t]);
+
+  const moreNavItems: NavItem[] = useMemo(() => [
+    { label: t("nav.absences"), path: "/absences", minRole: "manager", icon: UserX },
+    { label: t("nav.onboarding"), path: "/onboarding", minRole: "manager", icon: UserPlus },
+    { label: t("nav.training"), path: "/training", minRole: "manager", icon: GraduationCap },
+    { label: t("nav.disciplinary"), path: "/disciplinary", minRole: "admin", icon: ShieldAlert },
+    { label: t("nav.announcements"), path: "/announcements", minRole: "manager", icon: Megaphone },
+    { label: t("nav.contracts"), path: "/contracts", minRole: "admin", icon: FileText },
+    { label: t("nav.locations"), path: "/locations", minRole: "admin", icon: MapPin },
+    { label: t("nav.admin_centre"), path: "/settings", minRole: "admin", icon: Settings },
+  ], [t]);
 
   const visibleMore = moreNavItems.filter(item => canAccess(item.minRole));
   const isMoreActive = visibleMore.some((item) => location.pathname === item.path);
