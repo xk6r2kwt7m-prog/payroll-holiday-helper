@@ -96,6 +96,9 @@ const Index = () => {
           </Button>
         </div>
 
+        {/* ─── SETUP HEALTH (only for incomplete setup) ─── */}
+        <SetupHealthWidget />
+
         {/* ─── MOBILE: KPI STRIP ─── */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
