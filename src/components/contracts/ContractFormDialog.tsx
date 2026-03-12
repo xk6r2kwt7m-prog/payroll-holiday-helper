@@ -61,8 +61,12 @@ type Step = "fill" | "confirm" | "sign";
 export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogProps) {
   const { toast } = useToast();
   const { data: employees } = useEmployees();
+  const { data: companySettings } = useCompanySettings();
+  const { tenantName } = useTenant();
   const uploadDocument = useUploadDocument();
   const generateSigningLink = useGenerateSigningLink();
+  const companyLegalName = companySettings?.company_name || tenantName || "Your Company";
+  const companyAddress = companySettings?.address || "";
 
   const [step, setStep] = useState<Step>("fill");
   const [generating, setGenerating] = useState(false);
