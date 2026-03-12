@@ -164,10 +164,13 @@ const styles = StyleSheet.create({
 
 interface ContractPDFProps {
   variables: ContractVariables;
-  contractType?: string; // kept for backward compat (unused in new template)
+  contractType?: string;
+  companyLegalName?: string;
+  companyTradingName?: string;
+  companyAddress?: string;
 }
 
-export function ContractPDF({ variables }: ContractPDFProps) {
+export function ContractPDF({ variables, companyLegalName = "Your Company", companyTradingName, companyAddress }: ContractPDFProps) {
   const formattedDate = new Date(variables.effectiveDate).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
