@@ -688,9 +688,9 @@ const Holidays = () => {
             variant={totals.balance >= 0 ? "primary" : "accent"}
           />
           <StatCard
-            title="Total Paid"
+            title={t("holidays.total_cost")}
             value={formatCurrency(totals.paid)}
-            subtitle={`${selectedYear} leave year`}
+            subtitle={`${selectedYear} ${t("holidays.leave_year")}`}
             icon={<DollarSign className="h-5 w-5" />}
             variant="primary"
           />
