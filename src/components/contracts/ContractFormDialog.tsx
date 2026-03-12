@@ -485,7 +485,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                   className="flex-1"
                   onClick={async () => {
                     const blob = await pdf(
-                      <ContractPDF variables={variables} contractType={contractType} />
+                      <ContractPDF variables={variables} contractType={contractType} companyLegalName={companyLegalName} companyAddress={companyAddress} />
                     ).toBlob();
                     const url = URL.createObjectURL(blob);
                     window.open(url, "_blank");
