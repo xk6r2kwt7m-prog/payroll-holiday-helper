@@ -155,6 +155,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const updateEmployee = useUpdateEmployee();
   const setEmployeeBranches = useSetEmployeeBranches();
   const { tenantId } = useTenant();
+  const { data: allEmployees = [] } = useEmployees();
+  const planLimits = usePlanLimits();
+
+  const activeEmployeeCount = allEmployees.filter(e => e.status === "active").length;
 
   const isNewEmployee = !employee;
 
