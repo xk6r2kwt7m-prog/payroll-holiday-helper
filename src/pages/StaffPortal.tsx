@@ -8,7 +8,9 @@ import { useActiveClockIn, useClockInOut, useMyTimeEntries } from "@/hooks/useTi
 import { useShifts, useBranchLocations } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { Clock, MapPin, LogOut, Calendar, CheckCircle2, AlertCircle, Megaphone, FileText, Upload } from "lucide-react";
+import { Clock, MapPin, LogOut, Calendar, CheckCircle2, AlertCircle, Megaphone, FileText, Upload, Sun } from "lucide-react";
+import { useI18n } from "@/hooks/useI18n";
+import { HolidayRequestForm } from "@/components/holidays/HolidayRequestForm";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
