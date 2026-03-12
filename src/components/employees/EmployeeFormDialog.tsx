@@ -95,6 +95,13 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         residence_permit: employee.residence_permit || "",
         rtw_confirmed: !!(employee.settlement_status || employee.sharing_code),
         rtw_checked_date: "",
+        contract_country: (employee as any).contract_country || "GB",
+        work_country: (employee as any).work_country || "",
+        employing_entity: (employee as any).employing_entity || "",
+        pay_type: (employee as any).pay_type || "hourly",
+        overtime_model: (employee as any).overtime_model || "none",
+        holiday_entitlement_method: (employee as any).holiday_entitlement_method || "accrual",
+        service_charge_eligible: (employee as any).service_charge_eligible !== false,
       });
     } else {
       setFormData({
