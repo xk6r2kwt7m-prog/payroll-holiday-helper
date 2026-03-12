@@ -323,7 +323,7 @@ export default function Timesheets() {
               className="shadow-elevated px-6"
             >
               <Check className="h-4 w-4 mr-2" />
-              Approve {selectedIds.length} Timesheet{selectedIds.length > 1 ? "s" : ""}
+              {t("timesheets.approve_count", { count: String(selectedIds.length) })}
             </Button>
           </div>
         )}
