@@ -267,7 +267,7 @@ export default function Timesheets() {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <Badge variant="outline" className={cn("text-xs", statusColor(entry.status))}>
-                        {entry.status === "clocked_in" ? "On Shift" : entry.status}
+                        {entry.status === "clocked_in" ? t("timesheets.on_shift") : entry.status}
                       </Badge>
                       {entry.status === "pending" && (
                         <div className="flex gap-1">
