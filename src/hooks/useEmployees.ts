@@ -8,14 +8,19 @@ export type EmployeeInsert = TablesInsert<"employees">;
 export type EmployeeUpdate = TablesUpdate<"employees">;
 
 export function useEmployees(includeArchived = false) {
+  const { tenantId } = useTenant();
+  
   return useQuery({
-    queryKey: ["employees", { includeArchived }],
+    queryKey: ["employees", tenantId, { includeArchived }],
     queryFn: async () => {
+      if (!tenantId) return [] as Employee[];
+      
       // Auto-archive leavers older than 7 days
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       await supabase
         .from("employees")
         .update({ archived_at: new Date().toISOString() })
+        .eq("tenant_id", tenantId)
         .eq("status", "leaver")
         .is("archived_at", null)
         .lte("updated_at", sevenDaysAgo);
@@ -23,6 +28,7 @@ export function useEmployees(includeArchived = false) {
       let query = supabase
         .from("employees")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("forename");
 
       if (!includeArchived) {
@@ -33,6 +39,7 @@ export function useEmployees(includeArchived = false) {
       if (error) throw error;
       return data as Employee[];
     },
+    enabled: !!tenantId,
   });
 }
 

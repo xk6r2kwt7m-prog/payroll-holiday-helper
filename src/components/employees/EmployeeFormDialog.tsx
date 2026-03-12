@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck } from "lucide-react";
+import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck, Globe } from "lucide-react";
 import { TalentOptInDialog } from "@/components/talent/TalentOptInDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
 import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
+import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRules } from "@/hooks/useCountryRules";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/hooks/useTenant";
@@ -54,10 +55,19 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     residence_permit: "",
     rtw_confirmed: false,
     rtw_checked_date: "",
+    // Contract fields
+    contract_country: "GB",
+    work_country: "",
+    employing_entity: "",
+    pay_type: "hourly",
+    overtime_model: "none",
+    holiday_entitlement_method: "accrual",
+    service_charge_eligible: true,
   });
 
   const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
   const { data: availableBranches = [] } = useTenantBranches();
+  const { data: countryRules = [] } = useCountryRules();
 
   // Reset form only when dialog opens (not on every render)
   useEffect(() => {
@@ -85,6 +95,13 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         residence_permit: employee.residence_permit || "",
         rtw_confirmed: !!(employee.settlement_status || employee.sharing_code),
         rtw_checked_date: "",
+        contract_country: (employee as any).contract_country || "GB",
+        work_country: (employee as any).work_country || "",
+        employing_entity: (employee as any).employing_entity || "",
+        pay_type: (employee as any).pay_type || "hourly",
+        overtime_model: (employee as any).overtime_model || "none",
+        holiday_entitlement_method: (employee as any).holiday_entitlement_method || "accrual",
+        service_charge_eligible: (employee as any).service_charge_eligible !== false,
       });
     } else {
       setFormData({
@@ -108,6 +125,13 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         residence_permit: "",
         rtw_confirmed: false,
         rtw_checked_date: "",
+        contract_country: "GB",
+        work_country: "",
+        employing_entity: "",
+        pay_type: "hourly",
+        overtime_model: "none",
+        holiday_entitlement_method: "accrual",
+        service_charge_eligible: true,
       });
       setSelectedBranches([]);
       setPrimaryBranch(undefined);
@@ -162,7 +186,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     }
 
     try {
-      const employeeData: Omit<EmployeeInsert, 'tenant_id'> = {
+      const employeeData: any = {
         forename: formData.forename.trim(),
         surname: formData.surname.trim(),
         department: formData.department,
@@ -181,6 +205,13 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         sharing_code: formData.sharing_code.trim() || null,
         settlement_status: formData.settlement_status.trim() || null,
         residence_permit: formData.residence_permit.trim() || null,
+        contract_country: formData.contract_country || "GB",
+        work_country: formData.work_country || null,
+        employing_entity: formData.employing_entity.trim() || null,
+        pay_type: formData.pay_type,
+        overtime_model: formData.overtime_model,
+        holiday_entitlement_method: formData.holiday_entitlement_method,
+        service_charge_eligible: formData.service_charge_eligible,
       };
 
       let employeeId: string;
@@ -273,9 +304,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid grid-cols-6 mb-4">
+            <TabsList className="grid grid-cols-7 mb-4">
               <TabButton value="personal" icon={User} label="Personal" />
               <TabButton value="employment" icon={Building} label="Work" />
+              <TabButton value="contract" icon={Globe} label="Contract" />
               <TabButton value="branches" icon={MapPin} label="Branches" />
               <TabButton value="rtw" icon={ShieldCheck} label="RTW" />
               <TabButton value="banking" icon={CreditCard} label="Banking" />
@@ -476,7 +508,101 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
               </TabsContent>
 
-              {/* Branches Tab */}
+              {/* Contract Tab */}
+              <TabsContent value="contract" className="space-y-4 mt-0">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Contract Country</Label>
+                    <Select value={formData.contract_country} onValueChange={(v) => setFormData({ ...formData, contract_country: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {countryRules.map(r => (
+                          <SelectItem key={r.country_code} value={r.country_code}>{r.country_name}</SelectItem>
+                        ))}
+                        {countryRules.length === 0 && <SelectItem value="GB">United Kingdom</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Work Country</Label>
+                    <Select value={formData.work_country || formData.contract_country} onValueChange={(v) => setFormData({ ...formData, work_country: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {countryRules.map(r => (
+                          <SelectItem key={r.country_code} value={r.country_code}>{r.country_name}</SelectItem>
+                        ))}
+                        {countryRules.length === 0 && <SelectItem value="GB">United Kingdom</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Employing Entity</Label>
+                  <Input
+                    value={formData.employing_entity}
+                    onChange={(e) => setFormData({ ...formData, employing_entity: e.target.value })}
+                    placeholder="e.g. UD Restaurants Ltd"
+                    className="transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Pay Type</Label>
+                    <Select value={formData.pay_type} onValueChange={(v) => setFormData({ ...formData, pay_type: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {PAY_TYPES.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Overtime Model</Label>
+                    <Select value={formData.overtime_model} onValueChange={(v) => setFormData({ ...formData, overtime_model: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {OVERTIME_MODELS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Holiday Entitlement Method</Label>
+                    <Select value={formData.holiday_entitlement_method} onValueChange={(v) => setFormData({ ...formData, holiday_entitlement_method: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {HOLIDAY_ENTITLEMENT_METHODS.map(h => <SelectItem key={h.value} value={h.value}>{h.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 pt-6">
+                    <Label className="text-sm">Service Charge Eligible</Label>
+                    <input
+                      type="checkbox"
+                      checked={formData.service_charge_eligible}
+                      onChange={(e) => setFormData({ ...formData, service_charge_eligible: e.target.checked })}
+                      className="h-4 w-4 rounded border-border"
+                    />
+                  </div>
+                </div>
+
+                {formData.contract_country && countryRules.find(r => r.country_code === formData.contract_country) && (
+                  <div className="rounded-lg bg-muted/30 border border-border p-3 mt-2">
+                    <p className="text-xs font-semibold text-foreground">
+                      {countryRules.find(r => r.country_code === formData.contract_country)?.country_name} Labour Defaults
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {countryRules.find(r => r.country_code === formData.contract_country)?.max_statutory_days} days leave · 
+                      {countryRules.find(r => r.country_code === formData.contract_country)?.standard_week_hours}h workweek · 
+                      {countryRules.find(r => r.country_code === formData.contract_country)?.public_holiday_count} public holidays
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+
               <TabsContent value="branches" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
