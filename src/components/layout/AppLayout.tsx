@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MobileBottomNav } from "./MobileBottomNav";
@@ -6,6 +6,7 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useI18n } from "@/hooks/useI18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { cn } from "@/lib/utils";
