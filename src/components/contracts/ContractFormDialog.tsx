@@ -45,11 +45,11 @@ import {
   CONTRACT_TYPE_OPTIONS,
   EMPLOYMENT_TYPE_OPTIONS,
   JOB_TITLES,
-  WORK_LOCATIONS,
   getDefaultJobTitle,
   getEmploymentTypeLabel,
 } from "./contractTemplates";
 import { ContractPDF } from "./ContractPDF";
+import { useLocationSettings } from "@/hooks/useLocationSettings";
 
 interface ContractFormDialogProps {
   open: boolean;
