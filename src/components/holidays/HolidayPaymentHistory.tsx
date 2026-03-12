@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
+import { SensitiveField } from "@/components/ui/sensitive-field";
 
 interface PaymentRecord {
   id: string;
