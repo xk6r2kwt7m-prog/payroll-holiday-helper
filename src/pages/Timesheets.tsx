@@ -119,11 +119,11 @@ export default function Timesheets() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="clocked_in">On Shift</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="all">{t("common.all")}</SelectItem>
+                <SelectItem value="clocked_in">{t("timesheets.on_shift")}</SelectItem>
+                <SelectItem value="pending">{t("common.pending")}</SelectItem>
+                <SelectItem value="approved">{t("payroll.status_approved")}</SelectItem>
+                <SelectItem value="rejected">{t("payroll.status_rejected")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
