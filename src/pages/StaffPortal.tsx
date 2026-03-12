@@ -212,15 +212,18 @@ export default function StaffPortal() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="shift" className="text-xs">
-              <Clock className="h-3 w-3 mr-1" /> Shift
+              <Clock className="h-3 w-3 mr-1" /> {t("staff_portal.shift_tab")}
+            </TabsTrigger>
+            <TabsTrigger value="holidays" className="text-xs">
+              <Sun className="h-3 w-3 mr-1" /> {t("nav.holidays")}
             </TabsTrigger>
             <TabsTrigger value="history" className="text-xs">
-              <Calendar className="h-3 w-3 mr-1" /> History
+              <Calendar className="h-3 w-3 mr-1" /> {t("staff_portal.history_tab")}
             </TabsTrigger>
             <TabsTrigger value="documents" className="text-xs">
-              <FileText className="h-3 w-3 mr-1" /> Documents
+              <FileText className="h-3 w-3 mr-1" /> {t("staff_portal.documents_tab")}
             </TabsTrigger>
           </TabsList>
 
