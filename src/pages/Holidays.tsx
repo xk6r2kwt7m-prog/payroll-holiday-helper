@@ -655,10 +655,10 @@ const Holidays = () => {
                   <Scale className="h-4 w-4 mr-1" /> Check Accruals
                 </Button>
                 <Button variant={viewMode === "cards" ? "default" : "outline"} size="sm" onClick={() => setViewMode("cards")}>
-                  <LayoutGrid className="h-4 w-4 mr-1" /> Cards
+                  <LayoutGrid className="h-4 w-4 mr-1" /> {t("holidays.cards_view")}
                 </Button>
                 <Button variant={viewMode === "table" ? "default" : "outline"} size="sm" onClick={() => setViewMode("table")}>
-                  <TableIcon className="h-4 w-4 mr-1" /> Table
+                  <TableIcon className="h-4 w-4 mr-1" /> {t("holidays.table_view")}
                 </Button>
               </div>
             </div>
