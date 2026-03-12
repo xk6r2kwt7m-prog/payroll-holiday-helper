@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2 } from "lucide-react";
+import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2, Shield } from "lucide-react";
+import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
