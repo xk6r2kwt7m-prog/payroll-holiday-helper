@@ -217,7 +217,10 @@ const Settings = () => {
             {/* ─── COMPANY PROFILE ─── */}
             {activeSection === "company" && (
               <>
-                <ConfigCard title="Company Information" description="Basic details about your organisation">
+                <ConfigCard title="Company Configuration" description="Legal entity, currency, payroll frequency, and country-specific settings">
+                  <TenantConfigSection />
+                </ConfigCard>
+                <ConfigCard title="Company Profile" description="Display name, email, and address used on documents">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Company Name" id="company-name" value={companyName} onChange={setCompanyName} />
                     <Field label="Company Email" id="company-email" value={companyEmail} onChange={setCompanyEmail} type="email" />
