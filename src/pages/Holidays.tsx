@@ -601,14 +601,14 @@ const Holidays = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-in-left">
           <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+             <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
-              Holiday Management
+              {t("holidays.title")}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Real-time holiday tracking · Accrual · Entitlement · UK Compliant
+              {t("holidays.overview")}
             </p>
           </div>
 
