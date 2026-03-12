@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 import { useAllEmployeeBranches, useTenantBranches, getBranchEmoji } from "@/hooks/useBranches";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTenant } from "@/hooks/useTenant";
+import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
 
 const Index = () => {
   const { tenantName } = useTenant();
@@ -94,6 +95,9 @@ const Index = () => {
             <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground hidden sm:inline">⌘K</kbd>
           </Button>
         </div>
+
+        {/* ─── SETUP HEALTH (only for incomplete setup) ─── */}
+        <SetupHealthWidget />
 
         {/* ─── MOBILE: KPI STRIP ─── */}
         <motion.section
