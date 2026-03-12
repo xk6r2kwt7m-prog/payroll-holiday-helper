@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useAllEmployeeBranches, BranchType } from "@/hooks/useBranches";
+import { useAllEmployeeBranches, useTenantBranches, BranchType } from "@/hooks/useBranches";
 import { useAbsenceRecords } from "@/hooks/useAbsences";
 import { useTrainingRecords } from "@/hooks/useTrainingRecords";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
