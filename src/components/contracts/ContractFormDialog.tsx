@@ -416,9 +416,11 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                     <Select value={variables.workLocation} onValueChange={(v) => updateField("workLocation", v)}>
                       <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {WORK_LOCATIONS.map((loc) => (
+                        {workLocations.length > 0 ? workLocations.map((loc) => (
                           <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                        ))}
+                        )) : (
+                          <SelectItem value="main" disabled>Add locations in Settings first</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
