@@ -179,7 +179,7 @@ export function ContractPDF({ variables, companyLegalName = "Your Company", comp
 
   const PageHeader = () => (
     <View style={styles.pageHeader}>
-      <Text style={styles.pageHeaderBrand}>UD RESTAURANTS LTD</Text>
+      <Text style={styles.pageHeaderBrand}>{companyLegalName.toUpperCase()}</Text>
       <Text style={styles.pageHeaderText}>Employment Agreement — {variables.employeeName}</Text>
     </View>
   );
