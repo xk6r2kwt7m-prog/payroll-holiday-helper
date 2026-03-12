@@ -27,7 +27,15 @@ interface EmployeeRow {
 
 export default function ScheduleReport() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedBranch, setSelectedBranch] = useState<string>("Fitzrovia");
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const { data: BRANCHES = [] } = useTenantBranches();
+
+  // Auto-select first branch
+  useEffect(() => {
+    if (BRANCHES.length > 0 && !selectedBranch) {
+      setSelectedBranch(BRANCHES[0]);
+    }
+  }, [BRANCHES, selectedBranch]);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
