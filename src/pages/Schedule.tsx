@@ -30,14 +30,13 @@ import { useBulkCreateShifts } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
 
 type ViewMode = "week" | "day";
-const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
 const DEPT_WITH_ALL = ["All", ...DEPARTMENTS] as const;
 
 export default function Schedule() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [selectedBranch, setSelectedBranch] = useState<string>("Fitzrovia");
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [selectedDept, setSelectedDept] = useState<string>("FOH");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [publishDrawerOpen, setPublishDrawerOpen] = useState(false);
