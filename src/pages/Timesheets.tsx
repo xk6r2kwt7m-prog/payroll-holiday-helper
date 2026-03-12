@@ -18,6 +18,7 @@ import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDi
 import { useI18n } from "@/hooks/useI18n";
 
 export default function Timesheets() {
+  const { t } = useI18n();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("pending");
