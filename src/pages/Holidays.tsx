@@ -668,9 +668,9 @@ const Holidays = () => {
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 animate-fade-in">
           <StatCard
-            title="Hours Accrued"
+            title={t("holidays.total_accrued")}
             value={formatHours(totals.accrued)}
-            subtitle={`${filteredSummaries.length} employees`}
+            subtitle={`${filteredSummaries.length} ${t("common.staff")}`}
             icon={<TrendingUpIcon className="h-5 w-5" />}
             variant="accent"
           />
