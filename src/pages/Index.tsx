@@ -399,7 +399,7 @@ const Index = () => {
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-secondary text-lg">
-                        {BRANCH_EMOJI[branch]}
+                        {getBranchEmoji(branch, tenantBranches)}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-bold text-foreground text-sm tracking-tight">{branch}</h3>

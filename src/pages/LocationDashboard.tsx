@@ -136,7 +136,7 @@ const LocationDashboard = () => {
 
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-2xl shrink-0">
-              {getBranchEmoji(branch, pulseData.map(p => p.branch))}
+              {getBranchEmoji(branch, pulses?.map(p => p.branch) || [])}
             </div>
             <div className="flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{branch}</h1>

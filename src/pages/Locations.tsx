@@ -176,7 +176,7 @@ const Locations = () => {
                     "hover:opacity-80"
                   )}
                 >
-                  <span>{BRANCH_EMOJI[p.branch]}</span>
+                  <span>{getBranchEmoji(p.branch, [])}</span>
                   <span>{p.branch}</span>
                   <Circle className={cn("h-2.5 w-2.5 fill-current", colors.text)} />
                 </Link>
