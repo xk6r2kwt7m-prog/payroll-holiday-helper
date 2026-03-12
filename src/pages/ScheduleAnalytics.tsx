@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { format, startOfWeek, endOfWeek, addDays, subWeeks } from "date-fns";
 import { useShifts } from "@/hooks/useSchedule";
 import { useTimeEntries } from "@/hooks/useTimeEntries";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useTenantBranches } from "@/hooks/useBranches";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,6 @@ import {
   Cell,
 } from "recharts";
 
-const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
 const DEPARTMENTS = ["All", "FOH", "BOH", "CPU"] as const;
 
 const hoursChartConfig: ChartConfig = {
@@ -192,8 +192,15 @@ function useWeekData(weekStart: Date, weekEnd: Date, branch: string, deptFilter:
 
 export default function ScheduleAnalytics() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedBranch, setSelectedBranch] = useState<string>("Fitzrovia");
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [selectedDept, setSelectedDept] = useState<string>("All");
+  const { data: BRANCHES = [] } = useTenantBranches();
+
+  useEffect(() => {
+    if (BRANCHES.length > 0 && !selectedBranch) {
+      setSelectedBranch(BRANCHES[0]);
+    }
+  }, [BRANCHES, selectedBranch]);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });

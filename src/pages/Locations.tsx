@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Loader2, MapPin, ChevronRight, Settings2, Circle, Users, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useLocationSettings } from "@/hooks/useLocationSettings";
-import { BRANCH_EMOJI } from "@/hooks/useBranches";
+import { getBranchEmoji, useTenantBranches } from "@/hooks/useBranches";
 import { LocationSettingsSheet } from "@/components/locations/LocationSettingsSheet";
 import { useLocationPulse, PulseStatus, LocationPulse } from "@/hooks/useLocationPulse";
 import type { LocationSettings as LocationSettingsType } from "@/hooks/useLocationSettings";
@@ -39,7 +39,7 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
       {/* Header */}
       <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-border">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-xl shrink-0">
-          {BRANCH_EMOJI[pulse.branch] || "📍"}
+          {getBranchEmoji(pulse.branch, []) || "📍"}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -176,7 +176,7 @@ const Locations = () => {
                     "hover:opacity-80"
                   )}
                 >
-                  <span>{BRANCH_EMOJI[p.branch]}</span>
+                  <span>{getBranchEmoji(p.branch, [])}</span>
                   <span>{p.branch}</span>
                   <Circle className={cn("h-2.5 w-2.5 fill-current", colors.text)} />
                 </Link>

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
-import { useAllEmployeeBranches, BRANCHES, BRANCH_EMOJI } from "@/hooks/useBranches";
+import { useAllEmployeeBranches, useTenantBranches, getBranchEmoji } from "@/hooks/useBranches";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
@@ -25,6 +25,7 @@ const Index = () => {
   const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
   const { data: audit } = usePayrollAudit();
   const { data: employeeBranches = [] } = useAllEmployeeBranches();
+  const { data: tenantBranches = [] } = useTenantBranches();
   const { data: leaveRules } = useLeaveRules();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -380,7 +381,7 @@ const Index = () => {
           >
             {!isMobile && <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Locations</h2>}
             <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
-              {BRANCHES.map((branch) => {
+              {tenantBranches.map((branch) => {
                 const branchEmployeeIds = employeeBranches
                   .filter(eb => eb.branch === branch)
                   .map(eb => eb.employee_id);
@@ -399,7 +400,7 @@ const Index = () => {
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg bg-secondary text-lg">
-                        {BRANCH_EMOJI[branch]}
+                        {getBranchEmoji(branch, tenantBranches)}
                       </div>
                       <div className="flex-1">
                         <h3 className="font-bold text-foreground text-sm tracking-tight">{branch}</h3>

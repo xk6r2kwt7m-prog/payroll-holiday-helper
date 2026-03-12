@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
-import { useEmployeeBranches, useSetEmployeeBranches, BRANCHES, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
+import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/hooks/useTenant";
@@ -57,6 +57,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   });
 
   const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
+  const { data: availableBranches = [] } = useTenantBranches();
 
   // Reset form only when dialog opens (not on every render)
   useEffect(() => {
@@ -484,7 +485,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-3">
-                  {BRANCHES.map((branch) => (
+                  {availableBranches.map((branch) => (
                     <div
                       key={branch}
                       className={cn(
@@ -504,7 +505,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                         )}>
                           {selectedBranches.includes(branch) && <Check className="h-3 w-3" />}
                         </div>
-                        <span className="text-xl">{BRANCH_EMOJI[branch]}</span>
+                        <span className="text-xl">{getBranchEmoji(branch, availableBranches)}</span>
                         <span className="font-medium">{branch}</span>
                       </div>
                       

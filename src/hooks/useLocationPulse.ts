@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useAllEmployeeBranches, BranchType } from "@/hooks/useBranches";
+import { useAllEmployeeBranches, useTenantBranches, BranchType } from "@/hooks/useBranches";
 import { useAbsenceRecords } from "@/hooks/useAbsences";
 import { useTrainingRecords } from "@/hooks/useTrainingRecords";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
@@ -92,12 +92,14 @@ export function useLocationPulse(): { data: LocationPulse[]; isLoading: boolean 
 
   const isLoading = empLoading || brLoading || absLoading || trLoading || prLoading || shLoading || obLoading || docLoading || sigLoading;
 
+  // Get dynamic branch list from tenant's location_settings
+  const { data: tenantBranches = [] } = useTenantBranches();
+
   const data = useMemo(() => {
     const activeEmployees = employees.filter(e => e.status === "active");
-    const branchTypes: BranchType[] = ["Fitzrovia", "Carnaby", "Brixton"];
     const signedDocIds = new Set(signatures.map((s: any) => s.employee_document_id));
 
-    return branchTypes.map((branch): LocationPulse => {
+    return tenantBranches.map((branch): LocationPulse => {
       // Employee IDs for this branch
       const branchEmpIds = new Set(
         branches.filter(b => b.branch === branch).map(b => b.employee_id)
@@ -241,7 +243,7 @@ export function useLocationPulse(): { data: LocationPulse[]; isLoading: boolean 
         overallStatus: worstStatus(...sections.map(s => s.overallStatus)),
       };
     });
-  }, [employees, branches, absences, training, periods, todayShifts, onboardingProgress, documents, signatures, today]);
+  }, [employees, branches, absences, training, periods, todayShifts, onboardingProgress, documents, signatures, today, tenantBranches]);
 
   return { data, isLoading };
 }

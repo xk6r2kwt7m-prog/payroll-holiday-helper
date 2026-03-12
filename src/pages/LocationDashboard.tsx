@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { BRANCH_EMOJI, BranchType } from "@/hooks/useBranches";
+import { getBranchEmoji, useTenantBranches, BranchType } from "@/hooks/useBranches";
 import { useLocationPulse, PulseStatus } from "@/hooks/useLocationPulse";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAllEmployeeBranches } from "@/hooks/useBranches";
@@ -136,7 +136,7 @@ const LocationDashboard = () => {
 
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary text-2xl shrink-0">
-              {BRANCH_EMOJI[branch] || "📍"}
+              {getBranchEmoji(branch, pulses?.map(p => p.branch) || [])}
             </div>
             <div className="flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{branch}</h1>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useTenant } from "@/hooks/useTenant";
+import { useTenantBranches } from "@/hooks/useBranches";
 import { toast } from "sonner";
 import { RotaGrid } from "@/components/schedule/RotaGrid";
 import { DayView } from "@/components/schedule/DayView";
@@ -30,14 +31,13 @@ import { useBulkCreateShifts } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
 
 type ViewMode = "week" | "day";
-const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
 const DEPT_WITH_ALL = ["All", ...DEPARTMENTS] as const;
 
 export default function Schedule() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [selectedBranch, setSelectedBranch] = useState<string>("Fitzrovia");
+  const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [selectedDept, setSelectedDept] = useState<string>("FOH");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [publishDrawerOpen, setPublishDrawerOpen] = useState(false);
@@ -57,7 +57,15 @@ export default function Schedule() {
   const { sendNotification } = useNotifications();
   const { data: companySettings } = useCompanySettings();
   const { data: employees } = useEmployees();
+  const { data: tenantBranches = [] } = useTenantBranches();
   const isMobile = useIsMobile();
+
+  // Auto-select first branch when tenant branches load
+  useEffect(() => {
+    if (tenantBranches.length > 0 && !selectedBranch) {
+      setSelectedBranch(tenantBranches[0]);
+    }
+  }, [tenantBranches, selectedBranch]);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -351,7 +359,7 @@ export default function Schedule() {
             onPublish={() => setPublishDrawerOpen(true)}
             onUnpublish={handleUnpublish}
             isAdmin={isAdmin}
-            branches={BRANCHES}
+            branches={tenantBranches}
             selectedBranch={selectedBranch}
             onBranchChange={setSelectedBranch}
             departments={DEPT_WITH_ALL}

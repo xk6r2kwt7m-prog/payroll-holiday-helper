@@ -306,7 +306,7 @@ export type Database = {
       branch_locations: {
         Row: {
           address: string | null
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           created_at: string
           display_name: string
           geofence_radius_meters: number
@@ -318,7 +318,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           created_at?: string
           display_name: string
           geofence_radius_meters?: number
@@ -330,7 +330,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
-          branch?: Database["public"]["Enums"]["branch_type"]
+          branch?: string
           created_at?: string
           display_name?: string
           geofence_radius_meters?: number
@@ -642,7 +642,7 @@ export type Database = {
       }
       employee_branches: {
         Row: {
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           created_at: string
           employee_id: string
           id: string
@@ -650,7 +650,7 @@ export type Database = {
           tenant_id: string
         }
         Insert: {
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           created_at?: string
           employee_id: string
           id?: string
@@ -658,7 +658,7 @@ export type Database = {
           tenant_id: string
         }
         Update: {
-          branch?: Database["public"]["Enums"]["branch_type"]
+          branch?: string
           created_at?: string
           employee_id?: string
           id?: string
@@ -1496,7 +1496,7 @@ export type Database = {
           allow_shift_swaps: boolean
           allow_web_clock_in: boolean
           auto_approve_timesheets: boolean
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           created_at: string
           default_break_minutes: number
           display_name: string
@@ -1520,7 +1520,7 @@ export type Database = {
           allow_shift_swaps?: boolean
           allow_web_clock_in?: boolean
           auto_approve_timesheets?: boolean
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           created_at?: string
           default_break_minutes?: number
           display_name: string
@@ -1544,7 +1544,7 @@ export type Database = {
           allow_shift_swaps?: boolean
           allow_web_clock_in?: boolean
           auto_approve_timesheets?: boolean
-          branch?: Database["public"]["Enums"]["branch_type"]
+          branch?: string
           created_at?: string
           default_break_minutes?: number
           display_name?: string
@@ -2240,7 +2240,7 @@ export type Database = {
       }
       shifts: {
         Row: {
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           created_at: string
           created_by: string | null
           department: Database["public"]["Enums"]["department_type"]
@@ -2257,7 +2257,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           created_at?: string
           created_by?: string | null
           department: Database["public"]["Enums"]["department_type"]
@@ -2274,7 +2274,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          branch?: Database["public"]["Enums"]["branch_type"]
+          branch?: string
           created_at?: string
           created_by?: string | null
           department?: Database["public"]["Enums"]["department_type"]
@@ -3212,7 +3212,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           break_minutes: number | null
           clock_in_latitude: number | null
           clock_in_longitude: number | null
@@ -3240,7 +3240,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
-          branch: Database["public"]["Enums"]["branch_type"]
+          branch: string
           break_minutes?: number | null
           clock_in_latitude?: number | null
           clock_in_longitude?: number | null
@@ -3268,7 +3268,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
-          branch?: Database["public"]["Enums"]["branch_type"]
+          branch?: string
           break_minutes?: number | null
           clock_in_latitude?: number | null
           clock_in_longitude?: number | null
@@ -3581,7 +3581,6 @@ export type Database = {
         | "approve"
         | "reject"
         | "import"
-      branch_type: "Fitzrovia" | "Carnaby" | "Brixton"
       department_type: "FOH" | "BOH" | "CPU"
       document_type:
         | "contract"
@@ -3781,7 +3780,6 @@ export const Constants = {
         "reject",
         "import",
       ],
-      branch_type: ["Fitzrovia", "Carnaby", "Brixton"],
       department_type: ["FOH", "BOH", "CPU"],
       document_type: [
         "contract",

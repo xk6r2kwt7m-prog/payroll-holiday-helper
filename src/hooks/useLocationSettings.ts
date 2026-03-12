@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenant } from "@/hooks/useTenant";
 import { toast } from "sonner";
 
 export interface LocationSettings {
@@ -27,16 +28,21 @@ export interface LocationSettings {
 }
 
 export function useLocationSettings() {
+  const { tenantId } = useTenant();
+
   return useQuery({
-    queryKey: ["location_settings"],
+    queryKey: ["location_settings", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("location_settings")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("display_name");
       if (error) throw error;
       return data as unknown as LocationSettings[];
     },
+    enabled: !!tenantId,
   });
 }
 
@@ -53,6 +59,7 @@ export function useUpdateLocationSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["location_settings"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant_branches"] });
       toast.success("Location settings saved");
     },
     onError: (error) => {
