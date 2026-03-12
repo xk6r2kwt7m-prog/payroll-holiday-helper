@@ -43,8 +43,7 @@ type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2022" | "2023" | "2024" | "2025" | "2026";
 type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity" | "audit" | "requests";
 
-// Missing icon reference fix
-const TrendingUpIconComponent = TrendingUpIcon;
+const TrendingUpIcon = TrendingUp;
 
 interface EmployeeSummary {
   employeeId: string;
