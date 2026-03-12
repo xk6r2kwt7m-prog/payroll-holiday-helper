@@ -243,7 +243,7 @@ export function useLocationPulse(): { data: LocationPulse[]; isLoading: boolean 
         overallStatus: worstStatus(...sections.map(s => s.overallStatus)),
       };
     });
-  }, [employees, branches, absences, training, periods, todayShifts, onboardingProgress, documents, signatures, today]);
+  }, [employees, branches, absences, training, periods, todayShifts, onboardingProgress, documents, signatures, today, tenantBranches]);
 
   return { data, isLoading };
 }
