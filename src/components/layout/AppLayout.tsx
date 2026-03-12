@@ -274,6 +274,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Right side — language, search, user, sign out */}
         <div className="flex items-center gap-1 shrink-0">
+          <NotificationBell />
           <LanguageSwitcher compact />
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
