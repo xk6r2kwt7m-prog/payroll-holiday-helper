@@ -111,7 +111,7 @@ export default function Timesheets() {
     <AppLayout>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-foreground">Timesheets</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("timesheets.title")}</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <EvidenceRequestDialog />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
