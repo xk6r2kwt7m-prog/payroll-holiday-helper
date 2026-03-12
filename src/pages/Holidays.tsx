@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch, ShieldCheck, Bug, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch, ShieldCheck, Bug } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
