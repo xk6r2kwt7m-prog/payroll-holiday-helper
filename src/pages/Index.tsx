@@ -78,7 +78,7 @@ const Index = () => {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              {latestPeriod ? latestPeriod.period_name : "Welcome to Ugly Dumpling Payroll"}
+              {latestPeriod ? latestPeriod.period_name : `Welcome to ${tenantName || "your"} Payroll`}
             </p>
           </div>
           <Button

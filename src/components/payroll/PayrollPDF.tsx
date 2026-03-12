@@ -349,7 +349,7 @@ export function PayrollPDF({
   entries,
   holidayPayments = [],
   starters = [],
-  companyName = "UD Restaurants Ltd",
+  companyName = "Your Company",
   isCorrection = false,
   correctionNote,
   logoUrl,
