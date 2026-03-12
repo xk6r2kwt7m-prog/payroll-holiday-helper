@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
+import { ModulePricingConfig } from "@/components/settings/ModulePricingConfig";
 import { RolePermissionConfig } from "@/components/settings/RolePermissionConfig";
 import { TenantConfigSection } from "@/components/settings/TenantConfigSection";
 import { HistoricalImport } from "@/components/settings/HistoricalImport";
