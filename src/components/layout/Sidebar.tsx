@@ -71,7 +71,7 @@ const navItems: SideNavItem[] = [
   { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin", module: "documents" },
   { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
   { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
-  { icon: Settings, label: "Settings", path: "/settings", minRole: "admin" },
+  { icon: Settings, label: "Admin Centre", path: "/settings", minRole: "admin" },
 ];
 
 export function Sidebar() {
