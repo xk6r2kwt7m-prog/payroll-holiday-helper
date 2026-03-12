@@ -160,7 +160,7 @@ export default function SignContract() {
             <FileText className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">UD Restaurants Ltd</h1>
+            <h1 className="text-lg font-bold text-foreground">Employment Contract</h1>
             <p className="text-xs text-muted-foreground">Employment Contract Signing</p>
           </div>
         </div>

@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { useTenant } from "@/hooks/useTenant";
 import { pdf } from "@react-pdf/renderer";
 import {
   Dialog,
@@ -43,11 +45,11 @@ import {
   CONTRACT_TYPE_OPTIONS,
   EMPLOYMENT_TYPE_OPTIONS,
   JOB_TITLES,
-  WORK_LOCATIONS,
   getDefaultJobTitle,
   getEmploymentTypeLabel,
 } from "./contractTemplates";
 import { ContractPDF } from "./ContractPDF";
+import { useLocationSettings } from "@/hooks/useLocationSettings";
 
 interface ContractFormDialogProps {
   open: boolean;
@@ -59,8 +61,14 @@ type Step = "fill" | "confirm" | "sign";
 export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogProps) {
   const { toast } = useToast();
   const { data: employees } = useEmployees();
+  const { data: companySettings } = useCompanySettings();
+  const { tenantName } = useTenant();
   const uploadDocument = useUploadDocument();
   const generateSigningLink = useGenerateSigningLink();
+  const companyLegalName = companySettings?.company_name || tenantName || "Your Company";
+  const companyAddress = companySettings?.address || "";
+  const { data: locationSettings = [] } = useLocationSettings();
+  const workLocations = locationSettings.map(l => l.address ? `${l.display_name} — ${l.address}` : l.display_name);
 
   const [step, setStep] = useState<Step>("fill");
   const [generating, setGenerating] = useState(false);
@@ -75,7 +83,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     weeklyHours: "40",
     noticePeriod: "two weeks",
     probationPeriod: "2 months",
-    workLocation: WORK_LOCATIONS[0],
+    workLocation: "",
     employmentType: "variable_hours",
   });
 
@@ -138,7 +146,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     setGenerating(true);
     try {
       const blob = await pdf(
-        <ContractPDF variables={variables} contractType={contractType} />
+        <ContractPDF variables={variables} contractType={contractType} companyLegalName={companyLegalName} companyAddress={companyAddress} />
       ).toBlob();
 
       const fileName = `Employment_Contract_${variables.employeeName.replace(/\s+/g, "_")}.pdf`;
@@ -215,7 +223,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
         weeklyHours: "40",
         noticePeriod: "two weeks",
         probationPeriod: "2 months",
-        workLocation: WORK_LOCATIONS[0],
+        workLocation: "",
         employmentType: "variable_hours",
       });
     }, 300);
@@ -408,9 +416,11 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                     <Select value={variables.workLocation} onValueChange={(v) => updateField("workLocation", v)}>
                       <SelectTrigger className="bg-card"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {WORK_LOCATIONS.map((loc) => (
+                        {workLocations.length > 0 ? workLocations.map((loc) => (
                           <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                        ))}
+                        )) : (
+                          <SelectItem value="main" disabled>Add locations in Settings first</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -479,7 +489,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                   className="flex-1"
                   onClick={async () => {
                     const blob = await pdf(
-                      <ContractPDF variables={variables} contractType={contractType} />
+                      <ContractPDF variables={variables} contractType={contractType} companyLegalName={companyLegalName} companyAddress={companyAddress} />
                     ).toBlob();
                     const url = URL.createObjectURL(blob);
                     window.open(url, "_blank");

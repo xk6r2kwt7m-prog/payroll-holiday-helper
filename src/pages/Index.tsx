@@ -17,8 +17,10 @@ import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import { useAllEmployeeBranches, useTenantBranches, getBranchEmoji } from "@/hooks/useBranches";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTenant } from "@/hooks/useTenant";
 
 const Index = () => {
+  const { tenantName } = useTenant();
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriod = periods[0];
@@ -78,7 +80,7 @@ const Index = () => {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              {latestPeriod ? latestPeriod.period_name : "Welcome to Ugly Dumpling Payroll"}
+              {latestPeriod ? latestPeriod.period_name : `Welcome to ${tenantName || "your"} Payroll`}
             </p>
           </div>
           <Button

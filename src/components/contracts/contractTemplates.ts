@@ -77,8 +77,6 @@ export function getDefaultJobTitle(type: ContractType) {
   return JOB_TITLES[type]?.[0] || "Team Member";
 }
 
-export const WORK_LOCATIONS = [
-  "30 Rathbone Place, London, W1T 1JJ (Fitzrovia)",
-  "1 Newburgh Street, London, W1F 7RB (Carnaby)",
-  "Brixton Village, Unit 7, Coldharbour Lane, London, SW9 8PR (Brixton)",
-];
+// WORK_LOCATIONS is now dynamically loaded from tenant location_settings.
+// Use useLocationSettings() to fetch the current tenant's locations.
+export const WORK_LOCATIONS: string[] = [];

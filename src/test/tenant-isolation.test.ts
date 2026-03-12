@@ -3,10 +3,7 @@ import { calculateCapeVerdeProportionalLeave, isCapeVerdeNightWork } from "@/hoo
 
 describe("Tenant Isolation", () => {
   it("new tenant starts with no inherited branches", () => {
-    // A fresh tenant should have zero branches — they come from location_settings
-    // which is empty for new tenants. No hardcoded branch names should exist.
     const shiftDefaults = require("@/components/schedule/shiftDefaults");
-    // getMinimumStaff should not reference specific branch names
     expect(shiftDefaults.getMinimumStaff("SomeBranch", "FOH", "Mon")).toBe(2);
     expect(shiftDefaults.getMinimumStaff("AnyBranch", "BOH", "Wed")).toBe(2);
     expect(shiftDefaults.getMinimumStaff("NewPlace", "CPU", "Fri")).toBe(2);
@@ -18,6 +15,21 @@ describe("Tenant Isolation", () => {
     expect(fnString).not.toContain("Fitzrovia");
     expect(fnString).not.toContain("Carnaby");
     expect(fnString).not.toContain("Brixton");
+  });
+
+  it("WORK_LOCATIONS is empty (no hardcoded addresses)", () => {
+    const { WORK_LOCATIONS } = require("@/components/contracts/contractTemplates");
+    expect(WORK_LOCATIONS).toEqual([]);
+  });
+
+  it("contract templates do not contain hardcoded tenant addresses", () => {
+    const mod = require("@/components/contracts/contractTemplates");
+    const srcString = JSON.stringify(mod);
+    expect(srcString).not.toContain("Fitzrovia");
+    expect(srcString).not.toContain("Carnaby");
+    expect(srcString).not.toContain("Brixton");
+    expect(srcString).not.toContain("Rathbone");
+    expect(srcString).not.toContain("Newburgh");
   });
 });
 
@@ -47,7 +59,7 @@ describe("Cape Verde Labour Rules", () => {
   });
 });
 
-describe("Pay Model Configuration", () => {
+describe("Country Rules Engine", () => {
   it("PAY_TYPES includes all required models", () => {
     const { PAY_TYPES } = require("@/hooks/useCountryRules");
     const values = PAY_TYPES.map((p: any) => p.value);
@@ -66,6 +78,14 @@ describe("Pay Model Configuration", () => {
     expect(values).toContain("none");
     expect(values).toContain("time_and_half");
     expect(values).toContain("double_time");
+  });
+
+  it("HOLIDAY_ENTITLEMENT_METHODS includes all methods", () => {
+    const { HOLIDAY_ENTITLEMENT_METHODS } = require("@/hooks/useCountryRules");
+    const values = HOLIDAY_ENTITLEMENT_METHODS.map((m: any) => m.value);
+    expect(values).toContain("accrual");
+    expect(values).toContain("fixed_days");
+    expect(values).toContain("proportional");
   });
 });
 

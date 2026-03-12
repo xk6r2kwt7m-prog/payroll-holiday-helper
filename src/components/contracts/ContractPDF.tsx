@@ -164,10 +164,13 @@ const styles = StyleSheet.create({
 
 interface ContractPDFProps {
   variables: ContractVariables;
-  contractType?: string; // kept for backward compat (unused in new template)
+  contractType?: string;
+  companyLegalName?: string;
+  companyTradingName?: string;
+  companyAddress?: string;
 }
 
-export function ContractPDF({ variables }: ContractPDFProps) {
+export function ContractPDF({ variables, companyLegalName = "Your Company", companyTradingName, companyAddress }: ContractPDFProps) {
   const formattedDate = new Date(variables.effectiveDate).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
@@ -176,14 +179,14 @@ export function ContractPDF({ variables }: ContractPDFProps) {
 
   const PageHeader = () => (
     <View style={styles.pageHeader}>
-      <Text style={styles.pageHeaderBrand}>UD RESTAURANTS LTD</Text>
+      <Text style={styles.pageHeaderBrand}>{companyLegalName.toUpperCase()}</Text>
       <Text style={styles.pageHeaderText}>Employment Agreement — {variables.employeeName}</Text>
     </View>
   );
 
   const PageFooter = () => (
     <View style={styles.footer} fixed>
-      <Text>UD Restaurants Ltd — Confidential</Text>
+      <Text>{companyLegalName} — Confidential</Text>
       <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   );
@@ -193,8 +196,8 @@ export function ContractPDF({ variables }: ContractPDFProps) {
       {/* ─── Cover Page ─── */}
       <Page size="A4" style={styles.coverPage}>
         <View style={{ marginTop: 160, alignItems: "center" }}>
-          <Text style={styles.coverBrand}>UD RESTAURANTS LTD</Text>
-          <Text style={styles.coverTradingAs}>Trading as Ugly Dumpling</Text>
+          <Text style={styles.coverBrand}>{companyLegalName.toUpperCase()}</Text>
+          {companyTradingName && <Text style={styles.coverTradingAs}>Trading as {companyTradingName}</Text>}
           <Text style={styles.coverTitle}>Employment Agreement</Text>
           <View style={styles.coverLine} />
 
@@ -224,7 +227,7 @@ export function ContractPDF({ variables }: ContractPDFProps) {
           This Employment Agreement is made between:
         </Text>
         <Text style={styles.paragraph}>
-          <Text style={styles.bold}>UD Restaurants Ltd</Text>, trading as "Ugly Dumpling", with its registered address at 1 Newburgh Street, London W1F 7RB ("the Company")
+          <Text style={styles.bold}>{companyLegalName}</Text>{companyTradingName ? `, trading as "${companyTradingName}"` : ""}{companyAddress ? `, with its registered address at ${companyAddress}` : ""} ("the Company")
         </Text>
         <Text style={styles.paragraph}>and</Text>
         <Text style={styles.paragraph}>
@@ -452,7 +455,7 @@ export function ContractPDF({ variables }: ContractPDFProps) {
           <View style={styles.twoCol}>
             <View style={styles.col}>
               <Text style={styles.bold}>Employer</Text>
-              <Text>UD Restaurants Ltd</Text>
+              <Text>{companyLegalName}</Text>
               <View style={styles.signatureLine} />
               <Text style={styles.signatureLabel}>Signature</Text>
             </View>

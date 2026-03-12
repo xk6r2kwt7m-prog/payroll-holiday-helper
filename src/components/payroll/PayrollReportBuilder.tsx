@@ -57,7 +57,7 @@ export function PayrollReportBuilder({
   entries,
   holidayPayments,
   allEmployees,
-  companyName = "UD Restaurants Ltd",
+  companyName = "Your Company",
 }: PayrollReportBuilderProps) {
   const [config, setConfig] = useState<PayrollReportConfig>({ ...defaultReportConfig });
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
