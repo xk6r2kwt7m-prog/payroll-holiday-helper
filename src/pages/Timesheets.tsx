@@ -155,7 +155,7 @@ export default function Timesheets() {
             <ChevronRight className="h-5 w-5" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-            Today
+            {t("common.today")}
           </Button>
         </div>
 
