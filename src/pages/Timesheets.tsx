@@ -193,7 +193,7 @@ export default function Timesheets() {
                 )}
                 {pendingCount > 0 && (
                   <Button variant="outline" size="sm" onClick={selectAllPending}>
-                    Select All Pending
+                    {t("timesheets.select_all_pending")}
                   </Button>
                 )}
               </div>
