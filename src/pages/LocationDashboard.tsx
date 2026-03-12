@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { BRANCH_EMOJI, BranchType } from "@/hooks/useBranches";
+import { getBranchEmoji, useTenantBranches, BranchType } from "@/hooks/useBranches";
 import { useLocationPulse, PulseStatus } from "@/hooks/useLocationPulse";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAllEmployeeBranches } from "@/hooks/useBranches";

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Building2, CalendarClock, ClipboardCheck } from "lucide-react";
 import { useUpdateLocationSettings, type LocationSettings } from "@/hooks/useLocationSettings";
-import { BRANCH_EMOJI } from "@/hooks/useBranches";
+import { getBranchEmoji, useTenantBranches } from "@/hooks/useBranches";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 

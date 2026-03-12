@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
-import { useEmployeeBranches, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
+import { useEmployeeBranches, type BranchType } from "@/hooks/useBranches";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
 import { SensitiveField } from "@/components/ui/sensitive-field";

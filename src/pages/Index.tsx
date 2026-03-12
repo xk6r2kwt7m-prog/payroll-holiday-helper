@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useMemo, useState } from "react";
-import { useAllEmployeeBranches, BRANCHES, BRANCH_EMOJI } from "@/hooks/useBranches";
+import { useAllEmployeeBranches, useTenantBranches, getBranchEmoji } from "@/hooks/useBranches";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Loader2, MapPin, ChevronRight, Settings2, Circle, Users, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useLocationSettings } from "@/hooks/useLocationSettings";
-import { BRANCH_EMOJI } from "@/hooks/useBranches";
+import { getBranchEmoji, useTenantBranches } from "@/hooks/useBranches";
 import { LocationSettingsSheet } from "@/components/locations/LocationSettingsSheet";
 import { useLocationPulse, PulseStatus, LocationPulse } from "@/hooks/useLocationPulse";
 import type { LocationSettings as LocationSettingsType } from "@/hooks/useLocationSettings";

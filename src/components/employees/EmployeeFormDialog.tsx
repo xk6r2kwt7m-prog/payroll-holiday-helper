@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
-import { useEmployeeBranches, useSetEmployeeBranches, BRANCHES, BRANCH_EMOJI, type BranchType } from "@/hooks/useBranches";
+import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/hooks/useTenant";

@@ -24,7 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { BRANCH_EMOJI } from "@/hooks/useBranches";
+import { getBranchEmoji, useTenantBranches } from "@/hooks/useBranches";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
