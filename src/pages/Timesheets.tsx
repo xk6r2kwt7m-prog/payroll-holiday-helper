@@ -164,7 +164,7 @@ export default function Timesheets() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base">
-                {displayEntries.length} Entries
+                {displayEntries.length} {t("timesheets.entries")}
                 {pendingCount > 0 && (
                   <Badge variant="outline" className="ml-2 bg-warning/10 text-warning border-warning/30">
                     {pendingCount} pending
