@@ -35,6 +35,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useI18n } from "@/hooks/useI18n";
+import { HolidayRequestQueue } from "@/components/holidays/HolidayRequestQueue";
 
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
