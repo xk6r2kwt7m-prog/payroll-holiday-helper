@@ -57,52 +57,30 @@ interface NavItem {
   children?: NavItem[];
 }
 
-const primaryNavItems: NavItem[] = [
-  { label: "Dashboard", path: "/", minRole: "staff" },
-  { label: "Employees", path: "/employees", minRole: "supervisor" },
-  {
-    label: "Schedule",
-    path: "/schedule",
-    minRole: "supervisor",
-    children: [
-      { icon: CalendarClock, label: "Rota", path: "/schedule", minRole: "supervisor" },
-      { icon: ClipboardList, label: "Report", path: "/schedule/report", minRole: "manager" },
-      { icon: BarChart3, label: "Analytics", path: "/schedule/analytics", minRole: "manager" },
-    ],
-  },
-  { label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
-  {
-    label: "Payroll",
-    path: "/payroll",
-    minRole: "admin",
-    children: [
-      { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin" },
-      { icon: CalendarDays, label: "Calendar", path: "/payroll/calendar", minRole: "admin" },
-      { icon: PieChart, label: "Analytics", path: "/payroll/analytics", minRole: "admin" },
-      { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", minRole: "admin" },
-    ],
-  },
-  {
-    label: "Holidays",
-    path: "/holidays",
-    minRole: "manager",
-    children: [
-      { icon: Calendar, label: "Holiday Management", path: "/holidays", minRole: "manager" },
-      { icon: Scale, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" },
-    ],
-  },
-];
-
-const moreNavItems: NavItem[] = [
-  { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
-  { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
-  { icon: GraduationCap, label: "Training", path: "/training", minRole: "manager" },
-  { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
-  { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "manager" },
-  { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
-  { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
-  { icon: Settings, label: "Settings", path: "/settings", minRole: "admin" },
-];
+// Nav items use i18n keys, resolved at render time
+const NAV_KEYS = {
+  dashboard: "nav.dashboard",
+  employees: "nav.employees",
+  schedule: "nav.schedule",
+  rota: "nav.rota",
+  report: "nav.report",
+  analytics: "nav.analytics",
+  timesheets: "nav.timesheets",
+  payroll: "nav.payroll",
+  calendar: "nav.calendar",
+  overpayments: "nav.overpayments",
+  holidays: "nav.holidays",
+  holiday_management: "nav.holiday_management",
+  holiday_audit: "nav.holiday_audit",
+  absences: "nav.absences",
+  onboarding: "nav.onboarding",
+  training: "nav.training",
+  disciplinary: "nav.disciplinary",
+  announcements: "nav.announcements",
+  contracts: "nav.contracts",
+  locations: "nav.locations",
+  settings: "nav.admin_centre",
+} as const;
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
