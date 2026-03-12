@@ -9,16 +9,21 @@ export type ShiftUpdate = TablesUpdate<"shifts">;
 export type BranchLocation = Tables<"branch_locations">;
 
 export function useBranchLocations() {
+  const { tenantId } = useTenant();
+
   return useQuery({
-    queryKey: ["branch_locations"],
+    queryKey: ["branch_locations", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("branch_locations")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("display_name");
       if (error) throw error;
       return data as BranchLocation[];
     },
+    enabled: !!tenantId,
   });
 }
 
