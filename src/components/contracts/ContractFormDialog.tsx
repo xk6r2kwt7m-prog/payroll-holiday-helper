@@ -144,7 +144,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     setGenerating(true);
     try {
       const blob = await pdf(
-        <ContractPDF variables={variables} contractType={contractType} />
+        <ContractPDF variables={variables} contractType={contractType} companyLegalName={companyLegalName} companyAddress={companyAddress} />
       ).toBlob();
 
       const fileName = `Employment_Contract_${variables.employeeName.replace(/\s+/g, "_")}.pdf`;
