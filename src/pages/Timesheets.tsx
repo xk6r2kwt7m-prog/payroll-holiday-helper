@@ -167,7 +167,7 @@ export default function Timesheets() {
                 {displayEntries.length} {t("timesheets.entries")}
                 {pendingCount > 0 && (
                   <Badge variant="outline" className="ml-2 bg-warning/10 text-warning border-warning/30">
-                    {pendingCount} pending
+                    {pendingCount} {t("timesheets.pending")}
                   </Badge>
                 )}
                 {flaggedEntries.length > 0 && (
