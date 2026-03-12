@@ -212,7 +212,7 @@ export function LocationManagement() {
       {/* Location cards */}
       <div className="space-y-2">
         {locations.map((loc) => {
-          const emoji = BRANCH_EMOJI[loc.branch as keyof typeof BRANCH_EMOJI] || "📍";
+          const emoji = getBranchEmoji(loc.branch, locations.map(l => l.branch));
           return (
             <div
               key={loc.id}

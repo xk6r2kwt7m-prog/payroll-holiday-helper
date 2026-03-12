@@ -92,7 +92,8 @@ export function LocationSettingsSheet({ location, open, onOpenChange }: Props) {
     });
   };
 
-  const emoji = BRANCH_EMOJI[location.branch as keyof typeof BRANCH_EMOJI] || "📍";
+  const { data: allBranches = [] } = useTenantBranches();
+  const emoji = getBranchEmoji(location.branch, allBranches);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
