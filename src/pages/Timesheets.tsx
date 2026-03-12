@@ -182,8 +182,8 @@ export default function Timesheets() {
                   size="sm"
                   onClick={() => setShowFlaggedOnly(!showFlaggedOnly)}
                 >
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  {showFlaggedOnly ? "Show All" : "Flagged Only"}
+                   <AlertTriangle className="h-3 w-3 mr-1" />
+                   {showFlaggedOnly ? t("timesheets.show_all") : t("timesheets.flagged_only")}
                 </Button>
                 {cleanPendingIds.length > 0 && (
                   <Button variant="outline" size="sm" onClick={selectCleanPending}>
