@@ -51,6 +51,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <TenantProvider>
+          <PrivacyShieldProvider>
           <CommandPalette />
           <Routes>
             {/* Public routes */}
