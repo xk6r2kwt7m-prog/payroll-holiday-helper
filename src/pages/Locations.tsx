@@ -39,7 +39,7 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
       {/* Header */}
       <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-border">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-xl shrink-0">
-          {BRANCH_EMOJI[pulse.branch] || "📍"}
+          {getBranchEmoji(pulse.branch, []) || "📍"}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
