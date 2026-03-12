@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
 
 export default function StaffPortal() {
+  const { t } = useI18n();
   const { user, signOut } = useAuth();
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [employeeName, setEmployeeName] = useState("");
