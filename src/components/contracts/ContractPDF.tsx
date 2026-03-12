@@ -196,8 +196,8 @@ export function ContractPDF({ variables, companyLegalName = "Your Company", comp
       {/* ─── Cover Page ─── */}
       <Page size="A4" style={styles.coverPage}>
         <View style={{ marginTop: 160, alignItems: "center" }}>
-          <Text style={styles.coverBrand}>UD RESTAURANTS LTD</Text>
-          <Text style={styles.coverTradingAs}>Trading as Ugly Dumpling</Text>
+          <Text style={styles.coverBrand}>{companyLegalName.toUpperCase()}</Text>
+          {companyTradingName && <Text style={styles.coverTradingAs}>Trading as {companyTradingName}</Text>}
           <Text style={styles.coverTitle}>Employment Agreement</Text>
           <View style={styles.coverLine} />
 
