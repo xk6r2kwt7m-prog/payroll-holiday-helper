@@ -504,7 +504,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                         )}>
                           {selectedBranches.includes(branch) && <Check className="h-3 w-3" />}
                         </div>
-                        <span className="text-xl">{BRANCH_EMOJI[branch]}</span>
+                        <span className="text-xl">{getBranchEmoji(branch, availableBranches)}</span>
                         <span className="font-medium">{branch}</span>
                       </div>
                       
