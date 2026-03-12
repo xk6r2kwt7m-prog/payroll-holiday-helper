@@ -133,7 +133,6 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         holiday_entitlement_method: "accrual",
         service_charge_eligible: true,
       });
-      });
       setSelectedBranches([]);
       setPrimaryBranch(undefined);
     }
