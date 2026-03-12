@@ -484,7 +484,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-3">
-                  {BRANCHES.map((branch) => (
+                  {availableBranches.map((branch) => (
                     <div
                       key={branch}
                       className={cn(
