@@ -359,7 +359,7 @@ export default function Schedule() {
             onPublish={() => setPublishDrawerOpen(true)}
             onUnpublish={handleUnpublish}
             isAdmin={isAdmin}
-            branches={BRANCHES}
+            branches={tenantBranches}
             selectedBranch={selectedBranch}
             onBranchChange={setSelectedBranch}
             departments={DEPT_WITH_ALL}
