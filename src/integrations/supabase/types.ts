@@ -3200,6 +3200,8 @@ export type Database = {
           default_pay_model: string | null
           email: string | null
           enabled_modules: Json
+          founding_partner: boolean
+          founding_partner_expires_at: string | null
           id: string
           legal_name: string | null
           logo_url: string | null
@@ -3222,6 +3224,8 @@ export type Database = {
           default_pay_model?: string | null
           email?: string | null
           enabled_modules?: Json
+          founding_partner?: boolean
+          founding_partner_expires_at?: string | null
           id?: string
           legal_name?: string | null
           logo_url?: string | null
@@ -3244,6 +3248,8 @@ export type Database = {
           default_pay_model?: string | null
           email?: string | null
           enabled_modules?: Json
+          founding_partner?: boolean
+          founding_partner_expires_at?: string | null
           id?: string
           legal_name?: string | null
           logo_url?: string | null
