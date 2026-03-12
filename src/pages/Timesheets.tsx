@@ -201,9 +201,9 @@ export default function Timesheets() {
           </CardHeader>
           <CardContent className="space-y-2">
             {isLoading ? (
-              <p className="text-muted-foreground text-sm py-8 text-center">Loading...</p>
+              <p className="text-muted-foreground text-sm py-8 text-center">{t("common.loading")}</p>
             ) : displayEntries.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-8 text-center">No timesheet entries found</p>
+              <p className="text-muted-foreground text-sm py-8 text-center">{t("timesheets.no_entries")}</p>
             ) : (
               displayEntries.map((entry: any) => {
                 const flags = computeFlags(entry);
