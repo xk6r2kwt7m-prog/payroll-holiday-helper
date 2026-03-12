@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
-import { useCreateEmployee, useUpdateEmployee, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
+import { useCreateEmployee, useUpdateEmployee, useEmployees, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
 import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
 import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRules } from "@/hooks/useCountryRules";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/hooks/useTenant";
+import { usePlanLimits } from "@/hooks/useSubscription";
 
 type DepartmentType = Database["public"]["Enums"]["department_type"];
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
@@ -154,11 +155,23 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const updateEmployee = useUpdateEmployee();
   const setEmployeeBranches = useSetEmployeeBranches();
   const { tenantId } = useTenant();
+  const { data: allEmployees = [] } = useEmployees();
+  const planLimits = usePlanLimits();
+
+  const activeEmployeeCount = allEmployees.filter(e => e.status === "active").length;
 
   const isNewEmployee = !employee;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check plan employee limit for new employees
+    if (isNewEmployee && planLimits.hasEmployeeLimit && planLimits.maxEmployees !== null) {
+      if (activeEmployeeCount >= planLimits.maxEmployees) {
+        toast.error(`You have reached the employee limit (${planLimits.maxEmployees}) for your plan. Upgrade to continue.`);
+        return;
+      }
+    }
 
     // Validate required fields
     if (!formData.forename.trim() || !formData.surname.trim() || !formData.hourly_rate) {

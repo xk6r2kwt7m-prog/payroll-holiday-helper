@@ -1,8 +1,8 @@
-import { CreditCard, Users, TrendingUp, Sparkles, ArrowRight } from "lucide-react";
+import { CreditCard, Sparkles, ArrowRight, AlertTriangle, Lock, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useEntitlements, useTenantSubscription } from "@/hooks/useSubscription";
+import { useEntitlements, useTenantSubscription, useEffectivePrice, useBillingStatus } from "@/hooks/useSubscription";
 import { useEmployees } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
 
@@ -11,18 +11,16 @@ export function BillingSummaryWidget() {
   const entitlements = useEntitlements();
   const { data: subscription } = useTenantSubscription();
   const { data: employees = [] } = useEmployees();
+  const effectivePrice = useEffectivePrice();
+  const billingStatus = useBillingStatus();
 
   const activeCount = employees.filter(e => e.status === "active").length;
-  const pricePerEmployee = subscription?.plan
-    ? (subscription.plan as any).price_per_employee_monthly ?? 0
-    : 0;
-  const currency = (subscription?.plan as any)?.currency ?? "EUR";
-  const estimatedCost = activeCount * pricePerEmployee;
+  const estimatedCost = activeCount * effectivePrice.pricePerEmployee;
 
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat("en", {
       style: "currency",
-      currency,
+      currency: effectivePrice.currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
@@ -43,16 +41,53 @@ export function BillingSummaryWidget() {
             <p className="text-[10px] text-muted-foreground">Current plan & billing</p>
           </div>
         </div>
-        <Badge
-          variant={entitlements.isFoundingPartner ? "default" : "secondary"}
-          className={cn(
-            "text-[10px]",
-            entitlements.isFoundingPartner && "bg-gradient-to-r from-primary to-accent text-primary-foreground border-0"
+        <div className="flex items-center gap-1.5">
+          {effectivePrice.isLocked && (
+            <Badge variant="outline" className="text-[9px] border-success/40 text-success">
+              <Lock className="h-2.5 w-2.5 mr-0.5" />
+              v{effectivePrice.planVersion}
+            </Badge>
           )}
-        >
-          {entitlements.isFoundingPartner ? "⭐ Founding Partner" : entitlements.planName}
-        </Badge>
+          <Badge
+            variant={entitlements.isFoundingPartner ? "default" : "secondary"}
+            className={cn(
+              "text-[10px]",
+              entitlements.isFoundingPartner && "bg-gradient-to-r from-primary to-accent text-primary-foreground border-0"
+            )}
+          >
+            {entitlements.isFoundingPartner ? "⭐ Founding Partner" : entitlements.planName}
+          </Badge>
+        </div>
       </div>
+
+      {/* Grace period warning */}
+      {billingStatus.status === "past_due" && (
+        <div className="rounded-lg bg-warning/10 border border-warning/20 p-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs font-medium text-foreground">Payment overdue</p>
+              <p className="text-[10px] text-muted-foreground">
+                {billingStatus.graceRemaining} day{billingStatus.graceRemaining !== 1 ? "s" : ""} remaining before features are restricted
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {billingStatus.status === "restricted" && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-destructive shrink-0" />
+            <div className="flex-1">
+              <p className="text-xs font-medium text-foreground">Account restricted</p>
+              <p className="text-[10px] text-muted-foreground">
+                Advanced modules disabled due to unpaid invoice. Please update your payment method.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Founding partner banner */}
       {entitlements.isFoundingPartner && entitlements.foundingDaysRemaining !== null && (
@@ -60,9 +95,7 @@ export function BillingSummaryWidget() {
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent shrink-0" />
             <div className="flex-1">
-              <p className="text-xs font-medium text-foreground">
-                All modules unlocked
-              </p>
+              <p className="text-xs font-medium text-foreground">All modules unlocked</p>
               <p className="text-[10px] text-muted-foreground">
                 {entitlements.foundingDaysRemaining > 0
                   ? `${entitlements.foundingDaysRemaining} days remaining in founding partner programme`
@@ -81,7 +114,7 @@ export function BillingSummaryWidget() {
         </div>
         <div className="text-center rounded-lg bg-muted/50 p-2.5">
           <p className="text-lg font-bold text-foreground tabular-nums">
-            {formatPrice(pricePerEmployee)}
+            {formatPrice(effectivePrice.pricePerEmployee)}
           </p>
           <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">/Employee</p>
         </div>
@@ -92,6 +125,16 @@ export function BillingSummaryWidget() {
           <p className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Est. /Month</p>
         </div>
       </div>
+
+      {/* Grandfathered pricing note */}
+      {effectivePrice.isLocked && (
+        <div className="rounded-lg bg-success/5 border border-success/20 p-2.5">
+          <p className="text-[10px] text-muted-foreground">
+            <Lock className="h-3 w-3 inline mr-1 text-success" />
+            Your pricing is locked at <strong className="text-foreground">{formatPrice(effectivePrice.pricePerEmployee)}/emp</strong> (plan v{effectivePrice.planVersion}). Price changes won't affect your subscription.
+          </p>
+        </div>
+      )}
 
       <Button
         variant="outline"

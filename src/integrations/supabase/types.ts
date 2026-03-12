@@ -820,6 +820,69 @@ export type Database = {
           },
         ]
       }
+      employee_usage: {
+        Row: {
+          active_employee_count: number
+          billing_period_end: string
+          billing_period_start: string
+          created_at: string
+          currency: string
+          employees_added: number
+          employees_removed: number
+          id: string
+          plan_id: string | null
+          price_per_employee: number
+          snapshot_at: string
+          tenant_id: string
+          total_amount: number
+        }
+        Insert: {
+          active_employee_count?: number
+          billing_period_end: string
+          billing_period_start: string
+          created_at?: string
+          currency?: string
+          employees_added?: number
+          employees_removed?: number
+          id?: string
+          plan_id?: string | null
+          price_per_employee?: number
+          snapshot_at?: string
+          tenant_id: string
+          total_amount?: number
+        }
+        Update: {
+          active_employee_count?: number
+          billing_period_end?: string
+          billing_period_start?: string
+          created_at?: string
+          currency?: string
+          employees_added?: number
+          employees_removed?: number
+          id?: string
+          plan_id?: string | null
+          price_per_employee?: number
+          snapshot_at?: string
+          tenant_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_usage_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_usage_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           archived_at: string | null
@@ -2475,12 +2538,14 @@ export type Database = {
           max_employees: number | null
           max_locations: number | null
           name: string
+          plan_version: number
           price_annual: number
           price_monthly: number
           price_per_employee_annual: number
           price_per_employee_monthly: number
           slug: string
           sort_order: number
+          superseded_by: string | null
           updated_at: string
         }
         Insert: {
@@ -2495,12 +2560,14 @@ export type Database = {
           max_employees?: number | null
           max_locations?: number | null
           name: string
+          plan_version?: number
           price_annual?: number
           price_monthly?: number
           price_per_employee_annual?: number
           price_per_employee_monthly?: number
           slug: string
           sort_order?: number
+          superseded_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -2515,15 +2582,25 @@ export type Database = {
           max_employees?: number | null
           max_locations?: number | null
           name?: string
+          plan_version?: number
           price_annual?: number
           price_monthly?: number
           price_per_employee_annual?: number
           price_per_employee_monthly?: number
           slug?: string
           sort_order?: number
+          superseded_by?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plans_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       talent_audit_log: {
         Row: {
@@ -3090,8 +3167,15 @@ export type Database = {
           created_at: string
           current_period_end: string
           current_period_start: string
+          grace_period_days: number
           id: string
+          last_payment_at: string | null
+          locked_currency: string | null
+          locked_price_per_employee: number | null
+          payment_due_date: string | null
           plan_id: string
+          plan_version_at_signup: number | null
+          price_locked: boolean
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -3105,8 +3189,15 @@ export type Database = {
           created_at?: string
           current_period_end?: string
           current_period_start?: string
+          grace_period_days?: number
           id?: string
+          last_payment_at?: string | null
+          locked_currency?: string | null
+          locked_price_per_employee?: number | null
+          payment_due_date?: string | null
           plan_id: string
+          plan_version_at_signup?: number | null
+          price_locked?: boolean
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -3120,8 +3211,15 @@ export type Database = {
           created_at?: string
           current_period_end?: string
           current_period_start?: string
+          grace_period_days?: number
           id?: string
+          last_payment_at?: string | null
+          locked_currency?: string | null
+          locked_price_per_employee?: number | null
+          payment_due_date?: string | null
           plan_id?: string
+          plan_version_at_signup?: number | null
+          price_locked?: boolean
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
