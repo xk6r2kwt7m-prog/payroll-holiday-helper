@@ -186,7 +186,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     }
 
     try {
-      const employeeData: Omit<EmployeeInsert, 'tenant_id'> = {
+      const employeeData: any = {
         forename: formData.forename.trim(),
         surname: formData.surname.trim(),
         department: formData.department,
@@ -205,6 +205,13 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         sharing_code: formData.sharing_code.trim() || null,
         settlement_status: formData.settlement_status.trim() || null,
         residence_permit: formData.residence_permit.trim() || null,
+        contract_country: formData.contract_country || "GB",
+        work_country: formData.work_country || null,
+        employing_entity: formData.employing_entity.trim() || null,
+        pay_type: formData.pay_type,
+        overtime_model: formData.overtime_model,
+        holiday_entitlement_method: formData.holiday_entitlement_method,
+        service_charge_eligible: formData.service_charge_eligible,
       };
 
       let employeeId: string;
