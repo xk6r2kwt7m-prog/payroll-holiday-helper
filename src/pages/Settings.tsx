@@ -347,9 +347,14 @@ const Settings = () => {
 
             {/* ─── FEATURE ACCESS ─── */}
             {activeSection === "features" && (
-              <ConfigCard title="Feature Access" description="Modules enabled for your company">
-                <FeatureAccessSettings />
-              </ConfigCard>
+              <>
+                <ConfigCard title="Feature Access" description="Modules enabled for your company">
+                  <FeatureAccessSettings />
+                </ConfigCard>
+                <ConfigCard title="Module Pricing" description="Per-module pricing and billing configuration">
+                  <ModulePricingConfig />
+                </ConfigCard>
+              </>
             )}
 
             {/* ─── SECURITY ─── */}
