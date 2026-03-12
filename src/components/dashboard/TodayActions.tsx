@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAbsenceRecords } from "@/hooks/useAbsences";
 import { useTrainingRecords } from "@/hooks/useTrainingRecords";
+import { useI18n } from "@/hooks/useI18n";
 import { format } from "date-fns";
 
 interface TodayActionsProps {
@@ -53,6 +54,7 @@ const severityConfig = {
 
 export function TodayActions({ employees, periods, entries }: TodayActionsProps) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { data: absences = [] } = useAbsenceRecords();
   const { data: trainingRecords = [] } = useTrainingRecords();
 
@@ -61,7 +63,6 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
     const today = format(new Date(), "yyyy-MM-dd");
     const now = new Date();
 
-    // 1. Absences today
     const todayAbsences = absences.filter(
       (a) => a.start_date <= today && a.end_date >= today
     );
@@ -70,26 +71,24 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
         id: "absences-today",
         severity: "critical",
         icon: <UserX className="h-4 w-4" />,
-        title: `${todayAbsences.length} absent today`,
+        title: t("alerts.absent_today", { count: todayAbsences.length }),
         count: todayAbsences.length,
         href: "/absences",
       });
     }
 
-    // 2. Draft payroll needing approval
     const draftPeriods = periods.filter((p) => p.status === "draft");
     if (draftPeriods.length > 0) {
       result.push({
         id: "draft-payroll",
         severity: "critical",
         icon: <DollarSign className="h-4 w-4" />,
-        title: `${draftPeriods.length} payroll awaiting approval`,
+        title: t("alerts.payroll_awaiting", { count: draftPeriods.length }),
         count: draftPeriods.length,
         href: "/payroll",
       });
     }
 
-    // 3. Payroll due within 7 days
     const upcomingPay = periods.filter((p) => {
       if (!p.pay_date || p.status === "approved") return false;
       const payDate = new Date(p.pay_date);
@@ -101,12 +100,11 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
         id: "pay-due",
         severity: "critical",
         icon: <Clock className="h-4 w-4" />,
-        title: "Payroll due this week",
+        title: t("alerts.payroll_due_week"),
         href: "/payroll",
       });
     }
 
-    // 4. Missing bank details
     const missingBank = employees.filter(
       (e) => e.status === "active" && (!e.bank_account_no || !e.sort_code)
     );
@@ -115,32 +113,30 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
         id: "missing-bank",
         severity: "critical",
         icon: <CreditCard className="h-4 w-4" />,
-        title: `${missingBank.length} missing bank details`,
+        title: t("alerts.missing_bank", { count: missingBank.length }),
         count: missingBank.length,
         href: "/employees",
       });
     }
 
-    // 5. Training overdue
-    const overdueTraining = trainingRecords.filter((t) => {
-      if (!t.expiry_date) return false;
-      return new Date(t.expiry_date) < now;
+    const overdueTraining = trainingRecords.filter((tr) => {
+      if (!tr.expiry_date) return false;
+      return new Date(tr.expiry_date) < now;
     });
     if (overdueTraining.length > 0) {
       result.push({
         id: "training-overdue",
         severity: "critical",
         icon: <GraduationCap className="h-4 w-4" />,
-        title: `${overdueTraining.length} training expired`,
+        title: t("alerts.training_expired", { count: overdueTraining.length }),
         count: overdueTraining.length,
         href: "/training",
       });
     }
 
-    // 6. Training expiring within 30 days
-    const expiringTraining = trainingRecords.filter((t) => {
-      if (!t.expiry_date) return false;
-      const exp = new Date(t.expiry_date);
+    const expiringTraining = trainingRecords.filter((tr) => {
+      if (!tr.expiry_date) return false;
+      const exp = new Date(tr.expiry_date);
       const days = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       return days > 0 && days <= 30;
     });
@@ -149,13 +145,12 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
         id: "training-expiring",
         severity: "warning",
         icon: <GraduationCap className="h-4 w-4" />,
-        title: `${expiringTraining.length} training expiring soon`,
+        title: t("alerts.training_expiring", { count: expiringTraining.length }),
         count: expiringTraining.length,
         href: "/training",
       });
     }
 
-    // 7. New employees needing onboarding (started within 14 days, no end_date)
     const recentStarters = employees.filter((e) => {
       if (e.status !== "active" || !e.start_date) return false;
       const startDate = new Date(e.start_date);
@@ -167,13 +162,14 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
         id: "onboarding-new",
         severity: "info",
         icon: <UserPlus className="h-4 w-4" />,
-        title: `${recentStarters.length} new starter${recentStarters.length > 1 ? "s" : ""} onboarding`,
+        title: recentStarters.length > 1
+          ? t("alerts.new_starters_onboarding_plural", { count: recentStarters.length })
+          : t("alerts.new_starters_onboarding", { count: recentStarters.length }),
         count: recentStarters.length,
         href: "/onboarding",
       });
     }
 
-    // 8. Missing NI
     const missingNI = employees.filter(
       (e) => e.status === "active" && !e.ni_number
     );
@@ -182,13 +178,12 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
         id: "missing-ni",
         severity: "warning",
         icon: <Shield className="h-4 w-4" />,
-        title: `${missingNI.length} missing NI numbers`,
+        title: t("alerts.missing_ni", { count: missingNI.length }),
         count: missingNI.length,
         href: "/employees",
       });
     }
 
-    // 9. Rate discrepancies
     const rateIssues = entries.filter((e: any) => {
       const emp = e.employees;
       return emp && Number(e.hourly_rate) !== Number(emp.hourly_rate);
@@ -198,20 +193,19 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
         id: "rate-issues",
         severity: "info",
         icon: <TrendingUp className="h-4 w-4" />,
-        title: `${rateIssues.length} rate discrepancies`,
+        title: t("alerts.rate_discrepancies", { count: rateIssues.length }),
         count: rateIssues.length,
         href: "/payroll",
       });
     }
 
-    // 10. Zero-hour entries
     const zeroHours = entries.filter((e: any) => Number(e.timesheet_hours) === 0);
     if (zeroHours.length > 0 && entries.length > 0) {
       result.push({
         id: "zero-hours",
         severity: "info",
         icon: <UserX className="h-4 w-4" />,
-        title: `${zeroHours.length} with 0 hours`,
+        title: t("alerts.zero_hours", { count: zeroHours.length }),
         count: zeroHours.length,
         href: "/payroll",
       });
@@ -221,12 +215,12 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
       const order = { critical: 0, warning: 1, info: 2 };
       return order[a.severity] - order[b.severity];
     });
-  }, [employees, periods, entries, absences, trainingRecords]);
+  }, [employees, periods, entries, absences, trainingRecords, t]);
 
   if (actions.length === 0) {
     return (
       <div className="rounded-xl bg-success/8 border border-success/20 px-4 py-5 text-center">
-        <p className="text-sm font-semibold text-success">✓ All clear — nothing needs attention right now</p>
+        <p className="text-sm font-semibold text-success">{t("dashboard.all_clear")}</p>
       </div>
     );
   }
