@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
 import { TimesheetReviewPanel, computeFlags } from "@/components/attendance/TimesheetReviewPanel";
 import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDialog";
+import { useI18n } from "@/hooks/useI18n";
 
 export default function Timesheets() {
   const [currentDate, setCurrentDate] = useState(new Date());
