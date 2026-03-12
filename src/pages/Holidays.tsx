@@ -59,6 +59,7 @@ interface EmployeeSummary {
 }
 
 const Holidays = () => {
+  const { t } = useI18n();
   const { data: leaveRules } = useLeaveRules();
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [searchQuery, setSearchQuery] = useState("");
