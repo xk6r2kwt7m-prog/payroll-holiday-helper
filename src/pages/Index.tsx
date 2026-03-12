@@ -25,6 +25,7 @@ const Index = () => {
   const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
   const { data: audit } = usePayrollAudit();
   const { data: employeeBranches = [] } = useAllEmployeeBranches();
+  const { data: tenantBranches = [] } = useTenantBranches();
   const { data: leaveRules } = useLeaveRules();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
