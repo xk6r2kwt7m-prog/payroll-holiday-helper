@@ -350,6 +350,10 @@ export default function StaffPortal() {
             )}
           </TabsContent>
 
+          <TabsContent value="holidays" className="space-y-4 mt-0">
+            {employeeId && <HolidayRequestForm employeeId={employeeId} employeeName={employeeName} />}
+          </TabsContent>
+
           <TabsContent value="history" className="space-y-4 mt-0">
             <Card>
               <CardHeader className="pb-2">

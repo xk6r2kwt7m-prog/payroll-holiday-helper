@@ -1036,6 +1036,13 @@ const Holidays = () => {
         />
       )}
 
+      {/* Holiday Requests Tab Content - rendered outside Tabs but controlled by subTab */}
+      {subTab === "requests" && (
+        <div className="mt-4">
+          <HolidayRequestQueue />
+        </div>
+      )}
+
       {/* Formula Breakdown Sheet */}
       <HolidayFormulaBreakdown
         open={formulaOpen}
