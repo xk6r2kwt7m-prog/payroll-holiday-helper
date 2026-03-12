@@ -6,6 +6,7 @@ import { FloatingActionButton } from "./FloatingActionButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { cn } from "@/lib/utils";
 import {
