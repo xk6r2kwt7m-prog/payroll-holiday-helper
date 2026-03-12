@@ -118,7 +118,7 @@ export function usePrivacyShield() {
     try {
       await supabase.from("audit_log").insert({
         user_id: user?.id || null,
-        action: "view" as const,
+        action: "update" as const,
         table_name: "privacy_shield",
         record_id: employeeId || null,
         new_data: {
