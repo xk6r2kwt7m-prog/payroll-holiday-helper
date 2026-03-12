@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 import { useAllEmployeeBranches, useTenantBranches, getBranchEmoji } from "@/hooks/useBranches";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTenant } from "@/hooks/useTenant";
+import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
 
 const Index = () => {
   const { tenantName } = useTenant();
