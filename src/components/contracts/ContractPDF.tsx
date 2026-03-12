@@ -227,7 +227,7 @@ export function ContractPDF({ variables, companyLegalName = "Your Company", comp
           This Employment Agreement is made between:
         </Text>
         <Text style={styles.paragraph}>
-          <Text style={styles.bold}>UD Restaurants Ltd</Text>, trading as "Ugly Dumpling", with its registered address at 1 Newburgh Street, London W1F 7RB ("the Company")
+          <Text style={styles.bold}>{companyLegalName}</Text>{companyTradingName ? `, trading as "${companyTradingName}"` : ""}{companyAddress ? `, with its registered address at ${companyAddress}` : ""} ("the Company")
         </Text>
         <Text style={styles.paragraph}>and</Text>
         <Text style={styles.paragraph}>
