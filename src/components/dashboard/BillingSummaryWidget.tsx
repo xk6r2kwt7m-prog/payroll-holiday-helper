@@ -47,7 +47,7 @@ export function BillingSummaryWidget() {
           variant={entitlements.isFoundingPartner ? "default" : "secondary"}
           className={cn(
             "text-[10px]",
-            entitlements.isFoundingPartner && "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0"
+            entitlements.isFoundingPartner && "bg-gradient-to-r from-primary to-accent text-primary-foreground border-0"
           )}
         >
           {entitlements.isFoundingPartner ? "⭐ Founding Partner" : entitlements.planName}
