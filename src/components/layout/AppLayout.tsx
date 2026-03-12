@@ -275,8 +275,9 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
         </nav>
 
-        {/* Right side — search, user, sign out */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Right side — language, search, user, sign out */}
+        <div className="flex items-center gap-1 shrink-0">
+          <LanguageSwitcher compact />
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <Button
