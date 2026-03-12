@@ -718,18 +718,22 @@ const Holidays = () => {
 
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
-          <TabsList className="grid w-full grid-cols-7 sm:w-auto sm:inline-grid">
+          <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-grid sm:grid-cols-8">
             <TabsTrigger value="overview" className="gap-1.5">
               <Users className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Overview</span>
+              <span className="hidden sm:inline">{t("holidays.overview")}</span>
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t("holidays.request_holiday")}</span>
             </TabsTrigger>
             <TabsTrigger value="lookup" className="gap-1.5">
               <UserSearch className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Employee</span>
+              <span className="hidden sm:inline">{t("common.employee")}</span>
             </TabsTrigger>
             <TabsTrigger value="alerts" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Alerts</span>
+              <span className="hidden sm:inline">{t("holidays.alerts_tab")}</span>
               {alerts.length > 0 && (
                 <span className="ml-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 leading-none">
                   {alerts.length}
@@ -738,15 +742,15 @@ const Holidays = () => {
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-1.5">
               <History className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Payments</span>
+              <span className="hidden sm:inline">{t("holidays.history")}</span>
             </TabsTrigger>
             <TabsTrigger value="departments" className="gap-1.5">
               <BarChart3 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Departments</span>
+              <span className="hidden sm:inline">{t("holidays.departments_tab")}</span>
             </TabsTrigger>
             <TabsTrigger value="integrity" className="gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Integrity</span>
+              <span className="hidden sm:inline">{t("holidays.integrity")}</span>
               {integrityRows.filter(r => r.severity === "error").length > 0 && (
                 <span className="ml-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 leading-none">
                   {integrityRows.filter(r => r.severity === "error").length}
@@ -755,7 +759,7 @@ const Holidays = () => {
             </TabsTrigger>
             <TabsTrigger value="audit" className="gap-1.5">
               <Bug className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Audit</span>
+              <span className="hidden sm:inline">{t("holidays.audit")}</span>
             </TabsTrigger>
           </TabsList>
 
