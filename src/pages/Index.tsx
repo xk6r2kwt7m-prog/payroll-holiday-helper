@@ -224,9 +224,10 @@ const Index = () => {
           transition={{ duration: 0.35, delay: 0.15 }}
         >
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Operations</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <PayrollDeadlineWidget periods={periods} />
             <ExpiringDocumentsWidget />
+            <BillingSummaryWidget />
           </div>
         </motion.section>
 

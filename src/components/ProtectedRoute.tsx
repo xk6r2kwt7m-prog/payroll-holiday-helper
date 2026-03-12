@@ -87,7 +87,7 @@ export function ProtectedRoute({
   if (requiredModule && enabledModules && !isPlatformAdmin) {
     const isModuleEnabled = enabledModules[requiredModule] !== false;
     if (!isModuleEnabled) {
-      return <ModuleUnavailable moduleName={moduleName} />;
+      return <ModuleUnavailable moduleName={moduleName} moduleKey={requiredModule} />;
     }
   }
 
