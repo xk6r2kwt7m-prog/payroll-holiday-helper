@@ -304,9 +304,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid grid-cols-6 mb-4">
+            <TabsList className="grid grid-cols-7 mb-4">
               <TabButton value="personal" icon={User} label="Personal" />
               <TabButton value="employment" icon={Building} label="Work" />
+              <TabButton value="contract" icon={Globe} label="Contract" />
               <TabButton value="branches" icon={MapPin} label="Branches" />
               <TabButton value="rtw" icon={ShieldCheck} label="RTW" />
               <TabButton value="banking" icon={CreditCard} label="Banking" />
