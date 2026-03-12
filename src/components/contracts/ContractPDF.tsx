@@ -186,7 +186,7 @@ export function ContractPDF({ variables, companyLegalName = "Your Company", comp
 
   const PageFooter = () => (
     <View style={styles.footer} fixed>
-      <Text>UD Restaurants Ltd — Confidential</Text>
+      <Text>{companyLegalName} — Confidential</Text>
       <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
     </View>
   );
