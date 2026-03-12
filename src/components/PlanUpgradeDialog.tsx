@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles } from "lucide-react";
-import { useSubscriptionPlans, useTenantSubscription, type SubscriptionPlan } from "@/hooks/useSubscription";
+import { Check, Sparkles, Lock, Shield } from "lucide-react";
+import { useSubscriptionPlans, useTenantSubscription, useEffectivePrice, type SubscriptionPlan } from "@/hooks/useSubscription";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -16,12 +16,11 @@ interface PlanUpgradeDialogProps {
 export function PlanUpgradeDialog({ open, onOpenChange, highlightModule }: PlanUpgradeDialogProps) {
   const { data: plans = [] } = useSubscriptionPlans();
   const { data: currentSub } = useTenantSubscription();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const effectivePrice = useEffectivePrice();
 
   const currentPlanSlug = currentSub?.plan?.slug;
 
   const handleSelectPlan = (plan: SubscriptionPlan) => {
-    setSelectedPlan(plan.id);
     toast.success(`Plan "${plan.name}" selected. Billing integration coming soon.`);
     onOpenChange(false);
   };
@@ -35,7 +34,6 @@ export function PlanUpgradeDialog({ open, onOpenChange, highlightModule }: PlanU
     }).format(plan.price_per_employee_monthly);
   };
 
-  // Find which plan includes the highlighted module
   const getModuleAvailable = (plan: SubscriptionPlan) => {
     if (!highlightModule) return false;
     return plan.enabled_modules?.[highlightModule] === true;
@@ -49,9 +47,22 @@ export function PlanUpgradeDialog({ open, onOpenChange, highlightModule }: PlanU
           <DialogDescription className="text-xs">
             {highlightModule
               ? `Upgrade to access the ${highlightModule} module and more.`
-              : "Select the plan that best fits your team."}
+              : "Select the plan that best fits your team. All prices per employee per month."}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Grandfathered pricing notice */}
+        {effectivePrice.isLocked && (
+          <div className="rounded-lg bg-success/5 border border-success/20 p-3">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-success shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Your current pricing is <strong className="text-foreground">grandfathered</strong> at v{effectivePrice.planVersion}. 
+                Upgrading will apply the latest pricing version.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2">
           {plans.map((plan) => {
@@ -69,7 +80,10 @@ export function PlanUpgradeDialog({ open, onOpenChange, highlightModule }: PlanU
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-foreground">{plan.name}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-foreground">{plan.name}</h3>
+                    <span className="text-[9px] text-muted-foreground">v{plan.plan_version}</span>
+                  </div>
                   {isCurrent && <Badge variant="secondary" className="text-[9px]">Current</Badge>}
                   {hasModule && !isCurrent && (
                     <Badge className="text-[9px] bg-accent text-accent-foreground">
@@ -87,6 +101,18 @@ export function PlanUpgradeDialog({ open, onOpenChange, highlightModule }: PlanU
                   </span>
                   <span className="text-xs text-muted-foreground">/employee/mo</span>
                 </div>
+
+                {/* Plan limits */}
+                {(plan.max_employees || plan.max_locations) && (
+                  <div className="flex gap-2 text-[10px] text-muted-foreground">
+                    {plan.max_employees && (
+                      <span className="px-1.5 py-0.5 rounded bg-muted">Max {plan.max_employees} employees</span>
+                    )}
+                    {plan.max_locations && (
+                      <span className="px-1.5 py-0.5 rounded bg-muted">Max {plan.max_locations} location{plan.max_locations > 1 ? "s" : ""}</span>
+                    )}
+                  </div>
+                )}
 
                 <ul className="space-y-1.5">
                   {plan.features.map((f, i) => (
