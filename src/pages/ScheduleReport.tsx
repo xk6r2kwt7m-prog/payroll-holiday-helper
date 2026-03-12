@@ -1,16 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { useShifts } from "@/hooks/useSchedule";
 import { useTimeEntries } from "@/hooks/useTimeEntries";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useTenantBranches } from "@/hooks/useBranches";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight, Download, ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const BRANCHES = ["Fitzrovia", "Carnaby", "Brixton"] as const;
 
 interface EmployeeRow {
   id: string;
