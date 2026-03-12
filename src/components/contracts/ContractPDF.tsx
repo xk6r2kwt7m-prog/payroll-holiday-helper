@@ -455,7 +455,7 @@ export function ContractPDF({ variables, companyLegalName = "Your Company", comp
           <View style={styles.twoCol}>
             <View style={styles.col}>
               <Text style={styles.bold}>Employer</Text>
-              <Text>UD Restaurants Ltd</Text>
+              <Text>{companyLegalName}</Text>
               <View style={styles.signatureLine} />
               <Text style={styles.signatureLabel}>Signature</Text>
             </View>
