@@ -3323,6 +3323,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_manager_or_above: { Args: never; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      is_supervisor_only: { Args: never; Returns: boolean }
       is_supervisor_or_above: { Args: never; Returns: boolean }
       is_tenant_admin: { Args: { _tenant_id: string }; Returns: boolean }
       is_tenant_manager_or_above: {
