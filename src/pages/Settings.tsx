@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
+import { RolePermissionConfig } from "@/components/settings/RolePermissionConfig";
 import { HistoricalImport } from "@/components/settings/HistoricalImport";
 import { LeaveRulesSettings } from "@/components/settings/LeaveRulesSettings";
 import { DepartmentManagement } from "@/components/settings/DepartmentManagement";
@@ -20,16 +21,19 @@ import { EmployeeStatusConfig } from "@/components/settings/EmployeeStatusConfig
 import { ProtectedSystemInfo } from "@/components/settings/ProtectedSystemInfo";
 import { ProtectedBadge } from "@/components/settings/ProtectedBadge";
 import { AdminAuditLog } from "@/components/settings/AdminAuditLog";
+import { LocationManagement } from "@/components/settings/LocationManagement";
 import {
   SchedulingSettings,
   TrainingDocSettings,
   TalentPoolSettings,
   BrandingSettings,
   FeatureAccessSettings,
+  PayrollDisplaySettings,
+  HolidayDisplaySettings,
+  PeopleLifecycleSettings,
 } from "@/components/settings/AdminConfigSections";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /* ─── Section definitions ─── */
@@ -72,7 +76,6 @@ const Settings = () => {
 
   const { data: settings, isLoading } = useCompanySettings();
   const updateSettings = useUpdateCompanySettings();
-  const { isAdmin } = useAuth();
 
   const [companyName, setCompanyName] = useState("");
   const [companyEmail, setCompanyEmail] = useState("");
@@ -226,45 +229,36 @@ const Settings = () => {
 
             {/* ─── LOCATIONS ─── */}
             {activeSection === "locations" && (
-              <ConfigCard title="Location Management" description="Configure work locations and site-specific rules">
-                <p className="text-xs text-muted-foreground">
-                  Each location can have its own operating hours, scheduling preferences, break policies, and geofence settings.
-                </p>
-                <Link to="/locations">
-                  <Button variant="outline" size="sm" className="text-xs">
-                    <MapPin className="h-3.5 w-3.5 mr-1.5" />
-                    Open Location Settings
-                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                  </Button>
-                </Link>
-                <ConfigProtectedNote
-                  configurable="Operating hours, break policies, shift swap rules, geofence radius, display name"
-                  protected_="Tenant isolation, RLS policies, branch enum definitions"
-                />
+              <ConfigCard title="Location Management" description="Add, edit, and configure work locations and site-specific rules">
+                <LocationManagement />
               </ConfigCard>
             )}
 
             {/* ─── DEPARTMENTS ─── */}
             {activeSection === "departments" && (
-              <ConfigCard title="Departments" description="Team structure and department breakdown">
+              <ConfigCard title="Departments" description="Add, edit, and manage your team structure">
                 <DepartmentManagement />
               </ConfigCard>
             )}
 
             {/* ─── ROLES ─── */}
             {activeSection === "roles" && (
-              <ConfigCard title="User Roles & Access" description="Assign roles to control what each team member can access">
-                <RoleManagement />
-                <ConfigProtectedNote
-                  configurable="Role assignment within your company, team access levels"
-                  protected_="Permission model architecture, role hierarchy engine, platform-level access rules"
-                />
-              </ConfigCard>
+              <>
+                <ConfigCard title="Role Permissions" description="Configure what each role can view and manage">
+                  <RolePermissionConfig />
+                </ConfigCard>
+                <ConfigCard title="User Role Assignment" description="Assign roles to team members with linked accounts">
+                  <RoleManagement />
+                </ConfigCard>
+              </>
             )}
 
             {/* ─── PEOPLE & LIFECYCLE ─── */}
             {activeSection === "people" && (
               <>
+                <ConfigCard title="People Preferences" description="Configure employee directory and lifecycle behaviour">
+                  <PeopleLifecycleSettings />
+                </ConfigCard>
                 <ConfigCard title="Employee Status Lifecycle" description="Status definitions and current distribution">
                   <EmployeeStatusConfig />
                 </ConfigCard>
@@ -273,7 +267,7 @@ const Settings = () => {
 
             {/* ─── SCHEDULING ─── */}
             {activeSection === "scheduling" && (
-              <ConfigCard title="Scheduling Settings" description="Shift templates, presets, and scheduling preferences">
+              <ConfigCard title="Scheduling Settings" description="Configure shift defaults, presets, and mobile behaviour">
                 <SchedulingSettings />
               </ConfigCard>
             )}
@@ -281,15 +275,18 @@ const Settings = () => {
             {/* ─── PAYROLL ─── */}
             {activeSection === "payroll" && (
               <>
-                <ConfigCard title="Payroll Preferences" description="Configure payroll display and reminder settings">
+                <ConfigCard title="Payroll Preferences" description="Configure payroll display, reminders, and export settings">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Pay Period" id="pay-period" value={payPeriod} onChange={setPayPeriod} />
                     <Field label="Default Pay Day" id="pay-day" value={payDay} onChange={setPayDay} />
                   </div>
                   <SwitchRow label="Auto-calculate overtime" description="Automatically calculate overtime pay" checked={autoCalculateOvertime} onChange={setAutoCalculateOvertime} />
+                  <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
+                </ConfigCard>
+                <ConfigCard title="Display Preferences" description="Control which columns and elements appear in payroll views">
+                  <PayrollDisplaySettings />
                 </ConfigCard>
                 <ProtectedEngineNote label="Payroll Core Engine" description="The payroll calculation engine, total pay formulas, holiday accrual triggers, and closed-period protections cannot be modified. These are platform-level protected rules." />
-                <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
                 <Separator />
                 <HistoricalImport />
               </>
@@ -301,13 +298,16 @@ const Settings = () => {
                 <ConfigCard title="Leave & Holiday Rules" description="Configure accrual rates, carry-over, workweek, and leave year settings">
                   <LeaveRulesSettings />
                 </ConfigCard>
+                <ConfigCard title="Holiday Display Preferences" description="Configure how holiday data is shown across the platform">
+                  <HolidayDisplaySettings />
+                </ConfigCard>
                 <ProtectedEngineNote label="Holiday Engine" description="The holiday ledger engine, balance reconciliation, and accrual calculation formula are protected core logic. You can adjust configurable parameters above." />
               </>
             )}
 
             {/* ─── TRAINING ─── */}
             {activeSection === "training" && (
-              <ConfigCard title="Training & Documents" description="Certifications, document categories, and compliance">
+              <ConfigCard title="Training & Documents" description="Certifications, reminders, document categories, and compliance">
                 <TrainingDocSettings />
               </ConfigCard>
             )}
@@ -429,17 +429,6 @@ function ProtectedEngineNote({ label, description }: { label: string; descriptio
         <ProtectedBadge label={`${label} Protected`} />
       </div>
       <p className="text-[11px] text-muted-foreground">{description}</p>
-    </div>
-  );
-}
-
-function ConfigProtectedNote({ configurable, protected_ }: { configurable: string; protected_: string }) {
-  return (
-    <div className="text-[11px] text-muted-foreground space-y-1 pt-3 border-t border-border">
-      <p>✅ <span className="font-medium">Configurable:</span> {configurable}</p>
-      <p className="flex items-center gap-1">
-        <ProtectedBadge label="Protected" /> {protected_}
-      </p>
     </div>
   );
 }
