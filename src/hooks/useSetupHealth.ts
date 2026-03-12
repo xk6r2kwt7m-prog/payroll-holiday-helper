@@ -4,6 +4,7 @@ import { useLocationSettings } from "@/hooks/useLocationSettings";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { useTenant } from "@/hooks/useTenant";
+import { useI18n } from "@/hooks/useI18n";
 
 export interface SetupStep {
   id: string;
@@ -29,53 +30,54 @@ export function useSetupHealth(): SetupHealth {
   const { data: locations = [] } = useLocationSettings();
   const { data: companySettings } = useCompanySettings();
   const { data: leaveRules } = useLeaveRules();
+  const { t } = useI18n();
 
   return useMemo(() => {
     const steps: SetupStep[] = [
       {
         id: "company_profile",
-        label: "Company Profile",
-        description: "Set your company name, legal entity, country, and currency",
+        label: t("setup.company_profile"),
+        description: t("setup.company_profile_desc"),
         completed: !!(tenantName && tenantName.length > 0 && tenantCountry),
         href: "/settings?section=company",
         priority: "required",
       },
       {
         id: "leave_rules",
-        label: "Holiday & Leave Rules",
-        description: "Configure leave entitlement, accrual rates, and leave year",
+        label: t("setup.leave_rules"),
+        description: t("setup.leave_rules_desc"),
         completed: !!(leaveRules && leaveRules.accrualRate > 0),
         href: "/settings?section=leave",
         priority: "required",
       },
       {
         id: "branches",
-        label: "Branches / Locations",
-        description: "Add at least one work location for your company",
+        label: t("setup.branches"),
+        description: t("setup.branches_desc"),
         completed: locations.length > 0,
         href: "/settings?section=locations",
         priority: "required",
       },
       {
         id: "departments",
-        label: "Departments",
-        description: "Define your team structure (e.g. Kitchen, Front of House)",
-        completed: !!(companySettings), // departments exist via enum — always true if settings exist
+        label: t("setup.departments"),
+        description: t("setup.departments_desc"),
+        completed: !!(companySettings),
         href: "/settings?section=departments",
         priority: "recommended",
       },
       {
         id: "payroll_settings",
-        label: "Payroll Settings",
-        description: "Set pay period, pay day, and overtime preferences",
+        label: t("setup.payroll_settings"),
+        description: t("setup.payroll_settings_desc"),
         completed: !!(companySettings?.pay_period && companySettings?.default_pay_day),
         href: "/settings?section=payroll",
         priority: "recommended",
       },
       {
         id: "first_employee",
-        label: "Add First Employee",
-        description: "Create your first team member to start using the platform",
+        label: t("setup.first_employee"),
+        description: t("setup.first_employee_desc"),
         completed: employees.filter(e => e.status === "active").length > 0,
         href: "/employees",
         priority: "required",
@@ -87,10 +89,10 @@ export function useSetupHealth(): SetupHealth {
     const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
     const alerts: { message: string; href: string }[] = [];
-    if (locations.length === 0) alerts.push({ message: "No branches created", href: "/settings?section=locations" });
-    if (employees.filter(e => e.status === "active").length === 0) alerts.push({ message: "No employees added", href: "/employees" });
-    if (!companySettings?.pay_period) alerts.push({ message: "Payroll settings incomplete", href: "/settings?section=payroll" });
-    if (!leaveRules || leaveRules.accrualRate <= 0) alerts.push({ message: "Holiday rules not configured", href: "/settings?section=leave" });
+    if (locations.length === 0) alerts.push({ message: t("setup.no_branches"), href: "/settings?section=locations" });
+    if (employees.filter(e => e.status === "active").length === 0) alerts.push({ message: t("setup.no_employees"), href: "/employees" });
+    if (!companySettings?.pay_period) alerts.push({ message: t("setup.payroll_incomplete"), href: "/settings?section=payroll" });
+    if (!leaveRules || leaveRules.accrualRate <= 0) alerts.push({ message: t("setup.holiday_not_configured"), href: "/settings?section=leave" });
 
     return {
       steps,
@@ -100,5 +102,5 @@ export function useSetupHealth(): SetupHealth {
       isFullySetup: completedCount === totalCount,
       alerts,
     };
-  }, [tenantName, tenantCountry, employees, locations, companySettings, leaveRules]);
+  }, [tenantName, tenantCountry, employees, locations, companySettings, leaveRules, t]);
 }
