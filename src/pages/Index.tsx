@@ -380,7 +380,7 @@ const Index = () => {
           >
             {!isMobile && <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Locations</h2>}
             <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
-              {BRANCHES.map((branch) => {
+              {tenantBranches.map((branch) => {
                 const branchEmployeeIds = employeeBranches
                   .filter(eb => eb.branch === branch)
                   .map(eb => eb.employee_id);
