@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { PrivacyShieldProvider } from "@/hooks/usePrivacyShield";
 import { TenantProvider } from "@/hooks/useTenant";
+import { I18nProvider } from "@/hooks/useI18n";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Employees from "./pages/Employees";
@@ -51,6 +52,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <TenantProvider>
+          <I18nProvider>
           <PrivacyShieldProvider>
           <CommandPalette />
           <Routes>
@@ -116,6 +118,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           </PrivacyShieldProvider>
+          </I18nProvider>
         </TenantProvider>
         </AuthProvider>
       </BrowserRouter>

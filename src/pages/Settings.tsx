@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
+import { ModulePricingConfig } from "@/components/settings/ModulePricingConfig";
 import { RolePermissionConfig } from "@/components/settings/RolePermissionConfig";
 import { TenantConfigSection } from "@/components/settings/TenantConfigSection";
 import { HistoricalImport } from "@/components/settings/HistoricalImport";
@@ -346,9 +347,14 @@ const Settings = () => {
 
             {/* ─── FEATURE ACCESS ─── */}
             {activeSection === "features" && (
-              <ConfigCard title="Feature Access" description="Modules enabled for your company">
-                <FeatureAccessSettings />
-              </ConfigCard>
+              <>
+                <ConfigCard title="Feature Access" description="Modules enabled for your company">
+                  <FeatureAccessSettings />
+                </ConfigCard>
+                <ConfigCard title="Module Pricing" description="Per-module pricing and billing configuration">
+                  <ModulePricingConfig />
+                </ConfigCard>
+              </>
             )}
 
             {/* ─── SECURITY ─── */}

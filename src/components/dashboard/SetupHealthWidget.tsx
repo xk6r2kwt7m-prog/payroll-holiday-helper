@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSetupHealth, SetupStep } from "@/hooks/useSetupHealth";
+import { useI18n } from "@/hooks/useI18n";
 import {
   CheckCircle2, Circle, AlertTriangle, ArrowRight, Sparkles,
   Building2, MapPin, Users, Calendar, CreditCard, Briefcase,
@@ -21,6 +21,7 @@ const STEP_ICONS: Record<string, any> = {
 
 function StepRow({ step }: { step: SetupStep }) {
   const Icon = STEP_ICONS[step.id] || Circle;
+  const { t } = useI18n();
 
   return (
     <Link
@@ -53,7 +54,7 @@ function StepRow({ step }: { step: SetupStep }) {
       )}
       {step.priority === "required" && !step.completed && (
         <Badge variant="outline" className="text-[9px] px-1.5 py-0 shrink-0 border-warning/50 text-warning">
-          Required
+          {t("common.required")}
         </Badge>
       )}
     </Link>
@@ -62,8 +63,8 @@ function StepRow({ step }: { step: SetupStep }) {
 
 export function SetupHealthWidget() {
   const health = useSetupHealth();
+  const { t } = useI18n();
 
-  // Don't show if fully set up
   if (health.isFullySetup) return null;
 
   return (
@@ -80,9 +81,12 @@ export function SetupHealthWidget() {
             <Sparkles className="h-4.5 w-4.5 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-bold text-foreground">Company Setup</h3>
+            <h3 className="text-sm font-bold text-foreground">{t("dashboard.setup_title")}</h3>
             <p className="text-[11px] text-muted-foreground">
-              {health.completedCount} of {health.totalCount} steps completed
+              {t("dashboard.setup_steps_completed", {
+                completed: health.completedCount,
+                total: health.totalCount,
+              })}
             </p>
           </div>
           <span className="text-lg font-bold text-primary tabular-nums">{health.percentage}%</span>
@@ -118,9 +122,6 @@ export function SetupHealthWidget() {
   );
 }
 
-/**
- * Compact version for sidebar/header — shows just percentage + alert count.
- */
 export function SetupHealthBadge() {
   const health = useSetupHealth();
 
