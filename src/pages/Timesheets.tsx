@@ -188,7 +188,7 @@ export default function Timesheets() {
                 {cleanPendingIds.length > 0 && (
                   <Button variant="outline" size="sm" onClick={selectCleanPending}>
                     <Check className="h-3 w-3 mr-1" />
-                    Select Clean ({cleanPendingIds.length})
+                    {t("timesheets.select_clean", { count: String(cleanPendingIds.length) })}
                   </Button>
                 )}
                 {pendingCount > 0 && (
