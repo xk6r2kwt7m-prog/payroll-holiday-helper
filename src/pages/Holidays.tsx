@@ -35,11 +35,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useI18n } from "@/hooks/useI18n";
+import { HolidayRequestQueue } from "@/components/holidays/HolidayRequestQueue";
 
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2022" | "2023" | "2024" | "2025" | "2026";
-type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity" | "audit";
+type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity" | "audit" | "requests";
 
 interface EmployeeSummary {
   employeeId: string;
@@ -54,6 +56,7 @@ interface EmployeeSummary {
 }
 
 const Holidays = () => {
+  const { t } = useI18n();
   const { data: leaveRules } = useLeaveRules();
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [searchQuery, setSearchQuery] = useState("");
@@ -595,14 +598,14 @@ const Holidays = () => {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-in-left">
           <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+             <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
-              Holiday Management
+              {t("holidays.title")}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Real-time holiday tracking · Accrual · Entitlement · UK Compliant
+              {t("holidays.overview")}
             </p>
           </div>
 
@@ -649,10 +652,10 @@ const Holidays = () => {
                   <Scale className="h-4 w-4 mr-1" /> Check Accruals
                 </Button>
                 <Button variant={viewMode === "cards" ? "default" : "outline"} size="sm" onClick={() => setViewMode("cards")}>
-                  <LayoutGrid className="h-4 w-4 mr-1" /> Cards
+                  <LayoutGrid className="h-4 w-4 mr-1" /> {t("holidays.cards_view")}
                 </Button>
                 <Button variant={viewMode === "table" ? "default" : "outline"} size="sm" onClick={() => setViewMode("table")}>
-                  <TableIcon className="h-4 w-4 mr-1" /> Table
+                  <TableIcon className="h-4 w-4 mr-1" /> {t("holidays.table_view")}
                 </Button>
               </div>
             </div>
@@ -662,29 +665,29 @@ const Holidays = () => {
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 animate-fade-in">
           <StatCard
-            title="Hours Accrued"
+            title={t("holidays.total_accrued")}
             value={formatHours(totals.accrued)}
-            subtitle={`${filteredSummaries.length} employees`}
+            subtitle={`${filteredSummaries.length} ${t("common.staff")}`}
             icon={<TrendingUpIcon className="h-5 w-5" />}
             variant="accent"
           />
           <StatCard
-            title="Hours Taken"
+            title={t("holidays.total_taken")}
             value={formatHours(totals.taken)}
             subtitle={`${overdrawnCount} overdrawn`}
             icon={<Clock className="h-5 w-5" />}
           />
           <StatCard
-            title="Remaining Balance"
+            title={t("holidays.total_balance")}
             value={formatHours(totals.balance)}
-            subtitle="Accrued minus taken"
+            subtitle={t("holidays.accrued") + " − " + t("holidays.taken")}
             icon={<Scale className="h-5 w-5" />}
             variant={totals.balance >= 0 ? "primary" : "accent"}
           />
           <StatCard
-            title="Total Paid"
+            title={t("holidays.total_cost")}
             value={formatCurrency(totals.paid)}
-            subtitle={`${selectedYear} leave year`}
+            subtitle={`${selectedYear} ${t("holidays.leave_year")}`}
             icon={<DollarSign className="h-5 w-5" />}
             variant="primary"
           />
@@ -715,18 +718,22 @@ const Holidays = () => {
 
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
-          <TabsList className="grid w-full grid-cols-7 sm:w-auto sm:inline-grid">
+          <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-grid sm:grid-cols-8">
             <TabsTrigger value="overview" className="gap-1.5">
               <Users className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Overview</span>
+              <span className="hidden sm:inline">{t("holidays.overview")}</span>
+            </TabsTrigger>
+            <TabsTrigger value="requests" className="gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t("holidays.request_holiday")}</span>
             </TabsTrigger>
             <TabsTrigger value="lookup" className="gap-1.5">
               <UserSearch className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Employee</span>
+              <span className="hidden sm:inline">{t("common.employee")}</span>
             </TabsTrigger>
             <TabsTrigger value="alerts" className="gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Alerts</span>
+              <span className="hidden sm:inline">{t("holidays.alerts_tab")}</span>
               {alerts.length > 0 && (
                 <span className="ml-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 leading-none">
                   {alerts.length}
@@ -735,15 +742,15 @@ const Holidays = () => {
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-1.5">
               <History className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Payments</span>
+              <span className="hidden sm:inline">{t("holidays.history")}</span>
             </TabsTrigger>
             <TabsTrigger value="departments" className="gap-1.5">
               <BarChart3 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Departments</span>
+              <span className="hidden sm:inline">{t("holidays.departments_tab")}</span>
             </TabsTrigger>
             <TabsTrigger value="integrity" className="gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Integrity</span>
+              <span className="hidden sm:inline">{t("holidays.integrity")}</span>
               {integrityRows.filter(r => r.severity === "error").length > 0 && (
                 <span className="ml-1 text-[10px] bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 leading-none">
                   {integrityRows.filter(r => r.severity === "error").length}
@@ -752,7 +759,7 @@ const Holidays = () => {
             </TabsTrigger>
             <TabsTrigger value="audit" className="gap-1.5">
               <Bug className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Audit</span>
+              <span className="hidden sm:inline">{t("holidays.audit")}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1027,6 +1034,13 @@ const Holidays = () => {
             }, {} as Record<string, { hoursAccrued: number; hoursTaken: number; totalPaid: number; balance: number; hoursCarriedOver: number }>)
           }
         />
+      )}
+
+      {/* Holiday Requests Tab Content - rendered outside Tabs but controlled by subTab */}
+      {subTab === "requests" && (
+        <div className="mt-4">
+          <HolidayRequestQueue />
+        </div>
       )}
 
       {/* Formula Breakdown Sheet */}

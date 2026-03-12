@@ -15,8 +15,10 @@ import { cn } from "@/lib/utils";
 import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard";
 import { TimesheetReviewPanel, computeFlags } from "@/components/attendance/TimesheetReviewPanel";
 import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDialog";
+import { useI18n } from "@/hooks/useI18n";
 
 export default function Timesheets() {
+  const { t } = useI18n();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("pending");
@@ -109,7 +111,7 @@ export default function Timesheets() {
     <AppLayout>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-foreground">Timesheets</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("timesheets.title")}</h1>
           <div className="flex items-center gap-2 flex-wrap">
             <EvidenceRequestDialog />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -117,11 +119,11 @@ export default function Timesheets() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="clocked_in">On Shift</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="all">{t("common.all")}</SelectItem>
+                <SelectItem value="clocked_in">{t("timesheets.on_shift")}</SelectItem>
+                <SelectItem value="pending">{t("common.pending")}</SelectItem>
+                <SelectItem value="approved">{t("payroll.status_approved")}</SelectItem>
+                <SelectItem value="rejected">{t("payroll.status_rejected")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={selectedBranch} onValueChange={setSelectedBranch}>
@@ -129,7 +131,7 @@ export default function Timesheets() {
                 <SelectValue placeholder="All Locations" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
+                <SelectItem value="all">{t("timesheets.all_locations")}</SelectItem>
                 {branches?.map((b) => (
                   <SelectItem key={b.branch} value={b.branch}>{b.display_name}</SelectItem>
                 ))}
@@ -153,7 +155,7 @@ export default function Timesheets() {
             <ChevronRight className="h-5 w-5" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
-            Today
+            {t("common.today")}
           </Button>
         </div>
 
@@ -162,15 +164,15 @@ export default function Timesheets() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base">
-                {displayEntries.length} Entries
+                {displayEntries.length} {t("timesheets.entries")}
                 {pendingCount > 0 && (
                   <Badge variant="outline" className="ml-2 bg-warning/10 text-warning border-warning/30">
-                    {pendingCount} pending
+                    {pendingCount} {t("timesheets.pending")}
                   </Badge>
                 )}
                 {flaggedEntries.length > 0 && (
                   <Badge variant="outline" className="ml-2 bg-destructive/10 text-destructive border-destructive/30">
-                    {flaggedEntries.length} flagged
+                    {flaggedEntries.length} {t("timesheets.flagged")}
                   </Badge>
                 )}
               </CardTitle>
@@ -180,18 +182,18 @@ export default function Timesheets() {
                   size="sm"
                   onClick={() => setShowFlaggedOnly(!showFlaggedOnly)}
                 >
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  {showFlaggedOnly ? "Show All" : "Flagged Only"}
+                   <AlertTriangle className="h-3 w-3 mr-1" />
+                   {showFlaggedOnly ? t("timesheets.show_all") : t("timesheets.flagged_only")}
                 </Button>
                 {cleanPendingIds.length > 0 && (
                   <Button variant="outline" size="sm" onClick={selectCleanPending}>
                     <Check className="h-3 w-3 mr-1" />
-                    Select Clean ({cleanPendingIds.length})
+                    {t("timesheets.select_clean", { count: String(cleanPendingIds.length) })}
                   </Button>
                 )}
                 {pendingCount > 0 && (
                   <Button variant="outline" size="sm" onClick={selectAllPending}>
-                    Select All Pending
+                    {t("timesheets.select_all_pending")}
                   </Button>
                 )}
               </div>
@@ -199,9 +201,9 @@ export default function Timesheets() {
           </CardHeader>
           <CardContent className="space-y-2">
             {isLoading ? (
-              <p className="text-muted-foreground text-sm py-8 text-center">Loading...</p>
+              <p className="text-muted-foreground text-sm py-8 text-center">{t("common.loading")}</p>
             ) : displayEntries.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-8 text-center">No timesheet entries found</p>
+              <p className="text-muted-foreground text-sm py-8 text-center">{t("timesheets.no_entries")}</p>
             ) : (
               displayEntries.map((entry: any) => {
                 const flags = computeFlags(entry);
@@ -265,7 +267,7 @@ export default function Timesheets() {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <Badge variant="outline" className={cn("text-xs", statusColor(entry.status))}>
-                        {entry.status === "clocked_in" ? "On Shift" : entry.status}
+                        {entry.status === "clocked_in" ? t("timesheets.on_shift") : entry.status}
                       </Badge>
                       {entry.status === "pending" && (
                         <div className="flex gap-1">
@@ -321,7 +323,7 @@ export default function Timesheets() {
               className="shadow-elevated px-6"
             >
               <Check className="h-4 w-4 mr-2" />
-              Approve {selectedIds.length} Timesheet{selectedIds.length > 1 ? "s" : ""}
+              {t("timesheets.approve_count", { count: String(selectedIds.length) })}
             </Button>
           </div>
         )}
