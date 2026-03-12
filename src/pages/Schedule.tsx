@@ -57,7 +57,15 @@ export default function Schedule() {
   const { sendNotification } = useNotifications();
   const { data: companySettings } = useCompanySettings();
   const { data: employees } = useEmployees();
+  const { data: tenantBranches = [] } = useTenantBranches();
   const isMobile = useIsMobile();
+
+  // Auto-select first branch when tenant branches load
+  useEffect(() => {
+    if (tenantBranches.length > 0 && !selectedBranch) {
+      setSelectedBranch(tenantBranches[0]);
+    }
+  }, [tenantBranches, selectedBranch]);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
