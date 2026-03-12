@@ -118,6 +118,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           </PrivacyShieldProvider>
+          </I18nProvider>
         </TenantProvider>
         </AuthProvider>
       </BrowserRouter>
