@@ -508,7 +508,101 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
               </TabsContent>
 
-              {/* Branches Tab */}
+              {/* Contract Tab */}
+              <TabsContent value="contract" className="space-y-4 mt-0">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Contract Country</Label>
+                    <Select value={formData.contract_country} onValueChange={(v) => setFormData({ ...formData, contract_country: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {countryRules.map(r => (
+                          <SelectItem key={r.country_code} value={r.country_code}>{r.country_name}</SelectItem>
+                        ))}
+                        {countryRules.length === 0 && <SelectItem value="GB">United Kingdom</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Work Country</Label>
+                    <Select value={formData.work_country || formData.contract_country} onValueChange={(v) => setFormData({ ...formData, work_country: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {countryRules.map(r => (
+                          <SelectItem key={r.country_code} value={r.country_code}>{r.country_name}</SelectItem>
+                        ))}
+                        {countryRules.length === 0 && <SelectItem value="GB">United Kingdom</SelectItem>}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Employing Entity</Label>
+                  <Input
+                    value={formData.employing_entity}
+                    onChange={(e) => setFormData({ ...formData, employing_entity: e.target.value })}
+                    placeholder="e.g. UD Restaurants Ltd"
+                    className="transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Pay Type</Label>
+                    <Select value={formData.pay_type} onValueChange={(v) => setFormData({ ...formData, pay_type: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {PAY_TYPES.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Overtime Model</Label>
+                    <Select value={formData.overtime_model} onValueChange={(v) => setFormData({ ...formData, overtime_model: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {OVERTIME_MODELS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Holiday Entitlement Method</Label>
+                    <Select value={formData.holiday_entitlement_method} onValueChange={(v) => setFormData({ ...formData, holiday_entitlement_method: v })}>
+                      <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {HOLIDAY_ENTITLEMENT_METHODS.map(h => <SelectItem key={h.value} value={h.value}>{h.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 pt-6">
+                    <Label className="text-sm">Service Charge Eligible</Label>
+                    <input
+                      type="checkbox"
+                      checked={formData.service_charge_eligible}
+                      onChange={(e) => setFormData({ ...formData, service_charge_eligible: e.target.checked })}
+                      className="h-4 w-4 rounded border-border"
+                    />
+                  </div>
+                </div>
+
+                {formData.contract_country && countryRules.find(r => r.country_code === formData.contract_country) && (
+                  <div className="rounded-lg bg-muted/30 border border-border p-3 mt-2">
+                    <p className="text-xs font-semibold text-foreground">
+                      {countryRules.find(r => r.country_code === formData.contract_country)?.country_name} Labour Defaults
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {countryRules.find(r => r.country_code === formData.contract_country)?.max_statutory_days} days leave · 
+                      {countryRules.find(r => r.country_code === formData.contract_country)?.standard_week_hours}h workweek · 
+                      {countryRules.find(r => r.country_code === formData.contract_country)?.public_holiday_count} public holidays
+                    </p>
+                  </div>
+                )}
+              </TabsContent>
+
               <TabsContent value="branches" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
