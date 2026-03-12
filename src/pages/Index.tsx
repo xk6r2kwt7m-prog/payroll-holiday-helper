@@ -19,6 +19,7 @@ import { useAllEmployeeBranches, useTenantBranches, getBranchEmoji } from "@/hoo
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
+  const { tenantName } = useTenant();
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriod = periods[0];
