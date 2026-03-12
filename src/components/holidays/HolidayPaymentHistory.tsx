@@ -134,8 +134,27 @@ export function HolidayPaymentHistory({ payments, onEmployeeClick }: HolidayPaym
                         : "—"}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm font-medium text-primary">{formatHours(p.hours)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm text-muted-foreground">£{p.rate.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm font-semibold">{formatCurrency(p.total)}</TableCell>
+                    <TableCell className="text-right font-mono text-sm text-muted-foreground">
+                      <SensitiveField
+                        fieldKey={`hol-pay-rate-${p.id}`}
+                        value={<>£{p.rate.toFixed(2)}</>}
+                        category="compensation"
+                        employeeId={p.employeeId || undefined}
+                        mask="£•••"
+                        size="sm"
+                        inline
+                      />
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-sm font-semibold">
+                      <SensitiveField
+                        fieldKey={`hol-pay-total-${p.id}`}
+                        value={<>{formatCurrency(p.total)}</>}
+                        category="compensation"
+                        employeeId={p.employeeId || undefined}
+                        size="sm"
+                        inline
+                      />
+                    </TableCell>
                   </TableRow>
                 );
               })}
