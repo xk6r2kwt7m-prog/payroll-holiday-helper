@@ -8,6 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useI18n } from "@/hooks/useI18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { NotificationBell } from "@/components/NotificationBell";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { cn } from "@/lib/utils";
 import {
