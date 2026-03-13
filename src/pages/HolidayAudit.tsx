@@ -249,7 +249,7 @@ export default function HolidayAudit() {
       const db = dbTotals.get(resolved);
       const dbHours = db?.hours ?? 0;
       const dbAccrued = db?.accrued ?? 0;
-      const expectedAccrual = csv.csvHours * 0.1207;
+      const expectedAccrual = csv.csvHours * (leaveRules?.accrualRate ?? 0);
       results.push({
         csvName: csv.csvName,
         resolvedName: resolved,
