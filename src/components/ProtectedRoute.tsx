@@ -1,18 +1,11 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth, AppRole } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 import { AccessDenied } from "@/components/AccessDenied";
 import { ModuleUnavailable } from "@/components/ModuleUnavailable";
 import { TenantSuspended } from "@/components/TenantSuspended";
-
-const ROLE_LEVEL: Record<AppRole, number> = {
-  admin: 4,
-  manager: 3,
-  supervisor: 2,
-  staff: 1,
-  viewer: 0,
-};
+import { type AppRole, getRoleLevel } from "@/lib/roles";
 
 export type ModuleKey = "scheduling" | "payroll" | "training" | "documents" | "analytics";
 
