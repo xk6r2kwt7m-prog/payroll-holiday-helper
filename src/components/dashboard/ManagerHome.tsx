@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users, Clock, AlertTriangle, CheckCircle2, Calendar, CalendarClock,
-  ChevronRight, UserX, Megaphone, ClipboardCheck, Plus,
+  Users, Clock, AlertTriangle, Calendar, CalendarClock,
+  ChevronRight, Megaphone, ClipboardCheck, Plus, UserCheck,
+  UserX, Timer, ArrowRight, ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,11 +12,11 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useShifts } from "@/hooks/useSchedule";
 import { useAllHolidayRequests } from "@/hooks/useHolidayRequests";
 import { useI18n } from "@/hooks/useI18n";
-import { format, startOfWeek, endOfWeek } from "date-fns";
+import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-const anim = { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 } };
+const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
 export function ManagerHome() {
   const { t } = useI18n();
@@ -23,12 +24,12 @@ export function ManagerHome() {
   const activeEmployees = employees.filter(e => e.status === "active");
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
+  const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const { data: shifts = [] } = useShifts(weekStart, weekEnd);
   const { data: holidayRequests = [] } = useAllHolidayRequests();
 
-  // Time entries for today (clocked in staff)
   const { data: todayEntries = [] } = useQuery({
     queryKey: ["today_clock_ins", todayStr],
     queryFn: async () => {
@@ -44,19 +45,26 @@ export function ManagerHome() {
   });
 
   const todayShifts = shifts.filter((s: any) => s.shift_date === todayStr);
+  const tomorrowShifts = shifts.filter((s: any) => s.shift_date === tomorrowStr);
   const clockedInNow = todayEntries.filter((e: any) => !e.clock_out_time);
+
   const missingClockOut = todayEntries.filter((e: any) => {
     if (e.clock_out_time) return false;
-    const clockIn = new Date(e.clock_in_time);
-    const hoursAgo = (Date.now() - clockIn.getTime()) / 3600000;
+    const hoursAgo = (Date.now() - new Date(e.clock_in_time).getTime()) / 3600000;
     return hoursAgo > 10;
+  });
+
+  // Late arrivals: scheduled but not clocked in yet and shift started
+  const now = new Date();
+  const currentTimeStr = format(now, "HH:mm");
+  const clockedInEmployeeIds = new Set(todayEntries.map((e: any) => e.employee_id));
+  const lateArrivals = todayShifts.filter((s: any) => {
+    if (!s.start_time) return false;
+    return s.start_time.slice(0, 5) < currentTimeStr && !clockedInEmployeeIds.has(s.employee_id);
   });
 
   const pendingRequests = holidayRequests.filter((r: any) => r.status === "pending");
   const pendingTimesheets = todayEntries.filter((e: any) => e.status === "pending");
-
-  const scheduledToday = todayShifts.length;
-  const clockedInCount = clockedInNow.length;
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -65,55 +73,56 @@ export function ManagerHome() {
     return "Good evening";
   };
 
-  const alerts = [
-    ...(missingClockOut.length > 0 ? [{ icon: AlertTriangle, label: `${missingClockOut.length} missing clock-out${missingClockOut.length > 1 ? "s" : ""}`, color: "text-destructive", bg: "bg-destructive/10" }] : []),
-    ...(pendingRequests.length > 0 ? [{ icon: Calendar, label: `${pendingRequests.length} pending leave request${pendingRequests.length > 1 ? "s" : ""}`, color: "text-warning", bg: "bg-warning/10" }] : []),
-    ...(pendingTimesheets.length > 0 ? [{ icon: ClipboardCheck, label: `${pendingTimesheets.length} timesheet${pendingTimesheets.length > 1 ? "s" : ""} to review`, color: "text-accent", bg: "bg-accent/10" }] : []),
-  ];
+  // Build alerts
+  const alerts: { icon: any; label: string; color: string; bg: string; path: string }[] = [];
+  if (missingClockOut.length > 0) {
+    alerts.push({ icon: AlertTriangle, label: `${missingClockOut.length} missing clock-out`, color: "text-destructive", bg: "bg-destructive/10", path: "/timesheets" });
+  }
+  if (lateArrivals.length > 0) {
+    alerts.push({ icon: Timer, label: `${lateArrivals.length} late arrival${lateArrivals.length > 1 ? "s" : ""}`, color: "text-warning", bg: "bg-warning/10", path: "/timesheets" });
+  }
+  if (pendingRequests.length > 0) {
+    alerts.push({ icon: Calendar, label: `${pendingRequests.length} pending leave`, color: "text-accent", bg: "bg-accent/10", path: "/holidays" });
+  }
+  if (pendingTimesheets.length > 0) {
+    alerts.push({ icon: ClipboardCheck, label: `${pendingTimesheets.length} timesheet${pendingTimesheets.length > 1 ? "s" : ""} to review`, color: "text-primary", bg: "bg-primary/10", path: "/timesheets" });
+  }
 
   return (
-    <div className="space-y-5 max-w-2xl mx-auto pb-8">
+    <div className="space-y-5 max-w-2xl mx-auto pb-24">
       {/* Greeting */}
-      <motion.div {...anim} transition={{ duration: 0.3 }}>
+      <motion.div {...anim} transition={{ duration: 0.25 }}>
         <h1 className="text-xl font-bold text-foreground">{greeting()} 👋</h1>
         <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, d MMMM yyyy")}</p>
       </motion.div>
 
       {/* Live Status Strip */}
-      <motion.div {...anim} transition={{ duration: 0.3, delay: 0.05 }}>
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-card border border-border p-3 text-center">
-            <p className="text-2xl font-bold text-foreground tabular-nums">{clockedInCount}</p>
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-success mt-1">Working now</p>
-          </div>
-          <div className="rounded-xl bg-card border border-border p-3 text-center">
-            <p className="text-2xl font-bold text-foreground tabular-nums">{scheduledToday}</p>
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-primary mt-1">Scheduled</p>
-          </div>
-          <div className="rounded-xl bg-card border border-border p-3 text-center">
-            <p className="text-2xl font-bold text-foreground tabular-nums">{activeEmployees.length}</p>
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mt-1">Team</p>
-          </div>
+          <StatusCard value={clockedInNow.length} label="Working now" color="text-success" />
+          <StatusCard value={todayShifts.length} label="Scheduled" color="text-primary" />
+          <StatusCard value={activeEmployees.length} label="Team size" color="text-muted-foreground" />
         </div>
       </motion.div>
 
       {/* Alerts */}
       {alerts.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.3, delay: 0.1 }}>
+        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.08 }}>
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Needs Attention</h2>
           <div className="space-y-2">
             {alerts.map((alert, i) => (
-              <div key={i} className={cn("flex items-center gap-3 p-3 rounded-xl border border-border", alert.bg)}>
+              <Link key={i} to={alert.path} className={cn("flex items-center gap-3 p-3.5 rounded-xl border border-border shadow-sm", alert.bg)}>
                 <alert.icon className={cn("h-5 w-5 shrink-0", alert.color)} />
-                <span className="text-sm font-medium text-foreground">{alert.label}</span>
-              </div>
+                <span className="text-sm font-medium text-foreground flex-1">{alert.label}</span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+              </Link>
             ))}
           </div>
         </motion.div>
       )}
 
       {/* Quick Actions */}
-      <motion.div {...anim} transition={{ duration: 0.3, delay: 0.15 }}>
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.12 }}>
         <div className="grid grid-cols-4 gap-2">
           {[
             { icon: CalendarClock, label: "Rota", path: "/schedule", color: "text-primary", bg: "bg-primary/10" },
@@ -133,21 +142,16 @@ export function ManagerHome() {
 
       {/* Who's Working Now */}
       {clockedInNow.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.3, delay: 0.2 }}>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Working Now</h2>
-            <Link to="/timesheets" className="text-xs text-primary font-medium flex items-center gap-0.5">
-              View all <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
+        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
+          <SectionHeader title="Working Now" linkTo="/timesheets" />
           <div className="space-y-1.5">
             {clockedInNow.slice(0, 6).map((entry: any) => (
-              <div key={entry.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-card border border-border">
-                <div className="h-8 w-8 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+              <div key={entry.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border shadow-sm">
+                <div className="h-9 w-9 rounded-full bg-success/10 flex items-center justify-center shrink-0">
                   <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
+                  <p className="text-sm font-semibold text-foreground truncate">
                     {entry.employees?.forename} {entry.employees?.surname}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
@@ -160,20 +164,40 @@ export function ManagerHome() {
         </motion.div>
       )}
 
+      {/* Late Arrivals */}
+      {lateArrivals.length > 0 && (
+        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.2 }}>
+          <SectionHeader title="Late Arrivals" />
+          <div className="space-y-1.5">
+            {lateArrivals.slice(0, 4).map((shift: any) => (
+              <div key={shift.id} className="flex items-center gap-3 p-3 rounded-xl bg-warning/5 border border-warning/20 shadow-sm">
+                <div className="h-9 w-9 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
+                  <Timer className="h-4 w-4 text-warning" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {shift.employees?.forename} {shift.employees?.surname}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Expected {shift.start_time?.slice(0, 5)} · {shift.department}
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-[10px] text-warning border-warning/30 shrink-0">Late</Badge>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
       {/* Pending Holiday Requests */}
       {pendingRequests.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.3, delay: 0.25 }}>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Pending Requests</h2>
-            <Link to="/holidays" className="text-xs text-primary font-medium flex items-center gap-0.5">
-              Review <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
+        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.24 }}>
+          <SectionHeader title="Pending Requests" linkTo="/holidays" linkLabel="Review" />
           <div className="space-y-1.5">
             {pendingRequests.slice(0, 4).map((req: any) => (
-              <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
+              <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-sm">
                 <div>
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-semibold text-foreground">
                     {req.employees?.forename} {req.employees?.surname}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
@@ -188,33 +212,59 @@ export function ManagerHome() {
         </motion.div>
       )}
 
-      {/* Today's Schedule Overview */}
-      {todayShifts.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.3, delay: 0.3 }}>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Today's Schedule</h2>
-            <Link to="/schedule" className="text-xs text-primary font-medium flex items-center gap-0.5">
-              Full view <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="space-y-1.5">
-            {todayShifts.slice(0, 6).map((shift: any) => (
-              <div key={shift.id} className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border">
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {shift.employees?.forename} {shift.employees?.surname}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {shift.start_time?.slice(0, 5)} – {shift.end_time?.slice(0, 5)} · {shift.department}
-                  </p>
-                </div>
-                <Badge variant={shift.is_published ? "secondary" : "outline"} className="text-[10px]">
-                  {shift.is_published ? "Published" : "Draft"}
-                </Badge>
+      {/* Tomorrow's Schedule */}
+      {tomorrowShifts.length > 0 && (
+        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.28 }}>
+          <SectionHeader title="Tomorrow" linkTo="/schedule" />
+          <div className="rounded-xl bg-card border border-border p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-lg font-bold text-foreground tabular-nums">{tomorrowShifts.length} shifts</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {tomorrowShifts.length} staff scheduled for {format(addDays(new Date(), 1), "EEEE")}
+                </p>
               </div>
-            ))}
+              <div className="flex -space-x-2">
+                {tomorrowShifts.slice(0, 4).map((s: any, i: number) => (
+                  <div key={i} className="h-8 w-8 rounded-full bg-primary/10 border-2 border-card flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-primary">
+                      {s.employees?.forename?.[0]}{s.employees?.surname?.[0]}
+                    </span>
+                  </div>
+                ))}
+                {tomorrowShifts.length > 4 && (
+                  <div className="h-8 w-8 rounded-full bg-muted border-2 border-card flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-muted-foreground">+{tomorrowShifts.length - 4}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </motion.div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Sub-components ─── */
+
+function StatusCard({ value, label, color }: { value: number; label: string; color: string }) {
+  return (
+    <div className="rounded-xl bg-card border border-border p-3.5 text-center shadow-sm">
+      <p className="text-2xl font-bold text-foreground tabular-nums">{value}</p>
+      <p className={cn("text-[10px] uppercase tracking-widest font-semibold mt-1", color)}>{label}</p>
+    </div>
+  );
+}
+
+function SectionHeader({ title, linkTo, linkLabel = "View all" }: { title: string; linkTo?: string; linkLabel?: string }) {
+  return (
+    <div className="flex items-center justify-between mb-2.5">
+      <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{title}</h2>
+      {linkTo && (
+        <Link to={linkTo} className="text-xs text-primary font-medium flex items-center gap-0.5">
+          {linkLabel} <ChevronRight className="h-3 w-3" />
+        </Link>
       )}
     </div>
   );
