@@ -330,13 +330,16 @@ const Settings = () => {
             {activeSection === "notifications" && (
               <>
                 <ConfigCard title={t("settings.notifications")} description={t("settings.notifications_desc")}>
-                  <SwitchRow label={t("settings.email_notifications")} description={t("settings.email_notifications_desc")} checked={emailNotifications} onChange={setEmailNotifications} />
+                  <SwitchRow label="Enable Email Notifications" description="Send transactional emails via Postmark when HR events occur (holiday requests, schedule changes, etc.)" checked={emailNotifications} onChange={setEmailNotifications} />
                   <Separator />
                   <SwitchRow label={t("settings.holiday_alerts")} description={t("settings.holiday_alerts_desc")} checked={holidayRequestAlerts} onChange={setHolidayRequestAlerts} />
                   <Separator />
                   <SwitchRow label={t("settings.payroll_reminders")} description={t("settings.payroll_reminders_desc")} checked={payrollReminders} onChange={setPayrollReminders} />
                 </ConfigCard>
                 <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
+                <ConfigCard title="Email Delivery Test" description="Verify the email pipeline is connected and sending correctly.">
+                  <EmailTestButton />
+                </ConfigCard>
               </>
             )}
 
