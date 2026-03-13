@@ -5,6 +5,9 @@ import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocument
 import { PayrollDeadlineWidget } from "@/components/dashboard/PayrollDeadlineWidget";
 import { TodayActions } from "@/components/dashboard/TodayActions";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { LabourCostDashboard } from "@/components/dashboard/LabourCostDashboard";
+import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
+import { StaffingInsightsWidget } from "@/components/dashboard/StaffingInsightsWidget";
 import { usePayrollAudit } from "@/hooks/usePayrollAudit";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
