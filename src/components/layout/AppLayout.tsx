@@ -73,9 +73,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { t } = useI18n();
   const companyName = settings?.company_name || "UGLŌ";
 
-  const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
-  const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
-  const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const userLevel = getRoleLevel(role);
+  const canAccess = (minRole: string) => userLevel >= getRoleLevel(minRole);
 
   const primaryNavItems: NavItem[] = useMemo(() => [
     { label: t("nav.dashboard"), path: "/", minRole: "viewer", icon: LayoutDashboard },

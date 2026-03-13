@@ -70,8 +70,8 @@ export function ProtectedRoute({
   }
 
   if (requiredRole && !isPlatformAdmin) {
-    const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
-    const requiredLevel = ROLE_LEVEL[requiredRole] ?? 0;
+    const userLevel = getRoleLevel(role);
+    const requiredLevel = getRoleLevel(requiredRole);
     if (userLevel < requiredLevel) {
       return <AccessDenied />;
     }

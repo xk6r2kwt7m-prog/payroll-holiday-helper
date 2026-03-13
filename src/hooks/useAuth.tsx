@@ -20,13 +20,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ROLE_HIERARCHY: Record<AppRole, number> = {
-  admin: 4,
-  manager: 3,
-  supervisor: 2,
-  staff: 1,
-  viewer: 0,
-};
+// Role hierarchy imported from @/lib/roles
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

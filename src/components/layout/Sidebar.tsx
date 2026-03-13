@@ -37,8 +37,7 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ModuleKey } from "@/components/ProtectedRoute";
-
-const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
+import { getRoleLevel } from "@/lib/roles";
 
 interface SideNavItem {
   icon: any;
