@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,7 @@ const corsHeaders = {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "test";
   data: Record<string, string>;
 }
 
@@ -73,6 +74,14 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p><strong>Location:</strong> ${data.branch}</p>
       `;
       break;
+    case "test":
+      body = `
+        <h2>Test Email ✉️</h2>
+        <p>This is a diagnostic test email from UGLO HR.</p>
+        <p>If you received this, email delivery is working correctly.</p>
+        <p><strong>Sent at:</strong> ${new Date().toISOString()}</p>
+      `;
+      break;
     default:
       body = `<h2>Notification</h2><p>${data.message || "You have a new notification."}</p>`;
   }
@@ -93,35 +102,82 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const diagnostics: Record<string, any> = {
+    timestamp: new Date().toISOString(),
+    resend_api_key_configured: !!RESEND_API_KEY,
+    resend_api_key_prefix: RESEND_API_KEY ? `${RESEND_API_KEY.substring(0, 6)}...` : "MISSING",
+  };
+
   try {
     const { to, subject, type, data }: NotificationRequest = await req.json();
 
+    diagnostics.recipient = to;
+    diagnostics.subject = subject;
+    diagnostics.type = type;
+
     if (!to || !subject || !type) {
-      throw new Error("Missing required fields: to, subject, type");
+      diagnostics.error = "Missing required fields: to, subject, type";
+      console.error("[EMAIL_DIAG]", JSON.stringify(diagnostics));
+      throw new Error(diagnostics.error);
+    }
+
+    if (!resend || !RESEND_API_KEY) {
+      diagnostics.error = "RESEND_API_KEY is not configured. Email cannot be sent.";
+      console.error("[EMAIL_DIAG]", JSON.stringify(diagnostics));
+      return new Response(
+        JSON.stringify({ error: diagnostics.error, diagnostics }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     const html = buildHtml(type, data || {});
+    const fromAddress = "UGLO HR <notifications@hr.uglyops.com>";
+    diagnostics.from = fromAddress;
 
-    const { error } = await resend.emails.send({
-      from: "UGLO HR <notifications@hr.uglyops.com>",
+    console.log("[EMAIL_DIAG] Attempting send:", JSON.stringify({
+      to, subject, type, from: fromAddress, timestamp: diagnostics.timestamp,
+    }));
+
+    const { data: resendData, error } = await resend.emails.send({
+      from: fromAddress,
       to: [to],
       subject,
       html,
     });
 
     if (error) {
-      console.error("Resend error:", error);
-      throw new Error(error.message);
+      diagnostics.provider_error = error;
+      diagnostics.success = false;
+      console.error("[EMAIL_DIAG] Resend error:", JSON.stringify(diagnostics));
+
+      // Common Resend errors and their causes
+      if (error.message?.includes("domain")) {
+        diagnostics.hint = "The sender domain (hr.uglyops.com) may not be verified in Resend. Verify the domain at https://resend.com/domains";
+      }
+      if (error.message?.includes("API key")) {
+        diagnostics.hint = "The RESEND_API_KEY may be invalid or expired. Regenerate at https://resend.com/api-keys";
+      }
+
+      return new Response(
+        JSON.stringify({ error: error.message, diagnostics }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
-    return new Response(JSON.stringify({ success: true }), {
+    diagnostics.success = true;
+    diagnostics.resend_response = resendData;
+    console.log("[EMAIL_DIAG] Send successful:", JSON.stringify(diagnostics));
+
+    return new Response(JSON.stringify({ success: true, diagnostics }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
-    console.error("Error sending notification:", error);
+    diagnostics.error = error.message;
+    diagnostics.success = false;
+    console.error("[EMAIL_DIAG] Exception:", JSON.stringify(diagnostics));
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, diagnostics }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
