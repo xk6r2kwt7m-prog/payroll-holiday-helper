@@ -552,6 +552,47 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_revenue: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+          id: string
+          notes: string | null
+          revenue_amount: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date: string
+          id?: string
+          notes?: string | null
+          revenue_amount?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          id?: string
+          notes?: string | null
+          revenue_amount?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_revenue_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disciplinary_records: {
         Row: {
           appeal_deadline: string | null
@@ -2447,6 +2488,87 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shift_alerts: {
+        Row: {
+          alert_message: string
+          alert_type: string
+          created_at: string
+          employee_id: string
+          id: string
+          resolution_note: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          shift_id: string | null
+          tenant_id: string
+          time_entry_id: string | null
+        }
+        Insert: {
+          alert_message: string
+          alert_type: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          resolution_note?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          shift_id?: string | null
+          tenant_id: string
+          time_entry_id?: string | null
+        }
+        Update: {
+          alert_message?: string
+          alert_type?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          resolution_note?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          shift_id?: string | null
+          tenant_id?: string
+          time_entry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_alerts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_alerts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_alerts_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_alerts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_alerts_time_entry_id_fkey"
+            columns: ["time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
             referencedColumns: ["id"]
           },
         ]
