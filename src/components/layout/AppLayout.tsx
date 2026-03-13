@@ -11,6 +11,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationBell } from "@/components/NotificationBell";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { cn } from "@/lib/utils";
+import { getRoleLevel } from "@/lib/roles";
 import {
   LayoutDashboard,
   Users,

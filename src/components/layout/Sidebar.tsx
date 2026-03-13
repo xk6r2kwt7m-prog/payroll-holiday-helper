@@ -81,8 +81,8 @@ export function Sidebar() {
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || tenantName || "UGLŌ";
 
-  const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
-  const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const userLevel = getRoleLevel(role);
+  const canAccess = (minRole: string) => userLevel >= getRoleLevel(minRole);
 
   const isModuleEnabled = (module?: ModuleKey) => {
     if (!module) return true;

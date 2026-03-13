@@ -107,8 +107,8 @@ export function MobileBottomNav() {
   const { enabledModules, isPlatformAdmin } = useTenant();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
-  const canAccess = (minRole: MinRole) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const userLevel = getRoleLevel(role);
+  const canAccess = (minRole: MinRole) => userLevel >= getRoleLevel(minRole);
   const isModuleEnabled = (mod?: ModuleKey) => {
     if (!mod || isPlatformAdmin) return true;
     if (!enabledModules) return true;
