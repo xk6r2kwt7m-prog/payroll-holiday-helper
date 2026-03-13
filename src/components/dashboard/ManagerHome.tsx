@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Users, Clock, AlertTriangle, Calendar, CalendarClock,
-  ChevronRight, Megaphone, ClipboardCheck, Plus, UserCheck,
-  UserX, Timer, ArrowRight, ShieldAlert,
+  ChevronRight, Megaphone, ClipboardCheck, UserCheck,
+  UserX, Timer, ShieldAlert, TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useShifts } from "@/hooks/useSchedule";
 import { useAllHolidayRequests } from "@/hooks/useHolidayRequests";
 import { useI18n } from "@/hooks/useI18n";
+import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +55,7 @@ export function ManagerHome() {
     return hoursAgo > 10;
   });
 
-  // Late arrivals: scheduled but not clocked in yet and shift started
+  // Late arrivals
   const now = new Date();
   const currentTimeStr = format(now, "HH:mm");
   const clockedInEmployeeIds = new Set(todayEntries.map((e: any) => e.employee_id));
@@ -62,6 +63,20 @@ export function ManagerHome() {
     if (!s.start_time) return false;
     return s.start_time.slice(0, 5) < currentTimeStr && !clockedInEmployeeIds.has(s.employee_id);
   });
+
+  // Missing clock-ins: scheduled but never clocked in at all today
+  const missingClockIns = todayShifts.filter((s: any) => {
+    if (!s.start_time || !s.employee_id) return false;
+    const shiftStart = s.start_time.slice(0, 5);
+    // Only flag if shift started more than 30 mins ago
+    const [h, m] = shiftStart.split(":").map(Number);
+    const shiftStartDate = new Date();
+    shiftStartDate.setHours(h, m + 30, 0, 0);
+    return shiftStartDate < now && !clockedInEmployeeIds.has(s.employee_id);
+  });
+
+  // Shift coverage: unassigned shifts today
+  const unassignedToday = todayShifts.filter((s: any) => !s.employee_id);
 
   const pendingRequests = holidayRequests.filter((r: any) => r.status === "pending");
   const pendingTimesheets = todayEntries.filter((e: any) => e.status === "pending");
@@ -74,18 +89,24 @@ export function ManagerHome() {
   };
 
   // Build alerts
-  const alerts: { icon: any; label: string; color: string; bg: string; path: string }[] = [];
+  const alerts: { icon: any; label: string; count: number; color: string; bg: string; path: string }[] = [];
   if (missingClockOut.length > 0) {
-    alerts.push({ icon: AlertTriangle, label: `${missingClockOut.length} missing clock-out`, color: "text-destructive", bg: "bg-destructive/10", path: "/timesheets" });
+    alerts.push({ icon: AlertTriangle, label: "Missing clock-out", count: missingClockOut.length, color: "text-destructive", bg: "bg-destructive/10", path: "/timesheets" });
+  }
+  if (missingClockIns.length > 0) {
+    alerts.push({ icon: UserX, label: "Missing clock-in", count: missingClockIns.length, color: "text-destructive", bg: "bg-destructive/10", path: "/timesheets" });
   }
   if (lateArrivals.length > 0) {
-    alerts.push({ icon: Timer, label: `${lateArrivals.length} late arrival${lateArrivals.length > 1 ? "s" : ""}`, color: "text-warning", bg: "bg-warning/10", path: "/timesheets" });
+    alerts.push({ icon: Timer, label: "Late arrival", count: lateArrivals.length, color: "text-warning", bg: "bg-warning/10", path: "/timesheets" });
   }
   if (pendingRequests.length > 0) {
-    alerts.push({ icon: Calendar, label: `${pendingRequests.length} pending leave`, color: "text-accent", bg: "bg-accent/10", path: "/holidays" });
+    alerts.push({ icon: Calendar, label: "Pending leave", count: pendingRequests.length, color: "text-accent", bg: "bg-accent/10", path: "/holidays" });
   }
   if (pendingTimesheets.length > 0) {
-    alerts.push({ icon: ClipboardCheck, label: `${pendingTimesheets.length} timesheet${pendingTimesheets.length > 1 ? "s" : ""} to review`, color: "text-primary", bg: "bg-primary/10", path: "/timesheets" });
+    alerts.push({ icon: ClipboardCheck, label: "Timesheets to review", count: pendingTimesheets.length, color: "text-primary", bg: "bg-primary/10", path: "/timesheets" });
+  }
+  if (unassignedToday.length > 0) {
+    alerts.push({ icon: TrendingDown, label: "Unassigned shift", count: unassignedToday.length, color: "text-warning", bg: "bg-warning/10", path: "/schedule" });
   }
 
   return (
@@ -99,9 +120,9 @@ export function ManagerHome() {
       {/* Live Status Strip */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
         <div className="grid grid-cols-3 gap-2">
-          <StatusCard value={clockedInNow.length} label="Working now" color="text-success" />
+          <StatusCard value={clockedInNow.length} label="Working" color="text-success" />
           <StatusCard value={todayShifts.length} label="Scheduled" color="text-primary" />
-          <StatusCard value={activeEmployees.length} label="Team size" color="text-muted-foreground" />
+          <StatusCard value={activeEmployees.length} label="Team" color="text-muted-foreground" />
         </div>
       </motion.div>
 
@@ -113,13 +134,18 @@ export function ManagerHome() {
             {alerts.map((alert, i) => (
               <Link key={i} to={alert.path} className={cn("flex items-center gap-3 p-3.5 rounded-xl border border-border shadow-sm", alert.bg)}>
                 <alert.icon className={cn("h-5 w-5 shrink-0", alert.color)} />
-                <span className="text-sm font-medium text-foreground flex-1">{alert.label}</span>
+                <span className="text-sm font-medium text-foreground flex-1">{alert.count} {alert.label}{alert.count > 1 ? "s" : ""}</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
               </Link>
             ))}
           </div>
         </motion.div>
       )}
+
+      {/* Operational Alerts from shift_alerts table */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.1 }}>
+        <OperationalAlertsPanel />
+      </motion.div>
 
       {/* Quick Actions */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.12 }}>
@@ -164,10 +190,10 @@ export function ManagerHome() {
         </motion.div>
       )}
 
-      {/* Late Arrivals */}
-      {lateArrivals.length > 0 && (
+      {/* Late / Missing Clock-ins */}
+      {(lateArrivals.length > 0 || missingClockIns.length > 0) && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.2 }}>
-          <SectionHeader title="Late Arrivals" />
+          <SectionHeader title="Attendance Issues" />
           <div className="space-y-1.5">
             {lateArrivals.slice(0, 4).map((shift: any) => (
               <div key={shift.id} className="flex items-center gap-3 p-3 rounded-xl bg-warning/5 border border-warning/20 shadow-sm">
@@ -183,6 +209,22 @@ export function ManagerHome() {
                   </p>
                 </div>
                 <Badge variant="outline" className="text-[10px] text-warning border-warning/30 shrink-0">Late</Badge>
+              </div>
+            ))}
+            {missingClockIns.filter((s: any) => !lateArrivals.find((l: any) => l.id === s.id)).slice(0, 3).map((shift: any) => (
+              <div key={shift.id} className="flex items-center gap-3 p-3 rounded-xl bg-destructive/5 border border-destructive/20 shadow-sm">
+                <div className="h-9 w-9 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                  <UserX className="h-4 w-4 text-destructive" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {shift.employees?.forename} {shift.employees?.surname}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Shift {shift.start_time?.slice(0, 5)}–{shift.end_time?.slice(0, 5)} · No clock-in
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-[10px] text-destructive border-destructive/30 shrink-0">Missing</Badge>
               </div>
             ))}
           </div>

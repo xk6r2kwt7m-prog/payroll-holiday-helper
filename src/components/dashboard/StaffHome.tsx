@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Clock, MapPin, Calendar, ChevronRight, Megaphone, Sun, FileText,
-  Coffee, CheckCircle2, AlertCircle, ArrowRight,
+  Coffee, CheckCircle2, AlertCircle, ArrowRight, Pause, Play, Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useActiveClockIn, useClockInOut, useMyTimeEntries } from "@/hooks/useTimeEntries";
 import { useShifts, useBranchLocations } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfWeek, endOfWeek, isTomorrow } from "date-fns";
+import { format, startOfWeek, endOfWeek, isTomorrow, differenceInMinutes } from "date-fns";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,12 +36,29 @@ function GreetingHeader({ name }: { name: string }) {
   );
 }
 
-function GpsIndicator({ status }: { status: string }) {
+function GpsIndicator({ status, distance }: { status: string; distance?: number | null }) {
+  const withinGeofence = distance != null && distance <= 200;
   return (
-    <div className="flex items-center gap-2 text-xs justify-center py-1">
-      <MapPin className={cn("h-3.5 w-3.5", status === "granted" ? "text-success" : status === "denied" ? "text-destructive" : "text-muted-foreground")} />
-      <span className={cn("font-medium", status === "granted" ? "text-success" : "text-muted-foreground")}>
-        {status === "granted" ? "Location verified" : status === "denied" ? "Enable location services" : "Checking location..."}
+    <div className="flex items-center gap-2 text-xs justify-center py-1.5 rounded-lg bg-muted/50 px-3">
+      <Navigation className={cn(
+        "h-3.5 w-3.5",
+        status === "granted"
+          ? withinGeofence ? "text-success" : "text-warning"
+          : status === "denied" ? "text-destructive" : "text-muted-foreground"
+      )} />
+      <span className={cn(
+        "font-medium",
+        status === "granted"
+          ? withinGeofence ? "text-success" : "text-warning"
+          : "text-muted-foreground"
+      )}>
+        {status === "granted"
+          ? withinGeofence
+            ? "Within work area"
+            : distance != null
+              ? `${Math.round(distance)}m from workplace`
+              : "Location verified"
+          : status === "denied" ? "Enable location services" : "Checking location..."}
       </span>
     </div>
   );
@@ -51,78 +68,123 @@ function ActiveShiftCard({
   activeEntry,
   elapsedTime,
   onClockOut,
+  onBreak,
   isPending,
+  isOnBreak,
+  breakElapsed,
 }: {
   activeEntry: any;
   elapsedTime: string;
   onClockOut: () => void;
+  onBreak: () => void;
   isPending: boolean;
+  isOnBreak: boolean;
+  breakElapsed?: string;
 }) {
   return (
     <div className="text-center space-y-4">
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-success/10 text-success rounded-full text-sm font-semibold">
-        <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-        On Shift · {activeEntry.branch}
+      <div className={cn(
+        "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold",
+        isOnBreak ? "bg-warning/10 text-warning" : "bg-success/10 text-success"
+      )}>
+        <div className={cn("h-2 w-2 rounded-full animate-pulse", isOnBreak ? "bg-warning" : "bg-success")} />
+        {isOnBreak ? "On Break" : `On Shift · ${activeEntry.branch}`}
       </div>
+
       <div className="text-5xl font-mono font-bold text-foreground tracking-tight">
         {elapsedTime || "00:00:00"}
       </div>
-      <p className="text-xs text-muted-foreground">
-        Started at {format(new Date(activeEntry.clock_in_time), "HH:mm")}
-      </p>
-      <Button
-        onClick={onClockOut}
-        disabled={isPending}
-        variant="destructive"
-        className="w-full h-14 text-base font-semibold rounded-xl"
-      >
-        <Clock className="h-5 w-5 mr-2" />
-        {isPending ? "Clocking out..." : "Clock Out"}
-      </Button>
+
+      <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+        <span>Started {format(new Date(activeEntry.clock_in_time), "HH:mm")}</span>
+        {activeEntry.break_minutes > 0 && (
+          <span>· {activeEntry.break_minutes}min break</span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          onClick={onBreak}
+          variant="outline"
+          className="h-12 rounded-xl text-sm font-semibold"
+          disabled={isPending}
+        >
+          {isOnBreak ? <Play className="h-4 w-4 mr-1.5" /> : <Pause className="h-4 w-4 mr-1.5" />}
+          {isOnBreak ? "End Break" : "Start Break"}
+        </Button>
+        <Button
+          onClick={onClockOut}
+          disabled={isPending}
+          variant="destructive"
+          className="h-12 rounded-xl text-sm font-semibold"
+        >
+          <Clock className="h-4 w-4 mr-1.5" />
+          {isPending ? "Ending..." : "Clock Out"}
+        </Button>
+      </div>
     </div>
   );
 }
 
 function ClockInCard({
   gpsStatus,
+  gpsDistance,
   selectedBranch,
   setSelectedBranch,
   branches,
   onClockIn,
   isPending,
   hasShiftToday,
+  nextShiftTime,
 }: {
   gpsStatus: string;
+  gpsDistance?: number | null;
   selectedBranch: string;
   setSelectedBranch: (v: string) => void;
   branches: any[];
   onClockIn: () => void;
   isPending: boolean;
   hasShiftToday: boolean;
+  nextShiftTime?: string | null;
 }) {
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="text-lg font-semibold text-foreground">Ready to start?</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          {hasShiftToday ? "Ready to start?" : "No shift scheduled"}
+        </h2>
+        {hasShiftToday && nextShiftTime && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Shift starts at <span className="font-semibold text-foreground">{nextShiftTime}</span>
+          </p>
+        )}
         {!hasShiftToday && (
-          <p className="text-xs text-warning font-medium mt-1">No shift scheduled today</p>
+          <p className="text-xs text-muted-foreground mt-1">You can still clock in if needed</p>
         )}
       </div>
-      <GpsIndicator status={gpsStatus} />
-      <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-        <SelectTrigger className="h-12 rounded-xl text-sm">
-          <SelectValue placeholder="Select branch" />
-        </SelectTrigger>
-        <SelectContent>
-          {branches?.map((b) => (
-            <SelectItem key={b.branch} value={b.branch}>{b.display_name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+
+      <GpsIndicator status={gpsStatus} distance={gpsDistance} />
+
+      {branches && branches.length > 1 && (
+        <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+          <SelectTrigger className="h-12 rounded-xl text-sm">
+            <SelectValue placeholder="Select location" />
+          </SelectTrigger>
+          <SelectContent>
+            {branches.map((b) => (
+              <SelectItem key={b.branch} value={b.branch}>{b.display_name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
       <Button
         onClick={onClockIn}
         disabled={isPending || gpsStatus !== "granted"}
-        className="w-full h-14 text-base font-semibold rounded-xl"
+        className={cn(
+          "w-full h-14 text-base font-semibold rounded-xl",
+          !hasShiftToday && "bg-muted-foreground hover:bg-muted-foreground/90"
+        )}
       >
         <Clock className="h-5 w-5 mr-2" />
         {isPending ? "Clocking in..." : "Clock In"}
@@ -156,6 +218,32 @@ function QuickActionGrid() {
   );
 }
 
+function ShiftCountdown({ shiftStart }: { shiftStart: string }) {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const i = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(i);
+  }, []);
+
+  const today = format(now, "yyyy-MM-dd");
+  const shiftDate = new Date(`${today}T${shiftStart}`);
+  const minsUntil = differenceInMinutes(shiftDate, now);
+
+  if (minsUntil <= 0 || minsUntil > 480) return null;
+
+  const hrs = Math.floor(minsUntil / 60);
+  const mins = minsUntil % 60;
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/10">
+      <Clock className="h-3.5 w-3.5 text-primary" />
+      <span className="text-xs font-medium text-primary">
+        Shift starts in {hrs > 0 ? `${hrs}h ` : ""}{mins}min
+      </span>
+    </div>
+  );
+}
+
 /* ─── Main component ─── */
 
 export function StaffHome() {
@@ -166,6 +254,8 @@ export function StaffHome() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [elapsedTime, setElapsedTime] = useState("");
+  const [isOnBreak, setIsOnBreak] = useState(false);
+  const [breakStartTime, setBreakStartTime] = useState<Date | null>(null);
 
   const { data: activeEntry } = useActiveClockIn();
   const clockInOut = useClockInOut();
@@ -213,6 +303,31 @@ export function StaffHome() {
     );
   }, []);
 
+  // Auto-select single branch
+  useEffect(() => {
+    if (branches && branches.length === 1 && !selectedBranch) {
+      setSelectedBranch(branches[0].branch);
+    }
+  }, [branches, selectedBranch]);
+
+  // Calculate distance to nearest branch
+  const gpsDistance = useMemo(() => {
+    if (!coords || !branches || branches.length === 0) return null;
+    const target = selectedBranch
+      ? branches.find((b: any) => b.branch === selectedBranch)
+      : branches[0];
+    if (!target?.latitude || !target?.longitude) return null;
+
+    const R = 6371000;
+    const dLat = ((target.latitude - coords.lat) * Math.PI) / 180;
+    const dLon = ((target.longitude - coords.lng) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos((coords.lat * Math.PI) / 180) *
+      Math.cos((target.latitude * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }, [coords, branches, selectedBranch]);
+
   // Elapsed timer
   useEffect(() => {
     if (!activeEntry?.clock_in_time) return;
@@ -229,7 +344,7 @@ export function StaffHome() {
   }, [activeEntry?.clock_in_time]);
 
   const handleClockIn = async () => {
-    if (!selectedBranch) { toast.error("Please select a branch"); return; }
+    if (!selectedBranch) { toast.error("Please select a location"); return; }
     try {
       await clockInOut.mutateAsync({ action: "clock_in", latitude: coords?.lat, longitude: coords?.lng, branch: selectedBranch });
       toast.success("Clocked in!");
@@ -242,8 +357,22 @@ export function StaffHome() {
     try {
       await clockInOut.mutateAsync({ action: "clock_out", latitude: coords?.lat, longitude: coords?.lng });
       toast.success("Clocked out!");
+      setIsOnBreak(false);
+      setBreakStartTime(null);
     } catch (err: any) {
       toast.error(err.requires_override ? "Outside allowed area to clock out." : err.message);
+    }
+  };
+
+  const handleBreak = () => {
+    if (isOnBreak) {
+      setIsOnBreak(false);
+      setBreakStartTime(null);
+      toast.success("Break ended");
+    } else {
+      setIsOnBreak(true);
+      setBreakStartTime(new Date());
+      toast.success("Break started");
     }
   };
 
@@ -258,32 +387,63 @@ export function StaffHome() {
     ?.filter((e: any) => e.clock_in_time && format(new Date(e.clock_in_time), "yyyy-MM-dd") === todayStr && e.total_hours)
     .reduce((sum: number, e: any) => sum + Number(e.total_hours), 0) || 0;
 
+  const nextShiftTime = todayShifts.length > 0 ? todayShifts[0].start_time?.slice(0, 5) : null;
+
+  // Pending requests count
+  const { data: myRequests = [] } = useQuery({
+    queryKey: ["my_holiday_requests_count"],
+    queryFn: async () => {
+      if (!employeeId) return [];
+      const { data, error } = await supabase
+        .from("holiday_requests")
+        .select("id, status")
+        .eq("employee_id", employeeId)
+        .eq("status", "pending");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!employeeId,
+  });
+
   return (
     <div className="space-y-5 max-w-lg mx-auto pb-24">
       <GreetingHeader name={employeeName} />
+
+      {/* Shift Countdown */}
+      {!activeEntry && nextShiftTime && (
+        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.02 }}>
+          <ShiftCountdown shiftStart={nextShiftTime} />
+        </motion.div>
+      )}
 
       {/* Primary Time Action */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
         <div className={cn(
           "rounded-2xl p-5 border transition-all",
-          activeEntry ? "border-success/30 bg-success/5" : "border-border bg-card shadow-sm"
+          activeEntry
+            ? isOnBreak ? "border-warning/30 bg-warning/5" : "border-success/30 bg-success/5"
+            : "border-border bg-card shadow-sm"
         )}>
           {activeEntry ? (
             <ActiveShiftCard
               activeEntry={activeEntry}
               elapsedTime={elapsedTime}
               onClockOut={handleClockOut}
+              onBreak={handleBreak}
               isPending={clockInOut.isPending}
+              isOnBreak={isOnBreak}
             />
           ) : (
             <ClockInCard
               gpsStatus={gpsStatus}
+              gpsDistance={gpsDistance}
               selectedBranch={selectedBranch}
               setSelectedBranch={setSelectedBranch}
               branches={branches || []}
               onClockIn={handleClockIn}
               isPending={clockInOut.isPending}
               hasShiftToday={todayShifts.length > 0}
+              nextShiftTime={nextShiftTime}
             />
           )}
         </div>
@@ -291,26 +451,28 @@ export function StaffHome() {
 
       {/* Today Summary */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.08 }}>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-card border border-border p-4 shadow-sm">
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">Today's Shift</p>
-            <p className="text-xl font-bold text-foreground mt-1.5 tabular-nums">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-xl bg-card border border-border p-3.5 text-center shadow-sm">
+            <p className="text-lg font-bold text-foreground tabular-nums">
               {todayShifts.length > 0
-                ? `${todayShifts[0].start_time?.slice(0, 5)} – ${todayShifts[0].end_time?.slice(0, 5)}`
-                : "Day off"}
+                ? `${todayShifts[0].start_time?.slice(0, 5)}`
+                : "—"}
             </p>
-            {todayShifts.length > 0 && (
-              <p className="text-[11px] text-muted-foreground mt-1">{todayShifts[0].department} · {todayShifts[0].branch}</p>
-            )}
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mt-1">
+              {todayShifts.length > 0 ? "Shift" : "Day Off"}
+            </p>
           </div>
-          <div className="rounded-xl bg-card border border-border p-4 shadow-sm">
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">Worked Today</p>
-            <p className="text-xl font-bold text-foreground mt-1.5 tabular-nums">
-              {activeEntry ? elapsedTime?.slice(0, 5) || "0:00" : todayWorkedHours > 0 ? `${todayWorkedHours.toFixed(1)}h` : "—"}
+          <div className="rounded-xl bg-card border border-border p-3.5 text-center shadow-sm">
+            <p className="text-lg font-bold text-foreground tabular-nums">
+              {activeEntry ? elapsedTime?.slice(0, 5) || "0:00" : todayWorkedHours > 0 ? `${todayWorkedHours.toFixed(1)}h` : "0h"}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              {activeEntry ? "In progress" : todayWorkedHours > 0 ? "Completed" : "Not started"}
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mt-1">Worked</p>
+          </div>
+          <div className="rounded-xl bg-card border border-border p-3.5 text-center shadow-sm">
+            <p className={cn("text-lg font-bold tabular-nums", myRequests.length > 0 ? "text-warning" : "text-foreground")}>
+              {myRequests.length}
             </p>
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mt-1">Pending</p>
           </div>
         </div>
       </motion.div>
@@ -368,7 +530,7 @@ export function StaffHome() {
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.24 }}>
           <SectionHeader title="Recent Activity" />
           <div className="space-y-1.5">
-            {myEntries.slice(0, 5).map((entry: any) => (
+            {myEntries.slice(0, 4).map((entry: any) => (
               <div key={entry.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-sm">
                 <div>
                   <p className="text-sm font-medium text-foreground">{format(new Date(entry.clock_in_time), "EEE d MMM")}</p>
