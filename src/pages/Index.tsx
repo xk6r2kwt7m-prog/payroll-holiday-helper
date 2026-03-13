@@ -236,7 +236,25 @@ const Index = () => {
           </div>
         </motion.section>
 
-        {/* ─── MOBILE: COLLAPSIBLE DETAIL SECTIONS ─── */}
+        {/* ─── OPERATIONAL INTELLIGENCE ─── */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.2 }}
+        >
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
+            {t("ops.operational_intelligence")}
+          </h2>
+          <div className="space-y-4">
+            <LabourCostDashboard />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <OperationalAlertsPanel />
+              <StaffingInsightsWidget />
+            </div>
+          </div>
+        </motion.section>
+
+
         {isMobile && (
           <motion.section
             initial={{ opacity: 0, y: 12 }}
