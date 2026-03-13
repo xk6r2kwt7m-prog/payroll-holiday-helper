@@ -652,5 +652,26 @@
     "document_expiry": "Documento a expirar",
     "payroll_ready": "Processamento pronto para revisão",
     "setup_incomplete": "Configuração incompleta"
+  },
+  "ops": {
+    "labour_cost_today": "Custo de Mão-de-Obra Hoje",
+    "cost_today": "Custo Hoje",
+    "hours_today": "Horas Hoje",
+    "avg_hourly_cost": "Custo Médio/Hora",
+    "labour_percent_revenue": "% Mão-de-Obra",
+    "no_revenue_set": "Sem receita definida",
+    "set_revenue": "Definir Receita",
+    "invalid_amount": "Introduza um valor válido",
+    "alerts_title": "Alertas Operacionais",
+    "alert_resolved": "Alerta resolvido",
+    "alert_type_missing_clockout": "Saída em falta",
+    "alert_type_early_clockin": "Entrada antecipada",
+    "alert_type_late_clockin": "Entrada tardia",
+    "alert_type_overtime": "Horas extra",
+    "alert_type_unscheduled_work": "Trabalho não agendado",
+    "staffing_insights": "Equipa Sugerida",
+    "staffing_description": "Com base no histórico de escalas",
+    "data_points": "{{count}} dias analisados",
+    "operational_intelligence": "Inteligência Operacional"
   }
 }
