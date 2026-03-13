@@ -1,14 +1,26 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+interface EmailPayload {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  from: string;
+}
+
+interface EmailResponse {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  raw?: unknown;
+}
+
+interface EmailProvider {
+  name: string;
+  sendEmail(payload: EmailPayload): Promise<EmailResponse>;
+}
 
 interface NotificationRequest {
   to: string;
@@ -17,169 +29,219 @@ interface NotificationRequest {
   data: Record<string, string>;
 }
 
+// ─── Provider Adapters ───────────────────────────────────────────────────────
+
+class ResendProvider implements EmailProvider {
+  name = "resend";
+  private apiKey: string;
+  constructor(apiKey: string) { this.apiKey = apiKey; }
+
+  async sendEmail(p: EmailPayload): Promise<EmailResponse> {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: p.from, to: [p.to], subject: p.subject, html: p.html, text: p.text }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data?.message || res.statusText, raw: data };
+    return { success: true, messageId: data?.id, raw: data };
+  }
+}
+
+class PostmarkProvider implements EmailProvider {
+  name = "postmark";
+  private apiKey: string;
+  constructor(apiKey: string) { this.apiKey = apiKey; }
+
+  async sendEmail(p: EmailPayload): Promise<EmailResponse> {
+    const res = await fetch("https://api.postmarkapp.com/email", {
+      method: "POST",
+      headers: { "X-Postmark-Server-Token": this.apiKey, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ From: p.from, To: p.to, Subject: p.subject, HtmlBody: p.html, TextBody: p.text || "" }),
+    });
+    const data = await res.json();
+    if (data.ErrorCode && data.ErrorCode !== 0) return { success: false, error: data.Message, raw: data };
+    return { success: true, messageId: data?.MessageID, raw: data };
+  }
+}
+
+class SendGridProvider implements EmailProvider {
+  name = "sendgrid";
+  private apiKey: string;
+  constructor(apiKey: string) { this.apiKey = apiKey; }
+
+  async sendEmail(p: EmailPayload): Promise<EmailResponse> {
+    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: p.to }] }],
+        from: { email: p.from.includes("<") ? p.from.match(/<(.+)>/)?.[1] || p.from : p.from, name: p.from.includes("<") ? p.from.split("<")[0].trim() : undefined },
+        subject: p.subject,
+        content: [{ type: "text/html", value: p.html }],
+      }),
+    });
+    if (res.status === 202) return { success: true, messageId: res.headers.get("x-message-id") || undefined };
+    const data = await res.json().catch(() => ({}));
+    return { success: false, error: (data as Record<string, unknown>)?.errors?.[0]?.message || res.statusText, raw: data };
+  }
+}
+
+class MailgunProvider implements EmailProvider {
+  name = "mailgun";
+  private apiKey: string;
+  private domain: string;
+  constructor(apiKey: string, domain: string) { this.apiKey = apiKey; this.domain = domain; }
+
+  async sendEmail(p: EmailPayload): Promise<EmailResponse> {
+    const form = new FormData();
+    form.append("from", p.from);
+    form.append("to", p.to);
+    form.append("subject", p.subject);
+    form.append("html", p.html);
+    if (p.text) form.append("text", p.text);
+
+    const res = await fetch(`https://api.mailgun.net/v3/${this.domain}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Basic ${btoa(`api:${this.apiKey}`)}` },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data?.message || res.statusText, raw: data };
+    return { success: true, messageId: data?.id, raw: data };
+  }
+}
+
+// ─── Provider Factory ────────────────────────────────────────────────────────
+
+function resolveProvider(): EmailProvider {
+  const providerName = (Deno.env.get("EMAIL_PROVIDER") || "resend").toLowerCase();
+
+  switch (providerName) {
+    case "postmark": {
+      const key = Deno.env.get("POSTMARK_API_KEY");
+      if (!key) throw new Error("POSTMARK_API_KEY is not configured");
+      return new PostmarkProvider(key);
+    }
+    case "sendgrid": {
+      const key = Deno.env.get("SENDGRID_API_KEY");
+      if (!key) throw new Error("SENDGRID_API_KEY is not configured");
+      return new SendGridProvider(key);
+    }
+    case "mailgun": {
+      const key = Deno.env.get("MAILGUN_API_KEY");
+      const domain = Deno.env.get("MAILGUN_DOMAIN");
+      if (!key) throw new Error("MAILGUN_API_KEY is not configured");
+      if (!domain) throw new Error("MAILGUN_DOMAIN is not configured");
+      return new MailgunProvider(key, domain);
+    }
+    case "resend":
+    default: {
+      const key = Deno.env.get("RESEND_API_KEY");
+      if (!key) throw new Error("RESEND_API_KEY is not configured");
+      return new ResendProvider(key);
+    }
+  }
+}
+
+// ─── HTML Templates ──────────────────────────────────────────────────────────
+
 function buildHtml(type: string, data: Record<string, string>): string {
   const header = `
     <div style="background:#1a1a2e;padding:24px;text-align:center;">
       <h1 style="color:#e94560;margin:0;font-family:sans-serif;font-size:22px;">UGLO HR</h1>
-    </div>
-  `;
+    </div>`;
   const footer = `
     <div style="padding:16px;text-align:center;color:#888;font-size:12px;font-family:sans-serif;">
       This is an automated notification from UGLO HR. Do not reply to this email.
-    </div>
-  `;
+    </div>`;
 
   let body = "";
-
   switch (type) {
     case "holiday_request":
-      body = `
-        <h2>New Holiday Request</h2>
-        <p><strong>${data.employee_name}</strong> has submitted a holiday request.</p>
-        <p><strong>Dates:</strong> ${data.start_date} – ${data.end_date}</p>
-        <p><strong>Hours:</strong> ${data.hours}</p>
-        ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ""}
-      `;
+      body = `<h2>New Holiday Request</h2><p><strong>${data.employee_name}</strong> has submitted a holiday request.</p><p><strong>Dates:</strong> ${data.start_date} – ${data.end_date}</p><p><strong>Hours:</strong> ${data.hours}</p>${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ""}`;
       break;
     case "holiday_approved":
-      body = `
-        <h2>Holiday Approved ✅</h2>
-        <p>Your holiday request has been approved.</p>
-        <p><strong>Dates:</strong> ${data.start_date} – ${data.end_date}</p>
-        <p><strong>Hours:</strong> ${data.hours}</p>
-      `;
+      body = `<h2>Holiday Approved ✅</h2><p>Your holiday request has been approved.</p><p><strong>Dates:</strong> ${data.start_date} – ${data.end_date}</p><p><strong>Hours:</strong> ${data.hours}</p>`;
       break;
     case "holiday_rejected":
-      body = `
-        <h2>Holiday Rejected ❌</h2>
-        <p>Your holiday request has been rejected.</p>
-        <p><strong>Dates:</strong> ${data.start_date} – ${data.end_date}</p>
-        ${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ""}
-      `;
+      body = `<h2>Holiday Rejected ❌</h2><p>Your holiday request has been rejected.</p><p><strong>Dates:</strong> ${data.start_date} – ${data.end_date}</p>${data.reason ? `<p><strong>Reason:</strong> ${data.reason}</p>` : ""}`;
       break;
     case "payroll_reminder":
-      body = `
-        <h2>Payroll Reminder ⏰</h2>
-        <p>${data.message}</p>
-        <p><strong>Period:</strong> ${data.period_name}</p>
-        <p><strong>Pay date:</strong> ${data.pay_date}</p>
-      `;
+      body = `<h2>Payroll Reminder ⏰</h2><p>${data.message}</p><p><strong>Period:</strong> ${data.period_name}</p><p><strong>Pay date:</strong> ${data.pay_date}</p>`;
       break;
     case "shift_update":
-      body = `
-        <h2>Shift Update 📅</h2>
-        <p>${data.message}</p>
-        <p><strong>Date:</strong> ${data.shift_date}</p>
-        <p><strong>Time:</strong> ${data.start_time} – ${data.end_time}</p>
-        <p><strong>Location:</strong> ${data.branch}</p>
-      `;
+      body = `<h2>Shift Update 📅</h2><p>${data.message}</p><p><strong>Date:</strong> ${data.shift_date}</p><p><strong>Time:</strong> ${data.start_time} – ${data.end_time}</p><p><strong>Location:</strong> ${data.branch}</p>`;
       break;
     case "test":
-      body = `
-        <h2>Test Email ✉️</h2>
-        <p>This is a diagnostic test email from UGLO HR.</p>
-        <p>If you received this, email delivery is working correctly.</p>
-        <p><strong>Sent at:</strong> ${new Date().toISOString()}</p>
-      `;
+      body = `<h2>Test Email ✉️</h2><p>This is a diagnostic test email from UGLO HR.</p><p>If you received this, email delivery is working correctly.</p><p><strong>Sent at:</strong> ${new Date().toISOString()}</p>`;
       break;
     default:
       body = `<h2>Notification</h2><p>${data.message || "You have a new notification."}</p>`;
   }
 
-  return `
-    <div style="max-width:600px;margin:0 auto;background:#ffffff;font-family:sans-serif;">
-      ${header}
-      <div style="padding:24px;color:#333;line-height:1.6;">
-        ${body}
-      </div>
-      ${footer}
-    </div>
-  `;
+  return `<div style="max-width:600px;margin:0 auto;background:#ffffff;font-family:sans-serif;">${header}<div style="padding:24px;color:#333;line-height:1.6;">${body}</div>${footer}</div>`;
 }
+
+// ─── CORS ────────────────────────────────────────────────────────────────────
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+// ─── Handler ─────────────────────────────────────────────────────────────────
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const diagnostics: Record<string, any> = {
-    timestamp: new Date().toISOString(),
-    resend_api_key_configured: !!RESEND_API_KEY,
-    resend_api_key_prefix: RESEND_API_KEY ? `${RESEND_API_KEY.substring(0, 6)}...` : "MISSING",
-  };
+  const log: Record<string, unknown> = { timestamp: new Date().toISOString() };
 
   try {
-    const { to, subject, type, data }: NotificationRequest = await req.json();
+    const provider = resolveProvider();
+    log.provider = provider.name;
 
-    diagnostics.recipient = to;
-    diagnostics.subject = subject;
-    diagnostics.type = type;
+    const { to, subject, type, data }: NotificationRequest = await req.json();
+    log.recipient = to;
+    log.template = type;
 
     if (!to || !subject || !type) {
-      diagnostics.error = "Missing required fields: to, subject, type";
-      console.error("[EMAIL_DIAG]", JSON.stringify(diagnostics));
-      throw new Error(diagnostics.error);
-    }
-
-    if (!resend || !RESEND_API_KEY) {
-      diagnostics.error = "RESEND_API_KEY is not configured. Email cannot be sent.";
-      console.error("[EMAIL_DIAG]", JSON.stringify(diagnostics));
-      return new Response(
-        JSON.stringify({ error: diagnostics.error, diagnostics }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      throw new Error("Missing required fields: to, subject, type");
     }
 
     const html = buildHtml(type, data || {});
     const fromAddress = "UGLO HR <notifications@hr.uglyops.com>";
-    diagnostics.from = fromAddress;
 
-    console.log("[EMAIL_DIAG] Attempting send:", JSON.stringify({
-      to, subject, type, from: fromAddress, timestamp: diagnostics.timestamp,
-    }));
+    console.log("[EMAIL_SEND]", JSON.stringify({ provider: provider.name, recipient: to, template: type, status: "sending" }));
 
-    const { data: resendData, error } = await resend.emails.send({
-      from: fromAddress,
-      to: [to],
-      subject,
-      html,
-    });
+    const result = await provider.sendEmail({ to, subject, html, from: fromAddress });
 
-    if (error) {
-      diagnostics.provider_error = error;
-      diagnostics.success = false;
-      console.error("[EMAIL_DIAG] Resend error:", JSON.stringify(diagnostics));
+    log.status = result.success ? "sent" : "failed";
+    log.provider_response = result.raw;
+    if (result.messageId) log.message_id = result.messageId;
+    if (result.error) log.error = result.error;
 
-      // Common Resend errors and their causes
-      if (error.message?.includes("domain")) {
-        diagnostics.hint = "The sender domain (hr.uglyops.com) may not be verified in Resend. Verify the domain at https://resend.com/domains";
-      }
-      if (error.message?.includes("API key")) {
-        diagnostics.hint = "The RESEND_API_KEY may be invalid or expired. Regenerate at https://resend.com/api-keys";
-      }
+    console.log("[EMAIL_SEND]", JSON.stringify({ provider: provider.name, recipient: to, template: type, status: log.status, message_id: result.messageId }));
 
-      return new Response(
-        JSON.stringify({ error: error.message, diagnostics }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    if (!result.success) {
+      return new Response(JSON.stringify({ error: result.error, diagnostics: log }), {
+        status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    diagnostics.success = true;
-    diagnostics.resend_response = resendData;
-    console.log("[EMAIL_DIAG] Send successful:", JSON.stringify(diagnostics));
-
-    return new Response(JSON.stringify({ success: true, diagnostics }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+    return new Response(JSON.stringify({ success: true, diagnostics: log }), {
+      status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: any) {
-    diagnostics.error = error.message;
-    diagnostics.success = false;
-    console.error("[EMAIL_DIAG] Exception:", JSON.stringify(diagnostics));
-    return new Response(
-      JSON.stringify({ error: error.message, diagnostics }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    log.status = "error";
+    log.error = msg;
+    console.error("[EMAIL_SEND]", JSON.stringify(log));
+    return new Response(JSON.stringify({ error: msg, diagnostics: log }), {
+      status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
