@@ -25,11 +25,44 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "payroll_approved" | "test";
   data: Record<string, string>;
+  tenant_id?: string;
 }
 
-// ─── Provider Adapters ───────────────────────────────────────────────────────
+// ─── Provider: Postmark (Primary) ────────────────────────────────────────────
+
+class PostmarkProvider implements EmailProvider {
+  name = "postmark";
+  private apiKey: string;
+  constructor(apiKey: string) { this.apiKey = apiKey; }
+
+  async sendEmail(p: EmailPayload): Promise<EmailResponse> {
+    const res = await fetch("https://api.postmarkapp.com/email", {
+      method: "POST",
+      headers: {
+        "X-Postmark-Server-Token": this.apiKey,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        From: p.from,
+        To: p.to,
+        Subject: p.subject,
+        HtmlBody: p.html,
+        TextBody: p.text || "",
+        MessageStream: "outbound",
+      }),
+    });
+    const data = await res.json();
+    if (data.ErrorCode && data.ErrorCode !== 0) {
+      return { success: false, error: data.Message, raw: data };
+    }
+    return { success: true, messageId: data?.MessageID, raw: data };
+  }
+}
+
+// ─── Fallback Providers ──────────────────────────────────────────────────────
 
 class ResendProvider implements EmailProvider {
   name = "resend";
@@ -48,42 +81,27 @@ class ResendProvider implements EmailProvider {
   }
 }
 
-class PostmarkProvider implements EmailProvider {
-  name = "postmark";
-  private apiKey: string;
-  constructor(apiKey: string) { this.apiKey = apiKey; }
-
-  async sendEmail(p: EmailPayload): Promise<EmailResponse> {
-    const res = await fetch("https://api.postmarkapp.com/email", {
-      method: "POST",
-      headers: { "X-Postmark-Server-Token": this.apiKey, "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ From: p.from, To: p.to, Subject: p.subject, HtmlBody: p.html, TextBody: p.text || "" }),
-    });
-    const data = await res.json();
-    if (data.ErrorCode && data.ErrorCode !== 0) return { success: false, error: data.Message, raw: data };
-    return { success: true, messageId: data?.MessageID, raw: data };
-  }
-}
-
 class SendGridProvider implements EmailProvider {
   name = "sendgrid";
   private apiKey: string;
   constructor(apiKey: string) { this.apiKey = apiKey; }
 
   async sendEmail(p: EmailPayload): Promise<EmailResponse> {
+    const fromEmail = p.from.includes("<") ? p.from.match(/<(.+)>/)?.[1] || p.from : p.from;
+    const fromName = p.from.includes("<") ? p.from.split("<")[0].trim() : undefined;
     const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: { Authorization: `Bearer ${this.apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         personalizations: [{ to: [{ email: p.to }] }],
-        from: { email: p.from.includes("<") ? p.from.match(/<(.+)>/)?.[1] || p.from : p.from, name: p.from.includes("<") ? p.from.split("<")[0].trim() : undefined },
+        from: { email: fromEmail, name: fromName },
         subject: p.subject,
         content: [{ type: "text/html", value: p.html }],
       }),
     });
     if (res.status === 202) return { success: true, messageId: res.headers.get("x-message-id") || undefined };
     const data = await res.json().catch(() => ({}));
-    return { success: false, error: (data as Record<string, unknown>)?.errors?.[0]?.message || res.statusText, raw: data };
+    return { success: false, error: (data as any)?.errors?.[0]?.message || res.statusText, raw: data };
   }
 }
 
@@ -100,7 +118,6 @@ class MailgunProvider implements EmailProvider {
     form.append("subject", p.subject);
     form.append("html", p.html);
     if (p.text) form.append("text", p.text);
-
     const res = await fetch(`https://api.mailgun.net/v3/${this.domain}/messages`, {
       method: "POST",
       headers: { Authorization: `Basic ${btoa(`api:${this.apiKey}`)}` },
@@ -115,13 +132,13 @@ class MailgunProvider implements EmailProvider {
 // ─── Provider Factory ────────────────────────────────────────────────────────
 
 function resolveProvider(): EmailProvider {
-  const providerName = (Deno.env.get("EMAIL_PROVIDER") || "resend").toLowerCase();
+  const providerName = (Deno.env.get("EMAIL_PROVIDER") || "postmark").toLowerCase();
 
   switch (providerName) {
-    case "postmark": {
-      const key = Deno.env.get("POSTMARK_API_KEY");
-      if (!key) throw new Error("POSTMARK_API_KEY is not configured");
-      return new PostmarkProvider(key);
+    case "resend": {
+      const key = Deno.env.get("RESEND_API_KEY");
+      if (!key) throw new Error("RESEND_API_KEY is not configured");
+      return new ResendProvider(key);
     }
     case "sendgrid": {
       const key = Deno.env.get("SENDGRID_API_KEY");
@@ -135,25 +152,29 @@ function resolveProvider(): EmailProvider {
       if (!domain) throw new Error("MAILGUN_DOMAIN is not configured");
       return new MailgunProvider(key, domain);
     }
-    case "resend":
+    case "postmark":
     default: {
-      const key = Deno.env.get("RESEND_API_KEY");
-      if (!key) throw new Error("RESEND_API_KEY is not configured");
-      return new ResendProvider(key);
+      const key = Deno.env.get("POSTMARK_SERVER_TOKEN");
+      if (!key) throw new Error("POSTMARK_SERVER_TOKEN is not configured");
+      return new PostmarkProvider(key);
     }
   }
 }
+
+// ─── Default sender ──────────────────────────────────────────────────────────
+
+const FROM_ADDRESS = "UglyOps HR <support@uglyops.com>";
 
 // ─── HTML Templates ──────────────────────────────────────────────────────────
 
 function buildHtml(type: string, data: Record<string, string>): string {
   const header = `
     <div style="background:#1a1a2e;padding:24px;text-align:center;">
-      <h1 style="color:#e94560;margin:0;font-family:sans-serif;font-size:22px;">UGLO HR</h1>
+      <h1 style="color:#e94560;margin:0;font-family:sans-serif;font-size:22px;">UglyOps HR Platform</h1>
     </div>`;
   const footer = `
     <div style="padding:16px;text-align:center;color:#888;font-size:12px;font-family:sans-serif;">
-      This is an automated notification from UGLO HR. Do not reply to this email.
+      This is an automated notification from UglyOps HR. Do not reply to this email.
     </div>`;
 
   let body = "";
@@ -170,11 +191,23 @@ function buildHtml(type: string, data: Record<string, string>): string {
     case "payroll_reminder":
       body = `<h2>Payroll Reminder ⏰</h2><p>${data.message}</p><p><strong>Period:</strong> ${data.period_name}</p><p><strong>Pay date:</strong> ${data.pay_date}</p>`;
       break;
+    case "payroll_approved":
+      body = `<h2>Payroll Approved ✅</h2><p>The payroll period <strong>${data.period_name}</strong> has been approved and finalised.</p>`;
+      break;
     case "shift_update":
       body = `<h2>Shift Update 📅</h2><p>${data.message}</p><p><strong>Date:</strong> ${data.shift_date}</p><p><strong>Time:</strong> ${data.start_time} – ${data.end_time}</p><p><strong>Location:</strong> ${data.branch}</p>`;
       break;
+    case "schedule_published":
+      body = `<h2>Schedule Published 📅</h2><p>A new schedule has been published for <strong>${data.branch || "your location"}</strong>.</p><p><strong>Week:</strong> ${data.week_label || "upcoming"}</p><p>Log in to view your shifts.</p>`;
+      break;
+    case "document_expiry":
+      body = `<h2>Document Expiry Warning ⚠️</h2><p>A document for <strong>${data.employee_name}</strong> is expiring soon.</p><p><strong>Document:</strong> ${data.document_name}</p><p><strong>Expires:</strong> ${data.expiry_date}</p>`;
+      break;
+    case "employee_invitation":
+      body = `<h2>Welcome to UglyOps HR 🎉</h2><p>You have been invited to join <strong>${data.company_name || "the team"}</strong>.</p><p>Log in to complete your onboarding.</p>${data.login_url ? `<p><a href="${data.login_url}" style="display:inline-block;padding:10px 24px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Get Started</a></p>` : ""}`;
+      break;
     case "test":
-      body = `<h2>Test Email ✉️</h2><p>This is a diagnostic test email from UGLO HR.</p><p>If you received this, email delivery is working correctly.</p><p><strong>Sent at:</strong> ${new Date().toISOString()}</p>`;
+      body = `<h2>UglyOps HR Platform</h2><p>This confirms that the email notification system is working.</p><p><strong>Sent at:</strong> ${new Date().toISOString()}</p>`;
       break;
     default:
       body = `<h2>Notification</h2><p>${data.message || "You have a new notification."}</p>`;
@@ -203,27 +236,27 @@ const handler = async (req: Request): Promise<Response> => {
     const provider = resolveProvider();
     log.provider = provider.name;
 
-    const { to, subject, type, data }: NotificationRequest = await req.json();
+    const { to, subject, type, data, tenant_id }: NotificationRequest = await req.json();
     log.recipient = to;
     log.template = type;
+    log.tenant_id = tenant_id || "unknown";
 
     if (!to || !subject || !type) {
       throw new Error("Missing required fields: to, subject, type");
     }
 
     const html = buildHtml(type, data || {});
-    const fromAddress = "UGLO HR <notifications@hr.uglyops.com>";
 
-    console.log("[EMAIL_SEND]", JSON.stringify({ provider: provider.name, recipient: to, template: type, status: "sending" }));
+    console.log(`[EMAIL_SEND] provider=${provider.name} recipient=${to} template=${type} tenant=${tenant_id || "unknown"} status=sending`);
 
-    const result = await provider.sendEmail({ to, subject, html, from: fromAddress });
+    const result = await provider.sendEmail({ to, subject, html, from: FROM_ADDRESS });
 
     log.status = result.success ? "sent" : "failed";
     log.provider_response = result.raw;
     if (result.messageId) log.message_id = result.messageId;
     if (result.error) log.error = result.error;
 
-    console.log("[EMAIL_SEND]", JSON.stringify({ provider: provider.name, recipient: to, template: type, status: log.status, message_id: result.messageId }));
+    console.log(`[EMAIL_SEND] provider=${provider.name} recipient=${to} template=${type} tenant=${tenant_id || "unknown"} status=${log.status}${result.messageId ? ` message_id=${result.messageId}` : ""}`);
 
     if (!result.success) {
       return new Response(JSON.stringify({ error: result.error, diagnostics: log }), {
@@ -238,7 +271,7 @@ const handler = async (req: Request): Promise<Response> => {
     const msg = error instanceof Error ? error.message : String(error);
     log.status = "error";
     log.error = msg;
-    console.error("[EMAIL_SEND]", JSON.stringify(log));
+    console.error(`[EMAIL_SEND] error: ${msg}`, JSON.stringify(log));
     return new Response(JSON.stringify({ error: msg, diagnostics: log }), {
       status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
     });

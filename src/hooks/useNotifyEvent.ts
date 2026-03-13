@@ -2,14 +2,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import { useCallback } from "react";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 
 /**
  * Helper hook to create in-app notification records for operational events.
+ * Optionally sends an email via Postmark when email_notifications is enabled.
  * All notifications are tenant-scoped and user-targeted.
  */
 export function useNotifyEvent() {
   const { tenantId } = useTenant();
   const { user } = useAuth();
+  const { sendNotificationEmail } = useNotifications();
+  const { data: companySettings } = useCompanySettings();
+
+  const emailEnabled = companySettings?.email_notifications ?? false;
 
   const notify = useCallback(
     async (payload: {
@@ -19,9 +26,17 @@ export function useNotifyEvent() {
       body?: string;
       link?: string;
       metadata?: Record<string, any>;
+      /** Optional: send an email alongside the in-app notification */
+      email?: {
+        recipientEmail: string | null | undefined;
+        subject: string;
+        emailType: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "payroll_approved" | "shift_update" | "schedule_published" | "document_expiry" | "employee_invitation";
+        emailData: Record<string, string>;
+      };
     }) => {
       if (!tenantId) return;
       try {
+        // In-app notification
         await supabase.from("notifications" as any).insert({
           tenant_id: tenantId,
           user_id: payload.userId,
@@ -31,11 +46,22 @@ export function useNotifyEvent() {
           link: payload.link || null,
           metadata: payload.metadata || {},
         } as any);
+
+        // Email notification (if enabled and email data provided)
+        if (emailEnabled && payload.email) {
+          await sendNotificationEmail({
+            recipient: payload.email.recipientEmail,
+            eventType: payload.email.emailType,
+            subject: payload.email.subject,
+            payload: payload.email.emailData,
+            tenantId,
+          });
+        }
       } catch (err) {
         console.error("Failed to create notification:", err);
       }
     },
-    [tenantId]
+    [tenantId, emailEnabled, sendNotificationEmail]
   );
 
   /**
@@ -98,5 +124,5 @@ export function useNotifyEvent() {
     [tenantId, notifyMany]
   );
 
-  return { notify, notifyMany, notifyAdmins };
+  return { notify, notifyMany, notifyAdmins, emailEnabled };
 }
