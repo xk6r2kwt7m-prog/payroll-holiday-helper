@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Upload, AlertTriangle, CheckCircle2, Search, ArrowUpDown, Info } from "lucide-react";
 import { useAllPayrollEntriesWithHoliday, formatHours, formatCurrency } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { useEmployees } from "@/hooks/useEmployees";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
