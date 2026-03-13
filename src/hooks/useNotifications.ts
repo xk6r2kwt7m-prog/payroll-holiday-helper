@@ -10,17 +10,13 @@ interface NotificationPayload {
 
 interface EmailDiagnostics {
   timestamp: string;
-  resend_api_key_configured: boolean;
-  resend_api_key_prefix: string;
+  provider?: string;
   recipient?: string;
-  subject?: string;
-  type?: string;
-  from?: string;
-  success?: boolean;
+  template?: string;
+  status?: string;
+  message_id?: string;
   error?: string;
-  provider_error?: any;
-  hint?: string;
-  resend_response?: any;
+  provider_response?: unknown;
 }
 
 export function useNotifications() {
@@ -29,7 +25,6 @@ export function useNotifications() {
       to: payload.to,
       subject: payload.subject,
       type: payload.type,
-      timestamp: new Date().toISOString(),
     });
 
     try {
@@ -38,23 +33,18 @@ export function useNotifications() {
       });
 
       if (error) {
-        console.error("[EMAIL_CLIENT] Function invocation error:", error);
+        console.error("[EMAIL_CLIENT] Invocation error:", error);
         toast.error("Failed to send notification email");
         return false;
       }
 
-      const diagnostics = data?.diagnostics as EmailDiagnostics | undefined;
-
       if (data?.error) {
-        console.error("[EMAIL_CLIENT] Provider error:", data.error, diagnostics);
-        if (diagnostics?.hint) {
-          console.warn("[EMAIL_CLIENT] Hint:", diagnostics.hint);
-        }
+        console.error("[EMAIL_CLIENT] Provider error:", data.error, data.diagnostics);
         toast.error(`Email failed: ${data.error}`);
         return false;
       }
 
-      console.log("[EMAIL_CLIENT] Send successful:", diagnostics);
+      console.log("[EMAIL_CLIENT] Sent via", data?.diagnostics?.provider, "→", data?.diagnostics?.status);
       toast.success("Notification email sent");
       return true;
     } catch (err) {
@@ -64,10 +54,9 @@ export function useNotifications() {
     }
   };
 
-  /**
-   * Send a diagnostic test email to verify the email pipeline is working.
-   */
-  const sendTestEmail = async (recipientEmail: string): Promise<{ success: boolean; diagnostics?: EmailDiagnostics; error?: string }> => {
+  const sendTestEmail = async (
+    recipientEmail: string
+  ): Promise<{ success: boolean; diagnostics?: EmailDiagnostics; error?: string }> => {
     console.log("[EMAIL_CLIENT] Sending test email to:", recipientEmail);
 
     try {
@@ -80,17 +69,11 @@ export function useNotifications() {
         },
       });
 
-      if (error) {
-        return { success: false, error: error.message };
-      }
-
-      if (data?.error) {
-        return { success: false, diagnostics: data.diagnostics, error: data.error };
-      }
-
+      if (error) return { success: false, error: error.message };
+      if (data?.error) return { success: false, diagnostics: data.diagnostics, error: data.error };
       return { success: true, diagnostics: data?.diagnostics };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : String(err) };
     }
   };
 
