@@ -26,7 +26,7 @@ export function ManagerHome() {
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const { data: shifts = [] } = useShifts(weekStart, weekEnd);
-  const { data: holidayRequests = [] } = useHolidayRequests();
+  const { data: holidayRequests = [] } = useAllHolidayRequests();
 
   // Time entries for today (clocked in staff)
   const { data: todayEntries = [] } = useQuery({
