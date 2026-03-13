@@ -34,6 +34,7 @@ import {
   HolidayDisplaySettings,
   PeopleLifecycleSettings,
 } from "@/components/settings/AdminConfigSections";
+import { EmailTestButton } from "@/components/settings/EmailTestButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { cn } from "@/lib/utils";
