@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTenant } from "@/hooks/useTenant";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Announcement {
   id: string;
@@ -56,6 +58,8 @@ export function useReadReceipts(announcementId?: string) {
 
 export function useCreateAnnouncement() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (ann: {
       title: string;
@@ -65,9 +69,12 @@ export function useCreateAnnouncement() {
       target_departments?: string[];
       publish_now?: boolean;
     }) => {
+      if (!tenantId) throw new Error("Unable to create announcement: tenant context missing.");
       const { publish_now, ...rest } = ann;
       const { error } = await supabase.from("staff_announcements" as any).insert({
         ...rest,
+        tenant_id: tenantId,
+        created_by: user?.id || null,
         published_at: publish_now ? new Date().toISOString() : null,
       } as any);
       if (error) throw error;
