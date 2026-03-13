@@ -152,7 +152,11 @@ export function AdminHome() {
         </div>
       </motion.div>
 
-      {/* Payroll Status */}
+      {/* Operational Alerts */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.14 }}>
+        <OperationalAlertsPanel />
+      </motion.div>
+
       {latestPeriod && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
           <SectionHeader title="Payroll" linkTo="/payroll" />
