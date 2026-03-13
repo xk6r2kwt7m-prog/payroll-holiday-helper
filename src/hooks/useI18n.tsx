@@ -124,7 +124,22 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const { tenantCountry } = useTenant();
-  const autoLocale = LOCALE_MAP[tenantCountry || "GB"] || "en";
+
+  // Resolution order:
+  // 1. User preference (localStorage)
+  // 2. Tenant default language (from tenant country)
+  // 3. Browser/device locale
+  // 4. English fallback
+  const tenantLocale = LOCALE_MAP[tenantCountry || ""] || null;
+
+  const browserLocale = useMemo((): Locale | null => {
+    try {
+      const lang = navigator.language || "";
+      if (lang.startsWith("pt")) return "pt-PT";
+      if (lang.startsWith("en")) return "en";
+    } catch {}
+    return null;
+  }, []);
 
   // Allow user override stored in localStorage
   const [userLocale, setUserLocale] = useState<Locale | null>(() => {
@@ -132,7 +147,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return stored && (stored === "en" || stored === "pt-PT") ? (stored as Locale) : null;
   });
 
-  const locale = userLocale || autoLocale;
+  const locale = userLocale || tenantLocale || browserLocale || "en";
 
   const setLocale = useCallback((l: Locale) => {
     setUserLocale(l);

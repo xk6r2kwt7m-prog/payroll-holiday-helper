@@ -37,8 +37,7 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ModuleKey } from "@/components/ProtectedRoute";
-
-const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
+import { getRoleLevel } from "@/lib/roles";
 
 interface SideNavItem {
   icon: any;
@@ -82,8 +81,8 @@ export function Sidebar() {
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || tenantName || "UGLŌ";
 
-  const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
-  const canAccess = (minRole: string) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const userLevel = getRoleLevel(role);
+  const canAccess = (minRole: string) => userLevel >= getRoleLevel(minRole);
 
   const isModuleEnabled = (module?: ModuleKey) => {
     if (!module) return true;

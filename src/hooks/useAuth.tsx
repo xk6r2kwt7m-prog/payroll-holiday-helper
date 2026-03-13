@@ -2,7 +2,8 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-export type AppRole = 'admin' | 'manager' | 'supervisor' | 'staff' | 'viewer';
+import { AppRole, ROLE_LEVEL as ROLE_HIERARCHY } from '@/lib/roles';
+export type { AppRole } from '@/lib/roles';
 
 interface AuthContextType {
   user: User | null;
@@ -19,13 +20,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ROLE_HIERARCHY: Record<AppRole, number> = {
-  admin: 4,
-  manager: 3,
-  supervisor: 2,
-  staff: 1,
-  viewer: 0,
-};
+// Role hierarchy imported from @/lib/roles
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

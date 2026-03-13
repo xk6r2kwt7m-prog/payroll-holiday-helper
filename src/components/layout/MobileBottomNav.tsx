@@ -30,8 +30,7 @@ import { useAuth, AppRole } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { ModuleKey } from "@/components/ProtectedRoute";
-
-const ROLE_LEVEL: Record<string, number> = { admin: 4, manager: 3, supervisor: 2, staff: 1, viewer: 0 };
+import { getRoleLevel } from "@/lib/roles";
 
 type MinRole = "admin" | "manager" | "supervisor" | "staff" | "viewer";
 
@@ -108,8 +107,8 @@ export function MobileBottomNav() {
   const { enabledModules, isPlatformAdmin } = useTenant();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const userLevel = role ? (ROLE_LEVEL[role] ?? 0) : 0;
-  const canAccess = (minRole: MinRole) => userLevel >= (ROLE_LEVEL[minRole] ?? 0);
+  const userLevel = getRoleLevel(role);
+  const canAccess = (minRole: MinRole) => userLevel >= getRoleLevel(minRole);
   const isModuleEnabled = (mod?: ModuleKey) => {
     if (!mod || isPlatformAdmin) return true;
     if (!enabledModules) return true;
