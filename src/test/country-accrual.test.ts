@@ -106,7 +106,7 @@ describe("Fallback behaviour", () => {
 
 describe("Rounding precision", () => {
   it("respects custom precision from tenant settings", () => {
-    expect(calculateAccrual(33.33, 0.1207, 4)).toBe(4.0249);
+    expect(calculateAccrual(33.33, 0.1207, 4)).toBe(4.0229);
     expect(calculateAccrual(33.33, 0.1207, 2)).toBe(4.02);
   });
 });
