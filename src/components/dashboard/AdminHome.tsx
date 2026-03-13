@@ -14,6 +14,7 @@ import { useAllHolidayRequests } from "@/hooks/useHolidayRequests";
 import { formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { useI18n } from "@/hooks/useI18n";
 import { useTenant } from "@/hooks/useTenant";
+import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -151,7 +152,11 @@ export function AdminHome() {
         </div>
       </motion.div>
 
-      {/* Payroll Status */}
+      {/* Operational Alerts */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.14 }}>
+        <OperationalAlertsPanel />
+      </motion.div>
+
       {latestPeriod && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
           <SectionHeader title="Payroll" linkTo="/payroll" />
