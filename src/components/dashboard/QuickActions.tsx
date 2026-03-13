@@ -1,33 +1,59 @@
 import { useNavigate } from "react-router-dom";
 import {
-  Users,
-  CalendarClock,
-  DollarSign,
-  UserX,
-  UserPlus,
-  Calendar,
-  Search,
-  GraduationCap,
+  Users, CalendarClock, DollarSign, UserX, UserPlus, Calendar, Search,
+  GraduationCap, ClipboardCheck, Megaphone, MapPin, Settings, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/hooks/useI18n";
+import { useAuth } from "@/hooks/useAuth";
+import { getRoleLevel } from "@/lib/roles";
+
+interface QuickAction {
+  icon: any;
+  label: string;
+  path?: string;
+  action?: string;
+  color: string;
+  bg: string;
+}
+
+const adminActions: QuickAction[] = [
+  { icon: Search, label: "Search", action: "search", color: "text-foreground", bg: "bg-secondary" },
+  { icon: CalendarClock, label: "Rota", path: "/schedule", color: "text-primary", bg: "bg-primary/10" },
+  { icon: DollarSign, label: "Payroll", path: "/payroll", color: "text-primary", bg: "bg-primary/10" },
+  { icon: UserX, label: "Absences", path: "/absences", color: "text-destructive", bg: "bg-destructive/10" },
+  { icon: Calendar, label: "Holidays", path: "/holidays", color: "text-accent", bg: "bg-accent/10" },
+  { icon: UserPlus, label: "Onboarding", path: "/onboarding", color: "text-success", bg: "bg-success/10" },
+  { icon: GraduationCap, label: "Training", path: "/training", color: "text-warning", bg: "bg-warning/10" },
+  { icon: Users, label: "Employees", path: "/employees", color: "text-foreground", bg: "bg-secondary" },
+];
+
+const managerActions: QuickAction[] = [
+  { icon: CalendarClock, label: "Rota", path: "/schedule", color: "text-primary", bg: "bg-primary/10" },
+  { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", color: "text-accent", bg: "bg-accent/10" },
+  { icon: Calendar, label: "Leave", path: "/holidays", color: "text-warning", bg: "bg-warning/10" },
+  { icon: Megaphone, label: "Announce", path: "/announcements", color: "text-foreground", bg: "bg-secondary" },
+];
+
+const staffActions: QuickAction[] = [
+  { icon: CalendarClock, label: "Schedule", path: "/schedule", color: "text-primary", bg: "bg-primary/10" },
+  { icon: Calendar, label: "Time Off", path: "/holidays", color: "text-accent", bg: "bg-accent/10" },
+  { icon: GraduationCap, label: "Training", path: "/training", color: "text-warning", bg: "bg-warning/10" },
+  { icon: Megaphone, label: "Updates", path: "/announcements", color: "text-foreground", bg: "bg-secondary" },
+];
 
 export function QuickActions() {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { role } = useAuth();
+  const level = getRoleLevel(role);
 
-  const quickActions = [
-    { icon: Search, label: t("quick_actions.find_staff"), action: "search", color: "text-foreground", bg: "bg-secondary" },
-    { icon: CalendarClock, label: t("quick_actions.rota"), path: "/schedule", color: "text-primary", bg: "bg-primary/10" },
-    { icon: DollarSign, label: t("quick_actions.payroll"), path: "/payroll", color: "text-primary", bg: "bg-primary/10" },
-    { icon: UserX, label: t("quick_actions.absences"), path: "/absences", color: "text-destructive", bg: "bg-destructive/10" },
-    { icon: Calendar, label: t("quick_actions.holidays"), path: "/holidays", color: "text-accent", bg: "bg-accent/10" },
-    { icon: UserPlus, label: t("quick_actions.onboarding"), path: "/onboarding", color: "text-success", bg: "bg-success/10" },
-    { icon: GraduationCap, label: t("quick_actions.training"), path: "/training", color: "text-warning", bg: "bg-warning/10" },
-    { icon: Users, label: t("quick_actions.employees"), path: "/employees", color: "text-foreground", bg: "bg-secondary" },
-  ];
+  const isAdmin = level >= getRoleLevel("admin");
+  const isManager = level >= getRoleLevel("manager");
 
-  const handleAction = (action: typeof quickActions[0]) => {
+  const quickActions = isAdmin ? adminActions : isManager ? managerActions : staffActions;
+
+  const handleAction = (action: QuickAction) => {
     if (action.action === "search") {
       document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
     } else if (action.path) {
@@ -36,7 +62,7 @@ export function QuickActions() {
   };
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className={cn("grid gap-3", quickActions.length > 4 ? "grid-cols-4" : `grid-cols-${quickActions.length}`)}>
       {quickActions.map((action) => (
         <button
           key={action.label}

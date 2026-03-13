@@ -8,6 +8,8 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { LabourCostDashboard } from "@/components/dashboard/LabourCostDashboard";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
 import { StaffingInsightsWidget } from "@/components/dashboard/StaffingInsightsWidget";
+import { StaffHome } from "@/components/dashboard/StaffHome";
+import { ManagerHome } from "@/components/dashboard/ManagerHome";
 import { usePayrollAudit } from "@/hooks/usePayrollAudit";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
@@ -21,11 +23,35 @@ import { useMemo, useState } from "react";
 import { useAllEmployeeBranches, useTenantBranches, getBranchEmoji } from "@/hooks/useBranches";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTenant } from "@/hooks/useTenant";
+import { useAuth } from "@/hooks/useAuth";
+import { getRoleLevel } from "@/lib/roles";
 import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
 import { BillingSummaryWidget } from "@/components/dashboard/BillingSummaryWidget";
 import { useI18n } from "@/hooks/useI18n";
 
 const Index = () => {
+  const { t } = useI18n();
+  const { role } = useAuth();
+  const isMobile = useIsMobile();
+  const userLevel = getRoleLevel(role);
+
+  const isAdmin = userLevel >= getRoleLevel("admin");
+  const isManager = userLevel >= getRoleLevel("manager");
+
+  // Staff and managers on mobile get dedicated home screens
+  if (isMobile && !isAdmin && !isManager) {
+    return <AppLayout><StaffHome /></AppLayout>;
+  }
+
+  if (isMobile && isManager && !isAdmin) {
+    return <AppLayout><ManagerHome /></AppLayout>;
+  }
+
+  // Admin dashboard (and desktop for all roles)
+  return <AdminDashboard />;
+};
+
+function AdminDashboard() {
   const { t } = useI18n();
   const { tenantName } = useTenant();
   const { data: employees = [] } = useEmployees();
@@ -50,7 +76,6 @@ const Index = () => {
   const periodWeeks = latestPeriod ? Number((latestPeriod as any).period_weeks || 4) : 4;
   const payPerWeek = periodWeeks > 0 ? totalPayroll / periodWeeks : 0;
 
-  // Department data
   const deptConfig = {
     FOH: { label: t("departments_list.FOH"), icon: Utensils, color: "text-primary", bgColor: "bg-primary/10" },
     BOH: { label: t("departments_list.BOH"), icon: ChefHat, color: "text-accent", bgColor: "bg-accent/10" },
@@ -64,13 +89,11 @@ const Index = () => {
     return acc;
   }, {} as Record<string, { count: number }>);
 
-  // Audit
   const auditScore = audit?.summary?.healthScore ?? null;
   const auditErrors = audit?.summary?.errors ?? 0;
   const auditWarnings = audit?.summary?.warnings ?? 0;
   const auditTotal = auditErrors + auditWarnings;
 
-  // KPI data for compact mobile strip
   const kpis = [
     { label: t("dashboard.kpi_staff"), value: String(activeEmployees), color: "text-foreground", href: "/employees" },
     { label: t("dashboard.kpi_payroll"), value: formatCurrency(totalPayroll), color: "text-primary", href: "/payroll" },
@@ -81,8 +104,7 @@ const Index = () => {
   return (
     <AppLayout>
       <div className="space-y-6 sm:space-y-10 max-w-7xl mx-auto pb-8">
-
-        {/* ─── HEADER ─── */}
+        {/* HEADER */}
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("nav.dashboard")}</h1>
@@ -102,23 +124,13 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* ─── SETUP HEALTH ─── */}
         <SetupHealthWidget />
 
-        {/* ─── MOBILE: KPI STRIP ─── */}
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="sm:hidden"
-        >
+        {/* MOBILE: KPI STRIP */}
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="sm:hidden">
           <div className="grid grid-cols-4 gap-2">
             {kpis.map((kpi) => (
-              <Link
-                key={kpi.label}
-                to={kpi.href}
-                className="rounded-xl bg-card border border-border p-3 text-center transition-all active:bg-muted"
-              >
+              <Link key={kpi.label} to={kpi.href} className="rounded-xl bg-card border border-border p-3 text-center transition-all active:bg-muted">
                 <p className={cn("text-lg font-bold tabular-nums leading-none", kpi.color)}>{kpi.value}</p>
                 <p className="text-[10px] font-medium text-muted-foreground mt-1.5 uppercase tracking-wider">{kpi.label}</p>
               </Link>
@@ -126,66 +138,17 @@ const Index = () => {
           </div>
         </motion.section>
 
-        {/* ─── DESKTOP: KPI CARDS ─── */}
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.05 }}
-          className="hidden sm:block"
-        >
+        {/* DESKTOP: KPI CARDS */}
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="hidden sm:block">
           <div className="grid gap-4 grid-cols-3 lg:grid-cols-5">
             {[
-              {
-                label: t("dashboard.active_staff"),
-                value: String(activeEmployees),
-                sub: t("dashboard.total_incl_leavers", { count: employees.length }),
-                icon: <Users className="h-5 w-5" />,
-                color: "text-foreground",
-                iconBg: "bg-secondary",
-                href: "/employees",
-              },
-              {
-                label: t("dashboard.total_payroll"),
-                value: formatCurrency(totalPayroll),
-                sub: t("dashboard.per_week", { amount: formatCurrency(payPerWeek) }),
-                icon: <DollarSign className="h-5 w-5" />,
-                color: "text-primary",
-                iconBg: "bg-primary/10",
-                href: "/payroll",
-              },
-              {
-                label: t("dashboard.labour_percent"),
-                value: labourPercent > 0 ? `${labourPercent.toFixed(1)}%` : "—",
-                sub: salesTotal > 0 ? t("dashboard.of_sales", { amount: formatCurrency(salesTotal) }) : t("dashboard.no_sales_data"),
-                icon: <Percent className="h-5 w-5" />,
-                color: labourPercent > 35 ? "text-warning" : "text-success",
-                iconBg: labourPercent > 35 ? "bg-warning/10" : "bg-success/10",
-                href: "/payroll/analytics",
-              },
-              {
-                label: t("dashboard.holiday_accrued"),
-                value: `${formatHours(totalHolidayAccrued)} ${t("common.hours")}`,
-                sub: t("dashboard.accrual_rate", { rate: ((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2) }),
-                icon: <Calendar className="h-5 w-5" />,
-                color: "text-accent",
-                iconBg: "bg-accent/10",
-                href: "/holidays",
-              },
-              {
-                label: t("dashboard.hours_tracked"),
-                value: `${formatHours(totalHours)} ${t("common.hours")}`,
-                sub: `${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)} / ${t("common.week")}`,
-                icon: <Clock className="h-5 w-5" />,
-                color: "text-foreground",
-                iconBg: "bg-secondary",
-                href: "/timesheets",
-              },
+              { label: t("dashboard.active_staff"), value: String(activeEmployees), sub: t("dashboard.total_incl_leavers", { count: employees.length }), icon: <Users className="h-5 w-5" />, color: "text-foreground", iconBg: "bg-secondary", href: "/employees" },
+              { label: t("dashboard.total_payroll"), value: formatCurrency(totalPayroll), sub: t("dashboard.per_week", { amount: formatCurrency(payPerWeek) }), icon: <DollarSign className="h-5 w-5" />, color: "text-primary", iconBg: "bg-primary/10", href: "/payroll" },
+              { label: t("dashboard.labour_percent"), value: labourPercent > 0 ? `${labourPercent.toFixed(1)}%` : "—", sub: salesTotal > 0 ? t("dashboard.of_sales", { amount: formatCurrency(salesTotal) }) : t("dashboard.no_sales_data"), icon: <Percent className="h-5 w-5" />, color: labourPercent > 35 ? "text-warning" : "text-success", iconBg: labourPercent > 35 ? "bg-warning/10" : "bg-success/10", href: "/payroll/analytics" },
+              { label: t("dashboard.holiday_accrued"), value: `${formatHours(totalHolidayAccrued)} ${t("common.hours")}`, sub: t("dashboard.accrual_rate", { rate: ((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2) }), icon: <Calendar className="h-5 w-5" />, color: "text-accent", iconBg: "bg-accent/10", href: "/holidays" },
+              { label: t("dashboard.hours_tracked"), value: `${formatHours(totalHours)} ${t("common.hours")}`, sub: `${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)} / ${t("common.week")}`, icon: <Clock className="h-5 w-5" />, color: "text-foreground", iconBg: "bg-secondary", href: "/timesheets" },
             ].map((kpi) => (
-              <Link
-                key={kpi.label}
-                to={kpi.href}
-                className="rounded-xl bg-card border border-border p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group"
-              >
+              <Link key={kpi.label} to={kpi.href} className="rounded-xl bg-card border border-border p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group">
                 <div className="flex items-center justify-between mb-4">
                   <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", kpi.iconBg)}>
                     <span className={cn(kpi.color)}>{kpi.icon}</span>
@@ -200,34 +163,19 @@ const Index = () => {
           </div>
         </motion.section>
 
-        {/* ─── MOBILE: QUICK ACTIONS GRID ─── */}
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-          className="sm:hidden"
-        >
+        {/* MOBILE: QUICK ACTIONS GRID */}
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="sm:hidden">
           <QuickActions />
         </motion.section>
 
-        {/* ─── TODAY'S PRIORITIES ─── */}
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.1 }}
-        >
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
-            {t("dashboard.needs_attention")}
-          </h2>
+        {/* TODAY'S PRIORITIES */}
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">{t("dashboard.needs_attention")}</h2>
           <TodayActions employees={employees} periods={periods} entries={entries} />
         </motion.section>
 
-        {/* ─── OPERATIONS ─── */}
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.15 }}
-        >
+        {/* OPERATIONS */}
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.15 }}>
           <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">{t("dashboard.operations")}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <PayrollDeadlineWidget periods={periods} />
@@ -236,15 +184,9 @@ const Index = () => {
           </div>
         </motion.section>
 
-        {/* ─── OPERATIONAL INTELLIGENCE ─── */}
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.2 }}
-        >
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
-            {t("ops.operational_intelligence")}
-          </h2>
+        {/* OPERATIONAL INTELLIGENCE */}
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }}>
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">{t("ops.operational_intelligence")}</h2>
           <div className="space-y-4">
             <LabourCostDashboard />
             <div className="grid gap-4 sm:grid-cols-2">
@@ -254,34 +196,18 @@ const Index = () => {
           </div>
         </motion.section>
 
-
         {isMobile && (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-          >
-            <button
-              onClick={() => setShowDetails(!showDetails)}
-              className="flex items-center gap-2 w-full text-left py-2"
-            >
-              <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                {t("dashboard.departments")}
-              </h2>
+          <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}>
+            <button onClick={() => setShowDetails(!showDetails)} className="flex items-center gap-2 w-full text-left py-2">
+              <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t("dashboard.departments")}</h2>
               <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", showDetails && "rotate-180")} />
             </button>
           </motion.section>
         )}
 
-        {/* ─── DEPARTMENT OVERVIEW + AUDIT ─── */}
+        {/* DEPARTMENT OVERVIEW + AUDIT */}
         {(!isMobile || showDetails) && (
-          <motion.section
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.2 }}
-            className="grid gap-5 lg:grid-cols-12"
-          >
-            {/* Department Overview — 8 cols */}
+          <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }} className="grid gap-5 lg:grid-cols-12">
             <div className="lg:col-span-8">
               {!isMobile && <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">{t("dashboard.department_overview")}</h2>}
               <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
@@ -294,11 +220,7 @@ const Index = () => {
                   const count = departmentStats[dept]?.count || 0;
 
                   return (
-                    <Link
-                      key={dept}
-                      to={`/employees?dept=${dept}`}
-                      className="rounded-xl bg-card border border-border p-4 sm:p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group"
-                    >
+                    <Link key={dept} to={`/employees?dept=${dept}`} className="rounded-xl bg-card border border-border p-4 sm:p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group">
                       <div className="flex items-center gap-3 mb-3 sm:mb-5">
                         <div className={cn("flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg", cfg.bgColor)}>
                           <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", cfg.color)} />
@@ -307,14 +229,11 @@ const Index = () => {
                           <h3 className="font-bold text-foreground text-sm tracking-tight">{dept}</h3>
                           <p className="text-[11px] text-muted-foreground leading-none mt-0.5">{cfg.label}</p>
                         </div>
-                        {/* Mobile: inline stats */}
                         <div className="sm:hidden flex items-center gap-3 text-xs tabular-nums">
                           <span className="text-muted-foreground">{count} {t("common.staff")}</span>
                           <span className="font-semibold text-foreground">{formatCurrency(deptPay)}</span>
                         </div>
                       </div>
-
-                      {/* Desktop: stacked stats */}
                       <div className="hidden sm:block space-y-3 pt-1">
                         <div className="flex items-baseline justify-between">
                           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{t("dashboard.kpi_staff")}</span>
@@ -337,40 +256,21 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Audit Score — 4 cols */}
             <div className="lg:col-span-4">
               {!isMobile && <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">{t("dashboard.payroll_audit")}</h2>}
-              <Link
-                to="/payroll/audit"
-                className="flex flex-col rounded-xl bg-card border border-border p-5 sm:p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 sm:h-[calc(100%-2rem)]"
-              >
+              <Link to="/payroll/audit" className="flex flex-col rounded-xl bg-card border border-border p-5 sm:p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 sm:h-[calc(100%-2rem)]">
                 {auditScore !== null ? (
                   <div className="flex sm:flex-col items-center sm:justify-center gap-4 sm:gap-0 flex-1">
-                    {/* Circular gauge */}
                     <div className="relative w-[80px] h-[80px] sm:w-[120px] sm:h-[120px] shrink-0 sm:mb-5">
                       <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
                         <circle cx="60" cy="60" r="50" fill="none" strokeWidth="10" className="stroke-border" />
-                        <circle
-                          cx="60" cy="60" r="50" fill="none" strokeWidth="10"
-                          strokeDasharray={`${(auditScore / 100) * 314} 314`}
-                          strokeLinecap="round"
-                          className={cn(
-                            "transition-all duration-700",
-                            auditScore >= 80 ? "stroke-success" : auditScore >= 50 ? "stroke-warning" : "stroke-destructive"
-                          )}
-                        />
+                        <circle cx="60" cy="60" r="50" fill="none" strokeWidth="10" strokeDasharray={`${(auditScore / 100) * 314} 314`} strokeLinecap="round" className={cn("transition-all duration-700", auditScore >= 80 ? "stroke-success" : auditScore >= 50 ? "stroke-warning" : "stroke-destructive")} />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className={cn(
-                          "text-2xl sm:text-4xl font-bold tabular-nums",
-                          auditScore >= 80 ? "text-success" : auditScore >= 50 ? "text-warning" : "text-destructive"
-                        )}>
-                          {auditScore}
-                        </span>
+                        <span className={cn("text-2xl sm:text-4xl font-bold tabular-nums", auditScore >= 80 ? "text-success" : auditScore >= 50 ? "text-warning" : "text-destructive")}>{auditScore}</span>
                         <span className="text-[9px] sm:text-[10px] font-semibold text-muted-foreground mt-0.5">/ 100</span>
                       </div>
                     </div>
-
                     <div className="flex-1 sm:text-center">
                       <p className="text-xs font-semibold text-foreground">{t("dashboard.payroll_audit")}</p>
                       {auditTotal > 0 && (
@@ -395,6 +295,6 @@ const Index = () => {
       </div>
     </AppLayout>
   );
-};
+}
 
 export default Index;
