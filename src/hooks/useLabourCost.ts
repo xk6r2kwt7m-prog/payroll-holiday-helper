@@ -15,7 +15,7 @@ export function useDailyRevenue(date: string) {
         .eq("date", date)
         .maybeSingle();
       if (error) throw error;
-      return data as { id: string; revenue_amount: number; date: string } | null;
+      return data as unknown as { id: string; revenue_amount: number; date: string } | null;
     },
     enabled: !!tenantId && !!date,
   });
