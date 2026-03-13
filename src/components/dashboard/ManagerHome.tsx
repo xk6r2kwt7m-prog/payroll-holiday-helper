@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useShifts } from "@/hooks/useSchedule";
-import { useHolidayRequests } from "@/hooks/useHolidayRequests";
+import { useAllHolidayRequests } from "@/hooks/useHolidayRequests";
 import { useI18n } from "@/hooks/useI18n";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
