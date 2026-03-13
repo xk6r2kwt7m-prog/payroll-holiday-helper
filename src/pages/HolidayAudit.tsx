@@ -193,6 +193,7 @@ export default function HolidayAudit() {
 
   const { data: payrollEntries = [] } = useAllPayrollEntriesWithHoliday();
   const { data: employees = [] } = useEmployees();
+  const { data: leaveRules } = useLeaveRules();
 
   // Aggregate DB data filtered by detected year
   const dbTotals = useMemo(() => {
