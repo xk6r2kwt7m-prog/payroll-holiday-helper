@@ -5,6 +5,9 @@ import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocument
 import { PayrollDeadlineWidget } from "@/components/dashboard/PayrollDeadlineWidget";
 import { TodayActions } from "@/components/dashboard/TodayActions";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { LabourCostDashboard } from "@/components/dashboard/LabourCostDashboard";
+import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
+import { StaffingInsightsWidget } from "@/components/dashboard/StaffingInsightsWidget";
 import { usePayrollAudit } from "@/hooks/usePayrollAudit";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
@@ -233,7 +236,25 @@ const Index = () => {
           </div>
         </motion.section>
 
-        {/* ─── MOBILE: COLLAPSIBLE DETAIL SECTIONS ─── */}
+        {/* ─── OPERATIONAL INTELLIGENCE ─── */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.2 }}
+        >
+          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">
+            {t("ops.operational_intelligence")}
+          </h2>
+          <div className="space-y-4">
+            <LabourCostDashboard />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <OperationalAlertsPanel />
+              <StaffingInsightsWidget />
+            </div>
+          </div>
+        </motion.section>
+
+
         {isMobile && (
           <motion.section
             initial={{ opacity: 0, y: 12 }}

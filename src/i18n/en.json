@@ -652,5 +652,26 @@
     "document_expiry": "Document expiring",
     "payroll_ready": "Payroll ready for review",
     "setup_incomplete": "Setup incomplete"
+  },
+  "ops": {
+    "labour_cost_today": "Labour Cost Today",
+    "cost_today": "Cost Today",
+    "hours_today": "Hours Today",
+    "avg_hourly_cost": "Avg Hourly Cost",
+    "labour_percent_revenue": "Labour % Revenue",
+    "no_revenue_set": "No revenue set",
+    "set_revenue": "Set Revenue",
+    "invalid_amount": "Enter a valid amount",
+    "alerts_title": "Operational Alerts",
+    "alert_resolved": "Alert resolved",
+    "alert_type_missing_clockout": "Missing clock-out",
+    "alert_type_early_clockin": "Early clock-in",
+    "alert_type_late_clockin": "Late clock-in",
+    "alert_type_overtime": "Overtime",
+    "alert_type_unscheduled_work": "Unscheduled work",
+    "staffing_insights": "Suggested Staffing",
+    "staffing_description": "Based on historical schedule data",
+    "data_points": "{{count}} days analysed",
+    "operational_intelligence": "Operational Intelligence"
   }
 }
