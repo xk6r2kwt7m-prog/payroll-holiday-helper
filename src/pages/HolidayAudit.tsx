@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Upload, AlertTriangle, CheckCircle2, Search, ArrowUpDown, Info } from "lucide-react";
 import { useAllPayrollEntriesWithHoliday, formatHours, formatCurrency } from "@/hooks/useHolidays";
+import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { useEmployees } from "@/hooks/useEmployees";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -192,6 +193,7 @@ export default function HolidayAudit() {
 
   const { data: payrollEntries = [] } = useAllPayrollEntriesWithHoliday();
   const { data: employees = [] } = useEmployees();
+  const { data: leaveRules } = useLeaveRules();
 
   // Aggregate DB data filtered by detected year
   const dbTotals = useMemo(() => {
@@ -249,7 +251,7 @@ export default function HolidayAudit() {
       const db = dbTotals.get(resolved);
       const dbHours = db?.hours ?? 0;
       const dbAccrued = db?.accrued ?? 0;
-      const expectedAccrual = csv.csvHours * 0.1207;
+      const expectedAccrual = csv.csvHours * (leaveRules?.accrualRate ?? 0);
       results.push({
         csvName: csv.csvName,
         resolvedName: resolved,

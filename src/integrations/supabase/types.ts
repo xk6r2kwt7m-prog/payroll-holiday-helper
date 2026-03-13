@@ -3946,6 +3946,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_country_holiday_accrual: {
+        Args: { _employee_id: string; _hours_worked: number }
+        Returns: number
+      }
       calculate_holiday_accrual: {
         Args: { hours_worked: number }
         Returns: number
