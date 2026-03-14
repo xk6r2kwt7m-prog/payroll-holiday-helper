@@ -87,6 +87,16 @@ const Holidays = () => {
     }
   }, [searchParams]);
 
+  // Apply stored holiday display preferences
+  useEffect(() => {
+    if (holidayPrefs && !viewModeInit) {
+      if (holidayPrefs.defaultView === "table" || holidayPrefs.defaultView === "cards") {
+        setViewMode(holidayPrefs.defaultView as ViewMode);
+      }
+      setViewModeInit(true);
+    }
+  }, [holidayPrefs, viewModeInit]);
+
   const { data: periods = [] } = usePayrollPeriods();
 
   // Holiday payments by year

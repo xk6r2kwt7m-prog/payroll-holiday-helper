@@ -31,6 +31,15 @@ import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
+import { usePermission } from "@/hooks/useRolePermissions";
+import { useTenantPreferences } from "@/hooks/useTenantPreferences";
+
+const PAYROLL_DISPLAY_DEFAULTS = {
+  showBonusColumn: true,
+  showServiceCharge: true,
+  defaultPdfLogo: true,
+  reminderDaysBefore: "3",
+};
 
 const Payroll = () => {
   const { t } = useI18n();
