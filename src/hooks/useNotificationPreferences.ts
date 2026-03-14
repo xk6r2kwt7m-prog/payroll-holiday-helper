@@ -40,6 +40,10 @@ const EVENT_TO_CATEGORY: Record<string, PreferenceCategory> = {
   holiday_submitted: "leave_updates",
   holiday_approved: "leave_updates",
   holiday_rejected: "leave_updates",
+  leave_low_balance: "leave_updates",
+  leave_year_ending: "leave_updates",
+  // leave_negative_balance → mandatory (compliance)
+  // leave_overbooking_risk → mandatory (compliance)
   document_uploaded: "documents",
   document_verified: "documents",
   document_rejected: "documents",

@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.check-training-due]
 verify_jwt = false
+
+[functions.check-leave-risk]
+verify_jwt = false
