@@ -13,7 +13,7 @@ const SelectWorkspace = () => {
     if (!selecting) return;
 
     if (tenantId && !showTenantPicker) {
-      console.log("[SelectWorkspace] Tenant context applied:", tenantId);
+      
       return;
     }
 
@@ -53,11 +53,8 @@ const SelectWorkspace = () => {
 
   const handleSelect = async (id: string) => {
     setSelecting(true);
-    console.log("[SelectWorkspace] User selected tenant:", id);
-
     try {
       await selectTenant(id);
-      console.log("[SelectWorkspace] Selection complete, awaiting guarded redirect");
     } catch (error) {
       console.error("[SelectWorkspace] Selection failed:", error);
       setSelecting(false);

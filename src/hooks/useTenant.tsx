@@ -100,7 +100,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setTenantResolved(true);
     setLoading(false);
     localStorage.setItem("uglo_selected_tenant", selectedTenantId);
-    console.log("[TenantProvider] Selection committed:", selectedTenantId, "| Tenant:", tenant?.name);
+    
   }, [applyTenantData]);
 
   /**
@@ -109,14 +109,11 @@ export function TenantProvider({ children }: { children: ReactNode }) {
    * Falls back to a DB query only if cache miss.
    */
   const selectTenant = useCallback(async (selectedTenantId: string) => {
-    console.log("[TenantProvider] selectTenant called:", selectedTenantId);
-
     const cached = cachedMemberships.current.find(
       (m) => m.tenant_id === selectedTenantId
     );
 
     if (cached) {
-      console.log("[TenantProvider] selectTenant: using cached data for", (cached.tenants as any)?.name);
       commitTenantSelection(cached.tenant_id, cached.tenants);
       return;
     }
@@ -125,7 +122,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       throw new Error("Cannot select workspace without authenticated user");
     }
 
-    console.log("[TenantProvider] selectTenant: cache miss, fetching from DB");
+    
     const { data: membership, error: membershipError } = await supabase
       .from("tenant_members")
       .select("tenant_id, tenants(id, name, country, timezone, status, enabled_modules)")
@@ -146,7 +143,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
 
     commitTenantSelection(membership.tenant_id, membership.tenants as any);
-    console.log("[TenantProvider] selectTenant: applied from DB");
   }, [user, commitTenantSelection]);
 
   const openWorkspacePicker = useCallback(() => {
@@ -186,7 +182,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       cachedMemberships.current = [];
       setLoading(false);
       localStorage.removeItem("uglo_selected_tenant");
-      console.log("[TenantProvider] Auth resolved: no user → cleared state + localStorage");
       return;
     }
 
@@ -199,7 +194,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
     const fetchTenant = async () => {
       try {
-        console.log("[TenantProvider] Resolving workspace for user:", user.id);
+        
 
         const { data: platformAdmin } = await supabase
           .from("platform_admins")
@@ -234,14 +229,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
         const savedTenantId = localStorage.getItem("uglo_selected_tenant");
 
-        console.log(
-          "[TenantProvider] Memberships:", count,
-          "| Saved tenant:", savedTenantId,
-          "| Platform admin:", !!platformAdmin
-        );
 
         if (count === 0) {
-          console.log("[TenantProvider] Decision: 0 memberships → onboard");
+          
           setAvailableTenants([]);
           setShowTenantPicker(false);
           setTenantResolved(true);
@@ -251,7 +241,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
         if (count === 1) {
           const m = memberships![0];
-          console.log("[TenantProvider] Decision: 1 membership → auto-select:", (m.tenants as any)?.name);
+          
           commitTenantSelection(m.tenant_id, m.tenants as any);
         } else {
           const savedMembership = savedTenantId
@@ -259,14 +249,14 @@ export function TenantProvider({ children }: { children: ReactNode }) {
             : null;
 
           if (savedMembership) {
-            console.log("[TenantProvider] Decision: Restored saved tenant →", (savedMembership.tenants as any)?.name);
+            
             commitTenantSelection(savedMembership.tenant_id, savedMembership.tenants as any);
           } else {
             if (savedTenantId) {
               console.warn("[TenantProvider] Stale saved tenant ID removed:", savedTenantId);
               localStorage.removeItem("uglo_selected_tenant");
             }
-            console.log("[TenantProvider] Decision:", count, "tenants, no valid saved → workspace picker");
+            
             setAvailableTenants(
               memberships!.map((m) => ({
                 tenant_id: m.tenant_id,
