@@ -37,6 +37,10 @@ export function useNotifyEvent() {
     }) => {
       if (!tenantId) return;
       try {
+        // Check user preference before delivering non-critical notifications
+        const shouldDeliver = await shouldDeliverNotification(payload.userId, tenantId, payload.eventType);
+        if (!shouldDeliver) return;
+
         // In-app notification
         await supabase.from("notifications" as any).insert({
           tenant_id: tenantId,
