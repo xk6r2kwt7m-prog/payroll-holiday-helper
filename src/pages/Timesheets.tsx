@@ -17,6 +17,7 @@ import { TimesheetReviewPanel, computeFlags } from "@/components/attendance/Time
 import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDialog";
 import { useI18n } from "@/hooks/useI18n";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { usePermission } from "@/hooks/useRolePermissions";
 
 export default function Timesheets() {
   const { t } = useI18n();
