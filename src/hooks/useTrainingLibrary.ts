@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifyEvent } from "@/hooks/useNotifyEvent";
 import { toast } from "sonner";
 
 export interface TrainingLibraryItem {
@@ -185,6 +186,7 @@ export function useMyTrainingAssignments(employeeId?: string) {
 export function useCreateAssignments() {
   const qc = useQueryClient();
   const { tenantId } = useTenant();
+  const { notifyMany } = useNotifyEvent();
   return useMutation({
     mutationFn: async (assignments: Array<{ document_id: string; employee_id: string; due_date?: string; notes?: string }>) => {
       const rows = assignments.map(a => ({
@@ -202,6 +204,51 @@ export function useCreateAssignments() {
         action: "document_assigned",
       }));
       await supabase.from("training_audit_log" as any).insert(auditRows as any);
+
+      // Notify assigned employees
+      if (tenantId) {
+        // Fetch document titles for notification messages
+        const docIds = [...new Set(assignments.map(a => a.document_id))];
+        const { data: docs } = await supabase
+          .from("training_library" as any)
+          .select("id, title")
+          .in("id", docIds);
+        const titleMap = new Map((docs || []).map((d: any) => [d.id, d.title]));
+
+        // Fetch employee user_ids
+        const empIds = [...new Set(assignments.map(a => a.employee_id))];
+        const { data: emps } = await supabase
+          .from("employees" as any)
+          .select("id, user_id")
+          .in("id", empIds);
+        const userMap = new Map((emps || []).map((e: any) => [e.id, e.user_id]));
+
+        // Group by employee for a single notification per person
+        const byEmployee = new Map<string, string[]>();
+        for (const a of assignments) {
+          const uid = userMap.get(a.employee_id);
+          if (!uid) continue;
+          if (!byEmployee.has(uid)) byEmployee.set(uid, []);
+          byEmployee.get(uid)!.push(titleMap.get(a.document_id) || "Training");
+        }
+
+        for (const [userId, titles] of byEmployee) {
+          const title = titles.length === 1
+            ? `New training assigned: ${titles[0]}`
+            : `${titles.length} training items assigned`;
+          const body = titles.length === 1
+            ? "Please complete this as soon as possible."
+            : `Items: ${titles.join(", ")}`;
+          await notifyMany(
+            [userId],
+            "training_assigned",
+            title,
+            body,
+            "/staff-portal",
+            { document_count: titles.length }
+          );
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["training_assignments"] });
@@ -215,6 +262,7 @@ export function useCreateAssignments() {
 export function useUpdateAssignment() {
   const qc = useQueryClient();
   const { tenantId } = useTenant();
+  const { notifyAdmins } = useNotifyEvent();
   return useMutation({
     mutationFn: async ({ id, updates, action, employeeId, documentId }: {
       id: string;
@@ -236,6 +284,25 @@ export function useUpdateAssignment() {
         employee_id: employeeId,
         action,
       } as any);
+
+      // Notify admins/managers when training is completed
+      if (action === "completed" && employeeId && documentId) {
+        // Fetch employee name and document title
+        const [{ data: emp }, { data: doc }] = await Promise.all([
+          supabase.from("employees" as any).select("forename, surname").eq("id", employeeId).single(),
+          supabase.from("training_library" as any).select("title").eq("id", documentId).single(),
+        ]);
+        const empName = emp ? `${(emp as any).forename} ${(emp as any).surname}` : "An employee";
+        const docTitle = doc ? (doc as any).title : "training";
+
+        await notifyAdmins(
+          "training_completed",
+          `${empName} completed: ${docTitle}`,
+          `Training has been marked as complete.`,
+          "/training",
+          { employee_id: employeeId, document_id: documentId }
+        );
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["training_assignments"] });
