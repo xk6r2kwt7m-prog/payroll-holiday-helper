@@ -114,9 +114,9 @@ export function EmployeePayrollExport() {
         />
 
         {isLoading ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">Loading…</p>
+          <p className="text-sm text-muted-foreground py-4 text-center">Loading payroll entries…</p>
         ) : rows.length === 0 ? (
-          <EmptyState icon={Users} title="No payroll entries" description="No entries found for the selected period and filters." />
+          <EmptyState icon={Users} title="No payroll entries" description="No entries found for this period and filter combination. Try selecting a different period or clearing filters." />
         ) : (
           <div className="overflow-x-auto">
             <Table>

@@ -87,9 +87,9 @@ export function HolidayPayReport() {
         />
 
         {isLoading ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">Loading…</p>
+          <p className="text-sm text-muted-foreground py-4 text-center">Loading holiday payments…</p>
         ) : rows.length === 0 ? (
-          <EmptyState icon={Palmtree} title="No holiday payments" description="No holiday pay records match your filters." />
+          <EmptyState icon={Palmtree} title="No holiday payments" description="No holiday pay records match your filters. Try selecting a different period or employee." />
         ) : (
           <div className="overflow-x-auto">
             <Table>
