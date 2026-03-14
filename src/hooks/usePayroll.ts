@@ -451,6 +451,7 @@ export function useMarkBankDetailsExported() {
   
   return useMutation({
     mutationFn: async (entryIds: string[]) => {
+      await assertPermission("view_pay_data", null);
       const { error } = await supabase
         .from("payroll_entries")
         .update({ bank_details_exported: true })
