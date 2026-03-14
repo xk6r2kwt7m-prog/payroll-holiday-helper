@@ -17,9 +17,11 @@ import { TimesheetReviewPanel, computeFlags } from "@/components/attendance/Time
 import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDialog";
 import { useI18n } from "@/hooks/useI18n";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { usePermission } from "@/hooks/useRolePermissions";
 
 export default function Timesheets() {
   const { t } = useI18n();
+  const canApproveTimesheets = usePermission("approve_timesheets");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("pending");
@@ -277,28 +279,32 @@ export default function Timesheets() {
                       </Badge>
                       {entry.status === "pending" && (
                         <div className="flex gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-success hover:text-success"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              approveEntries.mutateAsync([entry.id]).then(() => toast.success("Approved"));
-                            }}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReject(entry.id);
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          {canApproveTimesheets && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-success hover:text-success"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                approveEntries.mutateAsync([entry.id]).then(() => toast.success("Approved"));
+                              }}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canApproveTimesheets && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(entry.id);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             size="icon"
                             variant="ghost"
@@ -321,7 +327,7 @@ export default function Timesheets() {
         </Card>
 
         {/* Bulk approve bar */}
-        {selectedIds.length > 0 && (
+        {selectedIds.length > 0 && canApproveTimesheets && (
           <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-in-bottom">
             <Button
               onClick={handleBulkApprove}

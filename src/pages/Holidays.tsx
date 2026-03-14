@@ -39,7 +39,14 @@ import {
 } from "@/components/ui/accordion";
 import { useI18n } from "@/hooks/useI18n";
 import { HolidayRequestQueue } from "@/components/holidays/HolidayRequestQueue";
+import { usePermission } from "@/hooks/useRolePermissions";
+import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 
+const HOLIDAY_DISPLAY_DEFAULTS = {
+  showBalanceSummary: true,
+  showLedgerTab: true,
+  defaultView: "cards" as string,
+};
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2022" | "2023" | "2024" | "2025" | "2026";
@@ -60,8 +67,11 @@ interface EmployeeSummary {
 const Holidays = () => {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
+  const canApproveHolidays = usePermission("approve_holidays");
   const { data: leaveRules } = useLeaveRules();
+  const { data: holidayPrefs } = useTenantPreferences("holiday_display", HOLIDAY_DISPLAY_DEFAULTS);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [viewModeInit, setViewModeInit] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
   const [selectedYear, setSelectedYear] = useState<LeaveYear>("2025");
@@ -77,6 +87,16 @@ const Holidays = () => {
       setSubTab(tab);
     }
   }, [searchParams]);
+
+  // Apply stored holiday display preferences
+  useEffect(() => {
+    if (holidayPrefs && !viewModeInit) {
+      if (holidayPrefs.defaultView === "table" || holidayPrefs.defaultView === "cards") {
+        setViewMode(holidayPrefs.defaultView as ViewMode);
+      }
+      setViewModeInit(true);
+    }
+  }, [holidayPrefs, viewModeInit]);
 
   const { data: periods = [] } = usePayrollPeriods();
 

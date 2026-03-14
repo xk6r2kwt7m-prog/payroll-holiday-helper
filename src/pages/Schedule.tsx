@@ -23,17 +23,39 @@ import { MobileManagerBar } from "@/components/schedule/MobileManagerBar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CalendarClock } from "lucide-react";
+import { usePermission } from "@/hooks/useRolePermissions";
+import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 
 type ViewMode = "week" | "day";
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
 const DEPT_WITH_ALL = ["All", ...DEPARTMENTS] as const;
 
+const SCHEDULING_DEFAULTS = {
+  defaultView: "week" as string,
+  autoPublish: false,
+  showDeptFilter: true,
+  mobileQuickBuild: true,
+  shiftSwapNotify: true,
+};
+
 export default function Schedule() {
+  // Load tenant scheduling preferences
+  const { data: schedPrefs } = useTenantPreferences("scheduling", SCHEDULING_DEFAULTS);
+  
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [viewModeInitialized, setViewModeInitialized] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedDept, setSelectedDept] = useState("FOH");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
+
+  // Apply stored default view preference on first load
+  useEffect(() => {
+    if (schedPrefs && !viewModeInitialized) {
+      setViewMode((schedPrefs.defaultView === "day" ? "day" : "week") as ViewMode);
+      setViewModeInitialized(true);
+    }
+  }, [schedPrefs, viewModeInitialized]);
 
   // Dialog states
   const [publishDrawerOpen, setPublishDrawerOpen] = useState(false);
@@ -46,6 +68,10 @@ export default function Schedule() {
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
 
   const { isAdmin } = useAuth();
+  // Permission-based access
+  const canEditSchedules = usePermission("edit_schedules");
+  const canPublishSchedules = usePermission("publish_schedules");
+  
   const { data: employees } = useEmployees();
   const { data: tenantBranches = [] } = useTenantBranches();
   const isMobile = useIsMobile();
@@ -182,9 +208,9 @@ export default function Schedule() {
             onNavigate={navigate}
             onToday={() => setCurrentDate(new Date())}
             onDateSelect={(d) => setCurrentDate(d)}
-            onPublish={() => setPublishDrawerOpen(true)}
-            onUnpublish={schedule.handleUnpublish}
-            isAdmin={isAdmin}
+            onPublish={() => canPublishSchedules ? setPublishDrawerOpen(true) : undefined}
+            onUnpublish={canPublishSchedules ? schedule.handleUnpublish : undefined}
+            isAdmin={canEditSchedules}
             branches={tenantBranches}
             selectedBranch={selectedBranch}
             onBranchChange={setSelectedBranch}
@@ -212,7 +238,7 @@ export default function Schedule() {
         <div className="h-px bg-border/40" />
 
         {/* Mobile Manager Bar */}
-        {isMobile && isAdmin && (
+        {isMobile && canEditSchedules && schedPrefs?.mobileQuickBuild !== false && (
           <MobileManagerBar
             onBuildShift={() => { setWizardInitialDay(null); setWizardOpen(true); }}
             onPublishDay={() => setPublishDrawerOpen(true)}
@@ -262,14 +288,14 @@ export default function Schedule() {
             <EmptyState
               icon={CalendarClock}
               title="No shifts this week"
-              description={isAdmin
+              description={canEditSchedules
                 ? isMobile
                   ? "Tap Build Shift above to start, or use the ⋮ menu to copy last week or load a saved template."
                   : "Start building your rota by adding shifts, copying from last week, or loading a template."
                 : "No shifts have been published for this week yet. Check back later or contact your manager."
               }
-              actionLabel={isAdmin && !isMobile ? "Build Shift" : undefined}
-              onAction={isAdmin && !isMobile ? () => { setWizardInitialDay(null); setWizardOpen(true); } : undefined}
+              actionLabel={canEditSchedules && !isMobile ? "Build Shift" : undefined}
+              onAction={canEditSchedules && !isMobile ? () => { setWizardInitialDay(null); setWizardOpen(true); } : undefined}
             />
           )}
 
@@ -289,7 +315,7 @@ export default function Schedule() {
                         employees={activeEmployees}
                         branch={selectedBranch}
                         department={deptVal}
-                        isAdmin={isAdmin}
+                        isAdmin={canEditSchedules}
                         onCreateShift={schedule.handleCreateShift}
                         onUpdateShift={schedule.handleUpdateShift}
                         onDeleteShift={schedule.handleDeleteShift}
@@ -314,7 +340,7 @@ export default function Schedule() {
                   employees={activeEmployees}
                   branch={selectedBranch}
                   department={selectedDept}
-                  isAdmin={isAdmin}
+                  isAdmin={canEditSchedules}
                   onCreateShift={schedule.handleCreateShift}
                   onUpdateShift={schedule.handleUpdateShift}
                   onDeleteShift={schedule.handleDeleteShift}
@@ -329,7 +355,7 @@ export default function Schedule() {
                     shifts={dayShifts}
                     branch={selectedBranch}
                     department={selectedDept}
-                    isAdmin={isAdmin}
+                    isAdmin={canEditSchedules}
                     onAddClick={() => { setDayDialogShift(null); setDayDialogOpen(true); }}
                     onEditClick={(shift) => { setDayDialogShift(shift); setDayDialogOpen(true); }}
                     onDeleteClick={schedule.handleDeleteShift}

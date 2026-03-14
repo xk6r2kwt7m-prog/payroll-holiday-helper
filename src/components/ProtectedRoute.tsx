@@ -6,6 +6,7 @@ import { AccessDenied } from "@/components/AccessDenied";
 import { ModuleUnavailable } from "@/components/ModuleUnavailable";
 import { TenantSuspended } from "@/components/TenantSuspended";
 import { type AppRole, getRoleLevel } from "@/lib/roles";
+import { usePermission, type PermissionKey } from "@/hooks/useRolePermissions";
 
 export type ModuleKey = "scheduling" | "payroll" | "training" | "documents" | "analytics";
 
@@ -15,6 +16,8 @@ interface ProtectedRouteProps {
   requiredModule?: ModuleKey;
   moduleName?: string;
   platformAdminOnly?: boolean;
+  /** Optional permission key check (enforced after role check) */
+  requiredPermission?: PermissionKey;
 }
 
 export function ProtectedRoute({
@@ -23,6 +26,7 @@ export function ProtectedRoute({
   requiredModule,
   moduleName,
   platformAdminOnly,
+  requiredPermission,
 }: ProtectedRouteProps) {
   const { user, role, loading: authLoading } = useAuth();
   const {
@@ -30,6 +34,9 @@ export function ProtectedRoute({
     loading: tenantLoading, tenantResolved, membershipCount,
     showTenantPicker, tenantStatus,
   } = useTenant();
+
+  // Permission check (safe to call unconditionally — returns true for admin/platform admin)
+  const hasPermission = usePermission(requiredPermission || "view_employees");
 
   // ─── GATE 1: Auth or tenant still loading ───
   if (authLoading || tenantLoading) {
@@ -52,8 +59,6 @@ export function ProtectedRoute({
   }
 
   // ─── GATE 3: Tenant resolution not yet complete ───
-  // This catches edge cases where loading=false but resolution failed/errored.
-  // We show a resolving screen instead of redirecting to onboard.
   if (!tenantResolved) {
     console.log("[ProtectedRoute] Tenant not yet resolved — showing resolving screen");
     return (
@@ -70,25 +75,16 @@ export function ProtectedRoute({
 
   // ─── GATE 4: Multiple tenants, none selected yet ───
   if (showTenantPicker && membershipCount > 1 && !tenantId) {
-    console.log("[ProtectedRoute] Multiple tenants, picker needed → /select-workspace", {
-      membershipCount,
-      tenantId,
-    });
     return <Navigate to="/select-workspace" replace />;
   }
 
   // ─── GATE 5: Zero memberships — only now redirect to onboard ───
-  // Explicitly check membershipCount === 0, not just tenantId === null
   if (membershipCount === 0 && !tenantId && !isPlatformAdmin) {
-    console.log("[ProtectedRoute] 0 memberships, not platform admin → /onboard");
     return <Navigate to="/onboard" replace />;
   }
 
   // ─── GATE 6: Tenant suspended or cancelled ───
-  if (tenantStatus === "suspended" && !isPlatformAdmin) {
-    return <TenantSuspended />;
-  }
-  if (tenantStatus === "cancelled" && !isPlatformAdmin) {
+  if ((tenantStatus === "suspended" || tenantStatus === "cancelled") && !isPlatformAdmin) {
     return <TenantSuspended />;
   }
 
@@ -106,7 +102,12 @@ export function ProtectedRoute({
     }
   }
 
-  // ─── GATE 9: Module check ───
+  // ─── GATE 9: Permission key check ───
+  if (requiredPermission && !isPlatformAdmin && !hasPermission) {
+    return <AccessDenied />;
+  }
+
+  // ─── GATE 10: Module check ───
   if (requiredModule && enabledModules && !isPlatformAdmin) {
     const isModuleEnabled = enabledModules[requiredModule] !== false;
     if (!isModuleEnabled) {

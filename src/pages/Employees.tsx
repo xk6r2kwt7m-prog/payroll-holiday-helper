@@ -20,6 +20,7 @@ import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet"
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
+import { usePermission } from "@/hooks/useRolePermissions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +68,9 @@ const Employees = () => {
   const { data: employees = [], isLoading, error } = useEmployees(includeArchived);
   const deleteEmployee = useDeleteEmployee();
   const { isAdmin } = useAuth();
-  const canViewSensitive = isAdmin;
+  const canEdit = usePermission("edit_employees");
+  const canManageLifecycle = usePermission("manage_lifecycle");
+  const canViewSensitive = usePermission("reveal_sensitive");
 
   useEffect(() => {
     const dept = searchParams.get("dept") as Department;
@@ -204,7 +207,7 @@ const Employees = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {isAdmin && filteredEmployees.length > 0 && (
+            {canManageLifecycle && filteredEmployees.length > 0 && (
               <Button
                 variant={isSelectionMode ? "secondary" : "ghost"}
                 size="icon"
@@ -214,15 +217,15 @@ const Employees = () => {
                 {isSelectionMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
               </Button>
             )}
-            {isAdmin && <InviteEmployeeDialog />}
-            {isAdmin && <EmployeeFormDialog />}
+            {canEdit && <InviteEmployeeDialog />}
+            {canEdit && <EmployeeFormDialog />}
           </div>
         </div>
 
         {/* Status Pills */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
           {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
-            if (status === "archived" && !isAdmin) return null;
+            if (status === "archived" && !canManageLifecycle) return null;
             const count = counts[status];
             const config = STATUS_CONFIG[status];
             const isActive = statusFilter === status;
@@ -351,16 +354,16 @@ const Employees = () => {
             </div>
             <h3 className="text-lg font-semibold text-card-foreground mb-2">{t("employees.no_employees_yet")}</h3>
             <p className="text-muted-foreground mb-2 text-sm max-w-md mx-auto">
-              {isAdmin
+            {canEdit
                 ? t("employees.add_first_employee")
                 : "Your team hasn't been set up yet. Your admin will add employees soon."}
             </p>
-            {isAdmin && (
+            {canEdit && (
               <p className="text-xs text-muted-foreground/70 mb-6 max-w-sm mx-auto">
                 Employees are the foundation of scheduling, payroll, and leave management. Start by adding your first team member.
               </p>
             )}
-            {isAdmin && <EmployeeFormDialog />}
+            {canEdit && <EmployeeFormDialog />}
           </div>
         )}
 
@@ -404,7 +407,7 @@ const Employees = () => {
                 >
                   <EmployeeCard
                     employee={employee}
-                    isAdmin={isAdmin && !isSelectionMode}
+                    isAdmin={canEdit && !isSelectionMode}
                     canViewSensitive={canViewSensitive}
                     onDelete={handleDelete}
                     onViewDetails={handleViewDetails}
@@ -420,11 +423,11 @@ const Employees = () => {
           employee={selectedEmployee}
           open={detailSheetOpen}
           onOpenChange={setDetailSheetOpen}
-          isAdmin={isAdmin}
+          isAdmin={canEdit}
           canViewSensitive={canViewSensitive}
         />
 
-        {isAdmin && (
+        {canManageLifecycle && (
           <BulkActionsBar
             selectedEmployees={selectedEmployees}
             onClearSelection={clearSelection}

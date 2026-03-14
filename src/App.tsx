@@ -86,30 +86,30 @@ const App = () => (
             {/* Employee self-service onboarding */}
             <Route path="/employee-onboarding" element={<ProtectedRoute requiredRole="staff"><EmployeeOnboarding /></ProtectedRoute>} />
 
-            {/* Schedule module — staff can view own, manager+ can manage */}
-            <Route path="/schedule" element={<ProtectedRoute requiredRole="staff" requiredModule="scheduling" moduleName="Scheduling"><Schedule /></ProtectedRoute>} />
-            <Route path="/schedule/report" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><ScheduleReport /></ProtectedRoute>} />
-            <Route path="/schedule/analytics" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><ScheduleAnalytics /></ProtectedRoute>} />
-            <Route path="/schedule/labour-cost" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><LabourCostPreview /></ProtectedRoute>} />
+            {/* Schedule module — permission-gated */}
+            <Route path="/schedule" element={<ProtectedRoute requiredRole="staff" requiredModule="scheduling" moduleName="Scheduling" requiredPermission="view_schedules"><Schedule /></ProtectedRoute>} />
+            <Route path="/schedule/report" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling" requiredPermission="view_schedules"><ScheduleReport /></ProtectedRoute>} />
+            <Route path="/schedule/analytics" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling" requiredPermission="view_schedules"><ScheduleAnalytics /></ProtectedRoute>} />
+            <Route path="/schedule/labour-cost" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling" requiredPermission="view_schedules"><LabourCostPreview /></ProtectedRoute>} />
             <Route path="/shift-marketplace" element={<ProtectedRoute requiredRole="staff" requiredModule="scheduling" moduleName="Scheduling"><ShiftMarketplace /></ProtectedRoute>} />
 
-            {/* Timesheets — supervisor+ */}
-            <Route path="/timesheets" element={<ProtectedRoute requiredRole="supervisor" requiredModule="scheduling" moduleName="Scheduling"><Timesheets /></ProtectedRoute>} />
+            {/* Timesheets — permission-gated */}
+            <Route path="/timesheets" element={<ProtectedRoute requiredRole="supervisor" requiredModule="scheduling" moduleName="Scheduling" requiredPermission="view_timesheets"><Timesheets /></ProtectedRoute>} />
 
-            {/* Employees — supervisor+ can view */}
-            <Route path="/employees" element={<ProtectedRoute requiredRole="supervisor"><Employees /></ProtectedRoute>} />
+            {/* Employees — permission-gated */}
+            <Route path="/employees" element={<ProtectedRoute requiredRole="supervisor" requiredPermission="view_employees"><Employees /></ProtectedRoute>} />
 
-            {/* Payroll module — admin only */}
-            <Route path="/payroll" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><Payroll /></ProtectedRoute>} />
-            <Route path="/payroll/calendar" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollCalendar /></ProtectedRoute>} />
-            <Route path="/payroll/analytics" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollAnalytics /></ProtectedRoute>} />
-            <Route path="/payroll/comparison" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollComparison /></ProtectedRoute>} />
-            <Route path="/payroll/overpayments" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollOverpayments /></ProtectedRoute>} />
-            <Route path="/payroll/audit" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollAudit /></ProtectedRoute>} />
+            {/* Payroll module — permission-gated */}
+            <Route path="/payroll" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll" requiredPermission="view_pay_data"><Payroll /></ProtectedRoute>} />
+            <Route path="/payroll/calendar" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll" requiredPermission="view_pay_data"><PayrollCalendar /></ProtectedRoute>} />
+            <Route path="/payroll/analytics" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll" requiredPermission="view_pay_data"><PayrollAnalytics /></ProtectedRoute>} />
+            <Route path="/payroll/comparison" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll" requiredPermission="view_pay_data"><PayrollComparison /></ProtectedRoute>} />
+            <Route path="/payroll/overpayments" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll" requiredPermission="view_pay_data"><PayrollOverpayments /></ProtectedRoute>} />
+            <Route path="/payroll/audit" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll" requiredPermission="view_pay_data"><PayrollAudit /></ProtectedRoute>} />
 
-            {/* Holidays — staff see StaffLeave, manager+ see admin Holidays */}
-            <Route path="/holidays" element={<ProtectedRoute requiredRole="staff"><StaffLeave /></ProtectedRoute>} />
-            <Route path="/holidays/manage" element={<ProtectedRoute requiredRole="manager"><Holidays /></ProtectedRoute>} />
+            {/* Holidays — permission-gated */}
+            <Route path="/holidays" element={<ProtectedRoute requiredRole="staff" requiredPermission="view_holidays"><StaffLeave /></ProtectedRoute>} />
+            <Route path="/holidays/manage" element={<ProtectedRoute requiredRole="manager" requiredPermission="approve_holidays"><Holidays /></ProtectedRoute>} />
             <Route path="/holidays/audit" element={<ProtectedRoute requiredRole="admin"><HolidayAudit /></ProtectedRoute>} />
 
             {/* Absences — manager+ */}
@@ -118,11 +118,11 @@ const App = () => (
             {/* Workforce — manager+ */}
             <Route path="/workforce" element={<ProtectedRoute requiredRole="manager"><Workforce /></ProtectedRoute>} />
 
-            {/* Onboarding — manager+ */}
-            <Route path="/onboarding" element={<ProtectedRoute requiredRole="manager"><Onboarding /></ProtectedRoute>} />
+            {/* Onboarding — permission-gated */}
+            <Route path="/onboarding" element={<ProtectedRoute requiredRole="manager" requiredPermission="manage_lifecycle"><Onboarding /></ProtectedRoute>} />
 
-            {/* Training — staff+ */}
-            <Route path="/training" element={<ProtectedRoute requiredRole="staff" requiredModule="training" moduleName="Training"><TrainingRecords /></ProtectedRoute>} />
+            {/* Training — permission-gated */}
+            <Route path="/training" element={<ProtectedRoute requiredRole="staff" requiredModule="training" moduleName="Training" requiredPermission="view_training"><TrainingRecords /></ProtectedRoute>} />
 
             {/* Announcements — staff+ */}
             <Route path="/announcements" element={<ProtectedRoute requiredRole="staff"><Announcements /></ProtectedRoute>} />
@@ -130,12 +130,12 @@ const App = () => (
             {/* Reports — manager+ */}
             <Route path="/reports" element={<ProtectedRoute requiredRole="manager"><Reports /></ProtectedRoute>} />
 
-            {/* Admin-only sections */}
-            <Route path="/disciplinary" element={<ProtectedRoute requiredRole="admin"><Disciplinary /></ProtectedRoute>} />
-            <Route path="/contracts" element={<ProtectedRoute requiredRole="admin" requiredModule="documents" moduleName="Documents"><Contracts /></ProtectedRoute>} />
+            {/* Admin-only sections — permission-gated */}
+            <Route path="/disciplinary" element={<ProtectedRoute requiredRole="admin" requiredPermission="manage_lifecycle"><Disciplinary /></ProtectedRoute>} />
+            <Route path="/contracts" element={<ProtectedRoute requiredRole="admin" requiredModule="documents" moduleName="Documents" requiredPermission="manage_documents"><Contracts /></ProtectedRoute>} />
             <Route path="/locations" element={<ProtectedRoute requiredRole="admin"><Locations /></ProtectedRoute>} />
             <Route path="/locations/:branch" element={<ProtectedRoute requiredRole="admin"><LocationDashboard /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute requiredRole="admin"><Settings /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute requiredRole="admin" requiredPermission="access_admin_centre"><Settings /></ProtectedRoute>} />
             <Route path="/talent-pool" element={<ProtectedRoute requiredRole="staff"><TalentPool /></ProtectedRoute>} />
 
             {/* FOH Training — staff+ */}
