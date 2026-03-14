@@ -141,7 +141,15 @@ export function StaffDocumentRequests({ employeeId }: Props) {
   }
 
   if (requests.length === 0) {
-    return null; // No requests = don't show section
+    return (
+      <div className="rounded-xl bg-success/5 border border-success/15 p-5 text-center">
+        <CheckCircle2 className="h-8 w-8 text-success mx-auto mb-2" />
+        <h3 className="text-sm font-semibold text-foreground mb-0.5">No outstanding document requests</h3>
+        <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+          You're all caught up. If your manager requests any documents, they'll appear here.
+        </p>
+      </div>
+    );
   }
 
   return (
