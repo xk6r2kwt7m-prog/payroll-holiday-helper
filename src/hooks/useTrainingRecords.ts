@@ -52,6 +52,7 @@ export function useTrainingRecords(employeeId?: string) {
 
 export function useAddTrainingRecord() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (record: {
       employee_id: string;
@@ -62,7 +63,7 @@ export function useAddTrainingRecord() {
       expiry_date?: string;
       notes?: string;
     }) => {
-      await assertPermission("manage_training", null);
+      await assertPermission("manage_training", tenantId!);
       const { error } = await supabase.from("training_records" as any).insert(record as any);
       if (error) throw error;
     },
