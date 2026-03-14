@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, DollarSign, Calendar, MoreHorizontal,
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin, Building2,
