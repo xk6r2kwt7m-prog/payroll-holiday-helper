@@ -42,7 +42,7 @@ interface WizardState {
 
 const CompanyOnboarding = () => {
   const { user } = useAuth();
-  const { tenantId, loading: tenantLoading } = useTenant();
+  const { tenantId, loading: tenantLoading, tenantResolved, membershipCount } = useTenant();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
