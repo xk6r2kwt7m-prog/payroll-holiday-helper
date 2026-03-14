@@ -200,13 +200,10 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
         },
         onError: (err) => toast.error(err.message),
       });
-    } catch {
-      deleteShift.mutate(id, {
-        onSuccess: () => toast.success("Shift deleted"),
-        onError: (err) => toast.error(err.message),
-      });
+    } catch (err: any) {
+      toast.error(err.message);
     }
-  }, [deleteShift, notifyShiftChange]);
+  }, [deleteShift, notifyShiftChange, tenantId]);
 
   const handlePublish = useCallback(async () => {
     try {
