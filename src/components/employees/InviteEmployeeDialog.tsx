@@ -9,9 +9,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Database } from "@/integrations/supabase/types";
+import { useDepartments } from "@/hooks/useDepartments";
 
-type DepartmentType = Database["public"]["Enums"]["department_type"];
+type DepartmentType = string;
 
 interface InviteEmployeeDialogProps {
   trigger?: React.ReactNode;
@@ -27,6 +27,7 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
   const [department, setDepartment] = useState<DepartmentType>("FOH");
   const { tenantId } = useTenant();
   const qc = useQueryClient();
+  const { data: departments = [] } = useDepartments();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,12 +150,12 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
 
           <div className="space-y-2">
             <Label>Department</Label>
-            <Select value={department} onValueChange={v => setDepartment(v as DepartmentType)}>
+            <Select value={department} onValueChange={v => setDepartment(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="FOH">Front of House</SelectItem>
-                <SelectItem value="BOH">Back of House</SelectItem>
-                <SelectItem value="CPU">Central Production</SelectItem>
+                {departments.map(d => (
+                  <SelectItem key={d.key} value={d.key}>{d.emoji} {d.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

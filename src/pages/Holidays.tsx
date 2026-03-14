@@ -30,6 +30,7 @@ import {
 import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
+import { DepartmentFilter } from "@/components/ui/DepartmentFilter";
 import {
   Accordion,
   AccordionContent,
@@ -779,17 +780,7 @@ const Holidays = () => {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Search employees..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
-            <Select value={departmentFilter} onValueChange={(v) => setDepartmentFilter(v as DepartmentFilter)}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Depts</SelectItem>
-                <SelectItem value="FOH">🍽️ FOH</SelectItem>
-                <SelectItem value="BOH">👨‍🍳 BOH</SelectItem>
-                <SelectItem value="CPU">🏭 CPU</SelectItem>
-              </SelectContent>
-            </Select>
+            <DepartmentFilter value={departmentFilter} onChange={(v) => setDepartmentFilter(v as DepartmentFilter)} />
           </div>
 
           {(searchQuery || departmentFilter !== "all") && (

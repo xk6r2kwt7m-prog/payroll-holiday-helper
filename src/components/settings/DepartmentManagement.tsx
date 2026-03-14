@@ -1,48 +1,28 @@
 import { useState } from "react";
-import { Plus, Edit2, Loader2, MoreHorizontal, Archive } from "lucide-react";
+import { Plus, Edit2, MoreHorizontal, Archive, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useDepartments, useCreateDepartment, useUpdateDepartment } from "@/hooks/useDepartments";
 import { toast } from "sonner";
-
-interface Department {
-  key: string;
-  label: string;
-  emoji: string;
-  description: string;
-  isSystem: boolean;
-  isActive: boolean;
-}
-
-const SYSTEM_DEPARTMENTS: Department[] = [
-  { key: "FOH", label: "Front of House", emoji: "🍽️", description: "Customer-facing roles", isSystem: true, isActive: true },
-  { key: "BOH", label: "Back of House", emoji: "👨‍🍳", description: "Kitchen & prep roles", isSystem: true, isActive: true },
-  { key: "CPU", label: "Central Production", emoji: "🏭", description: "Central production unit", isSystem: true, isActive: true },
-];
 
 export function DepartmentManagement() {
   const { data: employees = [] } = useEmployees();
-  const [departments, setDepartments] = useState<Department[]>(SYSTEM_DEPARTMENTS);
-  const [editingDept, setEditingDept] = useState<Department | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { data: departments = [], isLoading } = useDepartments(true);
+  const createDept = useCreateDepartment();
+  const updateDept = useUpdateDepartment();
 
-  // Form state
+  const [editingDept, setEditingDept] = useState<any | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formLabel, setFormLabel] = useState("");
   const [formEmoji, setFormEmoji] = useState("📋");
   const [formDescription, setFormDescription] = useState("");
@@ -55,113 +35,73 @@ export function DepartmentManagement() {
 
   const openCreate = () => {
     setEditingDept(null);
-    setFormLabel("");
-    setFormEmoji("📋");
-    setFormDescription("");
-    setFormActive(true);
+    setFormLabel(""); setFormEmoji("📋"); setFormDescription(""); setFormActive(true);
     setIsDialogOpen(true);
   };
 
-  const openEdit = (dept: Department) => {
+  const openEdit = (dept: any) => {
     setEditingDept(dept);
-    setFormLabel(dept.label);
-    setFormEmoji(dept.emoji);
-    setFormDescription(dept.description);
-    setFormActive(dept.isActive);
+    setFormLabel(dept.label); setFormEmoji(dept.emoji); setFormDescription(dept.description || ""); setFormActive(dept.is_active);
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    if (!formLabel.trim()) {
-      toast.error("Department name is required");
-      return;
-    }
+  const handleSave = async () => {
+    if (!formLabel.trim()) { toast.error("Department name is required"); return; }
 
-    if (editingDept) {
-      setDepartments(prev =>
-        prev.map(d =>
-          d.key === editingDept.key
-            ? { ...d, label: formLabel, emoji: formEmoji, description: formDescription, isActive: formActive }
-            : d
-        )
-      );
-      toast.success(`${formLabel} updated`);
-    } else {
-      const key = formLabel.toUpperCase().replace(/\s+/g, "_").slice(0, 10);
-      if (departments.some(d => d.key === key)) {
-        toast.error("Department key already exists");
-        return;
+    try {
+      if (editingDept) {
+        await updateDept.mutateAsync({
+          id: editingDept.id,
+          updates: { label: formLabel, emoji: formEmoji, description: formDescription, is_active: formActive },
+        });
+        toast.success(`${formLabel} updated`);
+      } else {
+        const key = formLabel.toUpperCase().replace(/\s+/g, "_").slice(0, 10);
+        await createDept.mutateAsync({ key, label: formLabel, emoji: formEmoji, description: formDescription });
+        toast.success(`${formLabel} created`);
       }
-      setDepartments(prev => [
-        ...prev,
-        { key, label: formLabel, emoji: formEmoji, description: formDescription, isSystem: false, isActive: formActive },
-      ]);
-      toast.success(`${formLabel} created`);
+      setIsDialogOpen(false);
+      setEditingDept(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save department");
     }
-    setIsDialogOpen(false);
-    setEditingDept(null);
   };
 
-  const toggleArchive = (dept: Department) => {
-    setDepartments(prev =>
-      prev.map(d =>
-        d.key === dept.key ? { ...d, isActive: !d.isActive } : d
-      )
-    );
-    toast.success(`${dept.label} ${dept.isActive ? "archived" : "restored"}`);
+  const toggleArchive = async (dept: any) => {
+    await updateDept.mutateAsync({ id: dept.id, updates: { is_active: !dept.is_active } });
+    toast.success(`${dept.label} ${dept.is_active ? "archived" : "restored"}`);
   };
 
-  const activeDepts = deptCounts.filter(d => d.isActive);
-  const archivedDepts = deptCounts.filter(d => !d.isActive);
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+
+  const activeDepts = deptCounts.filter(d => d.is_active);
+  const archivedDepts = deptCounts.filter(d => !d.is_active);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          {activeDepts.length} active department{activeDepts.length !== 1 ? "s" : ""}
-        </p>
-        <Button size="sm" onClick={openCreate} className="text-xs">
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Add Department
-        </Button>
+        <p className="text-xs text-muted-foreground">{activeDepts.length} active department{activeDepts.length !== 1 ? "s" : ""}</p>
+        <Button size="sm" onClick={openCreate} className="text-xs"><Plus className="h-3.5 w-3.5 mr-1" />Add Department</Button>
       </div>
 
-      {/* Active departments */}
       <div className="space-y-2">
         {activeDepts.map((dept) => (
-          <div
-            key={dept.key}
-            className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted/30 transition-colors"
-          >
+          <div key={dept.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-muted/30 transition-colors">
             <span className="text-lg">{dept.emoji}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-foreground">{dept.label}</p>
-                {dept.isSystem && (
-                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-muted-foreground">System</Badge>
-                )}
+                {dept.is_system && <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-muted-foreground">System</Badge>}
               </div>
               <p className="text-xs text-muted-foreground">{dept.description}</p>
             </div>
-            <Badge variant="outline" className="text-xs shrink-0">
-              {dept.count} active
-            </Badge>
+            <Badge variant="outline" className="text-xs shrink-0">{dept.count} active</Badge>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7"><MoreHorizontal className="h-3.5 w-3.5" /></Button></DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => openEdit(dept)}>
-                  <Edit2 className="h-3.5 w-3.5 mr-2" />
-                  Edit
-                </DropdownMenuItem>
-                {!dept.isSystem && (
-                  <DropdownMenuItem onClick={() => toggleArchive(dept)} className="text-destructive">
-                    <Archive className="h-3.5 w-3.5 mr-2" />
-                    Archive
-                  </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openEdit(dept)}><Edit2 className="h-3.5 w-3.5 mr-2" />Edit</DropdownMenuItem>
+                {!dept.is_system && (
+                  <DropdownMenuItem onClick={() => toggleArchive(dept)} className="text-destructive"><Archive className="h-3.5 w-3.5 mr-2" />Archive</DropdownMenuItem>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -169,33 +109,22 @@ export function DepartmentManagement() {
         ))}
       </div>
 
-      {/* Archived */}
       {archivedDepts.length > 0 && (
         <div className="space-y-2 pt-2">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Archived</p>
           {archivedDepts.map((dept) => (
-            <div
-              key={dept.key}
-              className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30 opacity-60"
-            >
+            <div key={dept.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30 opacity-60">
               <span className="text-lg">{dept.emoji}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">{dept.label}</p>
-              </div>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => toggleArchive(dept)}>
-                Restore
-              </Button>
+              <div className="flex-1 min-w-0"><p className="text-sm font-medium text-foreground">{dept.label}</p></div>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => toggleArchive(dept)}>Restore</Button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{editingDept ? "Edit Department" : "Add Department"}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editingDept ? "Edit Department" : "Add Department"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-[60px_1fr] gap-3">
               <div className="space-y-1.5">
@@ -218,7 +147,7 @@ export function DepartmentManagement() {
           </div>
           <DialogFooter className="gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button size="sm" onClick={handleSave}>
+            <Button size="sm" onClick={handleSave} disabled={createDept.isPending || updateDept.isPending}>
               {editingDept ? "Save Changes" : "Create Department"}
             </Button>
           </DialogFooter>

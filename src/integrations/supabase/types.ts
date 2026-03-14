@@ -593,6 +593,56 @@ export type Database = {
           },
         ]
       }
+      departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          emoji: string
+          id: string
+          is_active: boolean
+          is_system: boolean
+          key: string
+          label: string
+          sort_order: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key: string
+          label: string
+          sort_order?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          emoji?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disciplinary_records: {
         Row: {
           appeal_deadline: string | null
@@ -1412,7 +1462,7 @@ export type Database = {
           bank_account_no: string | null
           contract_country: string | null
           created_at: string
-          department: Database["public"]["Enums"]["department_type"]
+          department: string
           email: string | null
           employee_ref: string | null
           employing_entity: string | null
@@ -1451,7 +1501,7 @@ export type Database = {
           bank_account_no?: string | null
           contract_country?: string | null
           created_at?: string
-          department: Database["public"]["Enums"]["department_type"]
+          department: string
           email?: string | null
           employee_ref?: string | null
           employing_entity?: string | null
@@ -1490,7 +1540,7 @@ export type Database = {
           bank_account_no?: string | null
           contract_country?: string | null
           created_at?: string
-          department?: Database["public"]["Enums"]["department_type"]
+          department?: string
           email?: string | null
           employee_ref?: string | null
           employing_entity?: string | null
@@ -2968,6 +3018,44 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          granted: boolean
+          id: string
+          permission_key: string
+          role: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          granted?: boolean
+          id?: string
+          permission_key: string
+          role: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          granted?: boolean
+          id?: string
+          permission_key?: string
+          role?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sandbox_tenants: {
         Row: {
           created_at: string
@@ -3505,7 +3593,7 @@ export type Database = {
           branch: string
           created_at: string
           created_by: string | null
-          department: Database["public"]["Enums"]["department_type"]
+          department: string
           employee_id: string | null
           end_time: string
           id: string
@@ -3523,7 +3611,7 @@ export type Database = {
           branch: string
           created_at?: string
           created_by?: string | null
-          department: Database["public"]["Enums"]["department_type"]
+          department: string
           employee_id?: string | null
           end_time: string
           id?: string
@@ -3541,7 +3629,7 @@ export type Database = {
           branch?: string
           created_at?: string
           created_by?: string | null
-          department?: Database["public"]["Enums"]["department_type"]
+          department?: string
           employee_id?: string | null
           end_time?: string
           id?: string
@@ -4449,6 +4537,41 @@ export type Database = {
           },
         ]
       }
+      tenant_preferences: {
+        Row: {
+          category: string
+          id: string
+          preferences: Json
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category: string
+          id?: string
+          preferences?: Json
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          id?: string
+          preferences?: Json
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_preferences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_subscriptions: {
         Row: {
           billing_cycle: string
@@ -4679,7 +4802,7 @@ export type Database = {
           clock_out_time: string | null
           clock_out_within_geofence: boolean | null
           created_at: string
-          department: Database["public"]["Enums"]["department_type"]
+          department: string
           employee_id: string
           id: string
           manager_override: boolean | null
@@ -4707,7 +4830,7 @@ export type Database = {
           clock_out_time?: string | null
           clock_out_within_geofence?: boolean | null
           created_at?: string
-          department: Database["public"]["Enums"]["department_type"]
+          department: string
           employee_id: string
           id?: string
           manager_override?: boolean | null
@@ -4735,7 +4858,7 @@ export type Database = {
           clock_out_time?: string | null
           clock_out_within_geofence?: boolean | null
           created_at?: string
-          department?: Database["public"]["Enums"]["department_type"]
+          department?: string
           employee_id?: string
           id?: string
           manager_override?: boolean | null
@@ -5292,7 +5415,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           created_at: string | null
-          department: Database["public"]["Enums"]["department_type"] | null
+          department: string | null
           employee_ref: string | null
           end_date: string | null
           forename: string | null
@@ -5309,7 +5432,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           created_at?: string | null
-          department?: Database["public"]["Enums"]["department_type"] | null
+          department?: string | null
           employee_ref?: string | null
           end_date?: string | null
           forename?: string | null
@@ -5326,7 +5449,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           created_at?: string | null
-          department?: Database["public"]["Enums"]["department_type"] | null
+          department?: string | null
           employee_ref?: string | null
           end_date?: string | null
           forename?: string | null
@@ -5390,6 +5513,10 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: boolean
       }
+      seed_default_departments: {
+        Args: { _tenant_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "manager" | "viewer" | "staff" | "supervisor"
@@ -5400,7 +5527,6 @@ export type Database = {
         | "approve"
         | "reject"
         | "import"
-      department_type: "FOH" | "BOH" | "CPU"
       document_type:
         | "contract"
         | "id_document"
@@ -5599,7 +5725,6 @@ export const Constants = {
         "reject",
         "import",
       ],
-      department_type: ["FOH", "BOH", "CPU"],
       document_type: [
         "contract",
         "id_document",

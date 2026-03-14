@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDepartments } from "@/hooks/useDepartments";
 import { useTalentRequests, useCreateTalentRequest, useTalentMatches } from "@/hooks/useTalentPool";
 import { useTenant } from "@/hooks/useTenant";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,7 @@ const URGENCY_COLORS: Record<string, string> = {
 
 export function TalentRequestList() {
   const { data: requests = [], isLoading } = useTalentRequests();
+  const { data: departments = [] } = useDepartments();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
@@ -175,6 +177,7 @@ function TalentMatchesSection({ requestId }: { requestId: string }) {
 
 function CreateTalentRequestForm({ onSuccess }: { onSuccess: () => void }) {
   const createRequest = useCreateTalentRequest();
+  const { data: departments = [] } = useDepartments();
   const [form, setForm] = useState({
     role: "",
     department: "",
@@ -221,9 +224,9 @@ function CreateTalentRequestForm({ onSuccess }: { onSuccess: () => void }) {
           <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
             <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="FOH">FOH</SelectItem>
-              <SelectItem value="BOH">BOH</SelectItem>
-              <SelectItem value="CPU">CPU</SelectItem>
+              {(departments || []).map(d => (
+                <SelectItem key={d.key} value={d.key}>{d.emoji} {d.key}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

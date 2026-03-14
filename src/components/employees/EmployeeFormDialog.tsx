@@ -13,12 +13,13 @@ import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, useEmployees, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
 import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
 import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRules } from "@/hooks/useCountryRules";
+import { useDepartments } from "@/hooks/useDepartments";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/hooks/useTenant";
 import { usePlanLimits } from "@/hooks/useSubscription";
 
-type DepartmentType = Database["public"]["Enums"]["department_type"];
+type DepartmentType = string;
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
 
 interface EmployeeFormDialogProps {
@@ -69,6 +70,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
   const { data: availableBranches = [] } = useTenantBranches();
   const { data: countryRules = [] } = useCountryRules();
+  const { data: departments = [] } = useDepartments();
 
   // Reset form only when dialog opens (not on every render)
   useEffect(() => {
@@ -422,9 +424,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="FOH">🍽️ FOH (Front of House)</SelectItem>
-                        <SelectItem value="BOH">👨‍🍳 BOH (Back of House)</SelectItem>
-                        <SelectItem value="CPU">🏭 CPU (Central Production)</SelectItem>
+                        {departments.map(d => (
+                          <SelectItem key={d.key} value={d.key}>{d.emoji} {d.key} ({d.label})</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
