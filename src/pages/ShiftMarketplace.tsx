@@ -319,9 +319,11 @@ export default function ShiftMarketplace() {
 
   const handleRequestConfirm = () => {
     if (!confirmRequest || !currentEmployeeId) return;
+    const shift = (confirmRequest as any).shift;
     requestShift.mutate({
       listingId: confirmRequest.id,
       employeeId: currentEmployeeId,
+      shiftId: shift?.id || (confirmRequest as any).shift_id,
       notes: requestNotes,
     }, {
       onSuccess: () => {
@@ -342,7 +344,12 @@ export default function ShiftMarketplace() {
   };
 
   const handleReject = (request: MarketplaceRequest) => {
-    rejectRequest.mutate({ requestId: request.id });
+    const listing = request.listing as any;
+    rejectRequest.mutate({
+      requestId: request.id,
+      employeeId: request.requested_by,
+      shiftId: listing?.shift_id || listing?.shift?.id,
+    });
   };
 
   const tab = isManagerOrAbove ? "approvals" : "available";
