@@ -119,6 +119,15 @@ export function ManagerHome() {
         <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, d MMMM yyyy")}</p>
       </motion.div>
 
+      {/* Workforce Quick Actions */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.03 }}>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <FindCoverSheet trigger={<Button variant="outline" size="sm" className="flex-shrink-0 rounded-xl h-10"><Search className="h-4 w-4 mr-1.5" /> Find Cover</Button>} />
+          <EmergencyCoverTool trigger={<Button variant="destructive" size="sm" className="flex-shrink-0 rounded-xl h-10"><AlertTriangle className="h-4 w-4 mr-1.5" /> Emergency</Button>} />
+          <Link to="/workforce"><Button variant="outline" size="sm" className="flex-shrink-0 rounded-xl h-10"><Building2 className="h-4 w-4 mr-1.5" /> Workforce</Button></Link>
+        </div>
+      </motion.div>
+
       {/* Live Status Strip */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
         <div className="grid grid-cols-3 gap-2">
