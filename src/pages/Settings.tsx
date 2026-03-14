@@ -10,7 +10,6 @@ import {
   Building2, Bell, Shield, CreditCard, Loader2, Users, Calendar,
   MapPin, Briefcase, Settings as SettingsIcon, Lock, ChevronRight,
   CalendarClock, GraduationCap, Sparkles, Palette, Blocks, ClipboardList, DollarSign,
-  CalendarClock, GraduationCap, Sparkles, Palette, Blocks, ClipboardList,
 } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
