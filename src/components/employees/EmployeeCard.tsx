@@ -1,4 +1,4 @@
-import { Edit2, Trash2, Eye, MoreHorizontal, MapPin } from "lucide-react";
+import { Edit2, Trash2, Eye, MoreHorizontal, MapPin, Clock } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
+import { ReadinessStatusBadge } from "./OnboardingChecklist";
+import { useEmployeeReadiness } from "@/hooks/useOnboardingReadiness";
 import { formatCurrency } from "@/hooks/useHolidays";
 import { useEmployeeBranches, type BranchType } from "@/hooks/useBranches";
 import type { Employee } from "@/hooks/useEmployees";
@@ -51,6 +53,8 @@ interface EmployeeCardProps {
 
 export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDelete, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
+  const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
+  const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
 
   return (
     <div
@@ -100,9 +104,13 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
           </div>
         </div>
 
-        <Badge variant="outline" className={cn("text-[10px] font-medium px-1.5 py-0 h-5 shrink-0", statusStyles[employee.status])}>
-          {statusLabels[employee.status]}
-        </Badge>
+        {isNewStarter && readiness ? (
+          <ReadinessStatusBadge status={readiness.status} />
+        ) : (
+          <Badge variant="outline" className={cn("text-[10px] font-medium px-1.5 py-0 h-5 shrink-0", statusStyles[employee.status])}>
+            {statusLabels[employee.status]}
+          </Badge>
+        )}
 
         {isAdmin && (
           <DropdownMenu>
