@@ -195,7 +195,7 @@ const Employees = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-4 max-w-7xl mx-auto">
+      <div className="space-y-4 max-w-7xl mx-auto min-w-0 overflow-x-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
