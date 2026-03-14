@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export type DocumentType = Database["public"]["Enums"]["document_type"];
 
