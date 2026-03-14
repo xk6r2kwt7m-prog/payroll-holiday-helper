@@ -290,23 +290,42 @@ export function TrainingComplianceReport() {
   }, [assignableGaps, selectedGaps.size]);
 
   const handleAssignSingle = useCallback(async (g: GapRow) => {
-    await createAssignments.mutateAsync([{ document_id: g.moduleId, employee_id: g.employeeId }]);
-    setSelectedGaps(prev => { const n = new Set(prev); n.delete(gapKey(g)); return n; });
-  }, [createAssignments]);
+    const k = gapKey(g);
+    const dueDate = singleDueDates.get(k);
+    await createAssignments.mutateAsync([{
+      document_id: g.moduleId,
+      employee_id: g.employeeId,
+      due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : undefined,
+    }]);
+    setSelectedGaps(prev => { const n = new Set(prev); n.delete(k); return n; });
+    setSingleDueDates(prev => { const n = new Map(prev); n.delete(k); return n; });
+  }, [createAssignments, singleDueDates]);
 
   const handleAssignSelected = useCallback(async () => {
     const toAssign = assignableGaps.filter(g => selectedGaps.has(gapKey(g)));
     if (toAssign.length === 0) return;
     await createAssignments.mutateAsync(
-      toAssign.map(g => ({ document_id: g.moduleId, employee_id: g.employeeId }))
+      toAssign.map(g => ({
+        document_id: g.moduleId,
+        employee_id: g.employeeId,
+        due_date: bulkDueDate ? format(bulkDueDate, "yyyy-MM-dd") : undefined,
+      }))
     );
     setSelectedGaps(new Set());
-  }, [assignableGaps, selectedGaps, createAssignments]);
+    setBulkDueDate(undefined);
+  }, [assignableGaps, selectedGaps, createAssignments, bulkDueDate]);
 
   const handleViewAssignment = useCallback((g: GapRow) => {
-    // Navigate to training page where the assignment can be managed
     navigate("/training");
   }, [navigate]);
+
+  const setSingleDueDate = useCallback((key: string, date: Date | undefined) => {
+    setSingleDueDates(prev => {
+      const n = new Map(prev);
+      if (date) n.set(key, date); else n.delete(key);
+      return n;
+    });
+  }, []);
 
   // ─── Shared ───
 
