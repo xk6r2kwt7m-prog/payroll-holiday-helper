@@ -210,7 +210,7 @@ export default function Schedule() {
             onDateSelect={(d) => setCurrentDate(d)}
             onPublish={() => canPublishSchedules ? setPublishDrawerOpen(true) : undefined}
             onUnpublish={canPublishSchedules ? schedule.handleUnpublish : undefined}
-            isAdmin={isAdmin}
+            isAdmin={canEditSchedules}
             branches={tenantBranches}
             selectedBranch={selectedBranch}
             onBranchChange={setSelectedBranch}
