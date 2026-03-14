@@ -1,4 +1,4 @@
-import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote } from "lucide-react";
+import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { EmployeeNotesSection } from "./EmployeeNotesSection";
 import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateReferenceLetterDialog";
+import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocumentRequestDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
@@ -278,6 +279,20 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
 
           {/* Documents */}
           <Section title="Documents" icon={FolderOpen}>
+            {isAdmin && (
+              <div className="mb-3">
+                <CreateDocumentRequestDialog
+                  preselectedEmployeeId={employee.id}
+                  preselectedEmployeeName={`${employee.forename} ${employee.surname}`}
+                  trigger={
+                    <Button size="sm" variant="outline" className="gap-2 w-full">
+                      <FilePlus className="h-4 w-4" />
+                      Request Document
+                    </Button>
+                  }
+                />
+              </div>
+            )}
             <EmployeeDocumentList
               employeeId={employee.id}
               employeeName={`${employee.forename} ${employee.surname}`}

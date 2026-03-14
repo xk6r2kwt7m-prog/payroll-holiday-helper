@@ -15,6 +15,7 @@ import { formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { useI18n } from "@/hooks/useI18n";
 import { useTenant } from "@/hooks/useTenant";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
+import { DocumentRequestsWidget } from "@/components/dashboard/DocumentRequestsWidget";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -155,6 +156,11 @@ export function AdminHome() {
       {/* Operational Alerts */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.14 }}>
         <OperationalAlertsPanel />
+      </motion.div>
+
+      {/* Document Requests */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.15 }}>
+        <DocumentRequestsWidget />
       </motion.div>
 
       {latestPeriod && (
