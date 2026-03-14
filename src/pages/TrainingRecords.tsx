@@ -247,9 +247,11 @@ function TrainingAdminView() {
                         <div className="flex items-center gap-2">
                           {getExpiryBadge(r.expiry_date)}
                           <Badge variant="outline" className="text-xs">{certType?.label || r.certification_type}</Badge>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteRecord.mutate(r.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          {canManageTraining && (
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteRecord.mutate(r.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
