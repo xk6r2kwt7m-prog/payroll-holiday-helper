@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTrainingRecords, useAddTrainingRecord, useDeleteTrainingRecord, CERTIFICATION_TYPES } from "@/hooks/useTrainingRecords";
 import { TrainingLibraryManager, TrainingCompletionDashboard } from "@/components/training/TrainingLibraryManager";
+import { StaffTrainingView } from "@/components/training/StaffTrainingView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,8 +16,53 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GraduationCap, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, BookOpen, ClipboardCheck } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
+import { getRoleLevel } from "@/lib/roles";
 
 export default function TrainingRecords() {
+  const { role } = useAuth();
+  const userLevel = getRoleLevel(role);
+  const isManagerOrAbove = userLevel >= getRoleLevel("manager");
+  const { employeeId } = useCurrentEmployee();
+
+  // Staff view — only show their assigned training
+  if (!isManagerOrAbove) {
+    return (
+      <AppLayout>
+        <div className="space-y-6 max-w-lg mx-auto pb-24">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <GraduationCap className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">My Training</h1>
+              <p className="text-sm text-muted-foreground">Your assigned training and documents</p>
+            </div>
+          </div>
+          {employeeId ? (
+            <StaffTrainingView employeeId={employeeId} />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                <GraduationCap className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1">No training assigned</h3>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Your manager will assign training materials when needed.
+              </p>
+            </div>
+          )}
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Manager/Admin view — full library, tracking, certifications
+  return <TrainingAdminView />;
+}
+
+function TrainingAdminView() {
   const { data: employees = [] } = useEmployees();
   const { data: records = [] } = useTrainingRecords();
   const addRecord = useAddTrainingRecord();
@@ -88,17 +134,14 @@ export default function TrainingRecords() {
             <TabsTrigger value="certifications" className="gap-1.5"><GraduationCap className="h-4 w-4" /> Certifications</TabsTrigger>
           </TabsList>
 
-          {/* Library Tab */}
           <TabsContent value="library" className="mt-4">
             <TrainingLibraryManager />
           </TabsContent>
 
-          {/* Tracking Tab */}
           <TabsContent value="tracking" className="mt-4">
             <TrainingCompletionDashboard />
           </TabsContent>
 
-          {/* Certifications Tab */}
           <TabsContent value="certifications" className="mt-4">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -146,7 +189,6 @@ export default function TrainingRecords() {
                 </Dialog>
               </div>
 
-              {/* Alert banners */}
               {(expiredRecords.length > 0 || expiringRecords.length > 0) && (
                 <div className="space-y-2">
                   {expiredRecords.length > 0 && (
@@ -166,7 +208,17 @@ export default function TrainingRecords() {
 
               <div className="rounded-xl bg-card border border-border shadow-card overflow-hidden">
                 <div className="divide-y divide-border">
-                  {records.length === 0 && <p className="text-center text-muted-foreground py-8">No training records yet.</p>}
+                  {records.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                      <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                        <GraduationCap className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-base font-semibold text-foreground mb-1">No certification records</h3>
+                      <p className="text-sm text-muted-foreground max-w-xs">
+                        Add training records and certifications for your team using the button above.
+                      </p>
+                    </div>
+                  )}
                   {records.map(r => {
                     const emp = r.employees;
                     const name = emp ? `${emp.forename} ${emp.surname}` : "Unknown";

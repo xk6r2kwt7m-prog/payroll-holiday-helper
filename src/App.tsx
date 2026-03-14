@@ -15,6 +15,7 @@ import Employees from "./pages/Employees";
 import Payroll from "./pages/Payroll";
 import PayrollCalendar from "./pages/PayrollCalendar";
 import Holidays from "./pages/Holidays";
+import StaffLeave from "./pages/StaffLeave";
 import Settings from "./pages/Settings";
 import Locations from "./pages/Locations";
 import Contracts from "./pages/Contracts";
@@ -105,8 +106,9 @@ const App = () => (
             <Route path="/payroll/overpayments" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollOverpayments /></ProtectedRoute>} />
             <Route path="/payroll/audit" element={<ProtectedRoute requiredRole="admin" requiredModule="payroll" moduleName="Payroll"><PayrollAudit /></ProtectedRoute>} />
 
-            {/* Holidays — staff can see own, admin for audit */}
-            <Route path="/holidays" element={<ProtectedRoute requiredRole="staff"><Holidays /></ProtectedRoute>} />
+            {/* Holidays — staff see StaffLeave, manager+ see admin Holidays */}
+            <Route path="/holidays" element={<ProtectedRoute requiredRole="staff"><StaffLeave /></ProtectedRoute>} />
+            <Route path="/holidays/manage" element={<ProtectedRoute requiredRole="manager"><Holidays /></ProtectedRoute>} />
             <Route path="/holidays/audit" element={<ProtectedRoute requiredRole="admin"><HolidayAudit /></ProtectedRoute>} />
 
             {/* Absences — manager+ */}

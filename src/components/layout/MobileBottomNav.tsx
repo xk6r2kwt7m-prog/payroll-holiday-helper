@@ -2,9 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, DollarSign, Calendar, MoreHorizontal,
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin,
-  UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone, PieChart,
-  Scale, ClipboardList, Sparkles, FileText, CalendarDays, AlertTriangle,
-  CheckCircle2, User, ShoppingBag, FlaskConical, Shield,
+  UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone,
+  ClipboardList, CheckCircle2, User, Shield, FileText, CalendarDays, Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -29,7 +28,7 @@ interface NavDef {
 const staffTabs: NavDef[] = [
   { icon: LayoutDashboard, label: "Home", path: "/", minRole: "viewer" },
   { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff", module: "scheduling" },
-  { icon: Calendar, label: "Requests", path: "/holidays", minRole: "staff" },
+  { icon: Sun, label: "Time Off", path: "/holidays", minRole: "staff" },
   { icon: Megaphone, label: "Updates", path: "/announcements", minRole: "staff" },
   { icon: User, label: "Profile", path: "/staff", minRole: "staff" },
 ];
@@ -38,7 +37,7 @@ const managerTabs: NavDef[] = [
   { icon: LayoutDashboard, label: "Home", path: "/", minRole: "viewer" },
   { icon: Users, label: "Team", path: "/employees", minRole: "supervisor" },
   { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff", module: "scheduling" },
-  { icon: CheckCircle2, label: "Approvals", path: "/holidays", minRole: "manager" },
+  { icon: Calendar, label: "Leave", path: "/holidays/manage", minRole: "manager" },
 ];
 
 const adminTabs: NavDef[] = [
@@ -56,8 +55,7 @@ const staffMoreGroups: MoreGroup[] = [
   {
     title: "Work",
     items: [
-      { icon: ShoppingBag, label: "Shift Marketplace", path: "/shift-marketplace", minRole: "staff", module: "scheduling" },
-      { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "staff" },
+      { icon: ClipboardCheck, label: "Timesheets", path: "/staff", minRole: "staff" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
       { icon: FileText, label: "Documents", path: "/staff", minRole: "staff" },
     ],
@@ -68,7 +66,6 @@ const managerMoreGroups: MoreGroup[] = [
   {
     title: "Schedule",
     items: [
-      { icon: ShoppingBag, label: "Shift Marketplace", path: "/shift-marketplace", minRole: "staff", module: "scheduling" },
       { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
       { icon: ClipboardList, label: "Schedule Report", path: "/schedule/report", minRole: "manager" },
       { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics", minRole: "manager" },
@@ -84,9 +81,9 @@ const managerMoreGroups: MoreGroup[] = [
     ],
   },
   {
-    title: "Holidays",
+    title: "Leave",
     items: [
-      { icon: Calendar, label: "Holidays", path: "/holidays", minRole: "staff" },
+      { icon: Sun, label: "Staff Leave", path: "/holidays", minRole: "staff" },
     ],
   },
 ];
@@ -95,7 +92,6 @@ const adminMoreGroups: MoreGroup[] = [
   {
     title: "Schedule",
     items: [
-      { icon: ShoppingBag, label: "Shift Marketplace", path: "/shift-marketplace", minRole: "staff", module: "scheduling" },
       { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
       { icon: ClipboardList, label: "Schedule Report", path: "/schedule/report", minRole: "manager" },
       { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics", minRole: "manager" },
@@ -105,21 +101,21 @@ const adminMoreGroups: MoreGroup[] = [
     title: "Payroll",
     items: [
       { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin" },
-      { icon: PieChart, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin" },
-      { icon: AlertTriangle, label: "Overpayments", path: "/payroll/overpayments", minRole: "admin" },
+      { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin" },
     ],
   },
   {
-    title: "Holidays",
+    title: "Leave & Attendance",
     items: [
-      { icon: Calendar, label: "Holidays", path: "/holidays", minRole: "staff" },
-      { icon: Scale, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" },
+      { icon: Calendar, label: "Leave Management", path: "/holidays/manage", minRole: "manager" },
+      { icon: Sun, label: "Staff Leave", path: "/holidays", minRole: "staff" },
+      { icon: CheckCircle2, label: "Leave Audit", path: "/holidays/audit", minRole: "admin" },
+      { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
     ],
   },
   {
     title: "People",
     items: [
-      { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
       { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
       { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
@@ -129,7 +125,6 @@ const adminMoreGroups: MoreGroup[] = [
     title: "Admin",
     items: [
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
-      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
       { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
       { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
       { icon: Settings, label: "Admin Centre", path: "/settings", minRole: "admin" },
@@ -153,7 +148,6 @@ export function MobileBottomNav() {
     return enabledModules[mod] !== false;
   };
 
-  // Select tabs and more groups based on role
   const isAdmin = userLevel >= getRoleLevel("admin");
   const isManager = userLevel >= getRoleLevel("manager");
 
