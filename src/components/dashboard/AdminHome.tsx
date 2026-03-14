@@ -28,6 +28,7 @@ const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 export function AdminHome() {
   const { t } = useI18n();
   const { tenantName } = useTenant();
+  const setupHealth = useSetupHealth();
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriod = periods[0];
