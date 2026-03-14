@@ -107,11 +107,6 @@ export default function StaffPortal() {
               >
                 <s.icon className="h-4 w-4" />
                 {s.label}
-                {s.badge && s.badge > 0 && (
-                  <span className="ml-1 h-5 min-w-[20px] rounded-full bg-warning/20 text-warning text-[10px] font-bold flex items-center justify-center px-1">
-                    {s.badge}
-                  </span>
-                )}
               </button>
             ))}
           </div>
