@@ -13,6 +13,7 @@ import { TimesheetsSection } from "@/components/staff-portal/TimesheetsSection";
 import { DocumentsSection } from "@/components/staff-portal/DocumentsSection";
 import { ReadinessBanner } from "@/components/staff-portal/ReadinessBanner";
 import { StaffTrainingView } from "@/components/training/StaffTrainingView";
+import { FohTrainingQuickAccess } from "@/components/staff-portal/FohTrainingQuickAccess";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
