@@ -594,29 +594,58 @@ export function TrainingComplianceReport() {
           <>
             {/* Bulk action bar */}
             {assignableGaps.length > 0 && (
-              <div className="flex items-center justify-between gap-2 mb-3 p-2.5 rounded-lg bg-muted/50 border border-border">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    checked={selectedGaps.size > 0 && selectedGaps.size === assignableGaps.length}
-                    onCheckedChange={toggleSelectAll}
-                    aria-label="Select all unassigned gaps"
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    {selectedGaps.size > 0
-                      ? `${selectedGaps.size} selected`
-                      : `${assignableGaps.length} unassigned`}
-                  </span>
+              <div className="flex flex-col gap-2 mb-3 p-2.5 rounded-lg bg-muted/50 border border-border">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedGaps.size > 0 && selectedGaps.size === assignableGaps.length}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all unassigned gaps"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {selectedGaps.size > 0
+                        ? `${selectedGaps.size} selected`
+                        : `${assignableGaps.length} unassigned`}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-7 text-xs gap-1"
+                    disabled={selectedGaps.size === 0 || createAssignments.isPending}
+                    onClick={handleAssignSelected}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Assign {selectedGaps.size > 0 ? `(${selectedGaps.size})` : "selected"}
+                  </Button>
                 </div>
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-7 text-xs gap-1"
-                  disabled={selectedGaps.size === 0 || createAssignments.isPending}
-                  onClick={handleAssignSelected}
-                >
-                  <Plus className="h-3 w-3" />
-                  Assign {selectedGaps.size > 0 ? `(${selectedGaps.size})` : "selected"}
-                </Button>
+                {selectedGaps.size > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className={cn("h-7 text-xs gap-1", !bulkDueDate && "text-muted-foreground")}>
+                          <CalendarIcon className="h-3 w-3" />
+                          {bulkDueDate ? format(bulkDueDate, "d MMM yyyy") : "Set due date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={bulkDueDate}
+                          onSelect={setBulkDueDate}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {bulkDueDate && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs px-1.5 text-muted-foreground" onClick={() => setBulkDueDate(undefined)}>
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -632,13 +661,14 @@ export function TrainingComplianceReport() {
                       <TableHead>Module</TableHead>
                       <TableHead className="hidden sm:table-cell">Category</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="w-16">Action</TableHead>
+                      <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredGaps.slice(0, 200).map((g) => {
                       const k = gapKey(g);
                       const isNotAssigned = g.gapStatus === "not_assigned";
+                      const rowDueDate = singleDueDates.get(k);
                       return (
                         <TableRow key={k}>
                           <TableCell className="px-2">
@@ -663,15 +693,34 @@ export function TrainingComplianceReport() {
                           </TableCell>
                           <TableCell>
                             {isNotAssigned ? (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-[10px] gap-1 px-1.5 text-primary"
-                                disabled={createAssignments.isPending}
-                                onClick={() => handleAssignSingle(g)}
-                              >
-                                <Plus className="h-3 w-3" /> Assign
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="sm" className={cn("h-6 w-6 p-0", rowDueDate ? "text-primary" : "text-muted-foreground")}>
+                                      <CalendarIcon className="h-3 w-3" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="end">
+                                    <Calendar
+                                      mode="single"
+                                      selected={rowDueDate}
+                                      onSelect={(d) => setSingleDueDate(k, d)}
+                                      disabled={(date) => date < new Date()}
+                                      initialFocus
+                                      className={cn("p-3 pointer-events-auto")}
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 text-[10px] gap-1 px-1.5 text-primary"
+                                  disabled={createAssignments.isPending}
+                                  onClick={() => handleAssignSingle(g)}
+                                >
+                                  <Plus className="h-3 w-3" /> Assign
+                                </Button>
+                              </div>
                             ) : g.gapStatus !== "completed" ? (
                               <Button
                                 size="sm"
