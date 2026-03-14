@@ -112,9 +112,13 @@ export function AdminHome() {
     <div className="space-y-5 max-w-2xl mx-auto pb-24">
       {/* Greeting */}
       <motion.div {...anim} transition={{ duration: 0.25 }}>
-        <h1 className="text-xl font-bold text-foreground">{greeting()} 👋</h1>
+        <h1 className="text-xl font-bold text-foreground">
+          {isNewTenant ? `Welcome to ${tenantName || "your workspace"} 🎉` : `${greeting()} 👋`}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          {tenantName || "Dashboard"} · {format(new Date(), "EEEE, d MMMM")}
+          {isNewTenant
+            ? "Let's get your workspace ready. Complete the steps below to start managing your team."
+            : `${tenantName || "Dashboard"} · ${format(new Date(), "EEEE, d MMMM")}`}
         </p>
       </motion.div>
 
@@ -123,17 +127,19 @@ export function AdminHome() {
         <SetupHealthWidget />
       </motion.div>
 
-      {/* KPI Strip */}
-      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
-        <div className="grid grid-cols-4 gap-2">
-          {kpis.map((kpi) => (
-            <Link key={kpi.label} to={kpi.path} className="rounded-xl bg-card border border-border p-3 text-center shadow-sm active:bg-muted transition-all">
-              <p className={cn("text-lg font-bold tabular-nums leading-none", kpi.color)}>{kpi.value}</p>
-              <p className="text-[10px] font-semibold text-muted-foreground mt-1.5 uppercase tracking-wider">{kpi.label}</p>
-            </Link>
-          ))}
-        </div>
-      </motion.div>
+      {/* KPI Strip — hide when all zeros for new tenants */}
+      {!isNewTenant && (
+        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
+          <div className="grid grid-cols-4 gap-2">
+            {kpis.map((kpi) => (
+              <Link key={kpi.label} to={kpi.path} className="rounded-xl bg-card border border-border p-3 text-center shadow-sm active:bg-muted transition-all">
+                <p className={cn("text-lg font-bold tabular-nums leading-none", kpi.color)}>{kpi.value}</p>
+                <p className="text-[10px] font-semibold text-muted-foreground mt-1.5 uppercase tracking-wider">{kpi.label}</p>
+              </Link>
+            ))}
+          </div>
+        </motion.div>
+      )
 
       {/* Alerts */}
       {alerts.length > 0 && (
