@@ -31,10 +31,14 @@ Deno.serve(async (req) => {
       .single();
     if (reqError) throw reqError;
 
-    // Fetch visible talent profiles with employee data
+    // Fetch visible talent profiles — privacy-safe fields only, no internal HR data
     let profileQuery = supabase
       .from("talent_profiles")
-      .select("*, employees!inner(forename, surname, department, status, start_date, end_date)")
+      .select(`id, employee_id, tenant_id, talent_pool_status, visibility_mode,
+        preferred_roles, preferred_locations, preferred_countries, preferred_regions,
+        employment_type_preference, profile_summary, years_experience, languages,
+        work_eligibility_countries, willing_to_relocate, willing_to_travel,
+        available_from, employees!inner(forename, surname)`)
       .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"])
       .neq("visibility_mode", "hidden");
 
