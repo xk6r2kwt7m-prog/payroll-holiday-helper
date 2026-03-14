@@ -71,13 +71,44 @@ export function useCreateAnnouncement() {
     }) => {
       if (!tenantId) throw new Error("Unable to create announcement: tenant context missing.");
       const { publish_now, ...rest } = ann;
-      const { error } = await supabase.from("staff_announcements" as any).insert({
+      const { data, error } = await supabase.from("staff_announcements" as any).insert({
         ...rest,
         tenant_id: tenantId,
         created_by: user?.id || null,
         published_at: publish_now ? new Date().toISOString() : null,
-      } as any);
+      } as any).select().single();
       if (error) throw error;
+
+      // If published immediately, notify all tenant staff
+      if (publish_now && tenantId) {
+        try {
+          const { data: members } = await supabase
+            .from("tenant_members" as any)
+            .select("user_id")
+            .eq("tenant_id", tenantId)
+            .eq("is_active", true);
+
+          if (members && members.length > 0) {
+            const rows = (members as any[])
+              .map((m) => m.user_id)
+              .filter((uid: string) => uid && uid !== user?.id)
+              .map((uid: string) => ({
+                tenant_id: tenantId,
+                user_id: uid,
+                event_type: "announcement",
+                title: "New announcement",
+                body: ann.title,
+                link: "/announcements",
+                metadata: {},
+              }));
+            if (rows.length > 0) {
+              await supabase.from("notifications" as any).insert(rows as any);
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to send announcement notifications:", err);
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["staff_announcements"] });
