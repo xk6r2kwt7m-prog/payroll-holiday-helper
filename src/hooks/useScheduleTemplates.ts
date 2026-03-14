@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { assertPermission } from "@/lib/permission-guard";
 import { toast } from "sonner";
 
 export interface ScheduleTemplate {
