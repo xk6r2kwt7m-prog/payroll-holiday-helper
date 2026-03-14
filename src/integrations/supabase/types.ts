@@ -922,6 +922,10 @@ export type Database = {
           document_type: Database["public"]["Enums"]["document_type"]
           employee_id: string
           expires_at: string | null
+          extracted_data: Json | null
+          extraction_confidence: number | null
+          extraction_source: string | null
+          extraction_warnings: Json | null
           file_path: string
           file_size: number | null
           id: string
@@ -943,6 +947,10 @@ export type Database = {
           document_type: Database["public"]["Enums"]["document_type"]
           employee_id: string
           expires_at?: string | null
+          extracted_data?: Json | null
+          extraction_confidence?: number | null
+          extraction_source?: string | null
+          extraction_warnings?: Json | null
           file_path: string
           file_size?: number | null
           id?: string
@@ -964,6 +972,10 @@ export type Database = {
           document_type?: Database["public"]["Enums"]["document_type"]
           employee_id?: string
           expires_at?: string | null
+          extracted_data?: Json | null
+          extraction_confidence?: number | null
+          extraction_source?: string | null
+          extraction_warnings?: Json | null
           file_path?: string
           file_size?: number | null
           id?: string
