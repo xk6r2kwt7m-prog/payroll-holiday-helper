@@ -96,7 +96,7 @@ export function ReadinessStatusBadge({ status }: { status: ReadinessStatus }) {
   return (
     <Badge variant="outline" className={cn("text-[10px] gap-1", config.color, `border-current/20`)}>
       <Icon className="h-3 w-3" />
-      {config.label}
+      {config.shortLabel}
     </Badge>
   );
 }
