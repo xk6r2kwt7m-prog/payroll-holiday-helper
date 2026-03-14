@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2, Shield } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, ShieldCheck } from "lucide-react";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -29,11 +29,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const Payroll = () => {
   const { t } = useI18n();
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
+  const [workspaceTab, setWorkspaceTab] = useState("payroll");
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
@@ -285,38 +287,63 @@ const Payroll = () => {
                 </div>
                 {t("payroll.title")}
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
-                {selectedPeriod ? (
-                  <>
-                    {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} – {new Date(selectedPeriod.end_date).toLocaleDateString()}
-                  </>
-                ) : t("payroll.no_periods")}
-              </p>
             </div>
-            <div className="flex gap-1.5 shrink-0">
-              {selectedPeriod && entries.length > 0 && (
-                <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
-                  <FileDown className="h-4 w-4 sm:mr-1.5" />
-                  <span className="hidden sm:inline">PDF</span>
-                </Button>
-              )}
-              <Button variant="outline" size="sm" asChild className="h-9 px-2.5 sm:px-3">
-                <Link to="/payroll/analytics">
-                  <BarChart3 className="h-4 w-4 sm:mr-1.5" />
-                  <span className="hidden sm:inline">{t("nav.analytics")}</span>
-                </Link>
-              </Button>
-            </div>
+            {workspaceTab === "payroll" && (
+              <div className="flex gap-1.5 shrink-0">
+                {selectedPeriod && entries.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
+                    <FileDown className="h-4 w-4 sm:mr-1.5" />
+                    <span className="hidden sm:inline">PDF</span>
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
-          {isAdmin && (
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
-              <SettleLeaverDialog />
-              <AddHolidayPaymentDialog />
-              <CreatePayrollDialog />
-              <ImportPayrollDialog />
-            </div>
-          )}
         </div>
+
+        {/* Workspace Tabs */}
+        <Tabs value={workspaceTab} onValueChange={setWorkspaceTab}>
+          <TabsList className="w-full grid grid-cols-4 h-auto">
+            <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm py-2">
+              <DollarSign className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Payroll</span>
+              <span className="sm:hidden">Pay</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-1.5 text-xs sm:text-sm py-2">
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Calendar</span>
+              <span className="sm:hidden">Cal</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-1.5 text-xs sm:text-sm py-2">
+              <BarChart3 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Analytics</span>
+              <span className="sm:hidden">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5 text-xs sm:text-sm py-2">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Audit</span>
+              <span className="sm:hidden">Audit</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Main Payroll Tab */}
+          <TabsContent value="payroll" className="space-y-4 sm:space-y-6 mt-4">
+            {/* Admin actions */}
+            {isAdmin && (
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                <SettleLeaverDialog />
+                <AddHolidayPaymentDialog />
+                <CreatePayrollDialog />
+                <ImportPayrollDialog />
+              </div>
+            )}
+
+            {/* Period subtitle */}
+            {selectedPeriod && (
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} – {new Date(selectedPeriod.end_date).toLocaleDateString()}
+              </p>
+            )}
 
         {/* Period Selector */}
         {periods.length > 0 && (
@@ -467,16 +494,12 @@ const Payroll = () => {
 
         {/* Empty State */}
         {!loadingPeriods && periods.length === 0 && (
-          <div className="rounded-xl bg-card shadow-card p-8 text-center">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">{t("payroll.no_periods_desc")}</p>
-            {isAdmin && (
-              <div className="flex justify-center gap-3">
-                <CreatePayrollDialog />
-                <ImportPayrollDialog />
-              </div>
-            )}
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No payroll periods yet"
+            description="Create your first payroll period to start tracking staff pay, hours, and deductions."
+            actionLabel={isAdmin ? "Create Period" : undefined}
+          />
         )}
 
         {/* Payroll Table */}
@@ -502,9 +525,37 @@ const Payroll = () => {
             companyName={companySettings?.company_name}
           />
         )}
+          </TabsContent>
+
+          {/* Calendar Tab */}
+          <TabsContent value="calendar" className="mt-4">
+            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading calendar...</div>}>
+              <PayrollCalendarInline />
+            </Suspense>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="mt-4">
+            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading analytics...</div>}>
+              <PayrollAnalyticsView />
+            </Suspense>
+          </TabsContent>
+
+          {/* Audit Tab */}
+          <TabsContent value="audit" className="mt-4">
+            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading audit...</div>}>
+              <PayrollAuditView />
+            </Suspense>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
 };
+
+// Inline wrapper for Calendar (strips AppLayout since it's already in one)
+function PayrollCalendarInline() {
+  return <PayrollCalendarView />;
+}
 
 export default Payroll;
