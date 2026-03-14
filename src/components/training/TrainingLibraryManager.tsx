@@ -470,7 +470,12 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
           const doc = a.training_library;
           const isOverdue = a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0 && !["completed", "acknowledged", "cancelled"].includes(a.status);
           return (
-            <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border shadow-sm">
+            <div key={a.id} className={cn(
+              "flex items-center gap-3 p-3 rounded-xl bg-card border shadow-sm transition-all",
+              `${a.employee_id}::${a.document_id}` === highlightKey
+                ? "border-primary ring-2 ring-primary/20"
+                : "border-border"
+            )}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
                   {a.employees?.forename} {a.employees?.surname}
