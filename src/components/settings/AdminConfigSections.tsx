@@ -106,6 +106,7 @@ export function PayrollDisplaySettings() {
       <ToggleRow label="Show bonus column" desc="Display performance/special bonus on payroll table" checked={local.showBonusColumn} onChange={v => set("showBonusColumn", v)} />
       <ToggleRow label="Show service charge column" desc="Display service charge breakdown" checked={local.showServiceCharge} onChange={v => set("showServiceCharge", v)} />
       <ToggleRow label="Company logo on PDF exports" desc="Include logo in payroll report headers" checked={local.defaultPdfLogo} onChange={v => set("defaultPdfLogo", v)} />
+      <NotYetEnforced label="defaultPdfLogo — saved for future enforcement (PDF generator not yet reading this)" />
       <Separator />
       <div className="space-y-1.5">
         <Label className="text-xs">Payroll reminder (days before due)</Label>
