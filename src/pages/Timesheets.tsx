@@ -327,7 +327,7 @@ export default function Timesheets() {
         </Card>
 
         {/* Bulk approve bar */}
-        {selectedIds.length > 0 && (
+        {selectedIds.length > 0 && canApproveTimesheets && (
           <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-in-bottom">
             <Button
               onClick={handleBulkApprove}
