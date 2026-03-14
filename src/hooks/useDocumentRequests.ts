@@ -139,6 +139,7 @@ export function useCreateDocumentRequest() {
       requires_verification?: boolean;
       notes?: string;
     }) => {
+      await assertPermission("manage_documents", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("document_requests" as any)
