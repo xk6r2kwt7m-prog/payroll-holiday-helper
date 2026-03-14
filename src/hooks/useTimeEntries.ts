@@ -112,18 +112,9 @@ export function useApproveTimeEntries() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (entryIds: string[]) => {
-      // Defensive: verify caller has approval rights via role check
+      await assertPermission("approve_timesheets", null);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      
-      // Check role — only admin/manager should approve
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      const userRoles = roles?.map(r => r.role) || [];
-      const canApprove = userRoles.some(r => r === "admin" || r === "manager");
-      if (!canApprove) throw new Error("Permission denied: cannot approve timesheets");
 
       const { error } = await supabase
         .from("time_entries")
