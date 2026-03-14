@@ -258,14 +258,13 @@ export function MobileBottomNav() {
 
                 <div className="border-t border-border mt-3 pt-2 space-y-1">
                   {hasMultipleTenants && (
-                    <Link
-                      to="/select-workspace"
-                      onClick={() => setMoreOpen(false)}
+                    <button
+                      onClick={() => { setMoreOpen(false); openWorkspacePicker(); navigate("/select-workspace"); }}
                       className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-foreground w-full hover:bg-muted active:bg-muted min-h-[48px]"
                     >
                       <Building2 className="h-5 w-5" />
                       Switch Workspace
-                    </Link>
+                    </button>
                   )}
                   <button
                     onClick={() => { setMoreOpen(false); signOut(); }}
