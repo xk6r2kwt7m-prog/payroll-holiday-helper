@@ -246,11 +246,13 @@ export default function Schedule() {
               icon={CalendarClock}
               title="No shifts this week"
               description={isAdmin
-                ? "Start building your rota by adding shifts, copying from last week, or loading a template."
+                ? isMobile
+                  ? "Tap Build Shift above to start, or use the ⋮ menu to copy last week or load a saved template."
+                  : "Start building your rota by adding shifts, copying from last week, or loading a template."
                 : "No shifts have been published for this week yet. Check back later or contact your manager."
               }
-              actionLabel={isAdmin ? "Build Shift" : undefined}
-              onAction={isAdmin ? () => { setWizardInitialDay(null); setWizardOpen(true); } : undefined}
+              actionLabel={isAdmin && !isMobile ? "Build Shift" : undefined}
+              onAction={isAdmin && !isMobile ? () => { setWizardInitialDay(null); setWizardOpen(true); } : undefined}
             />
           )}
 
