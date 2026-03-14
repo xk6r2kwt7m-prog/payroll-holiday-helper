@@ -129,14 +129,19 @@ export function ShiftCellDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[420px] p-0 gap-0 overflow-hidden">
-        {/* Header — employee name + avatar */}
-        <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+        {/* Header — title row, well clear of the close X */}
+        <div className="px-5 pt-5 pb-1">
+          <p className="text-sm font-medium text-muted-foreground">{isEditing ? "Edit Shift" : "New Shift"}</p>
+        </div>
+
+        {/* Employee selector — separate from header, styled as a proper field */}
+        <div className="flex items-center gap-3 px-5 pb-3">
           <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
             <Select value={employeeId} onValueChange={setEmployeeId}>
-              <SelectTrigger className="h-auto border-0 p-0 shadow-none text-base font-semibold text-foreground [&>svg]:ml-1 [&>svg]:h-4 [&>svg]:w-4 focus:ring-0">
+              <SelectTrigger className="h-9 border border-border rounded-md px-3 shadow-none text-sm font-semibold text-foreground focus:ring-1 focus:ring-ring">
                 <SelectValue placeholder="Select employee" />
               </SelectTrigger>
               <SelectContent>
