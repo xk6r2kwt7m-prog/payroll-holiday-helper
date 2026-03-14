@@ -159,7 +159,7 @@ const Locations = () => {
 
         {/* Overall status summary */}
         {pulses && pulses.length > 0 && (
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {pulses.map((p) => {
               const colors = statusColors[p.overallStatus];
               return (
@@ -167,14 +167,14 @@ const Locations = () => {
                   key={p.branch}
                   to={`/locations/${encodeURIComponent(p.branch)}`}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm font-medium min-h-[44px]",
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border transition-colors text-xs font-medium min-h-[36px]",
                     colors.border, colors.bg, colors.text,
                     "hover:opacity-80"
                   )}
                 >
-                  <span>{getBranchEmoji(p.branch, [])}</span>
+                  <span className="text-sm">{getBranchEmoji(p.branch, [])}</span>
                   <span>{p.branch}</span>
-                  <Circle className={cn("h-2.5 w-2.5 fill-current", colors.text)} />
+                  <Circle className={cn("h-2 w-2 fill-current", colors.text)} />
                 </Link>
               );
             })}
