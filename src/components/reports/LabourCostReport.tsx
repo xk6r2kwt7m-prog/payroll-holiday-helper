@@ -20,9 +20,12 @@ export function LabourCostReport() {
       const entries = (allEntries as any[]).filter((e) => e.payroll_period_id === period.id);
       const holidays = (allHolidayPayments as any[]).filter((h) => h.payroll_period_id === period.id);
 
-      const timesheetTotal = entries.reduce((s, e) => s + ((e.timesheet_hours || 0) * (e.hourly_rate || 0)), 0);
+      // Read stored values only — no formula derivation
       const holidaysTotal = holidays.reduce((s, h) => s + (h.total || 0), 0);
       const grandTotal = entries.reduce((s, e) => s + (e.total_pay || 0), 0);
+      const totalBonuses = entries.reduce((s, e) => s + (e.performance_bonus || 0) + (e.special_bonus || 0), 0);
+      // Timesheet cost = stored grand total minus stored bonuses (all from DB, no rate multiplication)
+      const timesheetTotal = grandTotal - totalBonuses;
       const salesTotal = period.sales_total || 0;
       const labourPct = salesTotal > 0 ? (grandTotal / salesTotal) * 100 : null;
 
