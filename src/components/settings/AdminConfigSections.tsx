@@ -389,7 +389,7 @@ function ToggleRow({ label, desc, checked, onChange }: { label: string; desc: st
 
 function NotYetEnforced({ label }: { label: string }) {
   return (
-    <p className="text-[10px] text-amber-600 dark:text-amber-400 italic pl-1">⏳ {label}</p>
+    <p className="text-[10px] text-muted-foreground italic pl-1">⏳ {label}</p>
   );
 }
 
