@@ -107,17 +107,7 @@ export function EmployeeHolidayLookup({ allYearSummaries, onEmployeeClick }: Emp
           />
         </div>
         <div className="flex items-center gap-3">
-          <Select value={deptFilter} onValueChange={setDeptFilter}>
-            <SelectTrigger className="w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Depts</SelectItem>
-              <SelectItem value="FOH">🍽️ FOH</SelectItem>
-              <SelectItem value="BOH">👨‍🍳 BOH</SelectItem>
-              <SelectItem value="CPU">🏭 CPU</SelectItem>
-            </SelectContent>
-          </Select>
+          <DepartmentFilter value={deptFilter} onChange={setDeptFilter} className="w-[130px]" />
           <span className="text-sm text-muted-foreground">{filtered.length} employees</span>
         </div>
       </div>
