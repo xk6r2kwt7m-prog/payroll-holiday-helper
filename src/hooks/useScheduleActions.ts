@@ -168,7 +168,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [updateShift, notifyShiftChange]);
+  }, [updateShift, notifyShiftChange, tenantId]);
 
   const handleDeleteShift = useCallback(async (id: string) => {
     if (!confirm("Delete this shift?")) return;
