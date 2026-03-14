@@ -361,21 +361,23 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
       const ids = branchDeptShifts.map((s: any) => s.id);
       if (ids.length === 0) return;
 
-    // Capture published+assigned shifts before deleting
-    const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
+      const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
 
-    await bulkDelete.mutateAsync(ids);
-    toast.success(`Deleted ${ids.length} shifts`);
+      await bulkDelete.mutateAsync(ids);
+      toast.success(`Deleted ${ids.length} shifts`);
 
-    if (publishedAssigned.length > 0) {
-      await notifyPublishedShiftStaff(
-        publishedAssigned,
-        "Shifts cancelled",
-        ({ date }) => `Your ${date} at ${selectedBranch} has been removed from the rota. Check your schedule.`,
-        "shift_cancelled"
-      );
+      if (publishedAssigned.length > 0) {
+        await notifyPublishedShiftStaff(
+          publishedAssigned,
+          "Shifts cancelled",
+          ({ date }) => `Your ${date} at ${selectedBranch} has been removed from the rota. Check your schedule.`,
+          "shift_cancelled"
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message);
     }
-  }, [bulkDelete, branchDeptShifts, selectedDept, selectedBranch, notifyPublishedShiftStaff]);
+  }, [bulkDelete, branchDeptShifts, selectedDept, selectedBranch, notifyPublishedShiftStaff, tenantId]);
 
   const handleClearAssignments = useCallback(async () => {
     if (!confirm("Clear all employee assignments? This turns them into open shifts.")) return;
