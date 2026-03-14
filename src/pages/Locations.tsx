@@ -31,35 +31,32 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "rounded-lg bg-card border shadow-card overflow-hidden transition-shadow hover:shadow-md",
-        colors.border
-      )}
+      className="rounded-lg bg-card border border-border/70 shadow-card overflow-hidden transition-shadow hover:shadow-md"
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-border">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-xl shrink-0">
+      <div className="flex items-center gap-3 p-4 border-b border-border/40">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/50 text-lg shrink-0">
           {getBranchEmoji(pulse.branch, []) || "📍"}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-foreground text-base tracking-tight">{pulse.branch}</h3>
-            <Badge variant="outline" className={cn("text-[10px] font-semibold", colors.text, colors.border)}>
-              <Circle className={cn("h-2 w-2 mr-1 fill-current", colors.text)} />
+            <h3 className="font-semibold text-foreground text-sm tracking-tight">{pulse.branch}</h3>
+            <Badge variant="outline" className={cn("text-[10px] font-medium", colors.text, colors.border)}>
+              <Circle className={cn("h-1.5 w-1.5 mr-1 fill-current", colors.text)} />
               {statusLabel[pulse.overallStatus]}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-[11px] text-muted-foreground mt-0.5">
             <Users className="h-3 w-3 inline mr-1" />{pulse.staffCount} active staff
           </p>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 text-muted-foreground shrink-0"
+          className="h-8 w-8 text-muted-foreground/60 hover:text-foreground shrink-0"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSettings(); }}
         >
-          <Settings2 className="h-4 w-4" />
+          <Settings2 className="h-3.5 w-3.5" />
         </Button>
       </div>
 
