@@ -356,8 +356,10 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handleDeleteAllShifts = useCallback(async () => {
     if (!confirm(`Delete all ${branchDeptShifts.length} shifts for ${selectedDept} at ${selectedBranch} this week?`)) return;
-    const ids = branchDeptShifts.map((s: any) => s.id);
-    if (ids.length === 0) return;
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const ids = branchDeptShifts.map((s: any) => s.id);
+      if (ids.length === 0) return;
 
     // Capture published+assigned shifts before deleting
     const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
