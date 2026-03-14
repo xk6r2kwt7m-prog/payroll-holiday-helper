@@ -641,8 +641,8 @@ const Holidays = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <SettleLeaverDialog />
-            <AddHolidayPaymentDialog />
+            {canApproveHolidays && <SettleLeaverDialog />}
+            {canApproveHolidays && <AddHolidayPaymentDialog />}
           </div>
         </div>
 
@@ -693,44 +693,46 @@ const Holidays = () => {
           </Tabs>
         </div>
 
-        {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 animate-fade-in">
-          <StatCard
-            title={t("holidays.total_accrued")}
-            value={formatHours(totals.accrued)}
-            subtitle={`${filteredSummaries.length} ${t("common.staff")}`}
-            icon={<TrendingUpIcon className="h-5 w-5" />}
-            variant="accent"
-          />
-          <StatCard
-            title={t("holidays.total_taken")}
-            value={formatHours(totals.taken)}
-            subtitle={`${overdrawnCount} overdrawn`}
-            icon={<Clock className="h-5 w-5" />}
-          />
-          <StatCard
-            title={t("holidays.total_balance")}
-            value={formatHours(totals.balance)}
-            subtitle={t("holidays.accrued") + " − " + t("holidays.taken")}
-            icon={<Scale className="h-5 w-5" />}
-            variant={totals.balance >= 0 ? "primary" : "accent"}
-          />
-          <StatCard
-            title={t("holidays.total_cost")}
-            value={formatCurrency(totals.paid)}
-            subtitle={`${selectedYear} ${t("holidays.leave_year")}`}
-            icon={<DollarSign className="h-5 w-5" />}
-            variant="primary"
-          />
-          <StatCard
-            title="Alerts"
-            value={alerts.length.toString()}
-            subtitle={overdrawnCount > 0 ? `${overdrawnCount} overdrawn` : "All clear"}
-            icon={<AlertTriangle className="h-5 w-5" />}
-            variant={alerts.length > 0 ? "warning" : "success"}
-            onClick={() => setSubTab("alerts")}
-          />
-        </div>
+        {/* Stats — conditionally show balance summary based on preference */}
+        {holidayPrefs?.showBalanceSummary !== false && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 animate-fade-in">
+            <StatCard
+              title={t("holidays.total_accrued")}
+              value={formatHours(totals.accrued)}
+              subtitle={`${filteredSummaries.length} ${t("common.staff")}`}
+              icon={<TrendingUpIcon className="h-5 w-5" />}
+              variant="accent"
+            />
+            <StatCard
+              title={t("holidays.total_taken")}
+              value={formatHours(totals.taken)}
+              subtitle={`${overdrawnCount} overdrawn`}
+              icon={<Clock className="h-5 w-5" />}
+            />
+            <StatCard
+              title={t("holidays.total_balance")}
+              value={formatHours(totals.balance)}
+              subtitle={t("holidays.accrued") + " − " + t("holidays.taken")}
+              icon={<Scale className="h-5 w-5" />}
+              variant={totals.balance >= 0 ? "primary" : "accent"}
+            />
+            <StatCard
+              title={t("holidays.total_cost")}
+              value={formatCurrency(totals.paid)}
+              subtitle={`${selectedYear} ${t("holidays.leave_year")}`}
+              icon={<DollarSign className="h-5 w-5" />}
+              variant="primary"
+            />
+            <StatCard
+              title="Alerts"
+              value={alerts.length.toString()}
+              subtitle={overdrawnCount > 0 ? `${overdrawnCount} overdrawn` : "All clear"}
+              icon={<AlertTriangle className="h-5 w-5" />}
+              variant={alerts.length > 0 ? "warning" : "success"}
+              onClick={() => setSubTab("alerts")}
+            />
+          </div>
+        )}
 
         {/* Admin warning for partial data */}
         {!auditData.isBalanceComplete && (

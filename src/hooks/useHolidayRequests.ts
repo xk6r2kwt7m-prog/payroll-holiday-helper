@@ -79,11 +79,22 @@ export function useReviewHolidayRequest() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ id, status, review_notes }: { id: string; status: "approved" | "rejected"; review_notes?: string }) => {
+      if (!user) throw new Error("Not authenticated");
+
+      // Defensive: verify caller has approval rights
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const userRoles = roles?.map(r => r.role) || [];
+      const canReview = userRoles.some(r => r === "admin" || r === "manager");
+      if (!canReview) throw new Error("Permission denied: cannot review holiday requests");
+
       const { error } = await supabase
         .from("holiday_requests" as any)
         .update({
           status,
-          reviewed_by: user?.id,
+          reviewed_by: user.id,
           reviewed_at: new Date().toISOString(),
           review_notes: review_notes || null,
         } as any)

@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { usePermission, type PermissionKey, NAV_PERMISSION_MAP } from "@/hooks/usePermissionGate";
+import { type PermissionKey, NAV_PERMISSION_MAP } from "@/hooks/usePermissionGate";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -116,20 +117,33 @@ export function Sidebar() {
     return enabledModules[module] !== false;
   };
 
-  // Permission-based visibility check
-  const hasPermission = (permKey?: PermissionKey) => {
+  // Permission-based visibility check using real stored permissions
+  const checkPermission = (permKey?: PermissionKey) => {
     if (!permKey) return true;
     if (isPlatformAdmin) return true;
     if (role === "admin") return true;
-    // Check from NAV_PERMISSION_MAP via the stored permissions
-    return true; // Handled per-item below
+    // Use the NAV_PERMISSION_MAP lookup
+    const permPath = Object.entries(NAV_PERMISSION_MAP).find(([, v]) => v === permKey);
+    // Fall back to usePermission — but since we can't call hooks dynamically,
+    // we read from the loaded perms data directly
+    return true; // Will be checked per-item below
+  };
+
+  // Read all role permissions once for filtering
+  const { data: allPerms } = useRolePermissions();
+  const rolePerms = allPerms?.[role || "staff"] || {};
+
+  const hasItemPermission = (permKey?: PermissionKey) => {
+    if (!permKey) return true;
+    if (isPlatformAdmin || role === "admin") return true;
+    return rolePerms[permKey] ?? false;
   };
 
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
       items: group.items.filter(
-        (item) => canAccess(item.minRole) && isModuleEnabled(item.module)
+        (item) => canAccess(item.minRole) && isModuleEnabled(item.module) && hasItemPermission(item.permissionKey)
       ),
     }))
     .filter((group) => group.items.length > 0);

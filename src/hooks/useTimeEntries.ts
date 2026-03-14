@@ -111,12 +111,24 @@ export function useApproveTimeEntries() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (entryIds: string[]) => {
+      // Defensive: verify caller has approval rights via role check
       const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
+      // Check role — only admin/manager should approve
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const userRoles = roles?.map(r => r.role) || [];
+      const canApprove = userRoles.some(r => r === "admin" || r === "manager");
+      if (!canApprove) throw new Error("Permission denied: cannot approve timesheets");
+
       const { error } = await supabase
         .from("time_entries")
         .update({
           status: "approved" as const,
-          approved_by: user?.id,
+          approved_by: user.id,
           approved_at: new Date().toISOString(),
         })
         .in("id", entryIds);
@@ -132,6 +144,18 @@ export function useRejectTimeEntry() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, notes }: { id: string; notes?: string }) => {
+      // Defensive: verify caller has approval rights
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const userRoles = roles?.map(r => r.role) || [];
+      const canReject = userRoles.some(r => r === "admin" || r === "manager");
+      if (!canReject) throw new Error("Permission denied: cannot reject timesheets");
+
       const { error } = await supabase
         .from("time_entries")
         .update({ status: "rejected" as const, notes })

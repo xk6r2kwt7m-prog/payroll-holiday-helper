@@ -85,6 +85,8 @@ interface EditablePayrollTableProps {
   periodStatus: string;
   isAdmin: boolean;
   onExport: (includeBank: boolean) => void;
+  showBonusColumn?: boolean;
+  showServiceCharge?: boolean;
 }
 
 interface EditingEntry {
@@ -100,7 +102,9 @@ export function EditablePayrollTable({
   periodId, 
   periodStatus, 
   isAdmin,
-  onExport 
+  onExport,
+  showBonusColumn = true,
+  showServiceCharge = true,
 }: EditablePayrollTableProps) {
   const { data: leaveRules } = useLeaveRules();
   const [editingId, setEditingId] = useState<string | null>(null);

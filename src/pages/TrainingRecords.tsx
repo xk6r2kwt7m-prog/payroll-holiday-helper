@@ -69,6 +69,7 @@ function TrainingAdminView() {
   const { data: records = [] } = useTrainingRecords();
   const addRecord = useAddTrainingRecord();
   const deleteRecord = useDeleteTrainingRecord();
+  const canManageTraining = usePermission("manage_training");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
@@ -148,10 +149,11 @@ function TrainingAdminView() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">{records.length} certification records</p>
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Add Record</Button>
-                  </DialogTrigger>
+                {canManageTraining && (
+                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Add Record</Button>
+                    </DialogTrigger>
                   <DialogContent>
                     <DialogHeader><DialogTitle>Add Training Record</DialogTitle></DialogHeader>
                     <div className="space-y-4 pt-2">
@@ -189,6 +191,7 @@ function TrainingAdminView() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                )}
               </div>
 
               {(expiredRecords.length > 0 || expiringRecords.length > 0) && (
@@ -244,9 +247,11 @@ function TrainingAdminView() {
                         <div className="flex items-center gap-2">
                           {getExpiryBadge(r.expiry_date)}
                           <Badge variant="outline" className="text-xs">{certType?.label || r.certification_type}</Badge>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteRecord.mutate(r.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          {canManageTraining && (
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteRecord.mutate(r.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
