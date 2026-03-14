@@ -30,6 +30,7 @@ import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 
 const Payroll = () => {
   const { t } = useI18n();
