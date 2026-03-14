@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import {
   Clock, LogOut, Calendar, CheckCircle2, AlertCircle, AlertTriangle, Megaphone, FileText,
   Upload, Sun, User, ChevronRight, Shield, Phone, Building2, GraduationCap,
-  Bell, Settings,
+  Bell, Settings, BookOpen,
 } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { HolidayRequestForm } from "@/components/holidays/HolidayRequestForm";
