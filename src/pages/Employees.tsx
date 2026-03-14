@@ -20,6 +20,7 @@ import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet"
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
+import { usePermission } from "@/hooks/useRolePermissions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
