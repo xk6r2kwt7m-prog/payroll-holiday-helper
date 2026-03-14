@@ -182,11 +182,13 @@ function TalentProfileCard({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <CardTitle className="text-base truncate">
-              {emp?.forename} {emp?.surname}
+              {emp?.forename} {emp?.surname_initial}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {emp?.department}
-            </p>
+            {profile.preferred_roles?.length > 0 && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {profile.preferred_roles[0]}
+              </p>
+            )}
           </div>
           <Badge variant="outline" className={`shrink-0 text-xs ${statusClass}`}>
             {statusLabel}
