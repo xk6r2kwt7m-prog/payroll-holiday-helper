@@ -85,10 +85,11 @@ export function useCreateEmployee() {
 
 export function useUpdateEmployee() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: EmployeeUpdate }) => {
-      await assertPermission("edit_employees", null);
+      await assertPermission("edit_employees", tenantId!);
       const { data, error } = await supabase
         .from("employees")
         .update(updates)
