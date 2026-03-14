@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCallback } from "react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { shouldDeliverNotification } from "@/hooks/useNotificationPreferences";
 
 /**
  * Helper hook to create in-app notification records for operational events.
