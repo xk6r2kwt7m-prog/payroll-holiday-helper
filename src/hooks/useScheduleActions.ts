@@ -264,12 +264,13 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
   const handleUnpublish = useCallback(async () => {
     if (!confirm("Unpublish this week's rota? Staff will no longer see it.")) return;
     try {
+      await assertPermission("publish_schedules", tenantId);
       await unpublishWeek.mutateAsync({ startDate: weekStartStr, endDate: weekEndStr, branch: selectedBranch });
       toast.success("Rota unpublished");
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [unpublishWeek, weekStartStr, weekEndStr, selectedBranch]);
+  }, [unpublishWeek, weekStartStr, weekEndStr, selectedBranch, tenantId]);
 
   const handleCopyPrevWeek = useCallback(async (prevStart: string, prevEnd: string) => {
     try {
