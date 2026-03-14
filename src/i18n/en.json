@@ -663,7 +663,9 @@
     "payroll_ready": "Payroll ready for review",
     "setup_incomplete": "Setup incomplete",
     "training_assigned": "Training assigned",
-    "training_completed": "Training completed"
+    "training_completed": "Training completed",
+    "training_due_soon": "Training due soon",
+    "training_overdue": "Training overdue"
   },
   "ops": {
     "labour_cost_today": "Labour Cost Today",

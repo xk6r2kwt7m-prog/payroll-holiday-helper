@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.check-document-expiry]
 verify_jwt = false
+
+[functions.check-training-due]
+verify_jwt = false
