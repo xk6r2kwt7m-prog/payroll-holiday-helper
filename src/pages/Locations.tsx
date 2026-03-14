@@ -121,10 +121,10 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
       {/* Footer: tap to open location dashboard */}
       <Link
         to={`/locations/${encodeURIComponent(pulse.branch)}`}
-        className="flex items-center justify-center gap-2 px-4 py-3 border-t border-border bg-muted/30 text-sm font-medium text-primary hover:bg-muted/50 transition-colors min-h-[48px]"
+        className="flex items-center justify-center gap-1.5 px-4 py-2.5 border-t border-border/30 bg-muted/20 text-xs font-medium text-primary hover:bg-muted/40 transition-colors min-h-[44px]"
       >
         Open Location Dashboard
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-3.5 w-3.5" />
       </Link>
     </motion.div>
   );
