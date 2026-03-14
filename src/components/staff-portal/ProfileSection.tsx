@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
 
 interface ProfileSectionProps {
   employeeData: {
