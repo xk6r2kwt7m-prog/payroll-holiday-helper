@@ -361,6 +361,7 @@ export function useCreateAutoRule() {
   const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (rule: Record<string, any>) => {
+      await assertPermission("manage_training", tenantId!);
       const { error } = await supabase
         .from("training_auto_rules" as any)
         .insert({ ...rule, tenant_id: tenantId } as any);

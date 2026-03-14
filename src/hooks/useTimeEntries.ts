@@ -165,6 +165,7 @@ export function useManagerOverride() {
       branch: string;
       reason: string;
     }) => {
+      await assertPermission("approve_timesheets", tenantId);
       const { data: employee } = await supabase
         .from("employees")
         .select("department")

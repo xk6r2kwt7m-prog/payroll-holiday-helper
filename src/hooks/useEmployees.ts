@@ -110,18 +110,7 @@ export function useDeleteEmployee() {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      // Defensive: verify caller has edit rights
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      const userRoles = roles?.map(r => r.role) || [];
-      const canDelete = userRoles.some(r => r === "admin");
-      if (!canDelete) throw new Error("Permission denied: only admin can delete employees");
-
+      await assertPermission("edit_employees", null);
       const { error } = await supabase
         .from("employees")
         .delete()
