@@ -180,6 +180,7 @@ export function useReviewEvidence() {
       status: "approved" | "rejected" | "more_info_requested";
       notes?: string;
     }) => {
+      await assertPermission("approve_timesheets", null);
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("evidence_files" as any)
