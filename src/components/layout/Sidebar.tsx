@@ -69,9 +69,6 @@ const navGroups: NavGroup[] = [
     title: "Payroll",
     items: [
       { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin", module: "payroll" },
-      { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin", module: "payroll" },
-      { icon: BarChart3, label: "Payroll Analytics", path: "/payroll/analytics", minRole: "admin", module: "payroll" },
-      { icon: ShieldCheck, label: "Payroll Audit", path: "/payroll/audit", minRole: "admin", module: "payroll" },
     ],
   },
   {

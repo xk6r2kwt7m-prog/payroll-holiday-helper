@@ -526,37 +526,10 @@ const Payroll = () => {
             companyName={companySettings?.company_name}
           />
         )}
-          </TabsContent>
-
-          {/* Calendar Tab */}
-          <TabsContent value="calendar" className="mt-4">
-            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading calendar...</div>}>
-              <PayrollCalendarInline />
-            </Suspense>
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="mt-4">
-            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading analytics...</div>}>
-              <PayrollAnalyticsView />
-            </Suspense>
-          </TabsContent>
-
-          {/* Audit Tab */}
-          <TabsContent value="audit" className="mt-4">
-            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading audit...</div>}>
-              <PayrollAuditView />
-            </Suspense>
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </AppLayout>
   );
 };
-
-// Inline wrapper for Calendar (strips AppLayout since it's already in one)
-function PayrollCalendarInline() {
-  return <PayrollCalendarView />;
-}
 
 export default Payroll;
