@@ -38,41 +38,41 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
       style={style}
       onClick={(e) => { if (onView) { e.stopPropagation(); onView(e); } }}
       className={cn(
-        "rounded text-[10px] sm:text-[11px] leading-tight relative select-none",
-        "transition-all",
-        "min-h-[38px] sm:min-h-[38px] flex flex-col items-center justify-center gap-0",
-        "px-1 py-1 sm:px-1.5 sm:py-1",
-        // Clean, calm states
+        "rounded-md text-[10px] sm:text-[11px] leading-tight relative select-none",
+        "transition-all duration-150",
+        "min-h-[40px] sm:min-h-[40px] flex flex-col items-center justify-center gap-0.5",
+        "px-1.5 py-1.5 sm:px-2 sm:py-1.5",
+        // Clean, calm states with better distinction
         isOpen
-          ? "bg-muted/30 text-muted-foreground border border-dashed border-border/50"
+          ? "bg-muted/40 text-muted-foreground border border-dashed border-border/60"
           : isPublished
-            ? "bg-success/[0.04] border border-success/20"
-            : "bg-primary/[0.03] border border-primary/15",
+            ? "bg-card border border-border/60 shadow-card"
+            : "bg-primary/[0.04] border border-primary/20",
         isDragging && "shadow-lg ring-2 ring-primary/30 scale-105",
-        isAdmin && !isMobile && "cursor-grab active:cursor-grabbing hover:shadow-sm hover:border-border/60",
+        isAdmin && !isMobile && "cursor-grab active:cursor-grabbing hover:shadow-sm hover:border-border",
         isAdmin && isMobile && "cursor-pointer active:scale-[0.97]",
       )}
       {...(isAdmin && !isMobile ? { ...listeners, ...attributes } : {})}
     >
       {/* Time — strongest element */}
-      <div className="font-semibold tabular-nums whitespace-nowrap text-foreground text-[11px] sm:text-xs">
+      <div className="font-semibold tabular-nums whitespace-nowrap text-foreground text-[11px] sm:text-xs tracking-tight">
         {shift.start_time?.slice(0, 5)}
       </div>
-      <div className="tabular-nums whitespace-nowrap text-[9px] text-muted-foreground">
+      <div className="tabular-nums whitespace-nowrap text-[9px] text-muted-foreground/70">
         {shift.end_time?.slice(0, 5)}
       </div>
 
       {/* Published indicator — subtle dot */}
       {isPublished && (
         <div className="absolute top-[3px] right-[3px]">
-          <span className="inline-block h-[4px] w-[4px] rounded-full bg-success/70" />
+          <span className="inline-block h-[5px] w-[5px] rounded-full bg-success/60" />
         </div>
       )}
 
-      {/* Open shift dot */}
+      {/* Open shift indicator */}
       {isOpen && (
         <div className="absolute top-[3px] right-[3px]">
-          <span className="inline-block h-[4px] w-[4px] rounded-full bg-muted-foreground/40" />
+          <span className="inline-block h-[5px] w-[5px] rounded-full bg-muted-foreground/30" />
         </div>
       )}
     </div>
@@ -88,9 +88,9 @@ export function CrossBranchShiftCell({ shift, onNavigate }: CrossBranchShiftCell
   return (
     <div
       className={cn(
-        "rounded px-1.5 py-1 text-[10px] leading-tight",
-        "bg-muted/20 text-muted-foreground/70 border border-dashed border-border/40",
-        "min-h-[38px] flex flex-col items-center justify-center gap-0",
+        "rounded-md px-1.5 py-1.5 text-[10px] leading-tight",
+        "bg-muted/20 text-muted-foreground/60 border border-dashed border-border/40",
+        "min-h-[40px] flex flex-col items-center justify-center gap-0.5",
         "transition-all active:scale-95",
         onNavigate && "cursor-pointer hover:bg-muted/30"
       )}
@@ -103,7 +103,7 @@ export function CrossBranchShiftCell({ shift, onNavigate }: CrossBranchShiftCell
       <div className="font-semibold tabular-nums whitespace-nowrap">
         {shift.start_time?.slice(0, 5)}
       </div>
-      <div className="flex items-center gap-0.5 text-[8px] opacity-60">
+      <div className="flex items-center gap-0.5 text-[8px] opacity-50">
         <MapPin className="h-2 w-2" />
         <span>{shift.branch?.slice(0, 4)}</span>
       </div>

@@ -20,10 +20,10 @@ export function DroppableCell({ id, children, isAdmin, isToday, onClick }: Dropp
       ref={setNodeRef}
       className={cn(
         "group/cell p-0.5 sm:p-1 text-center transition-colors align-top",
-        "border-l border-border/20",
-        isToday && "bg-primary/[0.02]",
+        "border-l border-border/15",
+        isToday && "bg-primary/[0.015]",
         isAdmin && "cursor-pointer",
-        !isMobile && isOver && "bg-primary/[0.06] ring-1 ring-inset ring-primary/15",
+        !isMobile && isOver && "bg-primary/[0.05] ring-1 ring-inset ring-primary/15",
         isMobile && isAdmin && "active:bg-primary/[0.03]",
       )}
       onClick={onClick}
@@ -44,15 +44,15 @@ export function EmptyDropCell({ isAdmin }: EmptyDropCellProps) {
 
   return (
     <div className={cn(
-      "flex items-center justify-center rounded",
-      "min-h-[38px] sm:min-h-[34px]",
+      "flex items-center justify-center rounded-md",
+      "min-h-[40px] sm:min-h-[36px]",
       "transition-all",
       isMobile
         ? "active:bg-primary/[0.04]"
-        : "sm:group-hover/cell:bg-muted/20",
+        : "sm:group-hover/cell:bg-muted/30",
     )}>
       {!isMobile && (
-        <span className="h-3 w-3 text-muted-foreground/20 hidden sm:group-hover/cell:block text-sm leading-none">+</span>
+        <span className="h-3 w-3 text-muted-foreground/15 hidden sm:group-hover/cell:block text-sm leading-none font-light">+</span>
       )}
     </div>
   );
