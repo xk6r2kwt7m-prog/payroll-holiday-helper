@@ -262,6 +262,7 @@ export function useCreateAssignments() {
 export function useUpdateAssignment() {
   const qc = useQueryClient();
   const { tenantId } = useTenant();
+  const { notifyAdmins } = useNotifyEvent();
   return useMutation({
     mutationFn: async ({ id, updates, action, employeeId, documentId }: {
       id: string;
@@ -283,6 +284,25 @@ export function useUpdateAssignment() {
         employee_id: employeeId,
         action,
       } as any);
+
+      // Notify admins/managers when training is completed
+      if (action === "completed" && employeeId && documentId) {
+        // Fetch employee name and document title
+        const [{ data: emp }, { data: doc }] = await Promise.all([
+          supabase.from("employees" as any).select("forename, surname").eq("id", employeeId).single(),
+          supabase.from("training_library" as any).select("title").eq("id", documentId).single(),
+        ]);
+        const empName = emp ? `${(emp as any).forename} ${(emp as any).surname}` : "An employee";
+        const docTitle = doc ? (doc as any).title : "training";
+
+        await notifyAdmins(
+          "training_completed",
+          `${empName} completed: ${docTitle}`,
+          `Training has been marked as complete.`,
+          "/training",
+          { employee_id: employeeId, document_id: documentId }
+        );
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["training_assignments"] });

@@ -661,7 +661,9 @@
     "onboarding_completed": "Onboarding completed",
     "announcement_published": "New announcement",
     "payroll_ready": "Payroll ready for review",
-    "setup_incomplete": "Setup incomplete"
+    "setup_incomplete": "Setup incomplete",
+    "training_assigned": "Training assigned",
+    "training_completed": "Training completed"
   },
   "ops": {
     "labour_cost_today": "Labour Cost Today",
