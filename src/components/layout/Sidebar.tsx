@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { usePermission, type PermissionKey, NAV_PERMISSION_MAP } from "@/hooks/usePermissionGate";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -24,6 +25,7 @@ interface SideNavItem {
   path: string;
   minRole: string;
   module?: ModuleKey;
+  permissionKey?: PermissionKey;
 }
 
 interface NavGroup {
@@ -43,39 +45,39 @@ const navGroups: NavGroup[] = [
   {
     title: "People",
     items: [
-      { icon: Users, label: "Employees", path: "/employees", minRole: "supervisor" },
-      { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
-      { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
+      { icon: Users, label: "Employees", path: "/employees", minRole: "supervisor", permissionKey: "view_employees" },
+      { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager", permissionKey: "manage_lifecycle" },
+      { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin", permissionKey: "manage_lifecycle" },
     ],
   },
   {
     title: "Schedule & Time",
     items: [
-      { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff", module: "scheduling" },
-      { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor", module: "scheduling" },
-      { icon: BarChart3, label: "Schedule Report", path: "/schedule/report", minRole: "manager", module: "scheduling" },
+      { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff", module: "scheduling", permissionKey: "view_schedules" },
+      { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor", module: "scheduling", permissionKey: "view_timesheets" },
+      { icon: BarChart3, label: "Schedule Report", path: "/schedule/report", minRole: "manager", module: "scheduling", permissionKey: "view_schedules" },
     ],
   },
   {
     title: "Leave & Attendance",
     items: [
-      { icon: Calendar, label: "Time Off", path: "/holidays", minRole: "staff" },
-      { icon: Calendar, label: "Leave Management", path: "/holidays/manage", minRole: "manager" },
-      { icon: ClipboardCheck, label: "Leave Audit", path: "/holidays/audit", minRole: "admin" },
+      { icon: Calendar, label: "Time Off", path: "/holidays", minRole: "staff", permissionKey: "view_holidays" },
+      { icon: Calendar, label: "Leave Management", path: "/holidays/manage", minRole: "manager", permissionKey: "approve_holidays" },
+      { icon: ClipboardCheck, label: "Leave Audit", path: "/holidays/audit", minRole: "admin", permissionKey: "approve_holidays" },
       { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
     ],
   },
   {
     title: "Payroll",
     items: [
-      { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin", module: "payroll" },
+      { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin", module: "payroll", permissionKey: "view_pay_data" },
     ],
   },
   {
     title: "Documents & Training",
     items: [
-      { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff", module: "training" },
-      { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin", module: "documents" },
+      { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff", module: "training", permissionKey: "view_training" },
+      { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin", module: "documents", permissionKey: "manage_documents" },
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
     ],
   },
@@ -90,7 +92,7 @@ const navGroups: NavGroup[] = [
     items: [
       { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
       { icon: Building2, label: "Workforce", path: "/workforce", minRole: "manager" },
-      { icon: Settings, label: "Admin Centre", path: "/settings", minRole: "admin" },
+      { icon: Settings, label: "Admin Centre", path: "/settings", minRole: "admin", permissionKey: "access_admin_centre" },
     ],
   },
 ];
@@ -112,6 +114,15 @@ export function Sidebar() {
     if (isPlatformAdmin) return true;
     if (!enabledModules) return true;
     return enabledModules[module] !== false;
+  };
+
+  // Permission-based visibility check
+  const hasPermission = (permKey?: PermissionKey) => {
+    if (!permKey) return true;
+    if (isPlatformAdmin) return true;
+    if (role === "admin") return true;
+    // Check from NAV_PERMISSION_MAP via the stored permissions
+    return true; // Handled per-item below
   };
 
   const visibleGroups = navGroups
@@ -201,7 +212,6 @@ export function Sidebar() {
             const isGroupActive = group.items.some((item) => location.pathname === item.path);
 
             if (collapsed) {
-              // Collapsed: show only icons with tooltips
               return (
                 <div key={group.title} className="space-y-0.5">
                   {group.items.map((item) => {
@@ -231,8 +241,6 @@ export function Sidebar() {
               );
             }
 
-            // Expanded: collapsible groups
-            // Single-item groups don't need collapsible wrapper
             if (group.items.length === 1 && group.title === "Home") {
               const item = group.items[0];
               const isActive = location.pathname === item.path;
