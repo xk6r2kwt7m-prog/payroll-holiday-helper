@@ -71,6 +71,7 @@ export function useToggleServiceCharge() {
   return useMutation({
     mutationFn: async (enabled: boolean) => {
       if (!tenantId) throw new Error("No tenant");
+      await assertPermission("access_admin_centre", tenantId);
       const { error } = await supabase
         .from("tenants")
         .update({ service_charge_enabled: enabled } as any)
