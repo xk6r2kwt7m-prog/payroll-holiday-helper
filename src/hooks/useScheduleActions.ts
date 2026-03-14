@@ -444,10 +444,15 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handleBulkCreateShifts = useCallback(async (newShifts: any[]) => {
     if (!tenantId) { toast.error("No workspace selected"); return; }
-    const { data: { user } } = await supabase.auth.getUser();
-    const withCreator = newShifts.map((s) => ({ ...s, created_by: user?.id || null }));
-    await bulkCreate.mutateAsync(withCreator as any);
-    toast.success(`Created ${newShifts.length} shift${newShifts.length !== 1 ? "s" : ""}`);
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const { data: { user } } = await supabase.auth.getUser();
+      const withCreator = newShifts.map((s) => ({ ...s, created_by: user?.id || null }));
+      await bulkCreate.mutateAsync(withCreator as any);
+      toast.success(`Created ${newShifts.length} shift${newShifts.length !== 1 ? "s" : ""}`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   }, [tenantId, bulkCreate]);
 
   // Coverage stats
