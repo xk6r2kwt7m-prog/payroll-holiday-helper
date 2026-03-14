@@ -30,7 +30,6 @@ export function TalentSearch() {
 
   const { data: profiles = [], isLoading } = useTalentProfiles({
     country: countryFilter !== "all" ? countryFilter : undefined,
-    department: departmentFilter !== "all" ? departmentFilter : undefined,
   });
 
   const expressInterest = useCreateInterestAction();
