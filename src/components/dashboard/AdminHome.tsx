@@ -158,6 +158,11 @@ export function AdminHome() {
         <OperationalAlertsPanel />
       </motion.div>
 
+      {/* Document Requests */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.15 }}>
+        <DocumentRequestsWidget />
+      </motion.div>
+
       {latestPeriod && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
           <SectionHeader title="Payroll" linkTo="/payroll" />
