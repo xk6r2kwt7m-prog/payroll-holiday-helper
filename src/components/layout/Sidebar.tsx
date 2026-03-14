@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Calendar, DollarSign, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, FileText,
   CalendarClock, ClipboardCheck, BarChart3, MapPin, Search, UserX,
-  UserPlus, GraduationCap, Megaphone, ShieldAlert, ShieldCheck, Globe, Building2, FileBarChart,
+  UserPlus, GraduationCap, Megaphone, ShieldAlert, ShieldCheck, Globe, Building2, FileBarChart, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
