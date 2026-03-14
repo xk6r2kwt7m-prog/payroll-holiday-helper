@@ -650,13 +650,15 @@ const Holidays = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <TabsList className="grid w-full sm:w-auto grid-cols-5 h-9">
-                <TabsTrigger value="2022" className="text-xs px-3">2022</TabsTrigger>
-                <TabsTrigger value="2023" className="text-xs px-3">2023</TabsTrigger>
-                <TabsTrigger value="2024" className="text-xs px-3">2024</TabsTrigger>
-                <TabsTrigger value="2025" className="text-xs px-3">2025</TabsTrigger>
-                <TabsTrigger value="2026" className="text-xs px-3">2026</TabsTrigger>
-              </TabsList>
+              <div className="rounded-lg border border-border/60 bg-muted/40 p-1">
+                <TabsList className="grid w-full sm:w-auto grid-cols-5 h-auto bg-transparent gap-0.5">
+                  <TabsTrigger value="2022" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2022</TabsTrigger>
+                  <TabsTrigger value="2023" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2023</TabsTrigger>
+                  <TabsTrigger value="2024" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2024</TabsTrigger>
+                  <TabsTrigger value="2025" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2025</TabsTrigger>
+                  <TabsTrigger value="2026" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2026</TabsTrigger>
+                </TabsList>
+              </div>
 
               <div className="flex items-center gap-1.5">
                 <Button 
