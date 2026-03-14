@@ -396,7 +396,24 @@
     "two_factor": "Two-factor authentication",
     "two_factor_desc": "Add an extra layer of security",
     "session_timeout": "Session timeout",
-    "session_timeout_desc": "Automatically log out after inactivity"
+    "session_timeout_desc": "Automatically log out after inactivity",
+    "notif_pref": {
+      "title": "Notification Preferences",
+      "subtitle": "Choose which alerts you receive. Critical compliance and approval notifications are always delivered.",
+      "schedule": "Schedule Updates",
+      "schedule_desc": "Shift publishing, changes, and cancellations",
+      "marketplace": "Marketplace Activity",
+      "marketplace_desc": "Open shift offers, claims, and approvals",
+      "leave": "Leave Updates",
+      "leave_desc": "Holiday requests, approvals, and rejections",
+      "documents": "Documents & Compliance",
+      "documents_desc": "Uploads, verifications, and expiry warnings",
+      "training": "Training",
+      "training_desc": "Assignments, completions, and due reminders",
+      "announcements": "Announcements",
+      "announcements_desc": "Company-wide announcements and updates",
+      "mandatory_note": "Payroll alerts, evidence requests, and onboarding notifications cannot be turned off."
+    }
   },
   "setup": {
     "company_profile": "Company Profile",
