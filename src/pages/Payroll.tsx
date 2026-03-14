@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2, Shield } from "lucide-react";
+import { Download, DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, Trash2, Shield, ShieldCheck } from "lucide-react";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod, useDeletePayrollPeriod } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, useHolidayPayments } from "@/hooks/useHolidays";
 import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPaymentDialog";
@@ -29,6 +30,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
+import { EmptyState } from "@/components/ui/EmptyState";
+
+// Lazy load heavy sub-views
+const PayrollCalendarView = lazy(() => import("@/pages/PayrollCalendar"));
+const PayrollAnalyticsView = lazy(() => import("@/pages/PayrollAnalytics"));
+const PayrollAuditView = lazy(() => import("@/pages/PayrollAudit"));
 
 const Payroll = () => {
   const { t } = useI18n();
