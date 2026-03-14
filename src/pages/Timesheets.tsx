@@ -16,6 +16,7 @@ import { AttendanceDashboard } from "@/components/attendance/AttendanceDashboard
 import { TimesheetReviewPanel, computeFlags } from "@/components/attendance/TimesheetReviewPanel";
 import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDialog";
 import { useI18n } from "@/hooks/useI18n";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function Timesheets() {
   const { t } = useI18n();

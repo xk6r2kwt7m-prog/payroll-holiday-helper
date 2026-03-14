@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAnnouncements, useCreateAnnouncement, usePublishAnnouncement, useDeleteAnnouncement, useReadReceipts } from "@/hooks/useAnnouncements";
