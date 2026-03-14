@@ -743,6 +743,219 @@ export type Database = {
           },
         ]
       }
+      document_request_audit: {
+        Row: {
+          action: string
+          created_at: string
+          employee_id: string
+          id: string
+          metadata: Json | null
+          performed_by: string | null
+          request_id: string
+          tenant_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string | null
+          request_id: string
+          tenant_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string | null
+          request_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_request_audit_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_request_audit_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_request_audit_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "document_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_request_audit_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_request_templates: {
+        Row: {
+          applies_to_countries: string[] | null
+          applies_to_departments: string[] | null
+          applies_to_locations: string[] | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          request_items: Json
+          template_name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          applies_to_countries?: string[] | null
+          applies_to_departments?: string[] | null
+          applies_to_locations?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          request_items?: Json
+          template_name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          applies_to_countries?: string[] | null
+          applies_to_departments?: string[] | null
+          applies_to_locations?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          request_items?: Json
+          template_name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_request_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_requests: {
+        Row: {
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          document_type: string
+          due_date: string | null
+          employee_id: string
+          fulfilled_document_id: string | null
+          id: string
+          notes: string | null
+          priority: string
+          rejection_reason: string | null
+          request_description: string | null
+          request_title: string
+          requested_by: string | null
+          requires_verification: boolean
+          status: string
+          tenant_id: string
+          updated_at: string
+          verified_at: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          document_type?: string
+          due_date?: string | null
+          employee_id: string
+          fulfilled_document_id?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          rejection_reason?: string | null
+          request_description?: string | null
+          request_title: string
+          requested_by?: string | null
+          requires_verification?: boolean
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          verified_at?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          document_type?: string
+          due_date?: string | null
+          employee_id?: string
+          fulfilled_document_id?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          rejection_reason?: string | null
+          request_description?: string | null
+          request_title?: string
+          requested_by?: string | null
+          requires_verification?: boolean
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          verified_at?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_fulfilled_document_id_fkey"
+            columns: ["fulfilled_document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_availability: {
         Row: {
           available_from: string | null
