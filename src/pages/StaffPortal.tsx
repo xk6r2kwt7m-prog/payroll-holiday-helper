@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import {
-  Clock, LogOut, Calendar, CheckCircle2, AlertCircle, Megaphone, FileText,
+  Clock, LogOut, Calendar, CheckCircle2, AlertCircle, AlertTriangle, Megaphone, FileText,
   Upload, Sun, User, ChevronRight, Shield, Phone, Building2, GraduationCap,
   Bell, Settings,
 } from "lucide-react";
