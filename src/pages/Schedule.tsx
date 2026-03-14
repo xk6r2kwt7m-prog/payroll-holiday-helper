@@ -129,9 +129,12 @@ export default function Schedule() {
         <EmptyState
           icon={CalendarClock}
           title="No locations set up"
-          description="Add at least one location before building your schedule. Go to Locations in settings to get started."
-          actionLabel="Go to Locations"
-          actionHref="/locations"
+          description="Add at least one location before building your schedule. Locations define where your team works and what shifts are available."
+          hint="You can set up locations, operating hours, and geofencing in workplace settings."
+          actionLabel="Add a Location"
+          actionHref="/settings?group=workplaces&section=locations"
+          secondaryLabel="View Locations"
+          secondaryHref="/locations"
         />
       </AppLayout>
     );
