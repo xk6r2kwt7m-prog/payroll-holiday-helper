@@ -625,17 +625,17 @@ const Holidays = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-5 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-in-left">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-             <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <Calendar className="h-5 w-5 text-primary" />
+             <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 shrink-0">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
               </div>
               {t("holidays.title")}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-[13px] text-muted-foreground mt-1">
               {t("holidays.overview")}
             </p>
           </div>
