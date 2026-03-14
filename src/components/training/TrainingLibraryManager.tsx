@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen, Plus, FileText, Shield, GraduationCap, AlertTriangle,
-  CheckCircle2, Clock, Eye, Users, Search, Upload, Sparkles, RefreshCw, ShieldAlert, Loader2,
+  CheckCircle2, Clock, Eye, Users, Search, Upload, Sparkles,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -25,8 +24,6 @@ import {
 } from "@/hooks/useTrainingLibrary";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTenant } from "@/hooks/useTenant";
-
-import { supabase } from "@/integrations/supabase/client";
 
 // ─── Library Manager ───
 
