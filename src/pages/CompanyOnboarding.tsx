@@ -42,7 +42,7 @@ interface WizardState {
 
 const CompanyOnboarding = () => {
   const { user } = useAuth();
-  const { tenantId, loading: tenantLoading } = useTenant();
+  const { tenantId, loading: tenantLoading, tenantResolved, membershipCount } = useTenant();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -69,7 +69,17 @@ const CompanyOnboarding = () => {
   }, []);
 
   if (!user) { navigate("/auth"); return null; }
-  if (!tenantLoading && tenantId) { navigate("/"); return null; }
+  // Only bounce away if tenant is fully resolved AND a tenant is selected
+  if (tenantResolved && tenantId) { navigate("/"); return null; }
+  // If still resolving, show loading
+  if (!tenantResolved && !tenantLoading) { /* allow onboarding to render */ }
+  if (tenantLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   const canProceed = (): boolean => {
     switch (step) {
