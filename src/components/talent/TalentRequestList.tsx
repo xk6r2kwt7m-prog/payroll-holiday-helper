@@ -222,9 +222,9 @@ function CreateTalentRequestForm({ onSuccess }: { onSuccess: () => void }) {
           <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
             <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="FOH">FOH</SelectItem>
-              <SelectItem value="BOH">BOH</SelectItem>
-              <SelectItem value="CPU">CPU</SelectItem>
+              {(departments || []).map(d => (
+                <SelectItem key={d.key} value={d.key}>{d.emoji} {d.key}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
