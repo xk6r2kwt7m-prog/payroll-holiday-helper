@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { AssignmentStatusBadge } from "@/components/training/AssignmentStatusBadge";
 import {
   AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, Loader2,
 } from "lucide-react";
