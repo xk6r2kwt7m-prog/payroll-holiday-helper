@@ -1,11 +1,13 @@
 import { useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
-import { GraduationCap, BookOpen, AlertTriangle, Plus, CheckSquare, Eye } from "lucide-react";
+import { GraduationCap, BookOpen, AlertTriangle, Plus, Eye, CalendarIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TabsList, TabsTrigger, Tabs } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Switch } from "@/components/ui/switch";
