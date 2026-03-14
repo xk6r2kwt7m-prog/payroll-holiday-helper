@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export function useEvidenceRequests(employeeId?: string) {
   const { tenantId } = useTenant();
