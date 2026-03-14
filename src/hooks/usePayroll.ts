@@ -259,6 +259,7 @@ export function useUpdatePayrollEntry() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: PayrollEntryUpdate }) => {
+      await assertPermission("view_pay_data", null);
       const { data, error } = await supabase
         .from("payroll_entries")
         .update(updates)
