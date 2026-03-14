@@ -93,7 +93,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { user, isAdmin, role, signOut } = useAuth();
-  const { isPlatformAdmin, enabledModules, tenantName, membershipCount } = useTenant();
+  const { isPlatformAdmin, enabledModules, tenantName, membershipCount, openWorkspacePicker } = useTenant();
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || tenantName || "UGLŌ";
 
