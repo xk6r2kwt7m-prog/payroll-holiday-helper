@@ -42,6 +42,8 @@ const EVENT_ICONS: Record<string, string> = {
   payroll_ready: "💰",
   training_assigned: "📚",
   training_completed: "🎓",
+  training_due_soon: "⏰",
+  training_overdue: "🚨",
   general: "🔔",
 };
 
