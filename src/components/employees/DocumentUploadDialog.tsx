@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, Calendar, X } from "lucide-react";
+import { Upload, FileText, Calendar, X, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
