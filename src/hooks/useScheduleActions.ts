@@ -206,10 +206,12 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handlePublish = useCallback(async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       await publishWeek.mutateAsync({
         startDate: weekStartStr,
         endDate: weekEndStr,
         branch: selectedBranch,
+        userId: user?.id,
       });
       toast.success(`${selectedBranch} rota published — staff will be notified`);
 

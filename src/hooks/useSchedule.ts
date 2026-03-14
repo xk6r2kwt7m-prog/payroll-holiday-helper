@@ -156,10 +156,11 @@ export function useBulkUpdateShifts() {
 export function usePublishWeek() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ startDate, endDate, branch }: { startDate: string; endDate: string; branch: string }) => {
+    mutationFn: async ({ startDate, endDate, branch, userId }: { startDate: string; endDate: string; branch: string; userId?: string }) => {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("shifts")
-        .update({ is_published: true, published_at: new Date().toISOString() } as any)
+        .update({ is_published: true, published_at: now, published_by: userId || null } as any)
         .eq("branch", branch as any)
         .gte("shift_date", startDate)
         .lte("shift_date", endDate)
