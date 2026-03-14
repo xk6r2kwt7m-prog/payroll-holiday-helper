@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Calendar, DollarSign, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, FileText,
   CalendarClock, ClipboardCheck, BarChart3, MapPin, Search, UserX,
-  UserPlus, GraduationCap, Megaphone, ShieldAlert, ShieldCheck, Globe, Building2,
+  UserPlus, GraduationCap, Megaphone, ShieldAlert, ShieldCheck, Globe, Building2, FileBarChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -77,6 +77,12 @@ const navGroups: NavGroup[] = [
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff", module: "training" },
       { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin", module: "documents" },
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
+    ],
+  },
+  {
+    title: "Reports",
+    items: [
+      { icon: FileBarChart, label: "Reports", path: "/reports", minRole: "manager" },
     ],
   },
   {
