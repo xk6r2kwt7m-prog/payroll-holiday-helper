@@ -34,6 +34,7 @@ import {
   HolidayDisplaySettings,
   PeopleLifecycleSettings,
 } from "@/components/settings/AdminConfigSections";
+import { OnboardingRequirementsConfig } from "@/components/settings/OnboardingRequirementsConfig";
 import { ServiceChargeSettings } from "@/components/settings/ServiceChargeSettings";
 import { EmailTestButton } from "@/components/settings/EmailTestButton";
 import { useAuth } from "@/hooks/useAuth";
