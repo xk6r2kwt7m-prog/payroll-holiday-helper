@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Calendar, Clock, MapPin, Coffee, MessageSquare, Trash2, MoreHorizontal, ChevronDown, Repeat, CalendarDays } from "lucide-react";
+import { Calendar, Clock, MapPin, Coffee, MessageSquare, Trash2, MoreHorizontal, ChevronDown, Repeat, CalendarDays, AlertTriangle } from "lucide-react";
+import { useEmployeeReadiness } from "@/hooks/useOnboardingReadiness";
 import type { Employee } from "@/hooks/useEmployees";
 
 interface ShiftCellDialogProps {
@@ -107,8 +108,9 @@ export function ShiftCellDialog({
     };
   }, [startTime, endTime, breakMinutes, employeeId, employees]);
 
-  // Get selected employee
+  // Get selected employee and readiness
   const selectedEmployee = employees.find(e => e.id === employeeId);
+  const { data: readiness } = useEmployeeReadiness(employeeId !== "open" ? employeeId : undefined);
   const displayName = selectedEmployee
     ? `${selectedEmployee.forename} ${selectedEmployee.surname}`
     : "Open Shift";
@@ -148,6 +150,19 @@ export function ShiftCellDialog({
             </Select>
           </div>
         </div>
+
+        {/* Blocked employee warning */}
+        {readiness?.status === "blocked" && (
+          <div className="mx-5 mt-1 flex items-start gap-2 p-2.5 rounded-lg bg-destructive/5 border border-destructive/10">
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-destructive">Cannot schedule — critical requirement missing</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {readiness.missingCritical.join(", ")}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Details rows — Deputy style */}
         <div className="px-5 py-3 space-y-3">

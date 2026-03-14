@@ -16,6 +16,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { useTenant } from "@/hooks/useTenant";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
 import { DocumentRequestsWidget } from "@/components/dashboard/DocumentRequestsWidget";
+import { TeamReadinessWidget } from "@/components/dashboard/TeamReadinessWidget";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -161,6 +162,11 @@ export function AdminHome() {
       {/* Document Requests */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.15 }}>
         <DocumentRequestsWidget />
+      </motion.div>
+
+      {/* Team Readiness */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.155 }}>
+        <TeamReadinessWidget />
       </motion.div>
 
       {latestPeriod && (

@@ -4308,6 +4308,53 @@ export type Database = {
           },
         ]
       }
+      tenant_onboarding_requirements: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_critical: boolean
+          is_required: boolean
+          requirement_key: string
+          requirement_label: string
+          requirement_type: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_critical?: boolean
+          is_required?: boolean
+          requirement_key: string
+          requirement_label: string
+          requirement_type?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_critical?: boolean
+          is_required?: boolean
+          requirement_key?: string
+          requirement_label?: string
+          requirement_type?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_onboarding_requirements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_onboarding_state: {
         Row: {
           completed_at: string | null

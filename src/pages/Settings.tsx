@@ -34,6 +34,7 @@ import {
   HolidayDisplaySettings,
   PeopleLifecycleSettings,
 } from "@/components/settings/AdminConfigSections";
+import { OnboardingRequirementsConfig } from "@/components/settings/OnboardingRequirementsConfig";
 import { ServiceChargeSettings } from "@/components/settings/ServiceChargeSettings";
 import { EmailTestButton } from "@/components/settings/EmailTestButton";
 import { useAuth } from "@/hooks/useAuth";
@@ -271,6 +272,9 @@ const Settings = () => {
                 </ConfigCard>
                 <ConfigCard title={t("settings.employee_status_lifecycle")} description={t("settings.employee_status_lifecycle_desc")}>
                   <EmployeeStatusConfig />
+                </ConfigCard>
+                <ConfigCard title="Onboarding Requirements" description="Configure which onboarding steps are required and critical for work readiness.">
+                  <OnboardingRequirementsConfig />
                 </ConfigCard>
               </>
             )}
