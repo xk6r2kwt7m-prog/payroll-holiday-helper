@@ -499,6 +499,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     }
     if (!confirm("Undo publish? This will revert all recently published shifts back to draft. Staff will no longer see them.")) return;
     try {
+      await assertPermission("publish_schedules", tenantId);
       await unpublishWeek.mutateAsync({ startDate: weekStartStr, endDate: weekEndStr, branch: selectedBranch });
       toast.success("Publish reverted — shifts are back in draft");
 
