@@ -72,9 +72,6 @@ export interface TalentMatch {
 // Fetch visible talent profiles for the current tenant
 export function useTalentProfiles(filters?: {
   country?: string;
-  region?: string;
-  department?: string;
-  status?: string;
   role?: string;
 }) {
   const { tenantId } = useTenant();
