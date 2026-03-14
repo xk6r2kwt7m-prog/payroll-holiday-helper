@@ -244,6 +244,11 @@ export function ScheduleHeader({
                 Delete all shifts
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Analysis</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate("/schedule/labour-cost")} className="gap-2">
+                <DollarSign className="h-3.5 w-3.5" />
+                Preview labour cost
+              </DropdownMenuItem>
               <DropdownMenuItem className="gap-2">
                 <Printer className="h-3.5 w-3.5" />
                 Print schedule
