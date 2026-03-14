@@ -1,46 +1,66 @@
-import { DollarSign, TrendingUp } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { payrollSummary, formatCurrency } from "@/data/payrollData";
-
-interface PayrollItem {
-  label: string;
-  amount: number;
-  percentage: number;
-  color: string;
-}
-
-const payrollBreakdown: PayrollItem[] = [
-  { 
-    label: "Timesheet", 
-    amount: payrollSummary.timesheet, 
-    percentage: (payrollSummary.timesheet / payrollSummary.totalPayroll) * 100,
-    color: "bg-primary"
-  },
-  { 
-    label: "Holidays", 
-    amount: payrollSummary.holidays, 
-    percentage: (payrollSummary.holidays / payrollSummary.totalPayroll) * 100,
-    color: "bg-accent"
-  },
-  { 
-    label: "Incentives", 
-    amount: payrollSummary.incentives, 
-    percentage: (payrollSummary.incentives / payrollSummary.totalPayroll) * 100,
-    color: "bg-success"
-  },
-];
+import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
+import { useHolidayPayments } from "@/hooks/useHolidays";
+import { useMemo } from "react";
 
 export function UpcomingPayroll() {
+  const { data: periods = [], isLoading } = usePayrollPeriods();
+  const { data: allEntries = [] } = usePayrollEntries();
+  const { data: allHolidayPayments = [] } = useHolidayPayments();
+
+  // Pick the most recent period (already sorted desc by start_date)
+  const latestPeriod = periods[0];
+
+  const summary = useMemo(() => {
+    if (!latestPeriod) return null;
+    const entries = (allEntries as any[]).filter((e) => e.payroll_period_id === latestPeriod.id);
+    const holidays = (allHolidayPayments as any[]).filter((h) => h.payroll_period_id === latestPeriod.id);
+
+    const timesheetCost = entries.reduce((s, e) => s + ((e.timesheet_hours || 0) * (e.hourly_rate || 0) + (e.timesheet_hours || 0) * (e.service_charge || 0)), 0);
+    const holidayCost = holidays.reduce((s, h) => s + (h.total || 0), 0);
+    const bonuses = entries.reduce((s, e) => s + (e.performance_bonus || 0) + (e.special_bonus || 0), 0);
+    const totalPayroll = entries.reduce((s, e) => s + (e.total_pay || 0), 0);
+
+    return {
+      periodName: latestPeriod.period_name,
+      totalPayroll,
+      breakdown: [
+        { label: "Timesheet", amount: timesheetCost, color: "bg-primary" },
+        { label: "Holidays", amount: holidayCost, color: "bg-accent" },
+        { label: "Bonuses", amount: bonuses, color: "bg-green-500" },
+      ],
+    };
+  }, [latestPeriod, allEntries, allHolidayPayments]);
+
+  const formatCurrency = (v: number) => `£${v.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  if (isLoading) {
+    return (
+      <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in p-6">
+        <p className="text-sm text-muted-foreground">Loading payroll…</p>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in p-6">
+        <p className="text-sm text-muted-foreground">No payroll periods yet.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl bg-card shadow-card overflow-hidden animate-fade-in">
       <div className="border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-card-foreground">Current Payroll</h3>
-            <p className="text-sm text-muted-foreground">{payrollSummary.period}</p>
+            <p className="text-sm text-muted-foreground">{summary.periodName}</p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
-            <DollarSign className="h-5 w-5 text-success" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/10">
+            <DollarSign className="h-5 w-5 text-green-500" />
           </div>
         </div>
       </div>
@@ -48,23 +68,24 @@ export function UpcomingPayroll() {
         <div className="mb-6">
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold text-card-foreground">
-              {formatCurrency(payrollSummary.totalPayroll)}
+              {formatCurrency(summary.totalPayroll)}
             </span>
           </div>
           <p className="text-sm text-muted-foreground">Total payroll for this period</p>
         </div>
         <div className="space-y-4">
-          {payrollBreakdown.map((item) => (
-            <div key={item.label} className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{item.label}</span>
-                <span className="font-medium text-card-foreground">
-                  {formatCurrency(item.amount)}
-                </span>
+          {summary.breakdown.map((item) => {
+            const pct = summary.totalPayroll > 0 ? (item.amount / summary.totalPayroll) * 100 : 0;
+            return (
+              <div key={item.label} className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{item.label}</span>
+                  <span className="font-medium text-card-foreground">{formatCurrency(item.amount)}</span>
+                </div>
+                <Progress value={pct} className="h-2" />
               </div>
-              <Progress value={item.percentage} className="h-2" />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
