@@ -91,11 +91,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Prepare AI prompt
+    // Prepare AI prompt — privacy-safe data only, no internal HR fields
     const candidateSummaries = visibleProfiles.map((p: any) => ({
       id: p.id,
-      name: `${p.employees.forename} ${p.employees.surname}`,
-      department: p.employees.department,
+      name: `${p.employees.forename} ${p.employees.surname.charAt(0)}.`,
       status: p.talent_pool_status,
       roles: p.preferred_roles,
       locations: p.preferred_locations,
