@@ -114,6 +114,7 @@ export default function StaffPortal() {
     { id: "profile" as const, icon: User, label: "Profile" },
     { id: "requests" as const, icon: Sun, label: "Requests", badge: pendingRequests },
     { id: "timesheets" as const, icon: Clock, label: "Timesheets" },
+    { id: "training" as const, icon: BookOpen, label: "Training" },
     { id: "documents" as const, icon: FileText, label: "Documents" },
   ];
 
