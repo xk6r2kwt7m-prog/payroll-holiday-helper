@@ -395,12 +395,38 @@ function AssignDocumentDialog({ document, open, onOpenChange }: {
 // ─── Completion Tracking Dashboard ───
 
 export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModuleId }: { highlightEmployeeId?: string; highlightModuleId?: string } = {}) {
-  const { data: assignments = [] } = useTrainingAssignments();
+  const { data: assignments = [], isLoading } = useTrainingAssignments();
   const [statusFilter, setStatusFilter] = useState("all");
+  const highlightRef = useRef<HTMLDivElement>(null);
+  const hasScrolled = useRef(false);
 
-  // Auto-filter when deep-linked from Gaps tab
   const highlightKey = highlightEmployeeId && highlightModuleId
     ? `${highlightEmployeeId}::${highlightModuleId}` : null;
+
+  // When deep-linked, force filter to "all" so the row isn't hidden
+  useEffect(() => {
+    if (highlightKey) {
+      setStatusFilter("all");
+      hasScrolled.current = false;
+    }
+  }, [highlightKey]);
+
+  // Check if match exists in assignments
+  const matchExists = highlightKey
+    ? assignments.some(a => `${a.employee_id}::${a.document_id}` === highlightKey)
+    : false;
+
+  // Scroll into view once data loads and match is found
+  useEffect(() => {
+    if (highlightKey && matchExists && highlightRef.current && !hasScrolled.current) {
+      hasScrolled.current = true;
+      // Small delay to let DOM settle after filter reset
+      const t = setTimeout(() => {
+        highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [highlightKey, matchExists, assignments]);
 
   const counts = {
     all: assignments.length,
