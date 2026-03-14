@@ -353,11 +353,12 @@ export function useApproveRequest() {
 export function useRejectRequest() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { tenantId } = useTenant();
   const { notify } = useNotifyEvent();
 
   return useMutation({
     mutationFn: async ({ requestId, employeeId, shiftId, reviewNotes }: { requestId: string; employeeId?: string; shiftId?: string; reviewNotes?: string }) => {
-      await assertPermission("edit_schedules", null);
+      await assertPermission("edit_schedules", tenantId!);
       await supabase
         .from("shift_marketplace_requests" as any)
         .update({ status: "rejected", reviewed_by: user?.id, reviewed_at: new Date().toISOString(), review_notes: reviewNotes || null } as any)

@@ -78,10 +78,11 @@ export function useAllHolidayRequests() {
 export function useReviewHolidayRequest() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async ({ id, status, review_notes }: { id: string; status: "approved" | "rejected"; review_notes?: string }) => {
       if (!user) throw new Error("Not authenticated");
-      await assertPermission("approve_holidays", null);
+      await assertPermission("approve_holidays", tenantId!);
 
       const { error } = await supabase
         .from("holiday_requests" as any)

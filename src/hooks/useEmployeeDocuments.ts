@@ -212,10 +212,11 @@ export function useUpdateDocument() {
 
 export function useDeleteDocument() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async ({ id, filePath }: { id: string; filePath: string }) => {
-      await assertPermission("manage_documents", null);
+      await assertPermission("manage_documents", tenantId!);
       // Delete file from storage
       const { error: storageError } = await supabase.storage
         .from("employee-documents")

@@ -142,9 +142,10 @@ export function usePublishAnnouncement() {
 
 export function useDeleteAnnouncement() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (id: string) => {
-      await assertPermission("edit_employees", null);
+      await assertPermission("edit_employees", tenantId!);
       const { error } = await supabase.from("staff_announcements" as any).delete().eq("id", id);
       if (error) throw error;
     },

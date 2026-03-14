@@ -203,9 +203,10 @@ export function useReviewEvidence() {
 
 export function useUpdateEvidenceRequestStatus() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (params: { id: string; status: string }) => {
-      await assertPermission("approve_timesheets", null);
+      await assertPermission("approve_timesheets", tenantId!);
       const { error } = await supabase
         .from("evidence_requests" as any)
         .update({ status: params.status, updated_at: new Date().toISOString() } as any)

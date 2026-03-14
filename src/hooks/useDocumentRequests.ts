@@ -224,13 +224,14 @@ export function useBulkCreateDocumentRequests() {
 
 export function useUpdateDocumentRequest() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async ({ id, updates }: {
       id: string;
       updates: Partial<DocumentRequest>;
     }) => {
-      await assertPermission("manage_documents", null);
+      await assertPermission("manage_documents", tenantId!);
       const { error } = await supabase
         .from("document_requests" as any)
         .update({ ...updates, updated_at: new Date().toISOString() } as any)
