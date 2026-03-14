@@ -516,7 +516,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [publishRollbackInfo.canUndo, unpublishWeek, weekStartStr, weekEndStr, selectedBranch, branchShifts, notifyPublishedShiftStaff]);
+  }, [publishRollbackInfo.canUndo, unpublishWeek, weekStartStr, weekEndStr, selectedBranch, branchShifts, notifyPublishedShiftStaff, tenantId]);
 
   return {
     // Data
