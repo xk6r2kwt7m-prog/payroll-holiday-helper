@@ -225,7 +225,7 @@ const Employees = () => {
         {/* Status Pills */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
           {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
-            if (status === "archived" && !isAdmin) return null;
+            if (status === "archived" && !canManageLifecycle) return null;
             const count = counts[status];
             const config = STATUS_CONFIG[status];
             const isActive = statusFilter === status;
