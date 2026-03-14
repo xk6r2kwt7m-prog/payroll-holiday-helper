@@ -116,7 +116,7 @@ export function Sidebar() {
     }))
     .filter((group) => group.items.length > 0);
 
-  const hasMultipleTenants = availableTenants.length > 1;
+  const hasMultipleTenants = membershipCount > 1;
 
   return (
     <aside

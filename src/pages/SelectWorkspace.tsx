@@ -64,10 +64,13 @@ const SelectWorkspace = () => {
     }
   };
 
+  const lastUsedTenantId = typeof window !== "undefined" ? localStorage.getItem("uglo_selected_tenant") : null;
+
   return (
     <TenantPicker
       tenants={availableTenants}
       onSelect={handleSelect}
+      lastUsedTenantId={lastUsedTenantId}
     />
   );
 };
