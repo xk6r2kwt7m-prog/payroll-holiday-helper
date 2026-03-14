@@ -647,46 +647,31 @@ const Holidays = () => {
         </div>
 
         {/* Leave Year Selector */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <TabsList className="grid w-full sm:w-auto grid-cols-5">
-                <TabsTrigger value="2022" className="gap-2">
-                  <Calendar className="h-4 w-4" />
-                  2022
-                </TabsTrigger>
-                <TabsTrigger value="2023" className="gap-2">
-                  <Calendar className="h-4 w-4" />
-                  2023
-                </TabsTrigger>
-                <TabsTrigger value="2024" className="gap-2">
-                  <Calendar className="h-4 w-4" />
-                  2024
-                </TabsTrigger>
-                <TabsTrigger value="2025" className="gap-2">
-                  <Calendar className="h-4 w-4" />
-                  2025
-                </TabsTrigger>
-                <TabsTrigger value="2026" className="gap-2">
-                  <Calendar className="h-4 w-4" />
-                  2026
-                </TabsTrigger>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <TabsList className="grid w-full sm:w-auto grid-cols-5 h-9">
+                <TabsTrigger value="2022" className="text-xs px-3">2022</TabsTrigger>
+                <TabsTrigger value="2023" className="text-xs px-3">2023</TabsTrigger>
+                <TabsTrigger value="2024" className="text-xs px-3">2024</TabsTrigger>
+                <TabsTrigger value="2025" className="text-xs px-3">2025</TabsTrigger>
+                <TabsTrigger value="2026" className="text-xs px-3">2026</TabsTrigger>
               </TabsList>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setSubTab("lookup")}
-                  className="text-primary border-primary/30 hover:bg-primary/10"
+                  className="text-xs h-8"
                 >
-                  <Scale className="h-4 w-4 mr-1" /> Check Accruals
+                  <Scale className="h-3.5 w-3.5 mr-1" /> Check Accruals
                 </Button>
-                <Button variant={viewMode === "cards" ? "default" : "outline"} size="sm" onClick={() => setViewMode("cards")}>
-                  <LayoutGrid className="h-4 w-4 mr-1" /> {t("holidays.cards_view")}
+                <Button variant={viewMode === "cards" ? "default" : "outline"} size="sm" onClick={() => setViewMode("cards")} className="h-8 text-xs">
+                  <LayoutGrid className="h-3.5 w-3.5 mr-1" /> {t("holidays.cards_view")}
                 </Button>
-                <Button variant={viewMode === "table" ? "default" : "outline"} size="sm" onClick={() => setViewMode("table")}>
-                  <TableIcon className="h-4 w-4 mr-1" /> {t("holidays.table_view")}
+                <Button variant={viewMode === "table" ? "default" : "outline"} size="sm" onClick={() => setViewMode("table")} className="h-8 text-xs">
+                  <TableIcon className="h-3.5 w-3.5 mr-1" /> {t("holidays.table_view")}
                 </Button>
               </div>
             </div>
