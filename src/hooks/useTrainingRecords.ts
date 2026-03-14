@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export interface TrainingRecord {
   id: string;
@@ -60,6 +61,7 @@ export function useAddTrainingRecord() {
       expiry_date?: string;
       notes?: string;
     }) => {
+      await assertPermission("manage_training", null);
       const { error } = await supabase.from("training_records" as any).insert(record as any);
       if (error) throw error;
     },
@@ -75,6 +77,7 @@ export function useDeleteTrainingRecord() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("manage_training", null);
       const { error } = await supabase.from("training_records" as any).delete().eq("id", id);
       if (error) throw error;
     },

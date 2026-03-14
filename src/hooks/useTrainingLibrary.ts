@@ -4,6 +4,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifyEvent } from "@/hooks/useNotifyEvent";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export interface TrainingLibraryItem {
   id: string;
@@ -101,6 +102,7 @@ export function useCreateLibraryItem() {
   const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (item: Partial<TrainingLibraryItem>) => {
+      await assertPermission("manage_training", tenantId!);
       const { data, error } = await supabase
         .from("training_library" as any)
         .insert({ ...item, tenant_id: tenantId } as any)
@@ -127,6 +129,7 @@ export function useUpdateLibraryItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<TrainingLibraryItem> }) => {
+      await assertPermission("manage_training", null);
       const { error } = await supabase
         .from("training_library" as any)
         .update(updates as any)
@@ -189,6 +192,7 @@ export function useCreateAssignments() {
   const { notifyMany } = useNotifyEvent();
   return useMutation({
     mutationFn: async (assignments: Array<{ document_id: string; employee_id: string; due_date?: string; notes?: string }>) => {
+      await assertPermission("manage_training", tenantId!);
       const rows = assignments.map(a => ({
         ...a,
         tenant_id: tenantId,

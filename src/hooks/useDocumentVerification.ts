@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export type DocumentStatus = "uploaded" | "pending_verification" | "verified" | "rejected" | "expired";
 
@@ -20,6 +21,7 @@ export function useVerifyDocument() {
       verificationMethod: string;
       notes?: string;
     }) => {
+      await assertPermission("manage_documents", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
 
       const { error } = await supabase
@@ -86,6 +88,7 @@ export function useRejectDocument() {
       tenantId: string;
       reason: string;
     }) => {
+      await assertPermission("manage_documents", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
 
       const { error } = await supabase

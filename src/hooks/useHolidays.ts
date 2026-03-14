@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export type HolidayPayment = Tables<"holiday_payments">;
 export type HolidayPaymentInsert = TablesInsert<"holiday_payments">;
@@ -232,6 +233,7 @@ export function useCreateHolidayPayment() {
   
   return useMutation({
     mutationFn: async (payment: Omit<HolidayPaymentInsert, 'tenant_id'>) => {
+      await assertPermission("approve_holidays", tenantId!);
       const { data, error } = await supabase
         .from("holiday_payments")
         .insert({ ...payment, tenant_id: tenantId! })
@@ -284,6 +286,7 @@ export function useUpdateHolidayBalance() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: HolidayBalanceUpdate }) => {
+      await assertPermission("approve_holidays", null);
       const { data, error } = await supabase
         .from("holiday_balances")
         .update(updates)
@@ -306,6 +309,7 @@ export function useCreateHolidayBalance() {
   
   return useMutation({
     mutationFn: async (balance: Omit<HolidayBalanceInsert, 'tenant_id'>) => {
+      await assertPermission("approve_holidays", tenantId!);
       const { data, error } = await supabase
         .from("holiday_balances")
         .insert({ ...balance, tenant_id: tenantId! })
