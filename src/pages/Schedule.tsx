@@ -355,7 +355,7 @@ export default function Schedule() {
                     shifts={dayShifts}
                     branch={selectedBranch}
                     department={selectedDept}
-                    isAdmin={isAdmin}
+                    isAdmin={canEditSchedules}
                     onAddClick={() => { setDayDialogShift(null); setDayDialogOpen(true); }}
                     onEditClick={(shift) => { setDayDialogShift(shift); setDayDialogOpen(true); }}
                     onDeleteClick={schedule.handleDeleteShift}
