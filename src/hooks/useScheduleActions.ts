@@ -173,6 +173,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
   const handleDeleteShift = useCallback(async (id: string) => {
     if (!confirm("Delete this shift?")) return;
     try {
+      await assertPermission("edit_schedules", tenantId);
       // Fetch shift before deleting to notify if published
       const { data: shift } = await supabase
         .from("shifts")
