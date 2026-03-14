@@ -261,32 +261,32 @@ const Settings = () => {
       <AppLayout>
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-              <SettingsIcon className="h-5 w-5 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+              <SettingsIcon className="h-4.5 w-4.5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Admin Centre</h1>
-              <p className="text-sm text-muted-foreground">Manage your workspace settings and configuration</p>
+              <h1 className="text-lg font-bold text-foreground tracking-tight">Admin Centre</h1>
+              <p className="text-[13px] text-muted-foreground">Manage your workspace settings and configuration</p>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {SETTINGS_GROUPS.map((group) => (
               <button
                 key={group.id}
                 onClick={() => navigateTo(group.id, null)}
-                className="flex items-start gap-3.5 rounded-lg bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group shadow-card"
+                className="flex items-start gap-3 rounded-lg bg-card border border-border/70 p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group shadow-card"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/8 shrink-0 group-hover:bg-primary/12 transition-colors">
-                  <group.icon className="h-5 w-5 text-primary" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60 shrink-0 group-hover:bg-primary/10 transition-colors">
+                  <group.icon className="h-4.5 w-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-foreground">{group.label}</h3>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                   </div>
                   <p className="text-[13px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{group.description}</p>
-                  <p className="text-[10px] text-muted-foreground/50 mt-2 font-medium uppercase tracking-wider">
+                  <p className="text-[10px] text-muted-foreground/40 mt-2 font-medium uppercase tracking-wider">
                     {group.sections.length} setting{group.sections.length !== 1 ? "s" : ""}
                   </p>
                 </div>
@@ -303,7 +303,6 @@ const Settings = () => {
     return (
       <AppLayout>
         <div className="max-w-3xl mx-auto space-y-5">
-          {/* Back + header */}
           <button
             onClick={() => navigateTo(null, null)}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
@@ -313,27 +312,27 @@ const Settings = () => {
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-              <currentGroup.icon className="h-5 w-5 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60 shrink-0">
+              <currentGroup.icon className="h-4.5 w-4.5 text-muted-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">{currentGroup.label}</h1>
-              <p className="text-sm text-muted-foreground">{currentGroup.description}</p>
+              <h1 className="text-lg font-bold text-foreground tracking-tight">{currentGroup.label}</h1>
+              <p className="text-[13px] text-muted-foreground">{currentGroup.description}</p>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="rounded-lg border border-border/70 bg-card shadow-card overflow-hidden divide-y divide-border/50">
             {currentGroup.sections.map((section) => (
               <button
                 key={section.id}
                 onClick={() => navigateTo(activeGroup, section.id)}
-                className="flex items-center gap-3 w-full rounded-lg bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group shadow-card"
+                className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/30 transition-colors group"
               >
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-foreground">{section.label}</h3>
                   <p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">{section.description}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors shrink-0" />
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />
               </button>
             ))}
           </div>
@@ -536,8 +535,8 @@ const Settings = () => {
 /* ─── Reusable sub-components ─── */
 function ConfigCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg bg-card border border-border p-5 sm:p-6 shadow-card space-y-5">
-      <div>
+    <div className="rounded-lg bg-card border border-border/70 p-5 sm:p-6 shadow-card space-y-5">
+      <div className="pb-3 border-b border-border/40">
         <h3 className="text-sm font-semibold text-foreground leading-tight">{title}</h3>
         {description && <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{description}</p>}
       </div>

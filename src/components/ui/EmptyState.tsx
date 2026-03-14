@@ -33,47 +33,49 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className={cn(
-      "flex flex-col items-center justify-center text-center px-4",
-      compact ? "py-10" : "py-20",
+      "flex flex-col items-center justify-center text-center px-6",
+      compact ? "py-10" : "py-16",
       className,
     )}>
       <div className={cn(
-        "rounded-xl bg-muted/60 flex items-center justify-center mb-4",
-        compact ? "h-12 w-12" : "h-14 w-14",
+        "rounded-xl bg-muted/50 flex items-center justify-center",
+        compact ? "h-11 w-11 mb-3" : "h-12 w-12 mb-4",
       )}>
-        <Icon className={cn("text-muted-foreground/60", compact ? "h-5 w-5" : "h-6 w-6")} />
+        <Icon className={cn("text-muted-foreground/50", compact ? "h-5 w-5" : "h-5.5 w-5.5")} />
       </div>
       <h3 className={cn(
-        "font-semibold text-foreground mb-1.5",
-        compact ? "text-sm" : "text-base",
+        "font-semibold text-foreground",
+        compact ? "text-sm mb-1" : "text-[15px] mb-1.5",
       )}>
         {title}
       </h3>
       <p className={cn(
-        "text-muted-foreground max-w-sm leading-relaxed",
+        "text-muted-foreground max-w-xs leading-relaxed",
         compact ? "text-xs" : "text-[13px]",
       )}>
         {description}
       </p>
       {hint && (
-        <p className="text-xs text-muted-foreground/60 mt-2 max-w-xs leading-relaxed">{hint}</p>
+        <p className="text-xs text-muted-foreground/50 mt-2 max-w-xs leading-relaxed">{hint}</p>
       )}
-      <div className="flex items-center gap-2.5 mt-5">
-        {actionLabel && (onAction || actionHref) && (
-          actionHref ? (
-            <a href={actionHref}>
-              <Button size="sm">{actionLabel}</Button>
+      {(actionLabel || secondaryLabel) && (
+        <div className="flex items-center gap-2.5 mt-5">
+          {actionLabel && (onAction || actionHref) && (
+            actionHref ? (
+              <a href={actionHref}>
+                <Button size="sm">{actionLabel}</Button>
+              </a>
+            ) : (
+              <Button size="sm" onClick={onAction}>{actionLabel}</Button>
+            )
+          )}
+          {secondaryLabel && secondaryHref && (
+            <a href={secondaryHref}>
+              <Button variant="ghost" size="sm">{secondaryLabel}</Button>
             </a>
-          ) : (
-            <Button size="sm" onClick={onAction}>{actionLabel}</Button>
-          )
-        )}
-        {secondaryLabel && secondaryHref && (
-          <a href={secondaryHref}>
-            <Button variant="ghost" size="sm">{secondaryLabel}</Button>
-          </a>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
