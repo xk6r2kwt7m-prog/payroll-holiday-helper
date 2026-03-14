@@ -39,6 +39,7 @@ import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
 import ResetPassword from "./pages/ResetPassword";
 import TalentPool from "./pages/TalentPool";
+import Workforce from "./pages/Workforce";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 

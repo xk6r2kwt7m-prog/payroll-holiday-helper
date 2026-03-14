@@ -63,6 +63,7 @@ const navItems: SideNavItem[] = [
   { icon: Calendar, label: "Holidays", path: "/holidays", minRole: "staff" },
   { icon: ClipboardCheck, label: "Holiday Audit", path: "/holidays/audit", minRole: "admin" },
   { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
+  { icon: Building2, label: "Workforce", path: "/workforce", minRole: "manager" },
   { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
   { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff", module: "training" },
   { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
