@@ -229,11 +229,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
         const savedTenantId = localStorage.getItem("uglo_selected_tenant");
 
-        console.log(
-          "[TenantProvider] Memberships:", count,
-          "| Saved tenant:", savedTenantId,
-          "| Platform admin:", !!platformAdmin
-        );
 
         if (count === 0) {
           console.log("[TenantProvider] Decision: 0 memberships → onboard");
