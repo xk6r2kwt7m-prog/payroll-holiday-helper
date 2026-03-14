@@ -182,7 +182,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       cachedMemberships.current = [];
       setLoading(false);
       localStorage.removeItem("uglo_selected_tenant");
-      console.log("[TenantProvider] Auth resolved: no user → cleared state + localStorage");
       return;
     }
 
