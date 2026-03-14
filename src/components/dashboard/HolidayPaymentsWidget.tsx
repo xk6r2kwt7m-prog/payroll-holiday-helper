@@ -5,7 +5,7 @@ import { useHolidayPayments } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { useMemo } from "react";
 
-export function HolidayRequests() {
+export function HolidayPaymentsWidget() {
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriodId = periods[0]?.id;
   const { data: holidayPayments = [], isLoading } = useHolidayPayments(latestPeriodId);
