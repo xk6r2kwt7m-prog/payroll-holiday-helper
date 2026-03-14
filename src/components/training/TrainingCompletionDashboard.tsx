@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { AssignmentStatusBadge } from "@/components/training/AssignmentStatusBadge";
 import {
   AlertTriangle, CheckCircle2, RefreshCw, ShieldAlert, Loader2,
 } from "lucide-react";
@@ -238,18 +238,4 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
       </div>
     </div>
   );
-}
-
-// ─── Status Badge ───
-
-function AssignmentStatusBadge({ status, isOverdue }: { status: string; isOverdue: boolean }) {
-  if (isOverdue) return <Badge className="text-[10px] bg-destructive/10 text-destructive border-destructive/20">Overdue</Badge>;
-  const styles: Record<string, string> = {
-    assigned: "bg-muted text-muted-foreground",
-    viewed: "bg-primary/10 text-primary",
-    acknowledged: "bg-warning/10 text-warning",
-    completed: "bg-success/10 text-success",
-    cancelled: "bg-muted text-muted-foreground line-through",
-  };
-  return <Badge className={cn("text-[10px]", styles[status] || styles.assigned)}>{status}</Badge>;
 }
