@@ -406,12 +406,17 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
   }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff, tenantId]);
 
   const handleRemoveEmptyShifts = useCallback(async () => {
-    const emptyShifts = branchDeptShifts.filter((s: any) => !s.employee_id);
-    if (emptyShifts.length === 0) { toast.info("No empty shifts to remove"); return; }
-    if (!confirm(`Remove ${emptyShifts.length} empty shifts?`)) return;
-    await bulkDelete.mutateAsync(emptyShifts.map((s: any) => s.id));
-    toast.success(`Removed ${emptyShifts.length} empty shifts`);
-  }, [bulkDelete, branchDeptShifts]);
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const emptyShifts = branchDeptShifts.filter((s: any) => !s.employee_id);
+      if (emptyShifts.length === 0) { toast.info("No empty shifts to remove"); return; }
+      if (!confirm(`Remove ${emptyShifts.length} empty shifts?`)) return;
+      await bulkDelete.mutateAsync(emptyShifts.map((s: any) => s.id));
+      toast.success(`Removed ${emptyShifts.length} empty shifts`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  }, [bulkDelete, branchDeptShifts, tenantId]);
 
   const handleBulkUpdateTimes = useCallback(async (startTime: string, endTime: string) => {
     const ids = branchDeptShifts.map((s: any) => s.id);
