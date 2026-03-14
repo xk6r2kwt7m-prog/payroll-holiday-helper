@@ -108,8 +108,9 @@ export function ShiftCellDialog({
     };
   }, [startTime, endTime, breakMinutes, employeeId, employees]);
 
-  // Get selected employee
+  // Get selected employee and readiness
   const selectedEmployee = employees.find(e => e.id === employeeId);
+  const { data: readiness } = useEmployeeReadiness(employeeId !== "open" ? employeeId : undefined);
   const displayName = selectedEmployee
     ? `${selectedEmployee.forename} ${selectedEmployee.surname}`
     : "Open Shift";
