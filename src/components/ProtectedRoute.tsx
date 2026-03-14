@@ -38,8 +38,23 @@ export function ProtectedRoute({
   // Permission check (safe to call unconditionally — returns true for admin/platform admin)
   const hasPermission = usePermission(requiredPermission || "view_employees");
 
+  // ─── Diagnostic logging for redirect audit ───
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "unknown";
+
   // ─── GATE 1: Auth or tenant still loading ───
   if (authLoading || tenantLoading) {
+    console.log("[ProtectedRoute] GATE 1 — LOADING", {
+      userId: user?.id ?? null,
+      authLoading,
+      tenantLoading,
+      tenantResolved,
+      membershipCount,
+      tenantId,
+      role,
+      pathname,
+      redirect: "none (showing loader)",
+      reason: authLoading ? "auth still loading" : "tenant still loading",
+    });
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -54,13 +69,29 @@ export function ProtectedRoute({
 
   // ─── GATE 2: Not authenticated ───
   if (!user) {
-    console.log("[ProtectedRoute] No user → /auth");
+    console.log("[ProtectedRoute] GATE 2 — NO USER", {
+      userId: null,
+      tenantResolved,
+      membershipCount,
+      tenantId,
+      pathname,
+      redirect: "/auth",
+      reason: "no authenticated user",
+    });
     return <Navigate to="/auth" replace />;
   }
 
   // ─── GATE 3: Tenant resolution not yet complete ───
   if (!tenantResolved) {
-    console.log("[ProtectedRoute] Tenant not yet resolved — showing resolving screen");
+    console.log("[ProtectedRoute] GATE 3 — TENANT UNRESOLVED", {
+      userId: user.id,
+      tenantResolved,
+      membershipCount,
+      tenantId,
+      pathname,
+      redirect: "none (showing resolver)",
+      reason: "tenant not yet resolved",
+    });
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -75,13 +106,45 @@ export function ProtectedRoute({
 
   // ─── GATE 4: Multiple tenants, none selected yet ───
   if (showTenantPicker && membershipCount > 1 && !tenantId) {
+    console.log("[ProtectedRoute] GATE 4 — MULTI-TENANT PICKER", {
+      userId: user.id,
+      tenantResolved,
+      membershipCount,
+      tenantId,
+      showTenantPicker,
+      pathname,
+      redirect: "/select-workspace",
+      reason: `${membershipCount} memberships, no tenant selected`,
+    });
     return <Navigate to="/select-workspace" replace />;
   }
 
   // ─── GATE 5: Zero memberships — only redirect when confirmed (not stale) ───
   if (membershipCount === 0 && tenantResolved && !tenantId && !isPlatformAdmin) {
+    console.log("[ProtectedRoute] GATE 5 — ZERO MEMBERSHIPS", {
+      userId: user.id,
+      tenantResolved,
+      membershipCount,
+      tenantId,
+      isPlatformAdmin,
+      pathname,
+      redirect: "/onboard",
+      reason: "confirmed 0 memberships, not platform admin",
+    });
     return <Navigate to="/onboard" replace />;
   }
+
+  // Log successful pass-through
+  console.log("[ProtectedRoute] PASSED ALL GATES", {
+    userId: user.id,
+    tenantResolved,
+    membershipCount,
+    tenantId,
+    role,
+    isPlatformAdmin,
+    pathname,
+    redirect: "none (rendering children)",
+  });
 
   // ─── GATE 6: Tenant suspended or cancelled ───
   if ((tenantStatus === "suspended" || tenantStatus === "cancelled") && !isPlatformAdmin) {
