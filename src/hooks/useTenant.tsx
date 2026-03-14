@@ -194,7 +194,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
     const fetchTenant = async () => {
       try {
-        console.log("[TenantProvider] Resolving workspace for user:", user.id);
+        
 
         const { data: platformAdmin } = await supabase
           .from("platform_admins")
