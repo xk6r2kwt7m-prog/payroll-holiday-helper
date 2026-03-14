@@ -233,6 +233,7 @@ export function useCreateHolidayPayment() {
   
   return useMutation({
     mutationFn: async (payment: Omit<HolidayPaymentInsert, 'tenant_id'>) => {
+      await assertPermission("approve_holidays", tenantId!);
       const { data, error } = await supabase
         .from("holiday_payments")
         .insert({ ...payment, tenant_id: tenantId! })
