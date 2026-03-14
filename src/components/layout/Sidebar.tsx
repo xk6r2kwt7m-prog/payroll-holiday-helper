@@ -159,13 +159,13 @@ export function Sidebar() {
               {isPlatformAdmin && " · Platform Admin"}
             </p>
             {hasMultipleTenants && (
-              <Link
-                to="/select-workspace"
+              <button
+                onClick={() => { openWorkspacePicker(); navigate("/select-workspace"); }}
                 className="mt-1 flex items-center gap-1 text-xs text-sidebar-primary hover:underline"
               >
                 <Building2 className="h-3 w-3" />
                 Switch Workspace
-              </Link>
+              </button>
             )}
           </div>
         )}

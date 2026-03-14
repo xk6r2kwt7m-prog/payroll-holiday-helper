@@ -135,7 +135,7 @@ const peopleRoutes = ["/employees", "/absences", "/onboarding", "/training", "/d
 export function MobileBottomNav() {
   const location = useLocation();
   const { role, signOut } = useAuth();
-  const { enabledModules, isPlatformAdmin, membershipCount } = useTenant();
+  const { enabledModules, isPlatformAdmin, membershipCount, openWorkspacePicker } = useTenant();
   const [moreOpen, setMoreOpen] = useState(false);
   const hasMultipleTenants = membershipCount > 1;
 
