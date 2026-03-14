@@ -23,6 +23,7 @@ const URGENCY_COLORS: Record<string, string> = {
 
 export function TalentRequestList() {
   const { data: requests = [], isLoading } = useTalentRequests();
+  const { data: departments = [] } = useDepartments();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
 
