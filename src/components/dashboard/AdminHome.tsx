@@ -17,6 +17,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
 import { DocumentRequestsWidget } from "@/components/dashboard/DocumentRequestsWidget";
 import { TeamReadinessWidget } from "@/components/dashboard/TeamReadinessWidget";
+import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
