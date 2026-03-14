@@ -464,6 +464,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     handleDeleteAllShifts,
     handleClearAssignments,
     handleRemoveEmptyShifts,
+    handleBulkUpdateTimes,
     handleBulkCreateShifts,
     // Pending states
     isPending: createShift.isPending || updateShift.isPending,
