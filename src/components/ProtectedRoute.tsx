@@ -78,8 +78,8 @@ export function ProtectedRoute({
     return <Navigate to="/select-workspace" replace />;
   }
 
-  // ─── GATE 5: Zero memberships — only now redirect to onboard ───
-  if (membershipCount === 0 && !tenantId && !isPlatformAdmin) {
+  // ─── GATE 5: Zero memberships — only redirect when confirmed (not stale) ───
+  if (membershipCount === 0 && tenantResolved && !tenantId && !isPlatformAdmin) {
     return <Navigate to="/onboard" replace />;
   }
 

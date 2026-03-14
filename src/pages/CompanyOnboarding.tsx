@@ -69,11 +69,11 @@ const CompanyOnboarding = () => {
   }, []);
 
   if (!user) { navigate("/auth"); return null; }
-  // Only bounce away if tenant is fully resolved AND a tenant is selected
+  // If user already has workspace(s), they should never be here
   if (tenantResolved && tenantId) { navigate("/"); return null; }
+  if (tenantResolved && membershipCount > 0 && !tenantId) { navigate("/select-workspace"); return null; }
   // If still resolving, show loading
-  if (!tenantResolved && !tenantLoading) { /* allow onboarding to render */ }
-  if (tenantLoading) {
+  if (!tenantResolved || tenantLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>

@@ -43,8 +43,8 @@ const SelectWorkspace = () => {
   // Tenant already selected — go to dashboard
   if (tenantId && !showTenantPicker) return <Navigate to="/" replace />;
 
-  // Confirmed zero memberships
-  if (membershipCount === 0) return <Navigate to="/onboard" replace />;
+  // Confirmed zero memberships — tenantResolved ensures this isn't stale
+  if (tenantResolved && membershipCount === 0) return <Navigate to="/onboard" replace />;
 
   // Edge case fallback
   if (!showTenantPicker || availableTenants.length === 0) {

@@ -170,7 +170,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
 
     if (!user) {
-      // Confirmed logout
+      // Confirmed logout — use -1 (unresolved) not 0 to prevent stale redirects
+      // when a new user logs in before the effect re-runs
       setTenantId(null);
       setTenantName(null);
       setTenantCountry(null);
@@ -178,8 +179,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setTenantStatus(null);
       setIsPlatformAdmin(false);
       setEnabledModules(null);
-      setTenantResolved(true);
-      setMembershipCount(0);
+      setTenantResolved(false);
+      setMembershipCount(-1);
       setShowTenantPicker(false);
       setAvailableTenants([]);
       cachedMemberships.current = [];
