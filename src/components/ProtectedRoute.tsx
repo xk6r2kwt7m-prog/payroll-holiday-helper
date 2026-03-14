@@ -69,8 +69,11 @@ export function ProtectedRoute({
   }
 
   // ─── GATE 4: Multiple tenants, none selected yet ───
-  if (showTenantPicker) {
-    console.log("[ProtectedRoute] Multiple tenants, picker needed → /select-workspace");
+  if (showTenantPicker && membershipCount > 1 && !tenantId) {
+    console.log("[ProtectedRoute] Multiple tenants, picker needed → /select-workspace", {
+      membershipCount,
+      tenantId,
+    });
     return <Navigate to="/select-workspace" replace />;
   }
 
