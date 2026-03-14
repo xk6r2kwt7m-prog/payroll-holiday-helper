@@ -54,9 +54,12 @@ export function SchedulingSettings() {
         </div>
         <Separator />
         <ToggleRow label="Department filter visible by default" desc="Show department tabs on schedule page" checked={local.showDeptFilter} onChange={v => set("showDeptFilter", v)} />
+        <NotYetEnforced label="showDeptFilter — saved for future enforcement" />
         <ToggleRow label="Mobile Quick Build mode" desc="Enable guided shift wizard on mobile" checked={local.mobileQuickBuild} onChange={v => set("mobileQuickBuild", v)} />
         <ToggleRow label="Shift swap notifications" desc="Notify managers of swap requests" checked={local.shiftSwapNotify} onChange={v => set("shiftSwapNotify", v)} />
+        <NotYetEnforced label="shiftSwapNotify — saved for future enforcement (requires notification pipeline)" />
         <ToggleRow label="Auto-publish on create" desc="Publish shifts immediately when created" checked={local.autoPublish} onChange={v => set("autoPublish", v)} />
+        <NotYetEnforced label="autoPublish — saved for future enforcement (requires backend worker)" />
       </div>
       <div className="space-y-2 pt-2">
         <SettingLink label="Shift Templates" description="Manage pre-built shift patterns" to="/schedule" />
