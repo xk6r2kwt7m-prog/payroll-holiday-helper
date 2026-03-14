@@ -56,6 +56,9 @@ const Payroll = () => {
   const reopenPeriod = useReopenPayrollPeriod();
   const deletePeriod = useDeletePayrollPeriod();
   const { isAdmin } = useAuth();
+  const canViewPayData = usePermission("view_pay_data");
+  const canRevealSensitive = usePermission("reveal_sensitive");
+  const { data: payrollPrefs } = useTenantPreferences("payroll_display", PAYROLL_DISPLAY_DEFAULTS);
   const { sendNotification } = useNotifications();
   const { data: companySettings } = useCompanySettings();
 
