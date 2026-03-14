@@ -397,10 +397,14 @@ function AssignDocumentDialog({ document, open, onOpenChange }: {
 // ─── Completion Tracking Dashboard ───
 
 export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModuleId }: { highlightEmployeeId?: string; highlightModuleId?: string } = {}) {
-  const { data: assignments = [], isLoading } = useTrainingAssignments();
+  const { data: assignments = [], isLoading, isFetching } = useTrainingAssignments();
+  const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const highlightRef = useRef<HTMLDivElement>(null);
   const hasScrolled = useRef(false);
+  const [hasRefreshed, setHasRefreshed] = useState(false);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
   const highlightKey = highlightEmployeeId && highlightModuleId
     ? `${highlightEmployeeId}::${highlightModuleId}` : null;
@@ -410,6 +414,7 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
     if (highlightKey) {
       setStatusFilter("all");
       hasScrolled.current = false;
+      setHasRefreshed(false);
     }
   }, [highlightKey]);
 
@@ -422,13 +427,35 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
   useEffect(() => {
     if (highlightKey && matchExists && highlightRef.current && !hasScrolled.current) {
       hasScrolled.current = true;
-      // Small delay to let DOM settle after filter reset
       const t = setTimeout(() => {
         highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 150);
       return () => clearTimeout(t);
     }
   }, [highlightKey, matchExists, assignments]);
+
+  // Determine no-match state
+  type NoMatchState = "loading" | "not_found" | "scope_restricted" | null;
+  let noMatchState: NoMatchState = null;
+  if (highlightKey && !matchExists) {
+    if (isLoading || isFetching || isManualRefreshing) {
+      noMatchState = "loading";
+    } else if (!isAdmin) {
+      // Non-admin: could be scope restriction
+      noMatchState = "scope_restricted";
+    } else {
+      noMatchState = "not_found";
+    }
+  }
+
+  const handleRefresh = useCallback(async () => {
+    setIsManualRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["training_assignments"] });
+    // Wait for refetch to settle
+    await queryClient.refetchQueries({ queryKey: ["training_assignments"] });
+    setIsManualRefreshing(false);
+    setHasRefreshed(true);
+  }, [queryClient]);
 
   const counts = {
     all: assignments.length,
@@ -486,13 +513,65 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
         ))}
       </div>
 
-      {/* No-match notice for deep-links */}
-      {highlightKey && !isLoading && !matchExists && (
+      {/* Deep-link status banners */}
+      {noMatchState === "loading" && (
+        <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center gap-2">
+          <Loader2 className="h-4 w-4 text-muted-foreground animate-spin flex-shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            Loading assignment data…
+          </p>
+        </div>
+      )}
+
+      {noMatchState === "not_found" && (
         <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
-          <p className="text-xs text-warning">
-            The linked assignment could not be found — it may not have been created yet, or data is still loading.
-          </p>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-warning font-medium">Assignment not found</p>
+            <p className="text-[11px] text-warning/80 mt-0.5">
+              {hasRefreshed
+                ? "This assignment does not exist yet. It may need to be created from the Gaps tab first."
+                : "This assignment may not have been created yet. Try refreshing to check for recent changes."}
+            </p>
+          </div>
+          {!hasRefreshed && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 h-7 text-xs gap-1.5 border-warning/30 text-warning hover:bg-warning/10"
+              onClick={handleRefresh}
+              disabled={isManualRefreshing}
+            >
+              <RefreshCw className={cn("h-3 w-3", isManualRefreshing && "animate-spin")} />
+              Refresh
+            </Button>
+          )}
+        </div>
+      )}
+
+      {noMatchState === "scope_restricted" && (
+        <div className="rounded-lg border border-muted-foreground/20 bg-muted/30 p-3 flex items-center gap-2">
+          <ShieldAlert className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground font-medium">Assignment not visible</p>
+            <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+              {hasRefreshed
+                ? "This assignment is outside your branch scope, or it hasn't been created yet."
+                : "This employee may be outside your branch scope. Try refreshing to check for recent changes."}
+            </p>
+          </div>
+          {!hasRefreshed && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 h-7 text-xs gap-1.5"
+              onClick={handleRefresh}
+              disabled={isManualRefreshing}
+            >
+              <RefreshCw className={cn("h-3 w-3", isManualRefreshing && "animate-spin")} />
+              Refresh
+            </Button>
+          )}
         </div>
       )}
 
