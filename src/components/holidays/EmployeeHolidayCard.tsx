@@ -60,16 +60,16 @@ export function EmployeeHolidayCard({
     <div
       className={cn(
         "rounded-xl bg-card shadow-sm border border-border overflow-hidden",
-        "transition-all duration-300 animate-fade-in",
+        "transition-all duration-200 animate-fade-in",
         "hover:shadow-md hover:border-primary/20"
       )}
-      style={{ animationDelay: `${index * 50}ms` }}
+      style={{ animationDelay: `${Math.min(index, 6) * 30}ms` }}
     >
       {/* Header */}
-      <div className="p-5">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
-            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <Avatar className="h-10 w-10 ring-1 ring-background shadow-sm">
+            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-sm">
               {initials}
             </AvatarFallback>
           </Avatar>
