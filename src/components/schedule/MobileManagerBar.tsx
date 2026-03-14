@@ -1,28 +1,44 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Send, AlertTriangle, UserX } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Send, AlertTriangle, UserX, MoreVertical, Copy, FolderOpen, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MobileManagerBarProps {
   onBuildShift: () => void;
   onCopyDay?: () => void;
   onPublishDay?: () => void;
+  onCopyPreviousWeek?: () => void;
+  onLoadTemplate?: () => void;
+  onFindCover?: () => void;
   gapCount: number;
   unscheduledCount: number;
   hasUnpublished: boolean;
   isPublishing: boolean;
   department: string;
+  shiftCount?: number;
 }
 
 export function MobileManagerBar({
   onBuildShift,
   onPublishDay,
+  onCopyPreviousWeek,
+  onLoadTemplate,
+  onFindCover,
   gapCount,
   unscheduledCount,
   hasUnpublished,
   isPublishing,
   department,
+  shiftCount = 0,
 }: MobileManagerBarProps) {
+  const hasSecondaryActions = onCopyPreviousWeek || onLoadTemplate;
+
   return (
     <div className="flex items-center gap-2 px-3 py-2.5 bg-card border-b border-border overflow-x-auto no-scrollbar">
       {/* Primary CTA — large thumb target */}
@@ -48,6 +64,43 @@ export function MobileManagerBar({
           <Send className="h-3.5 w-3.5" />
           Publish
         </Button>
+      )}
+
+      {/* Quick actions overflow — Copy / Template / Find Cover */}
+      {hasSecondaryActions && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0 rounded-full">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[200px]">
+            {shiftCount === 0 && onCopyPreviousWeek && (
+              <DropdownMenuItem onClick={onCopyPreviousWeek} className="gap-2 py-3">
+                <Copy className="h-4 w-4" />
+                Copy last week
+              </DropdownMenuItem>
+            )}
+            {shiftCount === 0 && onLoadTemplate && (
+              <DropdownMenuItem onClick={onLoadTemplate} className="gap-2 py-3">
+                <FolderOpen className="h-4 w-4" />
+                Load template
+              </DropdownMenuItem>
+            )}
+            {shiftCount > 0 && onCopyPreviousWeek && (
+              <DropdownMenuItem onClick={onCopyPreviousWeek} className="gap-2 py-3">
+                <Copy className="h-4 w-4" />
+                Copy last week
+              </DropdownMenuItem>
+            )}
+            {shiftCount > 0 && onLoadTemplate && (
+              <DropdownMenuItem onClick={onLoadTemplate} className="gap-2 py-3">
+                <FolderOpen className="h-4 w-4" />
+                Load template
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
 
       {/* Spacer pushes badges right */}

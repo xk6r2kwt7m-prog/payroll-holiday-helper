@@ -52,7 +52,18 @@ export function DayView({
       </CardHeader>
       <CardContent className="space-y-2">
         {shifts.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-6 text-center">No shifts scheduled</p>
+          <div className="py-8 text-center space-y-2">
+            <p className="text-sm text-muted-foreground">No shifts scheduled for this day</p>
+            {isAdmin && (
+              <Button size="sm" variant="outline" onClick={onAddClick} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" />
+                Add first shift
+              </Button>
+            )}
+            {!isAdmin && (
+              <p className="text-xs text-muted-foreground/70">Check back once your manager publishes the rota.</p>
+            )}
+          </div>
         ) : (
           shifts.map((shift: any) => (
             <div

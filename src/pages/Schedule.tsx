@@ -213,12 +213,29 @@ export default function Schedule() {
           <MobileManagerBar
             onBuildShift={() => { setWizardInitialDay(null); setWizardOpen(true); }}
             onPublishDay={() => setPublishDrawerOpen(true)}
+            onCopyPreviousWeek={() => setCopyPrevOpen(true)}
+            onLoadTemplate={() => setLoadTemplateOpen(true)}
             gapCount={filterStats.gapCount}
             unscheduledCount={filterStats.noShiftCount}
             hasUnpublished={schedule.hasUnpublished}
             isPublishing={schedule.isPublishing}
             department={selectedDept}
+            shiftCount={schedule.branchDeptShifts.length}
           />
+        )}
+
+        {/* Mobile coverage strip */}
+        {isMobile && (schedule.shifts?.length ?? 0) > 0 && selectedDept !== "All" && (
+          <div className="px-3 py-2 border-b border-border bg-card">
+            <ScheduleSummary
+              shifts={schedule.shifts || []}
+              weekDays={schedule.weekDays}
+              branch={selectedBranch}
+              department={selectedDept === "All" ? "FOH" : selectedDept}
+              employees={activeEmployees}
+              complianceWarningCount={complianceWarnings.length}
+            />
+          </div>
         )}
 
         {/* Main schedule area */}
@@ -229,11 +246,13 @@ export default function Schedule() {
               icon={CalendarClock}
               title="No shifts this week"
               description={isAdmin
-                ? "Start building your rota by adding shifts, copying from last week, or loading a template."
+                ? isMobile
+                  ? "Tap Build Shift above to start, or use the ⋮ menu to copy last week or load a saved template."
+                  : "Start building your rota by adding shifts, copying from last week, or loading a template."
                 : "No shifts have been published for this week yet. Check back later or contact your manager."
               }
-              actionLabel={isAdmin ? "Build Shift" : undefined}
-              onAction={isAdmin ? () => { setWizardInitialDay(null); setWizardOpen(true); } : undefined}
+              actionLabel={isAdmin && !isMobile ? "Build Shift" : undefined}
+              onAction={isAdmin && !isMobile ? () => { setWizardInitialDay(null); setWizardOpen(true); } : undefined}
             />
           )}
 
