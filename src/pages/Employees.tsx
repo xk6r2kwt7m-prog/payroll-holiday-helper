@@ -286,14 +286,14 @@ const Employees = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2 justify-between">
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 justify-between min-w-0">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-none min-w-0 flex-1">
               {Object.entries(DEPT_CONFIG).map(([key, config]) => (
                 <button
                   key={key}
                   onClick={() => handleDepartmentChange(key as Department | "all")}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap",
+                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap shrink-0",
                     departmentFilter === key
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -304,7 +304,7 @@ const Employees = () => {
               ))}
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {isSelectionMode && (
                 <Button variant="ghost" size="sm" onClick={toggleSelectAll} className="text-xs h-7 px-2">
                   {allFilteredSelected ? t("common.deselect") : t("common.select_all")}
@@ -314,7 +314,7 @@ const Employees = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
                     <ArrowUpDown className="h-3 w-3 mr-1" />
-                    {SORT_OPTIONS[sortBy]}
+                    <span className="hidden sm:inline">{SORT_OPTIONS[sortBy]}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

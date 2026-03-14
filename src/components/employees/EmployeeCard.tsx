@@ -181,17 +181,17 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
 
       {/* Row 3: Admin quick actions */}
       {isAdmin && (
-        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border">
+        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border min-w-0">
           <EmployeeFormDialog
             employee={employee}
             trigger={
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 text-xs h-8"
+                className="flex-1 text-xs h-8 min-w-0"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Edit2 className="h-3 w-3 mr-1" /> Edit
+                <Edit2 className="h-3 w-3 mr-1 shrink-0" /> <span className="truncate">Edit</span>
               </Button>
             }
           />
@@ -199,7 +199,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); onViewDetails(employee); }}
-            className="text-xs h-8 px-2.5"
+            className="text-xs h-8 px-2.5 shrink-0"
           >
             <Eye className="h-3 w-3" />
           </Button>
