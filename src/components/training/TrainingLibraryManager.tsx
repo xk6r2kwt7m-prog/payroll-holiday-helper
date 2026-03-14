@@ -204,16 +204,38 @@ function AddDocumentDialog() {
         <div className="space-y-4 pt-2">
           <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Allergen Awareness Guide" /></div>
           <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Brief description..." rows={2} /></div>
-          <div>
-            <Label>Category</Label>
-            <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {LIBRARY_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
           <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Category</Label>
+              <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LIBRARY_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Content Type</Label>
+              <Select value={form.content_type} onValueChange={v => setForm(f => ({ ...f, content_type: v as any }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="document">Document</SelectItem>
+                  <SelectItem value="internal_page">Internal Page</SelectItem>
+                  <SelectItem value="external_link">External Link</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {form.content_type !== "document" && (
+            <div>
+              <Label>{form.content_type === "internal_page" ? "Page Route" : "URL"}</Label>
+              <Input
+                value={form.content_url}
+                onChange={e => setForm(f => ({ ...f, content_url: e.target.value }))}
+                placeholder={form.content_type === "internal_page" ? "/foh/service" : "https://..."}
+              />
+            </div>
+          )}
             <div><Label>Effective Date</Label><Input type="date" value={form.effective_date} onChange={e => setForm(f => ({ ...f, effective_date: e.target.value }))} /></div>
             <div><Label>Expiry Date</Label><Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} /></div>
           </div>
