@@ -350,8 +350,8 @@ export function RotaGrid({
   return (
     <>
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full border-collapse">
+        <div className="overflow-x-auto no-scrollbar px-1 sm:px-2">
+          <table className="w-full border-collapse table-fixed">
              <thead>
               <tr>
                 <th className={cn(
