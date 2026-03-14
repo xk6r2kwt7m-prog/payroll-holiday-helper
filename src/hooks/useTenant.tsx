@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { ModuleKey } from "@/components/ProtectedRoute";
@@ -11,6 +11,20 @@ interface TenantMembership {
 
 export type EnabledModules = Record<ModuleKey, boolean>;
 
+/** Full tenant data cached from initial fetch, used for synchronous selection. */
+interface CachedTenantData {
+  tenant_id: string;
+  role: string;
+  tenants: {
+    id: string;
+    name: string;
+    country: string;
+    timezone: string;
+    status: string;
+    enabled_modules: any;
+  };
+}
+
 interface TenantContextType {
   tenantId: string | null;
   tenantName: string | null;
@@ -20,14 +34,13 @@ interface TenantContextType {
   isPlatformAdmin: boolean;
   enabledModules: EnabledModules | null;
   loading: boolean;
-  /** True only after tenant membership lookup has fully completed. */
   tenantResolved: boolean;
-  /** Number of active memberships found; -1 = unresolved. */
   membershipCount: number;
   showTenantPicker: boolean;
   availableTenants: TenantMembership[];
   setTenantId: (id: string) => void;
-  selectTenant: (tenantId: string) => void;
+  /** Select a tenant — synchronous when data is cached, async fallback otherwise. */
+  selectTenant: (tenantId: string) => Promise<void>;
 }
 
 const DEFAULT_MODULES: EnabledModules = {
@@ -51,11 +64,14 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [enabledModules, setEnabledModules] = useState<EnabledModules | null>(null);
   const [loading, setLoading] = useState(true);
   const [tenantResolved, setTenantResolved] = useState(false);
-  const [membershipCount, setMembershipCount] = useState(-1); // -1 = unresolved
+  const [membershipCount, setMembershipCount] = useState(-1);
   const [showTenantPicker, setShowTenantPicker] = useState(false);
   const [availableTenants, setAvailableTenants] = useState<TenantMembership[]>([]);
 
-  const applyTenantData = (tenant: any, memberTenantId: string) => {
+  // Cache full membership data so selectTenant can work synchronously
+  const cachedMemberships = useRef<CachedTenantData[]>([]);
+
+  const applyTenantData = useCallback((tenant: any, memberTenantId: string) => {
     setTenantId(memberTenantId);
     setTenantName(tenant?.name || null);
     setTenantCountry(tenant?.country || null);
@@ -74,9 +90,32 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     } else {
       setEnabledModules(DEFAULT_MODULES);
     }
-  };
+  }, []);
 
+  /**
+   * Select a tenant from the picker.
+   * Uses cached membership data for instant state application.
+   * Falls back to a DB query only if cache miss.
+   */
   const selectTenant = useCallback(async (selectedTenantId: string) => {
+    console.log("[TenantProvider] selectTenant called:", selectedTenantId);
+
+    // 1. Try cached data first (synchronous path)
+    const cached = cachedMemberships.current.find(
+      (m) => m.tenant_id === selectedTenantId
+    );
+
+    if (cached) {
+      console.log("[TenantProvider] selectTenant: using cached data for", (cached.tenants as any)?.name);
+      applyTenantData(cached.tenants, cached.tenant_id);
+      setShowTenantPicker(false);
+      setTenantResolved(true);
+      localStorage.setItem("uglo_selected_tenant", selectedTenantId);
+      return;
+    }
+
+    // 2. Fallback: fetch from DB (should rarely happen)
+    console.log("[TenantProvider] selectTenant: cache miss, fetching from DB");
     const { data: membership } = await supabase
       .from("tenant_members")
       .select("tenant_id, tenants(id, name, country, timezone, status, enabled_modules)")
@@ -88,19 +127,23 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     if (membership) {
       applyTenantData(membership.tenants as any, membership.tenant_id);
       setShowTenantPicker(false);
+      setTenantResolved(true);
       localStorage.setItem("uglo_selected_tenant", selectedTenantId);
+      console.log("[TenantProvider] selectTenant: applied from DB");
+    } else {
+      console.error("[TenantProvider] selectTenant: tenant not found:", selectedTenantId);
     }
-  }, [user]);
+  }, [user, applyTenantData]);
 
   useEffect(() => {
-    // While auth is still bootstrapping, stay in loading — do NOT touch localStorage
+    // While auth is still bootstrapping, stay in loading
     if (authLoading) {
       setLoading(true);
       return;
     }
 
     if (!user) {
-      // Confirmed logout — clear everything including localStorage
+      // Confirmed logout
       setTenantId(null);
       setTenantName(null);
       setTenantCountry(null);
@@ -112,6 +155,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setMembershipCount(0);
       setShowTenantPicker(false);
       setAvailableTenants([]);
+      cachedMemberships.current = [];
       setLoading(false);
       localStorage.removeItem("uglo_selected_tenant");
       console.log("[TenantProvider] Auth resolved: no user → cleared state + localStorage");
@@ -123,37 +167,42 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setTenantResolved(false);
     setMembershipCount(-1);
 
+    let cancelled = false;
+
     const fetchTenant = async () => {
       try {
         console.log("[TenantProvider] Resolving workspace for user:", user.id);
 
-        // Check platform admin status
         const { data: platformAdmin } = await supabase
           .from("platform_admins")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle();
 
+        if (cancelled) return;
         setIsPlatformAdmin(!!platformAdmin);
 
-        // Get ALL active tenant memberships
         const { data: memberships, error: membershipError } = await supabase
           .from("tenant_members")
           .select("tenant_id, role, tenants(id, name, country, timezone, status, enabled_modules)")
           .eq("user_id", user.id)
           .eq("is_active", true);
 
+        if (cancelled) return;
+
         if (membershipError) {
           console.error("[TenantProvider] Membership lookup failed:", membershipError);
-          // On error, mark resolved but with -1 count — ProtectedRoute will show loading
           setMembershipCount(-1);
-          setTenantResolved(false); // keep unresolved so we don't redirect to onboard
+          setTenantResolved(false);
           setLoading(false);
           return;
         }
 
         const count = memberships?.length ?? 0;
         setMembershipCount(count);
+
+        // Cache full membership data for synchronous selection later
+        cachedMemberships.current = (memberships || []) as unknown as CachedTenantData[];
 
         const savedTenantId = localStorage.getItem("uglo_selected_tenant");
 
@@ -178,7 +227,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
           localStorage.setItem("uglo_selected_tenant", m.tenant_id);
           setShowTenantPicker(false);
         } else {
-          // Multiple tenants
           const savedMembership = savedTenantId
             ? memberships!.find((m) => m.tenant_id === savedTenantId)
             : null;
@@ -207,15 +255,16 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         setTenantResolved(true);
       } catch (err) {
         console.error("[TenantProvider] Unexpected error:", err);
-        // Keep unresolved to avoid false redirect
         setTenantResolved(false);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     fetchTenant();
-  }, [user, authLoading]);
+
+    return () => { cancelled = true; };
+  }, [user, authLoading, applyTenantData]);
 
   return (
     <TenantContext.Provider
@@ -249,10 +298,6 @@ export function useTenant() {
   return context;
 }
 
-/**
- * Helper to get tenant_id for insert operations.
- * Throws if no tenant is set.
- */
 export function useRequiredTenantId(): string {
   const { tenantId } = useTenant();
   if (!tenantId) {
