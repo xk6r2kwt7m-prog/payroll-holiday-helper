@@ -109,14 +109,11 @@ export function TenantProvider({ children }: { children: ReactNode }) {
    * Falls back to a DB query only if cache miss.
    */
   const selectTenant = useCallback(async (selectedTenantId: string) => {
-    console.log("[TenantProvider] selectTenant called:", selectedTenantId);
-
     const cached = cachedMemberships.current.find(
       (m) => m.tenant_id === selectedTenantId
     );
 
     if (cached) {
-      console.log("[TenantProvider] selectTenant: using cached data for", (cached.tenants as any)?.name);
       commitTenantSelection(cached.tenant_id, cached.tenants);
       return;
     }
