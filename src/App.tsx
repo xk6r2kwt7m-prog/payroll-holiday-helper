@@ -46,6 +46,10 @@ import LabourCostPreview from "./pages/LabourCostPreview";
 import ShiftMarketplace from "./pages/ShiftMarketplace";
 import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 import NotFound from "./pages/NotFound";
+import FohServiceTraining from "./pages/FohServiceTraining";
+import FohAllergyTraining from "./pages/FohAllergyTraining";
+import FohUpsellingTraining from "./pages/FohUpsellingTraining";
+import FohPrintableTraining from "./pages/FohPrintableTraining";
 import { CommandPalette } from "@/components/CommandPalette";
 
 const queryClient = new QueryClient();
@@ -127,6 +131,12 @@ const App = () => (
             <Route path="/locations/:branch" element={<ProtectedRoute requiredRole="admin"><LocationDashboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute requiredRole="admin"><Settings /></ProtectedRoute>} />
             <Route path="/talent-pool" element={<ProtectedRoute requiredRole="staff"><TalentPool /></ProtectedRoute>} />
+
+            {/* FOH Training — staff+ */}
+            <Route path="/foh/service" element={<ProtectedRoute requiredRole="staff"><FohServiceTraining /></ProtectedRoute>} />
+            <Route path="/foh/allergy" element={<ProtectedRoute requiredRole="staff"><FohAllergyTraining /></ProtectedRoute>} />
+            <Route path="/foh/upselling" element={<ProtectedRoute requiredRole="staff"><FohUpsellingTraining /></ProtectedRoute>} />
+            <Route path="/foh/print" element={<ProtectedRoute requiredRole="staff"><FohPrintableTraining /></ProtectedRoute>} />
 
             {/* Platform admin — platform owner only */}
             <Route path="/platform-admin" element={<ProtectedRoute platformAdminOnly><PlatformAdmin /></ProtectedRoute>} />
