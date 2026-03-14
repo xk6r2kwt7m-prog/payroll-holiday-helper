@@ -129,6 +129,7 @@ export function useUpdateLibraryItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<TrainingLibraryItem> }) => {
+      await assertPermission("manage_training", null);
       const { error } = await supabase
         .from("training_library" as any)
         .update(updates as any)
