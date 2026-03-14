@@ -381,25 +381,29 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handleClearAssignments = useCallback(async () => {
     if (!confirm("Clear all employee assignments? This turns them into open shifts.")) return;
-    const assigned = branchDeptShifts.filter((s: any) => s.employee_id);
-    const ids = assigned.map((s: any) => s.id);
-    if (ids.length === 0) return;
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const assigned = branchDeptShifts.filter((s: any) => s.employee_id);
+      const ids = assigned.map((s: any) => s.id);
+      if (ids.length === 0) return;
 
-    // Capture published+assigned shifts before clearing
-    const publishedAssigned = assigned.filter((s: any) => s.is_published);
+      const publishedAssigned = assigned.filter((s: any) => s.is_published);
 
-    await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { employee_id: null, status: "open" as const } });
-    toast.success(`Cleared ${ids.length} assignments`);
+      await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { employee_id: null, status: "open" as const } });
+      toast.success(`Cleared ${ids.length} assignments`);
 
-    if (publishedAssigned.length > 0) {
-      await notifyPublishedShiftStaff(
-        publishedAssigned,
-        "Shift assignment removed",
-        ({ date }) => `Your ${date} at ${selectedBranch} is no longer assigned to you. Check your schedule.`,
-        "shift_changed"
-      );
+      if (publishedAssigned.length > 0) {
+        await notifyPublishedShiftStaff(
+          publishedAssigned,
+          "Shift assignment removed",
+          ({ date }) => `Your ${date} at ${selectedBranch} is no longer assigned to you. Check your schedule.`,
+          "shift_changed"
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message);
     }
-  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff]);
+  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff, tenantId]);
 
   const handleRemoveEmptyShifts = useCallback(async () => {
     const emptyShifts = branchDeptShifts.filter((s: any) => !s.employee_id);
