@@ -7,6 +7,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { PrivacyShieldProvider } from "@/hooks/usePrivacyShield";
 import { TenantProvider } from "@/hooks/useTenant";
 import { I18nProvider } from "@/hooks/useI18n";
+import { ImpersonationProvider } from "@/hooks/useImpersonation";
+import { ImpersonationBanner } from "@/components/platform/ImpersonationBanner";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Employees from "./pages/Employees";
