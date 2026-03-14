@@ -1,16 +1,16 @@
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
-import { GraduationCap, BookOpen } from "lucide-react";
+import { GraduationCap, BookOpen, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsList, TabsTrigger, Tabs } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ReportFilters } from "./ReportFilters";
 import { ReportSummaryBar } from "./ReportSummaryBar";
 import { useTrainingRecords, CERTIFICATION_TYPES } from "@/hooks/useTrainingRecords";
-import { useTrainingAssignments } from "@/hooks/useTrainingLibrary";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useTrainingAssignments, useTrainingLibrary, type TrainingLibraryItem } from "@/hooks/useTrainingLibrary";
+import { useEmployees, type Employee } from "@/hooks/useEmployees";
 import { useManagerScope } from "@/hooks/useManagerScope";
 import { exportToCsv } from "@/lib/csv-export";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,101 @@ function getAssignmentStatus(a: any): { status: "completed" | "overdue" | "in_pr
   return { status: "assigned", label: "Assigned", color: "text-muted-foreground" };
 }
 
+// ─── Gap detection ───
+
+interface GapRow {
+  employeeId: string;
+  employeeName: string;
+  department: string;
+  moduleId: string;
+  moduleTitle: string;
+  category: string;
+  countsTowardReadiness: boolean;
+  gapStatus: "not_assigned" | "assigned_incomplete" | "overdue" | "completed";
+  gapColor: string;
+  gapLabel: string;
+}
+
+function doesModuleApply(item: TrainingLibraryItem, employee: Employee): boolean {
+  const deptMatch = !item.target_departments?.length || item.target_departments.includes(employee.department);
+  // target_roles and target_locations are checked if present
+  // For now employees don't have a "role" field in the employee table for targeting,
+  // so we only enforce department + location (branch via employee_branches not available here, skip)
+  return deptMatch;
+}
+
+function buildGapRows(
+  libraryItems: TrainingLibraryItem[],
+  employees: Employee[],
+  assignments: any[]
+): GapRow[] {
+  const rows: GapRow[] = [];
+  // Only consider active required items (has target criteria or counts_toward_readiness)
+  const requiredItems = libraryItems.filter(i => i.is_active && (i.target_departments?.length > 0 || i.counts_toward_readiness));
+
+  for (const emp of employees) {
+    for (const item of requiredItems) {
+      if (!doesModuleApply(item, emp)) continue;
+
+      const empAssignments = assignments.filter(
+        (a: any) => a.employee_id === emp.id && a.document_id === item.id && a.status !== "cancelled"
+      );
+
+      let gapStatus: GapRow["gapStatus"];
+      let gapColor: string;
+      let gapLabel: string;
+
+      if (empAssignments.length === 0) {
+        gapStatus = "not_assigned";
+        gapColor = "text-destructive border-destructive/30";
+        gapLabel = "Not Assigned";
+      } else {
+        const latest = empAssignments[0]; // assignments ordered by assigned_at desc
+        if (latest.completed_at) {
+          gapStatus = "completed";
+          gapColor = "text-success border-success/30";
+          gapLabel = "Completed";
+        } else if (latest.due_date) {
+          const due = new Date(latest.due_date);
+          due.setHours(0, 0, 0, 0);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (due < today) {
+            gapStatus = "overdue";
+            gapColor = "text-destructive border-destructive/30";
+            gapLabel = "Overdue";
+          } else {
+            gapStatus = "assigned_incomplete";
+            gapColor = "text-warning border-warning/30";
+            gapLabel = "Incomplete";
+          }
+        } else {
+          gapStatus = "assigned_incomplete";
+          gapColor = "text-warning border-warning/30";
+          gapLabel = "Incomplete";
+        }
+      }
+
+      rows.push({
+        employeeId: emp.id,
+        employeeName: `${emp.forename} ${emp.surname}`,
+        department: emp.department,
+        moduleId: item.id,
+        moduleTitle: item.title,
+        category: item.category,
+        countsTowardReadiness: item.counts_toward_readiness,
+        gapStatus,
+        gapColor,
+        gapLabel,
+      });
+    }
+  }
+
+  return rows;
+}
+
+// ─── Main Component ───
+
 export function TrainingComplianceReport() {
   const [tab, setTab] = useState("certifications");
   const [dept, setDept] = useState("all");
@@ -52,6 +147,7 @@ export function TrainingComplianceReport() {
 
   const { data: records = [], isLoading: certLoading } = useTrainingRecords();
   const { data: assignments = [], isLoading: assignLoading } = useTrainingAssignments();
+  const { data: libraryItems = [], isLoading: libLoading } = useTrainingLibrary();
   const { data: employees = [] } = useEmployees();
   const { filterByScope, filterEmployees } = useManagerScope();
 
@@ -120,6 +216,39 @@ export function TrainingComplianceReport() {
     return { total, completed, overdue, pending: total - completed - overdue };
   }, [assignments, filterByScope]);
 
+  // ─── Gaps tab ───
+
+  const allGapRows = useMemo(() => {
+    return buildGapRows(libraryItems, scopedEmployees, assignments as any[]);
+  }, [libraryItems, scopedEmployees, assignments]);
+
+  const filteredGaps = useMemo(() => {
+    let list = allGapRows;
+    if (dept !== "all") list = list.filter(r => r.department === dept);
+    if (empId !== "all") list = list.filter(r => r.employeeId === empId);
+    if (statusFilter !== "all") {
+      list = list.filter(r => {
+        if (statusFilter === "not_assigned") return r.gapStatus === "not_assigned";
+        if (statusFilter === "overdue") return r.gapStatus === "overdue";
+        if (statusFilter === "incomplete") return r.gapStatus === "assigned_incomplete";
+        if (statusFilter === "completed") return r.gapStatus === "completed";
+        return true;
+      });
+    }
+    return list;
+  }, [allGapRows, dept, empId, statusFilter]);
+
+  const gapSummary = useMemo(() => {
+    const total = allGapRows.length;
+    const notAssigned = allGapRows.filter(r => r.gapStatus === "not_assigned").length;
+    const overdue = allGapRows.filter(r => r.gapStatus === "overdue").length;
+    const incomplete = allGapRows.filter(r => r.gapStatus === "assigned_incomplete").length;
+    const completed = allGapRows.filter(r => r.gapStatus === "completed").length;
+    return { total, notAssigned, overdue, incomplete, completed };
+  }, [allGapRows]);
+
+  // ─── Shared ───
+
   const selectedEmpName = useMemo(() => {
     if (empId === "all") return undefined;
     const e = employees.find((x) => x.id === empId);
@@ -155,19 +284,37 @@ export function TrainingComplianceReport() {
     ], filteredAssignments);
   };
 
-  const isLoading = certLoading || assignLoading;
-  const isCertTab = tab === "certifications";
+  const handleExportGaps = () => {
+    exportToCsv("training_gaps_report", [
+      { header: "Employee", accessor: (r: GapRow) => r.employeeName },
+      { header: "Department", accessor: (r: GapRow) => r.department },
+      { header: "Module", accessor: (r: GapRow) => r.moduleTitle },
+      { header: "Category", accessor: (r: GapRow) => r.category },
+      { header: "Status", accessor: (r: GapRow) => r.gapLabel },
+      { header: "Counts Toward Readiness", accessor: (r: GapRow) => r.countsTowardReadiness ? "Yes" : "No" },
+    ], filteredGaps);
+  };
 
-  // Status filter options differ per tab
+  const isLoading = certLoading || assignLoading || libLoading;
+  const isGapsTab = tab === "gaps";
+  const isCertTab = tab === "certifications";
+  const isAssignTab = tab === "assignments";
+
   const statusOptions = isCertTab
     ? [{ value: "all", label: "All Statuses" }, { value: "overdue", label: "Overdue" }, { value: "expiring", label: "Expiring Soon" }, { value: "valid", label: "Valid" }]
-    : [{ value: "all", label: "All Statuses" }, { value: "overdue", label: "Overdue" }, { value: "in_progress", label: "In Progress" }, { value: "completed", label: "Completed" }];
+    : isAssignTab
+    ? [{ value: "all", label: "All Statuses" }, { value: "overdue", label: "Overdue" }, { value: "in_progress", label: "In Progress" }, { value: "completed", label: "Completed" }]
+    : [{ value: "all", label: "All Statuses" }, { value: "not_assigned", label: "Not Assigned" }, { value: "overdue", label: "Overdue" }, { value: "incomplete", label: "Incomplete" }, { value: "completed", label: "Completed" }];
 
-  // Reset status filter on tab change
   const handleTabChange = (t: string) => {
     setTab(t);
     setStatusFilter("all");
   };
+
+  const activeRowCount = isCertTab ? filteredCerts.length : isAssignTab ? filteredAssignments.length : filteredGaps.length;
+  const activeExport = isCertTab ? handleExportCerts : isAssignTab ? handleExportAssignments : handleExportGaps;
+
+  const actionableGaps = gapSummary.notAssigned + gapSummary.overdue + gapSummary.incomplete;
 
   return (
     <Card>
@@ -184,6 +331,10 @@ export function TrainingComplianceReport() {
               <BookOpen className="h-3.5 w-3.5" /> Modules
               {assignSummary.total > 0 && <Badge variant="secondary" className="text-[9px] h-4 px-1 ml-0.5">{assignSummary.total}</Badge>}
             </TabsTrigger>
+            <TabsTrigger value="gaps" className="text-xs gap-1">
+              <AlertTriangle className="h-3.5 w-3.5" /> Gaps
+              {actionableGaps > 0 && <Badge variant="destructive" className="text-[9px] h-4 px-1 ml-0.5">{actionableGaps}</Badge>}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -196,12 +347,21 @@ export function TrainingComplianceReport() {
             <Badge variant="outline" className="text-success border-success/30">{certSummary.valid} valid</Badge>
           </div>
         )}
-        {!isLoading && !isCertTab && assignSummary.total > 0 && (
+        {!isLoading && isAssignTab && assignSummary.total > 0 && (
           <div className="flex gap-2 flex-wrap text-xs">
             <Badge variant="outline" className="text-foreground">{assignSummary.total} total</Badge>
             {assignSummary.overdue > 0 && <Badge variant="outline" className="text-destructive border-destructive/30">{assignSummary.overdue} overdue</Badge>}
             {assignSummary.pending > 0 && <Badge variant="outline" className="text-warning border-warning/30">{assignSummary.pending} pending</Badge>}
             <Badge variant="outline" className="text-success border-success/30">{assignSummary.completed} completed</Badge>
+          </div>
+        )}
+        {!isLoading && isGapsTab && gapSummary.total > 0 && (
+          <div className="flex gap-2 flex-wrap text-xs">
+            <Badge variant="outline" className="text-foreground">{gapSummary.total} total</Badge>
+            {gapSummary.notAssigned > 0 && <Badge variant="outline" className="text-destructive border-destructive/30">{gapSummary.notAssigned} not assigned</Badge>}
+            {gapSummary.overdue > 0 && <Badge variant="outline" className="text-destructive border-destructive/30">{gapSummary.overdue} overdue</Badge>}
+            {gapSummary.incomplete > 0 && <Badge variant="outline" className="text-warning border-warning/30">{gapSummary.incomplete} incomplete</Badge>}
+            <Badge variant="outline" className="text-success border-success/30">{gapSummary.completed} completed</Badge>
           </div>
         )}
 
@@ -213,9 +373,9 @@ export function TrainingComplianceReport() {
             employees={employeeOptions}
             selectedEmployeeId={empId}
             onEmployeeChange={setEmpId}
-            onExport={isCertTab ? handleExportCerts : handleExportAssignments}
-            exportDisabled={isCertTab ? filteredCerts.length === 0 : filteredAssignments.length === 0}
-            rowCount={isCertTab ? filteredCerts.length : filteredAssignments.length}
+            onExport={activeExport}
+            exportDisabled={activeRowCount === 0}
+            rowCount={activeRowCount}
           />
           <select
             value={statusFilter}
@@ -230,7 +390,7 @@ export function TrainingComplianceReport() {
 
         {!isLoading && (
           <ReportSummaryBar
-            rowCount={isCertTab ? filteredCerts.length : filteredAssignments.length}
+            rowCount={activeRowCount}
             department={dept}
             employeeName={selectedEmpName}
             extra={statusFilter !== "all" ? statusFilter : undefined}
@@ -282,7 +442,7 @@ export function TrainingComplianceReport() {
               )}
             </div>
           )
-        ) : (
+        ) : isAssignTab ? (
           /* ─── Assignments Table ─── */
           filteredAssignments.length === 0 ? (
             <EmptyState icon={BookOpen} title="No training assignments" description="No assignments match your filters." compact />
@@ -328,6 +488,44 @@ export function TrainingComplianceReport() {
               </Table>
               {filteredAssignments.length > 200 && (
                 <p className="text-xs text-muted-foreground text-center mt-2">Showing 200 of {filteredAssignments.length}. Export CSV for full data.</p>
+              )}
+            </div>
+          )
+        ) : (
+          /* ─── Gaps Table ─── */
+          filteredGaps.length === 0 ? (
+            <EmptyState icon={AlertTriangle} title="No training gaps" description="All required modules are assigned and completed, or no filters match." compact />
+          ) : (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Module</TableHead>
+                    <TableHead className="hidden sm:table-cell">Category</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredGaps.slice(0, 200).map((g, i) => (
+                    <TableRow key={`${g.employeeId}-${g.moduleId}`}>
+                      <TableCell className="font-medium text-xs">{g.employeeName}</TableCell>
+                      <TableCell className="text-xs">
+                        <span>{g.moduleTitle}</span>
+                        {g.countsTowardReadiness && (
+                          <span className="block text-[9px] text-muted-foreground">Blocks readiness</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-xs capitalize">{g.category}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn("text-[10px]", g.gapColor)}>{g.gapLabel}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {filteredGaps.length > 200 && (
+                <p className="text-xs text-muted-foreground text-center mt-2">Showing 200 of {filteredGaps.length}. Export CSV for full data.</p>
               )}
             </div>
           )
