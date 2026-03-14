@@ -249,7 +249,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
             : null;
 
           if (savedMembership) {
-            console.log("[TenantProvider] Decision: Restored saved tenant →", (savedMembership.tenants as any)?.name);
+            
             commitTenantSelection(savedMembership.tenant_id, savedMembership.tenants as any);
           } else {
             if (savedTenantId) {
