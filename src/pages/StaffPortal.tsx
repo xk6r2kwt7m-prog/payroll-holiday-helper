@@ -21,7 +21,7 @@ import { StaffTrainingView } from "@/components/training/StaffTrainingView";
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
 export default function StaffPortal() {
-  const { t } = useI18n();
+  const { user, signOut } = useAuth();
   const { user, signOut } = useAuth();
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
