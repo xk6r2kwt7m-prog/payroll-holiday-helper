@@ -3,8 +3,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Calendar, Clock, MapPin, FileText,
-  Pencil, Trash2, Copy, ArrowRightLeft,
+  CalendarDays, Clock, MapPin, FileText,
+  Pencil, Trash2, Copy,
   UserPlus, UserMinus, Check,
 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
