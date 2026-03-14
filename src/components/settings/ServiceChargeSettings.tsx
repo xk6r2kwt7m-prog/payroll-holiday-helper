@@ -20,6 +20,7 @@ import {
   useSaveEmployeeRate,
   useDeleteEmployeeRate,
 } from "@/hooks/useServiceCharge";
+import { ServiceChargePreview } from "@/components/settings/ServiceChargePreview";
 import { useLocationSettings } from "@/hooks/useLocationSettings";
 import { useEmployees } from "@/hooks/useEmployees";
 import { format } from "date-fns";
