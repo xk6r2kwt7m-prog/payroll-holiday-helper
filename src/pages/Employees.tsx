@@ -199,9 +199,9 @@ const Employees = () => {
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                <Users className="h-4 w-4 text-primary" />
+            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 shrink-0">
+                <Users className="h-4 w-4 text-muted-foreground" />
               </div>
               {t("employees.people")}
             </h1>
@@ -223,7 +223,7 @@ const Employees = () => {
         </div>
 
         {/* Status Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
           {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
             if (status === "archived" && !canManageLifecycle) return null;
             const count = counts[status];
@@ -234,15 +234,15 @@ const Employees = () => {
                 key={status}
                 onClick={() => setStatusFilter(status)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap shrink-0",
-                  isActive ? config.style + " shadow-sm" : "bg-card text-muted-foreground border-border hover:border-primary/20"
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap shrink-0",
+                  isActive ? config.style + " shadow-sm" : "bg-card text-muted-foreground border-border/60 hover:border-border"
                 )}
               >
-                <span>{config.emoji}</span>
+                <span className="text-sm">{config.emoji}</span>
                 <span>{config.label}</span>
                 <span className={cn(
-                  "ml-0.5 tabular-nums font-bold",
-                  isActive ? "" : "text-muted-foreground/60"
+                  "ml-0.5 tabular-nums font-semibold",
+                  isActive ? "" : "text-muted-foreground/50"
                 )}>
                   {count}
                 </span>
@@ -333,12 +333,12 @@ const Employees = () => {
         {isLoading && (
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="rounded-xl bg-card p-4 shadow-sm animate-pulse">
+              <div key={i} className="rounded-lg bg-card border border-border/50 p-4 animate-pulse">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-full bg-muted" />
+                  <div className="h-9 w-9 rounded-full bg-muted/60" />
                   <div className="flex-1">
-                    <div className="h-4 w-28 bg-muted rounded mb-1.5" />
-                    <div className="h-3 w-16 bg-muted rounded" />
+                    <div className="h-3.5 w-28 bg-muted/60 rounded mb-1.5" />
+                    <div className="h-3 w-16 bg-muted/60 rounded" />
                   </div>
                 </div>
               </div>
@@ -348,18 +348,18 @@ const Employees = () => {
 
         {/* Empty — no employees at all */}
         {!isLoading && employees.length === 0 && (
-          <div className="rounded-xl bg-card shadow-sm p-10 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
-              <UserPlus className="h-7 w-7 text-primary" />
+          <div className="rounded-lg bg-card border border-border/70 shadow-card p-10 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/50 mx-auto mb-4">
+              <UserPlus className="h-5.5 w-5.5 text-muted-foreground/50" />
             </div>
-            <h3 className="text-lg font-semibold text-card-foreground mb-2">{t("employees.no_employees_yet")}</h3>
-            <p className="text-muted-foreground mb-2 text-sm max-w-md mx-auto">
+            <h3 className="text-[15px] font-semibold text-foreground mb-1.5">{t("employees.no_employees_yet")}</h3>
+            <p className="text-[13px] text-muted-foreground mb-2 max-w-md mx-auto">
             {canEdit
                 ? t("employees.add_first_employee")
                 : "Your team hasn't been set up yet. Your admin will add employees soon."}
             </p>
             {canEdit && (
-              <p className="text-xs text-muted-foreground/70 mb-6 max-w-sm mx-auto">
+              <p className="text-xs text-muted-foreground/50 mb-6 max-w-sm mx-auto">
                 Employees are the foundation of scheduling, payroll, and leave management. Start by adding your first team member.
               </p>
             )}
@@ -369,9 +369,9 @@ const Employees = () => {
 
         {/* No results */}
         {!isLoading && employees.length > 0 && filteredEmployees.length === 0 && (
-          <div className="rounded-xl bg-card shadow-sm p-8 text-center">
-            <Filter className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">{t("employees.no_match_filters")}</p>
+          <div className="rounded-lg bg-card border border-border/70 shadow-card p-8 text-center">
+            <Filter className="h-6 w-6 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-muted-foreground text-[13px]">{t("employees.no_match_filters")}</p>
             <Button
               variant="link"
               size="sm"

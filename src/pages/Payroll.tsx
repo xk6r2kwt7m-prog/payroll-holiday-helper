@@ -289,26 +289,24 @@ const Payroll = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto w-full min-w-0">
+      <div className="space-y-4 sm:space-y-5 max-w-7xl mx-auto w-full min-w-0">
         {/* Header */}
-        <div className="flex flex-col gap-3 animate-slide-in-left">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2.5">
-                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                </div>
-                {t("payroll.title")}
-              </h1>
-            </div>
-            <div className="flex gap-1.5 shrink-0">
-              {selectedPeriod && entries.length > 0 && (
-                <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
-                  <FileDown className="h-4 w-4 sm:mr-1.5" />
-                  <span className="hidden sm:inline">PDF</span>
-                </Button>
-              )}
-            </div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 shrink-0">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </div>
+              {t("payroll.title")}
+            </h1>
+          </div>
+          <div className="flex gap-1.5 shrink-0">
+            {selectedPeriod && entries.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-8 px-2.5 sm:px-3 text-xs">
+                <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">PDF</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -335,22 +333,22 @@ const Payroll = () => {
 
         {/* Period Selector */}
         {periods.length > 0 && (
-          <div className="-mx-4 sm:mx-0 px-4 sm:px-0 animate-fade-in">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
+          <div className="-mx-4 sm:mx-0 px-4 sm:px-0">
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
               {periods.slice(0, 6).map((period) => (
                 <button
                   key={period.id}
                   onClick={() => setSelectedPeriodId(period.id)}
                   className={cn(
-                    "flex items-center gap-1.5 shrink-0 rounded-lg border px-3 py-2 text-xs sm:text-sm font-medium transition-colors min-h-[40px]",
+                    "flex items-center gap-1.5 shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[36px]",
                     selectedPeriod?.id === period.id
                       ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card text-card-foreground border-border hover:bg-muted"
+                      : "bg-card text-card-foreground border-border/60 hover:bg-muted/50"
                   )}
                 >
                   <span className="truncate max-w-[120px]">{period.period_name}</span>
                   <span className={cn(
-                    "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                    "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none",
                     statusStyles[period.status]
                   )}>
                     {statusLabels[period.status]}

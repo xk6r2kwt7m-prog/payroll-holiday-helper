@@ -31,48 +31,44 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "rounded-lg bg-card border shadow-card overflow-hidden transition-shadow hover:shadow-md",
-        colors.border
-      )}
+      className="rounded-lg bg-card border border-border/70 shadow-card overflow-hidden transition-shadow hover:shadow-md"
     >
       {/* Header */}
-      <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-border">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary text-xl shrink-0">
+      <div className="flex items-center gap-3 p-4 border-b border-border/40">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted/50 text-lg shrink-0">
           {getBranchEmoji(pulse.branch, []) || "📍"}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-bold text-foreground text-base tracking-tight">{pulse.branch}</h3>
-            <Badge variant="outline" className={cn("text-[10px] font-semibold", colors.text, colors.border)}>
-              <Circle className={cn("h-2 w-2 mr-1 fill-current", colors.text)} />
+            <h3 className="font-semibold text-foreground text-sm tracking-tight">{pulse.branch}</h3>
+            <Badge variant="outline" className={cn("text-[10px] font-medium", colors.text, colors.border)}>
+              <Circle className={cn("h-1.5 w-1.5 mr-1 fill-current", colors.text)} />
               {statusLabel[pulse.overallStatus]}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-[11px] text-muted-foreground mt-0.5">
             <Users className="h-3 w-3 inline mr-1" />{pulse.staffCount} active staff
           </p>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 text-muted-foreground shrink-0"
+          className="h-8 w-8 text-muted-foreground/60 hover:text-foreground shrink-0"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSettings(); }}
         >
-          <Settings2 className="h-4 w-4" />
+          <Settings2 className="h-3.5 w-3.5" />
         </Button>
       </div>
 
       {/* Sections */}
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-border/30">
         {pulse.sections.map((section) => {
-          // Only show items that have count > 0 or are key indicators
           const hasIssues = section.items.some(i => i.count > 0 && i.status !== "green");
           const sectionColors = statusColors[section.overallStatus];
 
           return (
-            <div key={section.title} className="px-4 sm:px-5 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+            <div key={section.title} className="px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
                 {section.title}
               </p>
               <div className="space-y-1.5">
@@ -125,10 +121,10 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
       {/* Footer: tap to open location dashboard */}
       <Link
         to={`/locations/${encodeURIComponent(pulse.branch)}`}
-        className="flex items-center justify-center gap-2 px-4 py-3 border-t border-border bg-muted/30 text-sm font-medium text-primary hover:bg-muted/50 transition-colors min-h-[48px]"
+        className="flex items-center justify-center gap-1.5 px-4 py-2.5 border-t border-border/30 bg-muted/20 text-xs font-medium text-primary hover:bg-muted/40 transition-colors min-h-[44px]"
       >
         Open Location Dashboard
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRight className="h-3.5 w-3.5" />
       </Link>
     </motion.div>
   );
@@ -155,15 +151,15 @@ const Locations = () => {
     <AppLayout>
       <div className="max-w-5xl space-y-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Locations</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <h1 className="text-lg font-bold text-foreground tracking-tight">Locations</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">
             Multi-location command centre — monitor each site at a glance
           </p>
         </div>
 
         {/* Overall status summary */}
         {pulses && pulses.length > 0 && (
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {pulses.map((p) => {
               const colors = statusColors[p.overallStatus];
               return (
@@ -171,14 +167,14 @@ const Locations = () => {
                   key={p.branch}
                   to={`/locations/${encodeURIComponent(p.branch)}`}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm font-medium min-h-[44px]",
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border transition-colors text-xs font-medium min-h-[36px]",
                     colors.border, colors.bg, colors.text,
                     "hover:opacity-80"
                   )}
                 >
-                  <span>{getBranchEmoji(p.branch, [])}</span>
+                  <span className="text-sm">{getBranchEmoji(p.branch, [])}</span>
                   <span>{p.branch}</span>
-                  <Circle className={cn("h-2.5 w-2.5 fill-current", colors.text)} />
+                  <Circle className={cn("h-2 w-2 fill-current", colors.text)} />
                 </Link>
               );
             })}
@@ -186,7 +182,7 @@ const Locations = () => {
         )}
 
         {/* Location pulse cards */}
-        <div className="grid gap-4 sm:gap-5 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
           {pulses?.map((pulse) => (
             <PulseCard
               key={pulse.branch}
@@ -200,15 +196,15 @@ const Locations = () => {
         </div>
 
         {(!pulses || pulses.length === 0) && (
-          <div className="rounded-xl bg-card border border-border p-10 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
-              <MapPin className="h-7 w-7 text-primary" />
+          <div className="rounded-lg bg-card border border-border/70 shadow-card p-10 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/50 mx-auto mb-4">
+              <MapPin className="h-5.5 w-5.5 text-muted-foreground/50" />
             </div>
-            <h3 className="text-lg font-bold text-foreground mb-2">No locations yet</h3>
-            <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-2">
+            <h3 className="text-[15px] font-semibold text-foreground mb-1.5">No locations yet</h3>
+            <p className="text-[13px] text-muted-foreground max-w-sm mx-auto mb-2">
               Locations represent your physical sites — restaurants, kitchens, or offices. Add your first location to enable scheduling, attendance tracking, and geofence-based clock-in.
             </p>
-            <p className="text-xs text-muted-foreground/70 max-w-xs mx-auto mb-5">
+            <p className="text-xs text-muted-foreground/50 max-w-xs mx-auto mb-5">
               Each location can have its own operating hours, staff assignments, and compliance rules.
             </p>
             <a href="/settings?group=workplaces&section=locations">
