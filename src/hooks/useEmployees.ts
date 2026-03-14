@@ -67,6 +67,7 @@ export function useCreateEmployee() {
   
   return useMutation({
     mutationFn: async (employee: Omit<EmployeeInsert, 'tenant_id'>) => {
+      await assertPermission("edit_employees", tenantId!);
       const { data, error } = await supabase
         .from("employees")
         .insert({ ...employee, tenant_id: tenantId! })
