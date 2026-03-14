@@ -57,6 +57,8 @@ export function EmployeeDocumentList({ employeeId, employeeName, isAdmin }: Empl
   const { data: documents = [], isLoading } = useEmployeeDocuments(employeeId);
   const deleteDocument = useDeleteDocument();
   const [deleteTarget, setDeleteTarget] = useState<EmployeeDocument | null>(null);
+  const [showVerification, setShowVerification] = useState(false);
+  const { tenantId } = useTenant();
 
   const handleDownload = async (doc: EmployeeDocument) => {
     try {
