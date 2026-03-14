@@ -102,7 +102,9 @@ export function EditablePayrollTable({
   periodId, 
   periodStatus, 
   isAdmin,
-  onExport 
+  onExport,
+  showBonusColumn = true,
+  showServiceCharge = true,
 }: EditablePayrollTableProps) {
   const { data: leaveRules } = useLeaveRules();
   const [editingId, setEditingId] = useState<string | null>(null);
