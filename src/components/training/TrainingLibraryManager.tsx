@@ -23,6 +23,7 @@ import {
   type TrainingLibraryItem,
 } from "@/hooks/useTrainingLibrary";
 import { useEmployees } from "@/hooks/useEmployees";
+import { AssignmentStatusBadge } from "@/components/training/AssignmentStatusBadge";
 import { useTenant } from "@/hooks/useTenant";
 
 // ─── Library Manager ───
