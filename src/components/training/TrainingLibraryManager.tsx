@@ -26,6 +26,7 @@ import {
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 // ─── Library Manager ───
 
