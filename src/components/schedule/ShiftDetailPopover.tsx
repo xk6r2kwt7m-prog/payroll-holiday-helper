@@ -3,13 +3,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Calendar, Clock, MapPin, FileText,
   Pencil, Trash2, Copy, ArrowRightLeft,
   UserPlus, UserMinus, Check,

@@ -12,7 +12,7 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { Pencil, Copy, Trash2, Clock, MapPin, FileText, ArrowRightLeft, AlertTriangle, Check, X, UserPlus, UserMinus } from "lucide-react";
+import { Pencil, Copy, Trash2, Clock, MapPin, FileText, CalendarDays, AlertTriangle, Check, X, UserPlus, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isSameDay } from "date-fns";
 import type { Employee } from "@/hooks/useEmployees";

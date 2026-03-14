@@ -75,28 +75,16 @@ export function MobileManagerBar({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[200px]">
-            {shiftCount === 0 && onCopyPreviousWeek && (
+            {onCopyPreviousWeek && (
               <DropdownMenuItem onClick={onCopyPreviousWeek} className="gap-2 py-3">
                 <Copy className="h-4 w-4" />
-                Copy last week
+                Copy Last Week
               </DropdownMenuItem>
             )}
-            {shiftCount === 0 && onLoadTemplate && (
+            {onLoadTemplate && (
               <DropdownMenuItem onClick={onLoadTemplate} className="gap-2 py-3">
                 <FolderOpen className="h-4 w-4" />
-                Load template
-              </DropdownMenuItem>
-            )}
-            {shiftCount > 0 && onCopyPreviousWeek && (
-              <DropdownMenuItem onClick={onCopyPreviousWeek} className="gap-2 py-3">
-                <Copy className="h-4 w-4" />
-                Copy last week
-              </DropdownMenuItem>
-            )}
-            {shiftCount > 0 && onLoadTemplate && (
-              <DropdownMenuItem onClick={onLoadTemplate} className="gap-2 py-3">
-                <FolderOpen className="h-4 w-4" />
-                Load template
+                Load Template
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
