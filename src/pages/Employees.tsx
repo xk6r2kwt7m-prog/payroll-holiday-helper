@@ -197,16 +197,16 @@ const Employees = () => {
     <AppLayout>
       <div className="space-y-4 max-w-7xl mx-auto min-w-0 overflow-x-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="min-w-0">
             <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 shrink-0">
                 <Users className="h-4 w-4 text-muted-foreground" />
               </div>
-              {t("employees.people")}
+              <span className="truncate">{t("employees.people")}</span>
             </h1>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {canManageLifecycle && filteredEmployees.length > 0 && (
               <Button
                 variant={isSelectionMode ? "secondary" : "ghost"}
@@ -217,7 +217,16 @@ const Employees = () => {
                 {isSelectionMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
               </Button>
             )}
-            {canEdit && <InviteEmployeeDialog />}
+            {canEdit && (
+              <InviteEmployeeDialog
+                trigger={
+                  <Button size="icon" variant="outline" className="h-8 w-8 sm:hidden">
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            )}
+            {canEdit && <span className="hidden sm:inline-flex"><InviteEmployeeDialog /></span>}
             {canEdit && <EmployeeFormDialog />}
           </div>
         </div>
