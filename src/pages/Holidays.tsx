@@ -783,6 +783,7 @@ const Holidays = () => {
               <span className="hidden sm:inline">{t("holidays.audit")}</span>
             </TabsTrigger>
           </TabsList>
+          </div>
 
           {/* Filters (shared across sub-tabs) */}
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
