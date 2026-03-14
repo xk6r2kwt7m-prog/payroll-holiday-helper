@@ -104,9 +104,13 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
           </div>
         </div>
 
-        <Badge variant="outline" className={cn("text-[10px] font-medium px-1.5 py-0 h-5 shrink-0", statusStyles[employee.status])}>
-          {statusLabels[employee.status]}
-        </Badge>
+        {isNewStarter && readiness ? (
+          <ReadinessStatusBadge status={readiness.status} />
+        ) : (
+          <Badge variant="outline" className={cn("text-[10px] font-medium px-1.5 py-0 h-5 shrink-0", statusStyles[employee.status])}>
+            {statusLabels[employee.status]}
+          </Badge>
+        )}
 
         {isAdmin && (
           <DropdownMenu>

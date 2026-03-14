@@ -66,7 +66,13 @@ export function HolidayRequestQueue() {
         </CardHeader>
         <CardContent>
           {pendingRequests.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-2">{t("common.no_data")}</p>
+            <div className="flex items-center gap-3 py-4 px-2">
+              <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-foreground">All caught up</p>
+                <p className="text-xs text-muted-foreground">No leave requests waiting for approval right now.</p>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               {pendingRequests.map((req: any) => (

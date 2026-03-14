@@ -58,15 +58,24 @@ interface EmployeeSummary {
 
 const Holidays = () => {
   const { t } = useI18n();
+  const [searchParams] = useSearchParams();
   const { data: leaveRules } = useLeaveRules();
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
   const [selectedYear, setSelectedYear] = useState<LeaveYear>("2025");
-  const [subTab, setSubTab] = useState<SubTab>("overview");
+  const [subTab, setSubTab] = useState<SubTab>((searchParams.get("tab") as SubTab) || "overview");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [formulaBreakdownData, setFormulaBreakdownData] = useState<FormulaBreakdownData | null>(null);
   const [formulaOpen, setFormulaOpen] = useState(false);
+
+  // Allow deep-linking to specific tab (e.g. from Manager Home → "Review" link)
+  useEffect(() => {
+    const tab = searchParams.get("tab") as SubTab | null;
+    if (tab && ["overview", "requests", "alerts", "history", "departments", "lookup", "integrity", "audit"].includes(tab)) {
+      setSubTab(tab);
+    }
+  }, [searchParams]);
 
   const { data: periods = [] } = usePayrollPeriods();
 
