@@ -685,7 +685,11 @@
     "training_overdue": "Training overdue",
     "shift_claim_approved": "Shift request approved",
     "shift_claim_rejected": "Shift request rejected",
-    "shift_cover_found": "Cover found"
+    "shift_cover_found": "Cover found",
+    "leave_low_balance": "Low leave balance",
+    "leave_negative_balance": "Negative balance",
+    "leave_overbooking_risk": "Overbooking risk",
+    "leave_year_ending": "Leave year ending"
   },
   "ops": {
     "labour_cost_today": "Labour Cost Today",

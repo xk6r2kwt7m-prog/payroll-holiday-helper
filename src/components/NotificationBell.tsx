@@ -47,6 +47,10 @@ const EVENT_ICONS: Record<string, string> = {
   shift_claim_approved: "✅",
   shift_claim_rejected: "❌",
   shift_cover_found: "🤝",
+  leave_low_balance: "📉",
+  leave_negative_balance: "🔴",
+  leave_overbooking_risk: "⚠️",
+  leave_year_ending: "📆",
   general: "🔔",
 };
 
