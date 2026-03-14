@@ -391,7 +391,7 @@ export function MobileShiftSheet({
                     className="h-12 flex-col gap-1 rounded-xl text-muted-foreground"
                     onClick={() => onMove?.()}
                   >
-                    <ArrowRightLeft className="h-4 w-4" />
+                    <CalendarDays className="h-4 w-4" />
                     <span className="text-[10px]">Move Day</span>
                   </Button>
                   <Button
