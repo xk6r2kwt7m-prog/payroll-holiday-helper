@@ -147,17 +147,7 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
             />
           </div>
 
-          <div className="space-y-2">
-            <Label>Department</Label>
-            <Select value={department} onValueChange={v => setDepartment(v as DepartmentType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="FOH">Front of House</SelectItem>
-                <SelectItem value="BOH">Back of House</SelectItem>
-                <SelectItem value="CPU">Central Production</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <DepartmentSelector department={department} setDepartment={setDepartment} />
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
