@@ -405,6 +405,7 @@ export function useDeletePayrollPeriod() {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("view_pay_data", null);
       const { data: { user } } = await supabase.auth.getUser();
 
       // Delete entries first (foreign key constraint)
