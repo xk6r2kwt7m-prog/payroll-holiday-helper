@@ -25,6 +25,7 @@ import {
 } from "@/hooks/useTrainingLibrary";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTenant } from "@/hooks/useTenant";
+import { useAuth } from "@/hooks/useAuth";
 
 // ─── Library Manager ───
 
