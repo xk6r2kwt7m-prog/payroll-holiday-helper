@@ -42,8 +42,7 @@ export function TalentSearch() {
     const emp = p.employee;
     return (
       emp?.forename?.toLowerCase().includes(q) ||
-      emp?.surname?.toLowerCase().includes(q) ||
-      emp?.department?.toLowerCase().includes(q) ||
+      emp?.surname_initial?.toLowerCase().includes(q) ||
       p.preferred_roles?.some((r) => r.toLowerCase().includes(q)) ||
       p.preferred_locations?.some((l) => l.toLowerCase().includes(q)) ||
       p.profile_summary?.toLowerCase().includes(q)
