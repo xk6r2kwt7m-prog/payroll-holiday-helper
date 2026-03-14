@@ -64,6 +64,9 @@ export function AdminHome() {
     return (Date.now() - new Date(e.clock_in_time).getTime()) / 3600000 > 10;
   });
 
+  // New tenant = setup incomplete and no active employees
+  const isNewTenant = !setupHealth.isFullySetup && activeEmployees === 0;
+
   const greeting = () => {
     const h = new Date().getHours();
     if (h < 12) return "Good morning";
@@ -71,7 +74,7 @@ export function AdminHome() {
     return "Good evening";
   };
 
-  // KPIs
+  // KPIs — only meaningful when tenant has data
   const kpis = [
     { label: "Staff", value: String(activeEmployees), color: "text-foreground", icon: Users, bg: "bg-secondary", path: "/employees" },
     { label: "Working", value: String(clockedInNow.length), color: "text-success", icon: Clock, bg: "bg-success/10", path: "/timesheets" },
