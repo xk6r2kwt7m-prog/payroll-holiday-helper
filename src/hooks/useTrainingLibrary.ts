@@ -6,12 +6,16 @@ import { useNotifyEvent } from "@/hooks/useNotifyEvent";
 import { toast } from "sonner";
 import { assertPermission } from "@/lib/permission-guard";
 
+export type TrainingContentType = "document" | "internal_page" | "external_link";
+
 export interface TrainingLibraryItem {
   id: string;
   tenant_id: string;
   title: string;
   description: string | null;
   category: string;
+  content_type: TrainingContentType;
+  content_url: string | null;
   file_path: string | null;
   version: number;
   previous_version_id: string | null;
