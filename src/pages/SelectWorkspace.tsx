@@ -13,7 +13,7 @@ const SelectWorkspace = () => {
     if (!selecting) return;
 
     if (tenantId && !showTenantPicker) {
-      console.log("[SelectWorkspace] Tenant context applied:", tenantId);
+      
       return;
     }
 
