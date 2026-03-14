@@ -394,9 +394,13 @@ function AssignDocumentDialog({ document, open, onOpenChange }: {
 
 // ─── Completion Tracking Dashboard ───
 
-export function TrainingCompletionDashboard() {
+export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModuleId }: { highlightEmployeeId?: string; highlightModuleId?: string } = {}) {
   const { data: assignments = [] } = useTrainingAssignments();
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Auto-filter when deep-linked from Gaps tab
+  const highlightKey = highlightEmployeeId && highlightModuleId
+    ? `${highlightEmployeeId}::${highlightModuleId}` : null;
 
   const counts = {
     all: assignments.length,
@@ -410,11 +414,20 @@ export function TrainingCompletionDashboard() {
     }).length,
   };
 
-  const filtered = statusFilter === "all" ? assignments :
+  let filtered = statusFilter === "all" ? assignments :
     statusFilter === "overdue" ? assignments.filter(a => {
       if (!a.due_date) return false;
       return differenceInDays(new Date(), parseISO(a.due_date)) > 0 && !["completed", "acknowledged", "cancelled"].includes(a.status);
     }) : assignments.filter(a => a.status === statusFilter);
+
+  // When deep-linked, bring matching assignment to top
+  if (highlightKey) {
+    filtered = [...filtered].sort((a, b) => {
+      const aMatch = `${a.employee_id}::${a.document_id}` === highlightKey ? 0 : 1;
+      const bMatch = `${b.employee_id}::${b.document_id}` === highlightKey ? 0 : 1;
+      return aMatch - bMatch;
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -457,7 +470,12 @@ export function TrainingCompletionDashboard() {
           const doc = a.training_library;
           const isOverdue = a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0 && !["completed", "acknowledged", "cancelled"].includes(a.status);
           return (
-            <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border shadow-sm">
+            <div key={a.id} className={cn(
+              "flex items-center gap-3 p-3 rounded-xl bg-card border shadow-sm transition-all",
+              `${a.employee_id}::${a.document_id}` === highlightKey
+                ? "border-primary ring-2 ring-primary/20"
+                : "border-border"
+            )}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
                   {a.employees?.forename} {a.employees?.surname}

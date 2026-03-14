@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTrainingRecords, useAddTrainingRecord, useDeleteTrainingRecord, CERTIFICATION_TYPES } from "@/hooks/useTrainingRecords";
@@ -65,6 +66,11 @@ export default function TrainingRecords() {
 }
 
 function TrainingAdminView() {
+  const [searchParams] = useSearchParams();
+  const deepLinkTab = searchParams.get("tab") || "library";
+  const deepLinkEmployee = searchParams.get("employee") || undefined;
+  const deepLinkModule = searchParams.get("module") || undefined;
+
   const { data: employees = [] } = useEmployees();
   const { data: records = [] } = useTrainingRecords();
   const addRecord = useAddTrainingRecord();
@@ -130,7 +136,7 @@ function TrainingAdminView() {
           </div>
         </div>
 
-        <Tabs defaultValue="library">
+        <Tabs defaultValue={deepLinkTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="library" className="gap-1.5"><BookOpen className="h-4 w-4" /> Library</TabsTrigger>
             <TabsTrigger value="tracking" className="gap-1.5"><ClipboardCheck className="h-4 w-4" /> Tracking</TabsTrigger>
@@ -142,7 +148,10 @@ function TrainingAdminView() {
           </TabsContent>
 
           <TabsContent value="tracking" className="mt-4">
-            <TrainingCompletionDashboard />
+            <TrainingCompletionDashboard
+              highlightEmployeeId={deepLinkTab === "tracking" ? deepLinkEmployee : undefined}
+              highlightModuleId={deepLinkTab === "tracking" ? deepLinkModule : undefined}
+            />
           </TabsContent>
 
           <TabsContent value="certifications" className="mt-4">
