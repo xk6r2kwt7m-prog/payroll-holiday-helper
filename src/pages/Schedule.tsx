@@ -315,7 +315,7 @@ export default function Schedule() {
                         employees={activeEmployees}
                         branch={selectedBranch}
                         department={deptVal}
-                        isAdmin={isAdmin}
+                        isAdmin={canEditSchedules}
                         onCreateShift={schedule.handleCreateShift}
                         onUpdateShift={schedule.handleUpdateShift}
                         onDeleteShift={schedule.handleDeleteShift}
