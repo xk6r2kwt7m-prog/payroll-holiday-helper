@@ -238,7 +238,7 @@ export function useCreateAssignments() {
         toast.info(`${skipped} duplicate assignment(s) skipped`);
       }
       // Audit
-      const auditRows = assignments.map(a => ({
+      const auditRows = filtered.map(a => ({
         tenant_id: tenantId,
         document_id: a.document_id,
         employee_id: a.employee_id,
