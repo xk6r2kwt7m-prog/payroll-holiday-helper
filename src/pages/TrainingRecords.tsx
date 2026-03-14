@@ -19,11 +19,13 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
 import { getRoleLevel } from "@/lib/roles";
+import { usePermission } from "@/hooks/useRolePermissions";
 
 export default function TrainingRecords() {
   const { role } = useAuth();
   const userLevel = getRoleLevel(role);
   const isManagerOrAbove = userLevel >= getRoleLevel("manager");
+  const canManageTraining = usePermission("manage_training");
   const { employeeId } = useCurrentEmployee();
 
   // Staff view — only show their assigned training

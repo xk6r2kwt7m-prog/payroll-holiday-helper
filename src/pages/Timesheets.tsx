@@ -21,6 +21,7 @@ import { usePermission } from "@/hooks/useRolePermissions";
 
 export default function Timesheets() {
   const { t } = useI18n();
+  const canApproveTimesheets = usePermission("approve_timesheets");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedBranch, setSelectedBranch] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("pending");
