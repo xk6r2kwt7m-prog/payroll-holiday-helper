@@ -369,9 +369,9 @@ const Employees = () => {
 
         {/* No results */}
         {!isLoading && employees.length > 0 && filteredEmployees.length === 0 && (
-          <div className="rounded-xl bg-card shadow-sm p-8 text-center">
-            <Filter className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">{t("employees.no_match_filters")}</p>
+          <div className="rounded-lg bg-card border border-border/70 shadow-card p-8 text-center">
+            <Filter className="h-6 w-6 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-muted-foreground text-[13px]">{t("employees.no_match_filters")}</p>
             <Button
               variant="link"
               size="sm"

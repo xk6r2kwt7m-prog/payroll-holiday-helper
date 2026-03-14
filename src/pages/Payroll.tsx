@@ -333,22 +333,22 @@ const Payroll = () => {
 
         {/* Period Selector */}
         {periods.length > 0 && (
-          <div className="-mx-4 sm:mx-0 px-4 sm:px-0 animate-fade-in">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
+          <div className="-mx-4 sm:mx-0 px-4 sm:px-0">
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
               {periods.slice(0, 6).map((period) => (
                 <button
                   key={period.id}
                   onClick={() => setSelectedPeriodId(period.id)}
                   className={cn(
-                    "flex items-center gap-1.5 shrink-0 rounded-lg border px-3 py-2 text-xs sm:text-sm font-medium transition-colors min-h-[40px]",
+                    "flex items-center gap-1.5 shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[36px]",
                     selectedPeriod?.id === period.id
                       ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card text-card-foreground border-border hover:bg-muted"
+                      : "bg-card text-card-foreground border-border/60 hover:bg-muted/50"
                   )}
                 >
                   <span className="truncate max-w-[120px]">{period.period_name}</span>
                   <span className={cn(
-                    "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                    "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none",
                     statusStyles[period.status]
                   )}>
                     {statusLabels[period.status]}

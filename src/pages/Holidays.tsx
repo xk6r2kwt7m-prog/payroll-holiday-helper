@@ -680,7 +680,7 @@ const Holidays = () => {
 
         {/* Stats — conditionally show balance summary based on preference */}
         {holidayPrefs?.showBalanceSummary !== false && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 animate-fade-in">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
               title={t("holidays.total_accrued")}
               value={formatHours(totals.accrued)}
