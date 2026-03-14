@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, Clock, AlertTriangle, Calendar, CalendarClock,
   ChevronRight, Megaphone, ClipboardCheck, UserCheck,
-  UserX, Timer, ShieldAlert, TrendingDown,
+  UserX, Timer, ShieldAlert, TrendingDown, Search, ArrowRightLeft, Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,8 @@ import { useShifts } from "@/hooks/useSchedule";
 import { useAllHolidayRequests } from "@/hooks/useHolidayRequests";
 import { useI18n } from "@/hooks/useI18n";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
+import { FindCoverSheet } from "@/components/workforce/FindCoverSheet";
+import { EmergencyCoverTool } from "@/components/workforce/EmergencyCoverTool";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
