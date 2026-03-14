@@ -104,7 +104,7 @@ export function DocumentUploadDialog({ employeeId, employeeName, trigger }: Docu
     }
 
     try {
-      await uploadDocument.mutateAsync({
+      const result = await uploadDocument.mutateAsync({
         employeeId,
         file,
         documentType,
@@ -116,6 +116,13 @@ export function DocumentUploadDialog({ employeeId, employeeName, trigger }: Docu
       toast.success("Document uploaded successfully");
       setOpen(false);
       resetForm();
+
+      // Auto-trigger extraction for image/PDF documents
+      const isExtractable = file.type.startsWith("image/") || file.type === "application/pdf";
+      if (isExtractable && tenantId && result?.id) {
+        toast.info("Extracting document data...", { duration: 3000 });
+        extractDocument.mutate({ documentId: result.id, tenantId });
+      }
     } catch (error) {
       toast.error("Failed to upload document");
     }
