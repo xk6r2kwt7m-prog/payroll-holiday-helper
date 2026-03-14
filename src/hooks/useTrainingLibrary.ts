@@ -102,6 +102,7 @@ export function useCreateLibraryItem() {
   const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (item: Partial<TrainingLibraryItem>) => {
+      await assertPermission("manage_training", tenantId!);
       const { data, error } = await supabase
         .from("training_library" as any)
         .insert({ ...item, tenant_id: tenantId } as any)
