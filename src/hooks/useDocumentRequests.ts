@@ -112,12 +112,12 @@ export function usePendingReviewRequests() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("document_requests" as any)
-        .select("*, employees(id, forename, surname, department)")
+        .select("*, employees:employee_id(id, forename, surname, department)")
         .eq("tenant_id", tenantId!)
         .in("status", ["uploaded", "pending_review"])
         .order("updated_at", { ascending: true });
       if (error) throw error;
-      return (data || []) as DocumentRequest[];
+      return (data || []) as unknown as DocumentRequest[];
     },
     enabled: !!tenantId,
   });
