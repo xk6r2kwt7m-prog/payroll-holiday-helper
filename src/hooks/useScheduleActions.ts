@@ -289,13 +289,18 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
   }, [copyPrevWeek, weekStartStr, selectedBranch, selectedDept, tenantId]);
 
   const handleSaveTemplate = useCallback(async (name: string) => {
-    const currentShifts = branchDeptShifts.map((s: any) => {
-      const shiftDate = new Date(s.shift_date + "T00:00:00");
-      const dayOfWeek = shiftDate.getDay() === 0 ? 6 : shiftDate.getDay() - 1;
-      return { day_of_week: dayOfWeek, employee_id: s.employee_id, start_time: s.start_time, end_time: s.end_time, notes: s.notes || null };
-    });
-    await saveTemplate.mutateAsync({ name, branch: selectedBranch, department: selectedDept, shifts: currentShifts });
-  }, [saveTemplate, branchDeptShifts, selectedBranch, selectedDept]);
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const currentShifts = branchDeptShifts.map((s: any) => {
+        const shiftDate = new Date(s.shift_date + "T00:00:00");
+        const dayOfWeek = shiftDate.getDay() === 0 ? 6 : shiftDate.getDay() - 1;
+        return { day_of_week: dayOfWeek, employee_id: s.employee_id, start_time: s.start_time, end_time: s.end_time, notes: s.notes || null };
+      });
+      await saveTemplate.mutateAsync({ name, branch: selectedBranch, department: selectedDept, shifts: currentShifts });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  }, [saveTemplate, branchDeptShifts, selectedBranch, selectedDept, tenantId]);
 
   const handleLoadTemplate = useCallback(async (templateId: string) => {
     try {
