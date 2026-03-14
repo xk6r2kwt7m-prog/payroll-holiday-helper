@@ -3,7 +3,7 @@ import { Sparkles, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import TrainingSectionCard from "@/components/foh-training/TrainingSectionCard";
 import { upsellingSections } from "@/data/foh-training/upsellingTraining";
-import AppLayout from "@/components/layout/AppLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 const FohUpsellingTraining = () => {
   return (

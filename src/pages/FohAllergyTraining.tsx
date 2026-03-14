@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import TrainingSectionCard from "@/components/foh-training/TrainingSectionCard";
 import AllergenTable from "@/components/foh-training/AllergenTable";
 import { trainingSections } from "@/data/foh-training/allergyTraining";
-import AppLayout from "@/components/layout/AppLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 const FohAllergyTraining = () => {
   return (

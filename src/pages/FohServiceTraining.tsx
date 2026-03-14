@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import FohHeroSection from "@/components/foh-training/FohHeroSection";
 import ServiceStepCard from "@/components/foh-training/ServiceStepCard";
 import { serviceSteps } from "@/data/foh-training/serviceSteps";
-import AppLayout from "@/components/layout/AppLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 const FohServiceTraining = () => {
   return (

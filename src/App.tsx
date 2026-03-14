@@ -46,6 +46,10 @@ import LabourCostPreview from "./pages/LabourCostPreview";
 import ShiftMarketplace from "./pages/ShiftMarketplace";
 import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 import NotFound from "./pages/NotFound";
+import FohServiceTraining from "./pages/FohServiceTraining";
+import FohAllergyTraining from "./pages/FohAllergyTraining";
+import FohUpsellingTraining from "./pages/FohUpsellingTraining";
+import FohPrintableTraining from "./pages/FohPrintableTraining";
 import { CommandPalette } from "@/components/CommandPalette";
 
 const queryClient = new QueryClient();
