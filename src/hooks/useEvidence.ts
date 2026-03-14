@@ -101,6 +101,7 @@ export function useCreateEvidenceRequest() {
       related_time_entry_id?: string;
       related_absence_id?: string;
     }) => {
+      await assertPermission("approve_timesheets", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("evidence_requests" as any)
