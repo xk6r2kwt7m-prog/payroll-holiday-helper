@@ -288,16 +288,14 @@ const Payroll = () => {
                 {t("payroll.title")}
               </h1>
             </div>
-            {workspaceTab === "payroll" && (
-              <div className="flex gap-1.5 shrink-0">
-                {selectedPeriod && entries.length > 0 && (
-                  <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
-                    <FileDown className="h-4 w-4 sm:mr-1.5" />
-                    <span className="hidden sm:inline">PDF</span>
-                  </Button>
-                )}
-              </div>
-            )}
+            <div className="flex gap-1.5 shrink-0">
+              {selectedPeriod && entries.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
+                  <FileDown className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
