@@ -135,8 +135,9 @@ const peopleRoutes = ["/employees", "/absences", "/onboarding", "/training", "/d
 export function MobileBottomNav() {
   const location = useLocation();
   const { role, signOut } = useAuth();
-  const { enabledModules, isPlatformAdmin } = useTenant();
+  const { enabledModules, isPlatformAdmin, membershipCount } = useTenant();
   const [moreOpen, setMoreOpen] = useState(false);
+  const hasMultipleTenants = membershipCount > 1;
 
   const userLevel = getRoleLevel(role);
   const canAccess = (minRole: MinRole) => userLevel >= getRoleLevel(minRole);
