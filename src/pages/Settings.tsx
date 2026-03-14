@@ -223,7 +223,7 @@ const Settings = () => {
             <ChevronLeft className="h-3.5 w-3.5" />
             All Settings
           </button>
-          <div className="rounded-xl bg-card border border-border p-6 text-center space-y-2">
+          <div className="rounded-lg bg-card border border-border/70 p-6 text-center space-y-2 shadow-card">
             <p className="text-sm font-medium text-foreground">Settings group not found</p>
             <p className="text-xs text-muted-foreground">This section doesn't exist. Return to the Admin Centre to find what you need.</p>
             <Button size="sm" variant="outline" onClick={() => navigateTo(null, null)}>Back to Admin Centre</Button>
