@@ -78,6 +78,7 @@ const managerMoreGroups: MoreGroup[] = [
       { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
       { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
+      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
     ],
   },
