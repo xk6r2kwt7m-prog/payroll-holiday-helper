@@ -59,6 +59,7 @@ export function useDisciplinaryRecords(employeeId?: string) {
 
 export function useAddDisciplinaryRecord() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (record: {
       employee_id: string;
@@ -73,7 +74,7 @@ export function useAddDisciplinaryRecord() {
       appeal_deadline?: string;
       expiry_date?: string;
     }) => {
-      await assertPermission("manage_lifecycle", null);
+      await assertPermission("manage_lifecycle", tenantId!);
       const { error } = await supabase.from("disciplinary_records" as any).insert(record as any);
       if (error) throw error;
     },
