@@ -20,7 +20,7 @@ import {
   useSaveEmployeeRate,
   useDeleteEmployeeRate,
 } from "@/hooks/useServiceCharge";
-import { useTenantBranches } from "@/hooks/useBranches";
+import { useLocationSettings } from "@/hooks/useLocationSettings";
 import { useEmployees } from "@/hooks/useEmployees";
 import { format } from "date-fns";
 
