@@ -68,6 +68,9 @@ const CompanyOnboarding = () => {
     setData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
+  if (!user) { navigate("/auth"); return null; }
+  if (!tenantLoading && tenantId) { navigate("/"); return null; }
+
   const canProceed = (): boolean => {
     switch (step) {
       case 0: return data.firstName.length >= 1 && data.lastName.length >= 1 && data.logoUrl.length >= 2;
