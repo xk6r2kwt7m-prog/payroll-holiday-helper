@@ -356,8 +356,12 @@ const Settings = () => {
           {currentGroup?.label || "Settings"}
         </button>
 
-        <div className="flex items-center gap-2">
-          {currentGroup && <currentGroup.icon className="h-4 w-4 text-primary" />}
+        <div className="flex items-center gap-2.5">
+          {currentGroup && (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60 shrink-0">
+              <currentGroup.icon className="h-4.5 w-4.5 text-muted-foreground" />
+            </div>
+          )}
           <h2 className="text-base font-semibold text-foreground">{sectionLabel}</h2>
         </div>
 
