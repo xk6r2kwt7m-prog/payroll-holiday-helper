@@ -1804,6 +1804,44 @@ export type Database = {
           },
         ]
       }
+      impersonation_log: {
+        Row: {
+          ended_at: string | null
+          id: string
+          impersonated_role: string
+          impersonated_user_label: string | null
+          platform_admin_id: string
+          sandbox_tenant_id: string
+          started_at: string
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          impersonated_role: string
+          impersonated_user_label?: string | null
+          platform_admin_id: string
+          sandbox_tenant_id: string
+          started_at?: string
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          impersonated_role?: string
+          impersonated_user_label?: string | null
+          platform_admin_id?: string
+          sandbox_tenant_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impersonation_log_sandbox_tenant_id_fkey"
+            columns: ["sandbox_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       location_settings: {
         Row: {
           address: string | null
@@ -2497,6 +2535,50 @@ export type Database = {
             foreignKeyName: "return_to_work_forms_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sandbox_tenants: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          preset_name: string
+          setup_state: string
+          tenant_id: string
+          test_users: Json
+          testing_notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          preset_name?: string
+          setup_state?: string
+          tenant_id: string
+          test_users?: Json
+          testing_notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          preset_name?: string
+          setup_state?: string
+          tenant_id?: string
+          test_users?: Json
+          testing_notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sandbox_tenants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
