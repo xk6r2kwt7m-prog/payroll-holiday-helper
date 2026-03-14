@@ -536,10 +536,10 @@ const Settings = () => {
 /* ─── Reusable sub-components ─── */
 function ConfigCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-card border border-border p-4 sm:p-5 shadow-sm space-y-4">
+    <div className="rounded-lg bg-card border border-border p-5 sm:p-6 shadow-card space-y-5">
       <div>
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+        <h3 className="text-sm font-semibold text-foreground leading-tight">{title}</h3>
+        {description && <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{description}</p>}
       </div>
       {children}
     </div>
