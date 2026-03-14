@@ -10,7 +10,7 @@ import {
   User, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
 import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
 import { StaffDocumentRequests } from "@/components/documents/StaffDocumentRequests";
 import { useMyTimeEntries } from "@/hooks/useTimeEntries";
