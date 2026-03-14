@@ -142,8 +142,8 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
 
       {/* Row 2: Compact protected pay — only for authorized */}
       {canViewSensitive && (
-        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-border">
-          <div className="flex-1">
+        <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-border flex-wrap min-w-0">
+          <div className="min-w-0">
             <SensitiveField
               fieldKey={`card-${employee.id}-hourly_rate`}
               value={<span className="text-xs font-semibold text-foreground">{formatCurrency(Number(employee.hourly_rate))}/hr</span>}
@@ -154,7 +154,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
               inline
             />
           </div>
-          <div className="flex-1">
+          <div className="min-w-0">
             <SensitiveField
               fieldKey={`card-${employee.id}-service_charge`}
               value={<span className="text-xs font-semibold text-foreground">SC {formatCurrency(Number(employee.service_charge || 0))}</span>}
