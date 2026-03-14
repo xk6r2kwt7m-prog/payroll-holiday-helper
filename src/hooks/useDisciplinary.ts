@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export interface DisciplinaryRecord {
   id: string;
@@ -71,6 +72,7 @@ export function useAddDisciplinaryRecord() {
       appeal_deadline?: string;
       expiry_date?: string;
     }) => {
+      await assertPermission("manage_lifecycle", null);
       const { error } = await supabase.from("disciplinary_records" as any).insert(record as any);
       if (error) throw error;
     },
@@ -86,6 +88,7 @@ export function useUpdateDisciplinaryRecord() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; [key: string]: any }) => {
+      await assertPermission("manage_lifecycle", null);
       const { error } = await supabase
         .from("disciplinary_records" as any)
         .update(updates as any)

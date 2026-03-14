@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export interface CompanySettings {
   id: string;
@@ -50,6 +51,7 @@ export function useUpdateCompanySettings() {
   return useMutation({
     mutationFn: async (updates: Partial<CompanySettings>) => {
       if (!tenantId) throw new Error("No tenant context");
+      await assertPermission("access_admin_centre", tenantId);
 
       // First check if settings exist for this tenant
       const { data: existing } = await supabase

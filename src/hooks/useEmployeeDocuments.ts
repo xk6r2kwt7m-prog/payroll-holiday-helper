@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export type DocumentType = Database["public"]["Enums"]["document_type"];
 
@@ -190,6 +191,7 @@ export function useUpdateDocument() {
         notes?: string | null;
       };
     }) => {
+      await assertPermission("manage_documents", null);
       const { data, error } = await supabase
         .from("employee_documents")
         .update(updates)
@@ -212,6 +214,7 @@ export function useDeleteDocument() {
 
   return useMutation({
     mutationFn: async ({ id, filePath }: { id: string; filePath: string }) => {
+      await assertPermission("manage_documents", null);
       // Delete file from storage
       const { error: storageError } = await supabase.storage
         .from("employee-documents")

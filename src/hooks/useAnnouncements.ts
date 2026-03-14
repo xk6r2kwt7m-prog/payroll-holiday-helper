@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
+import { assertPermission } from "@/lib/permission-guard";
 
 export interface Announcement {
   id: string;
@@ -70,6 +71,7 @@ export function useCreateAnnouncement() {
       publish_now?: boolean;
     }) => {
       if (!tenantId) throw new Error("Unable to create announcement: tenant context missing.");
+      await assertPermission("edit_employees", tenantId);
       const { publish_now, ...rest } = ann;
       const { data, error } = await supabase.from("staff_announcements" as any).insert({
         ...rest,
@@ -122,6 +124,7 @@ export function usePublishAnnouncement() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("edit_employees", null);
       const { error } = await supabase
         .from("staff_announcements" as any)
         .update({ published_at: new Date().toISOString() } as any)
@@ -140,6 +143,7 @@ export function useDeleteAnnouncement() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("edit_employees", null);
       const { error } = await supabase.from("staff_announcements" as any).delete().eq("id", id);
       if (error) throw error;
     },

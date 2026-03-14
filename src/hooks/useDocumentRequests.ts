@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export interface DocumentRequest {
   id: string;
@@ -138,6 +139,7 @@ export function useCreateDocumentRequest() {
       requires_verification?: boolean;
       notes?: string;
     }) => {
+      await assertPermission("manage_documents", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("document_requests" as any)
@@ -191,6 +193,7 @@ export function useBulkCreateDocumentRequests() {
       priority?: string;
       requires_verification?: boolean;
     }) => {
+      await assertPermission("manage_documents", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       const rows = payload.employee_ids.map(eid => ({
         tenant_id: tenantId!,
@@ -249,6 +252,7 @@ export function useVerifyDocumentRequest() {
       employeeId: string;
       tenantId: string;
     }) => {
+      await assertPermission("manage_documents", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("document_requests" as any)
@@ -286,6 +290,7 @@ export function useRejectDocumentRequest() {
       tenantId: string;
       reason: string;
     }) => {
+      await assertPermission("manage_documents", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("document_requests" as any)
@@ -323,6 +328,7 @@ export function useCancelDocumentRequest() {
       employeeId: string;
       tenantId: string;
     }) => {
+      await assertPermission("manage_documents", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("document_requests" as any)

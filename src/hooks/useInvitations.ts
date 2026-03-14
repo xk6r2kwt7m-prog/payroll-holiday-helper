@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant, useRequiredTenantId } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export function useInvitations() {
   const { tenantId } = useTenant();
@@ -31,6 +32,7 @@ export function useSendInvitation() {
 
   return useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
+      await assertPermission("edit_employees", tenantId);
       const { data, error } = await supabase
         .from("tenant_invitations")
         .insert({

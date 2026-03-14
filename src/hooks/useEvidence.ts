@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export function useEvidenceRequests(employeeId?: string) {
   const { tenantId } = useTenant();
@@ -100,6 +101,7 @@ export function useCreateEvidenceRequest() {
       related_time_entry_id?: string;
       related_absence_id?: string;
     }) => {
+      await assertPermission("approve_timesheets", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from("evidence_requests" as any)
@@ -178,6 +180,7 @@ export function useReviewEvidence() {
       status: "approved" | "rejected" | "more_info_requested";
       notes?: string;
     }) => {
+      await assertPermission("approve_timesheets", null);
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("evidence_files" as any)
@@ -201,6 +204,7 @@ export function useUpdateEvidenceRequestStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (params: { id: string; status: string }) => {
+      await assertPermission("approve_timesheets", null);
       const { error } = await supabase
         .from("evidence_requests" as any)
         .update({ status: params.status, updated_at: new Date().toISOString() } as any)
