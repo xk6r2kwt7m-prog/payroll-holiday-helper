@@ -142,6 +142,8 @@ const PayrollAudit = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <PayrollNavStrip />
+
         {/* Header */}
         <div className="flex items-center justify-between animate-slide-in-left">
           <div>

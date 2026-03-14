@@ -178,6 +178,8 @@ const PayrollAnalytics = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <PayrollNavStrip />
+
         {/* Header */}
         <div className="animate-slide-in-left">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">

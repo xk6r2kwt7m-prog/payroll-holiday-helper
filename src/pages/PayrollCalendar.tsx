@@ -80,6 +80,8 @@ const PayrollCalendar = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <PayrollNavStrip />
+
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-in-left">
           <div>
@@ -93,10 +95,6 @@ const PayrollCalendar = () => {
               View pay periods, pay dates, and upcoming deadlines
             </p>
           </div>
-          <Button onClick={() => navigate("/payroll")} variant="outline">
-            <DollarSign className="mr-2 h-4 w-4" />
-            Go to Payroll
-          </Button>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-4">
