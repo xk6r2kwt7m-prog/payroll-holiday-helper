@@ -208,7 +208,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
   const handlePublish = useCallback(async () => {
     try {
       await assertPermission("publish_schedules", tenantId);
-      await publishWeek.mutateAsync({
+      const { data: { user } } = await supabase.auth.getUser();
         startDate: weekStartStr,
         endDate: weekEndStr,
         branch: selectedBranch,
