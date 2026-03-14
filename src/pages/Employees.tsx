@@ -354,16 +354,16 @@ const Employees = () => {
             </div>
             <h3 className="text-lg font-semibold text-card-foreground mb-2">{t("employees.no_employees_yet")}</h3>
             <p className="text-muted-foreground mb-2 text-sm max-w-md mx-auto">
-              {isAdmin
+            {canEdit
                 ? t("employees.add_first_employee")
                 : "Your team hasn't been set up yet. Your admin will add employees soon."}
             </p>
-            {isAdmin && (
+            {canEdit && (
               <p className="text-xs text-muted-foreground/70 mb-6 max-w-sm mx-auto">
                 Employees are the foundation of scheduling, payroll, and leave management. Start by adding your first team member.
               </p>
             )}
-            {isAdmin && <EmployeeFormDialog />}
+            {canEdit && <EmployeeFormDialog />}
           </div>
         )}
 
