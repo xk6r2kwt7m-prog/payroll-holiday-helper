@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { assertPermission } from "@/lib/permission-guard";
+import { useTenant } from "@/hooks/useTenant";
 
 export interface AbsenceRecord {
   id: string;
@@ -35,6 +36,7 @@ export function useAbsenceRecords(employeeId?: string) {
 
 export function useAddAbsence() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (record: {
       employee_id: string;
@@ -44,7 +46,7 @@ export function useAddAbsence() {
       hours: number;
       notes?: string;
     }) => {
-      await assertPermission("edit_employees", null);
+      await assertPermission("edit_employees", tenantId!);
       const { error } = await supabase.from("absence_records" as any).insert(record as any);
       if (error) throw error;
     },
@@ -58,9 +60,10 @@ export function useAddAbsence() {
 
 export function useDeleteAbsence() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (id: string) => {
-      await assertPermission("edit_employees", null);
+      await assertPermission("edit_employees", tenantId!);
       const { error } = await supabase.from("absence_records" as any).delete().eq("id", id);
       if (error) throw error;
     },

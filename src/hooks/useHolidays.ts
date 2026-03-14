@@ -283,10 +283,11 @@ export async function recalcPayrollPeriodTotals(periodId: string) {
 
 export function useUpdateHolidayBalance() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: HolidayBalanceUpdate }) => {
-      await assertPermission("approve_holidays", null);
+      await assertPermission("approve_holidays", tenantId!);
       const { data, error } = await supabase
         .from("holiday_balances")
         .update(updates)

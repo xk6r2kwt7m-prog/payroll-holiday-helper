@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { assertPermission } from "@/lib/permission-guard";
+import { useTenant } from "@/hooks/useTenant";
 
 export interface ReturnToWorkForm {
   id: string;
@@ -42,6 +43,7 @@ export function useReturnToWorkForms(employeeId?: string) {
 
 export function useCreateRTWForm() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (form: {
       absence_record_id: string;
@@ -56,7 +58,7 @@ export function useCreateRTWForm() {
       follow_up_notes?: string;
       manager_comments?: string;
     }) => {
-      await assertPermission("edit_employees", null);
+      await assertPermission("edit_employees", tenantId!);
       const { error } = await supabase
         .from("return_to_work_forms" as any)
         .insert({

@@ -110,9 +110,10 @@ export function useClockInOut() {
 
 export function useApproveTimeEntries() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (entryIds: string[]) => {
-      await assertPermission("approve_timesheets", null);
+      await assertPermission("approve_timesheets", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -134,9 +135,10 @@ export function useApproveTimeEntries() {
 
 export function useRejectTimeEntry() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async ({ id, notes }: { id: string; notes?: string }) => {
-      await assertPermission("approve_timesheets", null);
+      await assertPermission("approve_timesheets", tenantId!);
 
       const { error } = await supabase
         .from("time_entries")
