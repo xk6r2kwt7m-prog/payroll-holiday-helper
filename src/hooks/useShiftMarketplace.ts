@@ -4,6 +4,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifyEvent } from "@/hooks/useNotifyEvent";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export interface MarketplaceListing {
   id: string;
