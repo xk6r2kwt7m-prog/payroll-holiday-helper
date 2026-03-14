@@ -11,6 +11,9 @@ export interface CurrentEmployee {
   department: string;
   tenant_id: string;
   status: string;
+  pay_type: string | null;
+  start_date: string | null;
+  hourly_rate: number | null;
 }
 
 /**
