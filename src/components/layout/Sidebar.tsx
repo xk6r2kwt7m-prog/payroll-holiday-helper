@@ -54,6 +54,7 @@ const navItems: SideNavItem[] = [
   { icon: CalendarClock, label: "Schedule", path: "/schedule", minRole: "staff", module: "scheduling" },
   { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor", module: "scheduling" },
   { icon: BarChart3, label: "Schedule Report", path: "/schedule/report", minRole: "manager", module: "scheduling" },
+  { icon: DollarSign, label: "Labour Cost", path: "/schedule/labour-cost", minRole: "manager", module: "scheduling" },
   { icon: BarChart3, label: "Analytics", path: "/schedule/analytics", minRole: "manager", module: "analytics" },
   { icon: DollarSign, label: "Payroll", path: "/payroll", minRole: "admin", module: "payroll" },
   { icon: CalendarDays, label: "Payroll Calendar", path: "/payroll/calendar", minRole: "admin", module: "payroll" },
