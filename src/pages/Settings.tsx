@@ -273,6 +273,9 @@ const Settings = () => {
                 <ConfigCard title={t("settings.employee_status_lifecycle")} description={t("settings.employee_status_lifecycle_desc")}>
                   <EmployeeStatusConfig />
                 </ConfigCard>
+                <ConfigCard title="Onboarding Requirements" description="Configure which onboarding steps are required and critical for work readiness.">
+                  <OnboardingRequirementsConfig />
+                </ConfigCard>
               </>
             )}
 
