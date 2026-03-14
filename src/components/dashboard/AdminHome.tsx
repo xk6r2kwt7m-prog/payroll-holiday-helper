@@ -113,6 +113,11 @@ export function AdminHome() {
         </p>
       </motion.div>
 
+      {/* Setup Health — shows only when setup is incomplete */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.02 }}>
+        <SetupHealthWidget />
+      </motion.div>
+
       {/* KPI Strip */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
         <div className="grid grid-cols-4 gap-2">
