@@ -316,8 +316,8 @@ const Payroll = () => {
 
         {/* Main Payroll Content */}
         <div className="space-y-4 sm:space-y-6">
-            {/* Admin actions */}
-            {isAdmin && (
+            {/* Admin actions — gated by permission */}
+            {canViewPayData && isAdmin && (
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 <SettleLeaverDialog />
                 <AddHolidayPaymentDialog />
