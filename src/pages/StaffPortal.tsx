@@ -19,6 +19,15 @@ import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload
 import { useMyTimeEntries } from "@/hooks/useTimeEntries";
 import { useMyHolidayRequests } from "@/hooks/useHolidayRequests";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useEmployeeDocuments, getExpiryStatus } from "@/hooks/useEmployeeDocuments";
+import { useI18n } from "@/hooks/useI18n";
+import { HolidayRequestForm } from "@/components/holidays/HolidayRequestForm";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
+import { useMyTimeEntries } from "@/hooks/useTimeEntries";
+import { useMyHolidayRequests } from "@/hooks/useHolidayRequests";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
