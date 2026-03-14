@@ -40,6 +40,7 @@ import SelectWorkspace from "./pages/SelectWorkspace";
 import ResetPassword from "./pages/ResetPassword";
 import TalentPool from "./pages/TalentPool";
 import Workforce from "./pages/Workforce";
+import LabourCostPreview from "./pages/LabourCostPreview";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 
