@@ -102,26 +102,11 @@ export function TalentSearch() {
                 </SelectContent>
               </Select>
 
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d!} value={d!}>{d}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {(countryFilter !== "all" || departmentFilter !== "all") && (
+              {countryFilter !== "all" && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setCountryFilter("all");
-                    setDepartmentFilter("all");
-                  }}
+                  onClick={() => setCountryFilter("all")}
                 >
                   Clear filters
                 </Button>
