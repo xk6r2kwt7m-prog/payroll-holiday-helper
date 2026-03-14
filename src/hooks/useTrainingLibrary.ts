@@ -198,13 +198,45 @@ export function useCreateAssignments() {
   return useMutation({
     mutationFn: async (assignments: Array<{ document_id: string; employee_id: string; due_date?: string; notes?: string }>) => {
       await assertPermission("manage_training", tenantId!);
-      const rows = assignments.map(a => ({
+
+      // Deduplicate: check for existing active assignments
+      const pairs = assignments.map(a => ({ doc: a.document_id, emp: a.employee_id }));
+      const empIds = [...new Set(pairs.map(p => p.emp))];
+      const docIds = [...new Set(pairs.map(p => p.doc))];
+
+      const { data: existing } = await supabase
+        .from("training_assignments" as any)
+        .select("document_id, employee_id")
+        .eq("tenant_id", tenantId!)
+        .in("employee_id", empIds)
+        .in("document_id", docIds)
+        .not("status", "eq", "cancelled");
+
+      const existingSet = new Set(
+        ((existing || []) as any[]).map((e: any) => `${e.employee_id}::${e.document_id}`)
+      );
+
+      const filtered = assignments.filter(
+        a => !existingSet.has(`${a.employee_id}::${a.document_id}`)
+      );
+
+      if (filtered.length === 0) {
+        toast.info("All selected items already have active assignments");
+        return;
+      }
+
+      const rows = filtered.map(a => ({
         ...a,
         tenant_id: tenantId,
         status: "assigned",
       }));
       const { error } = await supabase.from("training_assignments" as any).insert(rows as any);
       if (error) throw error;
+
+      const skipped = assignments.length - filtered.length;
+      if (skipped > 0) {
+        toast.info(`${skipped} duplicate assignment(s) skipped`);
+      }
       // Audit
       const auditRows = assignments.map(a => ({
         tenant_id: tenantId,
