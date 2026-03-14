@@ -12,7 +12,8 @@ import { useTenant } from "@/hooks/useTenant";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { ModuleKey } from "@/components/ProtectedRoute";
 import { getRoleLevel } from "@/lib/roles";
-import { type PermissionKey } from "@/hooks/useRolePermissions";
+import { type PermissionKey, NAV_PERMISSION_MAP } from "@/hooks/usePermissionGate";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
 
 type MinRole = "admin" | "manager" | "supervisor" | "staff" | "viewer";
 
