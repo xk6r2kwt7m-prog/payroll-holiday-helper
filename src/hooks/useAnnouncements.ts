@@ -122,9 +122,10 @@ export function useCreateAnnouncement() {
 
 export function usePublishAnnouncement() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (id: string) => {
-      await assertPermission("edit_employees", null);
+      await assertPermission("edit_employees", tenantId!);
       const { error } = await supabase
         .from("staff_announcements" as any)
         .update({ published_at: new Date().toISOString() } as any)
