@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useUploadDocument, DOCUMENT_TYPES, type DocumentType } from "@/hooks/useEmployeeDocuments";
+import { useExtractDocument } from "@/hooks/useDocumentExtraction";
+import { useTenant } from "@/hooks/useTenant";
 import { cn } from "@/lib/utils";
 
 interface DocumentUploadDialogProps {
