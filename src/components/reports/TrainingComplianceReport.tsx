@@ -1,19 +1,25 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
-import { GraduationCap, BookOpen, AlertTriangle } from "lucide-react";
+import { GraduationCap, BookOpen, AlertTriangle, Plus, CheckSquare, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TabsList, TabsTrigger, Tabs } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ReportFilters } from "./ReportFilters";
 import { ReportSummaryBar } from "./ReportSummaryBar";
 import { useTrainingRecords, CERTIFICATION_TYPES } from "@/hooks/useTrainingRecords";
-import { useTrainingAssignments, useTrainingLibrary, type TrainingLibraryItem } from "@/hooks/useTrainingLibrary";
+import { useTrainingAssignments, useTrainingLibrary, useCreateAssignments, type TrainingLibraryItem } from "@/hooks/useTrainingLibrary";
 import { useEmployees, type Employee } from "@/hooks/useEmployees";
 import { useManagerScope } from "@/hooks/useManagerScope";
+import { useNavigate } from "react-router-dom";
 import { exportToCsv } from "@/lib/csv-export";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // ─── Certification helpers ───
 
@@ -57,13 +63,11 @@ interface GapRow {
   gapStatus: "not_assigned" | "assigned_incomplete" | "overdue" | "completed";
   gapColor: string;
   gapLabel: string;
+  assignmentId?: string; // present when an assignment exists
 }
 
 function doesModuleApply(item: TrainingLibraryItem, employee: Employee): boolean {
   const deptMatch = !item.target_departments?.length || item.target_departments.includes(employee.department);
-  // target_roles and target_locations are checked if present
-  // For now employees don't have a "role" field in the employee table for targeting,
-  // so we only enforce department + location (branch via employee_branches not available here, skip)
   return deptMatch;
 }
 
@@ -73,7 +77,6 @@ function buildGapRows(
   assignments: any[]
 ): GapRow[] {
   const rows: GapRow[] = [];
-  // Only consider active required items (has target criteria or counts_toward_readiness)
   const requiredItems = libraryItems.filter(i => i.is_active && (i.target_departments?.length > 0 || i.counts_toward_readiness));
 
   for (const emp of employees) {
@@ -87,13 +90,15 @@ function buildGapRows(
       let gapStatus: GapRow["gapStatus"];
       let gapColor: string;
       let gapLabel: string;
+      let assignmentId: string | undefined;
 
       if (empAssignments.length === 0) {
         gapStatus = "not_assigned";
         gapColor = "text-destructive border-destructive/30";
         gapLabel = "Not Assigned";
       } else {
-        const latest = empAssignments[0]; // assignments ordered by assigned_at desc
+        const latest = empAssignments[0];
+        assignmentId = latest.id;
         if (latest.completed_at) {
           gapStatus = "completed";
           gapColor = "text-success border-success/30";
@@ -130,6 +135,7 @@ function buildGapRows(
         gapStatus,
         gapColor,
         gapLabel,
+        assignmentId,
       });
     }
   }
@@ -144,12 +150,17 @@ export function TrainingComplianceReport() {
   const [dept, setDept] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [empId, setEmpId] = useState("all");
+  const [actionableOnly, setActionableOnly] = useState(false);
+  const [selectedGaps, setSelectedGaps] = useState<Set<string>>(new Set());
+
+  const navigate = useNavigate();
 
   const { data: records = [], isLoading: certLoading } = useTrainingRecords();
   const { data: assignments = [], isLoading: assignLoading } = useTrainingAssignments();
   const { data: libraryItems = [], isLoading: libLoading } = useTrainingLibrary();
   const { data: employees = [] } = useEmployees();
   const { filterByScope, filterEmployees } = useManagerScope();
+  const createAssignments = useCreateAssignments();
 
   const scopedEmployees = useMemo(() => filterEmployees(employees), [employees, filterEmployees]);
 
@@ -226,6 +237,9 @@ export function TrainingComplianceReport() {
     let list = allGapRows;
     if (dept !== "all") list = list.filter(r => r.department === dept);
     if (empId !== "all") list = list.filter(r => r.employeeId === empId);
+    if (actionableOnly) {
+      list = list.filter(r => r.gapStatus !== "completed");
+    }
     if (statusFilter !== "all") {
       list = list.filter(r => {
         if (statusFilter === "not_assigned") return r.gapStatus === "not_assigned";
@@ -236,7 +250,7 @@ export function TrainingComplianceReport() {
       });
     }
     return list;
-  }, [allGapRows, dept, empId, statusFilter]);
+  }, [allGapRows, dept, empId, statusFilter, actionableOnly]);
 
   const gapSummary = useMemo(() => {
     const total = allGapRows.length;
@@ -246,6 +260,49 @@ export function TrainingComplianceReport() {
     const completed = allGapRows.filter(r => r.gapStatus === "completed").length;
     return { total, notAssigned, overdue, incomplete, completed };
   }, [allGapRows]);
+
+  // Gaps that can be assigned (not_assigned only)
+  const assignableGaps = useMemo(() => filteredGaps.filter(g => g.gapStatus === "not_assigned"), [filteredGaps]);
+
+  // ─── Gap actions ───
+
+  const gapKey = (g: GapRow) => `${g.employeeId}::${g.moduleId}`;
+
+  const toggleGapSelection = useCallback((g: GapRow) => {
+    setSelectedGaps(prev => {
+      const next = new Set(prev);
+      const k = gapKey(g);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedGaps.size === assignableGaps.length) {
+      setSelectedGaps(new Set());
+    } else {
+      setSelectedGaps(new Set(assignableGaps.map(gapKey)));
+    }
+  }, [assignableGaps, selectedGaps.size]);
+
+  const handleAssignSingle = useCallback(async (g: GapRow) => {
+    await createAssignments.mutateAsync([{ document_id: g.moduleId, employee_id: g.employeeId }]);
+    setSelectedGaps(prev => { const n = new Set(prev); n.delete(gapKey(g)); return n; });
+  }, [createAssignments]);
+
+  const handleAssignSelected = useCallback(async () => {
+    const toAssign = assignableGaps.filter(g => selectedGaps.has(gapKey(g)));
+    if (toAssign.length === 0) return;
+    await createAssignments.mutateAsync(
+      toAssign.map(g => ({ document_id: g.moduleId, employee_id: g.employeeId }))
+    );
+    setSelectedGaps(new Set());
+  }, [assignableGaps, selectedGaps, createAssignments]);
+
+  const handleViewAssignment = useCallback((g: GapRow) => {
+    // Navigate to training page where the assignment can be managed
+    navigate("/training");
+  }, [navigate]);
 
   // ─── Shared ───
 
@@ -309,6 +366,8 @@ export function TrainingComplianceReport() {
   const handleTabChange = (t: string) => {
     setTab(t);
     setStatusFilter("all");
+    setSelectedGaps(new Set());
+    if (t !== "gaps") setActionableOnly(false);
   };
 
   const activeRowCount = isCertTab ? filteredCerts.length : isAssignTab ? filteredAssignments.length : filteredGaps.length;
@@ -388,12 +447,26 @@ export function TrainingComplianceReport() {
           </select>
         </div>
 
+        {/* Actionable-only toggle for Gaps tab */}
+        {isGapsTab && (
+          <div className="flex items-center gap-2">
+            <Switch
+              id="actionable-only"
+              checked={actionableOnly}
+              onCheckedChange={setActionableOnly}
+            />
+            <Label htmlFor="actionable-only" className="text-xs text-muted-foreground cursor-pointer">
+              Actionable only
+            </Label>
+          </div>
+        )}
+
         {!isLoading && (
           <ReportSummaryBar
             rowCount={activeRowCount}
             department={dept}
             employeeName={selectedEmpName}
-            extra={statusFilter !== "all" ? statusFilter : undefined}
+            extra={statusFilter !== "all" ? statusFilter : (actionableOnly && isGapsTab ? "actionable" : undefined)}
           />
         )}
       </CardHeader>
@@ -493,42 +566,109 @@ export function TrainingComplianceReport() {
           )
         ) : (
           /* ─── Gaps Table ─── */
-          filteredGaps.length === 0 ? (
-            <EmptyState icon={AlertTriangle} title="No training gaps" description="All required modules are assigned and completed, or no filters match." compact />
-          ) : (
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Module</TableHead>
-                    <TableHead className="hidden sm:table-cell">Category</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredGaps.slice(0, 200).map((g, i) => (
-                    <TableRow key={`${g.employeeId}-${g.moduleId}`}>
-                      <TableCell className="font-medium text-xs">{g.employeeName}</TableCell>
-                      <TableCell className="text-xs">
-                        <span>{g.moduleTitle}</span>
-                        {g.countsTowardReadiness && (
-                          <span className="block text-[9px] text-muted-foreground">Blocks readiness</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-xs capitalize">{g.category}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("text-[10px]", g.gapColor)}>{g.gapLabel}</Badge>
-                      </TableCell>
+          <>
+            {/* Bulk action bar */}
+            {assignableGaps.length > 0 && (
+              <div className="flex items-center justify-between gap-2 mb-3 p-2.5 rounded-lg bg-muted/50 border border-border">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedGaps.size > 0 && selectedGaps.size === assignableGaps.length}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Select all unassigned gaps"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {selectedGaps.size > 0
+                      ? `${selectedGaps.size} selected`
+                      : `${assignableGaps.length} unassigned`}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-7 text-xs gap-1"
+                  disabled={selectedGaps.size === 0 || createAssignments.isPending}
+                  onClick={handleAssignSelected}
+                >
+                  <Plus className="h-3 w-3" />
+                  Assign {selectedGaps.size > 0 ? `(${selectedGaps.size})` : "selected"}
+                </Button>
+              </div>
+            )}
+
+            {filteredGaps.length === 0 ? (
+              <EmptyState icon={AlertTriangle} title="No training gaps" description="All required modules are assigned and completed, or no filters match." compact />
+            ) : (
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-8" />
+                      <TableHead>Employee</TableHead>
+                      <TableHead>Module</TableHead>
+                      <TableHead className="hidden sm:table-cell">Category</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-16">Action</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {filteredGaps.length > 200 && (
-                <p className="text-xs text-muted-foreground text-center mt-2">Showing 200 of {filteredGaps.length}. Export CSV for full data.</p>
-              )}
-            </div>
-          )
+                  </TableHeader>
+                  <TableBody>
+                    {filteredGaps.slice(0, 200).map((g) => {
+                      const k = gapKey(g);
+                      const isNotAssigned = g.gapStatus === "not_assigned";
+                      return (
+                        <TableRow key={k}>
+                          <TableCell className="px-2">
+                            {isNotAssigned && (
+                              <Checkbox
+                                checked={selectedGaps.has(k)}
+                                onCheckedChange={() => toggleGapSelection(g)}
+                                aria-label={`Select ${g.employeeName} - ${g.moduleTitle}`}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium text-xs">{g.employeeName}</TableCell>
+                          <TableCell className="text-xs">
+                            <span>{g.moduleTitle}</span>
+                            {g.countsTowardReadiness && (
+                              <span className="block text-[9px] text-muted-foreground">Blocks readiness</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-xs capitalize">{g.category}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={cn("text-[10px]", g.gapColor)}>{g.gapLabel}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {isNotAssigned ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] gap-1 px-1.5 text-primary"
+                                disabled={createAssignments.isPending}
+                                onClick={() => handleAssignSingle(g)}
+                              >
+                                <Plus className="h-3 w-3" /> Assign
+                              </Button>
+                            ) : g.gapStatus !== "completed" ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[10px] gap-1 px-1.5"
+                                onClick={() => handleViewAssignment(g)}
+                              >
+                                <Eye className="h-3 w-3" /> View
+                              </Button>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                {filteredGaps.length > 200 && (
+                  <p className="text-xs text-muted-foreground text-center mt-2">Showing 200 of {filteredGaps.length}. Export CSV for full data.</p>
+                )}
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
