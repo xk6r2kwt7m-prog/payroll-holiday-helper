@@ -62,9 +62,8 @@ export function TalentSearch() {
     }
   };
 
-  // Collect unique countries/departments for filters
+  // Collect unique countries for filters (department filter removed — internal HR data)
   const countries = [...new Set(profiles.flatMap((p) => p.preferred_countries || []))].sort();
-  const departments = [...new Set(profiles.map((p) => p.employee?.department).filter(Boolean))].sort();
 
   return (
     <div className="space-y-4">
