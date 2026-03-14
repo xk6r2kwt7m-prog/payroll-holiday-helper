@@ -85,6 +85,8 @@ interface EditablePayrollTableProps {
   periodStatus: string;
   isAdmin: boolean;
   onExport: (includeBank: boolean) => void;
+  showBonusColumn?: boolean;
+  showServiceCharge?: boolean;
 }
 
 interface EditingEntry {
