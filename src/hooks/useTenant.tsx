@@ -20,6 +20,10 @@ interface TenantContextType {
   isPlatformAdmin: boolean;
   enabledModules: EnabledModules | null;
   loading: boolean;
+  /** True only after tenant membership lookup has fully completed. */
+  tenantResolved: boolean;
+  /** Number of active memberships found; -1 = unresolved. */
+  membershipCount: number;
   showTenantPicker: boolean;
   availableTenants: TenantMembership[];
   setTenantId: (id: string) => void;
@@ -37,7 +41,7 @@ const DEFAULT_MODULES: EnabledModules = {
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [tenantName, setTenantName] = useState<string | null>(null);
   const [tenantCountry, setTenantCountry] = useState<string | null>(null);
@@ -46,6 +50,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [enabledModules, setEnabledModules] = useState<EnabledModules | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tenantResolved, setTenantResolved] = useState(false);
+  const [membershipCount, setMembershipCount] = useState(-1); // -1 = unresolved
   const [showTenantPicker, setShowTenantPicker] = useState(false);
   const [availableTenants, setAvailableTenants] = useState<TenantMembership[]>([]);
 
@@ -56,7 +62,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setTenantTimezone(tenant?.timezone || null);
     setTenantStatus(tenant?.status || null);
 
-    // Parse enabled_modules from tenant record
     const modules = tenant?.enabled_modules;
     if (modules && typeof modules === "object") {
       setEnabledModules({
@@ -72,7 +77,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   };
 
   const selectTenant = useCallback(async (selectedTenantId: string) => {
-    // Fetch the tenant details for the selected one
     const { data: membership } = await supabase
       .from("tenant_members")
       .select("tenant_id, tenants(id, name, country, timezone, status, enabled_modules)")
@@ -84,13 +88,19 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     if (membership) {
       applyTenantData(membership.tenants as any, membership.tenant_id);
       setShowTenantPicker(false);
-      // Persist selection in localStorage for convenience
       localStorage.setItem("uglo_selected_tenant", selectedTenantId);
     }
   }, [user]);
 
   useEffect(() => {
+    // While auth is still bootstrapping, stay in loading — do NOT touch localStorage
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     if (!user) {
+      // Confirmed logout — clear everything including localStorage
       setTenantId(null);
       setTenantName(null);
       setTenantCountry(null);
@@ -98,17 +108,20 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setTenantStatus(null);
       setIsPlatformAdmin(false);
       setEnabledModules(null);
-      setLoading(false);
+      setTenantResolved(true);
+      setMembershipCount(0);
       setShowTenantPicker(false);
       setAvailableTenants([]);
+      setLoading(false);
       localStorage.removeItem("uglo_selected_tenant");
+      console.log("[TenantProvider] Auth resolved: no user → cleared state + localStorage");
       return;
     }
 
-    // CRITICAL: Set loading=true immediately when user changes
-    // to prevent ProtectedRoute from seeing stale tenantId=null
-    // and redirecting to /onboard before the fetch completes.
+    // User is authenticated — reset resolved state and start fetch
     setLoading(true);
+    setTenantResolved(false);
+    setMembershipCount(-1);
 
     const fetchTenant = async () => {
       try {
@@ -132,36 +145,42 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
         if (membershipError) {
           console.error("[TenantProvider] Membership lookup failed:", membershipError);
-          // On error, do NOT redirect to onboard — stay in loading or retry
+          // On error, mark resolved but with -1 count — ProtectedRoute will show loading
+          setMembershipCount(-1);
+          setTenantResolved(false); // keep unresolved so we don't redirect to onboard
           setLoading(false);
           return;
         }
+
+        const count = memberships?.length ?? 0;
+        setMembershipCount(count);
 
         const savedTenantId = localStorage.getItem("uglo_selected_tenant");
 
-        console.log("[TenantProvider] Memberships found:", memberships?.length ?? 0,
+        console.log(
+          "[TenantProvider] Memberships:", count,
           "| Saved tenant:", savedTenantId,
-          "| Platform admin:", !!platformAdmin);
+          "| Platform admin:", !!platformAdmin
+        );
 
-        if (!memberships || memberships.length === 0) {
-          // No tenant membership — onboarding needed (unless platform admin)
-          console.log("[TenantProvider] Decision: No memberships → onboard");
+        if (count === 0) {
+          console.log("[TenantProvider] Decision: 0 memberships → onboard");
           setShowTenantPicker(false);
+          setTenantResolved(true);
           setLoading(false);
           return;
         }
 
-        if (memberships.length === 1) {
-          // Single tenant — auto-resolve
-          const m = memberships[0];
-          console.log("[TenantProvider] Decision: Single tenant →", (m.tenants as any)?.name);
+        if (count === 1) {
+          const m = memberships![0];
+          console.log("[TenantProvider] Decision: 1 membership → auto-select:", (m.tenants as any)?.name);
           applyTenantData(m.tenants as any, m.tenant_id);
           localStorage.setItem("uglo_selected_tenant", m.tenant_id);
           setShowTenantPicker(false);
         } else {
-          // Multiple tenants — check localStorage for previous selection
+          // Multiple tenants
           const savedMembership = savedTenantId
-            ? memberships.find((m) => m.tenant_id === savedTenantId)
+            ? memberships!.find((m) => m.tenant_id === savedTenantId)
             : null;
 
           if (savedMembership) {
@@ -169,14 +188,13 @@ export function TenantProvider({ children }: { children: ReactNode }) {
             applyTenantData(savedMembership.tenants as any, savedMembership.tenant_id);
             setShowTenantPicker(false);
           } else {
-            // Stale or missing localStorage — show picker
-            console.log("[TenantProvider] Decision: Multiple tenants, no valid saved selection → workspace picker");
             if (savedTenantId) {
-              console.warn("[TenantProvider] Stale saved tenant ID cleared:", savedTenantId);
+              console.warn("[TenantProvider] Stale saved tenant ID removed:", savedTenantId);
               localStorage.removeItem("uglo_selected_tenant");
             }
+            console.log("[TenantProvider] Decision:", count, "tenants, no valid saved → workspace picker");
             setAvailableTenants(
-              memberships.map((m) => ({
+              memberships!.map((m) => ({
                 tenant_id: m.tenant_id,
                 tenant_name: (m.tenants as any)?.name || "Unknown",
                 role: m.role,
@@ -185,15 +203,19 @@ export function TenantProvider({ children }: { children: ReactNode }) {
             setShowTenantPicker(true);
           }
         }
+
+        setTenantResolved(true);
       } catch (err) {
-        console.error("[TenantProvider] Failed to fetch tenant:", err);
+        console.error("[TenantProvider] Unexpected error:", err);
+        // Keep unresolved to avoid false redirect
+        setTenantResolved(false);
       } finally {
         setLoading(false);
       }
     };
 
     fetchTenant();
-  }, [user]);
+  }, [user, authLoading]);
 
   return (
     <TenantContext.Provider
@@ -206,6 +228,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         isPlatformAdmin,
         enabledModules,
         loading,
+        tenantResolved,
+        membershipCount,
         showTenantPicker,
         availableTenants,
         setTenantId,
