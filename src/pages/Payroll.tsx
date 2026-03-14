@@ -34,7 +34,7 @@ import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 
 const Payroll = () => {
   const { t } = useI18n();
-  const location = useLocation();
+  
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
