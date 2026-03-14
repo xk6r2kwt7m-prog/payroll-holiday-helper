@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, Calendar, X } from "lucide-react";
+import { Upload, FileText, Calendar, X, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useUploadDocument, DOCUMENT_TYPES, type DocumentType } from "@/hooks/useEmployeeDocuments";
+import { useExtractDocument } from "@/hooks/useDocumentExtraction";
+import { useTenant } from "@/hooks/useTenant";
 import { cn } from "@/lib/utils";
 
 interface DocumentUploadDialogProps {
@@ -39,6 +41,8 @@ export function DocumentUploadDialog({ employeeId, employeeName, trigger }: Docu
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadDocument = useUploadDocument();
+  const extractDocument = useExtractDocument();
+  const { tenantId } = useTenant();
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -100,7 +104,7 @@ export function DocumentUploadDialog({ employeeId, employeeName, trigger }: Docu
     }
 
     try {
-      await uploadDocument.mutateAsync({
+      const result = await uploadDocument.mutateAsync({
         employeeId,
         file,
         documentType,
@@ -112,6 +116,13 @@ export function DocumentUploadDialog({ employeeId, employeeName, trigger }: Docu
       toast.success("Document uploaded successfully");
       setOpen(false);
       resetForm();
+
+      // Auto-trigger extraction for image/PDF documents
+      const isExtractable = file.type.startsWith("image/") || file.type === "application/pdf";
+      if (isExtractable && tenantId && result?.id) {
+        toast.info("Extracting document data...", { duration: 3000 });
+        extractDocument.mutate({ documentId: result.id, tenantId });
+      }
     } catch (error) {
       toast.error("Failed to upload document");
     }
