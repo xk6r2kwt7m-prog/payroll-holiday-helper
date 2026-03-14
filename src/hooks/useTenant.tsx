@@ -122,7 +122,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       throw new Error("Cannot select workspace without authenticated user");
     }
 
-    console.log("[TenantProvider] selectTenant: cache miss, fetching from DB");
+    
     const { data: membership, error: membershipError } = await supabase
       .from("tenant_members")
       .select("tenant_id, tenants(id, name, country, timezone, status, enabled_modules)")
