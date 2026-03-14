@@ -197,7 +197,7 @@ function QuickActionGrid() {
   const actions = [
     { icon: Calendar, label: "Schedule", path: "/schedule", color: "text-primary", bg: "bg-primary/10" },
     { icon: Sun, label: "Time Off", path: "/holidays", color: "text-accent", bg: "bg-accent/10" },
-    { icon: FileText, label: "Documents", path: "/staff", color: "text-foreground", bg: "bg-secondary" },
+    { icon: FileText, label: "Profile", path: "/staff", color: "text-foreground", bg: "bg-secondary" },
     { icon: Megaphone, label: "Updates", path: "/announcements", color: "text-warning", bg: "bg-warning/10" },
   ];
   return (
