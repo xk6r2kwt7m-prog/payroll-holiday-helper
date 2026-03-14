@@ -70,6 +70,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
       return;
     }
     try {
+      await assertPermission("edit_schedules", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
       await createShift.mutateAsync({ ...data, created_by: user?.id });
       toast.success("Shift added");
