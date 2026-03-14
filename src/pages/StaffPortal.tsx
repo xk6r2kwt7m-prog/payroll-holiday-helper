@@ -21,7 +21,6 @@ const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
 export default function StaffPortal() {
   const { user, signOut } = useAuth();
-  const { user, signOut } = useAuth();
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [activeSection, setActiveSection] = useState<"profile" | "timesheets" | "documents" | "training">("profile");
