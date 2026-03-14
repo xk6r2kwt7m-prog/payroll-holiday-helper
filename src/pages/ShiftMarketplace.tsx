@@ -344,7 +344,12 @@ export default function ShiftMarketplace() {
   };
 
   const handleReject = (request: MarketplaceRequest) => {
-    rejectRequest.mutate({ requestId: request.id });
+    const listing = request.listing as any;
+    rejectRequest.mutate({
+      requestId: request.id,
+      employeeId: request.requested_by,
+      shiftId: listing?.shift_id || listing?.shift?.id,
+    });
   };
 
   const tab = isManagerOrAbove ? "approvals" : "available";
