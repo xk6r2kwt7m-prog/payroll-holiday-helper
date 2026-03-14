@@ -43,6 +43,7 @@ import ResetPassword from "./pages/ResetPassword";
 import TalentPool from "./pages/TalentPool";
 import Workforce from "./pages/Workforce";
 import LabourCostPreview from "./pages/LabourCostPreview";
+import ShiftMarketplace from "./pages/ShiftMarketplace";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 
