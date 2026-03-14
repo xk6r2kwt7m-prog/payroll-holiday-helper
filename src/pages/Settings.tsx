@@ -302,23 +302,23 @@ const Settings = () => {
   if (activeGroup && !activeSection && currentGroup) {
     return (
       <AppLayout>
-        <div className="max-w-3xl mx-auto space-y-4">
+        <div className="max-w-3xl mx-auto space-y-5">
           {/* Back + header */}
           <button
             onClick={() => navigateTo(null, null)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             All Settings
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
               <currentGroup.icon className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">{currentGroup.label}</h1>
-              <p className="text-xs text-muted-foreground">{currentGroup.description}</p>
+              <p className="text-sm text-muted-foreground">{currentGroup.description}</p>
             </div>
           </div>
 
@@ -327,13 +327,13 @@ const Settings = () => {
               <button
                 key={section.id}
                 onClick={() => navigateTo(activeGroup, section.id)}
-                className="flex items-center gap-3 w-full rounded-xl bg-card border border-border p-3.5 text-left hover:border-primary/30 hover:shadow-sm transition-all group"
+                className="flex items-center gap-3 w-full rounded-lg bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group shadow-card"
               >
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-foreground">{section.label}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>
+                  <p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">{section.description}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors shrink-0" />
               </button>
             ))}
           </div>

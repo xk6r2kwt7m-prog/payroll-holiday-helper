@@ -235,7 +235,7 @@ export default function Schedule() {
         </div>
 
         {/* Thin separator */}
-        <div className="h-px bg-border/40" />
+        <div className="h-px bg-border/30" />
 
         {/* Mobile Manager Bar */}
         {isMobile && canEditSchedules && schedPrefs?.mobileQuickBuild !== false && (

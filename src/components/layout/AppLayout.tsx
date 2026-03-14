@@ -140,7 +140,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top navigation bar — desktop only */}
-      <header className="hidden md:flex items-center h-12 border-b border-border bg-card px-4 shrink-0 z-50">
+      <header className="hidden md:flex items-center h-12 border-b border-border/60 bg-card px-5 shrink-0 z-50">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 mr-6 shrink-0">
           <img
