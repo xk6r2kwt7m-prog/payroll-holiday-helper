@@ -393,6 +393,26 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     toast.success(`Removed ${emptyShifts.length} empty shifts`);
   }, [bulkDelete, branchDeptShifts]);
 
+  const handleBulkUpdateTimes = useCallback(async (startTime: string, endTime: string) => {
+    const ids = branchDeptShifts.map((s: any) => s.id);
+    if (ids.length === 0) return;
+
+    // Capture published+assigned shifts before updating
+    const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
+
+    await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { start_time: startTime, end_time: endTime } });
+    toast.success(`Updated times for ${ids.length} shifts`);
+
+    if (publishedAssigned.length > 0) {
+      await notifyPublishedShiftStaff(
+        publishedAssigned,
+        "Shift times changed",
+        ({ date }) => `Your ${date} at ${selectedBranch} has new times: ${startTime.slice(0, 5)}–${endTime.slice(0, 5)}. Check your schedule.`,
+        "shift_changed"
+      );
+    }
+  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff]);
+
   const handleBulkCreateShifts = useCallback(async (newShifts: any[]) => {
     if (!tenantId) { toast.error("No workspace selected"); return; }
     const { data: { user } } = await supabase.auth.getUser();
