@@ -150,18 +150,28 @@ export function MobileBottomNav() {
     return enabledModules[mod] !== false;
   };
 
+  // Permission-based filtering
+  const { data: allPerms } = useRolePermissions();
+  const rolePerms = allPerms?.[role || "staff"] || {};
+  const hasNavPermission = (path: string) => {
+    const permKey = NAV_PERMISSION_MAP[path];
+    if (!permKey) return true;
+    if (isPlatformAdmin || role === "admin") return true;
+    return rolePerms[permKey] ?? false;
+  };
+
   const isAdmin = userLevel >= getRoleLevel("admin");
   const isManager = userLevel >= getRoleLevel("manager");
 
   const primaryTabs = isAdmin ? adminTabs : isManager ? managerTabs : staffTabs;
   const moreGroupsDef = isAdmin ? adminMoreGroups : isManager ? managerMoreGroups : staffMoreGroups;
 
-  const visibleMainNav = primaryTabs.filter(item => canAccess(item.minRole) && isModuleEnabled(item.module));
+  const visibleMainNav = primaryTabs.filter(item => canAccess(item.minRole) && isModuleEnabled(item.module) && hasNavPermission(item.path));
 
   const visibleMoreGroups = moreGroupsDef
     .map(group => ({
       ...group,
-      items: group.items.filter(item => canAccess(item.minRole) && isModuleEnabled(item.module)),
+      items: group.items.filter(item => canAccess(item.minRole) && isModuleEnabled(item.module) && hasNavPermission(item.path)),
     }))
     .filter(group => group.items.length > 0);
 
