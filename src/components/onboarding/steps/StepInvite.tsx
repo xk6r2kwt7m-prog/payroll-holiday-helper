@@ -1,7 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Plus, X, UserPlus } from "lucide-react";
+import { Plus, X, UserPlus, Info } from "lucide-react";
 
 interface TeamMember {
   name: string;
@@ -22,12 +21,14 @@ export function StepInvite({ members, onChange }: StepInviteProps) {
     onChange(updated);
   };
 
+  const hasAnyInput = members.some((m) => m.name.trim() || m.contact.trim());
+
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold text-foreground">Invite your first team member</h2>
+        <h2 className="text-xl font-bold text-foreground">Invite your team</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Add people now or skip and do it later from settings.
+          Add a manager or key team member now, or skip this and invite people later from the People section.
         </p>
       </div>
 
@@ -49,7 +50,7 @@ export function StepInvite({ members, onChange }: StepInviteProps) {
               className="h-11 rounded-xl"
             />
             <Input
-              placeholder="Email or phone"
+              placeholder="Email address"
               value={member.contact}
               onChange={(e) => updateMember(i, "contact", e.target.value)}
               className="h-11 rounded-xl"
@@ -65,6 +66,17 @@ export function StepInvite({ members, onChange }: StepInviteProps) {
       >
         <Plus className="h-4 w-4 mr-2" /> Add another person
       </Button>
+
+      {/* Skip reassurance */}
+      {!hasAnyInput && (
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-muted/50 border border-border/50">
+          <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <span className="font-medium text-foreground">No pressure.</span>{" "}
+            You can add employees at any time from People → Add Employee. Most admins set up their workspace first, then invite the team.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
