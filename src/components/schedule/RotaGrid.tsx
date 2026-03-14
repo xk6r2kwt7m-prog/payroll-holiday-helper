@@ -348,13 +348,13 @@ export function RotaGrid({
   return (
     <>
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto no-scrollbar">
+        <div className="overflow-x-auto no-scrollbar rounded-lg border border-border/40 bg-card">
           <table className="w-full border-collapse table-fixed">
-             <thead>
-              <tr className="border-b border-border/20">
+            <thead>
+              <tr className="border-b border-border/30">
                 <th className={cn(
-                  "text-left py-2.5 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider sticky left-0 bg-background z-10",
-                  isMobile ? "px-1.5 w-[80px]" : "px-3 w-[100px] sm:w-[150px]"
+                  "text-left py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider sticky left-0 bg-card z-10 border-r border-border/20",
+                  isMobile ? "px-2 w-[80px]" : "px-3 w-[110px] sm:w-[160px]"
                 )}>
                   Team
                 </th>
@@ -370,18 +370,18 @@ export function RotaGrid({
                       )}
                     >
                       <div className={cn(
-                        "flex flex-col items-center gap-0 rounded-lg py-1 mx-auto transition-colors",
-                        today && "bg-primary text-primary-foreground px-2.5",
+                        "flex flex-col items-center gap-0 rounded-lg py-1.5 mx-auto transition-colors",
+                        today && "bg-primary text-primary-foreground px-3",
                       )}>
                         <span className={cn(
-                          "text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider",
-                          !today && "text-muted-foreground/50"
+                          "text-[9px] sm:text-[10px] font-bold uppercase tracking-wider",
+                          !today && "text-muted-foreground/60"
                         )}>
                           {format(day, "EEE")}
                         </span>
                         <span className={cn(
-                          "text-sm sm:text-[15px] font-bold leading-tight",
-                          !today && "text-foreground/80"
+                          "text-sm sm:text-base font-bold leading-tight",
+                          !today && "text-foreground"
                         )}>
                           {format(day, "d")}
                         </span>
