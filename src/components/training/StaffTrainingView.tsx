@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   FileText, Shield, GraduationCap, CheckCircle2, Clock,
-  AlertTriangle, Eye, ChevronRight, BookOpen,
+  AlertTriangle, Eye, ChevronRight, BookOpen, ExternalLink,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
