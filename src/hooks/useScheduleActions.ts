@@ -103,6 +103,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handleUpdateShift = useCallback(async (id: string, updates: any) => {
     try {
+      await assertPermission("edit_schedules", tenantId);
       // Fetch the current shift before updating to detect published-shift changes
       const { data: oldShift } = await supabase
         .from("shifts")
