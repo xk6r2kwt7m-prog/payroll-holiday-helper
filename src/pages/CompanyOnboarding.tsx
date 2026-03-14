@@ -68,30 +68,11 @@ const CompanyOnboarding = () => {
     setData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  // ─── Redirect guards with diagnostic logging ───
-  if (!user) {
-    console.log("[CompanyOnboarding] GUARD — no user", { redirect: "/auth" });
-    navigate("/auth"); return null;
-  }
-  if (tenantResolved && tenantId) {
-    console.log("[CompanyOnboarding] GUARD — already has tenant", {
-      userId: user.id, tenantResolved, membershipCount, tenantId, redirect: "/",
-      reason: "tenant already selected",
-    });
-    navigate("/"); return null;
-  }
-  if (tenantResolved && membershipCount > 0 && !tenantId) {
-    console.log("[CompanyOnboarding] GUARD — has memberships, no tenant selected", {
-      userId: user.id, tenantResolved, membershipCount, tenantId, redirect: "/select-workspace",
-      reason: `${membershipCount} memberships exist, must pick workspace`,
-    });
-    navigate("/select-workspace"); return null;
-  }
+  // ─── Redirect guards (using <Navigate> to avoid React warnings) ───
+  if (!user) return <Navigate to="/auth" replace />;
+  if (tenantResolved && tenantId) return <Navigate to="/" replace />;
+  if (tenantResolved && membershipCount > 0 && !tenantId) return <Navigate to="/select-workspace" replace />;
   if (!tenantResolved || tenantLoading) {
-    console.log("[CompanyOnboarding] GUARD — still resolving", {
-      userId: user.id, tenantResolved, tenantLoading, membershipCount,
-      redirect: "none (showing loader)",
-    });
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -99,10 +80,6 @@ const CompanyOnboarding = () => {
     );
   }
   // If we reach here: tenantResolved=true, membershipCount=0, no tenantId → allow onboarding
-  console.log("[CompanyOnboarding] ALLOWED — rendering onboarding wizard", {
-    userId: user.id, tenantResolved, membershipCount, tenantId,
-    reason: "confirmed 0 memberships",
-  });
 
   const canProceed = (): boolean => {
     switch (step) {
