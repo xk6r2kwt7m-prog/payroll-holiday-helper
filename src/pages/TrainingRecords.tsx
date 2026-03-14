@@ -69,6 +69,7 @@ function TrainingAdminView() {
   const { data: records = [] } = useTrainingRecords();
   const addRecord = useAddTrainingRecord();
   const deleteRecord = useDeleteTrainingRecord();
+  const canManageTraining = usePermission("manage_training");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
