@@ -4,7 +4,7 @@ import {
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin,
   UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone, PieChart,
   Scale, ClipboardList, Sparkles, FileText, CalendarDays, AlertTriangle,
-  CheckCircle2, User, ShoppingBag,
+  CheckCircle2, User, ShoppingBag, FlaskConical, Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
