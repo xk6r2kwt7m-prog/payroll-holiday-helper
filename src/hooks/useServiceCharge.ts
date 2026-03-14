@@ -113,6 +113,7 @@ export function useUpsertServiceChargeLocation() {
   return useMutation({
     mutationFn: async (input: Partial<ServiceChargeLocationSetting> & { branch: string }) => {
       if (!tenantId) throw new Error("No tenant");
+      await assertPermission("access_admin_centre", tenantId);
       const { error } = await supabase
         .from("service_charge_location_settings")
         .upsert(
