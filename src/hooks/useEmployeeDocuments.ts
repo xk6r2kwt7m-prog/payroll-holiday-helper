@@ -214,6 +214,7 @@ export function useDeleteDocument() {
 
   return useMutation({
     mutationFn: async ({ id, filePath }: { id: string; filePath: string }) => {
+      await assertPermission("manage_documents", null);
       // Delete file from storage
       const { error: storageError } = await supabase.storage
         .from("employee-documents")
