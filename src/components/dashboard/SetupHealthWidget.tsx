@@ -129,7 +129,7 @@ export function SetupHealthBadge() {
 
   return (
     <Link
-      to="/settings?section=company"
+      to="/settings?group=company&section=profile"
       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-warning/10 text-warning text-[11px] font-semibold hover:bg-warning/20 transition-colors"
     >
       <AlertTriangle className="h-3.5 w-3.5" />
