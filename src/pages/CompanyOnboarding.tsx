@@ -64,9 +64,6 @@ const CompanyOnboarding = () => {
     members: [{ name: "", contact: "" }],
   });
 
-  if (!user) { navigate("/auth"); return null; }
-  if (!tenantLoading && tenantId) { navigate("/"); return null; }
-
   const updateField = useCallback((field: string, value: string) => {
     setData((prev) => ({ ...prev, [field]: value }));
   }, []);
