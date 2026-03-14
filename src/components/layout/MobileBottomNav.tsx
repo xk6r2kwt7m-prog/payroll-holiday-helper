@@ -120,6 +120,7 @@ const adminMoreGroups: MoreGroup[] = [
     items: [
       { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
+      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
       { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
     ],
   },
