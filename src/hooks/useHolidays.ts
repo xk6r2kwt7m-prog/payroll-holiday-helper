@@ -286,6 +286,7 @@ export function useUpdateHolidayBalance() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: HolidayBalanceUpdate }) => {
+      await assertPermission("approve_holidays", null);
       const { data, error } = await supabase
         .from("holiday_balances")
         .update(updates)
