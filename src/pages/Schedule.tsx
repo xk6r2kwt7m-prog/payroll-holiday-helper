@@ -23,17 +23,39 @@ import { MobileManagerBar } from "@/components/schedule/MobileManagerBar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CalendarClock } from "lucide-react";
+import { usePermission } from "@/hooks/useRolePermissions";
+import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 
 type ViewMode = "week" | "day";
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
 const DEPT_WITH_ALL = ["All", ...DEPARTMENTS] as const;
 
+const SCHEDULING_DEFAULTS = {
+  defaultView: "week" as string,
+  autoPublish: false,
+  showDeptFilter: true,
+  mobileQuickBuild: true,
+  shiftSwapNotify: true,
+};
+
 export default function Schedule() {
+  // Load tenant scheduling preferences
+  const { data: schedPrefs } = useTenantPreferences("scheduling", SCHEDULING_DEFAULTS);
+  
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [viewModeInitialized, setViewModeInitialized] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedDept, setSelectedDept] = useState("FOH");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
+
+  // Apply stored default view preference on first load
+  useEffect(() => {
+    if (schedPrefs && !viewModeInitialized) {
+      setViewMode((schedPrefs.defaultView === "day" ? "day" : "week") as ViewMode);
+      setViewModeInitialized(true);
+    }
+  }, [schedPrefs, viewModeInitialized]);
 
   // Dialog states
   const [publishDrawerOpen, setPublishDrawerOpen] = useState(false);
@@ -46,6 +68,10 @@ export default function Schedule() {
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
 
   const { isAdmin } = useAuth();
+  // Permission-based access
+  const canEditSchedules = usePermission("edit_schedules");
+  const canPublishSchedules = usePermission("publish_schedules");
+  
   const { data: employees } = useEmployees();
   const { data: tenantBranches = [] } = useTenantBranches();
   const isMobile = useIsMobile();
