@@ -2,3 +2,6 @@ project_id = "hukujeeeawfuywpiclyd"
 
 [functions.extract-document]
 verify_jwt = false
+
+[functions.check-document-expiry]
+verify_jwt = false

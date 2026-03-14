@@ -30,6 +30,8 @@ const EVENT_ICONS: Record<string, string> = {
   timesheet_review: "⏱️",
   evidence_requested: "📎",
   document_expiry: "📄",
+  document_expiry_warning: "⏳",
+  document_expired: "🔴",
   document_verified: "✅",
   document_rejected: "⚠️",
   document_uploaded: "📤",
