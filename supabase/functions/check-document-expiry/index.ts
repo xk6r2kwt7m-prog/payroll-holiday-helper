@@ -172,11 +172,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Filter against user notification preferences
+    const userIds = [...new Set(notifications.map((n: any) => n.user_id))];
+    const { data: prefRows } = await supabase
+      .from("notification_preferences")
+      .select("user_id, documents")
+      .in("user_id", userIds);
+
+    const disabledUsers = new Set<string>();
+    if (prefRows) {
+      for (const p of prefRows) {
+        if (p.documents === false) disabledUsers.add(p.user_id);
+      }
+    }
+    const filtered = notifications.filter((n: any) => !disabledUsers.has(n.user_id));
+
     let insertedCount = 0;
-    if (notifications.length > 0) {
-      // Insert in batches of 100
-      for (let i = 0; i < notifications.length; i += 100) {
-        const batch = notifications.slice(i, i + 100);
+    if (filtered.length > 0) {
+      for (let i = 0; i < filtered.length; i += 100) {
+        const batch = filtered.slice(i, i + 100);
         const { error: insertError } = await supabase
           .from("notifications")
           .insert(batch);
