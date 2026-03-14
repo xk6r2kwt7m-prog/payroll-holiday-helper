@@ -203,6 +203,12 @@ export function EmployeeDocumentList({ employeeId, employeeName, isAdmin }: Empl
                     <Badge variant="outline" className="shrink-0 text-xs">
                       {typeInfo.label}
                     </Badge>
+                    {(doc as any).document_status === "verified" && (
+                      <Badge className="shrink-0 text-[10px] bg-success/10 text-success">✓ Verified</Badge>
+                    )}
+                    {(doc as any).document_status === "rejected" && (
+                      <Badge className="shrink-0 text-[10px] bg-destructive/10 text-destructive">Rejected</Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span>{formatFileSize(doc.file_size)}</span>
