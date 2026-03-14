@@ -193,11 +193,13 @@ function AssignmentCard({ assignment, onOpen }: { assignment: TrainingAssignment
     >
       <div className={cn(
         "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+        doc?.content_type === "internal_page" ? "bg-primary/10" :
         doc?.requires_quiz ? "bg-accent/10" :
         doc?.requires_acknowledgement ? "bg-warning/10" :
         "bg-primary/10"
       )}>
-        {doc?.requires_quiz ? <GraduationCap className="h-5 w-5 text-accent" /> :
+        {doc?.content_type === "internal_page" ? <BookOpen className="h-5 w-5 text-primary" /> :
+         doc?.requires_quiz ? <GraduationCap className="h-5 w-5 text-accent" /> :
          doc?.requires_acknowledgement ? <Shield className="h-5 w-5 text-warning" /> :
          <FileText className="h-5 w-5 text-primary" />}
       </div>

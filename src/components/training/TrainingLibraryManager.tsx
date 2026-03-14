@@ -106,11 +106,13 @@ export function TrainingLibraryManager() {
             >
               <div className={cn(
                 "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                item.content_type === "internal_page" ? "bg-primary/10" :
                 item.requires_quiz ? "bg-accent/10" :
                 item.requires_acknowledgement ? "bg-warning/10" :
                 "bg-primary/10"
               )}>
-                {item.requires_quiz ? <GraduationCap className="h-5 w-5 text-accent" /> :
+                {item.content_type === "internal_page" ? <BookOpen className="h-5 w-5 text-primary" /> :
+                 item.requires_quiz ? <GraduationCap className="h-5 w-5 text-accent" /> :
                  item.requires_acknowledgement ? <Shield className="h-5 w-5 text-warning" /> :
                  <FileText className="h-5 w-5 text-primary" />}
               </div>
