@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Database } from "@/integrations/supabase/types";
+import { useDepartments } from "@/hooks/useDepartments";
 
 type DepartmentType = string;
 
