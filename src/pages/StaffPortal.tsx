@@ -16,6 +16,7 @@ import { HolidayRequestForm } from "@/components/holidays/HolidayRequestForm";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
+import { StaffDocumentRequests } from "@/components/documents/StaffDocumentRequests";
 import { useMyTimeEntries } from "@/hooks/useTimeEntries";
 import { useMyHolidayRequests } from "@/hooks/useHolidayRequests";
 import { AppLayout } from "@/components/layout/AppLayout";
