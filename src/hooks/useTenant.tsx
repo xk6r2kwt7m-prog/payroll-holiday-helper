@@ -256,7 +256,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
               console.warn("[TenantProvider] Stale saved tenant ID removed:", savedTenantId);
               localStorage.removeItem("uglo_selected_tenant");
             }
-            console.log("[TenantProvider] Decision:", count, "tenants, no valid saved → workspace picker");
+            
             setAvailableTenants(
               memberships!.map((m) => ({
                 tenant_id: m.tenant_id,
