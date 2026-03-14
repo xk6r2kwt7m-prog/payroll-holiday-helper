@@ -29,12 +29,12 @@ import {
   Download,
   Trash2,
   UserX,
-  Clock,
   Save,
   FolderOpen,
   MapPin,
   CalendarDays,
   DollarSign,
+  Undo2,
 } from "lucide-react";
 import { format, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -78,6 +78,10 @@ interface ScheduleHeaderProps {
   onRemoveEmptyShifts?: () => void;
   shiftCount?: number;
   assignedCount?: number;
+  // Undo publish
+  canUndoPublish?: boolean;
+  undoTimeRemaining?: string;
+  onUndoPublish?: () => void;
 }
 
 export function ScheduleHeader({
@@ -113,6 +117,9 @@ export function ScheduleHeader({
   onRemoveEmptyShifts,
   shiftCount = 0,
   assignedCount = 0,
+  canUndoPublish,
+  undoTimeRemaining,
+  onUndoPublish,
 }: ScheduleHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const navigate = useNavigate();
@@ -131,14 +138,14 @@ export function ScheduleHeader({
       : format(currentDate, "EEE d MMM");
 
   return (
-    <div className={cn("space-y-2", isMobile ? "pb-1.5" : "pb-2")}>
-      {/* Row 1: Location + Date Nav — always visible */}
-      <div className="flex items-center gap-2">
-        {/* Location selector */}
+    <div className={cn("space-y-0", isMobile ? "pb-1.5" : "pb-0")}>
+      {/* Single header row: Location | Week Nav | Publish | Overflow */}
+      <div className="flex items-center gap-2 h-12">
+        {/* Location selector — compact */}
         <Select value={selectedBranch} onValueChange={onBranchChange}>
           <SelectTrigger className={cn(
-            "h-10 w-auto gap-1.5 text-sm font-semibold border-border",
-            isMobile ? "min-w-[100px]" : "min-w-[130px]"
+            "h-9 w-auto gap-1 text-xs font-semibold border-none bg-transparent shadow-none px-2",
+            isMobile ? "min-w-[80px]" : "min-w-[110px]"
           )}>
             <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
             <SelectValue />
@@ -150,9 +157,11 @@ export function ScheduleHeader({
           </SelectContent>
         </Select>
 
-        {/* Date navigation */}
-        <div className="flex items-center gap-0.5 flex-1 justify-center min-w-0">
-          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => onNavigate(-1)}>
+        <div className="h-4 w-px bg-border" />
+
+        {/* Date navigation — centered */}
+        <div className="flex items-center gap-0 flex-1 justify-center min-w-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onNavigate(-1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
@@ -161,9 +170,8 @@ export function ScheduleHeader({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-9 font-semibold text-sm px-2 min-w-0"
+                className="h-8 font-semibold text-sm px-2 min-w-0"
               >
-                <CalendarDays className="h-3.5 w-3.5 mr-1.5 shrink-0 text-muted-foreground" />
                 <span className="truncate">{dateLabel}</span>
               </Button>
             </PopoverTrigger>
@@ -182,22 +190,59 @@ export function ScheduleHeader({
                   className="w-full text-xs"
                   onClick={() => { onToday(); setCalendarOpen(false); }}
                 >
-                  Jump to Today
+                  Today
                 </Button>
               </div>
             </PopoverContent>
           </Popover>
 
-          <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => onNavigate(1)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onNavigate(1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Overflow menu — secondary actions */}
+        {/* Publish CTA + Undo */}
+        {isAdmin && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            {canUndoPublish && onUndoPublish ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onUndoPublish}
+                className="h-8 gap-1.5 text-xs rounded-full px-3 border-warning/40 text-warning hover:bg-warning/5"
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Undo ({undoTimeRemaining})
+              </Button>
+            ) : null}
+
+            {hasUnpublished ? (
+              <Button
+                size="sm"
+                onClick={onPublish}
+                disabled={isPublishing}
+                className="h-8 gap-1.5 text-xs shrink-0 rounded-full px-4"
+              >
+                <Send className="h-3.5 w-3.5" />
+                {isPublishing ? "Publishing…" : "Publish"}
+              </Button>
+            ) : publishedCount > 0 && !canUndoPublish ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-success shrink-0 rounded-full px-3 pointer-events-none"
+              >
+                ✓ Live
+              </Button>
+            ) : null}
+          </div>
+        )}
+
+        {/* Overflow menu */}
         {isAdmin && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -264,52 +309,22 @@ export function ScheduleHeader({
         )}
       </div>
 
-      {/* Row 2: Department filter pills + Publish CTA */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-1">
-          {departments.map((d) => (
-            <button
-              key={d}
-              onClick={() => onDeptChange(d)}
-              className={cn(
-                "rounded-full text-xs font-medium whitespace-nowrap transition-colors",
-                // Mobile: taller touch target
-                isMobile ? "px-3 py-2 min-h-[36px]" : "px-3 py-1.5 min-h-[32px]",
-                selectedDept === d
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              )}
-            >
-              {d}
-            </button>
-          ))}
-        </div>
-
-        {/* Publish CTA — always visible */}
-        {isAdmin && (
-          <>
-            {hasUnpublished ? (
-              <Button
-                size="sm"
-                onClick={onPublish}
-                disabled={isPublishing}
-                className="h-8 gap-1.5 text-xs shrink-0 rounded-full px-4"
-              >
-                <Send className="h-3.5 w-3.5" />
-                {isPublishing ? "Publishing…" : "Publish"}
-              </Button>
-            ) : publishedCount > 0 ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onUnpublish}
-                className="h-8 text-xs text-success border-success/30 hover:bg-success/5 shrink-0 rounded-full px-3"
-              >
-                ✓ Published
-              </Button>
-            ) : null}
-          </>
-        )}
+      {/* Department pills — second row, very light */}
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-2">
+        {departments.map((d) => (
+          <button
+            key={d}
+            onClick={() => onDeptChange(d)}
+            className={cn(
+              "rounded-full text-[11px] font-medium whitespace-nowrap transition-colors px-3 py-1 min-h-[28px]",
+              selectedDept === d
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            )}
+          >
+            {d}
+          </button>
+        ))}
       </div>
     </div>
   );

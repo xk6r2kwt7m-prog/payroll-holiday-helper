@@ -18,7 +18,6 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: shift.id,
     data: { shift },
-    // Disable drag on mobile — use tap workflows instead
     disabled: !isAdmin || isMobile,
   });
 
@@ -39,45 +38,41 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
       style={style}
       onClick={(e) => { if (onView) { e.stopPropagation(); onView(e); } }}
       className={cn(
-        "rounded-lg text-[10px] sm:text-[11px] leading-tight relative select-none",
-        "transition-all active:scale-[0.97]",
-        // Mobile: taller touch target, more padding
-        "min-h-[44px] sm:min-h-[44px] flex flex-col items-center justify-center gap-0.5",
-        "px-1 py-2 sm:px-1.5 sm:py-1.5",
-        // Clear colour differentiation: published = green, unpublished = blue/primary, open = amber dashed
+        "rounded-md text-[10px] sm:text-[11px] leading-tight relative select-none",
+        "transition-all",
+        "min-h-[40px] sm:min-h-[40px] flex flex-col items-center justify-center gap-0",
+        "px-1 py-1.5 sm:px-1.5 sm:py-1.5",
+        // Calmer colour system: published = subtle green left border, draft = subtle border, open = dashed
         isOpen
-          ? "bg-accent/15 text-accent border-2 border-dashed border-accent/40"
+          ? "bg-muted/40 text-muted-foreground border border-dashed border-border"
           : isPublished
-            ? "bg-success/15 text-success-foreground border-l-[3px] border-l-success border border-success/30 bg-gradient-to-r from-success/15 to-success/5"
-            : "bg-primary/12 text-primary border-l-[3px] border-l-primary border border-primary/25 bg-gradient-to-r from-primary/12 to-primary/5",
+            ? "bg-card border border-border/60 border-l-2 border-l-success"
+            : "bg-card border border-border/60 border-l-2 border-l-primary/60",
         isDragging && "shadow-lg ring-2 ring-primary/40 scale-105 opacity-90",
-        // Desktop: drag cursor. Mobile: tap cursor
-        isAdmin && !isMobile && "cursor-grab active:cursor-grabbing",
-        isAdmin && isMobile && "cursor-pointer",
+        isAdmin && !isMobile && "cursor-grab active:cursor-grabbing hover:shadow-sm",
+        isAdmin && isMobile && "cursor-pointer active:scale-[0.97]",
       )}
       {...(isAdmin && !isMobile ? { ...listeners, ...attributes } : {})}
     >
-      {/* Time — primary info */}
-      <div className="font-semibold tabular-nums whitespace-nowrap">
+      {/* Time — strongest visual element */}
+      <div className="font-semibold tabular-nums whitespace-nowrap text-foreground">
         {shift.start_time?.slice(0, 5)}
       </div>
-      <div className="font-medium tabular-nums whitespace-nowrap text-[9px] opacity-70">
+      <div className="font-medium tabular-nums whitespace-nowrap text-[9px] text-muted-foreground">
         {shift.end_time?.slice(0, 5)}
       </div>
 
-      {/* Status label — top right */}
+      {/* Published dot — tiny, top-right, only when published */}
       {isPublished && (
-        <div className="absolute top-0.5 right-0.5">
-          <span className="inline-block px-1 py-px rounded text-[7px] font-bold uppercase bg-success text-success-foreground leading-none">
-            Live
-          </span>
+        <div className="absolute top-[3px] right-[3px]">
+          <span className="inline-block h-[5px] w-[5px] rounded-full bg-success" />
         </div>
       )}
 
       {/* Open shift indicator */}
       {isOpen && (
-        <div className="absolute top-0.5 right-0.5">
-          <div className="h-2 w-2 rounded-full bg-accent animate-pulse" title="Open shift" />
+        <div className="absolute top-[3px] right-[3px]">
+          <div className="h-[5px] w-[5px] rounded-full bg-accent" />
         </div>
       )}
     </div>
@@ -93,11 +88,11 @@ export function CrossBranchShiftCell({ shift, onNavigate }: CrossBranchShiftCell
   return (
     <div
       className={cn(
-        "rounded-lg px-1.5 py-1.5 text-[10px] leading-tight",
-        "bg-warning/8 text-warning/80 border border-warning/20",
-        "min-h-[44px] flex flex-col items-center justify-center gap-0.5",
+        "rounded-md px-1.5 py-1.5 text-[10px] leading-tight",
+        "bg-muted/30 text-muted-foreground border border-dashed border-border/60",
+        "min-h-[40px] flex flex-col items-center justify-center gap-0",
         "transition-all active:scale-95",
-        onNavigate && "cursor-pointer"
+        onNavigate && "cursor-pointer hover:bg-muted/50"
       )}
       onClick={(e) => {
         e.stopPropagation();

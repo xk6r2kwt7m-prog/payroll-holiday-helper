@@ -206,10 +206,12 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handlePublish = useCallback(async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       await publishWeek.mutateAsync({
         startDate: weekStartStr,
         endDate: weekEndStr,
         branch: selectedBranch,
+        userId: user?.id,
       });
       toast.success(`${selectedBranch} rota published — staff will be notified`);
 
@@ -435,6 +437,54 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     return count;
   }, [branchDeptShifts, selectedBranch, selectedDept, weekDays]);
 
+  // 10-minute publish rollback — compute from published_at timestamps
+  const publishRollbackInfo = useMemo(() => {
+    const publishedShifts = branchShifts.filter((s: any) => s.is_published && s.published_at);
+    if (publishedShifts.length === 0) return { canUndo: false, timeRemaining: 0, publishedAt: null };
+
+    // Find the most recent published_at among this week's shifts
+    const latestPublishedAt = publishedShifts.reduce((latest: string, s: any) => {
+      return s.published_at > latest ? s.published_at : latest;
+    }, publishedShifts[0].published_at);
+
+    const publishedTime = new Date(latestPublishedAt).getTime();
+    const now = Date.now();
+    const elapsed = now - publishedTime;
+    const TEN_MINUTES = 10 * 60 * 1000;
+    const remaining = TEN_MINUTES - elapsed;
+
+    return {
+      canUndo: remaining > 0,
+      timeRemaining: Math.max(0, remaining),
+      publishedAt: latestPublishedAt,
+    };
+  }, [branchShifts]);
+
+  const handleUndoPublish = useCallback(async () => {
+    if (!publishRollbackInfo.canUndo) {
+      toast.error("Undo window has expired. You can still edit and re-publish individual shifts.");
+      return;
+    }
+    if (!confirm("Undo publish? This will revert all recently published shifts back to draft. Staff will no longer see them.")) return;
+    try {
+      await unpublishWeek.mutateAsync({ startDate: weekStartStr, endDate: weekEndStr, branch: selectedBranch });
+      toast.success("Publish reverted — shifts are back in draft");
+
+      // Notify staff that the published rota has been withdrawn
+      const publishedAssigned = branchShifts.filter((s: any) => s.is_published && s.employee_id);
+      if (publishedAssigned.length > 0) {
+        await notifyPublishedShiftStaff(
+          publishedAssigned,
+          "Rota withdrawn",
+          ({ date }) => `The published rota for ${date} at ${selectedBranch} has been withdrawn. An updated rota will follow.`,
+          "shift_cancelled"
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  }, [publishRollbackInfo.canUndo, unpublishWeek, weekStartStr, weekEndStr, selectedBranch, branchShifts, notifyPublishedShiftStaff]);
+
   return {
     // Data
     shifts,
@@ -452,12 +502,15 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     openShiftCount,
     hasUnpublished,
     understaffedDays,
+    // Publish rollback
+    publishRollbackInfo,
     // Handlers
     handleCreateShift,
     handleUpdateShift,
     handleDeleteShift,
     handlePublish,
     handleUnpublish,
+    handleUndoPublish,
     handleCopyPrevWeek,
     handleSaveTemplate,
     handleLoadTemplate,

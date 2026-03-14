@@ -103,6 +103,29 @@ export default function Schedule() {
     setCurrentDate((d) => addDays(d, viewMode === "week" ? 7 * dir : dir));
   };
 
+  // Undo publish timer
+  const [undoTimeStr, setUndoTimeStr] = useState("");
+  useEffect(() => {
+    if (!schedule.publishRollbackInfo.canUndo) {
+      setUndoTimeStr("");
+      return;
+    }
+    const updateTimer = () => {
+      const remaining = schedule.publishRollbackInfo.timeRemaining - (Date.now() - (Date.now() - schedule.publishRollbackInfo.timeRemaining + schedule.publishRollbackInfo.timeRemaining));
+      // Recalculate from source
+      if (schedule.publishRollbackInfo.publishedAt) {
+        const publishedTime = new Date(schedule.publishRollbackInfo.publishedAt).getTime();
+        const left = Math.max(0, 10 * 60 * 1000 - (Date.now() - publishedTime));
+        const mins = Math.floor(left / 60000);
+        const secs = Math.floor((left % 60000) / 1000);
+        setUndoTimeStr(mins > 0 ? `${mins}m ${secs}s` : `${secs}s`);
+      }
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [schedule.publishRollbackInfo.canUndo, schedule.publishRollbackInfo.publishedAt, schedule.publishRollbackInfo.timeRemaining]);
+
   // Day view data
   const dayShifts = useMemo(
     () => schedule.shifts?.filter(
@@ -143,8 +166,11 @@ export default function Schedule() {
   return (
     <AppLayout>
       <div className="flex flex-col h-full -m-4 sm:-m-6">
-        {/* Top control area */}
-        <div className={cn("border-b border-border bg-card", isMobile ? "px-2.5 pt-2" : "px-3 pt-3")}>
+        {/* Top control area — clean, minimal */}
+        <div className={cn(
+          "border-b border-border/50 bg-background",
+          isMobile ? "px-2.5 pt-2" : "px-4 pt-2"
+        )}>
           <ScheduleHeader
             currentDate={currentDate}
             viewMode={viewMode}
@@ -177,8 +203,12 @@ export default function Schedule() {
             onRemoveEmptyShifts={schedule.handleRemoveEmptyShifts}
             shiftCount={schedule.branchDeptShifts.length}
             assignedCount={schedule.branchDeptShifts.filter((s: any) => s.employee_id).length}
+            canUndoPublish={schedule.publishRollbackInfo.canUndo}
+            undoTimeRemaining={undoTimeStr}
+            onUndoPublish={schedule.handleUndoPublish}
           />
 
+          {/* Collapsible summary strip — desktop only */}
           {!isMobile && (
             <ScheduleSummary
               shifts={schedule.shifts || []}
@@ -190,6 +220,7 @@ export default function Schedule() {
             />
           )}
 
+          {/* Quick filters — desktop, only when issues exist */}
           {!isMobile && (
             <ScheduleFilters
               activeFilter={quickFilter}
@@ -201,6 +232,7 @@ export default function Schedule() {
             />
           )}
 
+          {/* Compliance warnings — compact inline */}
           {complianceWarnings.length > 0 && !isMobile && (
             <div className="pb-2">
               <ComplianceWarningsBanner warnings={complianceWarnings} />
@@ -239,7 +271,7 @@ export default function Schedule() {
         )}
 
         {/* Main schedule area */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto bg-background">
           {/* Empty state when no shifts exist */}
           {!schedule.isLoading && (schedule.shifts?.length === 0) && (
             <EmptyState
@@ -259,11 +291,11 @@ export default function Schedule() {
           {(schedule.shifts?.length ?? 0) > 0 && (
             selectedDept === "All" ? (
               viewMode === "week" ? (
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border/30">
                   {DEPARTMENTS.map((deptVal) => (
                     <div key={deptVal}>
-                      <div className="px-4 py-2 bg-muted/40 border-b border-border sticky top-0 z-20">
-                        <h3 className="text-sm font-semibold text-foreground">{deptVal}</h3>
+                      <div className="px-4 py-1.5 bg-muted/20 border-b border-border/30 sticky top-0 z-20">
+                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{deptVal}</h3>
                       </div>
                       <RotaGrid
                         weekDays={schedule.weekDays}
@@ -359,25 +391,25 @@ export default function Schedule() {
           )}
         </div>
 
-        {/* Bottom status bar — desktop only */}
+        {/* Bottom status bar — desktop only, very minimal */}
         {!isMobile && (schedule.shifts?.length ?? 0) > 0 && (
-          <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-card">
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between px-4 py-1.5 border-t border-border/40 bg-background">
+            <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                {schedule.openShiftCount} empty
+                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+                {schedule.openShiftCount} open
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-primary" />
+                <span className="h-1.5 w-1.5 rounded-full bg-primary/60" />
                 {schedule.unpublishedCount} draft
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-success" />
+                <span className="h-1.5 w-1.5 rounded-full bg-success" />
                 {schedule.publishedCount} live
               </span>
               {complianceWarnings.length > 0 && (
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-destructive" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
                   {complianceWarnings.length} warnings
                 </span>
               )}

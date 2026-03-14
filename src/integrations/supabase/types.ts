@@ -3512,6 +3512,7 @@ export type Database = {
           is_published: boolean
           notes: string | null
           published_at: string | null
+          published_by: string | null
           shift_date: string
           start_time: string
           status: Database["public"]["Enums"]["shift_status"]
@@ -3529,6 +3530,7 @@ export type Database = {
           is_published?: boolean
           notes?: string | null
           published_at?: string | null
+          published_by?: string | null
           shift_date: string
           start_time: string
           status?: Database["public"]["Enums"]["shift_status"]
@@ -3546,6 +3548,7 @@ export type Database = {
           is_published?: boolean
           notes?: string | null
           published_at?: string | null
+          published_by?: string | null
           shift_date?: string
           start_time?: string
           status?: Database["public"]["Enums"]["shift_status"]

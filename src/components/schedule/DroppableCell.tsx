@@ -19,13 +19,13 @@ export function DroppableCell({ id, children, isAdmin, isToday, onClick }: Dropp
     <td
       ref={setNodeRef}
       className={cn(
-        "group/cell p-0.5 sm:p-1 text-center border-l border-border/50 transition-colors align-top",
-        isToday && "bg-primary/[0.03]",
+        "group/cell p-0.5 sm:p-1 text-center transition-colors align-top",
+        // Stronger column structure with consistent left border
+        "border-l border-border/30",
+        isToday && "bg-primary/[0.02]",
         isAdmin && "cursor-pointer",
-        // Desktop: show drop indicator
-        !isMobile && isOver && "bg-primary/10 ring-1 ring-inset ring-primary/30",
-        // Mobile: active tap highlight
-        isMobile && isAdmin && "active:bg-primary/[0.06]",
+        !isMobile && isOver && "bg-primary/8 ring-1 ring-inset ring-primary/20",
+        isMobile && isAdmin && "active:bg-primary/[0.04]",
       )}
       onClick={onClick}
     >
@@ -45,20 +45,18 @@ export function EmptyDropCell({ isAdmin }: EmptyDropCellProps) {
 
   return (
     <div className={cn(
-      "flex items-center justify-center rounded-lg",
-      // Mobile: taller tap target, completely clean — no icons, no borders
-      "min-h-[44px] sm:min-h-[40px]",
+      "flex items-center justify-center rounded-md",
+      "min-h-[40px] sm:min-h-[36px]",
       "transition-all",
       isMobile
-        ? "active:bg-primary/[0.08]"
+        ? "active:bg-primary/[0.06]"
         : cn(
             "sm:border sm:border-dashed sm:border-transparent",
-            "sm:group-hover/cell:border-border/40 sm:group-hover/cell:bg-primary/[0.04]",
+            "sm:group-hover/cell:border-border/30",
           ),
     )}>
-      {/* Plus icon: desktop hover only */}
       {!isMobile && (
-        <span className="h-3.5 w-3.5 text-muted-foreground/40 hidden sm:group-hover/cell:block text-lg leading-none">+</span>
+        <span className="h-3 w-3 text-muted-foreground/30 hidden sm:group-hover/cell:block text-sm leading-none">+</span>
       )}
     </div>
   );

@@ -350,62 +350,44 @@ export function RotaGrid({
   return (
     <>
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full border-collapse">
-            <thead>
+        <div className="overflow-x-auto no-scrollbar px-1 sm:px-2">
+          <table className="w-full border-collapse table-fixed">
+             <thead>
               <tr>
                 <th className={cn(
-                  "text-left py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider sticky left-0 bg-card z-10 border-b border-border",
-                  isMobile ? "px-1.5 w-[80px]" : "px-2 w-[100px] sm:w-[160px]"
+                  "text-left py-2.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider sticky left-0 bg-background z-10 border-b border-border/50",
+                  isMobile ? "px-1.5 w-[80px]" : "px-3 w-[100px] sm:w-[150px]"
                 )}>
-                  <span className="hidden sm:inline">Employee</span>
+                  <span className="hidden sm:inline">Staff</span>
                   <span className="sm:hidden">Staff</span>
                 </th>
                 {weekDays.map((day) => {
-                  const dayShifts = shiftsForDay(day);
-                  const minStaff = getMinimumStaff(branch, department as any, getDayAbbr(day));
-                  const assignedCount = dayShifts.filter((s: any) => s.employee_id).length;
-                  const isUnder = assignedCount < minStaff;
                   const today = isToday(day);
 
                   return (
                     <th
                       key={day.toISOString()}
                       className={cn(
-                        "text-center px-0.5 py-1.5 sm:py-2 border-b",
+                        "text-center px-0.5 py-2.5 border-b border-border/50",
                         isMobile ? "min-w-[48px]" : "min-w-[44px] sm:min-w-[100px]",
-                        today ? "border-primary/40" : "border-border",
                       )}
                     >
                       <div className={cn(
-                        "flex flex-col items-center gap-0.5 rounded-lg py-1 mx-auto",
-                        today && "bg-primary text-primary-foreground",
+                        "flex flex-col items-center gap-0 rounded-md py-1 mx-auto transition-colors",
+                        today && "bg-primary text-primary-foreground rounded-lg px-2",
                       )}>
                         <span className={cn(
-                          "text-[9px] sm:text-[10px] font-medium uppercase",
+                          "text-[9px] sm:text-[10px] font-medium uppercase tracking-wide",
                           !today && "text-muted-foreground"
                         )}>
                           {format(day, "EEE")}
                         </span>
                         <span className={cn(
-                          "text-sm sm:text-base font-bold leading-none",
+                          "text-sm sm:text-base font-semibold leading-tight",
                           !today && "text-foreground"
                         )}>
                           {format(day, "d")}
                         </span>
-                      </div>
-                      <div className="mt-1 flex items-center justify-center">
-                        {isUnder ? (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-destructive">
-                            <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
-                            <span className="hidden sm:inline">{assignedCount}/{minStaff}</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-success/70">
-                            <span className="h-1.5 w-1.5 rounded-full bg-success/60" />
-                            <span className="hidden sm:inline">{assignedCount}/{minStaff}</span>
-                          </span>
-                        )}
                       </div>
                     </th>
                   );
@@ -424,21 +406,21 @@ export function RotaGrid({
                     key={emp.id}
                     className={cn(
                       "transition-colors",
-                      empIdx > 0 && "border-t border-border/40",
-                      hasNoShifts && "bg-muted/[0.15]",
+                      empIdx > 0 && "border-t border-border/30",
+                      hasNoShifts && "opacity-50",
                     )}
                   >
                     <td className={cn(
-                      "py-1.5 sticky left-0 bg-card z-10",
-                      isMobile ? "px-1.5" : "px-2 py-2"
+                      "py-1.5 sticky left-0 bg-background z-10",
+                      isMobile ? "px-1.5" : "px-3 py-2"
                     )}>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <div className={cn(
                           "rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
                           isMobile ? "h-6 w-6" : "h-7 w-7",
                           hasNoShifts
                             ? "bg-muted text-muted-foreground"
-                            : "bg-primary/10 text-primary"
+                            : "bg-primary/8 text-primary"
                         )}>
                           {emp.forename[0]}{emp.surname?.[0] || ""}
                         </div>
@@ -446,14 +428,13 @@ export function RotaGrid({
                           <div className="truncate text-[11px] sm:text-xs font-medium text-foreground leading-tight">
                             {emp.forename}
                           </div>
-                          {/* Mobile: show only hours. Desktop: hours + cost */}
                           <div className="text-[9px] text-muted-foreground leading-tight mt-0.5 tabular-nums">
                             {weeklyHours > 0
                               ? `${Math.floor(weeklyHours)}h${Math.round((weeklyHours % 1) * 60) > 0 ? ` ${Math.round((weeklyHours % 1) * 60)}m` : ""}`
                               : "—"
                             }
                             {!isMobile && weeklyCost > 0 && (
-                              <span className="hidden sm:inline"> · £{weeklyCost.toFixed(0)}</span>
+                              <span className="hidden sm:inline text-muted-foreground/60"> · £{weeklyCost.toFixed(0)}</span>
                             )}
                           </div>
                         </div>
@@ -491,13 +472,13 @@ export function RotaGrid({
 
               {/* Open shifts row */}
               {weekDays.some((d) => getOpenShifts(d).length > 0) && (
-                <tr className="border-t-2 border-dashed border-accent/20">
-                  <td className="px-2 py-2 sticky left-0 bg-card z-10">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-bold shrink-0">
+                <tr className="border-t border-dashed border-border/40">
+                  <td className="px-3 py-2 sticky left-0 bg-background z-10">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
                         ?
                       </div>
-                      <span className="text-[11px] text-accent font-medium">Open</span>
+                      <span className="text-[11px] text-muted-foreground font-medium">Open</span>
                     </div>
                   </td>
                   {weekDays.map((day) => {
@@ -529,8 +510,8 @@ export function RotaGrid({
         <DragOverlay dropAnimation={null}>
           {activeShift ? (
             <div className={cn(
-              "rounded-lg px-2 py-1.5 text-[11px] leading-tight shadow-xl ring-2 ring-primary/50 scale-105",
-              "bg-card border border-primary/30 text-foreground"
+              "rounded-md px-2 py-1.5 text-[11px] leading-tight shadow-lg ring-1 ring-primary/30",
+              "bg-card border border-border text-foreground"
             )}>
               <div className="font-semibold tabular-nums">
                 {activeShift.start_time?.slice(0, 5)}–{activeShift.end_time?.slice(0, 5)}
