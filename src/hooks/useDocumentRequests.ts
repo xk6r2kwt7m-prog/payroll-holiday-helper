@@ -252,6 +252,7 @@ export function useVerifyDocumentRequest() {
       employeeId: string;
       tenantId: string;
     }) => {
+      await assertPermission("manage_documents", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("document_requests" as any)
