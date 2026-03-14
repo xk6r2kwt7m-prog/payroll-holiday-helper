@@ -71,12 +71,12 @@ export function LabourCostReport() {
           </Button>
         </div>
 
-        <ReportSummaryBar rowCount={rows.length} />
+        <ReportSummaryBar rowCount={rows.length} extra={`${rows.length} period${rows.length !== 1 ? "s" : ""}`} />
 
         {periodsLoading ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">Loading…</p>
+          <p className="text-sm text-muted-foreground py-4 text-center">Loading payroll periods…</p>
         ) : rows.length === 0 ? (
-          <EmptyState icon={TrendingUp} title="No payroll periods" description="No payroll periods found." />
+          <EmptyState icon={TrendingUp} title="No payroll periods yet" description="Create a payroll period first, then labour costs will appear here." />
         ) : (
           <div className="overflow-x-auto">
             <Table>
