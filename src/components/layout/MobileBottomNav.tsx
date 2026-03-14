@@ -4,7 +4,7 @@ import {
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin,
   UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone, PieChart,
   Scale, ClipboardList, Sparkles, FileText, CalendarDays, AlertTriangle,
-  CheckCircle2, User, ShoppingBag,
+  CheckCircle2, User, ShoppingBag, FlaskConical, Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -242,6 +242,25 @@ export function MobileBottomNav() {
                     })}
                   </div>
                 ))}
+
+                {isPlatformAdmin && (
+                  <div className="mt-3">
+                    <p className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Platform
+                    </p>
+                    <Link
+                      to="/platform-admin"
+                      onClick={() => setMoreOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors min-h-[48px]",
+                        location.pathname === "/platform-admin" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted active:bg-muted"
+                      )}
+                    >
+                      <Shield className="h-5 w-5" />
+                      Platform Admin
+                    </Link>
+                  </div>
+                )}
 
                 <div className="border-t border-border mt-3 pt-2">
                   <button
