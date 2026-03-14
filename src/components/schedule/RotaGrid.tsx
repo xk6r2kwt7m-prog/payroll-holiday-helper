@@ -348,13 +348,13 @@ export function RotaGrid({
   return (
     <>
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto no-scrollbar">
+        <div className="overflow-x-auto no-scrollbar rounded-lg border border-border/40 bg-card">
           <table className="w-full border-collapse table-fixed">
-             <thead>
-              <tr className="border-b border-border/20">
+            <thead>
+              <tr className="border-b border-border/30">
                 <th className={cn(
-                  "text-left py-2.5 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider sticky left-0 bg-background z-10",
-                  isMobile ? "px-1.5 w-[80px]" : "px-3 w-[100px] sm:w-[150px]"
+                  "text-left py-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider sticky left-0 bg-card z-10 border-r border-border/20",
+                  isMobile ? "px-2 w-[80px]" : "px-3 w-[110px] sm:w-[160px]"
                 )}>
                   Team
                 </th>
@@ -370,18 +370,18 @@ export function RotaGrid({
                       )}
                     >
                       <div className={cn(
-                        "flex flex-col items-center gap-0 rounded-lg py-1 mx-auto transition-colors",
-                        today && "bg-primary text-primary-foreground px-2.5",
+                        "flex flex-col items-center gap-0 rounded-lg py-1.5 mx-auto transition-colors",
+                        today && "bg-primary text-primary-foreground px-3",
                       )}>
                         <span className={cn(
-                          "text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider",
-                          !today && "text-muted-foreground/50"
+                          "text-[9px] sm:text-[10px] font-bold uppercase tracking-wider",
+                          !today && "text-muted-foreground/60"
                         )}>
                           {format(day, "EEE")}
                         </span>
                         <span className={cn(
-                          "text-sm sm:text-[15px] font-bold leading-tight",
-                          !today && "text-foreground/80"
+                          "text-sm sm:text-base font-bold leading-tight",
+                          !today && "text-foreground"
                         )}>
                           {format(day, "d")}
                         </span>
@@ -403,35 +403,35 @@ export function RotaGrid({
                     key={emp.id}
                     className={cn(
                       "transition-colors",
-                      empIdx > 0 && "border-t border-border/10",
-                      hasNoShifts && "opacity-35",
+                      empIdx > 0 && "border-t border-border/15",
+                      hasNoShifts && "opacity-40",
                     )}
                   >
                     <td className={cn(
-                      "py-1.5 sticky left-0 bg-background z-10",
-                      isMobile ? "px-1.5" : "px-3 py-2"
+                      "py-2 sticky left-0 bg-card z-10 border-r border-border/20",
+                      isMobile ? "px-2" : "px-3"
                     )}>
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         <div className={cn(
-                          "rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
+                          "rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 uppercase",
                           isMobile ? "h-6 w-6" : "h-7 w-7",
                           hasNoShifts
-                            ? "bg-muted/50 text-muted-foreground/50"
-                            : "bg-primary/[0.07] text-primary"
+                            ? "bg-muted/40 text-muted-foreground/40"
+                            : "bg-primary/[0.08] text-primary/80"
                         )}>
                           {emp.forename[0]}{emp.surname?.[0] || ""}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[11px] sm:text-xs font-medium text-foreground leading-tight">
-                            {emp.forename}
+                            {isMobile ? emp.forename : `${emp.forename} ${emp.surname?.[0] || ""}.`}
                           </div>
-                          <div className="text-[9px] text-muted-foreground/50 leading-tight mt-0.5 tabular-nums">
+                          <div className="text-[9px] text-muted-foreground/60 leading-tight mt-0.5 tabular-nums">
                             {weeklyHours > 0
                               ? `${Math.floor(weeklyHours)}h${Math.round((weeklyHours % 1) * 60) > 0 ? ` ${Math.round((weeklyHours % 1) * 60)}m` : ""}`
                               : "—"
                             }
                             {!isMobile && weeklyCost > 0 && (
-                              <span className="hidden sm:inline text-muted-foreground/40"> · £{weeklyCost.toFixed(0)}</span>
+                              <span className="hidden sm:inline text-muted-foreground/45"> · £{weeklyCost.toFixed(0)}</span>
                             )}
                           </div>
                         </div>
@@ -469,13 +469,13 @@ export function RotaGrid({
 
               {/* Open shifts row */}
               {weekDays.some((d) => getOpenShifts(d).length > 0) && (
-                <tr className="border-t border-dashed border-border/20">
-                  <td className="px-3 py-1.5 sticky left-0 bg-background z-10">
+                <tr className="border-t border-dashed border-border/25">
+                  <td className="px-3 py-2 sticky left-0 bg-card z-10 border-r border-border/20">
                     <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-muted/40 text-muted-foreground/60 flex items-center justify-center text-[10px] font-bold shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-muted/30 text-muted-foreground/50 flex items-center justify-center text-[10px] font-bold shrink-0">
                         ?
                       </div>
-                      <span className="text-[11px] text-muted-foreground font-medium">Open</span>
+                      <span className="text-[11px] text-muted-foreground/70 font-medium">Open</span>
                     </div>
                   </td>
                   {weekDays.map((day) => {
@@ -507,14 +507,14 @@ export function RotaGrid({
         <DragOverlay dropAnimation={null}>
           {activeShift ? (
             <div className={cn(
-              "rounded px-2 py-1.5 text-[11px] leading-tight shadow-lg ring-1 ring-primary/20",
-              "bg-card border border-border/40 text-foreground"
+              "rounded-md px-2.5 py-2 text-[11px] leading-tight shadow-xl ring-1 ring-primary/25",
+              "bg-card border border-border/50 text-foreground"
             )}>
-              <div className="font-semibold tabular-nums">
+              <div className="font-semibold tabular-nums tracking-tight">
                 {activeShift.start_time?.slice(0, 5)}–{activeShift.end_time?.slice(0, 5)}
               </div>
               {activeShift.employee_id && (
-                <div className="text-[9px] text-muted-foreground mt-0.5">
+                <div className="text-[9px] text-muted-foreground/70 mt-0.5">
                   {deptEmployees.find(e => e.id === activeShift.employee_id)?.forename || "Unassigned"}
                 </div>
               )}
