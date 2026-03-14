@@ -20,6 +20,7 @@ import {
   useSaveEmployeeRate,
   useDeleteEmployeeRate,
 } from "@/hooks/useServiceCharge";
+import { ServiceChargePreview } from "@/components/settings/ServiceChargePreview";
 import { useLocationSettings } from "@/hooks/useLocationSettings";
 import { useEmployees } from "@/hooks/useEmployees";
 import { format } from "date-fns";
@@ -64,15 +65,17 @@ export function ServiceChargeSettings() {
 
       {enabled && (
         <Tabs defaultValue="locations" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 h-9">
+          <TabsList className="grid w-full grid-cols-4 h-9">
             <TabsTrigger value="locations" className="text-xs gap-1"><MapPin className="h-3 w-3" />Locations</TabsTrigger>
             <TabsTrigger value="roles" className="text-xs gap-1"><Users className="h-3 w-3" />By Role</TabsTrigger>
             <TabsTrigger value="employees" className="text-xs gap-1"><User className="h-3 w-3" />By Employee</TabsTrigger>
+            <TabsTrigger value="preview" className="text-xs gap-1"><DollarSign className="h-3 w-3" />Preview</TabsTrigger>
           </TabsList>
 
           <TabsContent value="locations"><LocationRulesTab /></TabsContent>
           <TabsContent value="roles"><RoleRatesTab /></TabsContent>
           <TabsContent value="employees"><EmployeeRatesTab /></TabsContent>
+          <TabsContent value="preview"><ServiceChargePreview /></TabsContent>
         </Tabs>
       )}
 
