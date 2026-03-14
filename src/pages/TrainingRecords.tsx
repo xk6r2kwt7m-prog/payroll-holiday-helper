@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTrainingRecords, useAddTrainingRecord, useDeleteTrainingRecord, CERTIFICATION_TYPES } from "@/hooks/useTrainingRecords";
