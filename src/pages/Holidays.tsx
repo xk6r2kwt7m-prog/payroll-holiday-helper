@@ -641,8 +641,8 @@ const Holidays = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <SettleLeaverDialog />
-            <AddHolidayPaymentDialog />
+            {canApproveHolidays && <SettleLeaverDialog />}
+            {canApproveHolidays && <AddHolidayPaymentDialog />}
           </div>
         </div>
 
