@@ -424,9 +424,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="FOH">🍽️ FOH (Front of House)</SelectItem>
-                        <SelectItem value="BOH">👨‍🍳 BOH (Back of House)</SelectItem>
-                        <SelectItem value="CPU">🏭 CPU (Central Production)</SelectItem>
+                        {departments.map(d => (
+                          <SelectItem key={d.key} value={d.key}>{d.emoji} {d.key} ({d.label})</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
