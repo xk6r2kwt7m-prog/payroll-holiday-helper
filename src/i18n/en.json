@@ -665,7 +665,10 @@
     "training_assigned": "Training assigned",
     "training_completed": "Training completed",
     "training_due_soon": "Training due soon",
-    "training_overdue": "Training overdue"
+    "training_overdue": "Training overdue",
+    "shift_claim_approved": "Shift request approved",
+    "shift_claim_rejected": "Shift request rejected",
+    "shift_cover_found": "Cover found"
   },
   "ops": {
     "labour_cost_today": "Labour Cost Today",

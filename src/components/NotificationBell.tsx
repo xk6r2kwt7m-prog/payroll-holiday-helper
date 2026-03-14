@@ -44,6 +44,9 @@ const EVENT_ICONS: Record<string, string> = {
   training_completed: "🎓",
   training_due_soon: "⏰",
   training_overdue: "🚨",
+  shift_claim_approved: "✅",
+  shift_claim_rejected: "❌",
+  shift_cover_found: "🤝",
   general: "🔔",
 };
 
