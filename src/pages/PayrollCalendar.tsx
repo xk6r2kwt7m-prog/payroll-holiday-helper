@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { formatCurrency } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
 
 const statusStyles = {
   draft: "bg-muted text-muted-foreground border-muted-foreground/20",
