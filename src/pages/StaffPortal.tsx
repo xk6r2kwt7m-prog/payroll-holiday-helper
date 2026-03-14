@@ -40,46 +40,6 @@ export default function StaffPortal() {
   }, [user]);
 
   const { data: myEntries } = useMyTimeEntries();
-  const { data: myRequests = [] } = useMyHolidayRequests(employeeId || "");
-
-  const { data: announcements = [] } = useQuery({
-    queryKey: ["staff_announcements_portal"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("staff_announcements" as any)
-        .select("*")
-        .not("published_at", "is", null)
-        .order("published_at", { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data as any[];
-    },
-  });
-
-  const { data: myReadReceipts = [] } = useQuery({
-    queryKey: ["my_read_receipts", employeeId],
-    queryFn: async () => {
-      if (!employeeId) return [];
-      const { data, error } = await supabase
-        .from("announcement_read_receipts" as any)
-        .select("announcement_id")
-        .eq("employee_id", employeeId);
-      if (error) throw error;
-      return (data || []).map((r: any) => r.announcement_id);
-    },
-    enabled: !!employeeId,
-  });
-
-  const markAsRead = useMutation({
-    mutationFn: async (announcementId: string) => {
-      if (!employeeId) return;
-      const { error } = await supabase
-        .from("announcement_read_receipts" as any)
-        .insert({ announcement_id: announcementId, employee_id: employeeId } as any);
-      if (error && !error.message.includes("duplicate")) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my_read_receipts"] }),
-  });
 
   if (!employeeId) {
     return (
