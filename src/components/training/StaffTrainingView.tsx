@@ -227,10 +227,20 @@ function AssignmentDetailDialog({ assignment, open, onOpenChange, onAcknowledge,
   onComplete: () => void;
   isPending: boolean;
 }) {
+  const navigate = useNavigate();
   const doc = assignment.training_library;
   const needsAck = doc?.requires_acknowledgement && !assignment.acknowledged_at;
   const needsCompletion = doc?.requires_completion && !assignment.completed_at;
   const needsQuiz = doc?.requires_quiz && !assignment.quiz_passed;
+  const isInternalPage = doc?.content_type === "internal_page" && doc?.content_url;
+
+  const handleOpenContent = () => {
+    if (isInternalPage) {
+      navigate(doc.content_url!);
+    } else if (doc?.content_type === "external_link" && doc?.content_url) {
+      window.open(doc.content_url, "_blank", "noopener,noreferrer");
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -241,6 +251,23 @@ function AssignmentDetailDialog({ assignment, open, onOpenChange, onAcknowledge,
         <div className="space-y-4 pt-2">
           {doc?.description && (
             <p className="text-sm text-muted-foreground">{doc.description}</p>
+          )}
+
+          {/* Open content button for internal pages / external links */}
+          {(isInternalPage || (doc?.content_type === "external_link" && doc?.content_url)) && (
+            <Button onClick={handleOpenContent} variant="outline" className="w-full gap-2">
+              {isInternalPage ? (
+                <>
+                  <BookOpen className="h-4 w-4" />
+                  Open Training Module
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="h-4 w-4" />
+                  Open External Resource
+                </>
+              )}
+            </Button>
           )}
 
           <div className="space-y-2 text-sm">
@@ -270,7 +297,7 @@ function AssignmentDetailDialog({ assignment, open, onOpenChange, onAcknowledge,
           <div className="space-y-2 pt-2 border-t border-border">
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Requirements</p>
             <div className="space-y-1.5">
-              <RequirementRow label="Read document" done={!!assignment.viewed_at} />
+              <RequirementRow label={isInternalPage ? "View training module" : "Read document"} done={!!assignment.viewed_at} />
               {doc?.requires_acknowledgement && (
                 <RequirementRow label="Acknowledge policy" done={!!assignment.acknowledged_at} />
               )}
