@@ -32,7 +32,7 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-xl bg-card border shadow-sm overflow-hidden transition-shadow hover:shadow-md",
+        "rounded-lg bg-card border shadow-card overflow-hidden transition-shadow hover:shadow-md",
         colors.border
       )}
     >
