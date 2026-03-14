@@ -102,7 +102,7 @@ export function CreateDocumentRequestDialog({ preselectedEmployeeId, preselected
                 </SelectTrigger>
                 <SelectContent>
                   {employees
-                    .filter(e => e.status !== "archived")
+                    .filter(e => (e.status as string) !== "archived")
                     .map(e => (
                       <SelectItem key={e.id} value={e.id}>
                         {e.forename} {e.surname} — {e.department}

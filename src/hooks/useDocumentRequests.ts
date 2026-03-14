@@ -363,7 +363,7 @@ export function useMyDocumentRequests(employeeId: string) {
         .not("status", "eq", "cancelled")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data || []) as DocumentRequest[];
+      return (data || []) as unknown as DocumentRequest[];
     },
     enabled: !!employeeId,
   });
