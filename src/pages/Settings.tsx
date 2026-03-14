@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   Building2, Bell, Shield, CreditCard, Loader2, Users, Calendar,
   MapPin, Briefcase, Settings as SettingsIcon, Lock, ChevronRight,
-  CalendarClock, GraduationCap, Sparkles, Palette, Blocks, ClipboardList,
+  CalendarClock, GraduationCap, Sparkles, Palette, Blocks, ClipboardList, DollarSign,
 } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
@@ -34,6 +34,7 @@ import {
   HolidayDisplaySettings,
   PeopleLifecycleSettings,
 } from "@/components/settings/AdminConfigSections";
+import { ServiceChargeSettings } from "@/components/settings/ServiceChargeSettings";
 import { EmailTestButton } from "@/components/settings/EmailTestButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
@@ -77,6 +78,7 @@ const Settings = () => {
     { id: "people", icon: Users, label: t("settings.people_lifecycle"), group: "organisation" },
     { id: "scheduling", icon: CalendarClock, label: t("settings.scheduling"), group: "operations" },
     { id: "payroll", icon: CreditCard, label: t("settings.payroll"), group: "operations" },
+    { id: "service-charge", icon: DollarSign, label: "Service Charge", group: "operations" },
     { id: "leave", icon: Calendar, label: t("settings.holiday_leave"), group: "operations" },
     { id: "training", icon: GraduationCap, label: t("settings.training_docs"), group: "operations" },
     { id: "talent", icon: Sparkles, label: t("settings.talent_pool"), group: "operations" },
@@ -298,6 +300,13 @@ const Settings = () => {
                 <Separator />
                 <HistoricalImport />
               </>
+            )}
+
+            {/* ─── SERVICE CHARGE ─── */}
+            {activeSection === "service-charge" && (
+              <ConfigCard title="Service Charge Configuration" description="Manage service charge / tips / tronc distribution across locations, roles, and employees.">
+                <ServiceChargeSettings />
+              </ConfigCard>
             )}
 
             {/* ─── LEAVE ─── */}
