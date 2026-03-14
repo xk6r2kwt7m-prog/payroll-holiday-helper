@@ -165,7 +165,7 @@ function LocationRulesTab() {
           )}
         </div>
       ))}
-      {branches.length === 0 && (
+      {locationSettings.length === 0 && (
         <p className="text-xs text-muted-foreground text-center py-4">No locations configured yet.</p>
       )}
     </div>
