@@ -569,6 +569,8 @@ export function RotaGrid({
         branch={branch}
         department={department}
         isAdmin={isAdmin}
+        employees={employees}
+        existingShifts={shifts || []}
         onEdit={() => {
           const shift = mobileSheetShift;
           const day = mobileSheetDay;
