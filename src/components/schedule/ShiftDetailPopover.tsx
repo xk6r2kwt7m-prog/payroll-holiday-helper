@@ -3,15 +3,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Calendar, Clock, MapPin, FileText,
-  Pencil, Trash2, Copy, ArrowRightLeft,
+  CalendarDays, Clock, MapPin, FileText,
+  Pencil, Trash2, Copy,
   UserPlus, UserMinus, Check,
 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
@@ -278,7 +271,7 @@ export function ShiftDetailPopover({
                       className="flex-1 h-8 gap-1.5 text-[11px] text-muted-foreground"
                       onClick={(e) => { e.stopPropagation(); onMove(); }}
                     >
-                      <ArrowRightLeft className="h-3 w-3" />
+                      <CalendarDays className="h-3 w-3" />
                       Move Day
                     </Button>
                   )}

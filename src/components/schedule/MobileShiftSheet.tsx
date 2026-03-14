@@ -12,7 +12,7 @@ import {
   DrawerDescription,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { Pencil, Copy, Trash2, Clock, MapPin, FileText, ArrowRightLeft, AlertTriangle, Check, X, UserPlus, UserMinus } from "lucide-react";
+import { Pencil, Copy, Trash2, Clock, MapPin, FileText, CalendarDays, AlertTriangle, Check, X, UserPlus, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isSameDay } from "date-fns";
 import type { Employee } from "@/hooks/useEmployees";
@@ -391,7 +391,7 @@ export function MobileShiftSheet({
                     className="h-12 flex-col gap-1 rounded-xl text-muted-foreground"
                     onClick={() => onMove?.()}
                   >
-                    <ArrowRightLeft className="h-4 w-4" />
+                    <CalendarDays className="h-4 w-4" />
                     <span className="text-[10px]">Move Day</span>
                   </Button>
                   <Button
