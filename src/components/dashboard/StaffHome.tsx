@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   Clock, MapPin, Calendar, ChevronRight, Megaphone, Sun, FileText,
   Coffee, CheckCircle2, AlertCircle, ArrowRight, Pause, Play, Navigation,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { format, startOfWeek, endOfWeek, isTomorrow, differenceInMinutes } from 
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ReadinessBanner } from "@/components/staff-portal/ReadinessBanner";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
