@@ -193,6 +193,7 @@ export function useBulkCreateDocumentRequests() {
       priority?: string;
       requires_verification?: boolean;
     }) => {
+      await assertPermission("manage_documents", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       const rows = payload.employee_ids.map(eid => ({
         tenant_id: tenantId!,
