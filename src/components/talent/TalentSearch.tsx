@@ -25,7 +25,7 @@ const STATUS_LABELS: Record<string, string> = {
 export function TalentSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [countryFilter, setCountryFilter] = useState<string>("all");
-  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data: profiles = [], isLoading } = useTalentProfiles({
