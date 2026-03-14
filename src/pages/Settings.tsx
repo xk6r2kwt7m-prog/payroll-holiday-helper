@@ -245,7 +245,7 @@ const Settings = () => {
             <ChevronLeft className="h-3.5 w-3.5" />
             {currentGroup.label}
           </button>
-          <div className="rounded-xl bg-card border border-border p-6 text-center space-y-2">
+          <div className="rounded-lg bg-card border border-border/70 p-6 text-center space-y-2 shadow-card">
             <p className="text-sm font-medium text-foreground">Section not found</p>
             <p className="text-xs text-muted-foreground">This setting doesn't exist in {currentGroup.label}.</p>
             <Button size="sm" variant="outline" onClick={() => navigateTo(activeGroup, null)}>Back to {currentGroup.label}</Button>
