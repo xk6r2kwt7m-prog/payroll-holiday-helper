@@ -553,7 +553,7 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
             <p className="text-[11px] text-warning/80 mt-0.5">
               {hasRefreshed
                 ? "This assignment does not exist yet. It may need to be created from the Gaps tab first."
-                : "This assignment may not have been created yet. Try refreshing to check for recent changes."}
+                : "This assignment may not exist yet. Refresh to check for recent changes."}
             </p>
           </div>
           {!hasRefreshed && (
@@ -575,25 +575,11 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
         <div className="rounded-lg border border-muted-foreground/20 bg-muted/30 p-3 flex items-center gap-2">
           <ShieldAlert className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground font-medium">Assignment not visible</p>
+            <p className="text-xs text-muted-foreground font-medium">Outside your branch scope</p>
             <p className="text-[11px] text-muted-foreground/80 mt-0.5">
-              {hasRefreshed
-                ? "This assignment is outside your branch scope, or it hasn't been created yet."
-                : "This employee may be outside your branch scope. Try refreshing to check for recent changes."}
+              This assignment exists, but it is outside your branch scope.
             </p>
           </div>
-          {!hasRefreshed && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 h-7 text-xs gap-1.5"
-              onClick={handleRefresh}
-              disabled={isManualRefreshing}
-            >
-              <RefreshCw className={cn("h-3 w-3", isManualRefreshing && "animate-spin")} />
-              Refresh
-            </Button>
-          )}
         </div>
       )}
 
