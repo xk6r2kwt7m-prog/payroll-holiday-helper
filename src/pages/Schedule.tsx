@@ -11,12 +11,12 @@ import { DayView } from "@/components/schedule/DayView";
 import { ShiftCellDialog } from "@/components/schedule/ShiftCellDialog";
 import { ScheduleHeader } from "@/components/schedule/ScheduleHeader";
 import { ScheduleSummary } from "@/components/schedule/ScheduleSummary";
-import { ScheduleFilters, type QuickFilter } from "@/components/schedule/ScheduleFilters";
+import { type QuickFilter } from "@/components/schedule/ScheduleFilters";
 import { PublishConfirmDrawer } from "@/components/schedule/PublishConfirmDrawer";
 import { SaveTemplateDialog } from "@/components/schedule/SaveTemplateDialog";
 import { LoadTemplateDialog } from "@/components/schedule/LoadTemplateDialog";
 import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
-import { ComplianceWarningsBanner, useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
+import { useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR, getMinimumStaff } from "@/components/schedule/shiftDefaults";
 import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
 import { MobileManagerBar } from "@/components/schedule/MobileManagerBar";
@@ -111,8 +111,6 @@ export default function Schedule() {
       return;
     }
     const updateTimer = () => {
-      const remaining = schedule.publishRollbackInfo.timeRemaining - (Date.now() - (Date.now() - schedule.publishRollbackInfo.timeRemaining + schedule.publishRollbackInfo.timeRemaining));
-      // Recalculate from source
       if (schedule.publishRollbackInfo.publishedAt) {
         const publishedTime = new Date(schedule.publishRollbackInfo.publishedAt).getTime();
         const left = Math.max(0, 10 * 60 * 1000 - (Date.now() - publishedTime));
@@ -124,7 +122,7 @@ export default function Schedule() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [schedule.publishRollbackInfo.canUndo, schedule.publishRollbackInfo.publishedAt, schedule.publishRollbackInfo.timeRemaining]);
+  }, [schedule.publishRollbackInfo.canUndo, schedule.publishRollbackInfo.publishedAt]);
 
   // Day view data
   const dayShifts = useMemo(
@@ -166,9 +164,9 @@ export default function Schedule() {
   return (
     <AppLayout>
       <div className="flex flex-col h-full -m-4 sm:-m-6">
-        {/* Top control area — clean, minimal */}
+        {/* Compact top control area */}
         <div className={cn(
-          "border-b border-border/50 bg-background",
+          "bg-background",
           isMobile ? "px-2.5 pt-2" : "px-4 pt-2"
         )}>
           <ScheduleHeader
@@ -194,6 +192,7 @@ export default function Schedule() {
             selectedDept={selectedDept}
             onDeptChange={setSelectedDept}
             onCopyPreviousWeek={() => setCopyPrevOpen(true)}
+            onCopyToNextWeek={() => {}}
             onSaveTemplate={() => setSaveTemplateOpen(true)}
             onLoadTemplate={() => setLoadTemplateOpen(true)}
             copyPending={schedule.isCopying}
@@ -207,38 +206,10 @@ export default function Schedule() {
             undoTimeRemaining={undoTimeStr}
             onUndoPublish={schedule.handleUndoPublish}
           />
-
-          {/* Collapsible summary strip — desktop only */}
-          {!isMobile && (
-            <ScheduleSummary
-              shifts={schedule.shifts || []}
-              weekDays={schedule.weekDays}
-              branch={selectedBranch}
-              department={selectedDept === "All" ? "FOH" : selectedDept}
-              employees={activeEmployees}
-              complianceWarningCount={complianceWarnings.length}
-            />
-          )}
-
-          {/* Quick filters — desktop, only when issues exist */}
-          {!isMobile && (
-            <ScheduleFilters
-              activeFilter={quickFilter}
-              onFilterChange={setQuickFilter}
-              gapCount={filterStats.gapCount}
-              unassignedCount={filterStats.unassignedCount}
-              noShiftCount={filterStats.noShiftCount}
-              unpublishedCount={filterStats.unpublished}
-            />
-          )}
-
-          {/* Compliance warnings — compact inline */}
-          {complianceWarnings.length > 0 && !isMobile && (
-            <div className="pb-2">
-              <ComplianceWarningsBanner warnings={complianceWarnings} />
-            </div>
-          )}
         </div>
+
+        {/* Thin separator */}
+        <div className="h-px bg-border/40" />
 
         {/* Mobile Manager Bar */}
         {isMobile && isAdmin && (
@@ -258,7 +229,7 @@ export default function Schedule() {
 
         {/* Mobile coverage strip */}
         {isMobile && (schedule.shifts?.length ?? 0) > 0 && selectedDept !== "All" && (
-          <div className="px-3 py-2 border-b border-border bg-card">
+          <div className="px-3 py-2 border-b border-border/30 bg-background">
             <ScheduleSummary
               shifts={schedule.shifts || []}
               weekDays={schedule.weekDays}
@@ -270,8 +241,22 @@ export default function Schedule() {
           </div>
         )}
 
-        {/* Main schedule area */}
+        {/* Main schedule area — the hero */}
         <div className="flex-1 overflow-auto bg-background">
+          {/* Desktop: inline summary strip above the grid */}
+          {!isMobile && (schedule.shifts?.length ?? 0) > 0 && (
+            <div className="px-4 py-1.5 border-b border-border/30">
+              <ScheduleSummary
+                shifts={schedule.shifts || []}
+                weekDays={schedule.weekDays}
+                branch={selectedBranch}
+                department={selectedDept === "All" ? "FOH" : selectedDept}
+                employees={activeEmployees}
+                complianceWarningCount={complianceWarnings.length}
+              />
+            </div>
+          )}
+
           {/* Empty state when no shifts exist */}
           {!schedule.isLoading && (schedule.shifts?.length === 0) && (
             <EmptyState
@@ -291,11 +276,11 @@ export default function Schedule() {
           {(schedule.shifts?.length ?? 0) > 0 && (
             selectedDept === "All" ? (
               viewMode === "week" ? (
-                <div className="divide-y divide-border/30">
+                <div className="divide-y divide-border/20">
                   {DEPARTMENTS.map((deptVal) => (
                     <div key={deptVal}>
-                      <div className="px-4 py-1.5 bg-muted/20 border-b border-border/30 sticky top-0 z-20">
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{deptVal}</h3>
+                      <div className="px-4 py-1.5 bg-muted/10 border-b border-border/20 sticky top-0 z-20">
+                        <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{deptVal}</h3>
                       </div>
                       <RotaGrid
                         weekDays={schedule.weekDays}
@@ -390,32 +375,6 @@ export default function Schedule() {
             )
           )}
         </div>
-
-        {/* Bottom status bar — desktop only, very minimal */}
-        {!isMobile && (schedule.shifts?.length ?? 0) > 0 && (
-          <div className="flex items-center justify-between px-4 py-1.5 border-t border-border/40 bg-background">
-            <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
-                {schedule.openShiftCount} open
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary/60" />
-                {schedule.unpublishedCount} draft
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                {schedule.publishedCount} live
-              </span>
-              {complianceWarnings.length > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
-                  {complianceWarnings.length} warnings
-                </span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Dialogs */}
