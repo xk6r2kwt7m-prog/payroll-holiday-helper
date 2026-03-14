@@ -133,16 +133,16 @@ export function ScheduleHeader({
       : format(currentDate, "EEE d MMM");
 
   return (
-    <div className="space-y-0 pb-0">
-      {/* Single control row */}
-      <div className="flex items-center gap-2 h-11">
-        {/* Location */}
+    <div className="space-y-1.5 pb-1">
+      {/* Primary control row */}
+      <div className="flex items-center gap-1.5 h-10">
+        {/* Location selector */}
         <Select value={selectedBranch} onValueChange={onBranchChange}>
           <SelectTrigger className={cn(
             "h-8 w-auto gap-1.5 text-xs font-medium border-none bg-transparent shadow-none px-2",
             isMobile ? "min-w-[70px]" : "min-w-[100px]"
           )}>
-            <MapPin className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+            <MapPin className="h-3 w-3 text-muted-foreground/50 shrink-0" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -152,13 +152,12 @@ export function ScheduleHeader({
           </SelectContent>
         </Select>
 
-        {/* Thin divider */}
-        <div className="h-4 w-px bg-border" />
+        <div className="h-4 w-px bg-border/60" />
 
-        {/* Week navigation */}
-        <div className="flex items-center gap-0.5 flex-1 justify-center min-w-0">
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground" onClick={() => onNavigate(-1)}>
-            <ChevronLeft className="h-3.5 w-3.5" />
+        {/* Week navigation — centred */}
+        <div className="flex items-center gap-0 flex-1 justify-center min-w-0">
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground" onClick={() => onNavigate(-1)}>
+            <ChevronLeft className="h-4 w-4" />
           </Button>
 
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -166,7 +165,7 @@ export function ScheduleHeader({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 font-semibold text-[13px] px-2.5 min-w-0 text-foreground"
+                className="h-8 font-semibold text-[13px] px-3 min-w-0 text-foreground tracking-tight"
               >
                 <span className="truncate">{dateLabel}</span>
               </Button>
@@ -192,12 +191,12 @@ export function ScheduleHeader({
             </PopoverContent>
           </Popover>
 
-          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground" onClick={() => onNavigate(1)}>
-            <ChevronRight className="h-3.5 w-3.5" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground" onClick={() => onNavigate(1)}>
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Publish CTA + Undo */}
+        {/* Publish / Undo */}
         {isAdmin && (
           <div className="flex items-center gap-1.5 shrink-0">
             {canUndoPublish && onUndoPublish ? (
@@ -223,8 +222,8 @@ export function ScheduleHeader({
                 {isPublishing ? "Publishing…" : "Publish"}
               </Button>
             ) : publishedCount > 0 && !canUndoPublish ? (
-              <span className="text-[11px] text-success font-medium px-2 flex items-center gap-1">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
+              <span className="text-[11px] text-success font-medium px-2 flex items-center gap-1.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
                 Live
               </span>
             ) : null}
@@ -235,60 +234,60 @@ export function ScheduleHeader({
         {isAdmin && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground">
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-muted-foreground">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[220px]">
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">View</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => onViewModeChange("week")} className="gap-2">
-                Week view {viewMode === "week" && <span className="ml-auto text-primary">✓</span>}
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">View</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => onViewModeChange("week")} className="gap-2 text-[13px]">
+                Week view {viewMode === "week" && <span className="ml-auto text-primary text-xs">✓</span>}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onViewModeChange("day")} className="gap-2">
-                Day view {viewMode === "day" && <span className="ml-auto text-primary">✓</span>}
+              <DropdownMenuItem onClick={() => onViewModeChange("day")} className="gap-2 text-[13px]">
+                Day view {viewMode === "day" && <span className="ml-auto text-primary text-xs">✓</span>}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Templates</DropdownMenuLabel>
-              <DropdownMenuItem onClick={onCopyPreviousWeek} disabled={copyPending} className="gap-2">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">Templates</DropdownMenuLabel>
+              <DropdownMenuItem onClick={onCopyPreviousWeek} disabled={copyPending} className="gap-2 text-[13px]">
                 <Copy className="h-3.5 w-3.5" />
                 Copy previous week
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onSaveTemplate} disabled={shiftCount === 0} className="gap-2">
+              <DropdownMenuItem onClick={onSaveTemplate} disabled={shiftCount === 0} className="gap-2 text-[13px]">
                 <Save className="h-3.5 w-3.5" />
                 Save as template
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onLoadTemplate} className="gap-2">
+              <DropdownMenuItem onClick={onLoadTemplate} className="gap-2 text-[13px]">
                 <FolderOpen className="h-3.5 w-3.5" />
                 Load template
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Bulk Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={onMarkAllEmpty} disabled={assignedCount === 0} className="gap-2">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">Bulk Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={onMarkAllEmpty} disabled={assignedCount === 0} className="gap-2 text-[13px]">
                 <UserX className="h-3.5 w-3.5" />
                 Clear assignments
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onRemoveEmptyShifts} disabled={shiftCount === 0} className="gap-2">
+              <DropdownMenuItem onClick={onRemoveEmptyShifts} disabled={shiftCount === 0} className="gap-2 text-[13px]">
                 <Trash2 className="h-3.5 w-3.5" />
                 Remove empty shifts
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDeleteAllShifts}
                 disabled={shiftCount === 0}
-                className="gap-2 text-destructive focus:text-destructive"
+                className="gap-2 text-[13px] text-destructive focus:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Delete all shifts
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate("/schedule/labour-cost")} className="gap-2">
+              <DropdownMenuItem onClick={() => navigate("/schedule/labour-cost")} className="gap-2 text-[13px]">
                 <DollarSign className="h-3.5 w-3.5" />
                 Labour cost preview
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2">
+              <DropdownMenuItem className="gap-2 text-[13px]">
                 <Printer className="h-3.5 w-3.5" />
                 Print schedule
               </DropdownMenuItem>
-              <DropdownMenuItem className="gap-2">
+              <DropdownMenuItem className="gap-2 text-[13px]">
                 <Download className="h-3.5 w-3.5" />
                 Export schedule
               </DropdownMenuItem>
@@ -297,17 +296,17 @@ export function ScheduleHeader({
         )}
       </div>
 
-      {/* Department pills — second row */}
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-2">
+      {/* Department pills */}
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
         {departments.map((d) => (
           <button
             key={d}
             onClick={() => onDeptChange(d)}
             className={cn(
-              "rounded-full text-[11px] font-medium whitespace-nowrap transition-all px-3 py-1 min-h-[28px]",
+              "rounded-full text-[11px] font-medium whitespace-nowrap transition-all px-3 py-1 min-h-[26px]",
               selectedDept === d
                 ? "bg-foreground text-background shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
             {d}
