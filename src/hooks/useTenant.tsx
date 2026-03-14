@@ -105,8 +105,15 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // CRITICAL: Set loading=true immediately when user changes
+    // to prevent ProtectedRoute from seeing stale tenantId=null
+    // and redirecting to /onboard before the fetch completes.
+    setLoading(true);
+
     const fetchTenant = async () => {
       try {
+        console.log("[TenantProvider] Resolving workspace for user:", user.id);
+
         // Check platform admin status
         const { data: platformAdmin } = await supabase
           .from("platform_admins")
@@ -117,14 +124,28 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         setIsPlatformAdmin(!!platformAdmin);
 
         // Get ALL active tenant memberships
-        const { data: memberships } = await supabase
+        const { data: memberships, error: membershipError } = await supabase
           .from("tenant_members")
           .select("tenant_id, role, tenants(id, name, country, timezone, status, enabled_modules)")
           .eq("user_id", user.id)
           .eq("is_active", true);
 
+        if (membershipError) {
+          console.error("[TenantProvider] Membership lookup failed:", membershipError);
+          // On error, do NOT redirect to onboard — stay in loading or retry
+          setLoading(false);
+          return;
+        }
+
+        const savedTenantId = localStorage.getItem("uglo_selected_tenant");
+
+        console.log("[TenantProvider] Memberships found:", memberships?.length ?? 0,
+          "| Saved tenant:", savedTenantId,
+          "| Platform admin:", !!platformAdmin);
+
         if (!memberships || memberships.length === 0) {
           // No tenant membership — onboarding needed (unless platform admin)
+          console.log("[TenantProvider] Decision: No memberships → onboard");
           setShowTenantPicker(false);
           setLoading(false);
           return;
@@ -133,20 +154,27 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         if (memberships.length === 1) {
           // Single tenant — auto-resolve
           const m = memberships[0];
+          console.log("[TenantProvider] Decision: Single tenant →", (m.tenants as any)?.name);
           applyTenantData(m.tenants as any, m.tenant_id);
+          localStorage.setItem("uglo_selected_tenant", m.tenant_id);
           setShowTenantPicker(false);
         } else {
           // Multiple tenants — check localStorage for previous selection
-          const savedTenantId = localStorage.getItem("uglo_selected_tenant");
           const savedMembership = savedTenantId
             ? memberships.find((m) => m.tenant_id === savedTenantId)
             : null;
 
           if (savedMembership) {
+            console.log("[TenantProvider] Decision: Restored saved tenant →", (savedMembership.tenants as any)?.name);
             applyTenantData(savedMembership.tenants as any, savedMembership.tenant_id);
             setShowTenantPicker(false);
           } else {
-            // Show picker
+            // Stale or missing localStorage — show picker
+            console.log("[TenantProvider] Decision: Multiple tenants, no valid saved selection → workspace picker");
+            if (savedTenantId) {
+              console.warn("[TenantProvider] Stale saved tenant ID cleared:", savedTenantId);
+              localStorage.removeItem("uglo_selected_tenant");
+            }
             setAvailableTenants(
               memberships.map((m) => ({
                 tenant_id: m.tenant_id,
@@ -158,7 +186,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (err) {
-        console.error("Failed to fetch tenant:", err);
+        console.error("[TenantProvider] Failed to fetch tenant:", err);
       } finally {
         setLoading(false);
       }
