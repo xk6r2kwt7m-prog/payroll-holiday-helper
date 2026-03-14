@@ -304,12 +304,13 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handleLoadTemplate = useCallback(async (templateId: string) => {
     try {
+      await assertPermission("edit_schedules", tenantId);
       const result = await loadTemplate.mutateAsync({ templateId, targetWeekStart: weekStartStr, branch: selectedBranch, department: selectedDept });
       toast.success(`Loaded ${(result as any[])?.length || 0} shifts from template`);
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [loadTemplate, weekStartStr, selectedBranch, selectedDept]);
+  }, [loadTemplate, weekStartStr, selectedBranch, selectedDept, tenantId]);
 
   const notifyPublishedShiftStaff = useCallback(async (
     affectedShifts: any[],
