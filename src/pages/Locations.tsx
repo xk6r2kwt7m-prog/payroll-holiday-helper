@@ -32,7 +32,7 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-xl bg-card border shadow-sm overflow-hidden transition-shadow hover:shadow-md",
+        "rounded-lg bg-card border shadow-card overflow-hidden transition-shadow hover:shadow-md",
         colors.border
       )}
     >
@@ -154,9 +154,9 @@ const Locations = () => {
   return (
     <AppLayout>
       <div className="max-w-5xl space-y-6">
-        <div className="animate-slide-in-left">
+        <div>
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Locations</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Multi-location command centre — monitor each site at a glance
           </p>
         </div>
