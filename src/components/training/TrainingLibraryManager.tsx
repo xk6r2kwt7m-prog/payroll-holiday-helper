@@ -394,9 +394,13 @@ function AssignDocumentDialog({ document, open, onOpenChange }: {
 
 // ─── Completion Tracking Dashboard ───
 
-export function TrainingCompletionDashboard() {
+export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModuleId }: { highlightEmployeeId?: string; highlightModuleId?: string } = {}) {
   const { data: assignments = [] } = useTrainingAssignments();
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Auto-filter when deep-linked from Gaps tab
+  const highlightKey = highlightEmployeeId && highlightModuleId
+    ? `${highlightEmployeeId}::${highlightModuleId}` : null;
 
   const counts = {
     all: assignments.length,
@@ -410,11 +414,20 @@ export function TrainingCompletionDashboard() {
     }).length,
   };
 
-  const filtered = statusFilter === "all" ? assignments :
+  let filtered = statusFilter === "all" ? assignments :
     statusFilter === "overdue" ? assignments.filter(a => {
       if (!a.due_date) return false;
       return differenceInDays(new Date(), parseISO(a.due_date)) > 0 && !["completed", "acknowledged", "cancelled"].includes(a.status);
     }) : assignments.filter(a => a.status === statusFilter);
+
+  // When deep-linked, bring matching assignment to top
+  if (highlightKey) {
+    filtered = [...filtered].sort((a, b) => {
+      const aMatch = `${a.employee_id}::${a.document_id}` === highlightKey ? 0 : 1;
+      const bMatch = `${b.employee_id}::${b.document_id}` === highlightKey ? 0 : 1;
+      return aMatch - bMatch;
+    });
+  }
 
   return (
     <div className="space-y-4">
