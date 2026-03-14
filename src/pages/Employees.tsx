@@ -79,6 +79,7 @@ const Employees = () => {
   const counts = useMemo(() => ({
     active: employees.filter(e => e.status === "active" && !e.archived_at).length,
     starter: employees.filter(e => e.status === "starter" && !e.archived_at).length,
+    onboarding: employees.filter(e => (e.status as string) === "onboarding" && !e.archived_at).length,
     leaver: employees.filter(e => e.status === "leaver" && !e.archived_at).length,
     archived: employees.filter(e => !!e.archived_at).length,
   }), [employees]);
