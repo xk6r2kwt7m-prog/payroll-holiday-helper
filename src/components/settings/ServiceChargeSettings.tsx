@@ -96,12 +96,12 @@ export function ServiceChargeSettings() {
 /* ─── Location Rules ─── */
 function LocationRulesTab() {
   const { data: locations = [] } = useServiceChargeLocations();
-  const { data: branches = [] } = useTenantBranches();
+  const { data: locationSettings = [] } = useLocationSettings();
   const upsert = useUpsertServiceChargeLocation();
 
-  const branchesWithSettings = branches.map((b) => {
-    const setting = locations.find((l) => l.branch === b.branch);
-    return { branch: b.branch, displayName: b.display_name, setting };
+  const branchesWithSettings = locationSettings.map((ls) => {
+    const setting = locations.find((l) => l.branch === ls.branch);
+    return { branch: ls.branch, displayName: ls.display_name, setting };
   });
 
   return (
