@@ -316,7 +316,11 @@ export function TrainingComplianceReport() {
   }, [assignableGaps, selectedGaps, createAssignments, bulkDueDate]);
 
   const handleViewAssignment = useCallback((g: GapRow) => {
-    navigate("/training");
+    const params = new URLSearchParams();
+    params.set("tab", "tracking");
+    params.set("employee", g.employeeId);
+    params.set("module", g.moduleId);
+    navigate(`/training?${params.toString()}`);
   }, [navigate]);
 
   const setSingleDueDate = useCallback((key: string, date: Date | undefined) => {
