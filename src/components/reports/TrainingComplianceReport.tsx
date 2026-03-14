@@ -117,7 +117,7 @@ export function TrainingComplianceReport() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-9 w-[140px] rounded-md border border-input bg-background px-3 text-sm"
           >
             <option value="all">All Statuses</option>
             <option value="overdue">Overdue</option>
