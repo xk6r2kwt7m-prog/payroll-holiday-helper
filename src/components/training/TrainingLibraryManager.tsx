@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +25,8 @@ import {
 } from "@/hooks/useTrainingLibrary";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTenant } from "@/hooks/useTenant";
-import { useAuth } from "@/hooks/useAuth";
+
+import { supabase } from "@/integrations/supabase/client";
 
 // ─── Library Manager ───
 
@@ -398,7 +399,7 @@ function AssignDocumentDialog({ document, open, onOpenChange }: {
 
 export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModuleId }: { highlightEmployeeId?: string; highlightModuleId?: string } = {}) {
   const { data: assignments = [], isLoading, isFetching } = useTrainingAssignments();
-  const { isAdmin } = useAuth();
+  const { tenantId } = useTenant();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -409,6 +410,25 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
   const highlightKey = highlightEmployeeId && highlightModuleId
     ? `${highlightEmployeeId}::${highlightModuleId}` : null;
 
+  // Unscoped existence check — queries DB directly to see if assignment exists at all
+  const { data: existsInDb, isLoading: existenceLoading } = useQuery({
+    queryKey: ["training_assignment_exists", highlightEmployeeId, highlightModuleId],
+    queryFn: async () => {
+      if (!highlightEmployeeId || !highlightModuleId || !tenantId) return false;
+      const { count, error } = await supabase
+        .from("training_assignments" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenantId)
+        .eq("employee_id", highlightEmployeeId)
+        .eq("document_id", highlightModuleId)
+        .not("status", "eq", "cancelled");
+      if (error) return false;
+      return (count ?? 0) > 0;
+    },
+    enabled: !!highlightKey && !!tenantId,
+    staleTime: 10_000,
+  });
+
   // When deep-linked, force filter to "all" so the row isn't hidden
   useEffect(() => {
     if (highlightKey) {
@@ -418,44 +438,46 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
     }
   }, [highlightKey]);
 
-  // Check if match exists in assignments
-  const matchExists = highlightKey
+  // Check if match exists in the scoped assignment list
+  const matchInScope = highlightKey
     ? assignments.some(a => `${a.employee_id}::${a.document_id}` === highlightKey)
     : false;
 
   // Scroll into view once data loads and match is found
   useEffect(() => {
-    if (highlightKey && matchExists && highlightRef.current && !hasScrolled.current) {
+    if (highlightKey && matchInScope && highlightRef.current && !hasScrolled.current) {
       hasScrolled.current = true;
       const t = setTimeout(() => {
         highlightRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 150);
       return () => clearTimeout(t);
     }
-  }, [highlightKey, matchExists, assignments]);
+  }, [highlightKey, matchInScope, assignments]);
 
-  // Determine no-match state
+  // Determine no-match state from real data
   type NoMatchState = "loading" | "not_found" | "scope_restricted" | null;
   let noMatchState: NoMatchState = null;
-  if (highlightKey && !matchExists) {
-    if (isLoading || isFetching || isManualRefreshing) {
+  if (highlightKey && !matchInScope) {
+    if (isLoading || isFetching || isManualRefreshing || existenceLoading) {
       noMatchState = "loading";
-    } else if (!isAdmin) {
-      // Non-admin: could be scope restriction
+    } else if (existsInDb) {
+      // Exists in DB but not in scoped results → manager scope restriction
       noMatchState = "scope_restricted";
     } else {
+      // Doesn't exist in DB at all
       noMatchState = "not_found";
     }
   }
 
   const handleRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ["training_assignments"] });
-    // Wait for refetch to settle
-    await queryClient.refetchQueries({ queryKey: ["training_assignments"] });
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ["training_assignments"] }),
+      queryClient.refetchQueries({ queryKey: ["training_assignment_exists", highlightEmployeeId, highlightModuleId] }),
+    ]);
     setIsManualRefreshing(false);
     setHasRefreshed(true);
-  }, [queryClient]);
+  }, [queryClient, highlightEmployeeId, highlightModuleId]);
 
   const counts = {
     all: assignments.length,
