@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, DollarSign, Calendar, MoreHorizontal,
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin, Building2,
-  UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone,
+  UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone, Sparkles,
   ClipboardList, CheckCircle2, User, Shield, FileText, CalendarDays, Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
