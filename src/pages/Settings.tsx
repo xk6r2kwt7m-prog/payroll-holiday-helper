@@ -343,7 +343,7 @@ const Settings = () => {
   }
 
   /* ─── LEVEL 3: Individual section content ─── */
-  const sectionLabel = currentGroup?.sections.find(s => s.id === activeSection)?.label || "Settings";
+  const sectionLabel = currentSection?.label || "Settings";
 
   return (
     <AppLayout>
