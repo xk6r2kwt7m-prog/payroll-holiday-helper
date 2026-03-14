@@ -77,23 +77,132 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     }
   }, [tenantId, createShift]);
 
+  const notifyShiftChange = useCallback(async (
+    userId: string,
+    title: string,
+    body: string,
+    metadata: Record<string, any> = {}
+  ) => {
+    if (!tenantId) return;
+    try {
+      await supabase.from("notifications" as any).insert({
+        tenant_id: tenantId,
+        user_id: userId,
+        event_type: "shift_changed",
+        title,
+        body,
+        link: "/schedule",
+        metadata,
+      } as any);
+    } catch (err) {
+      console.warn("Failed to send shift change notification:", err);
+    }
+  }, [tenantId]);
+
   const handleUpdateShift = useCallback(async (id: string, updates: any) => {
     try {
+      // Fetch the current shift before updating to detect published-shift changes
+      const { data: oldShift } = await supabase
+        .from("shifts")
+        .select("*, employees(user_id, forename, surname)")
+        .eq("id", id)
+        .single();
+
       await updateShift.mutateAsync({ id, updates });
       toast.success("Shift updated");
+
+      // Only notify for published shifts
+      if (!oldShift?.is_published) return;
+      const shiftDate = format(new Date(oldShift.shift_date + "T00:00:00"), "EEE d MMM");
+
+      // Case 1: Time changed
+      if (updates.start_time || updates.end_time) {
+        const oldTimes = `${oldShift.start_time?.slice(0, 5)}–${oldShift.end_time?.slice(0, 5)}`;
+        const newStart = updates.start_time?.slice(0, 5) || oldShift.start_time?.slice(0, 5);
+        const newEnd = updates.end_time?.slice(0, 5) || oldShift.end_time?.slice(0, 5);
+        const newTimes = `${newStart}–${newEnd}`;
+        const emp = oldShift.employees as any;
+        if (emp?.user_id && oldTimes !== newTimes) {
+          await notifyShiftChange(
+            emp.user_id,
+            "Shift time changed",
+            `Your ${shiftDate} shift changed from ${oldTimes} to ${newTimes}.`,
+            { shift_id: id, old_times: oldTimes, new_times: newTimes }
+          );
+        }
+      }
+
+      // Case 2: Reassigned to a different employee
+      if (updates.employee_id !== undefined && updates.employee_id !== oldShift.employee_id) {
+        const times = `${oldShift.start_time?.slice(0, 5)}–${oldShift.end_time?.slice(0, 5)}`;
+        // Notify old employee (shift removed)
+        const oldEmp = oldShift.employees as any;
+        if (oldEmp?.user_id) {
+          await notifyShiftChange(
+            oldEmp.user_id,
+            "Shift removed",
+            `Your ${shiftDate} shift (${times}) has been reassigned.`,
+            { shift_id: id }
+          );
+        }
+        // Notify new employee (shift assigned)
+        if (updates.employee_id) {
+          const { data: newEmp } = await supabase
+            .from("employees")
+            .select("user_id")
+            .eq("id", updates.employee_id)
+            .maybeSingle();
+          if (newEmp?.user_id) {
+            await notifyShiftChange(
+              newEmp.user_id,
+              "New shift assigned",
+              `You've been assigned a shift on ${shiftDate} (${times}).`,
+              { shift_id: id }
+            );
+          }
+        }
+      }
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [updateShift]);
+  }, [updateShift, notifyShiftChange]);
 
-  const handleDeleteShift = useCallback((id: string) => {
-    if (confirm("Delete this shift?")) {
+  const handleDeleteShift = useCallback(async (id: string) => {
+    if (!confirm("Delete this shift?")) return;
+    try {
+      // Fetch shift before deleting to notify if published
+      const { data: shift } = await supabase
+        .from("shifts")
+        .select("*, employees(user_id, forename, surname)")
+        .eq("id", id)
+        .single();
+
+      deleteShift.mutate(id, {
+        onSuccess: async () => {
+          toast.success("Shift deleted");
+          if (shift?.is_published) {
+            const emp = shift.employees as any;
+            if (emp?.user_id) {
+              const shiftDate = format(new Date(shift.shift_date + "T00:00:00"), "EEE d MMM");
+              const times = `${shift.start_time?.slice(0, 5)}–${shift.end_time?.slice(0, 5)}`;
+              await notifyShiftChange(
+                emp.user_id,
+                "Shift cancelled",
+                `Your ${shiftDate} shift (${times}) has been removed from the rota.`,
+                { shift_id: id }
+              );
+            }
+          }
+        },
+        onError: (err) => toast.error(err.message),
+      });
+    } catch {
       deleteShift.mutate(id, {
         onSuccess: () => toast.success("Shift deleted"),
         onError: (err) => toast.error(err.message),
       });
     }
-  }, [deleteShift]);
+  }, [deleteShift, notifyShiftChange]);
 
   const handlePublish = useCallback(async () => {
     try {

@@ -22,6 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 const EVENT_ICONS: Record<string, string> = {
   shift_published: "📅",
   shift_changed: "🔄",
+  shift_cancelled: "🚫",
   holiday_request: "🏖️",
   holiday_submitted: "🏖️",
   holiday_approved: "✅",
