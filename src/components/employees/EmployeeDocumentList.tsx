@@ -10,6 +10,8 @@ import {
   MoreHorizontal,
   ExternalLink,
   Edit2,
+  Shield,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +43,9 @@ import {
   type EmployeeDocument,
 } from "@/hooks/useEmployeeDocuments";
 import { DocumentUploadDialog } from "./DocumentUploadDialog";
+import { DocumentVerificationPanel } from "./DocumentVerificationPanel";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/hooks/useTenant";
 
 interface EmployeeDocumentListProps {
   employeeId: string;
@@ -53,6 +57,8 @@ export function EmployeeDocumentList({ employeeId, employeeName, isAdmin }: Empl
   const { data: documents = [], isLoading } = useEmployeeDocuments(employeeId);
   const deleteDocument = useDeleteDocument();
   const [deleteTarget, setDeleteTarget] = useState<EmployeeDocument | null>(null);
+  const [showVerification, setShowVerification] = useState(false);
+  const { tenantId } = useTenant();
 
   const handleDownload = async (doc: EmployeeDocument) => {
     try {
@@ -117,10 +123,32 @@ export function EmployeeDocumentList({ employeeId, employeeName, isAdmin }: Empl
         <h3 className="font-semibold text-card-foreground">
           Documents ({documents.length})
         </h3>
-        {isAdmin && (
-          <DocumentUploadDialog employeeId={employeeId} employeeName={employeeName} />
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin && documents.length > 0 && (
+            <Button
+              variant={showVerification ? "secondary" : "ghost"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setShowVerification(!showVerification)}
+            >
+              <Shield className="h-3.5 w-3.5" />
+              Verify
+            </Button>
+          )}
+          {isAdmin && (
+            <DocumentUploadDialog employeeId={employeeId} employeeName={employeeName} />
+          )}
+        </div>
       </div>
+
+      {/* Verification Panel */}
+      {showVerification && isAdmin && tenantId && documents.length > 0 && (
+        <DocumentVerificationPanel
+          documents={documents}
+          employeeId={employeeId}
+          tenantId={tenantId}
+        />
+      )}
 
       {/* Document List */}
       {documents.length === 0 ? (
@@ -175,6 +203,12 @@ export function EmployeeDocumentList({ employeeId, employeeName, isAdmin }: Empl
                     <Badge variant="outline" className="shrink-0 text-xs">
                       {typeInfo.label}
                     </Badge>
+                    {(doc as any).document_status === "verified" && (
+                      <Badge className="shrink-0 text-[10px] bg-success/10 text-success">✓ Verified</Badge>
+                    )}
+                    {(doc as any).document_status === "rejected" && (
+                      <Badge className="shrink-0 text-[10px] bg-destructive/10 text-destructive">Rejected</Badge>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span>{formatFileSize(doc.file_size)}</span>

@@ -44,6 +44,7 @@ import TalentPool from "./pages/TalentPool";
 import Workforce from "./pages/Workforce";
 import LabourCostPreview from "./pages/LabourCostPreview";
 import ShiftMarketplace from "./pages/ShiftMarketplace";
+import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 
@@ -75,6 +76,9 @@ const App = () => (
 
             {/* Staff portal — staff+ */}
             <Route path="/staff" element={<ProtectedRoute requiredRole="staff"><StaffPortal /></ProtectedRoute>} />
+
+            {/* Employee self-service onboarding */}
+            <Route path="/employee-onboarding" element={<ProtectedRoute requiredRole="staff"><EmployeeOnboarding /></ProtectedRoute>} />
 
             {/* Schedule module — staff can view own, manager+ can manage */}
             <Route path="/schedule" element={<ProtectedRoute requiredRole="staff" requiredModule="scheduling" moduleName="Scheduling"><Schedule /></ProtectedRoute>} />

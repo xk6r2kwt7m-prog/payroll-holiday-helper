@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEmployees, useDeleteEmployee, type Employee } from "@/hooks/useEmployees";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
+import { InviteEmployeeDialog } from "@/components/employees/InviteEmployeeDialog";
 import { EmployeeCard } from "@/components/employees/EmployeeCard";
 import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet";
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
@@ -23,7 +24,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type Department = "FOH" | "BOH" | "CPU";
-type StatusFilter = "active" | "starter" | "leaver" | "archived";
+type StatusFilter = "active" | "starter" | "leaver" | "onboarding" | "archived";
 type SortOption = "alpha" | "newest" | "recent-leavers" | "department";
 
 const Employees = () => {
@@ -43,6 +44,7 @@ const Employees = () => {
   const STATUS_CONFIG: Record<StatusFilter, { label: string; emoji: string; style: string }> = {
     active: { label: t("employees.status_active"), emoji: "✅", style: "bg-success/10 text-success border-success/30" },
     starter: { label: t("employees.status_starters"), emoji: "🆕", style: "bg-primary/10 text-primary border-primary/30" },
+    onboarding: { label: "Onboarding", emoji: "📋", style: "bg-accent/10 text-accent border-accent/30" },
     leaver: { label: t("employees.status_leavers"), emoji: "👋", style: "bg-destructive/10 text-destructive border-destructive/30" },
     archived: { label: t("employees.status_archived"), emoji: "📦", style: "bg-muted text-muted-foreground border-border" },
   };
@@ -77,6 +79,7 @@ const Employees = () => {
   const counts = useMemo(() => ({
     active: employees.filter(e => e.status === "active" && !e.archived_at).length,
     starter: employees.filter(e => e.status === "starter" && !e.archived_at).length,
+    onboarding: employees.filter(e => (e.status as string) === "onboarding" && !e.archived_at).length,
     leaver: employees.filter(e => e.status === "leaver" && !e.archived_at).length,
     archived: employees.filter(e => !!e.archived_at).length,
   }), [employees]);
@@ -211,6 +214,7 @@ const Employees = () => {
                 {isSelectionMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
               </Button>
             )}
+            {isAdmin && <InviteEmployeeDialog />}
             {isAdmin && <EmployeeFormDialog />}
           </div>
         </div>

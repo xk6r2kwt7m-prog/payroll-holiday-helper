@@ -681,6 +681,68 @@ export type Database = {
           },
         ]
       }
+      document_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          document_id: string
+          employee_id: string
+          id: string
+          metadata: Json | null
+          performed_by: string | null
+          tenant_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          document_id: string
+          employee_id: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string | null
+          tenant_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          document_id?: string
+          employee_id?: string
+          id?: string
+          metadata?: Json | null
+          performed_by?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_audit_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_audit_log_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_audit_log_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_audit_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_availability: {
         Row: {
           available_from: string | null
@@ -856,6 +918,7 @@ export type Database = {
         Row: {
           created_at: string
           document_name: string
+          document_status: string
           document_type: Database["public"]["Enums"]["document_type"]
           employee_id: string
           expires_at: string | null
@@ -864,13 +927,19 @@ export type Database = {
           id: string
           mime_type: string | null
           notes: string | null
+          rejected_reason: string | null
           tenant_id: string
           updated_at: string
           uploaded_by: string | null
+          verification_date: string | null
+          verification_method: string | null
+          verification_notes: string | null
+          verified_by: string | null
         }
         Insert: {
           created_at?: string
           document_name: string
+          document_status?: string
           document_type: Database["public"]["Enums"]["document_type"]
           employee_id: string
           expires_at?: string | null
@@ -879,13 +948,19 @@ export type Database = {
           id?: string
           mime_type?: string | null
           notes?: string | null
+          rejected_reason?: string | null
           tenant_id: string
           updated_at?: string
           uploaded_by?: string | null
+          verification_date?: string | null
+          verification_method?: string | null
+          verification_notes?: string | null
+          verified_by?: string | null
         }
         Update: {
           created_at?: string
           document_name?: string
+          document_status?: string
           document_type?: Database["public"]["Enums"]["document_type"]
           employee_id?: string
           expires_at?: string | null
@@ -894,9 +969,14 @@ export type Database = {
           id?: string
           mime_type?: string | null
           notes?: string | null
+          rejected_reason?: string | null
           tenant_id?: string
           updated_at?: string
           uploaded_by?: string | null
+          verification_date?: string | null
+          verification_method?: string | null
+          verification_notes?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -915,6 +995,70 @@ export type Database = {
           },
           {
             foreignKeyName: "employee_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_onboarding_data: {
+        Row: {
+          bank_details: Json | null
+          created_at: string
+          emergency_contact: Json | null
+          employee_id: string
+          id: string
+          onboarding_completed_at: string | null
+          personal_info: Json | null
+          step_completed: number
+          submitted_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          bank_details?: Json | null
+          created_at?: string
+          emergency_contact?: Json | null
+          employee_id: string
+          id?: string
+          onboarding_completed_at?: string | null
+          personal_info?: Json | null
+          step_completed?: number
+          submitted_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          bank_details?: Json | null
+          created_at?: string
+          emergency_contact?: Json | null
+          employee_id?: string
+          id?: string
+          onboarding_completed_at?: string | null
+          personal_info?: Json | null
+          step_completed?: number
+          submitted_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_onboarding_data_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_onboarding_data_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_onboarding_data_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1044,6 +1188,7 @@ export type Database = {
           contract_country: string | null
           created_at: string
           department: Database["public"]["Enums"]["department_type"]
+          email: string | null
           employee_ref: string | null
           employing_entity: string | null
           end_date: string | null
@@ -1054,6 +1199,8 @@ export type Database = {
           nationality: string | null
           ni_number: string | null
           notes: string | null
+          onboarding_token: string | null
+          onboarding_token_expires_at: string | null
           overtime_model: string | null
           passport_no: string | null
           pay_amount: number | null
@@ -1080,6 +1227,7 @@ export type Database = {
           contract_country?: string | null
           created_at?: string
           department: Database["public"]["Enums"]["department_type"]
+          email?: string | null
           employee_ref?: string | null
           employing_entity?: string | null
           end_date?: string | null
@@ -1090,6 +1238,8 @@ export type Database = {
           nationality?: string | null
           ni_number?: string | null
           notes?: string | null
+          onboarding_token?: string | null
+          onboarding_token_expires_at?: string | null
           overtime_model?: string | null
           passport_no?: string | null
           pay_amount?: number | null
@@ -1116,6 +1266,7 @@ export type Database = {
           contract_country?: string | null
           created_at?: string
           department?: Database["public"]["Enums"]["department_type"]
+          email?: string | null
           employee_ref?: string | null
           employing_entity?: string | null
           end_date?: string | null
@@ -1126,6 +1277,8 @@ export type Database = {
           nationality?: string | null
           ni_number?: string | null
           notes?: string | null
+          onboarding_token?: string | null
+          onboarding_token_expires_at?: string | null
           overtime_model?: string | null
           passport_no?: string | null
           pay_amount?: number | null
@@ -4575,7 +4728,7 @@ export type Database = {
         | "p45"
         | "p60"
         | "other"
-      employee_status: "active" | "leaver" | "starter"
+      employee_status: "active" | "leaver" | "starter" | "onboarding"
       holiday_ledger_entry_type:
         | "accrual"
         | "carry_over_in"
@@ -4775,7 +4928,7 @@ export const Constants = {
         "p60",
         "other",
       ],
-      employee_status: ["active", "leaver", "starter"],
+      employee_status: ["active", "leaver", "starter", "onboarding"],
       holiday_ledger_entry_type: [
         "accrual",
         "carry_over_in",

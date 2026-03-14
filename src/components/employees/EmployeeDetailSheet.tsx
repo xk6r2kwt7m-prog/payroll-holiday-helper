@@ -12,16 +12,18 @@ import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 
-const statusStyles = {
+const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
   leaver: "bg-destructive/10 text-destructive border-destructive/20",
   starter: "bg-primary/10 text-primary border-primary/20",
+  onboarding: "bg-accent/10 text-accent border-accent/20",
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   active: "Active",
   leaver: "Leaver",
   starter: "Starter",
+  onboarding: "Onboarding",
 };
 
 interface EmployeeDetailSheetProps {

@@ -12,7 +12,7 @@ interface ExpiringDocumentsWidgetProps {
 }
 
 export function ExpiringDocumentsWidget({ className }: ExpiringDocumentsWidgetProps) {
-  const { data: documents = [], isLoading } = useAllExpiringDocuments(60);
+  const { data: documents = [], isLoading } = useAllExpiringDocuments(90);
   const navigate = useNavigate();
 
   const getDocumentTypeInfo = (type: string) => {
