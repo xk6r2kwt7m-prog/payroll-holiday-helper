@@ -10,6 +10,8 @@ import {
   MoreHorizontal,
   ExternalLink,
   Edit2,
+  Shield,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +43,9 @@ import {
   type EmployeeDocument,
 } from "@/hooks/useEmployeeDocuments";
 import { DocumentUploadDialog } from "./DocumentUploadDialog";
+import { DocumentVerificationPanel } from "./DocumentVerificationPanel";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/hooks/useTenant";
 
 interface EmployeeDocumentListProps {
   employeeId: string;
