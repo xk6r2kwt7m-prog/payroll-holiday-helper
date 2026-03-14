@@ -77,6 +77,7 @@ export function useDeleteTrainingRecord() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("manage_training", null);
       const { error } = await supabase.from("training_records" as any).delete().eq("id", id);
       if (error) throw error;
     },

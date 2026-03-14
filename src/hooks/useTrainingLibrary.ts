@@ -192,6 +192,7 @@ export function useCreateAssignments() {
   const { notifyMany } = useNotifyEvent();
   return useMutation({
     mutationFn: async (assignments: Array<{ document_id: string; employee_id: string; due_date?: string; notes?: string }>) => {
+      await assertPermission("manage_training", tenantId!);
       const rows = assignments.map(a => ({
         ...a,
         tenant_id: tenantId,
