@@ -95,13 +95,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         { label: t("nav.payroll"), path: "/payroll", minRole: "admin", icon: DollarSign },
         { label: t("nav.calendar"), path: "/payroll/calendar", minRole: "admin", icon: CalendarDays },
         { label: t("nav.analytics"), path: "/payroll/analytics", minRole: "admin", icon: PieChart },
-        { label: t("nav.overpayments"), path: "/payroll/overpayments", minRole: "admin", icon: AlertTriangle },
       ],
     },
     {
-      label: t("nav.holidays"), path: "/holidays", minRole: "manager", icon: Calendar,
+      label: "Leave", path: "/holidays/manage", minRole: "manager", icon: Calendar,
       children: [
-        { label: t("nav.holiday_management"), path: "/holidays", minRole: "manager", icon: Calendar },
+        { label: "Leave Management", path: "/holidays/manage", minRole: "manager", icon: Calendar },
         { label: t("nav.holiday_audit"), path: "/holidays/audit", minRole: "admin", icon: Scale },
       ],
     },
