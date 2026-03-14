@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 /* ─── Types ─── */
 
@@ -70,6 +71,7 @@ export function useToggleServiceCharge() {
   return useMutation({
     mutationFn: async (enabled: boolean) => {
       if (!tenantId) throw new Error("No tenant");
+      await assertPermission("access_admin_centre", tenantId);
       const { error } = await supabase
         .from("tenants")
         .update({ service_charge_enabled: enabled } as any)
@@ -111,6 +113,7 @@ export function useUpsertServiceChargeLocation() {
   return useMutation({
     mutationFn: async (input: Partial<ServiceChargeLocationSetting> & { branch: string }) => {
       if (!tenantId) throw new Error("No tenant");
+      await assertPermission("access_admin_centre", tenantId);
       const { error } = await supabase
         .from("service_charge_location_settings")
         .upsert(
@@ -153,6 +156,7 @@ export function useSaveRoleRate() {
   return useMutation({
     mutationFn: async (input: { id?: string; role_name: string; rate_per_hour: number; effective_from: string; effective_to?: string | null; notes?: string | null; is_active?: boolean }) => {
       if (!tenantId) throw new Error("No tenant");
+      await assertPermission("access_admin_centre", tenantId);
       if (input.id) {
         const { id, ...rest } = input;
         const { error } = await supabase
@@ -179,6 +183,7 @@ export function useDeleteRoleRate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("access_admin_centre", null);
       const { error } = await supabase.from("service_charge_role_rates").delete().eq("id", id);
       if (error) throw error;
     },
@@ -216,6 +221,7 @@ export function useSaveEmployeeRate() {
   return useMutation({
     mutationFn: async (input: { id?: string; employee_id: string; custom_rate_per_hour: number; effective_from: string; effective_to?: string | null; notes?: string | null; is_active?: boolean }) => {
       if (!tenantId) throw new Error("No tenant");
+      await assertPermission("access_admin_centre", tenantId);
       if (input.id) {
         const { id, ...rest } = input;
         const { error } = await supabase
@@ -242,6 +248,7 @@ export function useDeleteEmployeeRate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("access_admin_centre", null);
       const { error } = await supabase.from("service_charge_employee_rates").delete().eq("id", id);
       if (error) throw error;
     },

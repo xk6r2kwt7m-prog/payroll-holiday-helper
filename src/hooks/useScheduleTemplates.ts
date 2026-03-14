@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { assertPermission } from "@/lib/permission-guard";
 import { toast } from "sonner";
 
 export interface ScheduleTemplate {
@@ -108,6 +109,7 @@ export function useDeleteScheduleTemplate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("edit_schedules", null);
       const { error } = await supabase.from("schedule_templates").delete().eq("id", id);
       if (error) throw error;
     },

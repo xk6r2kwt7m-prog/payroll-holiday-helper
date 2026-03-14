@@ -4,6 +4,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifyEvent } from "@/hooks/useNotifyEvent";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export interface MarketplaceListing {
   id: string;
@@ -251,6 +252,7 @@ export function useApproveRequest() {
     mutationFn: async ({ requestId, listingId, shiftId, newEmployeeId }: {
       requestId: string; listingId: string; shiftId: string; newEmployeeId: string;
     }) => {
+      await assertPermission("edit_schedules", tenantId);
       // 1. Update request status
       await supabase
         .from("shift_marketplace_requests" as any)
@@ -355,6 +357,7 @@ export function useRejectRequest() {
 
   return useMutation({
     mutationFn: async ({ requestId, employeeId, shiftId, reviewNotes }: { requestId: string; employeeId?: string; shiftId?: string; reviewNotes?: string }) => {
+      await assertPermission("edit_schedules", null);
       await supabase
         .from("shift_marketplace_requests" as any)
         .update({ status: "rejected", reviewed_by: user?.id, reviewed_at: new Date().toISOString(), review_notes: reviewNotes || null } as any)
