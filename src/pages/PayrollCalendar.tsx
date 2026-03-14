@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle, AlertCircle, DollarSign, FileText } from "lucide-react";
+import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
