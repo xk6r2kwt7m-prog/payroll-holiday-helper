@@ -139,7 +139,7 @@ export function AdminHome() {
             ))}
           </div>
         </motion.div>
-      )
+      )}
 
       {/* Alerts */}
       {alerts.length > 0 && (
