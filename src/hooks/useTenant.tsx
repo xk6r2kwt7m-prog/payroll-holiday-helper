@@ -308,6 +308,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         availableTenants,
         setTenantId,
         selectTenant,
+        openWorkspacePicker,
       }}
     >
       {children}
