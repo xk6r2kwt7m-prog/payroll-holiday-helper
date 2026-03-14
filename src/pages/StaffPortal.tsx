@@ -145,12 +145,6 @@ export default function StaffPortal() {
           </motion.div>
         )}
 
-        {/* Requests Section */}
-        {activeSection === "requests" && (
-          <motion.div {...anim} transition={{ duration: 0.25 }}>
-            {employeeId && <HolidayRequestForm employeeId={employeeId} employeeName={employeeName} />}
-          </motion.div>
-        )}
 
         {/* Timesheets Section */}
         {activeSection === "timesheets" && (
