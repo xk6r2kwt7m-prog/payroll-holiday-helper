@@ -500,16 +500,12 @@ const Payroll = () => {
 
         {/* Empty State */}
         {!loadingPeriods && periods.length === 0 && (
-          <div className="rounded-xl bg-card shadow-card p-8 text-center">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">{t("payroll.no_periods_desc")}</p>
-            {isAdmin && (
-              <div className="flex justify-center gap-3">
-                <CreatePayrollDialog />
-                <ImportPayrollDialog />
-              </div>
-            )}
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="No payroll periods yet"
+            description="Create your first payroll period to start tracking staff pay, hours, and deductions."
+            actionLabel={isAdmin ? "Create Period" : undefined}
+          />
         )}
 
         {/* Payroll Table */}
@@ -535,9 +531,37 @@ const Payroll = () => {
             companyName={companySettings?.company_name}
           />
         )}
+          </TabsContent>
+
+          {/* Calendar Tab */}
+          <TabsContent value="calendar" className="mt-4">
+            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading calendar...</div>}>
+              <PayrollCalendarInline />
+            </Suspense>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="mt-4">
+            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading analytics...</div>}>
+              <PayrollAnalyticsView />
+            </Suspense>
+          </TabsContent>
+
+          {/* Audit Tab */}
+          <TabsContent value="audit" className="mt-4">
+            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading audit...</div>}>
+              <PayrollAuditView />
+            </Suspense>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
 };
+
+// Inline wrapper for Calendar (strips AppLayout since it's already in one)
+function PayrollCalendarInline() {
+  return <PayrollCalendarView />;
+}
 
 export default Payroll;
