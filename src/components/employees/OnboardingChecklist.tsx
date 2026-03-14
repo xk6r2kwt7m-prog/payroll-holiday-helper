@@ -4,11 +4,11 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useEmployeeReadiness, type ReadinessStatus } from "@/hooks/useOnboardingReadiness";
 
-const statusConfig: Record<ReadinessStatus, { label: string; description: string; icon: any; color: string; bg: string }> = {
-  ready: { label: "Ready to Work", description: "All requirements met — this employee can be scheduled.", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
-  pending: { label: "Setup Incomplete", description: "Some required items are still missing.", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
-  pending_verification: { label: "Awaiting Admin Verification", description: "Documents uploaded but need admin review before clearance.", icon: Shield, color: "text-accent", bg: "bg-accent/10" },
-  blocked: { label: "Blocked — Cannot Work", description: "Critical compliance items are missing. This employee cannot be scheduled.", icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
+const statusConfig: Record<ReadinessStatus, { label: string; shortLabel: string; description: string; icon: any; color: string; bg: string }> = {
+  ready: { label: "Ready to Work", shortLabel: "Ready", description: "All requirements met — this employee can be scheduled.", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
+  pending: { label: "Setup Incomplete", shortLabel: "Pending", description: "Some required items are still missing.", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
+  pending_verification: { label: "Awaiting Admin Verification", shortLabel: "Verifying", description: "Documents uploaded but need admin review before clearance.", icon: Shield, color: "text-accent", bg: "bg-accent/10" },
+  blocked: { label: "Blocked — Cannot Work", shortLabel: "Blocked", description: "Critical compliance items are missing. This employee cannot be scheduled.", icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
 };
 
 const checkStatusIcon: Record<string, { icon: any; color: string }> = {
