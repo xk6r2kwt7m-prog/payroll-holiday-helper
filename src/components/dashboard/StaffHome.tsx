@@ -392,9 +392,31 @@ export function StaffHome() {
     ? elapsedTime?.slice(0, 5) || "0:00"
     : "0h";
 
+  const isOnboarding = employee?.status === "onboarding" || employee?.status === "starter";
+
   return (
     <div className="space-y-5 max-w-lg mx-auto pb-24">
       <GreetingHeader name={employee?.forename || ""} />
+
+      {/* Onboarding / Readiness banner for new employees */}
+      {employeeId && isOnboarding && (
+        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.01 }}>
+          <ReadinessBanner employeeId={employeeId} />
+          <Link
+            to="/employee-onboarding"
+            className="mt-2 flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 active:bg-primary/10 transition-colors"
+          >
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <ClipboardList className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Complete your onboarding</p>
+              <p className="text-xs text-muted-foreground">Finish your setup to get ready for work</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+          </Link>
+        </motion.div>
+      )}
 
       {/* Shift Countdown */}
       {!activeEntry && nextShiftTime && (
