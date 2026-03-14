@@ -57,7 +57,9 @@ const App = () => (
         <AuthProvider>
           <TenantProvider>
           <I18nProvider>
+          <ImpersonationProvider>
           <PrivacyShieldProvider>
+          <ImpersonationBanner />
           <CommandPalette />
           <Routes>
             {/* Public routes */}
