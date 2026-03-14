@@ -1,7 +1,6 @@
-import { useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Check, Users, Clock, DollarSign, Eye } from "lucide-react";
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Users, DollarSign } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { getMinimumStaff, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import {
@@ -11,7 +10,8 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ScheduleSummaryProps {
   shifts: any[];
@@ -27,7 +27,6 @@ interface CoverageDay {
   assigned: number;
   minimum: number;
   status: "ok" | "warning" | "critical";
-  label: string;
   dayAbbr: string;
 }
 
@@ -40,6 +39,7 @@ export function ScheduleSummary({
   complianceWarningCount,
 }: ScheduleSummaryProps) {
   const [gapDrawerOpen, setGapDrawerOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const deptEmployees = useMemo(
     () => employees.filter((e) => e.department === department && e.status === "active"),
@@ -60,16 +60,7 @@ export function ScheduleSummary({
       const assigned = dayShifts.filter((s: any) => s.employee_id).length;
       const minimum = getMinimumStaff(branch, department as any, dayAbbr);
       const status = assigned >= minimum ? "ok" : assigned === 0 ? "critical" : "warning";
-      return {
-        date: day,
-        assigned,
-        minimum,
-        status,
-        label: assigned >= minimum
-          ? "Covered"
-          : `Need ${minimum - assigned} more`,
-        dayAbbr,
-      };
+      return { date: day, assigned, minimum, status, dayAbbr };
     });
   }, [weekDays, branchDeptShifts, branch, department]);
 
@@ -79,14 +70,11 @@ export function ScheduleSummary({
     const unassigned = totalShifts - assignedShifts;
     const published = branchDeptShifts.filter((s: any) => s.is_published).length;
     const understaffedDays = coverage.filter((c) => c.status !== "ok").length;
-
-    // Employees with 0 shifts
     const employeesWithShifts = new Set(
       branchDeptShifts.filter((s: any) => s.employee_id).map((s: any) => s.employee_id)
     );
     const unscheduledEmployees = deptEmployees.filter((e) => !employeesWithShifts.has(e.id));
 
-    // Estimated labour cost
     let totalCost = 0;
     for (const shift of branchDeptShifts) {
       if (!shift.employee_id) continue;
@@ -103,77 +91,78 @@ export function ScheduleSummary({
   }, [branchDeptShifts, coverage, deptEmployees, employees]);
 
   const gapDays = coverage.filter((c) => c.status !== "ok");
+  const hasIssues = stats.understaffedDays > 0 || stats.unassigned > 0 || complianceWarningCount > 0;
+
+  // Don't render if no shifts
+  if (stats.totalShifts === 0) return null;
 
   return (
     <>
-      {/* Coverage strip — horizontal scrollable day indicators */}
-      <div className="flex items-stretch gap-1.5 overflow-x-auto no-scrollbar py-1">
-        {coverage.map((day) => (
-          <button
-            key={day.date.toISOString()}
-            onClick={() => day.status !== "ok" && setGapDrawerOpen(true)}
-            className={cn(
-              "flex flex-col items-center rounded-lg px-2.5 py-1.5 min-w-[48px] text-center transition-colors",
-              day.status === "ok" && "bg-success/10 border border-success/20",
-              day.status === "warning" && "bg-warning/10 border border-warning/30 cursor-pointer",
-              day.status === "critical" && "bg-destructive/10 border border-destructive/30 cursor-pointer animate-pulse",
-            )}
-          >
-            <span className="text-[10px] font-medium text-muted-foreground">{day.dayAbbr}</span>
-            <span className={cn(
-              "text-sm font-bold",
-              day.status === "ok" && "text-success",
-              day.status === "warning" && "text-warning",
-              day.status === "critical" && "text-destructive",
-            )}>
-              {day.assigned}/{day.minimum}
-            </span>
-            {day.status !== "ok" && (
-              <AlertTriangle className={cn(
-                "h-3 w-3 mt-0.5",
-                day.status === "warning" ? "text-warning" : "text-destructive"
-              )} />
-            )}
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between py-1.5 group">
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <span className="tabular-nums">
+                <span className="font-medium text-foreground">{stats.totalShifts}</span> shifts
+              </span>
+              {stats.unassigned > 0 && (
+                <span className="text-accent tabular-nums">
+                  <span className="font-medium">{stats.unassigned}</span> open
+                </span>
+              )}
+              {stats.understaffedDays > 0 && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setGapDrawerOpen(true); }}
+                  className="text-destructive tabular-nums hover:underline"
+                >
+                  <span className="font-medium">{stats.understaffedDays}</span> gap{stats.understaffedDays !== 1 ? "s" : ""}
+                </button>
+              )}
+              {complianceWarningCount > 0 && (
+                <span className="text-destructive tabular-nums">
+                  <span className="font-medium">{complianceWarningCount}</span> WTR
+                </span>
+              )}
+              {stats.totalCost > 0 && (
+                <span className="tabular-nums">
+                  £{stats.totalCost.toFixed(0)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 text-muted-foreground/60">
+              {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </div>
           </button>
-        ))}
-      </div>
+        </CollapsibleTrigger>
 
-      {/* Quick stats row */}
-      <div className="flex items-center gap-3 overflow-x-auto no-scrollbar text-xs py-1">
-        <div className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
-          <Users className="h-3 w-3" />
-          <span className="font-medium text-foreground">{stats.totalShifts}</span> shifts
-        </div>
-        {stats.unassigned > 0 && (
-          <div className="flex items-center gap-1 text-warning whitespace-nowrap">
-            <Eye className="h-3 w-3" />
-            <span className="font-medium">{stats.unassigned}</span> open
+        <CollapsibleContent>
+          {/* Coverage mini-bar */}
+          <div className="flex items-center gap-1 pb-2">
+            {coverage.map((day) => (
+              <button
+                key={day.date.toISOString()}
+                onClick={() => day.status !== "ok" && setGapDrawerOpen(true)}
+                className={cn(
+                  "flex-1 flex flex-col items-center rounded-md py-1 text-center transition-colors min-w-0",
+                  day.status === "ok" && "bg-success/8",
+                  day.status === "warning" && "bg-warning/10 cursor-pointer hover:bg-warning/15",
+                  day.status === "critical" && "bg-destructive/8 cursor-pointer hover:bg-destructive/12",
+                )}
+              >
+                <span className="text-[9px] font-medium text-muted-foreground">{day.dayAbbr}</span>
+                <span className={cn(
+                  "text-[11px] font-bold tabular-nums leading-tight",
+                  day.status === "ok" && "text-success",
+                  day.status === "warning" && "text-warning",
+                  day.status === "critical" && "text-destructive",
+                )}>
+                  {day.assigned}/{day.minimum}
+                </span>
+              </button>
+            ))}
           </div>
-        )}
-        {stats.understaffedDays > 0 && (
-          <div className="flex items-center gap-1 text-destructive whitespace-nowrap">
-            <AlertTriangle className="h-3 w-3" />
-            <span className="font-medium">{stats.understaffedDays}</span> gap{stats.understaffedDays !== 1 ? "s" : ""}
-          </div>
-        )}
-        {stats.unscheduledEmployees.length > 0 && (
-          <div className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
-            <Users className="h-3 w-3" />
-            <span className="font-medium">{stats.unscheduledEmployees.length}</span> unscheduled
-          </div>
-        )}
-        {stats.totalCost > 0 && (
-          <div className="flex items-center gap-1 text-muted-foreground whitespace-nowrap">
-            <DollarSign className="h-3 w-3" />
-            £{stats.totalCost.toFixed(0)}
-          </div>
-        )}
-        {complianceWarningCount > 0 && (
-          <Badge variant="destructive" className="text-[10px] px-1.5 py-0 shrink-0">
-            {complianceWarningCount} WTR
-          </Badge>
-        )}
-      </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Gap detail drawer */}
       <Drawer open={gapDrawerOpen} onOpenChange={setGapDrawerOpen}>
@@ -181,7 +170,7 @@ export function ScheduleSummary({
           <DrawerHeader>
             <DrawerTitle>Staffing Gaps — {department} at {branch}</DrawerTitle>
             <DrawerDescription>
-              {gapDays.length} day{gapDays.length !== 1 ? "s" : ""} need attention this week
+              {gapDays.length} day{gapDays.length !== 1 ? "s" : ""} need attention
             </DrawerDescription>
           </DrawerHeader>
           <div className="px-4 pb-6 space-y-3 max-h-[60vh] overflow-y-auto">
@@ -220,9 +209,6 @@ export function ScheduleSummary({
                       ? `No ${department} staff assigned — need ${day.minimum} shifts`
                       : `Need ${day.minimum - day.assigned} more ${department} shift${day.minimum - day.assigned > 1 ? "s" : ""}`
                     }
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Tap an empty cell on this day to quickly add a shift.
                   </p>
                 </div>
               ))
