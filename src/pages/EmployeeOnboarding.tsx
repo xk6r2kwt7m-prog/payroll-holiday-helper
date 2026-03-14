@@ -223,15 +223,22 @@ export default function EmployeeOnboarding() {
   if (onboardingData?.onboarding_completed_at) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center max-w-sm">
-          <CheckCircle2 className="h-16 w-16 text-success mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Onboarding Complete!</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            Your information has been submitted. Your admin will verify your documents shortly.
-          </p>
-          <Button onClick={() => window.location.href = "/staff"}>
-            Go to Staff Portal
-          </Button>
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center max-w-sm space-y-5">
+          <CheckCircle2 className="h-16 w-16 text-success mx-auto" />
+          <div>
+            <h2 className="text-xl font-bold mb-1">Onboarding Complete!</h2>
+            <p className="text-sm text-muted-foreground">
+              Your information has been submitted. Your manager will review your documents — you'll see the status update on your home screen.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Button className="w-full" onClick={() => window.location.href = "/"}>
+              Go to Home
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => window.location.href = "/staff"}>
+              View My Records
+            </Button>
+          </div>
         </motion.div>
       </div>
     );
