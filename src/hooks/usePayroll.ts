@@ -281,6 +281,7 @@ export function useBulkUpdatePayrollEntries() {
   
   return useMutation({
     mutationFn: async (entries: { id: string; updates: PayrollEntryUpdate }[]) => {
+      await assertPermission("view_pay_data", null);
       const results = await Promise.all(
         entries.map(async ({ id, updates }) => {
           const { data, error } = await supabase
