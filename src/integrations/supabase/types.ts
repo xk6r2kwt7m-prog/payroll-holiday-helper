@@ -2303,6 +2303,56 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          announcements: boolean
+          created_at: string
+          documents: boolean
+          id: string
+          leave_updates: boolean
+          marketplace_activity: boolean
+          schedule_updates: boolean
+          tenant_id: string
+          training: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          announcements?: boolean
+          created_at?: string
+          documents?: boolean
+          id?: string
+          leave_updates?: boolean
+          marketplace_activity?: boolean
+          schedule_updates?: boolean
+          tenant_id: string
+          training?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          announcements?: boolean
+          created_at?: string
+          documents?: boolean
+          id?: string
+          leave_updates?: boolean
+          marketplace_activity?: boolean
+          schedule_updates?: boolean
+          tenant_id?: string
+          training?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
