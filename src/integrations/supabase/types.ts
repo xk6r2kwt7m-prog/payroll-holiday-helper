@@ -5172,6 +5172,8 @@ export type Database = {
       training_library: {
         Row: {
           category: string
+          content_type: string
+          content_url: string | null
           counts_toward_readiness: boolean
           created_at: string
           created_by: string | null
@@ -5196,6 +5198,8 @@ export type Database = {
         }
         Insert: {
           category?: string
+          content_type?: string
+          content_url?: string | null
           counts_toward_readiness?: boolean
           created_at?: string
           created_by?: string | null
@@ -5220,6 +5224,8 @@ export type Database = {
         }
         Update: {
           category?: string
+          content_type?: string
+          content_url?: string | null
           counts_toward_readiness?: boolean
           created_at?: string
           created_by?: string | null

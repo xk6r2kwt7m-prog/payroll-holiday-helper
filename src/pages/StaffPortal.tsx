@@ -13,6 +13,7 @@ import { TimesheetsSection } from "@/components/staff-portal/TimesheetsSection";
 import { DocumentsSection } from "@/components/staff-portal/DocumentsSection";
 import { ReadinessBanner } from "@/components/staff-portal/ReadinessBanner";
 import { StaffTrainingView } from "@/components/training/StaffTrainingView";
+import { FohTrainingQuickAccess } from "@/components/staff-portal/FohTrainingQuickAccess";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
@@ -113,7 +114,12 @@ export default function StaffPortal() {
             <ProfileSection employeeData={employee} onSignOut={signOut} />
           )}
           {activeSection === "timesheets" && <TimesheetsSection />}
-          {activeSection === "training" && <StaffTrainingView employeeId={employeeId} />}
+          {activeSection === "training" && (
+            <div className="space-y-6">
+              <StaffTrainingView employeeId={employeeId} />
+              <FohTrainingQuickAccess department={employee?.department} />
+            </div>
+          )}
           {activeSection === "documents" && <DocumentsSection employeeId={employeeId} />}
         </motion.div>
       </div>
