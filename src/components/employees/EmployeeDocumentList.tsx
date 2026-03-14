@@ -123,10 +123,32 @@ export function EmployeeDocumentList({ employeeId, employeeName, isAdmin }: Empl
         <h3 className="font-semibold text-card-foreground">
           Documents ({documents.length})
         </h3>
-        {isAdmin && (
-          <DocumentUploadDialog employeeId={employeeId} employeeName={employeeName} />
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin && documents.length > 0 && (
+            <Button
+              variant={showVerification ? "secondary" : "ghost"}
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setShowVerification(!showVerification)}
+            >
+              <Shield className="h-3.5 w-3.5" />
+              Verify
+            </Button>
+          )}
+          {isAdmin && (
+            <DocumentUploadDialog employeeId={employeeId} employeeName={employeeName} />
+          )}
+        </div>
       </div>
+
+      {/* Verification Panel */}
+      {showVerification && isAdmin && tenantId && documents.length > 0 && (
+        <DocumentVerificationPanel
+          documents={documents}
+          employeeId={employeeId}
+          tenantId={tenantId}
+        />
+      )}
 
       {/* Document List */}
       {documents.length === 0 ? (
