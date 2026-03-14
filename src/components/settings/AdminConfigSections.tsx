@@ -158,6 +158,7 @@ export function HolidayDisplaySettings() {
       </div>
       <ToggleRow label="Show balance summary" desc="Display accrual/taken/remaining at top" checked={local.showBalanceSummary} onChange={v => set("showBalanceSummary", v)} />
       <ToggleRow label="Show ledger tab" desc="Allow viewing detailed ledger entries" checked={local.showLedgerTab} onChange={v => set("showLedgerTab", v)} />
+      <NotYetEnforced label="showLedgerTab — saved for future enforcement" />
       <SaveButton onSave={handleSave} isPending={saveMut.isPending} />
     </div>
   );
