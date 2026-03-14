@@ -30,7 +30,7 @@ export default function StaffPortal() {
   const { user, signOut } = useAuth();
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
-  const [activeSection, setActiveSection] = useState<"profile" | "requests" | "timesheets" | "documents">("profile");
+  const [activeSection, setActiveSection] = useState<"profile" | "requests" | "timesheets" | "documents" | "training">("profile");
   const qc = useQueryClient();
 
   useEffect(() => {
