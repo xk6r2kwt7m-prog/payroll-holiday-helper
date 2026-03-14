@@ -160,6 +160,8 @@ function AddDocumentDialog() {
     title: "",
     description: "",
     category: "training",
+    content_type: "document" as "document" | "internal_page" | "external_link",
+    content_url: "",
     requires_acknowledgement: false,
     requires_completion: false,
     requires_quiz: false,
