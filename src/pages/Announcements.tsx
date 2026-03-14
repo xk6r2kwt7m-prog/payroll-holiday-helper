@@ -93,9 +93,17 @@ export default function Announcements() {
         {/* Announcements list */}
         <div className="space-y-3">
           {announcements.length === 0 && (
-            <div className="rounded-xl bg-card border border-border shadow-card p-8 text-center">
-              <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No announcements yet. Create your first one above.</p>
+            <div className="rounded-xl bg-card border border-border shadow-card p-10 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted mx-auto mb-4">
+                <Megaphone className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1">No announcements yet</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-1.5">
+                Use announcements to share important updates with your team — policy changes, shift reminders, or company news.
+              </p>
+              <p className="text-xs text-muted-foreground/70 max-w-xs mx-auto">
+                You can track who has read each announcement with read receipts.
+              </p>
             </div>
           )}
           {announcements.map(ann => {

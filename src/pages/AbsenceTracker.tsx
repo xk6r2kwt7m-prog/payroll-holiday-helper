@@ -283,7 +283,15 @@ export default function AbsenceTracker() {
               </div>
               <div className="divide-y divide-border">
                 {absences.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">No absences recorded yet.</p>
+                  <div className="flex flex-col items-center justify-center py-14 text-center px-4">
+                    <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                      <Calendar className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground mb-1">No absences recorded</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      When staff are absent, record it here to keep attendance data accurate. Absence records feed into Bradford Factor scoring and compliance reporting.
+                    </p>
+                  </div>
                 )}
                 {absences.map(a => {
                   const emp = a.employees;

@@ -203,7 +203,15 @@ export default function Timesheets() {
             {isLoading ? (
               <p className="text-muted-foreground text-sm py-8 text-center">{t("common.loading")}</p>
             ) : displayEntries.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-8 text-center">{t("timesheets.no_entries")}</p>
+              <div className="flex flex-col items-center justify-center py-14 text-center px-4">
+                <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                  <Clock className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-1">No timesheet entries this week</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Timesheets are created automatically when staff clock in and out. Once shifts start, entries will appear here for review and approval.
+                </p>
+              </div>
             ) : (
               displayEntries.map((entry: any) => {
                 const flags = computeFlags(entry);

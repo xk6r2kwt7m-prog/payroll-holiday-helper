@@ -343,16 +343,23 @@ const Employees = () => {
           </div>
         )}
 
-        {/* Empty */}
+        {/* Empty — no employees at all */}
         {!isLoading && employees.length === 0 && (
           <div className="rounded-xl bg-card shadow-sm p-10 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
               <UserPlus className="h-7 w-7 text-primary" />
             </div>
             <h3 className="text-lg font-semibold text-card-foreground mb-2">{t("employees.no_employees_yet")}</h3>
-            <p className="text-muted-foreground mb-6 text-sm max-w-md mx-auto">
-              {t("employees.add_first_employee")}
+            <p className="text-muted-foreground mb-2 text-sm max-w-md mx-auto">
+              {isAdmin
+                ? t("employees.add_first_employee")
+                : "Your team hasn't been set up yet. Your admin will add employees soon."}
             </p>
+            {isAdmin && (
+              <p className="text-xs text-muted-foreground/70 mb-6 max-w-sm mx-auto">
+                Employees are the foundation of scheduling, payroll, and leave management. Start by adding your first team member.
+              </p>
+            )}
             {isAdmin && <EmployeeFormDialog />}
           </div>
         )}
