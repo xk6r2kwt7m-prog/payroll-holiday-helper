@@ -34,6 +34,9 @@ export function ProfileSection({ employeeData, onSignOut }: ProfileSectionProps)
         </div>
       </div>
 
+      {/* Notification Preferences */}
+      <NotificationPreferences />
+
       {/* Sign Out */}
       <button
         onClick={onSignOut}
