@@ -30,6 +30,7 @@ import {
 import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
+import { DepartmentFilter } from "@/components/ui/DepartmentFilter";
 import {
   Accordion,
   AccordionContent,

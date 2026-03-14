@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DepartmentFilter } from "@/components/ui/DepartmentFilter";
 import { formatHours, formatCurrency, hoursToDays } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
 
