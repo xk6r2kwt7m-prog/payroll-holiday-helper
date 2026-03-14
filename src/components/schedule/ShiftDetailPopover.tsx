@@ -271,7 +271,7 @@ export function ShiftDetailPopover({
                       className="flex-1 h-8 gap-1.5 text-[11px] text-muted-foreground"
                       onClick={(e) => { e.stopPropagation(); onMove(); }}
                     >
-                      <ArrowRightLeft className="h-3 w-3" />
+                      <CalendarDays className="h-3 w-3" />
                       Move Day
                     </Button>
                   )}
