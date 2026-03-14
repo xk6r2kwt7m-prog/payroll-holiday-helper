@@ -39,7 +39,14 @@ import {
 } from "@/components/ui/accordion";
 import { useI18n } from "@/hooks/useI18n";
 import { HolidayRequestQueue } from "@/components/holidays/HolidayRequestQueue";
+import { usePermission } from "@/hooks/useRolePermissions";
+import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 
+const HOLIDAY_DISPLAY_DEFAULTS = {
+  showBalanceSummary: true,
+  showLedgerTab: true,
+  defaultView: "cards" as string,
+};
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
 type LeaveYear = "2022" | "2023" | "2024" | "2025" | "2026";
