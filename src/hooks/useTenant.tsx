@@ -162,6 +162,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setShowTenantPicker(true);
   }, []);
 
+  useEffect(() => {
     // While auth is still bootstrapping, stay in loading
     if (authLoading) {
       setLoading(true);
