@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { motion } from "framer-motion";
 import {
