@@ -6,15 +6,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ReportFilters } from "./ReportFilters";
+import { ReportSummaryBar } from "./ReportSummaryBar";
 import { useTimeEntries } from "@/hooks/useTimeEntries";
 import { useBranchLocations } from "@/hooks/useSchedule";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useManagerScope } from "@/hooks/useManagerScope";
 import { exportToCsv } from "@/lib/csv-export";
 import { cn } from "@/lib/utils";
 
 export function AttendanceReport() {
   const [branch, setBranch] = useState("all");
   const [dept, setDept] = useState("all");
+  const [empId, setEmpId] = useState("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(startOfMonth(new Date()));
   const [dateTo, setDateTo] = useState<Date | undefined>(endOfMonth(new Date()));
 
@@ -23,22 +26,37 @@ export function AttendanceReport() {
 
   const { data: entries = [], isLoading } = useTimeEntries(startStr, endStr, undefined, branch !== "all" ? branch : undefined);
   const { data: branches } = useBranchLocations();
-  const { data: employees } = useEmployees();
+  const { data: employees = [] } = useEmployees();
+  const { filterByScope, filterEmployees } = useManagerScope();
+
+  const scopedEmployees = useMemo(() => filterEmployees(employees), [employees, filterEmployees]);
 
   const departments = useMemo(() => {
-    if (!employees) return [];
-    return [...new Set(employees.map((e) => e.department))].sort();
-  }, [employees]);
+    return [...new Set(scopedEmployees.map((e) => e.department))].sort();
+  }, [scopedEmployees]);
+
+  const employeeOptions = useMemo(() => {
+    let list = scopedEmployees;
+    if (dept !== "all") list = list.filter((e) => e.department === dept);
+    return list.map((e) => ({ id: e.id, forename: e.forename, surname: e.surname, department: e.department }));
+  }, [scopedEmployees, dept]);
 
   const filtered = useMemo(() => {
-    if (!entries) return [];
-    let list = entries as any[];
+    let list = filterByScope(entries as any[], (e: any) => e.employee_id);
     if (dept !== "all") list = list.filter((e: any) => e.employees?.department === dept);
+    if (empId !== "all") list = list.filter((e: any) => e.employee_id === empId);
     return list;
-  }, [entries, dept]);
+  }, [entries, dept, empId, filterByScope]);
+
+  const selectedEmpName = useMemo(() => {
+    if (empId === "all") return undefined;
+    const e = employees.find((x) => x.id === empId);
+    return e ? `${e.forename} ${e.surname}` : undefined;
+  }, [empId, employees]);
 
   const handleExport = () => {
-    exportToCsv("attendance_report", [
+    const dateStr = format(new Date(), "yyyyMMdd");
+    exportToCsv(`attendance_report_${dateStr}`, [
       { header: "Employee", accessor: (r: any) => `${r.employees?.forename || ""} ${r.employees?.surname || ""}` },
       { header: "Department", accessor: (r: any) => r.employees?.department },
       { header: "Branch", accessor: (r: any) => r.branch },
@@ -65,6 +83,9 @@ export function AttendanceReport() {
           departments={departments}
           selectedDepartment={dept}
           onDepartmentChange={setDept}
+          employees={employeeOptions}
+          selectedEmployeeId={empId}
+          onEmployeeChange={setEmpId}
           showDateRange
           dateFrom={dateFrom}
           dateTo={dateTo}
@@ -74,12 +95,22 @@ export function AttendanceReport() {
           exportDisabled={filtered.length === 0}
           rowCount={filtered.length}
         />
+        {!isLoading && (
+          <ReportSummaryBar
+            rowCount={filtered.length}
+            branch={branch}
+            department={dept}
+            employeeName={selectedEmpName}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+          />
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Clock} title="No timesheet entries" description="Adjust filters or date range to find records." compact />
+          <EmptyState icon={Clock} title="No timesheet entries" description="No records match your filters. Adjust filters or expand the date range." compact />
         ) : (
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
