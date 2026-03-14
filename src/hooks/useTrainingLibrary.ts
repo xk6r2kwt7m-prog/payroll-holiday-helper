@@ -244,7 +244,7 @@ export function useCreateAssignments() {
             "training_assigned",
             title,
             body,
-            "/staff-portal",
+            "/staff",
             { document_count: titles.length }
           );
         }

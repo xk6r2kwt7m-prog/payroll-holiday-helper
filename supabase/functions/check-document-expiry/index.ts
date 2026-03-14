@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
           event_type: eventType,
           title: employeeTitle,
           body: employeeBody,
-          link: "/staff-portal",
+          link: "/staff",
           metadata,
         });
       }
