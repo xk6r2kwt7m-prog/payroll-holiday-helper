@@ -17,10 +17,12 @@ export function UpcomingPayroll() {
     const entries = (allEntries as any[]).filter((e) => e.payroll_period_id === latestPeriod.id);
     const holidays = (allHolidayPayments as any[]).filter((h) => h.payroll_period_id === latestPeriod.id);
 
-    const timesheetCost = entries.reduce((s, e) => s + ((e.timesheet_hours || 0) * (e.hourly_rate || 0) + (e.timesheet_hours || 0) * (e.service_charge || 0)), 0);
+    // Read stored values only — no rate multiplication
+    const totalPayroll = entries.reduce((s, e) => s + (e.total_pay || 0), 0);
     const holidayCost = holidays.reduce((s, h) => s + (h.total || 0), 0);
     const bonuses = entries.reduce((s, e) => s + (e.performance_bonus || 0) + (e.special_bonus || 0), 0);
-    const totalPayroll = entries.reduce((s, e) => s + (e.total_pay || 0), 0);
+    // Timesheet = stored total_pay minus stored bonuses (derived from stored fields only)
+    const timesheetCost = totalPayroll - bonuses;
 
     return {
       periodName: latestPeriod.period_name,
@@ -28,7 +30,7 @@ export function UpcomingPayroll() {
       breakdown: [
         { label: "Timesheet", amount: timesheetCost, color: "bg-primary" },
         { label: "Holidays", amount: holidayCost, color: "bg-accent" },
-        { label: "Bonuses", amount: bonuses, color: "bg-green-500" },
+        { label: "Bonuses", amount: bonuses, color: "bg-success" },
       ],
     };
   }, [latestPeriod, allEntries, allHolidayPayments]);
