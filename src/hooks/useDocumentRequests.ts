@@ -93,13 +93,13 @@ export function useOverdueDocumentRequests() {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("document_requests" as any)
-        .select("*, employees(id, forename, surname, department)")
+        .select("*, employees:employee_id(id, forename, surname, department)")
         .eq("tenant_id", tenantId!)
         .in("status", ["requested", "viewed"])
         .lt("due_date", today)
         .order("due_date", { ascending: true });
       if (error) throw error;
-      return (data || []) as DocumentRequest[];
+      return (data || []) as unknown as DocumentRequest[];
     },
     enabled: !!tenantId,
   });
