@@ -8,8 +8,9 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import {
   Building2, Bell, Shield, CreditCard, Loader2, Users, Calendar,
-  MapPin, Briefcase, Settings as SettingsIcon, Lock, ChevronRight,
-  CalendarClock, GraduationCap, Sparkles, Palette, Blocks, ClipboardList, DollarSign,
+  MapPin, Briefcase, Settings as SettingsIcon, Lock, ChevronLeft,
+  CalendarClock, GraduationCap, Palette, ClipboardList, DollarSign,
+  ChevronRight, FileText, UserCog,
 } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { RoleManagement } from "@/components/settings/RoleManagement";
@@ -27,7 +28,6 @@ import { LocationManagement } from "@/components/settings/LocationManagement";
 import {
   SchedulingSettings,
   TrainingDocSettings,
-  TalentPoolSettings,
   BrandingSettings,
   FeatureAccessSettings,
   PayrollDisplaySettings,
@@ -42,10 +42,106 @@ import { useI18n } from "@/hooks/useI18n";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+/* ─── Settings group & section definitions ─── */
+interface SettingsSection {
+  id: string;
+  label: string;
+  description: string;
+}
+
+interface SettingsGroup {
+  id: string;
+  icon: any;
+  label: string;
+  description: string;
+  sections: SettingsSection[];
+}
+
+const SETTINGS_GROUPS: SettingsGroup[] = [
+  {
+    id: "company",
+    icon: Building2,
+    label: "Company",
+    description: "Profile, branding, and business identity",
+    sections: [
+      { id: "profile", label: "Company Profile", description: "Business name, email, and address" },
+      { id: "branding", label: "Branding", description: "Logo, colours, and visual identity" },
+      { id: "tenant", label: "Workspace Config", description: "Country, timezone, and locale" },
+    ],
+  },
+  {
+    id: "people",
+    icon: Users,
+    label: "People",
+    description: "Roles, departments, onboarding, and employee lifecycle",
+    sections: [
+      { id: "roles", label: "Roles & Permissions", description: "Control what each role can access" },
+      { id: "departments", label: "Departments", description: "Team groupings and labels" },
+      { id: "statuses", label: "Employee Lifecycle", description: "Status types and onboarding steps" },
+      { id: "onboarding", label: "Onboarding Requirements", description: "What new starters must complete" },
+    ],
+  },
+  {
+    id: "workplaces",
+    icon: MapPin,
+    label: "Workplaces",
+    description: "Locations, geofencing, and scheduling rules",
+    sections: [
+      { id: "locations", label: "Locations", description: "Sites, addresses, and geofence settings" },
+      { id: "scheduling", label: "Scheduling Rules", description: "Shift defaults and rota preferences" },
+    ],
+  },
+  {
+    id: "time-leave",
+    icon: Calendar,
+    label: "Time & Leave",
+    description: "Holiday rules, leave policies, and attendance",
+    sections: [
+      { id: "leave-rules", label: "Leave Rules", description: "Statutory entitlements and accrual settings" },
+      { id: "leave-display", label: "Leave Display", description: "How leave balances appear to staff" },
+    ],
+  },
+  {
+    id: "payroll",
+    icon: DollarSign,
+    label: "Payroll",
+    description: "Pay frequency, overtime, service charge, and imports",
+    sections: [
+      { id: "pay-settings", label: "Pay Settings", description: "Pay period, pay day, and overtime rules" },
+      { id: "pay-display", label: "Display Preferences", description: "How payroll data is shown" },
+      { id: "service-charge", label: "Service Charge", description: "Tips and tronc distribution" },
+      { id: "historical", label: "Historical Import", description: "Import past payroll records" },
+    ],
+  },
+  {
+    id: "docs-training",
+    icon: GraduationCap,
+    label: "Documents & Training",
+    description: "Training requirements and document templates",
+    sections: [
+      { id: "training", label: "Training Settings", description: "Required certifications and modules" },
+    ],
+  },
+  {
+    id: "system",
+    icon: Shield,
+    label: "System & Security",
+    description: "Notifications, security, modules, and audit trail",
+    sections: [
+      { id: "notifications", label: "Notifications", description: "Email alerts and reminders" },
+      { id: "security", label: "Security", description: "Authentication and session rules" },
+      { id: "features", label: "Feature Access", description: "Enable or disable platform modules" },
+      { id: "audit", label: "Audit Log", description: "View all admin actions and changes" },
+      { id: "protected", label: "Protected Systems", description: "Core engines that cannot be modified" },
+    ],
+  },
+];
+
 const Settings = () => {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeSection = searchParams.get("section") || "company";
+  const activeGroup = searchParams.get("group") || null;
+  const activeSection = searchParams.get("section") || null;
   const isMobile = useIsMobile();
 
   const { data: settings, isLoading } = useCompanySettings();
@@ -63,40 +159,6 @@ const Settings = () => {
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState(true);
 
-  /* ─── Section definitions ─── */
-  interface AdminSection {
-    id: string;
-    icon: any;
-    label: string;
-    group: "organisation" | "operations" | "system";
-  }
-
-  const SECTIONS: AdminSection[] = [
-    { id: "company", icon: Building2, label: t("settings.company_profile"), group: "organisation" },
-    { id: "locations", icon: MapPin, label: t("settings.locations"), group: "organisation" },
-    { id: "departments", icon: Briefcase, label: t("settings.departments"), group: "organisation" },
-    { id: "roles", icon: Users, label: t("settings.roles_access"), group: "organisation" },
-    { id: "people", icon: Users, label: t("settings.people_lifecycle"), group: "organisation" },
-    { id: "scheduling", icon: CalendarClock, label: t("settings.scheduling"), group: "operations" },
-    { id: "payroll", icon: CreditCard, label: t("settings.payroll"), group: "operations" },
-    { id: "service-charge", icon: DollarSign, label: "Service Charge", group: "operations" },
-    { id: "leave", icon: Calendar, label: t("settings.holiday_leave"), group: "operations" },
-    { id: "training", icon: GraduationCap, label: t("settings.training_docs"), group: "operations" },
-    { id: "talent", icon: Sparkles, label: t("settings.talent_pool"), group: "operations" },
-    { id: "notifications", icon: Bell, label: t("settings.notifications"), group: "operations" },
-    { id: "branding", icon: Palette, label: t("settings.branding"), group: "system" },
-    { id: "features", icon: Blocks, label: t("settings.feature_access"), group: "system" },
-    { id: "security", icon: Shield, label: t("settings.security"), group: "system" },
-    { id: "audit", icon: ClipboardList, label: t("settings.audit_log"), group: "system" },
-    { id: "protected", icon: Lock, label: t("settings.protected_systems"), group: "system" },
-  ];
-
-  const GROUP_LABELS: Record<string, string> = {
-    organisation: t("settings.organisation"),
-    operations: t("settings.operations"),
-    system: t("settings.system"),
-  };
-
   useEffect(() => {
     if (settings) {
       setCompanyName(settings.company_name || "");
@@ -113,8 +175,11 @@ const Settings = () => {
     }
   }, [settings]);
 
-  const setSection = (id: string) => {
-    setSearchParams({ section: id });
+  const navigateTo = (group: string | null, section: string | null) => {
+    const params: Record<string, string> = {};
+    if (group) params.group = group;
+    if (section) params.section = section;
+    setSearchParams(params);
   };
 
   const handleSave = () => {
@@ -143,266 +208,281 @@ const Settings = () => {
     );
   }
 
-  const currentSection = SECTIONS.find(s => s.id === activeSection) || SECTIONS[0];
+  const currentGroup = SETTINGS_GROUPS.find(g => g.id === activeGroup);
+
+  /* ─── LEVEL 1: Group overview (landing) ─── */
+  if (!activeGroup) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <SettingsIcon className="h-4.5 w-4.5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Admin Centre</h1>
+              <p className="text-xs text-muted-foreground">Manage your workspace settings and configuration</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {SETTINGS_GROUPS.map((group) => (
+              <button
+                key={group.id}
+                onClick={() => navigateTo(group.id, null)}
+                className="flex items-start gap-3 rounded-xl bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0 group-hover:bg-primary/15 transition-colors">
+                  <group.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-foreground">{group.label}</h3>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{group.description}</p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-1.5">
+                    {group.sections.length} setting{group.sections.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  /* ─── LEVEL 2: Group detail with section list ─── */
+  if (activeGroup && !activeSection && currentGroup) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto space-y-4">
+          {/* Back + header */}
+          <button
+            onClick={() => navigateTo(null, null)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            All Settings
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <currentGroup.icon className="h-4.5 w-4.5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">{currentGroup.label}</h1>
+              <p className="text-xs text-muted-foreground">{currentGroup.description}</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {currentGroup.sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => navigateTo(activeGroup, section.id)}
+                className="flex items-center gap-3 w-full rounded-xl bg-card border border-border p-3.5 text-left hover:border-primary/30 hover:shadow-sm transition-all group"
+              >
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-medium text-foreground">{section.label}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{section.description}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  /* ─── LEVEL 3: Individual section content ─── */
+  const sectionLabel = currentGroup?.sections.find(s => s.id === activeSection)?.label || "Settings";
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-            <SettingsIcon className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{t("settings.title")}</h1>
-            <p className="text-xs text-muted-foreground">{t("settings.subtitle")}</p>
-          </div>
+      <div className="max-w-3xl mx-auto space-y-4">
+        {/* Back navigation */}
+        <button
+          onClick={() => navigateTo(activeGroup, null)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          {currentGroup?.label || "Settings"}
+        </button>
+
+        <div className="flex items-center gap-2">
+          {currentGroup && <currentGroup.icon className="h-4 w-4 text-primary" />}
+          <h2 className="text-base font-semibold text-foreground">{sectionLabel}</h2>
         </div>
 
-        <div className="flex gap-6">
-          {/* Sidebar Navigation (desktop) */}
-          {!isMobile && (
-            <nav className="w-52 shrink-0 space-y-4 sticky top-20 self-start">
-              {(["organisation", "operations", "system"] as const).map((group) => (
-                <div key={group}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 px-2">
-                    {GROUP_LABELS[group]}
-                  </p>
-                  <div className="space-y-0.5">
-                    {SECTIONS.filter(s => s.group === group).map((section) => (
-                      <button
-                        key={section.id}
-                        onClick={() => setSection(section.id)}
-                        className={cn(
-                          "flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-xs font-medium transition-colors text-left",
-                          activeSection === section.id
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        )}
-                      >
-                        <section.icon className="h-3.5 w-3.5 shrink-0" />
-                        {section.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </nav>
-          )}
-
-          {/* Mobile section picker */}
-          {isMobile && (
-            <div className="fixed left-0 right-0 top-[64px] z-30 bg-background/95 backdrop-blur border-b border-border px-3 py-2 overflow-x-auto scrollbar-none">
-              <div className="flex gap-1.5 w-max">
-                {SECTIONS.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setSection(section.id)}
-                    className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-colors whitespace-nowrap shrink-0",
-                      activeSection === section.id
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted/50 text-muted-foreground"
-                    )}
-                  >
-                    <section.icon className="h-3 w-3" />
-                    {section.label}
-                  </button>
-                ))}
+        {/* ─── COMPANY GROUP ─── */}
+        {activeSection === "profile" && (
+          <>
+            <ConfigCard title="Business Details" description="Your company name, contact email, and registered address. Used on documents and correspondence.">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Company Name" id="company-name" value={companyName} onChange={setCompanyName} />
+                <Field label="Contact Email" id="company-email" value={companyEmail} onChange={setCompanyEmail} type="email" />
               </div>
-            </div>
-          )}
+              <Field label="Address" id="address" value={address} onChange={setAddress} />
+            </ConfigCard>
+            <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
+          </>
+        )}
+        {activeSection === "branding" && (
+          <ConfigCard title="Branding" description="Customise your workspace appearance — logo, colours, and display settings.">
+            <BrandingSettings />
+          </ConfigCard>
+        )}
+        {activeSection === "tenant" && (
+          <ConfigCard title="Workspace Configuration" description="Country, timezone, and regional settings that apply to your whole workspace.">
+            <TenantConfigSection />
+          </ConfigCard>
+        )}
 
-          {/* Content */}
-          <div className={cn("flex-1 min-w-0 space-y-4", isMobile && "mt-12")}>
-            {/* Section header */}
-            <div className="flex items-center gap-2">
-              <currentSection.icon className="h-4 w-4 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">{currentSection.label}</h2>
-            </div>
+        {/* ─── PEOPLE GROUP ─── */}
+        {activeSection === "roles" && (
+          <>
+            <ConfigCard title="Permissions by Role" description="Control what managers, supervisors, and staff can see and do.">
+              <RolePermissionConfig />
+            </ConfigCard>
+            <ConfigCard title="User Role Assignments" description="Assign roles to individual team members.">
+              <RoleManagement />
+            </ConfigCard>
+          </>
+        )}
+        {activeSection === "departments" && (
+          <ConfigCard title="Departments" description="Create and manage team groupings. Departments are used across scheduling, payroll, and reporting.">
+            <DepartmentManagement />
+          </ConfigCard>
+        )}
+        {activeSection === "statuses" && (
+          <>
+            <ConfigCard title="People Preferences" description="Default settings for how employee records behave.">
+              <PeopleLifecycleSettings />
+            </ConfigCard>
+            <ConfigCard title="Employee Status Types" description="Define the lifecycle statuses (active, leaver, starter, etc.) used across your workforce.">
+              <EmployeeStatusConfig />
+            </ConfigCard>
+          </>
+        )}
+        {activeSection === "onboarding" && (
+          <ConfigCard title="Onboarding Requirements" description="Choose which steps new starters must complete before they're work-ready.">
+            <OnboardingRequirementsConfig />
+          </ConfigCard>
+        )}
 
-            {/* ─── COMPANY PROFILE ─── */}
-            {activeSection === "company" && (
-              <>
-                <ConfigCard title={t("settings.company_config")} description={t("settings.company_config_desc")}>
-                  <TenantConfigSection />
-                </ConfigCard>
-                <ConfigCard title={t("settings.company_profile")} description={t("settings.company_profile_desc")}>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label={t("settings.company_name")} id="company-name" value={companyName} onChange={setCompanyName} />
-                    <Field label={t("settings.company_email")} id="company-email" value={companyEmail} onChange={setCompanyEmail} type="email" />
-                  </div>
-                  <Field label={t("settings.address")} id="address" value={address} onChange={setAddress} />
-                </ConfigCard>
-                <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
-              </>
-            )}
+        {/* ─── WORKPLACES GROUP ─── */}
+        {activeSection === "locations" && (
+          <ConfigCard title="Locations" description="Manage your sites — addresses, operating hours, and geofence settings for clock-in validation.">
+            <LocationManagement />
+          </ConfigCard>
+        )}
+        {activeSection === "scheduling" && (
+          <ConfigCard title="Scheduling Rules" description="Default shift times, rota preferences, and compliance thresholds.">
+            <SchedulingSettings />
+          </ConfigCard>
+        )}
 
-            {/* ─── LOCATIONS ─── */}
-            {activeSection === "locations" && (
-              <ConfigCard title={t("settings.location_management")} description={t("settings.location_management_desc")}>
-                <LocationManagement />
-              </ConfigCard>
-            )}
+        {/* ─── TIME & LEAVE GROUP ─── */}
+        {activeSection === "leave-rules" && (
+          <>
+            <ConfigCard title="Leave Rules" description="Statutory holiday entitlements, accrual rates, and carryover limits. These rules determine how leave is calculated for all employees.">
+              <LeaveRulesSettings />
+            </ConfigCard>
+            <ProtectedEngineNote label="Holiday Accrual Engine" description="The core accrual engine follows UK statutory rules and cannot be modified by tenant admins." />
+          </>
+        )}
+        {activeSection === "leave-display" && (
+          <ConfigCard title="Leave Display" description="Control how leave balances and entitlements appear to staff and managers.">
+            <HolidayDisplaySettings />
+          </ConfigCard>
+        )}
 
-            {/* ─── DEPARTMENTS ─── */}
-            {activeSection === "departments" && (
-              <ConfigCard title={t("settings.departments")} description={t("settings.departments_desc")}>
-                <DepartmentManagement />
-              </ConfigCard>
-            )}
+        {/* ─── PAYROLL GROUP ─── */}
+        {activeSection === "pay-settings" && (
+          <>
+            <ConfigCard title="Pay Settings" description="Set your pay cycle, default pay day, and overtime calculation preferences.">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Pay Period" id="pay-period" value={payPeriod} onChange={setPayPeriod} />
+                <Field label="Default Pay Day" id="pay-day" value={payDay} onChange={setPayDay} />
+              </div>
+              <SwitchRow label="Auto-calculate Overtime" description="Automatically flag and calculate overtime hours based on weekly thresholds." checked={autoCalculateOvertime} onChange={setAutoCalculateOvertime} />
+              <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
+            </ConfigCard>
+            <ProtectedEngineNote label="Payroll Calculation Engine" description="The core payroll engine follows UK best practice and HMRC compliance rules. It cannot be modified." />
+          </>
+        )}
+        {activeSection === "pay-display" && (
+          <ConfigCard title="Payroll Display Preferences" description="Control how payroll summaries and reports appear.">
+            <PayrollDisplaySettings />
+          </ConfigCard>
+        )}
+        {activeSection === "service-charge" && (
+          <ConfigCard title="Service Charge / Tips" description="Configure how service charge, tips, or tronc is distributed across locations, roles, and employees.">
+            <ServiceChargeSettings />
+          </ConfigCard>
+        )}
+        {activeSection === "historical" && (
+          <ConfigCard title="Historical Import" description="Import past payroll records to build a complete history for analytics and reporting.">
+            <HistoricalImport />
+          </ConfigCard>
+        )}
 
-            {/* ─── ROLES ─── */}
-            {activeSection === "roles" && (
-              <>
-                <ConfigCard title={t("settings.role_permissions")} description={t("settings.role_permissions_desc")}>
-                  <RolePermissionConfig />
-                </ConfigCard>
-                <ConfigCard title={t("settings.user_role_assignment")} description={t("settings.user_role_assignment_desc")}>
-                  <RoleManagement />
-                </ConfigCard>
-              </>
-            )}
+        {/* ─── DOCUMENTS & TRAINING GROUP ─── */}
+        {activeSection === "training" && (
+          <ConfigCard title="Training Settings" description="Configure required certifications, training modules, and compliance tracking.">
+            <TrainingDocSettings />
+          </ConfigCard>
+        )}
 
-            {/* ─── PEOPLE & LIFECYCLE ─── */}
-            {activeSection === "people" && (
-              <>
-                <ConfigCard title={t("settings.people_preferences")} description={t("settings.people_preferences_desc")}>
-                  <PeopleLifecycleSettings />
-                </ConfigCard>
-                <ConfigCard title={t("settings.employee_status_lifecycle")} description={t("settings.employee_status_lifecycle_desc")}>
-                  <EmployeeStatusConfig />
-                </ConfigCard>
-                <ConfigCard title="Onboarding Requirements" description="Configure which onboarding steps are required and critical for work readiness.">
-                  <OnboardingRequirementsConfig />
-                </ConfigCard>
-              </>
-            )}
-
-            {/* ─── SCHEDULING ─── */}
-            {activeSection === "scheduling" && (
-              <ConfigCard title={t("settings.scheduling_settings")} description={t("settings.scheduling_settings_desc")}>
-                <SchedulingSettings />
-              </ConfigCard>
-            )}
-
-            {/* ─── PAYROLL ─── */}
-            {activeSection === "payroll" && (
-              <>
-                <ConfigCard title={t("settings.payroll_preferences")} description={t("settings.payroll_preferences_desc")}>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label={t("settings.pay_period")} id="pay-period" value={payPeriod} onChange={setPayPeriod} />
-                    <Field label={t("settings.default_pay_day")} id="pay-day" value={payDay} onChange={setPayDay} />
-                  </div>
-                  <SwitchRow label={t("settings.auto_overtime")} description={t("settings.auto_overtime_desc")} checked={autoCalculateOvertime} onChange={setAutoCalculateOvertime} />
-                  <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
-                </ConfigCard>
-                <ConfigCard title={t("settings.display_preferences")} description={t("settings.display_preferences_desc")}>
-                  <PayrollDisplaySettings />
-                </ConfigCard>
-                <ProtectedEngineNote label={t("settings.payroll_engine_note")} description={t("settings.payroll_engine_desc")} />
-                <Separator />
-                <HistoricalImport />
-              </>
-            )}
-
-            {/* ─── SERVICE CHARGE ─── */}
-            {activeSection === "service-charge" && (
-              <ConfigCard title="Service Charge Configuration" description="Manage service charge / tips / tronc distribution across locations, roles, and employees.">
-                <ServiceChargeSettings />
-              </ConfigCard>
-            )}
-
-            {/* ─── LEAVE ─── */}
-            {activeSection === "leave" && (
-              <>
-                <ConfigCard title={t("settings.leave_rules")} description={t("settings.leave_rules_desc")}>
-                  <LeaveRulesSettings />
-                </ConfigCard>
-                <ConfigCard title={t("settings.holiday_display")} description={t("settings.holiday_display_desc")}>
-                  <HolidayDisplaySettings />
-                </ConfigCard>
-                <ProtectedEngineNote label={t("settings.holiday_engine_note")} description={t("settings.holiday_engine_desc")} />
-              </>
-            )}
-
-            {/* ─── TRAINING ─── */}
-            {activeSection === "training" && (
-              <ConfigCard title={t("settings.training_docs")} description={t("settings.training_docs_desc")}>
-                <TrainingDocSettings />
-              </ConfigCard>
-            )}
-
-            {/* ─── TALENT POOL ─── */}
-            {activeSection === "talent" && (
-              <ConfigCard title={t("settings.talent_pool")} description={t("settings.talent_pool_desc")}>
-                <TalentPoolSettings />
-              </ConfigCard>
-            )}
-
-            {/* ─── NOTIFICATIONS ─── */}
-            {activeSection === "notifications" && (
-              <>
-                <ConfigCard title={t("settings.notifications")} description={t("settings.notifications_desc")}>
-                  <SwitchRow label="Enable Email Notifications" description="Send transactional emails via Postmark when HR events occur (holiday requests, schedule changes, etc.)" checked={emailNotifications} onChange={setEmailNotifications} />
-                  <Separator />
-                  <SwitchRow label={t("settings.holiday_alerts")} description={t("settings.holiday_alerts_desc")} checked={holidayRequestAlerts} onChange={setHolidayRequestAlerts} />
-                  <Separator />
-                  <SwitchRow label={t("settings.payroll_reminders")} description={t("settings.payroll_reminders_desc")} checked={payrollReminders} onChange={setPayrollReminders} />
-                </ConfigCard>
-                <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
-                <ConfigCard title="Email Delivery Test" description="Verify the email pipeline is connected and sending correctly.">
-                  <EmailTestButton />
-                </ConfigCard>
-              </>
-            )}
-
-            {/* ─── BRANDING ─── */}
-            {activeSection === "branding" && (
-              <ConfigCard title={t("settings.branding")} description={t("settings.branding_desc")}>
-                <BrandingSettings />
-              </ConfigCard>
-            )}
-
-            {/* ─── FEATURE ACCESS ─── */}
-            {activeSection === "features" && (
-              <>
-                <ConfigCard title={t("settings.feature_access")} description={t("settings.feature_access_desc")}>
-                  <FeatureAccessSettings />
-                </ConfigCard>
-                <ConfigCard title={t("settings.module_pricing")} description={t("settings.module_pricing_desc")}>
-                  <ModulePricingConfig />
-                </ConfigCard>
-              </>
-            )}
-
-            {/* ─── SECURITY ─── */}
-            {activeSection === "security" && (
-              <>
-                <ConfigCard title={t("settings.security")} description={t("settings.security_desc")}>
-                  <SwitchRow label={t("settings.two_factor")} description={t("settings.two_factor_desc")} checked={twoFactorAuth} onChange={setTwoFactorAuth} />
-                  <Separator />
-                  <SwitchRow label={t("settings.session_timeout")} description={t("settings.session_timeout_desc")} checked={sessionTimeout} onChange={setSessionTimeout} />
-                </ConfigCard>
-                <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
-              </>
-            )}
-
-            {/* ─── AUDIT LOG ─── */}
-            {activeSection === "audit" && (
-              <ConfigCard title={t("settings.audit_log")} description="">
-                <AdminAuditLog />
-              </ConfigCard>
-            )}
-
-            {/* ─── PROTECTED SYSTEMS ─── */}
-            {activeSection === "protected" && (
-              <ConfigCard title={t("settings.protected_systems")} description="">
-                <ProtectedSystemInfo />
-              </ConfigCard>
-            )}
-          </div>
-        </div>
+        {/* ─── SYSTEM GROUP ─── */}
+        {activeSection === "notifications" && (
+          <>
+            <ConfigCard title="Notifications" description="Control which email alerts and reminders are sent to you and your team.">
+              <SwitchRow label="Email Notifications" description="Send emails when HR events occur (holiday requests, schedule changes, etc.)" checked={emailNotifications} onChange={setEmailNotifications} />
+              <Separator />
+              <SwitchRow label="Holiday Request Alerts" description="Get notified when staff submit leave requests." checked={holidayRequestAlerts} onChange={setHolidayRequestAlerts} />
+              <Separator />
+              <SwitchRow label="Payroll Reminders" description="Receive reminders before payroll deadlines." checked={payrollReminders} onChange={setPayrollReminders} />
+            </ConfigCard>
+            <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
+            <ConfigCard title="Email Delivery Test" description="Check that your email pipeline is connected and delivering correctly.">
+              <EmailTestButton />
+            </ConfigCard>
+          </>
+        )}
+        {activeSection === "security" && (
+          <>
+            <ConfigCard title="Security" description="Authentication and session management settings for your workspace.">
+              <SwitchRow label="Two-Factor Authentication" description="Require 2FA for all admin accounts." checked={twoFactorAuth} onChange={setTwoFactorAuth} />
+              <Separator />
+              <SwitchRow label="Session Timeout" description="Automatically sign out inactive users after a period." checked={sessionTimeout} onChange={setSessionTimeout} />
+            </ConfigCard>
+            <SaveButton onSave={handleSave} isPending={updateSettings.isPending} />
+          </>
+        )}
+        {activeSection === "features" && (
+          <>
+            <ConfigCard title="Feature Access" description="Enable or disable platform modules for your workspace. Disabled modules are hidden from all users.">
+              <FeatureAccessSettings />
+            </ConfigCard>
+            <ConfigCard title="Module Pricing" description="View pricing details for optional modules.">
+              <ModulePricingConfig />
+            </ConfigCard>
+          </>
+        )}
+        {activeSection === "audit" && (
+          <ConfigCard title="Audit Log" description="A complete record of all admin actions. Use this to track changes and maintain accountability.">
+            <AdminAuditLog />
+          </ConfigCard>
+        )}
+        {activeSection === "protected" && (
+          <ConfigCard title="Protected Systems" description="Core platform engines that are managed centrally and cannot be modified by workspace admins.">
+            <ProtectedSystemInfo />
+          </ConfigCard>
+        )}
       </div>
     </AppLayout>
   );
@@ -443,11 +523,10 @@ function SwitchRow({ label, description, checked, onChange }: { label: string; d
 }
 
 function SaveButton({ onSave, isPending }: { onSave: () => void; isPending: boolean }) {
-  const { t } = useI18n();
   return (
     <div className="flex justify-end pt-2">
       <Button onClick={onSave} disabled={isPending} size="sm">
-        {isPending ? t("common.saving") : t("settings.save_config")}
+        {isPending ? "Saving…" : "Save Changes"}
       </Button>
     </div>
   );
