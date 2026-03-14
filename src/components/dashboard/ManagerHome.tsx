@@ -99,7 +99,7 @@ export function ManagerHome() {
   if (unassignedToday.length > 0)
     alerts.push({ icon: TrendingDown, label: "Unassigned shift", count: unassignedToday.length, color: "text-warning", bg: "bg-warning/10", path: "/schedule" });
   if (pendingRequests.length > 0)
-    alerts.push({ icon: Calendar, label: "Pending leave", count: pendingRequests.length, color: "text-accent", bg: "bg-accent/10", path: "/holidays" });
+    alerts.push({ icon: Calendar, label: "Pending leave", count: pendingRequests.length, color: "text-accent", bg: "bg-accent/10", path: "/holidays?tab=requests" });
   if (pendingTimesheets.length > 0)
     alerts.push({ icon: ClipboardCheck, label: "Timesheets to review", count: pendingTimesheets.length, color: "text-primary", bg: "bg-primary/10", path: "/timesheets" });
   if (newStarters.length > 0)
