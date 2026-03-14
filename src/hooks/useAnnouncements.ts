@@ -71,6 +71,7 @@ export function useCreateAnnouncement() {
       publish_now?: boolean;
     }) => {
       if (!tenantId) throw new Error("Unable to create announcement: tenant context missing.");
+      await assertPermission("edit_employees", tenantId);
       const { publish_now, ...rest } = ann;
       const { data, error } = await supabase.from("staff_announcements" as any).insert({
         ...rest,
