@@ -290,6 +290,7 @@ export function useRejectDocumentRequest() {
       tenantId: string;
       reason: string;
     }) => {
+      await assertPermission("manage_documents", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("document_requests" as any)
