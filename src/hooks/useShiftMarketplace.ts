@@ -252,6 +252,7 @@ export function useApproveRequest() {
     mutationFn: async ({ requestId, listingId, shiftId, newEmployeeId }: {
       requestId: string; listingId: string; shiftId: string; newEmployeeId: string;
     }) => {
+      await assertPermission("edit_schedules", tenantId);
       // 1. Update request status
       await supabase
         .from("shift_marketplace_requests" as any)
