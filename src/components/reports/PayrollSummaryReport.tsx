@@ -99,7 +99,7 @@ export function PayrollSummaryReport() {
         {periodsLoading ? (
           <p className="text-sm text-muted-foreground py-4 text-center">Loading…</p>
         ) : rows.length === 0 ? (
-          <EmptyState icon="file" title="No payroll periods" description="No payroll periods match your filters." />
+          <EmptyState icon={DollarSign} title="No payroll periods" description="No payroll periods match your filters." />
         ) : (
           <div className="overflow-x-auto">
             <Table>

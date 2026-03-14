@@ -59,8 +59,8 @@ export function UpcomingPayroll() {
             <h3 className="text-lg font-semibold text-card-foreground">Current Payroll</h3>
             <p className="text-sm text-muted-foreground">{summary.periodName}</p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/10">
-            <DollarSign className="h-5 w-5 text-green-500" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
+            <DollarSign className="h-5 w-5 text-success" />
           </div>
         </div>
       </div>

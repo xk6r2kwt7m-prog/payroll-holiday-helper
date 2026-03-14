@@ -73,7 +73,7 @@ export function LabourCostReport() {
         {periodsLoading ? (
           <p className="text-sm text-muted-foreground py-4 text-center">Loading…</p>
         ) : rows.length === 0 ? (
-          <EmptyState icon="file" title="No payroll periods" description="No payroll periods found." />
+          <EmptyState icon={TrendingUp} title="No payroll periods" description="No payroll periods found." />
         ) : (
           <div className="overflow-x-auto">
             <Table>
