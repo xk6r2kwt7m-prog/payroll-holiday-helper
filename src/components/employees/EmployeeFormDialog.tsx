@@ -298,9 +298,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="gradient-primary shadow-md hover:shadow-lg transition-shadow">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Employee
+          <Button className="gradient-primary shadow-md hover:shadow-lg transition-shadow" size="sm">
+            <Plus className="h-4 w-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Add Employee</span>
           </Button>
         )}
       </DialogTrigger>
