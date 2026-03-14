@@ -302,6 +302,13 @@ const Settings = () => {
               </>
             )}
 
+            {/* ─── SERVICE CHARGE ─── */}
+            {activeSection === "service-charge" && (
+              <ConfigCard title="Service Charge Configuration" description="Manage service charge / tips / tronc distribution across locations, roles, and employees.">
+                <ServiceChargeSettings />
+              </ConfigCard>
+            )}
+
             {/* ─── LEAVE ─── */}
             {activeSection === "leave" && (
               <>
