@@ -241,7 +241,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
         if (count === 1) {
           const m = memberships![0];
-          console.log("[TenantProvider] Decision: 1 membership → auto-select:", (m.tenants as any)?.name);
+          
           commitTenantSelection(m.tenant_id, m.tenants as any);
         } else {
           const savedMembership = savedTenantId
