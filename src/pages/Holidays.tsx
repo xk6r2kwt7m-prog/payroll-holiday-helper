@@ -795,7 +795,7 @@ const Holidays = () => {
           </div>
 
           {(searchQuery || departmentFilter !== "all") && (
-            <p className="text-sm text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Showing {filteredSummaries.length} of {currentSummaries.length} employees
             </p>
           )}
