@@ -128,7 +128,7 @@ export function useSubmitPayrollForReview() {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
+      await assertPermission("view_pay_data", null);
       
       const { data, error } = await supabase
         .from("payroll_periods")
