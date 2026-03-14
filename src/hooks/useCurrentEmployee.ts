@@ -11,6 +11,9 @@ export interface CurrentEmployee {
   department: string;
   tenant_id: string;
   status: string;
+  pay_type: string | null;
+  start_date: string | null;
+  hourly_rate: number | null;
 }
 
 /**
@@ -31,7 +34,7 @@ export function useCurrentEmployee() {
       if (!user) return null;
       const { data, error } = await supabase
         .from("employees")
-        .select("id, forename, surname, contract_country, work_country, department, tenant_id, status")
+        .select("id, forename, surname, contract_country, work_country, department, tenant_id, status, pay_type, start_date, hourly_rate")
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) {
