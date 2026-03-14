@@ -5,30 +5,46 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ReportFilters } from "./ReportFilters";
+import { ReportSummaryBar } from "./ReportSummaryBar";
 import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useBranchLocations } from "@/hooks/useSchedule";
+import { useManagerScope } from "@/hooks/useManagerScope";
 import { exportToCsv } from "@/lib/csv-export";
 
 export function HolidayBalanceReport() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [dept, setDept] = useState("all");
+  const [empId, setEmpId] = useState("all");
 
   const { data: balances = [], isLoading } = useHolidayBalancesByYear(year);
-  const { data: employees } = useEmployees();
-  const { data: branches } = useBranchLocations();
+  const { data: employees = [] } = useEmployees();
+  const { filterByScope, filterEmployees } = useManagerScope();
+
+  const scopedEmployees = useMemo(() => filterEmployees(employees), [employees, filterEmployees]);
 
   const departments = useMemo(() => {
-    if (!employees) return [];
-    return [...new Set(employees.map((e) => e.department))].sort();
-  }, [employees]);
+    return [...new Set(scopedEmployees.map((e) => e.department))].sort();
+  }, [scopedEmployees]);
+
+  const employeeOptions = useMemo(() => {
+    let list = scopedEmployees;
+    if (dept !== "all") list = list.filter((e) => e.department === dept);
+    return list.map((e) => ({ id: e.id, forename: e.forename, surname: e.surname, department: e.department }));
+  }, [scopedEmployees, dept]);
 
   const filtered = useMemo(() => {
-    let list = balances as any[];
+    let list = filterByScope(balances as any[], (b: any) => b.employee_id);
     if (dept !== "all") list = list.filter((b: any) => b.employees?.department === dept);
+    if (empId !== "all") list = list.filter((b: any) => b.employee_id === empId);
     return list;
-  }, [balances, dept]);
+  }, [balances, dept, empId, filterByScope]);
+
+  const selectedEmpName = useMemo(() => {
+    if (empId === "all") return undefined;
+    const e = employees.find((x) => x.id === empId);
+    return e ? `${e.forename} ${e.surname}` : undefined;
+  }, [empId, employees]);
 
   const handleExport = () => {
     exportToCsv(`holiday_balances_${year}`, [
@@ -68,16 +84,27 @@ export function HolidayBalanceReport() {
           departments={departments}
           selectedDepartment={dept}
           onDepartmentChange={setDept}
+          employees={employeeOptions}
+          selectedEmployeeId={empId}
+          onEmployeeChange={setEmpId}
           onExport={handleExport}
           exportDisabled={filtered.length === 0}
           rowCount={filtered.length}
         />
+        {!isLoading && (
+          <ReportSummaryBar
+            rowCount={filtered.length}
+            department={dept}
+            employeeName={selectedEmpName}
+            extra={String(year)}
+          />
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>
         ) : filtered.length === 0 ? (
-          <EmptyState icon={Calendar} title="No holiday balances" description="No records found for the selected year." compact />
+          <EmptyState icon={Calendar} title="No holiday balances" description="No records match your filters. Adjust filters or expand the date range." compact />
         ) : (
           <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
