@@ -46,6 +46,7 @@ import Workforce from "./pages/Workforce";
 import LabourCostPreview from "./pages/LabourCostPreview";
 import ShiftMarketplace from "./pages/ShiftMarketplace";
 import EmployeeOnboarding from "./pages/EmployeeOnboarding";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import FohServiceTraining from "./pages/FohServiceTraining";
 import FohAllergyTraining from "./pages/FohAllergyTraining";
