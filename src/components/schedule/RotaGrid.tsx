@@ -352,60 +352,42 @@ export function RotaGrid({
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="overflow-x-auto no-scrollbar">
           <table className="w-full border-collapse">
-            <thead>
+             <thead>
               <tr>
                 <th className={cn(
-                  "text-left py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider sticky left-0 bg-card z-10 border-b border-border",
-                  isMobile ? "px-1.5 w-[80px]" : "px-2 w-[100px] sm:w-[160px]"
+                  "text-left py-2.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider sticky left-0 bg-background z-10 border-b border-border/50",
+                  isMobile ? "px-1.5 w-[80px]" : "px-3 w-[100px] sm:w-[150px]"
                 )}>
-                  <span className="hidden sm:inline">Employee</span>
+                  <span className="hidden sm:inline">Staff</span>
                   <span className="sm:hidden">Staff</span>
                 </th>
                 {weekDays.map((day) => {
-                  const dayShifts = shiftsForDay(day);
-                  const minStaff = getMinimumStaff(branch, department as any, getDayAbbr(day));
-                  const assignedCount = dayShifts.filter((s: any) => s.employee_id).length;
-                  const isUnder = assignedCount < minStaff;
                   const today = isToday(day);
 
                   return (
                     <th
                       key={day.toISOString()}
                       className={cn(
-                        "text-center px-0.5 py-1.5 sm:py-2 border-b",
+                        "text-center px-0.5 py-2.5 border-b border-border/50",
                         isMobile ? "min-w-[48px]" : "min-w-[44px] sm:min-w-[100px]",
-                        today ? "border-primary/40" : "border-border",
                       )}
                     >
                       <div className={cn(
-                        "flex flex-col items-center gap-0.5 rounded-lg py-1 mx-auto",
-                        today && "bg-primary text-primary-foreground",
+                        "flex flex-col items-center gap-0 rounded-md py-1 mx-auto transition-colors",
+                        today && "bg-primary text-primary-foreground rounded-lg px-2",
                       )}>
                         <span className={cn(
-                          "text-[9px] sm:text-[10px] font-medium uppercase",
+                          "text-[9px] sm:text-[10px] font-medium uppercase tracking-wide",
                           !today && "text-muted-foreground"
                         )}>
                           {format(day, "EEE")}
                         </span>
                         <span className={cn(
-                          "text-sm sm:text-base font-bold leading-none",
+                          "text-sm sm:text-base font-semibold leading-tight",
                           !today && "text-foreground"
                         )}>
                           {format(day, "d")}
                         </span>
-                      </div>
-                      <div className="mt-1 flex items-center justify-center">
-                        {isUnder ? (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-destructive">
-                            <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
-                            <span className="hidden sm:inline">{assignedCount}/{minStaff}</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-success/70">
-                            <span className="h-1.5 w-1.5 rounded-full bg-success/60" />
-                            <span className="hidden sm:inline">{assignedCount}/{minStaff}</span>
-                          </span>
-                        )}
                       </div>
                     </th>
                   );
