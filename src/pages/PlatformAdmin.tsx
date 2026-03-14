@@ -53,6 +53,9 @@ const PlatformAdmin = () => {
             <TabsTrigger value="permissions" className="gap-2">
               <Shield className="h-4 w-4" /> Permissions
             </TabsTrigger>
+            <TabsTrigger value="sandbox" className="gap-2">
+              <FlaskConical className="h-4 w-4" /> Sandbox
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
@@ -69,6 +72,10 @@ const PlatformAdmin = () => {
 
           <TabsContent value="permissions" className="mt-6">
             <PermissionVisualizer />
+          </TabsContent>
+
+          <TabsContent value="sandbox" className="mt-6">
+            <SandboxTestingConsole />
           </TabsContent>
         </Tabs>
       </div>
