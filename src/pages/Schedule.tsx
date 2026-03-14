@@ -213,12 +213,29 @@ export default function Schedule() {
           <MobileManagerBar
             onBuildShift={() => { setWizardInitialDay(null); setWizardOpen(true); }}
             onPublishDay={() => setPublishDrawerOpen(true)}
+            onCopyPreviousWeek={() => setCopyPrevOpen(true)}
+            onLoadTemplate={() => setLoadTemplateOpen(true)}
             gapCount={filterStats.gapCount}
             unscheduledCount={filterStats.noShiftCount}
             hasUnpublished={schedule.hasUnpublished}
             isPublishing={schedule.isPublishing}
             department={selectedDept}
+            shiftCount={schedule.branchDeptShifts.length}
           />
+        )}
+
+        {/* Mobile coverage strip */}
+        {isMobile && (schedule.shifts?.length ?? 0) > 0 && selectedDept !== "All" && (
+          <div className="px-3 py-2 border-b border-border bg-card">
+            <ScheduleSummary
+              shifts={schedule.shifts || []}
+              weekDays={schedule.weekDays}
+              branch={selectedBranch}
+              department={selectedDept === "All" ? "FOH" : selectedDept}
+              employees={activeEmployees}
+              complianceWarningCount={complianceWarnings.length}
+            />
+          </div>
         )}
 
         {/* Main schedule area */}
