@@ -221,7 +221,12 @@ export function useTalentMatches(requestId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("talent_request_matches")
-        .select("*, talent_profiles(*, employees!inner(forename, surname, department, status))")
+        .select(`*, talent_profiles(
+          id, talent_pool_status, preferred_roles, preferred_locations,
+          preferred_countries, profile_summary, years_experience, languages,
+          employment_type_preference, available_from,
+          employees!inner(forename, surname)
+        )`)
         .eq("talent_request_id", requestId)
         .order("match_score", { ascending: false });
       if (error) throw error;
@@ -229,7 +234,10 @@ export function useTalentMatches(requestId: string) {
         ...d,
         talent_profile: d.talent_profiles ? {
           ...d.talent_profiles,
-          employee: d.talent_profiles.employees,
+          employee: {
+            forename: d.talent_profiles.employees?.forename || "",
+            surname_initial: d.talent_profiles.employees?.surname ? d.talent_profiles.employees.surname.charAt(0) + "." : "",
+          },
         } : undefined,
       })) as TalentMatch[];
     },
