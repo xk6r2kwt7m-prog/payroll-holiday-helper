@@ -279,6 +279,20 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
 
           {/* Documents */}
           <Section title="Documents" icon={FolderOpen}>
+            {isAdmin && (
+              <div className="mb-3">
+                <CreateDocumentRequestDialog
+                  preselectedEmployeeId={employee.id}
+                  preselectedEmployeeName={`${employee.forename} ${employee.surname}`}
+                  trigger={
+                    <Button size="sm" variant="outline" className="gap-2 w-full">
+                      <FilePlus className="h-4 w-4" />
+                      Request Document
+                    </Button>
+                  }
+                />
+              </div>
+            )}
             <EmployeeDocumentList
               employeeId={employee.id}
               employeeName={`${employee.forename} ${employee.surname}`}
