@@ -423,11 +423,11 @@ const Employees = () => {
           employee={selectedEmployee}
           open={detailSheetOpen}
           onOpenChange={setDetailSheetOpen}
-          isAdmin={isAdmin}
+          isAdmin={canEdit}
           canViewSensitive={canViewSensitive}
         />
 
-        {isAdmin && (
+        {canManageLifecycle && (
           <BulkActionsBar
             selectedEmployees={selectedEmployees}
             onClearSelection={clearSelection}
