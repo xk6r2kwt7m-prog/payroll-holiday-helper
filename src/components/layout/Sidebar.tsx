@@ -251,10 +251,10 @@ export function Sidebar() {
             }
 
             return (
-              <Collapsible key={group.title} defaultOpen={group.defaultOpen || isGroupActive}>
+            <Collapsible key={group.title} defaultOpen={group.defaultOpen || isGroupActive} className="group/collapsible">
                 <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/70 transition-colors">
                   <span>{group.title}</span>
-                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 [[data-state=closed]>&]:rotate-[-90deg]" />
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-data-[state=closed]/collapsible:-rotate-90" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-0.5">
                   {group.items.map((item) => {
