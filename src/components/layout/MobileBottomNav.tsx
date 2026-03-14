@@ -56,6 +56,7 @@ const staffMoreGroups: MoreGroup[] = [
   {
     title: "Work",
     items: [
+      { icon: ShoppingBag, label: "Shift Marketplace", path: "/shift-marketplace", minRole: "staff", module: "scheduling" },
       { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "staff" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
       { icon: FileText, label: "Documents", path: "/staff", minRole: "staff" },
