@@ -156,6 +156,7 @@ export function useSaveRoleRate() {
   return useMutation({
     mutationFn: async (input: { id?: string; role_name: string; rate_per_hour: number; effective_from: string; effective_to?: string | null; notes?: string | null; is_active?: boolean }) => {
       if (!tenantId) throw new Error("No tenant");
+      await assertPermission("access_admin_centre", tenantId);
       if (input.id) {
         const { id, ...rest } = input;
         const { error } = await supabase
