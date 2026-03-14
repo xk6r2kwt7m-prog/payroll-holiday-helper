@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant, useRequiredTenantId } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { assertPermission } from "@/lib/permission-guard";
 
 export function useInvitations() {
   const { tenantId } = useTenant();
