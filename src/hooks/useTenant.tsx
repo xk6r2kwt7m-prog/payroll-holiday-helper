@@ -231,7 +231,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
 
         if (count === 0) {
-          console.log("[TenantProvider] Decision: 0 memberships → onboard");
+          
           setAvailableTenants([]);
           setShowTenantPicker(false);
           setTenantResolved(true);
