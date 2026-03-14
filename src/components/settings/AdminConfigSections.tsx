@@ -54,9 +54,12 @@ export function SchedulingSettings() {
         </div>
         <Separator />
         <ToggleRow label="Department filter visible by default" desc="Show department tabs on schedule page" checked={local.showDeptFilter} onChange={v => set("showDeptFilter", v)} />
+        <NotYetEnforced label="showDeptFilter — saved for future enforcement" />
         <ToggleRow label="Mobile Quick Build mode" desc="Enable guided shift wizard on mobile" checked={local.mobileQuickBuild} onChange={v => set("mobileQuickBuild", v)} />
         <ToggleRow label="Shift swap notifications" desc="Notify managers of swap requests" checked={local.shiftSwapNotify} onChange={v => set("shiftSwapNotify", v)} />
+        <NotYetEnforced label="shiftSwapNotify — saved for future enforcement (requires notification pipeline)" />
         <ToggleRow label="Auto-publish on create" desc="Publish shifts immediately when created" checked={local.autoPublish} onChange={v => set("autoPublish", v)} />
+        <NotYetEnforced label="autoPublish — saved for future enforcement (requires backend worker)" />
       </div>
       <div className="space-y-2 pt-2">
         <SettingLink label="Shift Templates" description="Manage pre-built shift patterns" to="/schedule" />
@@ -103,6 +106,7 @@ export function PayrollDisplaySettings() {
       <ToggleRow label="Show bonus column" desc="Display performance/special bonus on payroll table" checked={local.showBonusColumn} onChange={v => set("showBonusColumn", v)} />
       <ToggleRow label="Show service charge column" desc="Display service charge breakdown" checked={local.showServiceCharge} onChange={v => set("showServiceCharge", v)} />
       <ToggleRow label="Company logo on PDF exports" desc="Include logo in payroll report headers" checked={local.defaultPdfLogo} onChange={v => set("defaultPdfLogo", v)} />
+      <NotYetEnforced label="defaultPdfLogo — saved for future enforcement (PDF generator not yet reading this)" />
       <Separator />
       <div className="space-y-1.5">
         <Label className="text-xs">Payroll reminder (days before due)</Label>
@@ -154,6 +158,7 @@ export function HolidayDisplaySettings() {
       </div>
       <ToggleRow label="Show balance summary" desc="Display accrual/taken/remaining at top" checked={local.showBalanceSummary} onChange={v => set("showBalanceSummary", v)} />
       <ToggleRow label="Show ledger tab" desc="Allow viewing detailed ledger entries" checked={local.showLedgerTab} onChange={v => set("showLedgerTab", v)} />
+      <NotYetEnforced label="showLedgerTab — saved for future enforcement" />
       <SaveButton onSave={handleSave} isPending={saveMut.isPending} />
     </div>
   );
@@ -191,6 +196,7 @@ export function TrainingDocSettings() {
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">Manage training modules, certifications, document categories, and compliance reminders.</p>
       <ToggleRow label="Auto renewal reminders" desc="Send reminders before certifications expire" checked={local.autoReminders} onChange={v => set("autoReminders", v)} />
+      <NotYetEnforced label="autoReminders — saved for future enforcement (requires cron job)" />
       {local.autoReminders && (
         <div className="space-y-1.5 pl-1">
           <Label className="text-xs">Reminder days before expiry</Label>
@@ -198,6 +204,7 @@ export function TrainingDocSettings() {
         </div>
       )}
       <ToggleRow label="Require document acknowledgement" desc="Staff must acknowledge receipt of documents" checked={local.requireAcknowledge} onChange={v => set("requireAcknowledge", v)} />
+      <NotYetEnforced label="requireAcknowledge — saved for future enforcement" />
       <Separator />
       <div className="space-y-2">
         <SettingLink label="Training Records" description="View and manage certifications" to="/training" />
@@ -341,11 +348,13 @@ export function PeopleLifecycleSettings() {
       </div>
       <ToggleRow label="Hide leavers by default" desc="Show only active employees on the Employees page" checked={local.hideLeaversDefault} onChange={v => set("hideLeaversDefault", v)} />
       <ToggleRow label="Talent pool opt-in for leavers" desc="Prompt departing staff to join the talent pool" checked={local.talentOptIn} onChange={v => set("talentOptIn", v)} />
+      <NotYetEnforced label="talentOptIn — saved for future enforcement" />
       <Separator />
       <div className="space-y-1.5">
         <Label className="text-xs">Auto-archive leavers after (days)</Label>
         <Input type="number" min="1" max="90" value={local.archiveAfterDays} onChange={e => set("archiveAfterDays", e.target.value)} className="h-9 w-24" />
         <p className="text-[10px] text-muted-foreground">Leavers automatically move to archive after this period</p>
+        <NotYetEnforced label="archiveAfterDays — saved for future enforcement (requires cron job)" />
       </div>
       <SaveButton onSave={handleSave} isPending={saveMut.isPending} />
       <ConfigProtectedNote configurable="Default views, leaver visibility, archive timing, talent opt-in prompts" protected_="Status transition engine, auto-archival rules, leaver workflow core logic" />
@@ -375,6 +384,12 @@ function ToggleRow({ label, desc, checked, onChange }: { label: string; desc: st
       </div>
       <Switch checked={checked} onCheckedChange={onChange} className="shrink-0" />
     </div>
+  );
+}
+
+function NotYetEnforced({ label }: { label: string }) {
+  return (
+    <p className="text-[10px] text-muted-foreground italic pl-1">⏳ {label}</p>
   );
 }
 

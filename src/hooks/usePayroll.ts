@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export type PayrollPeriod = Tables<"payroll_periods">;
 export type PayrollPeriodInsert = TablesInsert<"payroll_periods">;
@@ -85,6 +86,7 @@ export function useCreatePayrollPeriod() {
   
   return useMutation({
     mutationFn: async (period: Omit<PayrollPeriodInsert, 'tenant_id'>) => {
+      await assertPermission("view_pay_data", tenantId!);
       const { data, error } = await supabase
         .from("payroll_periods")
         .insert({ ...period, tenant_id: tenantId! })
@@ -126,6 +128,7 @@ export function useSubmitPayrollForReview() {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("view_pay_data", null);
       const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase
@@ -159,6 +162,7 @@ export function useApprovePayrollPeriod() {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("view_pay_data", null);
       const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase
@@ -196,6 +200,7 @@ export function useReopenPayrollPeriod() {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("view_pay_data", null);
       const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase
@@ -233,6 +238,7 @@ export function useCreatePayrollEntry() {
   
   return useMutation({
     mutationFn: async (entry: PayrollEntryInsert) => {
+      await assertPermission("view_pay_data", null);
       const { data, error } = await supabase
         .from("payroll_entries")
         .insert(entry)
@@ -253,6 +259,7 @@ export function useUpdatePayrollEntry() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: PayrollEntryUpdate }) => {
+      await assertPermission("view_pay_data", null);
       const { data, error } = await supabase
         .from("payroll_entries")
         .update(updates)
@@ -274,6 +281,7 @@ export function useBulkUpdatePayrollEntries() {
   
   return useMutation({
     mutationFn: async (entries: { id: string; updates: PayrollEntryUpdate }[]) => {
+      await assertPermission("view_pay_data", null);
       const results = await Promise.all(
         entries.map(async ({ id, updates }) => {
           const { data, error } = await supabase
@@ -317,6 +325,7 @@ export function useCopyPayrollPeriod() {
       periodWeeks?: number;
       salesTotal?: number;
     }) => {
+      await assertPermission("view_pay_data", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
 
       // Create new period
@@ -396,6 +405,7 @@ export function useDeletePayrollPeriod() {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("view_pay_data", null);
       const { data: { user } } = await supabase.auth.getUser();
 
       // Delete entries first (foreign key constraint)
@@ -441,6 +451,7 @@ export function useMarkBankDetailsExported() {
   
   return useMutation({
     mutationFn: async (entryIds: string[]) => {
+      await assertPermission("view_pay_data", null);
       const { error } = await supabase
         .from("payroll_entries")
         .update({ bank_details_exported: true })

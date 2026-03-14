@@ -12,6 +12,7 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { type DayOfWeek, DAY_ABBR, getMinimumStaff } from "@/components/schedule/shiftDefaults";
+import { assertPermission } from "@/lib/permission-guard";
 
 interface UseScheduleActionsParams {
   currentDate: Date;
@@ -69,6 +70,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
       return;
     }
     try {
+      await assertPermission("edit_schedules", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
       await createShift.mutateAsync({ ...data, created_by: user?.id });
       toast.success("Shift added");
@@ -101,6 +103,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handleUpdateShift = useCallback(async (id: string, updates: any) => {
     try {
+      await assertPermission("edit_schedules", tenantId);
       // Fetch the current shift before updating to detect published-shift changes
       const { data: oldShift } = await supabase
         .from("shifts")
@@ -165,11 +168,12 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [updateShift, notifyShiftChange]);
+  }, [updateShift, notifyShiftChange, tenantId]);
 
   const handleDeleteShift = useCallback(async (id: string) => {
     if (!confirm("Delete this shift?")) return;
     try {
+      await assertPermission("edit_schedules", tenantId);
       // Fetch shift before deleting to notify if published
       const { data: shift } = await supabase
         .from("shifts")
@@ -196,16 +200,14 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
         },
         onError: (err) => toast.error(err.message),
       });
-    } catch {
-      deleteShift.mutate(id, {
-        onSuccess: () => toast.success("Shift deleted"),
-        onError: (err) => toast.error(err.message),
-      });
+    } catch (err: any) {
+      toast.error(err.message);
     }
-  }, [deleteShift, notifyShiftChange]);
+  }, [deleteShift, notifyShiftChange, tenantId]);
 
   const handlePublish = useCallback(async () => {
     try {
+      await assertPermission("publish_schedules", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
       await publishWeek.mutateAsync({
         startDate: weekStartStr,
@@ -262,15 +264,17 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
   const handleUnpublish = useCallback(async () => {
     if (!confirm("Unpublish this week's rota? Staff will no longer see it.")) return;
     try {
+      await assertPermission("publish_schedules", tenantId);
       await unpublishWeek.mutateAsync({ startDate: weekStartStr, endDate: weekEndStr, branch: selectedBranch });
       toast.success("Rota unpublished");
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [unpublishWeek, weekStartStr, weekEndStr, selectedBranch]);
+  }, [unpublishWeek, weekStartStr, weekEndStr, selectedBranch, tenantId]);
 
   const handleCopyPrevWeek = useCallback(async (prevStart: string, prevEnd: string) => {
     try {
+      await assertPermission("edit_schedules", tenantId);
       const result = await copyPrevWeek.mutateAsync({
         prevStartDate: prevStart,
         prevEndDate: prevEnd,
@@ -282,25 +286,31 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [copyPrevWeek, weekStartStr, selectedBranch, selectedDept]);
+  }, [copyPrevWeek, weekStartStr, selectedBranch, selectedDept, tenantId]);
 
   const handleSaveTemplate = useCallback(async (name: string) => {
-    const currentShifts = branchDeptShifts.map((s: any) => {
-      const shiftDate = new Date(s.shift_date + "T00:00:00");
-      const dayOfWeek = shiftDate.getDay() === 0 ? 6 : shiftDate.getDay() - 1;
-      return { day_of_week: dayOfWeek, employee_id: s.employee_id, start_time: s.start_time, end_time: s.end_time, notes: s.notes || null };
-    });
-    await saveTemplate.mutateAsync({ name, branch: selectedBranch, department: selectedDept, shifts: currentShifts });
-  }, [saveTemplate, branchDeptShifts, selectedBranch, selectedDept]);
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const currentShifts = branchDeptShifts.map((s: any) => {
+        const shiftDate = new Date(s.shift_date + "T00:00:00");
+        const dayOfWeek = shiftDate.getDay() === 0 ? 6 : shiftDate.getDay() - 1;
+        return { day_of_week: dayOfWeek, employee_id: s.employee_id, start_time: s.start_time, end_time: s.end_time, notes: s.notes || null };
+      });
+      await saveTemplate.mutateAsync({ name, branch: selectedBranch, department: selectedDept, shifts: currentShifts });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  }, [saveTemplate, branchDeptShifts, selectedBranch, selectedDept, tenantId]);
 
   const handleLoadTemplate = useCallback(async (templateId: string) => {
     try {
+      await assertPermission("edit_schedules", tenantId);
       const result = await loadTemplate.mutateAsync({ templateId, targetWeekStart: weekStartStr, branch: selectedBranch, department: selectedDept });
       toast.success(`Loaded ${(result as any[])?.length || 0} shifts from template`);
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [loadTemplate, weekStartStr, selectedBranch, selectedDept]);
+  }, [loadTemplate, weekStartStr, selectedBranch, selectedDept, tenantId]);
 
   const notifyPublishedShiftStaff = useCallback(async (
     affectedShifts: any[],
@@ -346,81 +356,103 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handleDeleteAllShifts = useCallback(async () => {
     if (!confirm(`Delete all ${branchDeptShifts.length} shifts for ${selectedDept} at ${selectedBranch} this week?`)) return;
-    const ids = branchDeptShifts.map((s: any) => s.id);
-    if (ids.length === 0) return;
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const ids = branchDeptShifts.map((s: any) => s.id);
+      if (ids.length === 0) return;
 
-    // Capture published+assigned shifts before deleting
-    const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
+      const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
 
-    await bulkDelete.mutateAsync(ids);
-    toast.success(`Deleted ${ids.length} shifts`);
+      await bulkDelete.mutateAsync(ids);
+      toast.success(`Deleted ${ids.length} shifts`);
 
-    if (publishedAssigned.length > 0) {
-      await notifyPublishedShiftStaff(
-        publishedAssigned,
-        "Shifts cancelled",
-        ({ date }) => `Your ${date} at ${selectedBranch} has been removed from the rota. Check your schedule.`,
-        "shift_cancelled"
-      );
+      if (publishedAssigned.length > 0) {
+        await notifyPublishedShiftStaff(
+          publishedAssigned,
+          "Shifts cancelled",
+          ({ date }) => `Your ${date} at ${selectedBranch} has been removed from the rota. Check your schedule.`,
+          "shift_cancelled"
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message);
     }
-  }, [bulkDelete, branchDeptShifts, selectedDept, selectedBranch, notifyPublishedShiftStaff]);
+  }, [bulkDelete, branchDeptShifts, selectedDept, selectedBranch, notifyPublishedShiftStaff, tenantId]);
 
   const handleClearAssignments = useCallback(async () => {
     if (!confirm("Clear all employee assignments? This turns them into open shifts.")) return;
-    const assigned = branchDeptShifts.filter((s: any) => s.employee_id);
-    const ids = assigned.map((s: any) => s.id);
-    if (ids.length === 0) return;
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const assigned = branchDeptShifts.filter((s: any) => s.employee_id);
+      const ids = assigned.map((s: any) => s.id);
+      if (ids.length === 0) return;
 
-    // Capture published+assigned shifts before clearing
-    const publishedAssigned = assigned.filter((s: any) => s.is_published);
+      const publishedAssigned = assigned.filter((s: any) => s.is_published);
 
-    await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { employee_id: null, status: "open" as const } });
-    toast.success(`Cleared ${ids.length} assignments`);
+      await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { employee_id: null, status: "open" as const } });
+      toast.success(`Cleared ${ids.length} assignments`);
 
-    if (publishedAssigned.length > 0) {
-      await notifyPublishedShiftStaff(
-        publishedAssigned,
-        "Shift assignment removed",
-        ({ date }) => `Your ${date} at ${selectedBranch} is no longer assigned to you. Check your schedule.`,
-        "shift_changed"
-      );
+      if (publishedAssigned.length > 0) {
+        await notifyPublishedShiftStaff(
+          publishedAssigned,
+          "Shift assignment removed",
+          ({ date }) => `Your ${date} at ${selectedBranch} is no longer assigned to you. Check your schedule.`,
+          "shift_changed"
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message);
     }
-  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff]);
+  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff, tenantId]);
 
   const handleRemoveEmptyShifts = useCallback(async () => {
-    const emptyShifts = branchDeptShifts.filter((s: any) => !s.employee_id);
-    if (emptyShifts.length === 0) { toast.info("No empty shifts to remove"); return; }
-    if (!confirm(`Remove ${emptyShifts.length} empty shifts?`)) return;
-    await bulkDelete.mutateAsync(emptyShifts.map((s: any) => s.id));
-    toast.success(`Removed ${emptyShifts.length} empty shifts`);
-  }, [bulkDelete, branchDeptShifts]);
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const emptyShifts = branchDeptShifts.filter((s: any) => !s.employee_id);
+      if (emptyShifts.length === 0) { toast.info("No empty shifts to remove"); return; }
+      if (!confirm(`Remove ${emptyShifts.length} empty shifts?`)) return;
+      await bulkDelete.mutateAsync(emptyShifts.map((s: any) => s.id));
+      toast.success(`Removed ${emptyShifts.length} empty shifts`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  }, [bulkDelete, branchDeptShifts, tenantId]);
 
   const handleBulkUpdateTimes = useCallback(async (startTime: string, endTime: string) => {
-    const ids = branchDeptShifts.map((s: any) => s.id);
-    if (ids.length === 0) return;
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const ids = branchDeptShifts.map((s: any) => s.id);
+      if (ids.length === 0) return;
 
-    // Capture published+assigned shifts before updating
-    const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
+      const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
 
-    await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { start_time: startTime, end_time: endTime } });
-    toast.success(`Updated times for ${ids.length} shifts`);
+      await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { start_time: startTime, end_time: endTime } });
+      toast.success(`Updated times for ${ids.length} shifts`);
 
-    if (publishedAssigned.length > 0) {
-      await notifyPublishedShiftStaff(
-        publishedAssigned,
-        "Shift times changed",
-        ({ date }) => `Your ${date} at ${selectedBranch} has new times: ${startTime.slice(0, 5)}–${endTime.slice(0, 5)}. Check your schedule.`,
-        "shift_changed"
-      );
+      if (publishedAssigned.length > 0) {
+        await notifyPublishedShiftStaff(
+          publishedAssigned,
+          "Shift times changed",
+          ({ date }) => `Your ${date} at ${selectedBranch} has new times: ${startTime.slice(0, 5)}–${endTime.slice(0, 5)}. Check your schedule.`,
+          "shift_changed"
+        );
+      }
+    } catch (err: any) {
+      toast.error(err.message);
     }
-  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff]);
+  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff, tenantId]);
 
   const handleBulkCreateShifts = useCallback(async (newShifts: any[]) => {
     if (!tenantId) { toast.error("No workspace selected"); return; }
-    const { data: { user } } = await supabase.auth.getUser();
-    const withCreator = newShifts.map((s) => ({ ...s, created_by: user?.id || null }));
-    await bulkCreate.mutateAsync(withCreator as any);
-    toast.success(`Created ${newShifts.length} shift${newShifts.length !== 1 ? "s" : ""}`);
+    try {
+      await assertPermission("edit_schedules", tenantId);
+      const { data: { user } } = await supabase.auth.getUser();
+      const withCreator = newShifts.map((s) => ({ ...s, created_by: user?.id || null }));
+      await bulkCreate.mutateAsync(withCreator as any);
+      toast.success(`Created ${newShifts.length} shift${newShifts.length !== 1 ? "s" : ""}`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
   }, [tenantId, bulkCreate]);
 
   // Coverage stats
@@ -467,6 +499,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     }
     if (!confirm("Undo publish? This will revert all recently published shifts back to draft. Staff will no longer see them.")) return;
     try {
+      await assertPermission("publish_schedules", tenantId);
       await unpublishWeek.mutateAsync({ startDate: weekStartStr, endDate: weekEndStr, branch: selectedBranch });
       toast.success("Publish reverted — shifts are back in draft");
 
@@ -483,7 +516,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [publishRollbackInfo.canUndo, unpublishWeek, weekStartStr, weekEndStr, selectedBranch, branchShifts, notifyPublishedShiftStaff]);
+  }, [publishRollbackInfo.canUndo, unpublishWeek, weekStartStr, weekEndStr, selectedBranch, branchShifts, notifyPublishedShiftStaff, tenantId]);
 
   return {
     // Data
