@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export type Employee = Tables<"employees">;
 export type EmployeeInsert = TablesInsert<"employees">;
@@ -66,6 +67,7 @@ export function useCreateEmployee() {
   
   return useMutation({
     mutationFn: async (employee: Omit<EmployeeInsert, 'tenant_id'>) => {
+      await assertPermission("edit_employees", tenantId!);
       const { data, error } = await supabase
         .from("employees")
         .insert({ ...employee, tenant_id: tenantId! })
@@ -86,6 +88,7 @@ export function useUpdateEmployee() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: EmployeeUpdate }) => {
+      await assertPermission("edit_employees", null);
       const { data, error } = await supabase
         .from("employees")
         .update(updates)
@@ -107,18 +110,7 @@ export function useDeleteEmployee() {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      // Defensive: verify caller has edit rights
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      const userRoles = roles?.map(r => r.role) || [];
-      const canDelete = userRoles.some(r => r === "admin");
-      if (!canDelete) throw new Error("Permission denied: only admin can delete employees");
-
+      await assertPermission("edit_employees", null);
       const { error } = await supabase
         .from("employees")
         .delete()
