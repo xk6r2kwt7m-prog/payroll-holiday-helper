@@ -61,7 +61,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
       className={cn(
         "group rounded-xl bg-card p-3.5 shadow-sm transition-all duration-200",
         "hover:shadow-md sm:hover:-translate-y-0.5 hover:border-primary/20 border border-border",
-        "animate-fade-in cursor-pointer"
+        "animate-fade-in cursor-pointer min-w-0 overflow-hidden"
       )}
       style={{ animationDelay: `${Math.min(index, 6) * 30}ms` }}
       onClick={() => onViewDetails(employee)}
@@ -142,8 +142,8 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
 
       {/* Row 2: Compact protected pay — only for authorized */}
       {canViewSensitive && (
-        <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-border">
-          <div className="flex-1">
+        <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-border flex-wrap min-w-0">
+          <div className="min-w-0">
             <SensitiveField
               fieldKey={`card-${employee.id}-hourly_rate`}
               value={<span className="text-xs font-semibold text-foreground">{formatCurrency(Number(employee.hourly_rate))}/hr</span>}
@@ -154,7 +154,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
               inline
             />
           </div>
-          <div className="flex-1">
+          <div className="min-w-0">
             <SensitiveField
               fieldKey={`card-${employee.id}-service_charge`}
               value={<span className="text-xs font-semibold text-foreground">SC {formatCurrency(Number(employee.service_charge || 0))}</span>}
@@ -181,17 +181,17 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
 
       {/* Row 3: Admin quick actions */}
       {isAdmin && (
-        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border">
+        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border min-w-0">
           <EmployeeFormDialog
             employee={employee}
             trigger={
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 text-xs h-8"
+                className="flex-1 text-xs h-8 min-w-0"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Edit2 className="h-3 w-3 mr-1" /> Edit
+                <Edit2 className="h-3 w-3 mr-1 shrink-0" /> <span className="truncate">Edit</span>
               </Button>
             }
           />
@@ -199,7 +199,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
             variant="outline"
             size="sm"
             onClick={(e) => { e.stopPropagation(); onViewDetails(employee); }}
-            className="text-xs h-8 px-2.5"
+            className="text-xs h-8 px-2.5 shrink-0"
           >
             <Eye className="h-3 w-3" />
           </Button>

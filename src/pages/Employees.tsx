@@ -195,18 +195,18 @@ const Employees = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-4 max-w-7xl mx-auto">
+      <div className="space-y-4 max-w-7xl mx-auto min-w-0 overflow-x-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="min-w-0">
             <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 shrink-0">
                 <Users className="h-4 w-4 text-muted-foreground" />
               </div>
-              {t("employees.people")}
+              <span className="truncate">{t("employees.people")}</span>
             </h1>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {canManageLifecycle && filteredEmployees.length > 0 && (
               <Button
                 variant={isSelectionMode ? "secondary" : "ghost"}
@@ -217,7 +217,16 @@ const Employees = () => {
                 {isSelectionMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
               </Button>
             )}
-            {canEdit && <InviteEmployeeDialog />}
+            {canEdit && (
+              <InviteEmployeeDialog
+                trigger={
+                  <Button size="icon" variant="outline" className="h-8 w-8 sm:hidden">
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                }
+              />
+            )}
+            {canEdit && <span className="hidden sm:inline-flex"><InviteEmployeeDialog /></span>}
             {canEdit && <EmployeeFormDialog />}
           </div>
         </div>
@@ -277,14 +286,14 @@ const Employees = () => {
             />
           </div>
 
-          <div className="flex items-center gap-2 justify-between">
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 justify-between min-w-0">
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-none min-w-0 flex-1">
               {Object.entries(DEPT_CONFIG).map(([key, config]) => (
                 <button
                   key={key}
                   onClick={() => handleDepartmentChange(key as Department | "all")}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap",
+                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap shrink-0",
                     departmentFilter === key
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -295,7 +304,7 @@ const Employees = () => {
               ))}
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {isSelectionMode && (
                 <Button variant="ghost" size="sm" onClick={toggleSelectAll} className="text-xs h-7 px-2">
                   {allFilteredSelected ? t("common.deselect") : t("common.select_all")}
@@ -305,7 +314,7 @@ const Employees = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
                     <ArrowUpDown className="h-3 w-3 mr-1" />
-                    {SORT_OPTIONS[sortBy]}
+                    <span className="hidden sm:inline">{SORT_OPTIONS[sortBy]}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
