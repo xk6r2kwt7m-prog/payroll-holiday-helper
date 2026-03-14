@@ -100,7 +100,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setTenantResolved(true);
     setLoading(false);
     localStorage.setItem("uglo_selected_tenant", selectedTenantId);
-    console.log("[TenantProvider] Selection committed:", selectedTenantId, "| Tenant:", tenant?.name);
+    
   }, [applyTenantData]);
 
   /**
