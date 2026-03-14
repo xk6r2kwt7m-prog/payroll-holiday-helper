@@ -61,6 +61,7 @@ export function useAddTrainingRecord() {
       expiry_date?: string;
       notes?: string;
     }) => {
+      await assertPermission("manage_training", null);
       const { error } = await supabase.from("training_records" as any).insert(record as any);
       if (error) throw error;
     },
