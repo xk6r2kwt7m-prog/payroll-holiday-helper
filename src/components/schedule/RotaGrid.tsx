@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
+import { ShiftDetailPopover } from "./ShiftDetailPopover";
 import { MobileShiftSheet } from "./MobileShiftSheet";
 import { MoveShiftDrawer } from "./MoveShiftDrawer";
 import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
@@ -264,34 +265,75 @@ export function RotaGrid({
   };
 
   const renderShiftCell = (shift: any, day: Date) => {
-    return (
-      <div key={shift.id}>
-        <DraggableShiftCell
-          shift={shift}
-          isAdmin={isAdmin}
-          onView={(e) => {
-            e.stopPropagation();
-            if (isMobile) {
-              setMobileSheetShift(shift);
-              setMobileSheetDay(day);
-            } else {
-              setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
-            }
-          }}
-          onCopy={(e) => {
-            e.stopPropagation();
-            handleCopyShift(shift);
-          }}
-          onAdd={(e) => {
-            e.stopPropagation();
-            setSelectedDay(day);
-            setSelectedShift(null);
-            setDefaultEmployeeId(shift.employee_id || null);
-            setDialogOpen(true);
-          }}
-        />
-      </div>
+    const shiftCell = (
+      <DraggableShiftCell
+        shift={shift}
+        isAdmin={isAdmin}
+        onView={(e) => {
+          e.stopPropagation();
+          if (isMobile) {
+            setMobileSheetShift(shift);
+            setMobileSheetDay(day);
+          } else {
+            setPopoverShiftId(popoverShiftId === shift.id ? null : shift.id);
+          }
+        }}
+        onCopy={(e) => {
+          e.stopPropagation();
+          handleCopyShift(shift);
+        }}
+        onAdd={(e) => {
+          e.stopPropagation();
+          setSelectedDay(day);
+          setSelectedShift(null);
+          setDefaultEmployeeId(shift.employee_id || null);
+          setDialogOpen(true);
+        }}
+      />
     );
+
+    // Desktop: wrap with popover for inline actions
+    if (!isMobile) {
+      return (
+        <div key={shift.id}>
+          <ShiftDetailPopover
+            shift={shift}
+            employeeName={getEmployeeName(shift.employee_id)}
+            branch={branch}
+            department={department}
+            isAdmin={isAdmin}
+            open={popoverShiftId === shift.id}
+            onOpenChange={(open) => setPopoverShiftId(open ? shift.id : null)}
+            employees={employees}
+            existingShifts={shifts || []}
+            onEdit={() => {
+              setPopoverShiftId(null);
+              handleEditFromPopover(shift, day);
+            }}
+            onCopy={() => {
+              setPopoverShiftId(null);
+              handleCopyShift(shift);
+            }}
+            onDelete={() => {
+              setPopoverShiftId(null);
+              handleDeleteFromPopover(shift.id);
+            }}
+            onMove={() => {
+              setPopoverShiftId(null);
+              setMoveDrawerShift(shift);
+            }}
+            onUpdate={async (id, updates) => {
+              await onUpdateShift(id, updates);
+              toast.success("Shift updated");
+            }}
+          >
+            {shiftCell}
+          </ShiftDetailPopover>
+        </div>
+      );
+    }
+
+    return <div key={shift.id}>{shiftCell}</div>;
   };
 
   const filteredEmployees = useMemo(() => {
