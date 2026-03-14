@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Users, DollarSign } from "lucide-react";
+import { ChevronDown, ChevronUp, Check } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { getMinimumStaff, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import {
@@ -39,7 +39,7 @@ export function ScheduleSummary({
   complianceWarningCount,
 }: ScheduleSummaryProps) {
   const [gapDrawerOpen, setGapDrawerOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const deptEmployees = useMemo(
     () => employees.filter((e) => e.department === department && e.status === "active"),
@@ -91,67 +91,69 @@ export function ScheduleSummary({
   }, [branchDeptShifts, coverage, deptEmployees, employees]);
 
   const gapDays = coverage.filter((c) => c.status !== "ok");
-  const hasIssues = stats.understaffedDays > 0 || stats.unassigned > 0 || complianceWarningCount > 0;
 
-  // Don't render if no shifts
   if (stats.totalShifts === 0) return null;
+
+  const hasIssues = stats.understaffedDays > 0 || stats.unassigned > 0 || complianceWarningCount > 0;
 
   return (
     <>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center justify-between py-1.5 group">
+          <button className="w-full flex items-center justify-between py-0.5 group">
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
               <span className="tabular-nums">
                 <span className="font-medium text-foreground">{stats.totalShifts}</span> shifts
               </span>
+              <span className="tabular-nums">
+                <span className="font-medium text-foreground">{stats.published}</span> live
+              </span>
               {stats.unassigned > 0 && (
-                <span className="text-accent tabular-nums">
-                  <span className="font-medium">{stats.unassigned}</span> open
+                <span className="tabular-nums text-muted-foreground">
+                  {stats.unassigned} open
                 </span>
               )}
               {stats.understaffedDays > 0 && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setGapDrawerOpen(true); }}
-                  className="text-destructive tabular-nums hover:underline"
+                  className="tabular-nums text-warning hover:underline"
                 >
-                  <span className="font-medium">{stats.understaffedDays}</span> gap{stats.understaffedDays !== 1 ? "s" : ""}
+                  {stats.understaffedDays} gap{stats.understaffedDays !== 1 ? "s" : ""}
                 </button>
               )}
               {complianceWarningCount > 0 && (
-                <span className="text-destructive tabular-nums">
-                  <span className="font-medium">{complianceWarningCount}</span> WTR
+                <span className="tabular-nums text-warning">
+                  {complianceWarningCount} WTR
                 </span>
               )}
               {stats.totalCost > 0 && (
-                <span className="tabular-nums">
+                <span className="tabular-nums text-muted-foreground/70">
                   £{stats.totalCost.toFixed(0)}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-1 text-muted-foreground/60">
+            <div className="text-muted-foreground/40">
               {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </div>
           </button>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          {/* Coverage mini-bar */}
-          <div className="flex items-center gap-1 pb-2">
+          <div className="flex items-center gap-0.5 pb-1.5 pt-1">
             {coverage.map((day) => (
               <button
                 key={day.date.toISOString()}
                 onClick={() => day.status !== "ok" && setGapDrawerOpen(true)}
                 className={cn(
-                  "flex-1 flex flex-col items-center rounded-md py-1 text-center transition-colors min-w-0",
-                  day.status === "ok" && "bg-success/8",
-                  day.status === "warning" && "bg-warning/10 cursor-pointer hover:bg-warning/15",
-                  day.status === "critical" && "bg-destructive/8 cursor-pointer hover:bg-destructive/12",
+                  "flex-1 flex flex-col items-center rounded py-0.5 text-center transition-colors min-w-0",
+                  day.status === "ok" && "bg-success/5",
+                  day.status === "warning" && "bg-warning/8 cursor-pointer hover:bg-warning/12",
+                  day.status === "critical" && "bg-destructive/6 cursor-pointer hover:bg-destructive/10",
                 )}
               >
                 <span className="text-[9px] font-medium text-muted-foreground">{day.dayAbbr}</span>
                 <span className={cn(
-                  "text-[11px] font-bold tabular-nums leading-tight",
+                  "text-[10px] font-semibold tabular-nums leading-tight",
                   day.status === "ok" && "text-success",
                   day.status === "warning" && "text-warning",
                   day.status === "critical" && "text-destructive",

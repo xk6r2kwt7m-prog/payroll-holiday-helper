@@ -20,12 +20,11 @@ export function DroppableCell({ id, children, isAdmin, isToday, onClick }: Dropp
       ref={setNodeRef}
       className={cn(
         "group/cell p-0.5 sm:p-1 text-center transition-colors align-top",
-        // Stronger column structure with consistent left border
-        "border-l border-border/30",
+        "border-l border-border/20",
         isToday && "bg-primary/[0.02]",
         isAdmin && "cursor-pointer",
-        !isMobile && isOver && "bg-primary/8 ring-1 ring-inset ring-primary/20",
-        isMobile && isAdmin && "active:bg-primary/[0.04]",
+        !isMobile && isOver && "bg-primary/[0.06] ring-1 ring-inset ring-primary/15",
+        isMobile && isAdmin && "active:bg-primary/[0.03]",
       )}
       onClick={onClick}
     >
@@ -45,18 +44,15 @@ export function EmptyDropCell({ isAdmin }: EmptyDropCellProps) {
 
   return (
     <div className={cn(
-      "flex items-center justify-center rounded-md",
-      "min-h-[40px] sm:min-h-[36px]",
+      "flex items-center justify-center rounded",
+      "min-h-[38px] sm:min-h-[34px]",
       "transition-all",
       isMobile
-        ? "active:bg-primary/[0.06]"
-        : cn(
-            "sm:border sm:border-dashed sm:border-transparent",
-            "sm:group-hover/cell:border-border/30",
-          ),
+        ? "active:bg-primary/[0.04]"
+        : "sm:group-hover/cell:bg-muted/20",
     )}>
       {!isMobile && (
-        <span className="h-3 w-3 text-muted-foreground/30 hidden sm:group-hover/cell:block text-sm leading-none">+</span>
+        <span className="h-3 w-3 text-muted-foreground/20 hidden sm:group-hover/cell:block text-sm leading-none">+</span>
       )}
     </div>
   );

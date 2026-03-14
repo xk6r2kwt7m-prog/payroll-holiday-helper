@@ -1,7 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import { format, isSameDay, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
 import { ShiftDetailPopover } from "./ShiftDetailPopover";
@@ -292,7 +291,6 @@ export function RotaGrid({
       />
     );
 
-    // Desktop: wrap with popover for inline actions
     if (!isMobile) {
       return (
         <div key={shift.id}>
@@ -350,16 +348,15 @@ export function RotaGrid({
   return (
     <>
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto no-scrollbar px-1 sm:px-2">
+        <div className="overflow-x-auto no-scrollbar">
           <table className="w-full border-collapse table-fixed">
              <thead>
               <tr>
                 <th className={cn(
-                  "text-left py-2.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider sticky left-0 bg-background z-10 border-b border-border/50",
-                  isMobile ? "px-1.5 w-[80px]" : "px-3 w-[100px] sm:w-[150px]"
+                  "text-left py-2 text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider sticky left-0 bg-background z-10",
+                  isMobile ? "px-1.5 w-[80px]" : "px-3 w-[100px] sm:w-[140px]"
                 )}>
-                  <span className="hidden sm:inline">Staff</span>
-                  <span className="sm:hidden">Staff</span>
+                  Team
                 </th>
                 {weekDays.map((day) => {
                   const today = isToday(day);
@@ -368,17 +365,17 @@ export function RotaGrid({
                     <th
                       key={day.toISOString()}
                       className={cn(
-                        "text-center px-0.5 py-2.5 border-b border-border/50",
+                        "text-center px-0.5 py-2",
                         isMobile ? "min-w-[48px]" : "min-w-[44px] sm:min-w-[100px]",
                       )}
                     >
                       <div className={cn(
-                        "flex flex-col items-center gap-0 rounded-md py-1 mx-auto transition-colors",
+                        "flex flex-col items-center gap-0 rounded-md py-0.5 mx-auto transition-colors",
                         today && "bg-primary text-primary-foreground rounded-lg px-2",
                       )}>
                         <span className={cn(
                           "text-[9px] sm:text-[10px] font-medium uppercase tracking-wide",
-                          !today && "text-muted-foreground"
+                          !today && "text-muted-foreground/60"
                         )}>
                           {format(day, "EEE")}
                         </span>
@@ -406,21 +403,21 @@ export function RotaGrid({
                     key={emp.id}
                     className={cn(
                       "transition-colors",
-                      empIdx > 0 && "border-t border-border/30",
-                      hasNoShifts && "opacity-50",
+                      empIdx > 0 && "border-t border-border/15",
+                      hasNoShifts && "opacity-40",
                     )}
                   >
                     <td className={cn(
-                      "py-1.5 sticky left-0 bg-background z-10",
-                      isMobile ? "px-1.5" : "px-3 py-2"
+                      "py-1 sticky left-0 bg-background z-10",
+                      isMobile ? "px-1.5" : "px-3 py-1.5"
                     )}>
                       <div className="flex items-center gap-2">
                         <div className={cn(
                           "rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
                           isMobile ? "h-6 w-6" : "h-7 w-7",
                           hasNoShifts
-                            ? "bg-muted text-muted-foreground"
-                            : "bg-primary/8 text-primary"
+                            ? "bg-muted/60 text-muted-foreground/60"
+                            : "bg-primary/[0.06] text-primary"
                         )}>
                           {emp.forename[0]}{emp.surname?.[0] || ""}
                         </div>
@@ -428,13 +425,13 @@ export function RotaGrid({
                           <div className="truncate text-[11px] sm:text-xs font-medium text-foreground leading-tight">
                             {emp.forename}
                           </div>
-                          <div className="text-[9px] text-muted-foreground leading-tight mt-0.5 tabular-nums">
+                          <div className="text-[9px] text-muted-foreground/60 leading-tight mt-0.5 tabular-nums">
                             {weeklyHours > 0
                               ? `${Math.floor(weeklyHours)}h${Math.round((weeklyHours % 1) * 60) > 0 ? ` ${Math.round((weeklyHours % 1) * 60)}m` : ""}`
                               : "—"
                             }
                             {!isMobile && weeklyCost > 0 && (
-                              <span className="hidden sm:inline text-muted-foreground/60"> · £{weeklyCost.toFixed(0)}</span>
+                              <span className="hidden sm:inline"> · £{weeklyCost.toFixed(0)}</span>
                             )}
                           </div>
                         </div>
@@ -472,10 +469,10 @@ export function RotaGrid({
 
               {/* Open shifts row */}
               {weekDays.some((d) => getOpenShifts(d).length > 0) && (
-                <tr className="border-t border-dashed border-border/40">
-                  <td className="px-3 py-2 sticky left-0 bg-background z-10">
+                <tr className="border-t border-dashed border-border/20">
+                  <td className="px-3 py-1.5 sticky left-0 bg-background z-10">
                     <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-muted/40 text-muted-foreground/60 flex items-center justify-center text-[10px] font-bold shrink-0">
                         ?
                       </div>
                       <span className="text-[11px] text-muted-foreground font-medium">Open</span>
@@ -510,8 +507,8 @@ export function RotaGrid({
         <DragOverlay dropAnimation={null}>
           {activeShift ? (
             <div className={cn(
-              "rounded-md px-2 py-1.5 text-[11px] leading-tight shadow-lg ring-1 ring-primary/30",
-              "bg-card border border-border text-foreground"
+              "rounded px-2 py-1.5 text-[11px] leading-tight shadow-lg ring-1 ring-primary/20",
+              "bg-card border border-border/40 text-foreground"
             )}>
               <div className="font-semibold tabular-nums">
                 {activeShift.start_time?.slice(0, 5)}–{activeShift.end_time?.slice(0, 5)}

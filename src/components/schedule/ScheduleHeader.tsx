@@ -32,7 +32,6 @@ import {
   Save,
   FolderOpen,
   MapPin,
-  CalendarDays,
   DollarSign,
   Undo2,
 } from "lucide-react";
@@ -57,28 +56,23 @@ interface ScheduleHeaderProps {
   onPublish: () => void;
   onUnpublish: () => void;
   isAdmin: boolean;
-  // Branch
   branches: readonly string[];
   selectedBranch: string;
   onBranchChange: (b: string) => void;
-  // Department
   departments: readonly string[];
   selectedDept: string;
   onDeptChange: (d: string) => void;
-  // Copy dropdown actions
   onCopyPreviousWeek?: () => void;
   onCopyToNextWeek?: () => void;
   onSaveTemplate?: () => void;
   onLoadTemplate?: () => void;
   copyPending?: boolean;
-  // More menu actions
   onDeleteAllShifts?: () => void;
   onClearAssignments?: () => void;
   onMarkAllEmpty?: () => void;
   onRemoveEmptyShifts?: () => void;
   shiftCount?: number;
   assignedCount?: number;
-  // Undo publish
   canUndoPublish?: boolean;
   undoTimeRemaining?: string;
   onUndoPublish?: () => void;
@@ -124,6 +118,7 @@ export function ScheduleHeader({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
       const week = startOfWeek(date, { weekStartsOn: 1 });
@@ -138,16 +133,16 @@ export function ScheduleHeader({
       : format(currentDate, "EEE d MMM");
 
   return (
-    <div className={cn("space-y-0", isMobile ? "pb-1.5" : "pb-0")}>
-      {/* Single header row: Location | Week Nav | Publish | Overflow */}
-      <div className="flex items-center gap-2 h-12">
-        {/* Location selector — compact */}
+    <div className="space-y-0 pb-0">
+      {/* Single control row */}
+      <div className="flex items-center gap-1.5 h-11">
+        {/* Location */}
         <Select value={selectedBranch} onValueChange={onBranchChange}>
           <SelectTrigger className={cn(
-            "h-9 w-auto gap-1 text-xs font-semibold border-none bg-transparent shadow-none px-2",
-            isMobile ? "min-w-[80px]" : "min-w-[110px]"
+            "h-8 w-auto gap-1 text-xs font-medium border-none bg-transparent shadow-none px-1.5",
+            isMobile ? "min-w-[70px]" : "min-w-[100px]"
           )}>
-            <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+            <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -157,12 +152,13 @@ export function ScheduleHeader({
           </SelectContent>
         </Select>
 
-        <div className="h-4 w-px bg-border" />
+        {/* Thin divider */}
+        <div className="h-3.5 w-px bg-border/50" />
 
-        {/* Date navigation — centered */}
+        {/* Week navigation */}
         <div className="flex items-center gap-0 flex-1 justify-center min-w-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onNavigate(-1)}>
-            <ChevronLeft className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onNavigate(-1)}>
+            <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
 
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -170,7 +166,7 @@ export function ScheduleHeader({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 font-semibold text-sm px-2 min-w-0"
+                className="h-7 font-medium text-xs px-2 min-w-0"
               >
                 <span className="truncate">{dateLabel}</span>
               </Button>
@@ -196,22 +192,22 @@ export function ScheduleHeader({
             </PopoverContent>
           </Popover>
 
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onNavigate(1)}>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onNavigate(1)}>
+            <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>
 
         {/* Publish CTA + Undo */}
         {isAdmin && (
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             {canUndoPublish && onUndoPublish ? (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onUndoPublish}
-                className="h-8 gap-1.5 text-xs rounded-full px-3 border-warning/40 text-warning hover:bg-warning/5"
+                className="h-7 gap-1 text-[11px] rounded-full px-2.5 border-warning/30 text-warning hover:bg-warning/5"
               >
-                <Undo2 className="h-3.5 w-3.5" />
+                <Undo2 className="h-3 w-3" />
                 Undo ({undoTimeRemaining})
               </Button>
             ) : null}
@@ -221,19 +217,13 @@ export function ScheduleHeader({
                 size="sm"
                 onClick={onPublish}
                 disabled={isPublishing}
-                className="h-8 gap-1.5 text-xs shrink-0 rounded-full px-4"
+                className="h-7 gap-1 text-[11px] shrink-0 rounded-full px-3"
               >
-                <Send className="h-3.5 w-3.5" />
+                <Send className="h-3 w-3" />
                 {isPublishing ? "Publishing…" : "Publish"}
               </Button>
             ) : publishedCount > 0 && !canUndoPublish ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs text-success shrink-0 rounded-full px-3 pointer-events-none"
-              >
-                ✓ Live
-              </Button>
+              <span className="text-[11px] text-success font-medium px-2">✓ Live</span>
             ) : null}
           </div>
         )}
@@ -242,11 +232,11 @@ export function ScheduleHeader({
         {isAdmin && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                <MoreHorizontal className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[220px]">
+            <DropdownMenuContent align="end" className="w-[210px]">
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">View</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => onViewModeChange("week")}>
                 Week view {viewMode === "week" && "✓"}
@@ -255,28 +245,24 @@ export function ScheduleHeader({
                 Day view {viewMode === "day" && "✓"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Copy & Templates</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Templates</DropdownMenuLabel>
               <DropdownMenuItem onClick={onCopyPreviousWeek} disabled={copyPending}>
                 <Copy className="h-3.5 w-3.5 mr-2" />
-                Copy from previous week
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onCopyToNextWeek} disabled={copyPending}>
-                <Copy className="h-3.5 w-3.5 mr-2" />
-                Copy to next week
+                Copy previous week
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onSaveTemplate} disabled={shiftCount === 0}>
                 <Save className="h-3.5 w-3.5 mr-2" />
-                Save as Template
+                Save as template
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onLoadTemplate}>
                 <FolderOpen className="h-3.5 w-3.5 mr-2" />
-                Load Template
+                Load template
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Bulk Actions</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Bulk</DropdownMenuLabel>
               <DropdownMenuItem onClick={onMarkAllEmpty} disabled={assignedCount === 0} className="gap-2">
                 <UserX className="h-3.5 w-3.5" />
-                Clear all assignments
+                Clear assignments
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onRemoveEmptyShifts} disabled={shiftCount === 0} className="gap-2">
                 <Trash2 className="h-3.5 w-3.5" />
@@ -291,10 +277,9 @@ export function ScheduleHeader({
                 Delete all shifts
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Analysis</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => navigate("/schedule/labour-cost")} className="gap-2">
                 <DollarSign className="h-3.5 w-3.5" />
-                Preview labour cost
+                Labour cost preview
               </DropdownMenuItem>
               <DropdownMenuItem className="gap-2">
                 <Printer className="h-3.5 w-3.5" />
@@ -309,17 +294,17 @@ export function ScheduleHeader({
         )}
       </div>
 
-      {/* Department pills — second row, very light */}
-      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-2">
+      {/* Department pills — second row */}
+      <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1.5">
         {departments.map((d) => (
           <button
             key={d}
             onClick={() => onDeptChange(d)}
             className={cn(
-              "rounded-full text-[11px] font-medium whitespace-nowrap transition-colors px-3 py-1 min-h-[28px]",
+              "rounded-full text-[11px] font-medium whitespace-nowrap transition-colors px-2.5 py-0.5 min-h-[26px]",
               selectedDept === d
                 ? "bg-foreground text-background"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             )}
           >
             {d}
