@@ -67,9 +67,20 @@ export default function TrainingRecords() {
 
 function TrainingAdminView() {
   const [searchParams] = useSearchParams();
-  const deepLinkTab = searchParams.get("tab") || "library";
+  const urlTab = searchParams.get("tab");
   const deepLinkEmployee = searchParams.get("employee") || undefined;
   const deepLinkModule = searchParams.get("module") || undefined;
+
+  // Controlled tab state — syncs from URL on every param change
+  const [activeTab, setActiveTab] = useState(urlTab || "library");
+
+  // Re-sync when URL params change (e.g. navigating from Gaps tab while already on /training)
+  const paramKey = `${urlTab}::${deepLinkEmployee}::${deepLinkModule}`;
+  const [lastParamKey, setLastParamKey] = useState(paramKey);
+  if (paramKey !== lastParamKey) {
+    setLastParamKey(paramKey);
+    if (urlTab) setActiveTab(urlTab);
+  }
 
   const { data: employees = [] } = useEmployees();
   const { data: records = [] } = useTrainingRecords();
