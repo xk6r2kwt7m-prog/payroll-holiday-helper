@@ -15,7 +15,7 @@ import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateAccrual } from "@/hooks/useLeaveRules";
 import type { Database } from "@/integrations/supabase/types";
 
-type DepartmentType = Database["public"]["Enums"]["department_type"];
+type DepartmentType = string;
 
 // ─── Name mapping: CSV first name → DB employee match ───
 // This resolves informal names, nicknames, and abbreviations

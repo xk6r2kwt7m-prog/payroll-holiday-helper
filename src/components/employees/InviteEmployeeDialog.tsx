@@ -11,7 +11,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/integrations/supabase/types";
 
-type DepartmentType = Database["public"]["Enums"]["department_type"];
+type DepartmentType = string;
 
 interface InviteEmployeeDialogProps {
   trigger?: React.ReactNode;

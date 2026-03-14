@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { useTenant } from "@/hooks/useTenant";
 import { usePlanLimits } from "@/hooks/useSubscription";
 
-type DepartmentType = Database["public"]["Enums"]["department_type"];
+type DepartmentType = string;
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
 
 interface EmployeeFormDialogProps {
