@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, Clock, AlertTriangle, Calendar, CalendarClock,
   ChevronRight, Megaphone, ClipboardCheck, UserCheck,
-  UserX, Timer, ShieldAlert, TrendingDown,
+  UserX, Timer, ShieldAlert, TrendingDown, Search, ArrowRightLeft, Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,8 @@ import { useShifts } from "@/hooks/useSchedule";
 import { useAllHolidayRequests } from "@/hooks/useHolidayRequests";
 import { useI18n } from "@/hooks/useI18n";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
+import { FindCoverSheet } from "@/components/workforce/FindCoverSheet";
+import { EmergencyCoverTool } from "@/components/workforce/EmergencyCoverTool";
 import { format, startOfWeek, endOfWeek, addDays } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -115,6 +117,15 @@ export function ManagerHome() {
       <motion.div {...anim} transition={{ duration: 0.25 }}>
         <h1 className="text-xl font-bold text-foreground">{greeting()} 👋</h1>
         <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, d MMMM yyyy")}</p>
+      </motion.div>
+
+      {/* Workforce Quick Actions */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.03 }}>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <FindCoverSheet trigger={<Button variant="outline" size="sm" className="flex-shrink-0 rounded-xl h-10"><Search className="h-4 w-4 mr-1.5" /> Find Cover</Button>} />
+          <EmergencyCoverTool trigger={<Button variant="destructive" size="sm" className="flex-shrink-0 rounded-xl h-10"><AlertTriangle className="h-4 w-4 mr-1.5" /> Emergency</Button>} />
+          <Link to="/workforce"><Button variant="outline" size="sm" className="flex-shrink-0 rounded-xl h-10"><Building2 className="h-4 w-4 mr-1.5" /> Workforce</Button></Link>
+        </div>
       </motion.div>
 
       {/* Live Status Strip */}

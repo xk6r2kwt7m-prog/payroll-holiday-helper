@@ -39,6 +39,7 @@ import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
 import ResetPassword from "./pages/ResetPassword";
 import TalentPool from "./pages/TalentPool";
+import Workforce from "./pages/Workforce";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 
@@ -94,6 +95,9 @@ const App = () => (
 
             {/* Absences — manager+ */}
             <Route path="/absences" element={<ProtectedRoute requiredRole="manager"><AbsenceTracker /></ProtectedRoute>} />
+
+            {/* Workforce — manager+ */}
+            <Route path="/workforce" element={<ProtectedRoute requiredRole="manager"><Workforce /></ProtectedRoute>} />
 
             {/* Onboarding — manager+ */}
             <Route path="/onboarding" element={<ProtectedRoute requiredRole="manager"><Onboarding /></ProtectedRoute>} />

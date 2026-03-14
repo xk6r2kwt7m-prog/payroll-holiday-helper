@@ -681,6 +681,67 @@ export type Database = {
           },
         ]
       }
+      employee_availability: {
+        Row: {
+          available_from: string | null
+          available_to: string | null
+          created_at: string
+          day_of_week: number
+          employee_id: string
+          id: string
+          is_available: boolean
+          notes: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          available_from?: string | null
+          available_to?: string | null
+          created_at?: string
+          day_of_week: number
+          employee_id: string
+          id?: string
+          is_available?: boolean
+          notes?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          available_from?: string | null
+          available_to?: string | null
+          created_at?: string
+          day_of_week?: number
+          employee_id?: string
+          id?: string
+          is_available?: boolean
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_availability_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_availability_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_availability_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_branches: {
         Row: {
           branch: string
@@ -854,6 +915,58 @@ export type Database = {
           },
           {
             foreignKeyName: "employee_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_skills: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          proficiency_level: number | null
+          skill_type: string
+          skill_value: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          proficiency_level?: number | null
+          skill_type?: string
+          skill_value: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          proficiency_level?: number | null
+          skill_type?: string
+          skill_value?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_skills_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_skills_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_skills_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2760,6 +2873,76 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "staff_announcements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_transfers: {
+        Row: {
+          created_at: string
+          employee_id: string
+          end_date: string | null
+          from_branch: string
+          id: string
+          is_temporary: boolean
+          reason: string | null
+          status: string
+          tenant_id: string
+          to_branch: string
+          transfer_date: string
+          transferred_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          end_date?: string | null
+          from_branch: string
+          id?: string
+          is_temporary?: boolean
+          reason?: string | null
+          status?: string
+          tenant_id: string
+          to_branch: string
+          transfer_date: string
+          transferred_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          end_date?: string | null
+          from_branch?: string
+          id?: string
+          is_temporary?: boolean
+          reason?: string | null
+          status?: string
+          tenant_id?: string
+          to_branch?: string
+          transfer_date?: string
+          transferred_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_transfers_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_transfers_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_transfers_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
