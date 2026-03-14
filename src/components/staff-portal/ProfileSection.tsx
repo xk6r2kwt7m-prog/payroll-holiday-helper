@@ -1,5 +1,6 @@
 import { format } from "date-fns";
-import { LogOut } from "lucide-react";
+import { LogOut, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
 
