@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export function HolidayRequestQueue() {
   const { t } = useI18n();
