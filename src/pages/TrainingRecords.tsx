@@ -66,6 +66,11 @@ export default function TrainingRecords() {
 }
 
 function TrainingAdminView() {
+  const [searchParams] = useSearchParams();
+  const deepLinkTab = searchParams.get("tab") || "library";
+  const deepLinkEmployee = searchParams.get("employee") || undefined;
+  const deepLinkModule = searchParams.get("module") || undefined;
+
   const { data: employees = [] } = useEmployees();
   const { data: records = [] } = useTrainingRecords();
   const addRecord = useAddTrainingRecord();
