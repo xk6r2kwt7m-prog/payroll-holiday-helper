@@ -1,4 +1,4 @@
-import { Edit2, Trash2, Eye, MoreHorizontal, MapPin } from "lucide-react";
+import { Edit2, Trash2, Eye, MoreHorizontal, MapPin, Clock } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
+import { ReadinessStatusBadge } from "./OnboardingChecklist";
+import { useEmployeeReadiness } from "@/hooks/useOnboardingReadiness";
 import { formatCurrency } from "@/hooks/useHolidays";
 import { useEmployeeBranches, type BranchType } from "@/hooks/useBranches";
 import type { Employee } from "@/hooks/useEmployees";
