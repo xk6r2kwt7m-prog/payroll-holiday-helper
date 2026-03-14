@@ -650,13 +650,15 @@ const Holidays = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <TabsList className="grid w-full sm:w-auto grid-cols-5 h-9">
-                <TabsTrigger value="2022" className="text-xs px-3">2022</TabsTrigger>
-                <TabsTrigger value="2023" className="text-xs px-3">2023</TabsTrigger>
-                <TabsTrigger value="2024" className="text-xs px-3">2024</TabsTrigger>
-                <TabsTrigger value="2025" className="text-xs px-3">2025</TabsTrigger>
-                <TabsTrigger value="2026" className="text-xs px-3">2026</TabsTrigger>
-              </TabsList>
+              <div className="rounded-lg border border-border/60 bg-muted/40 p-1">
+                <TabsList className="grid w-full sm:w-auto grid-cols-5 h-auto bg-transparent gap-0.5">
+                  <TabsTrigger value="2022" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2022</TabsTrigger>
+                  <TabsTrigger value="2023" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2023</TabsTrigger>
+                  <TabsTrigger value="2024" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2024</TabsTrigger>
+                  <TabsTrigger value="2025" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2025</TabsTrigger>
+                  <TabsTrigger value="2026" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2026</TabsTrigger>
+                </TabsList>
+              </div>
 
               <div className="flex items-center gap-1.5">
                 <Button 
@@ -736,20 +738,21 @@ const Holidays = () => {
 
         {/* Sub-navigation tabs */}
         <Tabs value={subTab} onValueChange={(v) => setSubTab(v as SubTab)}>
-          <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-grid sm:grid-cols-8">
-            <TabsTrigger value="overview" className="gap-1.5">
+          <div className="rounded-lg border border-border/60 bg-muted/40 p-1">
+          <TabsList className="grid w-full grid-cols-4 sm:w-auto sm:inline-grid sm:grid-cols-8 bg-transparent h-auto gap-0.5">
+            <TabsTrigger value="overview" className="gap-1.5 text-xs rounded-md py-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Users className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("holidays.overview")}</span>
             </TabsTrigger>
-            <TabsTrigger value="requests" className="gap-1.5">
+            <TabsTrigger value="requests" className="gap-1.5 text-xs rounded-md py-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Calendar className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("holidays.request_holiday")}</span>
             </TabsTrigger>
-            <TabsTrigger value="lookup" className="gap-1.5">
+            <TabsTrigger value="lookup" className="gap-1.5 text-xs rounded-md py-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <UserSearch className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("common.employee")}</span>
             </TabsTrigger>
-            <TabsTrigger value="alerts" className="gap-1.5">
+            <TabsTrigger value="alerts" className="gap-1.5 text-xs rounded-md py-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <AlertTriangle className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("holidays.alerts_tab")}</span>
               {alerts.length > 0 && (
@@ -758,15 +761,15 @@ const Holidays = () => {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-1.5">
+            <TabsTrigger value="history" className="gap-1.5 text-xs rounded-md py-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <History className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("holidays.history")}</span>
             </TabsTrigger>
-            <TabsTrigger value="departments" className="gap-1.5">
+            <TabsTrigger value="departments" className="gap-1.5 text-xs rounded-md py-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <BarChart3 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("holidays.departments_tab")}</span>
             </TabsTrigger>
-            <TabsTrigger value="integrity" className="gap-1.5">
+            <TabsTrigger value="integrity" className="gap-1.5 text-xs rounded-md py-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <ShieldCheck className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("holidays.integrity")}</span>
               {integrityRows.filter(r => r.severity === "error").length > 0 && (
@@ -775,11 +778,12 @@ const Holidays = () => {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="audit" className="gap-1.5">
+            <TabsTrigger value="audit" className="gap-1.5 text-xs rounded-md py-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
               <Bug className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("holidays.audit")}</span>
             </TabsTrigger>
           </TabsList>
+          </div>
 
           {/* Filters (shared across sub-tabs) */}
           <div className="flex flex-col sm:flex-row gap-3 mt-4">

@@ -60,16 +60,16 @@ export function EmployeeHolidayCard({
     <div
       className={cn(
         "rounded-xl bg-card shadow-sm border border-border overflow-hidden",
-        "transition-all duration-300 animate-fade-in",
+        "transition-all duration-200 animate-fade-in",
         "hover:shadow-md hover:border-primary/20"
       )}
-      style={{ animationDelay: `${index * 50}ms` }}
+      style={{ animationDelay: `${Math.min(index, 6) * 30}ms` }}
     >
       {/* Header */}
-      <div className="p-5">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-12 w-12 ring-2 ring-background shadow-md">
-            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <Avatar className="h-10 w-10 ring-1 ring-background shadow-sm">
+            <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-sm">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -105,56 +105,56 @@ export function EmployeeHolidayCard({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-3 mt-4">
-          <div className="text-center p-2 rounded-lg bg-success/5 border border-success/10">
-            <p className="text-lg font-bold text-success">{formatHours(totalAccrued)}</p>
+        <div className="grid grid-cols-4 gap-2 mt-3">
+          <div className="text-center p-1.5 rounded-lg bg-success/5 border border-success/10">
+            <p className="text-base font-bold text-success">{formatHours(totalAccrued)}</p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(totalAccrued)} days</p>
-            <p className="text-xs text-muted-foreground">Accrued</p>
+            <p className="text-[11px] text-muted-foreground">Accrued</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
-            <p className="text-lg font-bold text-blue-600">{formatHours(carryOver)}</p>
+          <div className="text-center p-1.5 rounded-lg bg-accent/5 border border-accent/10">
+            <p className="text-base font-bold text-accent">{formatHours(carryOver)}</p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(carryOver)} days</p>
-            <p className="text-xs text-muted-foreground">Carried Over</p>
+            <p className="text-[11px] text-muted-foreground">Carried Over</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-primary/5 border border-primary/10">
-            <p className="text-lg font-bold text-primary">{formatHours(totalTaken)}</p>
+          <div className="text-center p-1.5 rounded-lg bg-primary/5 border border-primary/10">
+            <p className="text-base font-bold text-primary">{formatHours(totalTaken)}</p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(totalTaken)} days</p>
-            <p className="text-xs text-muted-foreground">Taken</p>
+            <p className="text-[11px] text-muted-foreground">Taken</p>
           </div>
           <div className={cn(
-            "text-center p-2 rounded-lg border",
+            "text-center p-1.5 rounded-lg border",
             balance >= 0 
-              ? "bg-accent/5 border-accent/10" 
+              ? "bg-muted/50 border-border/60" 
               : "bg-destructive/5 border-destructive/10"
           )}>
-            <p className={cn("text-lg font-bold", balance >= 0 ? "text-accent" : "text-destructive")}>
+            <p className={cn("text-base font-bold", balance >= 0 ? "text-foreground" : "text-destructive")}>
               {formatHours(balance)}
             </p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(balance)} days</p>
-            <p className="text-xs text-muted-foreground">Balance</p>
+            <p className="text-[11px] text-muted-foreground">Balance</p>
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
             <span>Holiday Usage</span>
             <span>{usedPercentage.toFixed(0)}% of entitlement</span>
           </div>
           <Progress 
             value={usedPercentage} 
             className={cn(
-              "h-2",
+              "h-1.5",
               isOverUsed && "[&>div]:bg-destructive"
             )} 
           />
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-[11px] text-muted-foreground mt-1">
             {formatHours(totalTaken)} of {formatHours(entitlement)} hours used
           </p>
         </div>
 
         {/* Total Paid + Breakdown */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/60">
           <div className="flex items-center gap-2">
             <Lock className="h-3 w-3 text-muted-foreground/50" />
             <span className="text-sm text-muted-foreground">Total Paid</span>
