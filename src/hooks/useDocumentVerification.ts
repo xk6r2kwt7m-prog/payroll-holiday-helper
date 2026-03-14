@@ -109,6 +109,25 @@ export function useRejectDocument() {
           performed_by: user?.id,
           metadata: { reason },
         } as any);
+
+      // Notify the employee their document was rejected
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("user_id, forename")
+        .eq("id", employeeId)
+        .maybeSingle();
+
+      if (emp?.user_id) {
+        await supabase.from("notifications" as any).insert({
+          tenant_id: tenantId,
+          user_id: emp.user_id,
+          event_type: "document_rejected",
+          title: "Document needs attention",
+          body: `Your document was not approved: ${reason}. Please upload a new version.`,
+          link: "/staff",
+          metadata: { document_id: documentId, reason },
+        } as any);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["employee_documents"] });

@@ -650,6 +650,11 @@
     "timesheet_review": "Timesheet needs review",
     "evidence_requested": "Evidence requested",
     "document_expiry": "Document expiring",
+    "document_verified": "Document verified",
+    "document_rejected": "Document needs attention",
+    "document_uploaded": "Document uploaded",
+    "onboarding_completed": "Onboarding completed",
+    "announcement_published": "New announcement",
     "payroll_ready": "Payroll ready for review",
     "setup_incomplete": "Setup incomplete"
   },
