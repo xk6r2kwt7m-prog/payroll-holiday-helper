@@ -70,6 +70,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
   const { data: availableBranches = [] } = useTenantBranches();
   const { data: countryRules = [] } = useCountryRules();
+  const { data: departments = [] } = useDepartments();
 
   // Reset form only when dialog opens (not on every render)
   useEffect(() => {
