@@ -294,6 +294,8 @@ export function useCreateAssignments() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["training_assignments"] });
       qc.invalidateQueries({ queryKey: ["my_training_assignments"] });
+      qc.invalidateQueries({ queryKey: ["employee_readiness"] });
+      qc.invalidateQueries({ queryKey: ["team_readiness"] });
       toast.success("Document(s) assigned");
     },
     onError: (e: any) => toast.error(e.message),
