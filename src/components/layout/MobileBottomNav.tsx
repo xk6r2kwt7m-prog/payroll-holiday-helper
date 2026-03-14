@@ -4,7 +4,7 @@ import {
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin,
   UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone, PieChart,
   Scale, ClipboardList, Sparkles, FileText, CalendarDays, AlertTriangle,
-  CheckCircle2, User,
+  CheckCircle2, User, ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -56,6 +56,7 @@ const staffMoreGroups: MoreGroup[] = [
   {
     title: "Work",
     items: [
+      { icon: ShoppingBag, label: "Shift Marketplace", path: "/shift-marketplace", minRole: "staff", module: "scheduling" },
       { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "staff" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
       { icon: FileText, label: "Documents", path: "/staff", minRole: "staff" },
@@ -67,6 +68,7 @@ const managerMoreGroups: MoreGroup[] = [
   {
     title: "Schedule",
     items: [
+      { icon: ShoppingBag, label: "Shift Marketplace", path: "/shift-marketplace", minRole: "staff", module: "scheduling" },
       { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
       { icon: ClipboardList, label: "Schedule Report", path: "/schedule/report", minRole: "manager" },
       { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics", minRole: "manager" },
@@ -93,6 +95,7 @@ const adminMoreGroups: MoreGroup[] = [
   {
     title: "Schedule",
     items: [
+      { icon: ShoppingBag, label: "Shift Marketplace", path: "/shift-marketplace", minRole: "staff", module: "scheduling" },
       { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
       { icon: ClipboardList, label: "Schedule Report", path: "/schedule/report", minRole: "manager" },
       { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics", minRole: "manager" },
