@@ -653,6 +653,8 @@
     "timesheet_review": "Timesheet needs review",
     "evidence_requested": "Evidence requested",
     "document_expiry": "Document expiring",
+    "document_expiry_warning": "Document expiring soon",
+    "document_expired": "Document expired",
     "document_verified": "Document verified",
     "document_rejected": "Document needs attention",
     "document_uploaded": "Document uploaded",
