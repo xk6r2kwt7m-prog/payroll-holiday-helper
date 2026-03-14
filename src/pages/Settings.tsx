@@ -209,6 +209,51 @@ const Settings = () => {
   }
 
   const currentGroup = SETTINGS_GROUPS.find(g => g.id === activeGroup);
+  const currentSection = currentGroup?.sections.find(s => s.id === activeSection);
+
+  // Invalid group → redirect to landing
+  if (activeGroup && !currentGroup) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto space-y-4">
+          <button
+            onClick={() => navigateTo(null, null)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            All Settings
+          </button>
+          <div className="rounded-xl bg-card border border-border p-6 text-center space-y-2">
+            <p className="text-sm font-medium text-foreground">Settings group not found</p>
+            <p className="text-xs text-muted-foreground">This section doesn't exist. Return to the Admin Centre to find what you need.</p>
+            <Button size="sm" variant="outline" onClick={() => navigateTo(null, null)}>Back to Admin Centre</Button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Invalid section within valid group → redirect to group
+  if (activeGroup && activeSection && currentGroup && !currentSection) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto space-y-4">
+          <button
+            onClick={() => navigateTo(activeGroup, null)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            {currentGroup.label}
+          </button>
+          <div className="rounded-xl bg-card border border-border p-6 text-center space-y-2">
+            <p className="text-sm font-medium text-foreground">Section not found</p>
+            <p className="text-xs text-muted-foreground">This setting doesn't exist in {currentGroup.label}.</p>
+            <Button size="sm" variant="outline" onClick={() => navigateTo(activeGroup, null)}>Back to {currentGroup.label}</Button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   /* ─── LEVEL 1: Group overview (landing) ─── */
   if (!activeGroup) {
@@ -217,7 +262,7 @@ const Settings = () => {
         <div className="max-w-3xl mx-auto space-y-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-              <SettingsIcon className="h-4.5 w-4.5 text-primary" />
+              <SettingsIcon className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Admin Centre</h1>
@@ -269,7 +314,7 @@ const Settings = () => {
 
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-              <currentGroup.icon className="h-4.5 w-4.5 text-primary" />
+              <currentGroup.icon className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">{currentGroup.label}</h1>
@@ -298,7 +343,7 @@ const Settings = () => {
   }
 
   /* ─── LEVEL 3: Individual section content ─── */
-  const sectionLabel = currentGroup?.sections.find(s => s.id === activeSection)?.label || "Settings";
+  const sectionLabel = currentSection?.label || "Settings";
 
   return (
     <AppLayout>
