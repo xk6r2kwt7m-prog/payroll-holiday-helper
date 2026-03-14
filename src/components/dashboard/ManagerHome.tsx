@@ -258,7 +258,7 @@ export function ManagerHome() {
       {/* Pending Leave Requests */}
       {pendingRequests.length > 0 && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.24 }}>
-          <SectionHeader title="Pending Requests" linkTo="/holidays" linkLabel="Review" />
+          <SectionHeader title="Pending Requests" linkTo="/holidays?tab=requests" linkLabel="Review" />
           <div className="space-y-1.5">
             {pendingRequests.slice(0, 4).map((req: any) => (
               <div key={req.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-sm">
