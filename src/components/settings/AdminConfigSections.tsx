@@ -387,6 +387,12 @@ function ToggleRow({ label, desc, checked, onChange }: { label: string; desc: st
   );
 }
 
+function NotYetEnforced({ label }: { label: string }) {
+  return (
+    <p className="text-[10px] text-amber-600 dark:text-amber-400 italic pl-1">⏳ {label}</p>
+  );
+}
+
 function ConfigProtectedNote({ configurable, protected_ }: { configurable: string; protected_: string }) {
   return (
     <div className="text-[11px] text-muted-foreground space-y-1 pt-3 border-t border-border">
