@@ -214,6 +214,7 @@ const Employees = () => {
                 {isSelectionMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
               </Button>
             )}
+            {isAdmin && <InviteEmployeeDialog />}
             {isAdmin && <EmployeeFormDialog />}
           </div>
         </div>

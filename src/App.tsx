@@ -77,6 +77,9 @@ const App = () => (
             {/* Staff portal — staff+ */}
             <Route path="/staff" element={<ProtectedRoute requiredRole="staff"><StaffPortal /></ProtectedRoute>} />
 
+            {/* Employee self-service onboarding */}
+            <Route path="/employee-onboarding" element={<ProtectedRoute requiredRole="staff"><EmployeeOnboarding /></ProtectedRoute>} />
+
             {/* Schedule module — staff can view own, manager+ can manage */}
             <Route path="/schedule" element={<ProtectedRoute requiredRole="staff" requiredModule="scheduling" moduleName="Scheduling"><Schedule /></ProtectedRoute>} />
             <Route path="/schedule/report" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><ScheduleReport /></ProtectedRoute>} />
