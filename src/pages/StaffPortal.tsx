@@ -114,7 +114,12 @@ export default function StaffPortal() {
             <ProfileSection employeeData={employee} onSignOut={signOut} />
           )}
           {activeSection === "timesheets" && <TimesheetsSection />}
-          {activeSection === "training" && <StaffTrainingView employeeId={employeeId} />}
+          {activeSection === "training" && (
+            <div className="space-y-6">
+              <StaffTrainingView employeeId={employeeId} />
+              <FohTrainingQuickAccess department={employee?.department} />
+            </div>
+          )}
           {activeSection === "documents" && <DocumentsSection employeeId={employeeId} />}
         </motion.div>
       </div>
