@@ -279,28 +279,32 @@ export default function Timesheets() {
                       </Badge>
                       {entry.status === "pending" && (
                         <div className="flex gap-1">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-success hover:text-success"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              approveEntries.mutateAsync([entry.id]).then(() => toast.success("Approved"));
-                            }}
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReject(entry.id);
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          {canApproveTimesheets && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-success hover:text-success"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                approveEntries.mutateAsync([entry.id]).then(() => toast.success("Approved"));
+                              }}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {canApproveTimesheets && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(entry.id);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             size="icon"
                             variant="ghost"
