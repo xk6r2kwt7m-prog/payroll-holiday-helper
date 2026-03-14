@@ -407,7 +407,7 @@ const Employees = () => {
                 >
                   <EmployeeCard
                     employee={employee}
-                    isAdmin={isAdmin && !isSelectionMode}
+                    isAdmin={canEdit && !isSelectionMode}
                     canViewSensitive={canViewSensitive}
                     onDelete={handleDelete}
                     onViewDetails={handleViewDetails}
