@@ -259,14 +259,14 @@ const Settings = () => {
   if (!activeGroup) {
     return (
       <AppLayout>
-        <div className="max-w-3xl mx-auto space-y-5">
+        <div className="max-w-3xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
               <SettingsIcon className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">Admin Centre</h1>
-              <p className="text-xs text-muted-foreground">Manage your workspace settings and configuration</p>
+              <p className="text-sm text-muted-foreground">Manage your workspace settings and configuration</p>
             </div>
           </div>
 
@@ -275,18 +275,18 @@ const Settings = () => {
               <button
                 key={group.id}
                 onClick={() => navigateTo(group.id, null)}
-                className="flex items-start gap-3 rounded-xl bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group"
+                className="flex items-start gap-3.5 rounded-lg bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group shadow-card"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0 group-hover:bg-primary/15 transition-colors">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/8 shrink-0 group-hover:bg-primary/12 transition-colors">
                   <group.icon className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-foreground">{group.label}</h3>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{group.description}</p>
-                  <p className="text-[10px] text-muted-foreground/70 mt-1.5">
+                  <p className="text-[13px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{group.description}</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-2 font-medium uppercase tracking-wider">
                     {group.sections.length} setting{group.sections.length !== 1 ? "s" : ""}
                   </p>
                 </div>
