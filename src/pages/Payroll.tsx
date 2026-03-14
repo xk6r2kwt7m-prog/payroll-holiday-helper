@@ -33,9 +33,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 const Payroll = () => {
   const { t } = useI18n();
+  const location = useLocation();
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
-  const [workspaceTab, setWorkspaceTab] = useState("payroll");
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
