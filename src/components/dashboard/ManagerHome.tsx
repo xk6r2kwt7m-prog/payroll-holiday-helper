@@ -4,6 +4,7 @@ import {
   Users, Clock, AlertTriangle, Calendar, CalendarClock,
   ChevronRight, Megaphone, ClipboardCheck, UserCheck,
   UserX, Timer, ShieldAlert, TrendingDown, Search, ArrowRightLeft, Building2,
+  CheckCircle2, BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ export function ManagerHome() {
   const { t } = useI18n();
   const { data: employees = [] } = useEmployees();
   const activeEmployees = employees.filter(e => e.status === "active");
+  const newStarters = employees.filter(e => e.status === "starter" || (e.status as string) === "onboarding");
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const tomorrowStr = format(addDays(new Date(), 1), "yyyy-MM-dd");
@@ -57,29 +59,25 @@ export function ManagerHome() {
     return hoursAgo > 10;
   });
 
-  // Late arrivals
   const now = new Date();
   const currentTimeStr = format(now, "HH:mm");
   const clockedInEmployeeIds = new Set(todayEntries.map((e: any) => e.employee_id));
+
   const lateArrivals = todayShifts.filter((s: any) => {
     if (!s.start_time) return false;
     return s.start_time.slice(0, 5) < currentTimeStr && !clockedInEmployeeIds.has(s.employee_id);
   });
 
-  // Missing clock-ins: scheduled but never clocked in at all today
   const missingClockIns = todayShifts.filter((s: any) => {
     if (!s.start_time || !s.employee_id) return false;
     const shiftStart = s.start_time.slice(0, 5);
-    // Only flag if shift started more than 30 mins ago
     const [h, m] = shiftStart.split(":").map(Number);
     const shiftStartDate = new Date();
     shiftStartDate.setHours(h, m + 30, 0, 0);
     return shiftStartDate < now && !clockedInEmployeeIds.has(s.employee_id);
   });
 
-  // Shift coverage: unassigned shifts today
   const unassignedToday = todayShifts.filter((s: any) => !s.employee_id);
-
   const pendingRequests = holidayRequests.filter((r: any) => r.status === "pending");
   const pendingTimesheets = todayEntries.filter((e: any) => e.status === "pending");
 
@@ -90,26 +88,24 @@ export function ManagerHome() {
     return "Good evening";
   };
 
-  // Build alerts
+  // Build prioritised alerts
   const alerts: { icon: any; label: string; count: number; color: string; bg: string; path: string }[] = [];
-  if (missingClockOut.length > 0) {
+  if (missingClockOut.length > 0)
     alerts.push({ icon: AlertTriangle, label: "Missing clock-out", count: missingClockOut.length, color: "text-destructive", bg: "bg-destructive/10", path: "/timesheets" });
-  }
-  if (missingClockIns.length > 0) {
+  if (missingClockIns.length > 0)
     alerts.push({ icon: UserX, label: "Missing clock-in", count: missingClockIns.length, color: "text-destructive", bg: "bg-destructive/10", path: "/timesheets" });
-  }
-  if (lateArrivals.length > 0) {
+  if (lateArrivals.length > 0)
     alerts.push({ icon: Timer, label: "Late arrival", count: lateArrivals.length, color: "text-warning", bg: "bg-warning/10", path: "/timesheets" });
-  }
-  if (pendingRequests.length > 0) {
-    alerts.push({ icon: Calendar, label: "Pending leave", count: pendingRequests.length, color: "text-accent", bg: "bg-accent/10", path: "/holidays" });
-  }
-  if (pendingTimesheets.length > 0) {
-    alerts.push({ icon: ClipboardCheck, label: "Timesheets to review", count: pendingTimesheets.length, color: "text-primary", bg: "bg-primary/10", path: "/timesheets" });
-  }
-  if (unassignedToday.length > 0) {
+  if (unassignedToday.length > 0)
     alerts.push({ icon: TrendingDown, label: "Unassigned shift", count: unassignedToday.length, color: "text-warning", bg: "bg-warning/10", path: "/schedule" });
-  }
+  if (pendingRequests.length > 0)
+    alerts.push({ icon: Calendar, label: "Pending leave", count: pendingRequests.length, color: "text-accent", bg: "bg-accent/10", path: "/holidays" });
+  if (pendingTimesheets.length > 0)
+    alerts.push({ icon: ClipboardCheck, label: "Timesheets to review", count: pendingTimesheets.length, color: "text-primary", bg: "bg-primary/10", path: "/timesheets" });
+  if (newStarters.length > 0)
+    alerts.push({ icon: UserCheck, label: "New starter setup", count: newStarters.length, color: "text-accent", bg: "bg-accent/10", path: "/employees" });
+
+  const hasNoAlerts = alerts.length === 0;
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto pb-24">
@@ -137,21 +133,31 @@ export function ManagerHome() {
         </div>
       </motion.div>
 
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.08 }}>
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Needs Attention</h2>
-          <div className="space-y-2">
-            {alerts.map((alert, i) => (
-              <Link key={i} to={alert.path} className={cn("flex items-center gap-3 p-3.5 rounded-xl border border-border shadow-sm", alert.bg)}>
-                <alert.icon className={cn("h-5 w-5 shrink-0", alert.color)} />
-                <span className="text-sm font-medium text-foreground flex-1">{alert.count} {alert.label}{alert.count > 1 ? "s" : ""}</span>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
-              </Link>
-            ))}
+      {/* Alerts or All Clear */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.08 }}>
+        {hasNoAlerts ? (
+          <div className="rounded-xl bg-success/5 border border-success/15 p-4 flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">All clear</p>
+              <p className="text-xs text-muted-foreground">No attendance issues, pending approvals, or staffing gaps right now.</p>
+            </div>
           </div>
-        </motion.div>
-      )}
+        ) : (
+          <>
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Needs Attention</h2>
+            <div className="space-y-2">
+              {alerts.map((alert, i) => (
+                <Link key={i} to={alert.path} className={cn("flex items-center gap-3 p-3.5 rounded-xl border border-border shadow-sm", alert.bg)}>
+                  <alert.icon className={cn("h-5 w-5 shrink-0", alert.color)} />
+                  <span className="text-sm font-medium text-foreground flex-1">{alert.count} {alert.label}{alert.count > 1 ? "s" : ""}</span>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
+      </motion.div>
 
       {/* Operational Alerts from shift_alerts table */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.1 }}>
@@ -165,7 +171,7 @@ export function ManagerHome() {
             { icon: CalendarClock, label: "Rota", path: "/schedule", color: "text-primary", bg: "bg-primary/10" },
             { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", color: "text-accent", bg: "bg-accent/10" },
             { icon: Calendar, label: "Leave", path: "/holidays", color: "text-warning", bg: "bg-warning/10" },
-            { icon: Megaphone, label: "Announce", path: "/announcements", color: "text-foreground", bg: "bg-secondary" },
+            { icon: Users, label: "Team", path: "/employees", color: "text-foreground", bg: "bg-secondary" },
           ].map((a) => (
             <Link key={a.label} to={a.path} className="flex flex-col items-center gap-1.5 py-3 rounded-xl active:bg-muted transition-colors">
               <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl", a.bg)}>
@@ -178,9 +184,9 @@ export function ManagerHome() {
       </motion.div>
 
       {/* Who's Working Now */}
-      {clockedInNow.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
-          <SectionHeader title="Working Now" linkTo="/timesheets" />
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
+        <SectionHeader title="Working Now" linkTo="/timesheets" />
+        {clockedInNow.length > 0 ? (
           <div className="space-y-1.5">
             {clockedInNow.slice(0, 6).map((entry: any) => (
               <div key={entry.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border shadow-sm">
@@ -198,13 +204,20 @@ export function ManagerHome() {
               </div>
             ))}
           </div>
-        </motion.div>
-      )}
+        ) : (
+          <div className="rounded-xl bg-card border border-border p-4 text-center">
+            <p className="text-sm text-muted-foreground">No one clocked in right now</p>
+            {todayShifts.length > 0 && (
+              <p className="text-xs text-muted-foreground/70 mt-1">{todayShifts.length} shift{todayShifts.length > 1 ? "s" : ""} scheduled today</p>
+            )}
+          </div>
+        )}
+      </motion.div>
 
-      {/* Late / Missing Clock-ins */}
+      {/* Attendance Issues — only shown when there are issues (avoids duplication with alerts strip) */}
       {(lateArrivals.length > 0 || missingClockIns.length > 0) && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.2 }}>
-          <SectionHeader title="Attendance Issues" />
+          <SectionHeader title="Attendance Issues" linkTo="/timesheets" />
           <div className="space-y-1.5">
             {lateArrivals.slice(0, 4).map((shift: any) => (
               <div key={shift.id} className="flex items-center gap-3 p-3 rounded-xl bg-warning/5 border border-warning/20 shadow-sm">
@@ -242,7 +255,7 @@ export function ManagerHome() {
         </motion.div>
       )}
 
-      {/* Pending Holiday Requests */}
+      {/* Pending Leave Requests */}
       {pendingRequests.length > 0 && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.24 }}>
           <SectionHeader title="Pending Requests" linkTo="/holidays" linkLabel="Review" />
@@ -266,15 +279,15 @@ export function ManagerHome() {
       )}
 
       {/* Tomorrow's Schedule */}
-      {tomorrowShifts.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.28 }}>
-          <SectionHeader title="Tomorrow" linkTo="/schedule" />
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.28 }}>
+        <SectionHeader title="Tomorrow" linkTo="/schedule" />
+        {tomorrowShifts.length > 0 ? (
           <div className="rounded-xl bg-card border border-border p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-lg font-bold text-foreground tabular-nums">{tomorrowShifts.length} shifts</p>
+                <p className="text-lg font-bold text-foreground tabular-nums">{tomorrowShifts.length} shift{tomorrowShifts.length > 1 ? "s" : ""}</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {tomorrowShifts.length} staff scheduled for {format(addDays(new Date(), 1), "EEEE")}
+                  Scheduled for {format(addDays(new Date(), 1), "EEEE")}
                 </p>
               </div>
               <div className="flex -space-x-2">
@@ -293,8 +306,15 @@ export function ManagerHome() {
               </div>
             </div>
           </div>
-        </motion.div>
-      )}
+        ) : (
+          <div className="rounded-xl bg-card border border-border p-4 text-center">
+            <p className="text-sm text-muted-foreground">No shifts scheduled for tomorrow</p>
+            <Link to="/schedule" className="text-xs text-primary font-medium mt-1 inline-flex items-center gap-0.5">
+              Open schedule <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }
