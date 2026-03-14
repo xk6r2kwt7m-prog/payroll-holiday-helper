@@ -1,17 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTenant } from "@/hooks/useTenant";
 import { TenantPicker } from "@/components/TenantPicker";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 const SelectWorkspace = () => {
   const { user, loading: authLoading } = useAuth();
   const { availableTenants, selectTenant, showTenantPicker, tenantId, tenantResolved, membershipCount, loading: tenantLoading } = useTenant();
-  const navigate = useNavigate();
   const [selecting, setSelecting] = useState(false);
 
-  // Show loading while auth, tenant, or selection is in progress
-  if (authLoading || tenantLoading || !tenantResolved || selecting) {
+  useEffect(() => {
+    if (!selecting) return;
+
+    if (tenantId && !showTenantPicker) {
+      console.log("[SelectWorkspace] Tenant context applied:", tenantId);
+      return;
+    }
+
+    if (tenantResolved && showTenantPicker && !tenantId) {
+      setSelecting(false);
+    }
+  }, [selecting, tenantId, showTenantPicker, tenantResolved]);
+
+  // Show loading while auth, tenant, or selection is still unresolved
+  if (authLoading || tenantLoading || !tenantResolved || (selecting && (!tenantId || showTenantPicker))) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -42,11 +54,14 @@ const SelectWorkspace = () => {
   const handleSelect = async (id: string) => {
     setSelecting(true);
     console.log("[SelectWorkspace] User selected tenant:", id);
-    await selectTenant(id);
-    // selectTenant has already applied state synchronously from cache.
-    // Use navigate (not window.location.href) to avoid full reload.
-    console.log("[SelectWorkspace] Selection complete, navigating to /");
-    navigate("/", { replace: true });
+
+    try {
+      await selectTenant(id);
+      console.log("[SelectWorkspace] Selection complete, awaiting guarded redirect");
+    } catch (error) {
+      console.error("[SelectWorkspace] Selection failed:", error);
+      setSelecting(false);
+    }
   };
 
   return (

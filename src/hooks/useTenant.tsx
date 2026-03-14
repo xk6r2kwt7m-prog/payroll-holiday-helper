@@ -92,6 +92,16 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const commitTenantSelection = useCallback((selectedTenantId: string, tenant: any) => {
+    applyTenantData(tenant, selectedTenantId);
+    setShowTenantPicker(false);
+    setAvailableTenants([]);
+    setTenantResolved(true);
+    setLoading(false);
+    localStorage.setItem("uglo_selected_tenant", selectedTenantId);
+    console.log("[TenantProvider] Selection committed:", selectedTenantId, "| Tenant:", tenant?.name);
+  }, [applyTenantData]);
+
   /**
    * Select a tenant from the picker.
    * Uses cached membership data for instant state application.
@@ -100,40 +110,43 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const selectTenant = useCallback(async (selectedTenantId: string) => {
     console.log("[TenantProvider] selectTenant called:", selectedTenantId);
 
-    // 1. Try cached data first (synchronous path)
     const cached = cachedMemberships.current.find(
       (m) => m.tenant_id === selectedTenantId
     );
 
     if (cached) {
       console.log("[TenantProvider] selectTenant: using cached data for", (cached.tenants as any)?.name);
-      applyTenantData(cached.tenants, cached.tenant_id);
-      setShowTenantPicker(false);
-      setTenantResolved(true);
-      localStorage.setItem("uglo_selected_tenant", selectedTenantId);
+      commitTenantSelection(cached.tenant_id, cached.tenants);
       return;
     }
 
-    // 2. Fallback: fetch from DB (should rarely happen)
+    if (!user) {
+      throw new Error("Cannot select workspace without authenticated user");
+    }
+
     console.log("[TenantProvider] selectTenant: cache miss, fetching from DB");
-    const { data: membership } = await supabase
+    const { data: membership, error: membershipError } = await supabase
       .from("tenant_members")
       .select("tenant_id, tenants(id, name, country, timezone, status, enabled_modules)")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .eq("tenant_id", selectedTenantId)
       .eq("is_active", true)
       .single();
 
-    if (membership) {
-      applyTenantData(membership.tenants as any, membership.tenant_id);
-      setShowTenantPicker(false);
-      setTenantResolved(true);
-      localStorage.setItem("uglo_selected_tenant", selectedTenantId);
-      console.log("[TenantProvider] selectTenant: applied from DB");
-    } else {
-      console.error("[TenantProvider] selectTenant: tenant not found:", selectedTenantId);
+    if (membershipError) {
+      console.error("[TenantProvider] selectTenant: DB fetch failed:", membershipError);
+      throw membershipError;
     }
-  }, [user, applyTenantData]);
+
+    if (!membership?.tenants) {
+      console.error("[TenantProvider] selectTenant: tenant not found:", selectedTenantId);
+      setShowTenantPicker(true);
+      throw new Error("Selected workspace is no longer available");
+    }
+
+    commitTenantSelection(membership.tenant_id, membership.tenants as any);
+    console.log("[TenantProvider] selectTenant: applied from DB");
+  }, [user, commitTenantSelection]);
 
   useEffect(() => {
     // While auth is still bootstrapping, stay in loading
@@ -214,6 +227,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
         if (count === 0) {
           console.log("[TenantProvider] Decision: 0 memberships → onboard");
+          setAvailableTenants([]);
           setShowTenantPicker(false);
           setTenantResolved(true);
           setLoading(false);
@@ -223,9 +237,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         if (count === 1) {
           const m = memberships![0];
           console.log("[TenantProvider] Decision: 1 membership → auto-select:", (m.tenants as any)?.name);
-          applyTenantData(m.tenants as any, m.tenant_id);
-          localStorage.setItem("uglo_selected_tenant", m.tenant_id);
-          setShowTenantPicker(false);
+          commitTenantSelection(m.tenant_id, m.tenants as any);
         } else {
           const savedMembership = savedTenantId
             ? memberships!.find((m) => m.tenant_id === savedTenantId)
@@ -233,8 +245,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
           if (savedMembership) {
             console.log("[TenantProvider] Decision: Restored saved tenant →", (savedMembership.tenants as any)?.name);
-            applyTenantData(savedMembership.tenants as any, savedMembership.tenant_id);
-            setShowTenantPicker(false);
+            commitTenantSelection(savedMembership.tenant_id, savedMembership.tenants as any);
           } else {
             if (savedTenantId) {
               console.warn("[TenantProvider] Stale saved tenant ID removed:", savedTenantId);
@@ -264,7 +275,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     fetchTenant();
 
     return () => { cancelled = true; };
-  }, [user, authLoading, applyTenantData]);
+  }, [user, authLoading, commitTenantSelection]);
 
   return (
     <TenantContext.Provider
