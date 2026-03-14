@@ -114,6 +114,7 @@ export function ScheduleHeader({
   assignedCount = 0,
 }: ScheduleHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
