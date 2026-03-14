@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, Users, Calendar, CalendarDays, DollarSign, Settings,
+  LayoutDashboard, Users, Calendar, DollarSign, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, FileText,
   CalendarClock, ClipboardCheck, BarChart3, MapPin, Search, UserX,
   UserPlus, GraduationCap, Megaphone, ShieldAlert, ShieldCheck, Globe, Building2,
