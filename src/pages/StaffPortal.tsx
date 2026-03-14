@@ -9,7 +9,7 @@ import {
   Clock, LogOut, CheckCircle2, AlertCircle, AlertTriangle, FileText,
   User, BookOpen,
 } from "lucide-react";
-import { useI18n } from "@/hooks/useI18n";
+import { cn } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
 import { StaffDocumentRequests } from "@/components/documents/StaffDocumentRequests";
