@@ -176,6 +176,8 @@ function AddDocumentDialog() {
       title: form.title,
       description: form.description || null,
       category: form.category,
+      content_type: form.content_type,
+      content_url: form.content_url || null,
       requires_acknowledgement: form.requires_acknowledgement,
       requires_completion: form.requires_completion,
       requires_quiz: form.requires_quiz,
@@ -185,7 +187,7 @@ function AddDocumentDialog() {
     } as any, {
       onSuccess: () => {
         setOpen(false);
-        setForm({ title: "", description: "", category: "training", requires_acknowledgement: false, requires_completion: false, requires_quiz: false, counts_toward_readiness: false, effective_date: "", expiry_date: "" });
+        setForm({ title: "", description: "", category: "training", content_type: "document", content_url: "", requires_acknowledgement: false, requires_completion: false, requires_quiz: false, counts_toward_readiness: false, effective_date: "", expiry_date: "" });
       },
     });
   };
