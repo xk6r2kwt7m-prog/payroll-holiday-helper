@@ -24,11 +24,6 @@ const SelectWorkspace = () => {
 
   // Show loading while auth, tenant, or selection is still unresolved
   if (authLoading || tenantLoading || !tenantResolved || (selecting && (!tenantId || showTenantPicker))) {
-    console.log("[SelectWorkspace] LOADING", {
-      userId: user?.id ?? null, authLoading, tenantLoading, tenantResolved,
-      membershipCount, tenantId, selecting,
-      redirect: "none (showing loader)",
-    });
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -43,41 +38,18 @@ const SelectWorkspace = () => {
     );
   }
 
-  if (!user) {
-    console.log("[SelectWorkspace] GUARD — no user", { redirect: "/auth" });
-    return <Navigate to="/auth" replace />;
-  }
+  if (!user) return <Navigate to="/auth" replace />;
 
   // Tenant already selected — go to dashboard
-  if (tenantId && !showTenantPicker) {
-    console.log("[SelectWorkspace] GUARD — tenant already selected", {
-      userId: user.id, tenantId, membershipCount, redirect: "/",
-    });
-    return <Navigate to="/" replace />;
-  }
+  if (tenantId && !showTenantPicker) return <Navigate to="/" replace />;
 
   // Confirmed zero memberships — tenantResolved ensures this isn't stale
-  if (tenantResolved && membershipCount === 0) {
-    console.log("[SelectWorkspace] GUARD — zero memberships", {
-      userId: user.id, tenantResolved, membershipCount, redirect: "/onboard",
-      reason: "confirmed 0 memberships after resolution",
-    });
-    return <Navigate to="/onboard" replace />;
-  }
+  if (tenantResolved && membershipCount === 0) return <Navigate to="/onboard" replace />;
 
   // Edge case fallback
   if (!showTenantPicker || availableTenants.length === 0) {
-    console.log("[SelectWorkspace] GUARD — edge fallback", {
-      userId: user.id, showTenantPicker, availableTenants: availableTenants.length,
-      membershipCount, redirect: "/",
-      reason: "no picker or no tenants to show",
-    });
     return <Navigate to="/" replace />;
   }
-
-  console.log("[SelectWorkspace] RENDERING PICKER", {
-    userId: user.id, membershipCount, availableTenants: availableTenants.length,
-  });
 
   const handleSelect = async (id: string) => {
     setSelecting(true);
