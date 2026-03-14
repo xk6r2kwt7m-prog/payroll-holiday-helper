@@ -281,7 +281,8 @@ export default function StaffPortal() {
 
         {/* Documents Section */}
         {activeSection === "documents" && (
-          <motion.div {...anim} transition={{ duration: 0.25 }}>
+          <motion.div {...anim} transition={{ duration: 0.25 }} className="space-y-4">
+            {employeeId && <StaffDocumentView employeeId={employeeId} />}
             {employeeId && <StaffEvidenceUpload employeeId={employeeId} />}
           </motion.div>
         )}
