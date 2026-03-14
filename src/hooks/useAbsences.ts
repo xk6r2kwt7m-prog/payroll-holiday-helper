@@ -44,6 +44,7 @@ export function useAddAbsence() {
       hours: number;
       notes?: string;
     }) => {
+      await assertPermission("edit_employees", null);
       const { error } = await supabase.from("absence_records" as any).insert(record as any);
       if (error) throw error;
     },
