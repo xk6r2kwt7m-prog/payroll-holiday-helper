@@ -100,7 +100,6 @@ export function useSubmitOnboarding() {
       bankDetails: Record<string, any>;
       emergencyContact: Record<string, any>;
     }) => {
-      // Update onboarding data as submitted
       await supabase
         .from("employee_onboarding_data" as any)
         .update({
@@ -113,7 +112,6 @@ export function useSubmitOnboarding() {
         } as any)
         .eq("employee_id", employeeId);
 
-      // Update employee record with personal info
       const updates: Record<string, any> = {
         status: "starter",
         nationality: personalInfo.nationality || null,
@@ -131,6 +129,38 @@ export function useSubmitOnboarding() {
         .update(updates)
         .eq("id", employeeId);
       if (error) throw error;
+
+      // Notify admins that a new employee completed onboarding
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("tenant_id, forename, surname")
+        .eq("id", employeeId)
+        .maybeSingle();
+
+      if (emp?.tenant_id) {
+        const { data: admins } = await supabase
+          .from("tenant_members" as any)
+          .select("user_id")
+          .eq("tenant_id", emp.tenant_id)
+          .in("role", ["company_admin", "manager"])
+          .eq("is_active", true);
+
+        if (admins && admins.length > 0) {
+          const rows = (admins as any[])
+            .map((a) => a.user_id)
+            .filter(Boolean)
+            .map((uid: string) => ({
+              tenant_id: emp.tenant_id,
+              user_id: uid,
+              event_type: "onboarding_completed",
+              title: "Employee onboarding completed",
+              body: `${emp.forename} ${emp.surname} has submitted their onboarding details and is ready for review.`,
+              link: "/employees",
+              metadata: { employee_id: employeeId },
+            }));
+          await supabase.from("notifications" as any).insert(rows as any);
+        }
+      }
     },
     onSuccess: (_, { employeeId }) => {
       qc.invalidateQueries({ queryKey: ["employee_onboarding_data", employeeId] });

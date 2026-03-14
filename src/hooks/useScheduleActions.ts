@@ -103,6 +103,31 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
         branch: selectedBranch,
       });
       toast.success(`${selectedBranch} rota published — staff will be notified`);
+
+      // In-app notifications: notify all assigned staff for this week
+      const weekShifts = branchShifts.filter((s: any) => s.employee_id);
+      const uniqueUserIds = new Map<string, string>();
+      for (const s of weekShifts) {
+        const emp = (s as any).employees;
+        if (emp?.user_id && !uniqueUserIds.has(emp.user_id)) {
+          uniqueUserIds.set(emp.user_id, `${emp.forename} ${emp.surname}`);
+        }
+      }
+      if (uniqueUserIds.size > 0 && tenantId) {
+        const dateLabel = `${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")}`;
+        const rows = Array.from(uniqueUserIds.keys()).map((uid) => ({
+          tenant_id: tenantId,
+          user_id: uid,
+          event_type: "shift_published",
+          title: "New rota published",
+          body: `Your ${selectedBranch} schedule for ${dateLabel} is ready. Check your shifts.`,
+          link: "/schedule",
+          metadata: { branch: selectedBranch, week_start: weekStartStr },
+        }));
+        await supabase.from("notifications" as any).insert(rows as any);
+      }
+
+      // Email notification to admin
       const adminEmail = companySettings?.company_email;
       if (adminEmail) {
         sendNotification({
@@ -121,7 +146,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [publishWeek, weekStartStr, weekEndStr, selectedBranch, companySettings, sendNotification, weekStart, weekEnd]);
+  }, [publishWeek, weekStartStr, weekEndStr, selectedBranch, companySettings, sendNotification, weekStart, weekEnd, branchShifts, tenantId]);
 
   const handleUnpublish = useCallback(async () => {
     if (!confirm("Unpublish this week's rota? Staff will no longer see it.")) return;

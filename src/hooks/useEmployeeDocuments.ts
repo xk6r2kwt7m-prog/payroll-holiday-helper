@@ -132,9 +132,45 @@ export function useUploadDocument() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, { employeeId }) => {
+    onSuccess: async (data, { employeeId }) => {
       queryClient.invalidateQueries({ queryKey: ["employee_documents", employeeId] });
       queryClient.invalidateQueries({ queryKey: ["expiring_documents"] });
+
+      // Notify admins about new document upload
+      if (tenantId) {
+        try {
+          const { data: emp } = await supabase
+            .from("employees")
+            .select("forename, surname")
+            .eq("id", employeeId)
+            .maybeSingle();
+
+          const { data: admins } = await supabase
+            .from("tenant_members" as any)
+            .select("user_id")
+            .eq("tenant_id", tenantId)
+            .in("role", ["company_admin", "manager"])
+            .eq("is_active", true);
+
+          if (admins && admins.length > 0 && emp) {
+            const rows = (admins as any[])
+              .map((a) => a.user_id)
+              .filter(Boolean)
+              .map((uid: string) => ({
+                tenant_id: tenantId,
+                user_id: uid,
+                event_type: "document_uploaded",
+                title: "New document uploaded",
+                body: `${emp.forename} ${emp.surname} uploaded a document for review.`,
+                link: "/employees",
+                metadata: { employee_id: employeeId },
+              }));
+            await supabase.from("notifications" as any).insert(rows as any);
+          }
+        } catch (err) {
+          console.warn("Failed to send document upload notification:", err);
+        }
+      }
     },
   });
 }

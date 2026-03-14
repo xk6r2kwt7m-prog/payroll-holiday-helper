@@ -22,7 +22,6 @@ export function useVerifyDocument() {
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Update document status
       const { error } = await supabase
         .from("employee_documents")
         .update({
@@ -35,7 +34,6 @@ export function useVerifyDocument() {
         .eq("id", documentId);
       if (error) throw error;
 
-      // Log audit entry
       await supabase
         .from("document_audit_log" as any)
         .insert({
@@ -46,6 +44,25 @@ export function useVerifyDocument() {
           performed_by: user?.id,
           metadata: { verification_method: verificationMethod, notes },
         } as any);
+
+      // Notify the employee their document was verified
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("user_id, forename")
+        .eq("id", employeeId)
+        .maybeSingle();
+
+      if (emp?.user_id) {
+        await supabase.from("notifications" as any).insert({
+          tenant_id: tenantId,
+          user_id: emp.user_id,
+          event_type: "document_verified",
+          title: "Document verified",
+          body: "Your document has been reviewed and approved.",
+          link: "/staff",
+          metadata: { document_id: documentId },
+        } as any);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["employee_documents"] });
@@ -92,6 +109,25 @@ export function useRejectDocument() {
           performed_by: user?.id,
           metadata: { reason },
         } as any);
+
+      // Notify the employee their document was rejected
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("user_id, forename")
+        .eq("id", employeeId)
+        .maybeSingle();
+
+      if (emp?.user_id) {
+        await supabase.from("notifications" as any).insert({
+          tenant_id: tenantId,
+          user_id: emp.user_id,
+          event_type: "document_rejected",
+          title: "Document needs attention",
+          body: `Your document was not approved: ${reason}. Please upload a new version.`,
+          link: "/staff",
+          metadata: { document_id: documentId, reason },
+        } as any);
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["employee_documents"] });
