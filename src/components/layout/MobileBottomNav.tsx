@@ -1,7 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, DollarSign, Calendar, MoreHorizontal,
-  CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin,
+  CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin, Building2,
   UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone,
   ClipboardList, CheckCircle2, User, Shield, FileText, CalendarDays, Sun,
 } from "lucide-react";
@@ -134,9 +134,11 @@ const peopleRoutes = ["/employees", "/absences", "/onboarding", "/training", "/d
 
 export function MobileBottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { role, signOut } = useAuth();
-  const { enabledModules, isPlatformAdmin } = useTenant();
+  const { enabledModules, isPlatformAdmin, membershipCount, openWorkspacePicker } = useTenant();
   const [moreOpen, setMoreOpen] = useState(false);
+  const hasMultipleTenants = membershipCount > 1;
 
   const userLevel = getRoleLevel(role);
   const canAccess = (minRole: MinRole) => userLevel >= getRoleLevel(minRole);
@@ -254,7 +256,16 @@ export function MobileBottomNav() {
                   </div>
                 )}
 
-                <div className="border-t border-border mt-3 pt-2">
+                <div className="border-t border-border mt-3 pt-2 space-y-1">
+                  {hasMultipleTenants && (
+                    <button
+                      onClick={() => { setMoreOpen(false); openWorkspacePicker(); navigate("/select-workspace"); }}
+                      className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-foreground w-full hover:bg-muted active:bg-muted min-h-[48px]"
+                    >
+                      <Building2 className="h-5 w-5" />
+                      Switch Workspace
+                    </button>
+                  )}
                   <button
                     onClick={() => { setMoreOpen(false); signOut(); }}
                     className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium text-destructive w-full hover:bg-destructive/5 active:bg-destructive/10 min-h-[48px]"

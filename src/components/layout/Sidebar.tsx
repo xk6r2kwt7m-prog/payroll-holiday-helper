@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { motion } from "framer-motion";
 import {
@@ -92,8 +92,9 @@ const navGroups: NavGroup[] = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, isAdmin, role, signOut } = useAuth();
-  const { isPlatformAdmin, enabledModules, tenantName, availableTenants } = useTenant();
+  const { isPlatformAdmin, enabledModules, tenantName, membershipCount, openWorkspacePicker } = useTenant();
   const { data: settings } = useCompanySettings();
   const companyName = settings?.company_name || tenantName || "UGLŌ";
 
@@ -116,7 +117,7 @@ export function Sidebar() {
     }))
     .filter((group) => group.items.length > 0);
 
-  const hasMultipleTenants = availableTenants.length > 1;
+  const hasMultipleTenants = membershipCount > 1;
 
   return (
     <aside
@@ -158,13 +159,13 @@ export function Sidebar() {
               {isPlatformAdmin && " · Platform Admin"}
             </p>
             {hasMultipleTenants && (
-              <Link
-                to="/select-workspace"
+              <button
+                onClick={() => { openWorkspacePicker(); navigate("/select-workspace"); }}
                 className="mt-1 flex items-center gap-1 text-xs text-sidebar-primary hover:underline"
               >
                 <Building2 className="h-3 w-3" />
                 Switch Workspace
-              </Link>
+              </button>
             )}
           </div>
         )}

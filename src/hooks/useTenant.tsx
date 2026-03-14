@@ -39,8 +39,9 @@ interface TenantContextType {
   showTenantPicker: boolean;
   availableTenants: TenantMembership[];
   setTenantId: (id: string) => void;
-  /** Select a tenant — synchronous when data is cached, async fallback otherwise. */
   selectTenant: (tenantId: string) => Promise<void>;
+  /** Re-enter workspace picker mode without clearing auth. */
+  openWorkspacePicker: () => void;
 }
 
 const DEFAULT_MODULES: EnabledModules = {
@@ -147,6 +148,19 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     commitTenantSelection(membership.tenant_id, membership.tenants as any);
     console.log("[TenantProvider] selectTenant: applied from DB");
   }, [user, commitTenantSelection]);
+
+  const openWorkspacePicker = useCallback(() => {
+    const cached = cachedMemberships.current;
+    if (cached.length <= 1) return; // nothing to switch to
+    setAvailableTenants(
+      cached.map((m) => ({
+        tenant_id: m.tenant_id,
+        tenant_name: (m.tenants as any)?.name || "Unknown",
+        role: m.role,
+      }))
+    );
+    setShowTenantPicker(true);
+  }, []);
 
   useEffect(() => {
     // While auth is still bootstrapping, stay in loading
@@ -294,6 +308,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         availableTenants,
         setTenantId,
         selectTenant,
+        openWorkspacePicker,
       }}
     >
       {children}
