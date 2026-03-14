@@ -34,31 +34,31 @@ export function EmptyState({
   return (
     <div className={cn(
       "flex flex-col items-center justify-center text-center px-4",
-      compact ? "py-10" : "py-16",
+      compact ? "py-10" : "py-20",
       className,
     )}>
       <div className={cn(
-        "rounded-2xl bg-muted flex items-center justify-center mb-4",
+        "rounded-xl bg-muted/60 flex items-center justify-center mb-4",
         compact ? "h-12 w-12" : "h-14 w-14",
       )}>
-        <Icon className={cn("text-muted-foreground", compact ? "h-5 w-5" : "h-6 w-6")} />
+        <Icon className={cn("text-muted-foreground/60", compact ? "h-5 w-5" : "h-6 w-6")} />
       </div>
       <h3 className={cn(
-        "font-semibold text-foreground mb-1",
+        "font-semibold text-foreground mb-1.5",
         compact ? "text-sm" : "text-base",
       )}>
         {title}
       </h3>
       <p className={cn(
-        "text-muted-foreground max-w-sm",
-        compact ? "text-xs" : "text-sm",
+        "text-muted-foreground max-w-sm leading-relaxed",
+        compact ? "text-xs" : "text-[13px]",
       )}>
         {description}
       </p>
       {hint && (
-        <p className="text-xs text-muted-foreground/70 mt-1.5 max-w-xs">{hint}</p>
+        <p className="text-xs text-muted-foreground/60 mt-2 max-w-xs leading-relaxed">{hint}</p>
       )}
-      <div className="flex items-center gap-2 mt-4">
+      <div className="flex items-center gap-2.5 mt-5">
         {actionLabel && (onAction || actionHref) && (
           actionHref ? (
             <a href={actionHref}>
