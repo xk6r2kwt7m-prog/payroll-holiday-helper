@@ -61,7 +61,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
       className={cn(
         "group rounded-xl bg-card p-3.5 shadow-sm transition-all duration-200",
         "hover:shadow-md sm:hover:-translate-y-0.5 hover:border-primary/20 border border-border",
-        "animate-fade-in cursor-pointer"
+        "animate-fade-in cursor-pointer min-w-0 overflow-hidden"
       )}
       style={{ animationDelay: `${Math.min(index, 6) * 30}ms` }}
       onClick={() => onViewDetails(employee)}
