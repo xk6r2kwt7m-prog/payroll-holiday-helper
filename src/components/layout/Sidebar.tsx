@@ -80,6 +80,12 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    title: "Reports",
+    items: [
+      { icon: FileBarChart, label: "Reports", path: "/reports", minRole: "manager" },
+    ],
+  },
+  {
     title: "Settings",
     items: [
       { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },

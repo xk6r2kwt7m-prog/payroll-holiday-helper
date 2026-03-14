@@ -127,6 +127,9 @@ const App = () => (
             {/* Announcements — staff+ */}
             <Route path="/announcements" element={<ProtectedRoute requiredRole="staff"><Announcements /></ProtectedRoute>} />
 
+            {/* Reports — manager+ */}
+            <Route path="/reports" element={<ProtectedRoute requiredRole="manager"><Reports /></ProtectedRoute>} />
+
             {/* Admin-only sections */}
             <Route path="/disciplinary" element={<ProtectedRoute requiredRole="admin"><Disciplinary /></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute requiredRole="admin" requiredModule="documents" moduleName="Documents"><Contracts /></ProtectedRoute>} />
