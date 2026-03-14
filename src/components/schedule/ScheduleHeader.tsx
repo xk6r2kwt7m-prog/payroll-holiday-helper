@@ -34,6 +34,7 @@ import {
   FolderOpen,
   MapPin,
   CalendarDays,
+  DollarSign,
 } from "lucide-react";
 import { format, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
