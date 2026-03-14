@@ -68,6 +68,7 @@ const Holidays = () => {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const canApproveHolidays = usePermission("approve_holidays");
+  const { data: leaveRules } = useLeaveRules();
   const { data: holidayPrefs } = useTenantPreferences("holiday_display", HOLIDAY_DISPLAY_DEFAULTS);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [viewModeInit, setViewModeInit] = useState(false);
