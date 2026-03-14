@@ -83,7 +83,17 @@ export function useNotifyEvent() {
     ) => {
       if (!tenantId || userIds.length === 0) return;
       try {
-        const rows = userIds.map((uid) => ({
+        // Filter out users who opted out of this category
+        const deliverChecks = await Promise.all(
+          userIds.map(async (uid) => ({
+            uid,
+            deliver: await shouldDeliverNotification(uid, tenantId, eventType),
+          }))
+        );
+        const filteredIds = deliverChecks.filter((c) => c.deliver).map((c) => c.uid);
+        if (filteredIds.length === 0) return;
+
+        const rows = filteredIds.map((uid) => ({
           tenant_id: tenantId,
           user_id: uid,
           event_type: eventType,
