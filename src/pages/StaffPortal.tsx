@@ -21,6 +21,7 @@ import { useMyTimeEntries } from "@/hooks/useTimeEntries";
 import { useMyHolidayRequests } from "@/hooks/useHolidayRequests";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployeeDocuments, getExpiryStatus } from "@/hooks/useEmployeeDocuments";
+import { StaffTrainingView } from "@/components/training/StaffTrainingView";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
