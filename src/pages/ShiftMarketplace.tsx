@@ -287,7 +287,7 @@ function OfferShiftSheet({
 /* ─── Main Page ─── */
 export default function ShiftMarketplace() {
   const { isManagerOrAbove } = useAuth();
-  const { data: currentEmployee } = useCurrentEmployee();
+  const { employee: currentEmployee } = useCurrentEmployee();
   const today = new Date();
   const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
   const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
