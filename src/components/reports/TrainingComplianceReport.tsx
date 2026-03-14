@@ -154,6 +154,8 @@ export function TrainingComplianceReport() {
   const [empId, setEmpId] = useState("all");
   const [actionableOnly, setActionableOnly] = useState(false);
   const [selectedGaps, setSelectedGaps] = useState<Set<string>>(new Set());
+  const [bulkDueDate, setBulkDueDate] = useState<Date | undefined>(undefined);
+  const [singleDueDates, setSingleDueDates] = useState<Map<string, Date>>(new Map());
 
   const navigate = useNavigate();
 
