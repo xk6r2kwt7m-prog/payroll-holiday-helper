@@ -390,6 +390,8 @@ export function TrainingComplianceReport() {
     setTab(t);
     setStatusFilter("all");
     setSelectedGaps(new Set());
+    setBulkDueDate(undefined);
+    setSingleDueDates(new Map());
     if (t !== "gaps") setActionableOnly(false);
   };
 
