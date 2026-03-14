@@ -274,7 +274,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
   const handleCopyPrevWeek = useCallback(async (prevStart: string, prevEnd: string) => {
     try {
-      const result = await copyPrevWeek.mutateAsync({
+      await assertPermission("edit_schedules", tenantId);
         prevStartDate: prevStart,
         prevEndDate: prevEnd,
         targetWeekStart: weekStartStr,
