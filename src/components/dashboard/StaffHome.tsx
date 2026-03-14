@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
+import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
 import { useActiveClockIn, useClockInOut, useMyTimeEntries } from "@/hooks/useTimeEntries";
 import { useShifts, useBranchLocations } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
@@ -197,7 +197,7 @@ function QuickActionGrid() {
   const actions = [
     { icon: Calendar, label: "Schedule", path: "/schedule", color: "text-primary", bg: "bg-primary/10" },
     { icon: Sun, label: "Time Off", path: "/holidays", color: "text-accent", bg: "bg-accent/10" },
-    { icon: FileText, label: "Profile", path: "/staff", color: "text-foreground", bg: "bg-secondary" },
+    { icon: FileText, label: "My Records", path: "/staff", color: "text-foreground", bg: "bg-secondary" },
     { icon: Megaphone, label: "Updates", path: "/announcements", color: "text-warning", bg: "bg-warning/10" },
   ];
   return (
@@ -247,9 +247,7 @@ function ShiftCountdown({ shiftStart }: { shiftStart: string }) {
 /* ─── Main component ─── */
 
 export function StaffHome() {
-  const { user } = useAuth();
-  const [employeeId, setEmployeeId] = useState<string | null>(null);
-  const [employeeName, setEmployeeName] = useState("");
+  const { employee, employeeId, isLinked } = useCurrentEmployee();
   const [gpsStatus, setGpsStatus] = useState<"loading" | "granted" | "denied" | "unavailable">("loading");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("");
@@ -259,7 +257,6 @@ export function StaffHome() {
 
   const { data: activeEntry } = useActiveClockIn();
   const clockInOut = useClockInOut();
-  const { data: myEntries } = useMyTimeEntries();
   const { data: branches } = useBranchLocations();
 
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -279,19 +276,6 @@ export function StaffHome() {
       return data as any[];
     },
   });
-
-  // Resolve employee
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("employees")
-      .select("id, forename, surname")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) { setEmployeeId(data.id); setEmployeeName(data.forename); }
-      });
-  }, [user]);
 
   // GPS
   useEffect(() => {
@@ -383,10 +367,6 @@ export function StaffHome() {
     .sort((a: any, b: any) => a.shift_date.localeCompare(b.shift_date))
     .slice(0, 3) || [];
 
-  const todayWorkedHours = myEntries
-    ?.filter((e: any) => e.clock_in_time && format(new Date(e.clock_in_time), "yyyy-MM-dd") === todayStr && e.total_hours)
-    .reduce((sum: number, e: any) => sum + Number(e.total_hours), 0) || 0;
-
   const nextShiftTime = todayShifts.length > 0 ? todayShifts[0].start_time?.slice(0, 5) : null;
 
   // Pending requests count
@@ -405,9 +385,14 @@ export function StaffHome() {
     enabled: !!employeeId,
   });
 
+  // Today's worked hours from active entry only (not full timesheet history)
+  const todayWorkedDisplay = activeEntry
+    ? elapsedTime?.slice(0, 5) || "0:00"
+    : "0h";
+
   return (
     <div className="space-y-5 max-w-lg mx-auto pb-24">
-      <GreetingHeader name={employeeName} />
+      <GreetingHeader name={employee?.forename || ""} />
 
       {/* Shift Countdown */}
       {!activeEntry && nextShiftTime && (
@@ -463,9 +448,7 @@ export function StaffHome() {
             </p>
           </div>
           <div className="rounded-xl bg-card border border-border p-3.5 text-center shadow-sm">
-            <p className="text-lg font-bold text-foreground tabular-nums">
-              {activeEntry ? elapsedTime?.slice(0, 5) || "0:00" : todayWorkedHours > 0 ? `${todayWorkedHours.toFixed(1)}h` : "0h"}
-            </p>
+            <p className="text-lg font-bold text-foreground tabular-nums">{todayWorkedDisplay}</p>
             <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mt-1">Worked</p>
           </div>
           <div className="rounded-xl bg-card border border-border p-3.5 text-center shadow-sm">
@@ -483,9 +466,9 @@ export function StaffHome() {
       </motion.div>
 
       {/* Upcoming Shifts */}
-      {upcomingShifts.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
-          <SectionHeader title="Upcoming Shifts" linkTo="/schedule" />
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
+        <SectionHeader title="Upcoming Shifts" linkTo="/schedule" />
+        {upcomingShifts.length > 0 ? (
           <div className="space-y-2">
             {upcomingShifts.map((shift: any) => {
               const d = new Date(shift.shift_date);
@@ -506,13 +489,20 @@ export function StaffHome() {
               );
             })}
           </div>
-        </motion.div>
-      )}
+        ) : (
+          <div className="rounded-xl bg-card border border-border p-4 text-center">
+            <p className="text-sm text-muted-foreground">No upcoming shifts this week</p>
+            <Link to="/schedule" className="text-xs text-primary font-medium mt-1 inline-flex items-center gap-0.5">
+              View full schedule <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
+      </motion.div>
 
       {/* Announcements */}
-      {announcements.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.2 }}>
-          <SectionHeader title="Updates" linkTo="/announcements" />
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.2 }}>
+        <SectionHeader title="Updates" linkTo="/announcements" />
+        {announcements.length > 0 ? (
           <div className="space-y-2">
             {announcements.map((ann: any) => (
               <div key={ann.id} className="p-3.5 rounded-xl bg-card border border-border shadow-sm">
@@ -522,36 +512,12 @@ export function StaffHome() {
               </div>
             ))}
           </div>
-        </motion.div>
-      )}
-
-      {/* Recent Activity */}
-      {myEntries && myEntries.length > 0 && (
-        <motion.div {...anim} transition={{ duration: 0.25, delay: 0.24 }}>
-          <SectionHeader title="Recent Activity" />
-          <div className="space-y-1.5">
-            {myEntries.slice(0, 4).map((entry: any) => (
-              <div key={entry.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border shadow-sm">
-                <div>
-                  <p className="text-sm font-medium text-foreground">{format(new Date(entry.clock_in_time), "EEE d MMM")}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {format(new Date(entry.clock_in_time), "HH:mm")}
-                    {entry.clock_out_time ? ` – ${format(new Date(entry.clock_out_time), "HH:mm")}` : " – on shift"}
-                    {entry.total_hours ? ` · ${entry.total_hours}h` : ""}
-                  </p>
-                </div>
-                <Badge variant="outline" className={cn("text-[10px]", {
-                  "text-warning border-warning/30": entry.status === "pending",
-                  "text-success border-success/30": entry.status === "approved",
-                  "text-primary border-primary/30": entry.status === "clocked_in",
-                })}>
-                  {entry.status === "clocked_in" ? "Active" : entry.status}
-                </Badge>
-              </div>
-            ))}
+        ) : (
+          <div className="rounded-xl bg-card border border-border p-4 text-center">
+            <p className="text-sm text-muted-foreground">No recent updates</p>
           </div>
-        </motion.div>
-      )}
+        )}
+      </motion.div>
     </div>
   );
 }
