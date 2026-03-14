@@ -470,15 +470,23 @@ const Payroll = () => {
 
         {/* Empty State */}
         {!loadingPeriods && periods.length === 0 && (
-          <EmptyState
-            icon={FileText}
-            title="No payroll periods yet"
-            description="Create your first payroll period to start tracking staff pay, hours, and deductions. Each period represents one pay cycle."
-            hint="Payroll periods lock automatically after approval to protect data integrity."
-            actionLabel={isAdmin ? "Create Period" : undefined}
-            secondaryLabel={isAdmin ? "Configure Pay Settings" : undefined}
-            secondaryHref={isAdmin ? "/settings?group=payroll&section=pay-settings" : undefined}
-          />
+          <div>
+            <EmptyState
+              icon={FileText}
+              title="No payroll periods yet"
+              description={isAdmin
+                ? "Create your first payroll period to start tracking staff pay, hours, and deductions. Each period represents one pay cycle."
+                : "No payroll periods have been created yet. Your admin will set these up."}
+              hint={isAdmin ? "Payroll periods lock automatically after approval to protect data integrity." : undefined}
+              secondaryLabel={isAdmin ? "Configure Pay Settings" : undefined}
+              secondaryHref={isAdmin ? "/settings?group=payroll&section=pay-settings" : undefined}
+            />
+            {isAdmin && (
+              <div className="flex justify-center -mt-2 mb-4">
+                <CreatePayrollDialog />
+              </div>
+            )}
+          </div>
         )}
 
         {/* Payroll Table */}
