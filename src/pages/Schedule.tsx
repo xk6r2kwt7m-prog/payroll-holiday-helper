@@ -238,7 +238,7 @@ export default function Schedule() {
         <div className="h-px bg-border/40" />
 
         {/* Mobile Manager Bar */}
-        {isMobile && isAdmin && (
+        {isMobile && canEditSchedules && schedPrefs?.mobileQuickBuild !== false && (
           <MobileManagerBar
             onBuildShift={() => { setWizardInitialDay(null); setWizardOpen(true); }}
             onPublishDay={() => setPublishDrawerOpen(true)}
