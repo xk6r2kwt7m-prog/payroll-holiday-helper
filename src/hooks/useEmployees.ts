@@ -88,6 +88,7 @@ export function useUpdateEmployee() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: EmployeeUpdate }) => {
+      await assertPermission("edit_employees", null);
       const { data, error } = await supabase
         .from("employees")
         .update(updates)
