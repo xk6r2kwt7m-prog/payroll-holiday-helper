@@ -261,32 +261,32 @@ const Settings = () => {
       <AppLayout>
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-              <SettingsIcon className="h-5 w-5 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+              <SettingsIcon className="h-4.5 w-4.5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Admin Centre</h1>
-              <p className="text-sm text-muted-foreground">Manage your workspace settings and configuration</p>
+              <h1 className="text-lg font-bold text-foreground tracking-tight">Admin Centre</h1>
+              <p className="text-[13px] text-muted-foreground">Manage your workspace settings and configuration</p>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {SETTINGS_GROUPS.map((group) => (
               <button
                 key={group.id}
                 onClick={() => navigateTo(group.id, null)}
-                className="flex items-start gap-3.5 rounded-lg bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group shadow-card"
+                className="flex items-start gap-3 rounded-lg bg-card border border-border/70 p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group shadow-card"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/8 shrink-0 group-hover:bg-primary/12 transition-colors">
-                  <group.icon className="h-5 w-5 text-primary" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60 shrink-0 group-hover:bg-primary/10 transition-colors">
+                  <group.icon className="h-4.5 w-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-foreground">{group.label}</h3>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
                   </div>
                   <p className="text-[13px] text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{group.description}</p>
-                  <p className="text-[10px] text-muted-foreground/50 mt-2 font-medium uppercase tracking-wider">
+                  <p className="text-[10px] text-muted-foreground/40 mt-2 font-medium uppercase tracking-wider">
                     {group.sections.length} setting{group.sections.length !== 1 ? "s" : ""}
                   </p>
                 </div>
