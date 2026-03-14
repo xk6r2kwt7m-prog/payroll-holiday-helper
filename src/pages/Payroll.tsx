@@ -293,38 +293,63 @@ const Payroll = () => {
                 </div>
                 {t("payroll.title")}
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
-                {selectedPeriod ? (
-                  <>
-                    {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} – {new Date(selectedPeriod.end_date).toLocaleDateString()}
-                  </>
-                ) : t("payroll.no_periods")}
-              </p>
             </div>
-            <div className="flex gap-1.5 shrink-0">
-              {selectedPeriod && entries.length > 0 && (
-                <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
-                  <FileDown className="h-4 w-4 sm:mr-1.5" />
-                  <span className="hidden sm:inline">PDF</span>
-                </Button>
-              )}
-              <Button variant="outline" size="sm" asChild className="h-9 px-2.5 sm:px-3">
-                <Link to="/payroll/analytics">
-                  <BarChart3 className="h-4 w-4 sm:mr-1.5" />
-                  <span className="hidden sm:inline">{t("nav.analytics")}</span>
-                </Link>
-              </Button>
-            </div>
+            {workspaceTab === "payroll" && (
+              <div className="flex gap-1.5 shrink-0">
+                {selectedPeriod && entries.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
+                    <FileDown className="h-4 w-4 sm:mr-1.5" />
+                    <span className="hidden sm:inline">PDF</span>
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
-          {isAdmin && (
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
-              <SettleLeaverDialog />
-              <AddHolidayPaymentDialog />
-              <CreatePayrollDialog />
-              <ImportPayrollDialog />
-            </div>
-          )}
         </div>
+
+        {/* Workspace Tabs */}
+        <Tabs value={workspaceTab} onValueChange={setWorkspaceTab}>
+          <TabsList className="w-full grid grid-cols-4 h-auto">
+            <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm py-2">
+              <DollarSign className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Payroll</span>
+              <span className="sm:hidden">Pay</span>
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-1.5 text-xs sm:text-sm py-2">
+              <Calendar className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Calendar</span>
+              <span className="sm:hidden">Cal</span>
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-1.5 text-xs sm:text-sm py-2">
+              <BarChart3 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Analytics</span>
+              <span className="sm:hidden">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-1.5 text-xs sm:text-sm py-2">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Audit</span>
+              <span className="sm:hidden">Audit</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Main Payroll Tab */}
+          <TabsContent value="payroll" className="space-y-4 sm:space-y-6 mt-4">
+            {/* Admin actions */}
+            {isAdmin && (
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                <SettleLeaverDialog />
+                <AddHolidayPaymentDialog />
+                <CreatePayrollDialog />
+                <ImportPayrollDialog />
+              </div>
+            )}
+
+            {/* Period subtitle */}
+            {selectedPeriod && (
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} – {new Date(selectedPeriod.end_date).toLocaleDateString()}
+              </p>
+            )}
 
         {/* Period Selector */}
         {periods.length > 0 && (
