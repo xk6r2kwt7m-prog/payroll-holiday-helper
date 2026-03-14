@@ -238,6 +238,7 @@ export function useCreatePayrollEntry() {
   
   return useMutation({
     mutationFn: async (entry: PayrollEntryInsert) => {
+      await assertPermission("view_pay_data", null);
       const { data, error } = await supabase
         .from("payroll_entries")
         .insert(entry)
