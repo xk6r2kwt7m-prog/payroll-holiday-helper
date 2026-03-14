@@ -67,9 +67,20 @@ export default function TrainingRecords() {
 
 function TrainingAdminView() {
   const [searchParams] = useSearchParams();
-  const deepLinkTab = searchParams.get("tab") || "library";
+  const urlTab = searchParams.get("tab");
   const deepLinkEmployee = searchParams.get("employee") || undefined;
   const deepLinkModule = searchParams.get("module") || undefined;
+
+  // Controlled tab state — syncs from URL on every param change
+  const [activeTab, setActiveTab] = useState(urlTab || "library");
+
+  // Re-sync when URL params change (e.g. navigating from Gaps tab while already on /training)
+  const paramKey = `${urlTab}::${deepLinkEmployee}::${deepLinkModule}`;
+  const [lastParamKey, setLastParamKey] = useState(paramKey);
+  if (paramKey !== lastParamKey) {
+    setLastParamKey(paramKey);
+    if (urlTab) setActiveTab(urlTab);
+  }
 
   const { data: employees = [] } = useEmployees();
   const { data: records = [] } = useTrainingRecords();
@@ -136,7 +147,7 @@ function TrainingAdminView() {
           </div>
         </div>
 
-        <Tabs defaultValue={deepLinkTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="library" className="gap-1.5"><BookOpen className="h-4 w-4" /> Library</TabsTrigger>
             <TabsTrigger value="tracking" className="gap-1.5"><ClipboardCheck className="h-4 w-4" /> Tracking</TabsTrigger>
@@ -149,8 +160,8 @@ function TrainingAdminView() {
 
           <TabsContent value="tracking" className="mt-4">
             <TrainingCompletionDashboard
-              highlightEmployeeId={deepLinkTab === "tracking" ? deepLinkEmployee : undefined}
-              highlightModuleId={deepLinkTab === "tracking" ? deepLinkModule : undefined}
+              highlightEmployeeId={activeTab === "tracking" ? deepLinkEmployee : undefined}
+              highlightModuleId={activeTab === "tracking" ? deepLinkModule : undefined}
             />
           </TabsContent>
 
