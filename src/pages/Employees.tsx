@@ -199,9 +199,9 @@ const Employees = () => {
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                <Users className="h-4 w-4 text-primary" />
+            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 shrink-0">
+                <Users className="h-4 w-4 text-muted-foreground" />
               </div>
               {t("employees.people")}
             </h1>
@@ -223,7 +223,7 @@ const Employees = () => {
         </div>
 
         {/* Status Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
           {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
             if (status === "archived" && !canManageLifecycle) return null;
             const count = counts[status];
@@ -234,15 +234,15 @@ const Employees = () => {
                 key={status}
                 onClick={() => setStatusFilter(status)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap shrink-0",
-                  isActive ? config.style + " shadow-sm" : "bg-card text-muted-foreground border-border hover:border-primary/20"
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap shrink-0",
+                  isActive ? config.style + " shadow-sm" : "bg-card text-muted-foreground border-border/60 hover:border-border"
                 )}
               >
-                <span>{config.emoji}</span>
+                <span className="text-sm">{config.emoji}</span>
                 <span>{config.label}</span>
                 <span className={cn(
-                  "ml-0.5 tabular-nums font-bold",
-                  isActive ? "" : "text-muted-foreground/60"
+                  "ml-0.5 tabular-nums font-semibold",
+                  isActive ? "" : "text-muted-foreground/50"
                 )}>
                   {count}
                 </span>
