@@ -61,12 +61,9 @@ export default function StaffPortal() {
   }
 
   const employeeName = employeeData ? `${employeeData.forename} ${employeeData.surname}` : "";
-  const pendingRequests = myRequests.filter(r => r.status === "pending").length;
-  const unreadAnnouncements = announcements.filter((a: any) => !myReadReceipts.includes(a.id)).length;
 
   const sections = [
     { id: "profile" as const, icon: User, label: "Profile" },
-    { id: "requests" as const, icon: Sun, label: "Requests", badge: pendingRequests },
     { id: "timesheets" as const, icon: Clock, label: "Timesheets" },
     { id: "training" as const, icon: BookOpen, label: "Training" },
     { id: "documents" as const, icon: FileText, label: "Documents" },
