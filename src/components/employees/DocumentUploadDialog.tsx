@@ -41,6 +41,8 @@ export function DocumentUploadDialog({ employeeId, employeeName, trigger }: Docu
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadDocument = useUploadDocument();
+  const extractDocument = useExtractDocument();
+  const { tenantId } = useTenant();
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
