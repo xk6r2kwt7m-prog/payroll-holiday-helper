@@ -471,12 +471,13 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
 
   const handleRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ["training_assignments"] });
-    // Wait for refetch to settle
-    await queryClient.refetchQueries({ queryKey: ["training_assignments"] });
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ["training_assignments"] }),
+      queryClient.refetchQueries({ queryKey: ["training_assignment_exists", highlightEmployeeId, highlightModuleId] }),
+    ]);
     setIsManualRefreshing(false);
     setHasRefreshed(true);
-  }, [queryClient]);
+  }, [queryClient, highlightEmployeeId, highlightModuleId]);
 
   const counts = {
     all: assignments.length,
