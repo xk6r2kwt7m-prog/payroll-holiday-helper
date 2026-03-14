@@ -63,7 +63,7 @@ export function useDocumentRequests(filters?: {
     queryFn: async () => {
       let query = supabase
         .from("document_requests" as any)
-        .select("*, employees(id, forename, surname, department, email)")
+        .select("*, employees:employee_id(id, forename, surname, department, email)")
         .eq("tenant_id", tenantId!)
         .order("created_at", { ascending: false });
 
@@ -79,7 +79,7 @@ export function useDocumentRequests(filters?: {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as DocumentRequest[];
+      return (data || []) as unknown as DocumentRequest[];
     },
     enabled: !!tenantId,
   });
