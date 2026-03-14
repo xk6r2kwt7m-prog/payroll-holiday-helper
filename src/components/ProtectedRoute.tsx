@@ -80,13 +80,6 @@ export function ProtectedRoute({
   if (membershipCount === 0 && tenantResolved && !tenantId && !isPlatformAdmin) {
     return <Navigate to="/onboard" replace />;
   }
-    membershipCount,
-    tenantId,
-    role,
-    isPlatformAdmin,
-    pathname,
-    redirect: "none (rendering children)",
-  });
 
   // ─── GATE 6: Tenant suspended or cancelled ───
   if ((tenantStatus === "suspended" || tenantStatus === "cancelled") && !isPlatformAdmin) {
