@@ -143,7 +143,6 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
 
     commitTenantSelection(membership.tenant_id, membership.tenants as any);
-    console.log("[TenantProvider] selectTenant: applied from DB");
   }, [user, commitTenantSelection]);
 
   const openWorkspacePicker = useCallback(() => {
