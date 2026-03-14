@@ -61,15 +61,14 @@ function PulseCard({ pulse, onSettings }: { pulse: LocationPulse; onSettings: ()
       </div>
 
       {/* Sections */}
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-border/30">
         {pulse.sections.map((section) => {
-          // Only show items that have count > 0 or are key indicators
           const hasIssues = section.items.some(i => i.count > 0 && i.status !== "green");
           const sectionColors = statusColors[section.overallStatus];
 
           return (
-            <div key={section.title} className="px-4 sm:px-5 py-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+            <div key={section.title} className="px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
                 {section.title}
               </p>
               <div className="space-y-1.5">
