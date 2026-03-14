@@ -96,6 +96,9 @@ const App = () => (
             {/* Absences — manager+ */}
             <Route path="/absences" element={<ProtectedRoute requiredRole="manager"><AbsenceTracker /></ProtectedRoute>} />
 
+            {/* Workforce — manager+ */}
+            <Route path="/workforce" element={<ProtectedRoute requiredRole="manager"><Workforce /></ProtectedRoute>} />
+
             {/* Onboarding — manager+ */}
             <Route path="/onboarding" element={<ProtectedRoute requiredRole="manager"><Onboarding /></ProtectedRoute>} />
 
