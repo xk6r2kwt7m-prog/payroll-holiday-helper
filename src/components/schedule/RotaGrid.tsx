@@ -472,13 +472,13 @@ export function RotaGrid({
 
               {/* Open shifts row */}
               {weekDays.some((d) => getOpenShifts(d).length > 0) && (
-                <tr className="border-t-2 border-dashed border-accent/20">
-                  <td className="px-2 py-2 sticky left-0 bg-card z-10">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-7 w-7 rounded-full bg-accent/10 text-accent flex items-center justify-center text-[10px] font-bold shrink-0">
+                <tr className="border-t border-dashed border-border/40">
+                  <td className="px-3 py-2 sticky left-0 bg-background z-10">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
                         ?
                       </div>
-                      <span className="text-[11px] text-accent font-medium">Open</span>
+                      <span className="text-[11px] text-muted-foreground font-medium">Open</span>
                     </div>
                   </td>
                   {weekDays.map((day) => {
@@ -510,8 +510,8 @@ export function RotaGrid({
         <DragOverlay dropAnimation={null}>
           {activeShift ? (
             <div className={cn(
-              "rounded-lg px-2 py-1.5 text-[11px] leading-tight shadow-xl ring-2 ring-primary/50 scale-105",
-              "bg-card border border-primary/30 text-foreground"
+              "rounded-md px-2 py-1.5 text-[11px] leading-tight shadow-lg ring-1 ring-primary/30",
+              "bg-card border border-border text-foreground"
             )}>
               <div className="font-semibold tabular-nums">
                 {activeShift.start_time?.slice(0, 5)}–{activeShift.end_time?.slice(0, 5)}
