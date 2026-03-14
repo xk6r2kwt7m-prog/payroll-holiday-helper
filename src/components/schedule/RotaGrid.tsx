@@ -469,13 +469,13 @@ export function RotaGrid({
 
               {/* Open shifts row */}
               {weekDays.some((d) => getOpenShifts(d).length > 0) && (
-                <tr className="border-t border-dashed border-border/20">
-                  <td className="px-3 py-1.5 sticky left-0 bg-background z-10">
+                <tr className="border-t border-dashed border-border/25">
+                  <td className="px-3 py-2 sticky left-0 bg-card z-10 border-r border-border/20">
                     <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-muted/40 text-muted-foreground/60 flex items-center justify-center text-[10px] font-bold shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-muted/30 text-muted-foreground/50 flex items-center justify-center text-[10px] font-bold shrink-0">
                         ?
                       </div>
-                      <span className="text-[11px] text-muted-foreground font-medium">Open</span>
+                      <span className="text-[11px] text-muted-foreground/70 font-medium">Open</span>
                     </div>
                   </td>
                   {weekDays.map((day) => {
