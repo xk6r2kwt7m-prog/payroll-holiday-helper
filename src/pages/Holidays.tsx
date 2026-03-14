@@ -807,7 +807,7 @@ const Holidays = () => {
             ) : filteredSummaries.length === 0 ? (
               <EmptyState hasFilters={!!(searchQuery || departmentFilter !== "all")} onClearFilters={() => { setSearchQuery(""); setDepartmentFilter("all"); }} />
             ) : viewMode === "cards" ? (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredSummaries.map((summary, index) => (
                   <div key={summary.employeeId} onClick={() => setSelectedEmployeeId(summary.employeeId)} className="cursor-pointer">
                     <EmployeeHolidayCard
