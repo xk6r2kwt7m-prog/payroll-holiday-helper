@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,18 +6,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import {
-  Clock, LogOut, Calendar, CheckCircle2, AlertCircle, AlertTriangle, Megaphone, FileText,
-  Upload, Sun, User, ChevronRight, Shield, Phone, Building2, GraduationCap,
-  Bell, Settings, BookOpen,
+  Clock, LogOut, CheckCircle2, AlertCircle, AlertTriangle, FileText,
+  User, BookOpen,
 } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
-import { HolidayRequestForm } from "@/components/holidays/HolidayRequestForm";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
 import { StaffDocumentRequests } from "@/components/documents/StaffDocumentRequests";
 import { useMyTimeEntries } from "@/hooks/useTimeEntries";
-import { useMyHolidayRequests } from "@/hooks/useHolidayRequests";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployeeDocuments, getExpiryStatus } from "@/hooks/useEmployeeDocuments";
 import { StaffTrainingView } from "@/components/training/StaffTrainingView";
