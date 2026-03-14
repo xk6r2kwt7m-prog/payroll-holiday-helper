@@ -92,6 +92,7 @@ const navGroups: NavGroup[] = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, isAdmin, role, signOut } = useAuth();
   const { isPlatformAdmin, enabledModules, tenantName, membershipCount, openWorkspacePicker } = useTenant();
   const { data: settings } = useCompanySettings();
