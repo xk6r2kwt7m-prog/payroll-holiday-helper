@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useEmployees, useDeleteEmployee, type Employee } from "@/hooks/useEmployees";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
+import { InviteEmployeeDialog } from "@/components/employees/InviteEmployeeDialog";
 import { EmployeeCard } from "@/components/employees/EmployeeCard";
 import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet";
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
