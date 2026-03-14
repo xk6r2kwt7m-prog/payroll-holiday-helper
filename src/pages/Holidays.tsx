@@ -67,8 +67,10 @@ interface EmployeeSummary {
 const Holidays = () => {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
-  const { data: leaveRules } = useLeaveRules();
+  const canApproveHolidays = usePermission("approve_holidays");
+  const { data: holidayPrefs } = useTenantPreferences("holiday_display", HOLIDAY_DISPLAY_DEFAULTS);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [viewModeInit, setViewModeInit] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
   const [selectedYear, setSelectedYear] = useState<LeaveYear>("2025");
