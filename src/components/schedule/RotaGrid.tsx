@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { getMinimumStaff, getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { ShiftCellDialog } from "./ShiftCellDialog";
+import { ShiftDetailPopover } from "./ShiftDetailPopover";
 import { MobileShiftSheet } from "./MobileShiftSheet";
 import { MoveShiftDrawer } from "./MoveShiftDrawer";
 import { DraggableShiftCell, CrossBranchShiftCell } from "./DraggableShiftCell";
