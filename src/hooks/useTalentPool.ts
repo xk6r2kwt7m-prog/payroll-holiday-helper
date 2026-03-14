@@ -81,24 +81,31 @@ export function useTalentProfiles(filters?: {
   return useQuery({
     queryKey: ["talent-profiles", tenantId, filters],
     queryFn: async () => {
-      // Query profiles visible to this tenant
+      // Privacy-safe browse query — only hiring-relevant fields, no internal HR data
       let query: any = supabase
         .from("talent_profiles")
-        .select("*, employees!inner(forename, surname, department, status, start_date, end_date)")
+        .select(`
+          id, employee_id, tenant_id, talent_pool_status, available_from,
+          preferred_roles, preferred_locations, preferred_countries, preferred_regions,
+          employment_type_preference, profile_summary, years_experience, languages,
+          work_eligibility_countries, willing_to_relocate, willing_to_travel,
+          preferred_work_radius_km, contact_visibility,
+          employees!inner(forename, surname)
+        `)
         .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"]);
 
       if (filters?.country) {
         query = query.contains("preferred_countries", [filters.country]);
-      }
-      if (filters?.department) {
-        query = query.eq("employees.department", filters.department);
       }
 
       const { data, error } = await query.order("updated_at", { ascending: false });
       if (error) throw error;
       return (data || []).map((d: any) => ({
         ...d,
-        employee: d.employees,
+        employee: {
+          forename: d.employees?.forename || "",
+          surname_initial: d.employees?.surname ? d.employees.surname.charAt(0) + "." : "",
+        },
       })) as TalentProfile[];
     },
     enabled: !!tenantId,
