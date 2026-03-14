@@ -84,7 +84,7 @@ export function TalentSearch() {
             <Button variant="outline" size="sm" className="gap-2">
               <Filter className="h-4 w-4" />
               Filters
-              {(countryFilter !== "all" || departmentFilter !== "all") && (
+              {countryFilter !== "all" && (
                 <Badge variant="secondary" className="ml-1 text-xs">Active</Badge>
               )}
             </Button>
