@@ -300,9 +300,9 @@ const CompanyOnboarding = () => {
                 className="w-full h-12 rounded-xl text-sm font-semibold bg-primary hover:bg-primary/90"
               >
                 {loading ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating…</>
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating workspace…</>
                 ) : (
-                  <><Rocket className="h-4 w-4 mr-2" /> Go to dashboard</>
+                  <><Rocket className="h-4 w-4 mr-2" /> Launch Workspace</>
                 )}
               </Button>
             ) : (

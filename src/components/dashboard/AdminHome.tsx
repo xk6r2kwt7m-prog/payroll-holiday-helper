@@ -17,6 +17,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
 import { DocumentRequestsWidget } from "@/components/dashboard/DocumentRequestsWidget";
 import { TeamReadinessWidget } from "@/components/dashboard/TeamReadinessWidget";
+import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -110,6 +111,11 @@ export function AdminHome() {
         <p className="text-sm text-muted-foreground">
           {tenantName || "Dashboard"} · {format(new Date(), "EEEE, d MMMM")}
         </p>
+      </motion.div>
+
+      {/* Setup Health — shows only when setup is incomplete */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.02 }}>
+        <SetupHealthWidget />
       </motion.div>
 
       {/* KPI Strip */}

@@ -1,4 +1,4 @@
-import { Check, MapPin, Users, CreditCard, Building2 } from "lucide-react";
+import { Check, MapPin, Users, CreditCard, Building2, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface StepSummaryProps {
@@ -34,7 +34,8 @@ const STYLE_LABELS: Record<string, string> = {
 export function StepSummary({ workspaceName, workplaceName, teamSize, payRhythm, workStyle }: StepSummaryProps) {
   const items = [
     { icon: Building2, label: "Workspace", value: workspaceName || "—" },
-    { icon: MapPin, label: "Workplace", value: workplaceName || "Not set" },
+    { icon: MapPin, label: "Workplace", value: workplaceName || "Not set yet" },
+    { icon: Briefcase, label: "Work style", value: STYLE_LABELS[workStyle] || "—" },
     { icon: Users, label: "Team size", value: TEAM_LABELS[teamSize] || "—" },
     { icon: CreditCard, label: "Pay rhythm", value: PAY_LABELS[payRhythm] || "—" },
   ];
@@ -50,9 +51,9 @@ export function StepSummary({ workspaceName, workplaceName, teamSize, payRhythm,
         >
           <Check className="h-8 w-8 text-primary" />
         </motion.div>
-        <h2 className="text-xl font-bold text-foreground">Your workspace is ready</h2>
+        <h2 className="text-xl font-bold text-foreground">Review your setup</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Here's a summary of your setup.
+          Check the details below, then launch your workspace.
         </p>
       </div>
 
@@ -75,6 +76,10 @@ export function StepSummary({ workspaceName, workplaceName, teamSize, payRhythm,
           </motion.div>
         ))}
       </div>
+
+      <p className="text-xs text-muted-foreground text-center">
+        You can change any of these in Settings after launch.
+      </p>
     </div>
   );
 }
