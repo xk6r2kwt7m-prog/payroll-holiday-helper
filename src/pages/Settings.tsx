@@ -303,7 +303,6 @@ const Settings = () => {
     return (
       <AppLayout>
         <div className="max-w-3xl mx-auto space-y-5">
-          {/* Back + header */}
           <button
             onClick={() => navigateTo(null, null)}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
@@ -313,27 +312,27 @@ const Settings = () => {
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-              <currentGroup.icon className="h-5 w-5 text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60 shrink-0">
+              <currentGroup.icon className="h-4.5 w-4.5 text-muted-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">{currentGroup.label}</h1>
-              <p className="text-sm text-muted-foreground">{currentGroup.description}</p>
+              <h1 className="text-lg font-bold text-foreground tracking-tight">{currentGroup.label}</h1>
+              <p className="text-[13px] text-muted-foreground">{currentGroup.description}</p>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="rounded-lg border border-border/70 bg-card shadow-card overflow-hidden divide-y divide-border/50">
             {currentGroup.sections.map((section) => (
               <button
                 key={section.id}
                 onClick={() => navigateTo(activeGroup, section.id)}
-                className="flex items-center gap-3 w-full rounded-lg bg-card border border-border p-4 text-left hover:border-primary/30 hover:shadow-sm transition-all group shadow-card"
+                className="flex items-center gap-3 w-full px-4 py-3.5 text-left hover:bg-muted/30 transition-colors group"
               >
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-foreground">{section.label}</h3>
                   <p className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed">{section.description}</p>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors shrink-0" />
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />
               </button>
             ))}
           </div>
