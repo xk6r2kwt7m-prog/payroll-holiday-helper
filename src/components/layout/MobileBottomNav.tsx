@@ -68,6 +68,7 @@ const managerMoreGroups: MoreGroup[] = [
   {
     title: "Schedule",
     items: [
+      { icon: ShoppingBag, label: "Shift Marketplace", path: "/shift-marketplace", minRole: "staff", module: "scheduling" },
       { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
       { icon: ClipboardList, label: "Schedule Report", path: "/schedule/report", minRole: "manager" },
       { icon: BarChart3, label: "Schedule Analytics", path: "/schedule/analytics", minRole: "manager" },
