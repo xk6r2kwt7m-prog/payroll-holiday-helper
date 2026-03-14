@@ -40,39 +40,40 @@ export function DraggableShiftCell({ shift, isAdmin, onView }: DraggableShiftCel
       className={cn(
         "rounded-md text-[10px] sm:text-[11px] leading-tight relative select-none",
         "transition-all duration-150",
-        "min-h-[40px] sm:min-h-[40px] flex flex-col items-center justify-center gap-0.5",
-        "px-1.5 py-1.5 sm:px-2 sm:py-1.5",
-        // Clean, calm states with better distinction
+        "min-h-[38px] sm:min-h-[38px] flex flex-col items-center justify-center gap-0.5",
+        "px-1.5 py-1 sm:px-2 sm:py-1.5",
+        // Three clear visual states
         isOpen
-          ? "bg-muted/40 text-muted-foreground border border-dashed border-border/60"
+          ? "bg-muted/30 text-muted-foreground border border-dashed border-border/50"
           : isPublished
-            ? "bg-card border border-border/60 shadow-card"
-            : "bg-primary/[0.04] border border-primary/20",
+            ? "bg-card border border-border/50 shadow-sm"
+            : "bg-accent/40 border border-accent-foreground/10",
         isDragging && "shadow-lg ring-2 ring-primary/30 scale-105",
-        isAdmin && !isMobile && "cursor-grab active:cursor-grabbing hover:shadow-sm hover:border-border",
+        isAdmin && !isMobile && "cursor-grab active:cursor-grabbing hover:shadow-md hover:border-border/80",
         isAdmin && isMobile && "cursor-pointer active:scale-[0.97]",
       )}
       {...(isAdmin && !isMobile ? { ...listeners, ...attributes } : {})}
     >
-      {/* Time — strongest element */}
+      {/* Start time — primary */}
       <div className="font-semibold tabular-nums whitespace-nowrap text-foreground text-[11px] sm:text-xs tracking-tight">
         {shift.start_time?.slice(0, 5)}
       </div>
-      <div className="tabular-nums whitespace-nowrap text-[9px] text-muted-foreground/70">
+      {/* End time — secondary */}
+      <div className="tabular-nums whitespace-nowrap text-[9px] text-muted-foreground/60">
         {shift.end_time?.slice(0, 5)}
       </div>
 
-      {/* Published indicator — subtle dot */}
-      {isPublished && (
+      {/* Published dot */}
+      {isPublished && !isOpen && (
         <div className="absolute top-[3px] right-[3px]">
-          <span className="inline-block h-[5px] w-[5px] rounded-full bg-success/60" />
+          <span className="inline-block h-[5px] w-[5px] rounded-full bg-success/70" />
         </div>
       )}
 
-      {/* Open shift indicator */}
+      {/* Open shift dot */}
       {isOpen && (
         <div className="absolute top-[3px] right-[3px]">
-          <span className="inline-block h-[5px] w-[5px] rounded-full bg-muted-foreground/30" />
+          <span className="inline-block h-[5px] w-[5px] rounded-full bg-muted-foreground/25" />
         </div>
       )}
     </div>
@@ -89,10 +90,10 @@ export function CrossBranchShiftCell({ shift, onNavigate }: CrossBranchShiftCell
     <div
       className={cn(
         "rounded-md px-1.5 py-1.5 text-[10px] leading-tight",
-        "bg-muted/20 text-muted-foreground/60 border border-dashed border-border/40",
-        "min-h-[40px] flex flex-col items-center justify-center gap-0.5",
+        "bg-muted/15 text-muted-foreground/50 border border-dashed border-border/30",
+        "min-h-[38px] flex flex-col items-center justify-center gap-0.5",
         "transition-all active:scale-95",
-        onNavigate && "cursor-pointer hover:bg-muted/30"
+        onNavigate && "cursor-pointer hover:bg-muted/25"
       )}
       onClick={(e) => {
         e.stopPropagation();
@@ -103,7 +104,7 @@ export function CrossBranchShiftCell({ shift, onNavigate }: CrossBranchShiftCell
       <div className="font-semibold tabular-nums whitespace-nowrap">
         {shift.start_time?.slice(0, 5)}
       </div>
-      <div className="flex items-center gap-0.5 text-[8px] opacity-50">
+      <div className="flex items-center gap-0.5 text-[8px] opacity-40">
         <MapPin className="h-2 w-2" />
         <span>{shift.branch?.slice(0, 4)}</span>
       </div>
