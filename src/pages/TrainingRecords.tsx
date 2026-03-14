@@ -149,10 +149,11 @@ function TrainingAdminView() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">{records.length} certification records</p>
-                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Add Record</Button>
-                  </DialogTrigger>
+                {canManageTraining && (
+                  <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Add Record</Button>
+                    </DialogTrigger>
                   <DialogContent>
                     <DialogHeader><DialogTitle>Add Training Record</DialogTitle></DialogHeader>
                     <div className="space-y-4 pt-2">
