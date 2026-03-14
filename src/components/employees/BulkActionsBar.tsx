@@ -74,8 +74,8 @@ export function BulkActionsBar({ selectedEmployees, onClearSelection }: BulkActi
   return (
     <>
       <div className={cn(
-        "fixed bottom-6 left-1/2 -translate-x-1/2 z-50",
-        "flex items-center gap-3 px-4 py-3 rounded-xl",
+        "fixed bottom-20 md:bottom-6 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50",
+        "flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 rounded-xl",
         "bg-card border border-border shadow-elevated",
         "animate-slide-in-bottom"
       )}>
