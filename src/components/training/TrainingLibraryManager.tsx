@@ -484,9 +484,19 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
         ))}
       </div>
 
+      {/* No-match notice for deep-links */}
+      {highlightKey && !isLoading && !matchExists && (
+        <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0" />
+          <p className="text-xs text-warning">
+            The linked assignment could not be found — it may not have been created yet, or data is still loading.
+          </p>
+        </div>
+      )}
+
       {/* Assignment list */}
       <div className="space-y-1.5">
-        {filtered.length === 0 && (
+        {filtered.length === 0 && !highlightKey && (
           <div className="text-center py-8">
             <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">No assignments match this filter</p>
@@ -495,13 +505,18 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
         {filtered.slice(0, 50).map(a => {
           const doc = a.training_library;
           const isOverdue = a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0 && !["completed", "acknowledged", "cancelled"].includes(a.status);
+          const isMatch = `${a.employee_id}::${a.document_id}` === highlightKey;
           return (
-            <div key={a.id} className={cn(
-              "flex items-center gap-3 p-3 rounded-xl bg-card border shadow-sm transition-all",
-              `${a.employee_id}::${a.document_id}` === highlightKey
-                ? "border-primary ring-2 ring-primary/20"
-                : "border-border"
-            )}>
+            <div
+              key={a.id}
+              ref={isMatch ? highlightRef : undefined}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded-xl bg-card border shadow-sm transition-all",
+                isMatch
+                  ? "border-primary ring-2 ring-primary/20"
+                  : "border-border"
+              )}
+            >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
                   {a.employees?.forename} {a.employees?.surname}
