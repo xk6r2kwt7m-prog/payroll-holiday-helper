@@ -348,11 +348,13 @@ export function PeopleLifecycleSettings() {
       </div>
       <ToggleRow label="Hide leavers by default" desc="Show only active employees on the Employees page" checked={local.hideLeaversDefault} onChange={v => set("hideLeaversDefault", v)} />
       <ToggleRow label="Talent pool opt-in for leavers" desc="Prompt departing staff to join the talent pool" checked={local.talentOptIn} onChange={v => set("talentOptIn", v)} />
+      <NotYetEnforced label="talentOptIn — saved for future enforcement" />
       <Separator />
       <div className="space-y-1.5">
         <Label className="text-xs">Auto-archive leavers after (days)</Label>
         <Input type="number" min="1" max="90" value={local.archiveAfterDays} onChange={e => set("archiveAfterDays", e.target.value)} className="h-9 w-24" />
         <p className="text-[10px] text-muted-foreground">Leavers automatically move to archive after this period</p>
+        <NotYetEnforced label="archiveAfterDays — saved for future enforcement (requires cron job)" />
       </div>
       <SaveButton onSave={handleSave} isPending={saveMut.isPending} />
       <ConfigProtectedNote configurable="Default views, leaver visibility, archive timing, talent opt-in prompts" protected_="Status transition engine, auto-archival rules, leaver workflow core logic" />
