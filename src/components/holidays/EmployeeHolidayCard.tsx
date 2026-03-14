@@ -136,25 +136,25 @@ export function EmployeeHolidayCard({
         </div>
 
         {/* Progress bar */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
             <span>Holiday Usage</span>
             <span>{usedPercentage.toFixed(0)}% of entitlement</span>
           </div>
           <Progress 
             value={usedPercentage} 
             className={cn(
-              "h-2",
+              "h-1.5",
               isOverUsed && "[&>div]:bg-destructive"
             )} 
           />
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-[11px] text-muted-foreground mt-1">
             {formatHours(totalTaken)} of {formatHours(entitlement)} hours used
           </p>
         </div>
 
         {/* Total Paid + Breakdown */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/60">
           <div className="flex items-center gap-2">
             <Lock className="h-3 w-3 text-muted-foreground/50" />
             <span className="text-sm text-muted-foreground">Total Paid</span>
