@@ -39,8 +39,9 @@ interface TenantContextType {
   showTenantPicker: boolean;
   availableTenants: TenantMembership[];
   setTenantId: (id: string) => void;
-  /** Select a tenant — synchronous when data is cached, async fallback otherwise. */
   selectTenant: (tenantId: string) => Promise<void>;
+  /** Re-enter workspace picker mode without clearing auth. */
+  openWorkspacePicker: () => void;
 }
 
 const DEFAULT_MODULES: EnabledModules = {
