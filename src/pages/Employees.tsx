@@ -207,7 +207,7 @@ const Employees = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            {isAdmin && filteredEmployees.length > 0 && (
+            {canManageLifecycle && filteredEmployees.length > 0 && (
               <Button
                 variant={isSelectionMode ? "secondary" : "ghost"}
                 size="icon"
@@ -217,8 +217,8 @@ const Employees = () => {
                 {isSelectionMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
               </Button>
             )}
-            {isAdmin && <InviteEmployeeDialog />}
-            {isAdmin && <EmployeeFormDialog />}
+            {canEdit && <InviteEmployeeDialog />}
+            {canEdit && <EmployeeFormDialog />}
           </div>
         </div>
 
