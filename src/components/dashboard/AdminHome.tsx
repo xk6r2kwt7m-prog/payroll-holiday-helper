@@ -164,6 +164,11 @@ export function AdminHome() {
         <DocumentRequestsWidget />
       </motion.div>
 
+      {/* Team Readiness */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.155 }}>
+        <TeamReadinessWidget />
+      </motion.div>
+
       {latestPeriod && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.16 }}>
           <SectionHeader title="Payroll" linkTo="/payroll" />

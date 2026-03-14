@@ -151,6 +151,19 @@ export function ShiftCellDialog({
           </div>
         </div>
 
+        {/* Blocked employee warning */}
+        {readiness?.status === "blocked" && (
+          <div className="mx-5 mt-1 flex items-start gap-2 p-2.5 rounded-lg bg-destructive/5 border border-destructive/10">
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-destructive">Cannot schedule — critical requirement missing</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {readiness.missingCritical.join(", ")}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Details rows — Deputy style */}
         <div className="px-5 py-3 space-y-3">
           {/* Date */}

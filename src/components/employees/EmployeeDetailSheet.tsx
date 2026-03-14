@@ -278,6 +278,13 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             </SensitiveSection>
           )}
 
+          {/* Onboarding Readiness */}
+          {(employee.status === "starter" || (employee.status as string) === "onboarding") && (
+            <Section title="Onboarding Readiness" icon={ClipboardCheck}>
+              <OnboardingChecklist employeeId={employee.id} />
+            </Section>
+          )}
+
           {/* Documents */}
           <Section title="Documents" icon={FolderOpen}>
             {isAdmin && (
