@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, DollarSign, Calendar, MoreHorizontal,
-  CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin,
+  CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin, Building2,
   UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone,
   ClipboardList, CheckCircle2, User, Shield, FileText, CalendarDays, Sun,
 } from "lucide-react";
