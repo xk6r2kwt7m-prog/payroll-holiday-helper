@@ -177,6 +177,7 @@ function TalentMatchesSection({ requestId }: { requestId: string }) {
 
 function CreateTalentRequestForm({ onSuccess }: { onSuccess: () => void }) {
   const createRequest = useCreateTalentRequest();
+  const { data: departments = [] } = useDepartments();
   const [form, setForm] = useState({
     role: "",
     department: "",
