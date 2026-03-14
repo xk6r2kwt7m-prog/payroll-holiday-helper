@@ -315,3 +315,59 @@ function EmptyState({ icon: Icon, message }: { icon: any; message: string }) {
     </div>
   );
 }
+
+function StaffDocumentView({ employeeId }: { employeeId: string }) {
+  const { data: documents = [], isLoading } = useEmployeeDocuments(employeeId);
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-sm text-muted-foreground">Loading documents...</div>;
+  }
+
+  if (documents.length === 0) {
+    return (
+      <div className="rounded-xl bg-card border border-border p-6 text-center">
+        <FileText className="h-10 w-10 mx-auto mb-2 text-muted-foreground/40" />
+        <p className="text-sm text-muted-foreground">No documents uploaded yet</p>
+      </div>
+    );
+  }
+
+  const STATUS_LABELS: Record<string, { label: string; style: string }> = {
+    uploaded: { label: "Uploaded", style: "bg-muted text-muted-foreground" },
+    pending_verification: { label: "Pending", style: "bg-warning/10 text-warning" },
+    verified: { label: "Verified", style: "bg-success/10 text-success" },
+    rejected: { label: "Rejected", style: "bg-destructive/10 text-destructive" },
+    expired: { label: "Expired", style: "bg-destructive/10 text-destructive" },
+  };
+
+  return (
+    <div className="rounded-xl bg-card border border-border overflow-hidden">
+      <div className="px-4 py-3 border-b border-border">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">My Documents</h2>
+      </div>
+      <div className="divide-y divide-border">
+        {documents.map(doc => {
+          const status = STATUS_LABELS[(doc as any).document_status || "uploaded"] || STATUS_LABELS.uploaded;
+          const expiry = getExpiryStatus(doc.expires_at);
+          return (
+            <div key={doc.id} className="px-4 py-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{doc.document_name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Badge variant="outline" className="text-[10px]">{doc.document_type.replace(/_/g, " ")}</Badge>
+                  <Badge className={cn("text-[10px]", status.style)}>{status.label}</Badge>
+                </div>
+                {doc.expires_at && (
+                  <p className={cn("text-xs mt-0.5", expiry.status === "expired" ? "text-destructive" : expiry.status === "expiring" ? "text-warning" : "text-muted-foreground")}>
+                    {expiry.label}
+                  </p>
+                )}
+              </div>
+              <CheckCircle2 className={cn("h-5 w-5 shrink-0", (doc as any).document_status === "verified" ? "text-success" : "text-muted-foreground/20")} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
