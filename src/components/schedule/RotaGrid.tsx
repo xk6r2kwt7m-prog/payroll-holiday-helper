@@ -507,14 +507,14 @@ export function RotaGrid({
         <DragOverlay dropAnimation={null}>
           {activeShift ? (
             <div className={cn(
-              "rounded px-2 py-1.5 text-[11px] leading-tight shadow-lg ring-1 ring-primary/20",
-              "bg-card border border-border/40 text-foreground"
+              "rounded-md px-2.5 py-2 text-[11px] leading-tight shadow-xl ring-1 ring-primary/25",
+              "bg-card border border-border/50 text-foreground"
             )}>
-              <div className="font-semibold tabular-nums">
+              <div className="font-semibold tabular-nums tracking-tight">
                 {activeShift.start_time?.slice(0, 5)}–{activeShift.end_time?.slice(0, 5)}
               </div>
               {activeShift.employee_id && (
-                <div className="text-[9px] text-muted-foreground mt-0.5">
+                <div className="text-[9px] text-muted-foreground/70 mt-0.5">
                   {deptEmployees.find(e => e.id === activeShift.employee_id)?.forename || "Unassigned"}
                 </div>
               )}
