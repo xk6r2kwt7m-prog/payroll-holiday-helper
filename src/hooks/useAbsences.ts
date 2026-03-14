@@ -59,9 +59,10 @@ export function useAddAbsence() {
 
 export function useDeleteAbsence() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (id: string) => {
-      await assertPermission("edit_employees", null);
+      await assertPermission("edit_employees", tenantId!);
       const { error } = await supabase.from("absence_records" as any).delete().eq("id", id);
       if (error) throw error;
     },
