@@ -156,10 +156,10 @@ function TalentMatchesSection({ requestId }: { requestId: string }) {
         <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
           <div>
             <p className="text-sm font-medium">
-              {m.talent_profile?.employee?.forename} {m.talent_profile?.employee?.surname}
+              {m.talent_profile?.employee?.forename} {m.talent_profile?.employee?.surname_initial}
             </p>
             <p className="text-xs text-muted-foreground">
-              {m.talent_profile?.employee?.department} • Score: {Math.round((m.match_score || 0) * 100)}%
+              {m.talent_profile?.preferred_roles?.join(", ") || "No roles specified"} • Score: {Math.round((m.match_score || 0) * 100)}%
             </p>
           </div>
           <div className="flex items-center gap-1.5">

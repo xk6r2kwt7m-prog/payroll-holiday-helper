@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Users, Search, FileText, Sparkles } from "lucide-react";
@@ -8,8 +9,14 @@ import { TalentProfileManager } from "@/components/talent/TalentProfileManager";
 import { useAuth } from "@/hooks/useAuth";
 
 const TalentPool = () => {
-  const [activeTab, setActiveTab] = useState("browse");
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabParam === "my-profile" ? "my-profile" : "browse");
   const { isAdmin } = useAuth();
+
+  useEffect(() => {
+    if (tabParam === "my-profile") setActiveTab("my-profile");
+  }, [tabParam]);
 
   return (
     <AppLayout>

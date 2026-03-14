@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, DollarSign, Calendar, MoreHorizontal,
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin, Building2,
-  UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone,
+  UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone, Sparkles,
   ClipboardList, CheckCircle2, User, Shield, FileText, CalendarDays, Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,7 @@ const staffMoreGroups: MoreGroup[] = [
     title: "Work",
     items: [
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
+      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
     ],
   },
 ];
@@ -77,6 +78,7 @@ const managerMoreGroups: MoreGroup[] = [
       { icon: UserX, label: "Absences", path: "/absences", minRole: "manager" },
       { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
+      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
     ],
   },
@@ -118,6 +120,7 @@ const adminMoreGroups: MoreGroup[] = [
     items: [
       { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
+      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
       { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin" },
     ],
   },

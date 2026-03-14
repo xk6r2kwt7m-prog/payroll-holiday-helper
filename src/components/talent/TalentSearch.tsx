@@ -25,12 +25,11 @@ const STATUS_LABELS: Record<string, string> = {
 export function TalentSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [countryFilter, setCountryFilter] = useState<string>("all");
-  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const { data: profiles = [], isLoading } = useTalentProfiles({
     country: countryFilter !== "all" ? countryFilter : undefined,
-    department: departmentFilter !== "all" ? departmentFilter : undefined,
   });
 
   const expressInterest = useCreateInterestAction();
@@ -42,8 +41,7 @@ export function TalentSearch() {
     const emp = p.employee;
     return (
       emp?.forename?.toLowerCase().includes(q) ||
-      emp?.surname?.toLowerCase().includes(q) ||
-      emp?.department?.toLowerCase().includes(q) ||
+      emp?.surname_initial?.toLowerCase().includes(q) ||
       p.preferred_roles?.some((r) => r.toLowerCase().includes(q)) ||
       p.preferred_locations?.some((l) => l.toLowerCase().includes(q)) ||
       p.profile_summary?.toLowerCase().includes(q)
@@ -63,9 +61,8 @@ export function TalentSearch() {
     }
   };
 
-  // Collect unique countries/departments for filters
+  // Collect unique countries for filters (department filter removed — internal HR data)
   const countries = [...new Set(profiles.flatMap((p) => p.preferred_countries || []))].sort();
-  const departments = [...new Set(profiles.map((p) => p.employee?.department).filter(Boolean))].sort();
 
   return (
     <div className="space-y-4">
@@ -74,7 +71,7 @@ export function TalentSearch() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by name, role, department, location..."
+            placeholder="Search by name, role, location..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-11"
@@ -86,7 +83,7 @@ export function TalentSearch() {
             <Button variant="outline" size="sm" className="gap-2">
               <Filter className="h-4 w-4" />
               Filters
-              {(countryFilter !== "all" || departmentFilter !== "all") && (
+              {countryFilter !== "all" && (
                 <Badge variant="secondary" className="ml-1 text-xs">Active</Badge>
               )}
             </Button>
@@ -105,26 +102,11 @@ export function TalentSearch() {
                 </SelectContent>
               </Select>
 
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((d) => (
-                    <SelectItem key={d!} value={d!}>{d}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {(countryFilter !== "all" || departmentFilter !== "all") && (
+              {countryFilter !== "all" && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setCountryFilter("all");
-                    setDepartmentFilter("all");
-                  }}
+                  onClick={() => setCountryFilter("all")}
                 >
                   Clear filters
                 </Button>
@@ -200,11 +182,13 @@ function TalentProfileCard({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <CardTitle className="text-base truncate">
-              {emp?.forename} {emp?.surname}
+              {emp?.forename} {emp?.surname_initial}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {emp?.department}
-            </p>
+            {profile.preferred_roles?.length > 0 && (
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {profile.preferred_roles[0]}
+              </p>
+            )}
           </div>
           <Badge variant="outline" className={`shrink-0 text-xs ${statusClass}`}>
             {statusLabel}

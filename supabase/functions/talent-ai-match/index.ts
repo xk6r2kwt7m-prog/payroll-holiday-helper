@@ -31,10 +31,14 @@ Deno.serve(async (req) => {
       .single();
     if (reqError) throw reqError;
 
-    // Fetch visible talent profiles with employee data
+    // Fetch visible talent profiles — privacy-safe fields only, no internal HR data
     let profileQuery = supabase
       .from("talent_profiles")
-      .select("*, employees!inner(forename, surname, department, status, start_date, end_date)")
+      .select(`id, employee_id, tenant_id, talent_pool_status, visibility_mode,
+        preferred_roles, preferred_locations, preferred_countries, preferred_regions,
+        employment_type_preference, profile_summary, years_experience, languages,
+        work_eligibility_countries, willing_to_relocate, willing_to_travel,
+        available_from, employees!inner(forename, surname)`)
       .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"])
       .neq("visibility_mode", "hidden");
 
@@ -87,11 +91,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Prepare AI prompt
+    // Prepare AI prompt — privacy-safe data only, no internal HR fields
     const candidateSummaries = visibleProfiles.map((p: any) => ({
       id: p.id,
-      name: `${p.employees.forename} ${p.employees.surname}`,
-      department: p.employees.department,
+      name: `${p.employees.forename} ${p.employees.surname.charAt(0)}.`,
       status: p.talent_pool_status,
       roles: p.preferred_roles,
       locations: p.preferred_locations,
@@ -122,8 +125,7 @@ ${JSON.stringify(candidateSummaries, null, 2)}
 For each candidate, assess:
 1. Role/skill match
 2. Geography match (location, country, work eligibility)
-3. Availability match
-4. Department relevance`;
+3. Availability match`;
 
     // Call Lovable AI with tool calling for structured output
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
