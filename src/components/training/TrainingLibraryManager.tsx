@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen, Plus, FileText, Shield, GraduationCap, AlertTriangle,
-  CheckCircle2, Clock, Eye, Users, Search, Upload, Sparkles,
+  CheckCircle2, Clock, Eye, Users, Search, Upload, Sparkles, RefreshCw, ShieldAlert, Loader2,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
