@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { usePayrollAudit, type AuditFinding, type AuditSeverity } from "@/hooks/usePayrollAudit";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -141,6 +142,8 @@ const PayrollAudit = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <PayrollNavStrip />
+
         {/* Header */}
         <div className="flex items-center justify-between animate-slide-in-left">
           <div>

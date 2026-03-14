@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { BarChart3, TrendingUp, DollarSign, Clock, Users, Percent, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -177,6 +178,8 @@ const PayrollAnalytics = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        <PayrollNavStrip />
+
         {/* Header */}
         <div className="animate-slide-in-left">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">

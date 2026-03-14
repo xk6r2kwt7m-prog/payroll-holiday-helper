@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { DollarSign, Clock, FileText, Calendar, BarChart3, FileDown, ShieldCheck } from "lucide-react";
+
+import { DollarSign, Clock, FileText, FileDown } from "lucide-react";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -30,12 +30,13 @@ import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 
 const Payroll = () => {
   const { t } = useI18n();
+  
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
-  const [workspaceTab, setWorkspaceTab] = useState("payroll");
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
@@ -288,46 +289,21 @@ const Payroll = () => {
                 {t("payroll.title")}
               </h1>
             </div>
-            {workspaceTab === "payroll" && (
-              <div className="flex gap-1.5 shrink-0">
-                {selectedPeriod && entries.length > 0 && (
-                  <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
-                    <FileDown className="h-4 w-4 sm:mr-1.5" />
-                    <span className="hidden sm:inline">PDF</span>
-                  </Button>
-                )}
-              </div>
-            )}
+            <div className="flex gap-1.5 shrink-0">
+              {selectedPeriod && entries.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-9 px-2.5 sm:px-3">
+                  <FileDown className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Workspace Tabs */}
-        <Tabs value={workspaceTab} onValueChange={setWorkspaceTab}>
-          <TabsList className="w-full grid grid-cols-4 h-auto">
-            <TabsTrigger value="payroll" className="gap-1.5 text-xs sm:text-sm py-2">
-              <DollarSign className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Payroll</span>
-              <span className="sm:hidden">Pay</span>
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="gap-1.5 text-xs sm:text-sm py-2">
-              <Calendar className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Calendar</span>
-              <span className="sm:hidden">Cal</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="gap-1.5 text-xs sm:text-sm py-2">
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Analytics</span>
-              <span className="sm:hidden">Stats</span>
-            </TabsTrigger>
-            <TabsTrigger value="audit" className="gap-1.5 text-xs sm:text-sm py-2">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Audit</span>
-              <span className="sm:hidden">Audit</span>
-            </TabsTrigger>
-          </TabsList>
+        <PayrollNavStrip />
 
-          {/* Main Payroll Tab */}
-          <TabsContent value="payroll" className="space-y-4 sm:space-y-6 mt-4">
+        {/* Main Payroll Content */}
+        <div className="space-y-4 sm:space-y-6">
             {/* Admin actions */}
             {isAdmin && (
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -525,37 +501,10 @@ const Payroll = () => {
             companyName={companySettings?.company_name}
           />
         )}
-          </TabsContent>
-
-          {/* Calendar Tab */}
-          <TabsContent value="calendar" className="mt-4">
-            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading calendar...</div>}>
-              <PayrollCalendarInline />
-            </Suspense>
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="mt-4">
-            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading analytics...</div>}>
-              <PayrollAnalyticsView />
-            </Suspense>
-          </TabsContent>
-
-          {/* Audit Tab */}
-          <TabsContent value="audit" className="mt-4">
-            <Suspense fallback={<div className="flex items-center justify-center py-16 text-sm text-muted-foreground">Loading audit...</div>}>
-              <PayrollAuditView />
-            </Suspense>
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
     </AppLayout>
   );
 };
-
-// Inline wrapper for Calendar (strips AppLayout since it's already in one)
-function PayrollCalendarInline() {
-  return <PayrollCalendarView />;
-}
 
 export default Payroll;
