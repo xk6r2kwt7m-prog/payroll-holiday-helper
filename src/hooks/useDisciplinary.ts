@@ -72,6 +72,7 @@ export function useAddDisciplinaryRecord() {
       appeal_deadline?: string;
       expiry_date?: string;
     }) => {
+      await assertPermission("manage_lifecycle", null);
       const { error } = await supabase.from("disciplinary_records" as any).insert(record as any);
       if (error) throw error;
     },
