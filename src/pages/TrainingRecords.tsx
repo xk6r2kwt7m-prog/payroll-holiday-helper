@@ -191,6 +191,7 @@ function TrainingAdminView() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                )}
               </div>
 
               {(expiredRecords.length > 0 || expiringRecords.length > 0) && (
