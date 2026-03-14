@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -33,6 +34,7 @@ import {
   FolderOpen,
   MapPin,
   CalendarDays,
+  DollarSign,
 } from "lucide-react";
 import { format, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -113,6 +115,7 @@ export function ScheduleHeader({
   assignedCount = 0,
 }: ScheduleHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
@@ -243,6 +246,11 @@ export function ScheduleHeader({
                 Delete all shifts
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">Analysis</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => navigate("/schedule/labour-cost")} className="gap-2">
+                <DollarSign className="h-3.5 w-3.5" />
+                Preview labour cost
+              </DropdownMenuItem>
               <DropdownMenuItem className="gap-2">
                 <Printer className="h-3.5 w-3.5" />
                 Print schedule

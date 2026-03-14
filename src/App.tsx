@@ -40,6 +40,7 @@ import SelectWorkspace from "./pages/SelectWorkspace";
 import ResetPassword from "./pages/ResetPassword";
 import TalentPool from "./pages/TalentPool";
 import Workforce from "./pages/Workforce";
+import LabourCostPreview from "./pages/LabourCostPreview";
 import NotFound from "./pages/NotFound";
 import { CommandPalette } from "@/components/CommandPalette";
 
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/schedule" element={<ProtectedRoute requiredRole="staff" requiredModule="scheduling" moduleName="Scheduling"><Schedule /></ProtectedRoute>} />
             <Route path="/schedule/report" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><ScheduleReport /></ProtectedRoute>} />
             <Route path="/schedule/analytics" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><ScheduleAnalytics /></ProtectedRoute>} />
+            <Route path="/schedule/labour-cost" element={<ProtectedRoute requiredRole="manager" requiredModule="scheduling" moduleName="Scheduling"><LabourCostPreview /></ProtectedRoute>} />
 
             {/* Timesheets — supervisor+ */}
             <Route path="/timesheets" element={<ProtectedRoute requiredRole="supervisor" requiredModule="scheduling" moduleName="Scheduling"><Timesheets /></ProtectedRoute>} />
