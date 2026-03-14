@@ -178,6 +178,7 @@ export function useUploadDocument() {
 
 export function useUpdateDocument() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   return useMutation({
     mutationFn: async ({
@@ -191,7 +192,7 @@ export function useUpdateDocument() {
         notes?: string | null;
       };
     }) => {
-      await assertPermission("manage_documents", null);
+      await assertPermission("manage_documents", tenantId!);
       const { data, error } = await supabase
         .from("employee_documents")
         .update(updates)
