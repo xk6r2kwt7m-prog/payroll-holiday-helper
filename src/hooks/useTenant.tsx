@@ -149,7 +149,19 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     console.log("[TenantProvider] selectTenant: applied from DB");
   }, [user, commitTenantSelection]);
 
-  useEffect(() => {
+  const openWorkspacePicker = useCallback(() => {
+    const cached = cachedMemberships.current;
+    if (cached.length <= 1) return; // nothing to switch to
+    setAvailableTenants(
+      cached.map((m) => ({
+        tenant_id: m.tenant_id,
+        tenant_name: (m.tenants as any)?.name || "Unknown",
+        role: m.role,
+      }))
+    );
+    setShowTenantPicker(true);
+  }, []);
+
     // While auth is still bootstrapping, stay in loading
     if (authLoading) {
       setLoading(true);
