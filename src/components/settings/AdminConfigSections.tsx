@@ -196,6 +196,7 @@ export function TrainingDocSettings() {
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">Manage training modules, certifications, document categories, and compliance reminders.</p>
       <ToggleRow label="Auto renewal reminders" desc="Send reminders before certifications expire" checked={local.autoReminders} onChange={v => set("autoReminders", v)} />
+      <NotYetEnforced label="autoReminders — saved for future enforcement (requires cron job)" />
       {local.autoReminders && (
         <div className="space-y-1.5 pl-1">
           <Label className="text-xs">Reminder days before expiry</Label>
@@ -203,6 +204,7 @@ export function TrainingDocSettings() {
         </div>
       )}
       <ToggleRow label="Require document acknowledgement" desc="Staff must acknowledge receipt of documents" checked={local.requireAcknowledge} onChange={v => set("requireAcknowledge", v)} />
+      <NotYetEnforced label="requireAcknowledge — saved for future enforcement" />
       <Separator />
       <div className="space-y-2">
         <SettingLink label="Training Records" description="View and manage certifications" to="/training" />
