@@ -35,6 +35,7 @@ export function useAbsenceRecords(employeeId?: string) {
 
 export function useAddAbsence() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (record: {
       employee_id: string;
@@ -44,7 +45,7 @@ export function useAddAbsence() {
       hours: number;
       notes?: string;
     }) => {
-      await assertPermission("edit_employees", null);
+      await assertPermission("edit_employees", tenantId!);
       const { error } = await supabase.from("absence_records" as any).insert(record as any);
       if (error) throw error;
     },
