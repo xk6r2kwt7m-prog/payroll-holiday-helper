@@ -29,14 +29,10 @@ export interface TalentProfile {
   opted_out_at: string | null;
   created_at: string;
   updated_at: string;
-  // Joined fields
+  // Joined fields — privacy-safe subset only
   employee?: {
     forename: string;
-    surname: string;
-    department: string;
-    status: string;
-    start_date: string | null;
-    end_date: string | null;
+    surname_initial: string;
   };
 }
 
