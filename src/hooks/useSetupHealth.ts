@@ -39,7 +39,7 @@ export function useSetupHealth(): SetupHealth {
         label: t("setup.company_profile"),
         description: t("setup.company_profile_desc"),
         completed: !!(tenantName && tenantName.length > 0 && tenantCountry),
-        href: "/settings?section=company",
+        href: "/settings?group=company&section=profile",
         priority: "required",
       },
       {
@@ -47,7 +47,7 @@ export function useSetupHealth(): SetupHealth {
         label: t("setup.leave_rules"),
         description: t("setup.leave_rules_desc"),
         completed: !!(leaveRules && leaveRules.accrualRate > 0),
-        href: "/settings?section=leave",
+        href: "/settings?group=time-leave&section=leave-rules",
         priority: "required",
       },
       {
@@ -55,7 +55,7 @@ export function useSetupHealth(): SetupHealth {
         label: t("setup.branches"),
         description: t("setup.branches_desc"),
         completed: locations.length > 0,
-        href: "/settings?section=locations",
+        href: "/settings?group=workplaces&section=locations",
         priority: "required",
       },
       {
@@ -63,7 +63,7 @@ export function useSetupHealth(): SetupHealth {
         label: t("setup.departments"),
         description: t("setup.departments_desc"),
         completed: !!(companySettings),
-        href: "/settings?section=departments",
+        href: "/settings?group=people&section=departments",
         priority: "recommended",
       },
       {
@@ -71,7 +71,7 @@ export function useSetupHealth(): SetupHealth {
         label: t("setup.payroll_settings"),
         description: t("setup.payroll_settings_desc"),
         completed: !!(companySettings?.pay_period && companySettings?.default_pay_day),
-        href: "/settings?section=payroll",
+        href: "/settings?group=payroll&section=pay-settings",
         priority: "recommended",
       },
       {
@@ -89,10 +89,10 @@ export function useSetupHealth(): SetupHealth {
     const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
     const alerts: { message: string; href: string }[] = [];
-    if (locations.length === 0) alerts.push({ message: t("setup.no_branches"), href: "/settings?section=locations" });
+    if (locations.length === 0) alerts.push({ message: t("setup.no_branches"), href: "/settings?group=workplaces&section=locations" });
     if (employees.filter(e => e.status === "active").length === 0) alerts.push({ message: t("setup.no_employees"), href: "/employees" });
-    if (!companySettings?.pay_period) alerts.push({ message: t("setup.payroll_incomplete"), href: "/settings?section=payroll" });
-    if (!leaveRules || leaveRules.accrualRate <= 0) alerts.push({ message: t("setup.holiday_not_configured"), href: "/settings?section=leave" });
+    if (!companySettings?.pay_period) alerts.push({ message: t("setup.payroll_incomplete"), href: "/settings?group=payroll&section=pay-settings" });
+    if (!leaveRules || leaveRules.accrualRate <= 0) alerts.push({ message: t("setup.holiday_not_configured"), href: "/settings?group=time-leave&section=leave-rules" });
 
     return {
       steps,

@@ -200,10 +200,23 @@ const Locations = () => {
         </div>
 
         {(!pulses || pulses.length === 0) && (
-          <div className="rounded-xl bg-card border border-border p-8 text-center">
-            <MapPin className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-            <h3 className="font-bold text-foreground mb-1">No Locations Configured</h3>
-            <p className="text-sm text-muted-foreground">Set up branch locations to see operational data here.</p>
+          <div className="rounded-xl bg-card border border-border p-10 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
+              <MapPin className="h-7 w-7 text-primary" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground mb-2">No locations yet</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-2">
+              Locations represent your physical sites — restaurants, kitchens, or offices. Add your first location to enable scheduling, attendance tracking, and geofence-based clock-in.
+            </p>
+            <p className="text-xs text-muted-foreground/70 max-w-xs mx-auto mb-5">
+              Each location can have its own operating hours, staff assignments, and compliance rules.
+            </p>
+            <a href="/settings?group=workplaces&section=locations">
+              <Button size="sm">
+                <MapPin className="h-4 w-4 mr-1.5" />
+                Add First Location
+              </Button>
+            </a>
           </div>
         )}
       </div>

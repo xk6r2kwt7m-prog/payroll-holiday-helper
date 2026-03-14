@@ -78,7 +78,7 @@ export function SetupHealthWidget() {
       <div className="p-4 sm:p-5 pb-3 sm:pb-4">
         <div className="flex items-center gap-3 mb-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <Sparkles className="h-4.5 w-4.5 text-primary" />
+            <Sparkles className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-bold text-foreground">{t("dashboard.setup_title")}</h3>
@@ -129,7 +129,7 @@ export function SetupHealthBadge() {
 
   return (
     <Link
-      to="/settings?section=company"
+      to="/settings?group=company&section=profile"
       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-warning/10 text-warning text-[11px] font-semibold hover:bg-warning/20 transition-colors"
     >
       <AlertTriangle className="h-3.5 w-3.5" />

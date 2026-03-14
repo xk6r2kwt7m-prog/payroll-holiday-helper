@@ -473,8 +473,11 @@ const Payroll = () => {
           <EmptyState
             icon={FileText}
             title="No payroll periods yet"
-            description="Create your first payroll period to start tracking staff pay, hours, and deductions."
+            description="Create your first payroll period to start tracking staff pay, hours, and deductions. Each period represents one pay cycle."
+            hint="Payroll periods lock automatically after approval to protect data integrity."
             actionLabel={isAdmin ? "Create Period" : undefined}
+            secondaryLabel={isAdmin ? "Configure Pay Settings" : undefined}
+            secondaryHref={isAdmin ? "/settings?group=payroll&section=pay-settings" : undefined}
           />
         )}
 
