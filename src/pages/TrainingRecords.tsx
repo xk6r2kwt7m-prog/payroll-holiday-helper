@@ -215,7 +215,10 @@ function TrainingAdminView() {
                       </div>
                       <h3 className="text-base font-semibold text-foreground mb-1">No certification records</h3>
                       <p className="text-sm text-muted-foreground max-w-xs">
-                        Add training records and certifications for your team using the button above.
+                        Track food hygiene certificates, first aid qualifications, and other mandatory training for your team.
+                      </p>
+                      <p className="text-xs text-muted-foreground/70 mt-1.5 max-w-xs">
+                        The system will alert you when certifications are expiring so renewals aren't missed.
                       </p>
                     </div>
                   )}

@@ -158,9 +158,14 @@ export function DocumentVerificationPanel({ documents, employeeId, tenantId }: D
 
   if (documents.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <FileText className="h-10 w-10 mx-auto mb-2 opacity-40" />
-        <p className="text-sm">No documents uploaded yet</p>
+      <div className="text-center py-10 text-muted-foreground px-4">
+        <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+          <FileText className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <h3 className="text-sm font-semibold text-foreground mb-1">No documents to verify</h3>
+        <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+          Upload documents first, then return here to verify them for right-to-work compliance.
+        </p>
       </div>
     );
   }

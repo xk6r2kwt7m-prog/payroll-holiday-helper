@@ -134,9 +134,23 @@ export function DocumentRequestsManager() {
       {isLoading ? (
         <div className="text-center py-12 text-sm text-muted-foreground">Loading...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <FileText className="h-10 w-10 mx-auto mb-2 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">No document requests found</p>
+        <div className="text-center py-12 px-4">
+          <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+            <FileText className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-base font-semibold text-foreground mb-1">
+            {statusFilter !== "all" || search ? "No matching requests" : "No document requests yet"}
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            {statusFilter !== "all" || search
+              ? "Try adjusting your filters or search terms."
+              : "Use document requests to collect missing files from employees — passports, right-to-work proof, food hygiene certificates, and more."}
+          </p>
+          {!search && statusFilter === "all" && (
+            <p className="text-xs text-muted-foreground/70 mt-1.5 max-w-xs mx-auto">
+              The system tracks the full lifecycle from request to verification, with automated reminders.
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

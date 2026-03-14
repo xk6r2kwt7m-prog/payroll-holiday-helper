@@ -4,11 +4,11 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useEmployeeReadiness, type ReadinessStatus } from "@/hooks/useOnboardingReadiness";
 
-const statusConfig: Record<ReadinessStatus, { label: string; icon: any; color: string; bg: string }> = {
-  ready: { label: "Ready", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
-  pending: { label: "Pending", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
-  pending_verification: { label: "Awaiting Verification", icon: Shield, color: "text-accent", bg: "bg-accent/10" },
-  blocked: { label: "Blocked", icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
+const statusConfig: Record<ReadinessStatus, { label: string; shortLabel: string; description: string; icon: any; color: string; bg: string }> = {
+  ready: { label: "Ready to Work", shortLabel: "Ready", description: "All requirements met — this employee can be scheduled.", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
+  pending: { label: "Setup Incomplete", shortLabel: "Pending", description: "Some required items are still missing.", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
+  pending_verification: { label: "Awaiting Admin Verification", shortLabel: "Verifying", description: "Documents uploaded but need admin review before clearance.", icon: Shield, color: "text-accent", bg: "bg-accent/10" },
+  blocked: { label: "Blocked — Cannot Work", shortLabel: "Blocked", description: "Critical compliance items are missing. This employee cannot be scheduled.", icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
 };
 
 const checkStatusIcon: Record<string, { icon: any; color: string }> = {
@@ -36,7 +36,7 @@ export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
         <StatusIcon className={cn("h-5 w-5", config.color)} />
         <div className="flex-1">
           <p className={cn("text-sm font-semibold", config.color)}>{config.label}</p>
-          <p className="text-xs text-muted-foreground">{readiness.score}% complete</p>
+          <p className="text-[11px] text-muted-foreground">{config.description}</p>
         </div>
         <Badge variant="outline" className={cn("text-xs", config.color)}>
           {readiness.score}%
@@ -96,7 +96,7 @@ export function ReadinessStatusBadge({ status }: { status: ReadinessStatus }) {
   return (
     <Badge variant="outline" className={cn("text-[10px] gap-1", config.color, `border-current/20`)}>
       <Icon className="h-3 w-3" />
-      {config.label}
+      {config.shortLabel}
     </Badge>
   );
 }
