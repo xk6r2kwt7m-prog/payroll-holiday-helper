@@ -286,7 +286,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     } catch (err: any) {
       toast.error(err.message);
     }
-  }, [copyPrevWeek, weekStartStr, selectedBranch, selectedDept]);
+  }, [copyPrevWeek, weekStartStr, selectedBranch, selectedDept, tenantId]);
 
   const handleSaveTemplate = useCallback(async (name: string) => {
     const currentShifts = branchDeptShifts.map((s: any) => {
