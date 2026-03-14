@@ -88,6 +88,7 @@ export function useUpdateDisciplinaryRecord() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; [key: string]: any }) => {
+      await assertPermission("manage_lifecycle", null);
       const { error } = await supabase
         .from("disciplinary_records" as any)
         .update(updates as any)

@@ -51,6 +51,7 @@ export function useUpdateCompanySettings() {
   return useMutation({
     mutationFn: async (updates: Partial<CompanySettings>) => {
       if (!tenantId) throw new Error("No tenant context");
+      await assertPermission("access_admin_centre", tenantId);
 
       // First check if settings exist for this tenant
       const { data: existing } = await supabase

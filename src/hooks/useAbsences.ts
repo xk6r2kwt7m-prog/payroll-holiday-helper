@@ -60,6 +60,7 @@ export function useDeleteAbsence() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("edit_employees", null);
       const { error } = await supabase.from("absence_records" as any).delete().eq("id", id);
       if (error) throw error;
     },

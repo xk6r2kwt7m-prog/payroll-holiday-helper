@@ -204,6 +204,7 @@ export function useUpdateEvidenceRequestStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (params: { id: string; status: string }) => {
+      await assertPermission("approve_timesheets", null);
       const { error } = await supabase
         .from("evidence_requests" as any)
         .update({ status: params.status, updated_at: new Date().toISOString() } as any)

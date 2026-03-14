@@ -32,6 +32,7 @@ export function useSendInvitation() {
 
   return useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
+      await assertPermission("edit_employees", tenantId);
       const { data, error } = await supabase
         .from("tenant_invitations")
         .insert({
