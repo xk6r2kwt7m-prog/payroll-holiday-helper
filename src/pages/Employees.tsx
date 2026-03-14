@@ -44,6 +44,7 @@ const Employees = () => {
   const STATUS_CONFIG: Record<StatusFilter, { label: string; emoji: string; style: string }> = {
     active: { label: t("employees.status_active"), emoji: "✅", style: "bg-success/10 text-success border-success/30" },
     starter: { label: t("employees.status_starters"), emoji: "🆕", style: "bg-primary/10 text-primary border-primary/30" },
+    onboarding: { label: "Onboarding", emoji: "📋", style: "bg-accent/10 text-accent border-accent/30" },
     leaver: { label: t("employees.status_leavers"), emoji: "👋", style: "bg-destructive/10 text-destructive border-destructive/30" },
     archived: { label: t("employees.status_archived"), emoji: "📦", style: "bg-muted text-muted-foreground border-border" },
   };
