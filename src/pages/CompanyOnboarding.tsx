@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,11 +68,10 @@ const CompanyOnboarding = () => {
     setData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  if (!user) { navigate("/auth"); return null; }
-  // If user already has workspace(s), they should never be here
-  if (tenantResolved && tenantId) { navigate("/"); return null; }
-  if (tenantResolved && membershipCount > 0 && !tenantId) { navigate("/select-workspace"); return null; }
-  // If still resolving, show loading
+  // ─── Redirect guards (using <Navigate> to avoid React warnings) ───
+  if (!user) return <Navigate to="/auth" replace />;
+  if (tenantResolved && tenantId) return <Navigate to="/" replace />;
+  if (tenantResolved && membershipCount > 0 && !tenantId) return <Navigate to="/select-workspace" replace />;
   if (!tenantResolved || tenantLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -80,6 +79,7 @@ const CompanyOnboarding = () => {
       </div>
     );
   }
+  // If we reach here: tenantResolved=true, membershipCount=0, no tenantId → allow onboarding
 
   const canProceed = (): boolean => {
     switch (step) {

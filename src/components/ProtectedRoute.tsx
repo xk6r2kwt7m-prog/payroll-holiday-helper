@@ -54,13 +54,11 @@ export function ProtectedRoute({
 
   // ─── GATE 2: Not authenticated ───
   if (!user) {
-    console.log("[ProtectedRoute] No user → /auth");
     return <Navigate to="/auth" replace />;
   }
 
   // ─── GATE 3: Tenant resolution not yet complete ───
   if (!tenantResolved) {
-    console.log("[ProtectedRoute] Tenant not yet resolved — showing resolving screen");
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -78,7 +76,7 @@ export function ProtectedRoute({
     return <Navigate to="/select-workspace" replace />;
   }
 
-  // ─── GATE 5: Zero memberships — only redirect when confirmed (not stale) ───
+  // ─── GATE 5: Zero memberships — only redirect when tenantResolved confirms 0 ───
   if (membershipCount === 0 && tenantResolved && !tenantId && !isPlatformAdmin) {
     return <Navigate to="/onboard" replace />;
   }
