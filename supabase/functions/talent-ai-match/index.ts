@@ -125,8 +125,7 @@ ${JSON.stringify(candidateSummaries, null, 2)}
 For each candidate, assess:
 1. Role/skill match
 2. Geography match (location, country, work eligibility)
-3. Availability match
-4. Department relevance`;
+3. Availability match`;
 
     // Call Lovable AI with tool calling for structured output
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
