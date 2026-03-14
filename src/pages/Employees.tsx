@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type Department = "FOH" | "BOH" | "CPU";
-type StatusFilter = "active" | "starter" | "leaver" | "archived";
+type StatusFilter = "active" | "starter" | "leaver" | "onboarding" | "archived";
 type SortOption = "alpha" | "newest" | "recent-leavers" | "department";
 
 const Employees = () => {
