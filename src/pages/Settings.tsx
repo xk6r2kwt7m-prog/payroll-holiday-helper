@@ -223,7 +223,7 @@ const Settings = () => {
             <ChevronLeft className="h-3.5 w-3.5" />
             All Settings
           </button>
-          <div className="rounded-xl bg-card border border-border p-6 text-center space-y-2">
+          <div className="rounded-lg bg-card border border-border/70 p-6 text-center space-y-2 shadow-card">
             <p className="text-sm font-medium text-foreground">Settings group not found</p>
             <p className="text-xs text-muted-foreground">This section doesn't exist. Return to the Admin Centre to find what you need.</p>
             <Button size="sm" variant="outline" onClick={() => navigateTo(null, null)}>Back to Admin Centre</Button>
@@ -245,7 +245,7 @@ const Settings = () => {
             <ChevronLeft className="h-3.5 w-3.5" />
             {currentGroup.label}
           </button>
-          <div className="rounded-xl bg-card border border-border p-6 text-center space-y-2">
+          <div className="rounded-lg bg-card border border-border/70 p-6 text-center space-y-2 shadow-card">
             <p className="text-sm font-medium text-foreground">Section not found</p>
             <p className="text-xs text-muted-foreground">This setting doesn't exist in {currentGroup.label}.</p>
             <Button size="sm" variant="outline" onClick={() => navigateTo(activeGroup, null)}>Back to {currentGroup.label}</Button>
@@ -350,14 +350,18 @@ const Settings = () => {
         {/* Back navigation */}
         <button
           onClick={() => navigateTo(activeGroup, null)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors font-medium"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           {currentGroup?.label || "Settings"}
         </button>
 
-        <div className="flex items-center gap-2">
-          {currentGroup && <currentGroup.icon className="h-4 w-4 text-primary" />}
+        <div className="flex items-center gap-2.5">
+          {currentGroup && (
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60 shrink-0">
+              <currentGroup.icon className="h-4.5 w-4.5 text-muted-foreground" />
+            </div>
+          )}
           <h2 className="text-base font-semibold text-foreground">{sectionLabel}</h2>
         </div>
 
