@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import {
   Clock, LogOut, Calendar, CheckCircle2, AlertCircle, AlertTriangle, Megaphone, FileText,
   Upload, Sun, User, ChevronRight, Shield, Phone, Building2, GraduationCap,
-  Bell, Settings,
+  Bell, Settings, BookOpen,
 } from "lucide-react";
 import { useI18n } from "@/hooks/useI18n";
 import { HolidayRequestForm } from "@/components/holidays/HolidayRequestForm";
@@ -21,6 +21,7 @@ import { useMyTimeEntries } from "@/hooks/useTimeEntries";
 import { useMyHolidayRequests } from "@/hooks/useHolidayRequests";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployeeDocuments, getExpiryStatus } from "@/hooks/useEmployeeDocuments";
+import { StaffTrainingView } from "@/components/training/StaffTrainingView";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
@@ -29,7 +30,7 @@ export default function StaffPortal() {
   const { user, signOut } = useAuth();
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
-  const [activeSection, setActiveSection] = useState<"profile" | "requests" | "timesheets" | "documents">("profile");
+  const [activeSection, setActiveSection] = useState<"profile" | "requests" | "timesheets" | "documents" | "training">("profile");
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -113,6 +114,7 @@ export default function StaffPortal() {
     { id: "profile" as const, icon: User, label: "Profile" },
     { id: "requests" as const, icon: Sun, label: "Requests", badge: pendingRequests },
     { id: "timesheets" as const, icon: Clock, label: "Timesheets" },
+    { id: "training" as const, icon: BookOpen, label: "Training" },
     { id: "documents" as const, icon: FileText, label: "Documents" },
   ];
 
@@ -278,6 +280,13 @@ export default function StaffPortal() {
                 </div>
               ))
             )}
+          </motion.div>
+        )}
+
+        {/* Training Section */}
+        {activeSection === "training" && (
+          <motion.div {...anim} transition={{ duration: 0.25 }}>
+            {employeeId && <StaffTrainingView employeeId={employeeId} />}
           </motion.div>
         )}
 

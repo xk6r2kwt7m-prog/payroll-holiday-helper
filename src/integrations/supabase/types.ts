@@ -4772,6 +4772,365 @@ export type Database = {
           },
         ]
       }
+      training_assignments: {
+        Row: {
+          acknowledged_at: string | null
+          assigned_at: string
+          assigned_by: string | null
+          completed_at: string | null
+          created_at: string
+          document_id: string
+          due_date: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          quiz_passed: boolean | null
+          quiz_score: number | null
+          reminder_count: number
+          status: string
+          tenant_id: string
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          assigned_at?: string
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          document_id: string
+          due_date?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          quiz_passed?: boolean | null
+          quiz_score?: number | null
+          reminder_count?: number
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          assigned_at?: string
+          assigned_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          document_id?: string
+          due_date?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          quiz_passed?: boolean | null
+          quiz_score?: number | null
+          reminder_count?: number
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_assignments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_audit_log: {
+        Row: {
+          acting_user_id: string | null
+          action: string
+          assignment_id: string | null
+          created_at: string
+          document_id: string | null
+          employee_id: string | null
+          id: string
+          metadata: Json | null
+          tenant_id: string
+        }
+        Insert: {
+          acting_user_id?: string | null
+          action: string
+          assignment_id?: string | null
+          created_at?: string
+          document_id?: string | null
+          employee_id?: string | null
+          id?: string
+          metadata?: Json | null
+          tenant_id: string
+        }
+        Update: {
+          acting_user_id?: string | null
+          action?: string
+          assignment_id?: string | null
+          created_at?: string
+          document_id?: string | null
+          employee_id?: string | null
+          id?: string
+          metadata?: Json | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_audit_log_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "training_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_audit_log_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_audit_log_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_audit_log_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_audit_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_auto_rules: {
+        Row: {
+          apply_to_new_starters: boolean
+          created_at: string
+          document_id: string
+          due_days_after_start: number | null
+          id: string
+          is_active: boolean
+          rule_name: string
+          target_departments: string[] | null
+          target_locations: string[] | null
+          target_roles: string[] | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          apply_to_new_starters?: boolean
+          created_at?: string
+          document_id: string
+          due_days_after_start?: number | null
+          id?: string
+          is_active?: boolean
+          rule_name: string
+          target_departments?: string[] | null
+          target_locations?: string[] | null
+          target_roles?: string[] | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          apply_to_new_starters?: boolean
+          created_at?: string
+          document_id?: string
+          due_days_after_start?: number | null
+          id?: string
+          is_active?: boolean
+          rule_name?: string
+          target_departments?: string[] | null
+          target_locations?: string[] | null
+          target_roles?: string[] | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_auto_rules_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_auto_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_library: {
+        Row: {
+          category: string
+          counts_toward_readiness: boolean
+          created_at: string
+          created_by: string | null
+          description: string | null
+          effective_date: string | null
+          expiry_date: string | null
+          file_path: string | null
+          id: string
+          is_active: boolean
+          previous_version_id: string | null
+          requires_acknowledgement: boolean
+          requires_completion: boolean
+          requires_quiz: boolean
+          review_date: string | null
+          target_departments: string[] | null
+          target_locations: string[] | null
+          target_roles: string[] | null
+          tenant_id: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          category?: string
+          counts_toward_readiness?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          file_path?: string | null
+          id?: string
+          is_active?: boolean
+          previous_version_id?: string | null
+          requires_acknowledgement?: boolean
+          requires_completion?: boolean
+          requires_quiz?: boolean
+          review_date?: string | null
+          target_departments?: string[] | null
+          target_locations?: string[] | null
+          target_roles?: string[] | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          category?: string
+          counts_toward_readiness?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_date?: string | null
+          expiry_date?: string | null
+          file_path?: string | null
+          id?: string
+          is_active?: boolean
+          previous_version_id?: string | null
+          requires_acknowledgement?: boolean
+          requires_completion?: boolean
+          requires_quiz?: boolean
+          review_date?: string | null
+          target_departments?: string[] | null
+          target_locations?: string[] | null
+          target_roles?: string[] | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_library_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_library_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_quiz_questions: {
+        Row: {
+          correct_option: number
+          created_at: string
+          display_order: number
+          document_id: string
+          id: string
+          options: Json
+          question: string
+          tenant_id: string
+        }
+        Insert: {
+          correct_option?: number
+          created_at?: string
+          display_order?: number
+          document_id: string
+          id?: string
+          options?: Json
+          question: string
+          tenant_id: string
+        }
+        Update: {
+          correct_option?: number
+          created_at?: string
+          display_order?: number
+          document_id?: string
+          id?: string
+          options?: Json
+          question?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_quiz_questions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_quiz_questions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_records: {
         Row: {
           certificate_file_path: string | null
