@@ -86,6 +86,7 @@ export function useCreatePayrollPeriod() {
   
   return useMutation({
     mutationFn: async (period: Omit<PayrollPeriodInsert, 'tenant_id'>) => {
+      await assertPermission("view_pay_data", tenantId!);
       const { data, error } = await supabase
         .from("payroll_periods")
         .insert({ ...period, tenant_id: tenantId! })
