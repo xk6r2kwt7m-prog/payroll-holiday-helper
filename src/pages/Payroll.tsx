@@ -509,6 +509,8 @@ const Payroll = () => {
             periodStatus={selectedPeriod.status}
             isAdmin={isAdmin}
             onExport={handleExport}
+            showBonusColumn={payrollPrefs?.showBonusColumn !== false}
+            showServiceCharge={payrollPrefs?.showServiceCharge !== false}
           />
         )}
 
