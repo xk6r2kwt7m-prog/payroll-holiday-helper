@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,18 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import {
-  Clock, LogOut, Calendar, CheckCircle2, AlertCircle, AlertTriangle, Megaphone, FileText,
-  Upload, Sun, User, ChevronRight, Shield, Phone, Building2, GraduationCap,
-  Bell, Settings, BookOpen,
+  Clock, LogOut, CheckCircle2, AlertCircle, AlertTriangle, FileText,
+  User, BookOpen,
 } from "lucide-react";
-import { useI18n } from "@/hooks/useI18n";
-import { HolidayRequestForm } from "@/components/holidays/HolidayRequestForm";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
 import { StaffDocumentRequests } from "@/components/documents/StaffDocumentRequests";
 import { useMyTimeEntries } from "@/hooks/useTimeEntries";
-import { useMyHolidayRequests } from "@/hooks/useHolidayRequests";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployeeDocuments, getExpiryStatus } from "@/hooks/useEmployeeDocuments";
 import { StaffTrainingView } from "@/components/training/StaffTrainingView";
@@ -26,12 +20,10 @@ import { StaffTrainingView } from "@/components/training/StaffTrainingView";
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
 export default function StaffPortal() {
-  const { t } = useI18n();
   const { user, signOut } = useAuth();
   const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [employeeData, setEmployeeData] = useState<any>(null);
-  const [activeSection, setActiveSection] = useState<"profile" | "requests" | "timesheets" | "documents" | "training">("profile");
-  const qc = useQueryClient();
+  const [activeSection, setActiveSection] = useState<"profile" | "timesheets" | "documents" | "training">("profile");
 
   useEffect(() => {
     if (!user) return;
@@ -46,46 +38,6 @@ export default function StaffPortal() {
   }, [user]);
 
   const { data: myEntries } = useMyTimeEntries();
-  const { data: myRequests = [] } = useMyHolidayRequests(employeeId || "");
-
-  const { data: announcements = [] } = useQuery({
-    queryKey: ["staff_announcements_portal"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("staff_announcements" as any)
-        .select("*")
-        .not("published_at", "is", null)
-        .order("published_at", { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data as any[];
-    },
-  });
-
-  const { data: myReadReceipts = [] } = useQuery({
-    queryKey: ["my_read_receipts", employeeId],
-    queryFn: async () => {
-      if (!employeeId) return [];
-      const { data, error } = await supabase
-        .from("announcement_read_receipts" as any)
-        .select("announcement_id")
-        .eq("employee_id", employeeId);
-      if (error) throw error;
-      return (data || []).map((r: any) => r.announcement_id);
-    },
-    enabled: !!employeeId,
-  });
-
-  const markAsRead = useMutation({
-    mutationFn: async (announcementId: string) => {
-      if (!employeeId) return;
-      const { error } = await supabase
-        .from("announcement_read_receipts" as any)
-        .insert({ announcement_id: announcementId, employee_id: employeeId } as any);
-      if (error && !error.message.includes("duplicate")) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my_read_receipts"] }),
-  });
 
   if (!employeeId) {
     return (
@@ -107,12 +59,9 @@ export default function StaffPortal() {
   }
 
   const employeeName = employeeData ? `${employeeData.forename} ${employeeData.surname}` : "";
-  const pendingRequests = myRequests.filter(r => r.status === "pending").length;
-  const unreadAnnouncements = announcements.filter((a: any) => !myReadReceipts.includes(a.id)).length;
 
   const sections = [
     { id: "profile" as const, icon: User, label: "Profile" },
-    { id: "requests" as const, icon: Sun, label: "Requests", badge: pendingRequests },
     { id: "timesheets" as const, icon: Clock, label: "Timesheets" },
     { id: "training" as const, icon: BookOpen, label: "Training" },
     { id: "documents" as const, icon: FileText, label: "Documents" },
@@ -156,11 +105,6 @@ export default function StaffPortal() {
               >
                 <s.icon className="h-4 w-4" />
                 {s.label}
-                {s.badge && s.badge > 0 && (
-                  <span className="ml-1 h-5 min-w-[20px] rounded-full bg-warning/20 text-warning text-[10px] font-bold flex items-center justify-center px-1">
-                    {s.badge}
-                  </span>
-                )}
               </button>
             ))}
           </div>
@@ -194,12 +138,6 @@ export default function StaffPortal() {
           </motion.div>
         )}
 
-        {/* Requests Section */}
-        {activeSection === "requests" && (
-          <motion.div {...anim} transition={{ duration: 0.25 }}>
-            {employeeId && <HolidayRequestForm employeeId={employeeId} employeeName={employeeName} />}
-          </motion.div>
-        )}
 
         {/* Timesheets Section */}
         {activeSection === "timesheets" && (

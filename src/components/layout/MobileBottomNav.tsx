@@ -55,9 +55,7 @@ const staffMoreGroups: MoreGroup[] = [
   {
     title: "Work",
     items: [
-      { icon: ClipboardCheck, label: "Timesheets", path: "/staff", minRole: "staff" },
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
-      { icon: FileText, label: "Documents", path: "/staff", minRole: "staff" },
     ],
   },
 ];
