@@ -68,7 +68,9 @@ const Employees = () => {
   const { data: employees = [], isLoading, error } = useEmployees(includeArchived);
   const deleteEmployee = useDeleteEmployee();
   const { isAdmin } = useAuth();
-  const canViewSensitive = isAdmin;
+  const canEdit = usePermission("edit_employees");
+  const canManageLifecycle = usePermission("manage_lifecycle");
+  const canViewSensitive = usePermission("reveal_sensitive");
 
   useEffect(() => {
     const dept = searchParams.get("dept") as Department;
