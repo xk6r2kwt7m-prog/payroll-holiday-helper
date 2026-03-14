@@ -283,6 +283,13 @@ export default function StaffPortal() {
           </motion.div>
         )}
 
+        {/* Training Section */}
+        {activeSection === "training" && (
+          <motion.div {...anim} transition={{ duration: 0.25 }}>
+            {employeeId && <StaffTrainingView employeeId={employeeId} />}
+          </motion.div>
+        )}
+
         {/* Documents Section */}
         {activeSection === "documents" && (
           <motion.div {...anim} transition={{ duration: 0.25 }} className="space-y-4">
