@@ -2605,6 +2605,164 @@ export type Database = {
           },
         ]
       }
+      service_charge_employee_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_rate_per_hour: number
+          effective_from: string
+          effective_to: string | null
+          employee_id: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_rate_per_hour?: number
+          effective_from?: string
+          effective_to?: string | null
+          employee_id: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_rate_per_hour?: number
+          effective_from?: string
+          effective_to?: string | null
+          employee_id?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_charge_employee_rates_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_charge_employee_rates_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_charge_employee_rates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_charge_location_settings: {
+        Row: {
+          branch: string
+          calculation_model: string
+          created_at: string
+          default_rate_per_hour: number | null
+          enabled: boolean
+          id: string
+          notes: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          branch: string
+          calculation_model?: string
+          created_at?: string
+          default_rate_per_hour?: number | null
+          enabled?: boolean
+          id?: string
+          notes?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          branch?: string
+          calculation_model?: string
+          created_at?: string
+          default_rate_per_hour?: number | null
+          enabled?: boolean
+          id?: string
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_charge_location_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_charge_role_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          effective_to: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          rate_per_hour: number
+          role_name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          rate_per_hour?: number
+          role_name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          rate_per_hour?: number
+          role_name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_charge_role_rates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shift_alerts: {
         Row: {
           alert_message: string
