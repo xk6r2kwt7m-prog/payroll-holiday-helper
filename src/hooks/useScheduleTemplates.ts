@@ -109,6 +109,7 @@ export function useDeleteScheduleTemplate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("edit_schedules", null);
       const { error } = await supabase.from("schedule_templates").delete().eq("id", id);
       if (error) throw error;
     },

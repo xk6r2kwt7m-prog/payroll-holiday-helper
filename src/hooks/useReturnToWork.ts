@@ -56,6 +56,7 @@ export function useCreateRTWForm() {
       follow_up_notes?: string;
       manager_comments?: string;
     }) => {
+      await assertPermission("edit_employees", null);
       const { error } = await supabase
         .from("return_to_work_forms" as any)
         .insert({

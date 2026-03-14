@@ -60,6 +60,7 @@ export function useCreateTransfer() {
       isTemporary: boolean;
       reason?: string;
     }) => {
+      await assertPermission("edit_employees", tenantId);
       const { data: { user } } = await supabase.auth.getUser();
 
       // Create transfer record

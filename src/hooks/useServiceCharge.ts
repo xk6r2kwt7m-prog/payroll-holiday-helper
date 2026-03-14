@@ -248,6 +248,7 @@ export function useDeleteEmployeeRate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      await assertPermission("access_admin_centre", null);
       const { error } = await supabase.from("service_charge_employee_rates").delete().eq("id", id);
       if (error) throw error;
     },

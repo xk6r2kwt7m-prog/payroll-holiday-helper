@@ -357,6 +357,7 @@ export function useRejectRequest() {
 
   return useMutation({
     mutationFn: async ({ requestId, employeeId, shiftId, reviewNotes }: { requestId: string; employeeId?: string; shiftId?: string; reviewNotes?: string }) => {
+      await assertPermission("edit_schedules", null);
       await supabase
         .from("shift_marketplace_requests" as any)
         .update({ status: "rejected", reviewed_by: user?.id, reviewed_at: new Date().toISOString(), review_notes: reviewNotes || null } as any)

@@ -230,6 +230,7 @@ export function useUpdateDocumentRequest() {
       id: string;
       updates: Partial<DocumentRequest>;
     }) => {
+      await assertPermission("manage_documents", null);
       const { error } = await supabase
         .from("document_requests" as any)
         .update({ ...updates, updated_at: new Date().toISOString() } as any)
