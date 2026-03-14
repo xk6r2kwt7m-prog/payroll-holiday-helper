@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
+import { assertPermission } from "@/lib/permission-guard";
 
 export type PayrollPeriod = Tables<"payroll_periods">;
 export type PayrollPeriodInsert = TablesInsert<"payroll_periods">;
