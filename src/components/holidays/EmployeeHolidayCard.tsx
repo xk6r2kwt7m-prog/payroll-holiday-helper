@@ -105,33 +105,33 @@ export function EmployeeHolidayCard({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-3 mt-4">
-          <div className="text-center p-2 rounded-lg bg-success/5 border border-success/10">
-            <p className="text-lg font-bold text-success">{formatHours(totalAccrued)}</p>
+        <div className="grid grid-cols-4 gap-2 mt-3">
+          <div className="text-center p-1.5 rounded-lg bg-success/5 border border-success/10">
+            <p className="text-base font-bold text-success">{formatHours(totalAccrued)}</p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(totalAccrued)} days</p>
-            <p className="text-xs text-muted-foreground">Accrued</p>
+            <p className="text-[11px] text-muted-foreground">Accrued</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
-            <p className="text-lg font-bold text-blue-600">{formatHours(carryOver)}</p>
+          <div className="text-center p-1.5 rounded-lg bg-accent/5 border border-accent/10">
+            <p className="text-base font-bold text-accent">{formatHours(carryOver)}</p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(carryOver)} days</p>
-            <p className="text-xs text-muted-foreground">Carried Over</p>
+            <p className="text-[11px] text-muted-foreground">Carried Over</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-primary/5 border border-primary/10">
-            <p className="text-lg font-bold text-primary">{formatHours(totalTaken)}</p>
+          <div className="text-center p-1.5 rounded-lg bg-primary/5 border border-primary/10">
+            <p className="text-base font-bold text-primary">{formatHours(totalTaken)}</p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(totalTaken)} days</p>
-            <p className="text-xs text-muted-foreground">Taken</p>
+            <p className="text-[11px] text-muted-foreground">Taken</p>
           </div>
           <div className={cn(
-            "text-center p-2 rounded-lg border",
+            "text-center p-1.5 rounded-lg border",
             balance >= 0 
-              ? "bg-accent/5 border-accent/10" 
+              ? "bg-muted/50 border-border/60" 
               : "bg-destructive/5 border-destructive/10"
           )}>
-            <p className={cn("text-lg font-bold", balance >= 0 ? "text-accent" : "text-destructive")}>
+            <p className={cn("text-base font-bold", balance >= 0 ? "text-foreground" : "text-destructive")}>
               {formatHours(balance)}
             </p>
             <p className="text-[10px] text-muted-foreground/70">{hoursToDays(balance)} days</p>
-            <p className="text-xs text-muted-foreground">Balance</p>
+            <p className="text-[11px] text-muted-foreground">Balance</p>
           </div>
         </div>
 

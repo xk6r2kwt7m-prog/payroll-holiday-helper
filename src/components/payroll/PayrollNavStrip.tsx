@@ -13,26 +13,28 @@ export function PayrollNavStrip() {
   const location = useLocation();
 
   return (
-    <nav className="flex gap-1 rounded-lg bg-muted p-1 overflow-x-auto no-scrollbar">
-      {tabs.map((tab) => {
-        const isActive = location.pathname === tab.path;
-        return (
-          <Link
-            key={tab.path}
-            to={tab.path}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap",
-              isActive
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <tab.icon className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{tab.label}</span>
-            <span className="sm:hidden">{tab.shortLabel}</span>
-          </Link>
-        );
-      })}
+    <nav className="rounded-lg border border-border/60 bg-muted/40 p-1 overflow-x-auto no-scrollbar">
+      <div className="flex gap-0.5">
+        {tabs.map((tab) => {
+          const isActive = location.pathname === tab.path;
+          return (
+            <Link
+              key={tab.path}
+              to={tab.path}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap",
+                isActive
+                  ? "bg-card text-foreground shadow-sm border border-border/60"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <tab.icon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.shortLabel}</span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }
