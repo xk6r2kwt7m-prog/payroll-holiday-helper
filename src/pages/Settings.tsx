@@ -79,6 +79,7 @@ const Settings = () => {
     { id: "people", icon: Users, label: t("settings.people_lifecycle"), group: "organisation" },
     { id: "scheduling", icon: CalendarClock, label: t("settings.scheduling"), group: "operations" },
     { id: "payroll", icon: CreditCard, label: t("settings.payroll"), group: "operations" },
+    { id: "service-charge", icon: DollarSign, label: "Service Charge", group: "operations" },
     { id: "leave", icon: Calendar, label: t("settings.holiday_leave"), group: "operations" },
     { id: "training", icon: GraduationCap, label: t("settings.training_docs"), group: "operations" },
     { id: "talent", icon: Sparkles, label: t("settings.talent_pool"), group: "operations" },
