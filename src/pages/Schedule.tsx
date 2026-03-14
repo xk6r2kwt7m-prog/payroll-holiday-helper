@@ -208,8 +208,8 @@ export default function Schedule() {
             onNavigate={navigate}
             onToday={() => setCurrentDate(new Date())}
             onDateSelect={(d) => setCurrentDate(d)}
-            onPublish={() => setPublishDrawerOpen(true)}
-            onUnpublish={schedule.handleUnpublish}
+            onPublish={() => canPublishSchedules ? setPublishDrawerOpen(true) : undefined}
+            onUnpublish={canPublishSchedules ? schedule.handleUnpublish : undefined}
             isAdmin={isAdmin}
             branches={tenantBranches}
             selectedBranch={selectedBranch}
