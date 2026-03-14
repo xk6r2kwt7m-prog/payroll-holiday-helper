@@ -325,6 +325,7 @@ export function useCopyPayrollPeriod() {
       periodWeeks?: number;
       salesTotal?: number;
     }) => {
+      await assertPermission("view_pay_data", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
 
       // Create new period
