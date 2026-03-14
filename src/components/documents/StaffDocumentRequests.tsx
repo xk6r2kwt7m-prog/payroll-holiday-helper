@@ -247,7 +247,7 @@ export function StaffDocumentRequests({ employeeId }: Props) {
                     Verified {req.verified_at ? format(new Date(req.verified_at), "d MMM yyyy") : ""}
                   </p>
                 </div>
-                <CheckCircle2 className="h-4.5 w-4.5 text-success shrink-0" />
+                <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
               </div>
             ))}
           </div>

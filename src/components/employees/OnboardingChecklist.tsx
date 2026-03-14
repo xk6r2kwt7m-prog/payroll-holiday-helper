@@ -36,7 +36,7 @@ export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
         <StatusIcon className={cn("h-5 w-5", config.color)} />
         <div className="flex-1">
           <p className={cn("text-sm font-semibold", config.color)}>{config.label}</p>
-          <p className="text-xs text-muted-foreground">{readiness.score}% complete</p>
+          <p className="text-[11px] text-muted-foreground">{config.description}</p>
         </div>
         <Badge variant="outline" className={cn("text-xs", config.color)}>
           {readiness.score}%

@@ -152,9 +152,21 @@ export function EmployeeDocumentList({ employeeId, employeeName, isAdmin }: Empl
 
       {/* Document List */}
       {documents.length === 0 ? (
-        <div className="text-center py-8 rounded-lg border border-dashed border-border">
-          <FileText className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground mb-3">No documents uploaded yet</p>
+        <div className="text-center py-10 rounded-lg border border-dashed border-border px-4">
+          <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
+            <FileText className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <h3 className="text-sm font-semibold text-foreground mb-1">No documents uploaded yet</h3>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto mb-1.5">
+            {isAdmin
+              ? "Upload identity documents, contracts, or certificates to build this employee's compliance file."
+              : "Your documents will appear here once uploaded. Check if you have any outstanding document requests."}
+          </p>
+          {isAdmin && (
+            <p className="text-[11px] text-muted-foreground/70 max-w-xs mx-auto mb-4">
+              Documents can be auto-verified using AI extraction for faster right-to-work checks.
+            </p>
+          )}
           {isAdmin && (
             <DocumentUploadDialog
               employeeId={employeeId}

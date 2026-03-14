@@ -146,9 +146,17 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
 
       {/* Empty */}
       {assignments.length === 0 && (
-        <div className="text-center py-12">
-          <BookOpen className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">No training assigned yet</p>
+        <div className="text-center py-12 px-4">
+          <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-base font-semibold text-foreground mb-1">No training assigned yet</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            When your manager assigns training materials, policies, or quizzes, they'll appear here for you to complete.
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-1.5 max-w-xs mx-auto">
+            Check back regularly — new starters often receive assignments within the first few days.
+          </p>
         </div>
       )}
 
