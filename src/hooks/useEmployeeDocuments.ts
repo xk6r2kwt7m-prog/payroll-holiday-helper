@@ -191,6 +191,7 @@ export function useUpdateDocument() {
         notes?: string | null;
       };
     }) => {
+      await assertPermission("manage_documents", null);
       const { data, error } = await supabase
         .from("employee_documents")
         .update(updates)
