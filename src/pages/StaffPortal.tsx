@@ -183,55 +183,6 @@ export default function StaffPortal() {
               </div>
             </div>
 
-            {/* Quick Links */}
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { icon: Calendar, label: "Schedule", path: "/schedule" },
-                { icon: Sun, label: "Time Off", path: "/holidays" },
-                { icon: GraduationCap, label: "Training", path: "/training" },
-                { icon: Megaphone, label: "Updates", path: "/announcements" },
-              ].map((link) => (
-                <Link key={link.label} to={link.path} className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm active:bg-muted transition-all">
-                  <link.icon className="h-4.5 w-4.5 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">{link.label}</span>
-                </Link>
-              ))}
-            </div>
-
-            {/* Announcements */}
-            {announcements.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Updates</h2>
-                  {unreadAnnouncements > 0 && (
-                    <Badge variant="outline" className="text-[10px] text-warning border-warning/30">{unreadAnnouncements} new</Badge>
-                  )}
-                </div>
-                {announcements.slice(0, 3).map((ann: any) => {
-                  const isRead = myReadReceipts.includes(ann.id);
-                  return (
-                    <div key={ann.id} className={cn(
-                      "p-3.5 rounded-xl border shadow-sm",
-                      isRead ? "bg-card border-border" : "bg-primary/5 border-primary/20"
-                    )}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-foreground">{ann.title}</p>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{ann.content}</p>
-                          <p className="text-[10px] text-muted-foreground/60 mt-1.5">{format(new Date(ann.published_at), "d MMM yyyy")}</p>
-                        </div>
-                        {!isRead && (
-                          <Button size="sm" variant="ghost" className="text-xs h-8 shrink-0 text-primary" onClick={() => markAsRead.mutate(ann.id)}>
-                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Read
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
             {/* Sign Out */}
             <button
               onClick={signOut}
