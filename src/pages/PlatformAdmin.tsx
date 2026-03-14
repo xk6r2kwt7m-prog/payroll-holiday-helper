@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useTenant } from "@/hooks/useTenant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, BarChart3, Shield, Loader2 } from "lucide-react";
+import { Building2, BarChart3, Shield, Loader2, FlaskConical } from "lucide-react";
 import { PlatformOverview } from "@/components/platform/PlatformOverview";
 import { TenantManagement } from "@/components/platform/TenantManagement";
 import { PlatformAnalytics } from "@/components/platform/PlatformAnalytics";
 import { PermissionVisualizer } from "@/components/platform/PermissionVisualizer";
+import { SandboxTestingConsole } from "@/components/platform/SandboxTestingConsole";
 
 const PlatformAdmin = () => {
   const { isPlatformAdmin, loading } = useTenant();
