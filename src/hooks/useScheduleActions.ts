@@ -300,22 +300,90 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     }
   }, [loadTemplate, weekStartStr, selectedBranch, selectedDept]);
 
+  const notifyPublishedShiftStaff = useCallback(async (
+    affectedShifts: any[],
+    title: string,
+    bodyFn: (s: any) => string,
+    eventType: string = "shift_changed"
+  ) => {
+    if (!tenantId) return;
+    const publishedAssigned = affectedShifts.filter((s: any) => s.is_published && s.employee_id);
+    if (publishedAssigned.length === 0) return;
+
+    // Group by user to send one notification per person
+    const byUser = new Map<string, { name: string; dates: string[] }>();
+    for (const s of publishedAssigned) {
+      const emp = (s as any).employees;
+      const userId = emp?.user_id;
+      if (!userId) continue;
+      const dateLabel = format(new Date(s.shift_date + "T00:00:00"), "EEE d MMM");
+      if (!byUser.has(userId)) {
+        byUser.set(userId, { name: `${emp.forename} ${emp.surname}`, dates: [] });
+      }
+      byUser.get(userId)!.dates.push(dateLabel);
+    }
+
+    const rows = Array.from(byUser.entries()).map(([userId, info]) => ({
+      tenant_id: tenantId,
+      user_id: userId,
+      event_type: eventType,
+      title,
+      body: info.dates.length === 1
+        ? bodyFn({ date: info.dates[0] })
+        : bodyFn({ date: `${info.dates.length} shifts (${info.dates.slice(0, 3).join(", ")}${info.dates.length > 3 ? "…" : ""})` }),
+      link: "/schedule",
+      metadata: { branch: selectedBranch },
+    }));
+
+    try {
+      await supabase.from("notifications" as any).insert(rows as any);
+    } catch (err) {
+      console.warn("Failed to send bulk shift notifications:", err);
+    }
+  }, [tenantId, selectedBranch]);
+
   const handleDeleteAllShifts = useCallback(async () => {
     if (!confirm(`Delete all ${branchDeptShifts.length} shifts for ${selectedDept} at ${selectedBranch} this week?`)) return;
     const ids = branchDeptShifts.map((s: any) => s.id);
     if (ids.length === 0) return;
+
+    // Capture published+assigned shifts before deleting
+    const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
+
     await bulkDelete.mutateAsync(ids);
     toast.success(`Deleted ${ids.length} shifts`);
-  }, [bulkDelete, branchDeptShifts, selectedDept, selectedBranch]);
+
+    if (publishedAssigned.length > 0) {
+      await notifyPublishedShiftStaff(
+        publishedAssigned,
+        "Shifts cancelled",
+        ({ date }) => `Your ${date} at ${selectedBranch} has been removed from the rota. Check your schedule.`,
+        "shift_cancelled"
+      );
+    }
+  }, [bulkDelete, branchDeptShifts, selectedDept, selectedBranch, notifyPublishedShiftStaff]);
 
   const handleClearAssignments = useCallback(async () => {
     if (!confirm("Clear all employee assignments? This turns them into open shifts.")) return;
     const assigned = branchDeptShifts.filter((s: any) => s.employee_id);
     const ids = assigned.map((s: any) => s.id);
     if (ids.length === 0) return;
+
+    // Capture published+assigned shifts before clearing
+    const publishedAssigned = assigned.filter((s: any) => s.is_published);
+
     await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { employee_id: null, status: "open" as const } });
     toast.success(`Cleared ${ids.length} assignments`);
-  }, [bulkUpdate, branchDeptShifts]);
+
+    if (publishedAssigned.length > 0) {
+      await notifyPublishedShiftStaff(
+        publishedAssigned,
+        "Shift assignment removed",
+        ({ date }) => `Your ${date} at ${selectedBranch} is no longer assigned to you. Check your schedule.`,
+        "shift_changed"
+      );
+    }
+  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff]);
 
   const handleRemoveEmptyShifts = useCallback(async () => {
     const emptyShifts = branchDeptShifts.filter((s: any) => !s.employee_id);
@@ -324,6 +392,26 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     await bulkDelete.mutateAsync(emptyShifts.map((s: any) => s.id));
     toast.success(`Removed ${emptyShifts.length} empty shifts`);
   }, [bulkDelete, branchDeptShifts]);
+
+  const handleBulkUpdateTimes = useCallback(async (startTime: string, endTime: string) => {
+    const ids = branchDeptShifts.map((s: any) => s.id);
+    if (ids.length === 0) return;
+
+    // Capture published+assigned shifts before updating
+    const publishedAssigned = branchDeptShifts.filter((s: any) => s.is_published && s.employee_id);
+
+    await bulkUpdate.mutateAsync({ shiftIds: ids, updates: { start_time: startTime, end_time: endTime } });
+    toast.success(`Updated times for ${ids.length} shifts`);
+
+    if (publishedAssigned.length > 0) {
+      await notifyPublishedShiftStaff(
+        publishedAssigned,
+        "Shift times changed",
+        ({ date }) => `Your ${date} at ${selectedBranch} has new times: ${startTime.slice(0, 5)}–${endTime.slice(0, 5)}. Check your schedule.`,
+        "shift_changed"
+      );
+    }
+  }, [bulkUpdate, branchDeptShifts, selectedBranch, notifyPublishedShiftStaff]);
 
   const handleBulkCreateShifts = useCallback(async (newShifts: any[]) => {
     if (!tenantId) { toast.error("No workspace selected"); return; }
@@ -376,6 +464,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
     handleDeleteAllShifts,
     handleClearAssignments,
     handleRemoveEmptyShifts,
+    handleBulkUpdateTimes,
     handleBulkCreateShifts,
     // Pending states
     isPending: createShift.isPending || updateShift.isPending,
