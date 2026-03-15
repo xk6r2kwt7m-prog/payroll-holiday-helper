@@ -536,6 +536,15 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   {module.published_at && <InfoRow label="Published" value={format(parseISO(module.published_at), "d MMM yyyy")} />}
                   {module.review_date && <InfoRow label="Review Due" value={format(parseISO(module.review_date), "d MMM yyyy")} />}
                 </div>
+                {/* Admin-only evidence completeness */}
+                {canManage && (
+                  <EvidenceCompletenessBar
+                    documentId={module.id}
+                    lastReviewedAt={(module as any).last_reviewed_at ?? null}
+                    lastReviewedBy={(module as any).last_reviewed_by ?? null}
+                    canEdit={canEdit}
+                  />
+                )}
                 {/* Admin-only standards metadata */}
                 {canManage && module.standards_metadata && (
                   <WhyThisMattersPanel metadata={module.standards_metadata} />
