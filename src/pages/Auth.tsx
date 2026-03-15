@@ -191,117 +191,152 @@ const Auth = () => {
                 <span className="text-2xl font-bold text-card-foreground">UGLŌ</span>
               </div>
 
-              {/* Mode tabs */}
-              <div className="flex rounded-lg bg-muted p-1 mb-6">
-                <button
-                  type="button"
-                  onClick={() => { setMode("login"); setErrors({}); }}
-                  className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
-                    mode === "login"
-                      ? "bg-card text-card-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setMode("signup"); setErrors({}); }}
-                  className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
-                    mode === "signup"
-                      ? "bg-card text-card-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Create Account
-                </button>
-              </div>
-
-              <h1 className="text-xl font-semibold text-card-foreground text-center mb-1">
-                {mode === "login" ? "Welcome Back" : "Get Started"}
-              </h1>
-              <p className="text-muted-foreground text-center text-sm mb-6">
-                {mode === "login"
-                  ? "Sign in to your account"
-                  : "Create your account, then set up your company"}
-              </p>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {mode === "signup" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="Jane Smith"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className={errors.fullName ? "border-destructive" : ""}
-                    />
-                    {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
+              {signupComplete ? (
+                /* ── Post-signup confirmation ── */
+                <div className="text-center space-y-4 py-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mx-auto">
+                    <MailCheck className="h-7 w-7 text-primary" />
                   </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={errors.email ? "border-destructive" : ""}
-                  />
-                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                  <div>
+                    <h2 className="text-lg font-semibold text-card-foreground">Check your email</h2>
+                    <p className="text-sm text-muted-foreground mt-1.5 max-w-xs mx-auto">
+                      We've sent a verification link to{" "}
+                      <span className="font-medium text-foreground">{signupEmail}</span>.
+                      Click the link to activate your account.
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 border border-border p-3">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Didn't receive it? Check your spam folder or wait a minute, then try signing up again.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      setSignupComplete(false);
+                      setMode("login");
+                    }}
+                  >
+                    Back to Sign In
+                  </Button>
                 </div>
+              ) : (
+                <>
+                  {/* Mode tabs */}
+                  <div className="flex rounded-lg bg-muted p-1 mb-6">
+                    <button
+                      type="button"
+                      onClick={() => { setMode("login"); setErrors({}); }}
+                      className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
+                        mode === "login"
+                          ? "bg-card text-card-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Sign In
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setMode("signup"); setErrors({}); }}
+                      className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
+                        mode === "signup"
+                          ? "bg-card text-card-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Create Account
+                    </button>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={errors.password ? "border-destructive" : ""}
-                  />
-                  {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                </div>
+                  <h1 className="text-xl font-semibold text-card-foreground text-center mb-1">
+                    {mode === "login" ? "Welcome Back" : "Get Started"}
+                  </h1>
+                  <p className="text-muted-foreground text-center text-sm mb-6">
+                    {mode === "login"
+                      ? "Sign in to your account"
+                      : "Create your account, then set up your company"}
+                  </p>
 
-                <Button type="submit" className="w-full gradient-primary" disabled={loading}>
-                  {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
-                </Button>
-              </form>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {mode === "signup" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input
+                          id="fullName"
+                          type="text"
+                          placeholder="Jane Smith"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className={errors.fullName ? "border-destructive" : ""}
+                        />
+                        {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
+                      </div>
+                    )}
 
-              {mode === "login" && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!email) {
-                      toast.error("Please enter your email address first");
-                      return;
-                    }
-                    try {
-                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                        redirectTo: `${window.location.origin}/reset-password`,
-                      });
-                      if (error) throw error;
-                      toast.success("Password reset email sent. Check your inbox.");
-                    } catch (err: any) {
-                      toast.error(err.message || "Failed to send reset email");
-                    }
-                  }}
-                  className="mt-3 w-full text-center text-sm text-primary hover:underline"
-                >
-                  Forgot your password?
-                </button>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={errors.email ? "border-destructive" : ""}
+                      />
+                      {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={errors.password ? "border-destructive" : ""}
+                      />
+                      {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                    </div>
+
+                    <Button type="submit" className="w-full gradient-primary" disabled={loading}>
+                      {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+                    </Button>
+                  </form>
+
+                  {mode === "login" && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!email) {
+                          toast.error("Please enter your email address first");
+                          return;
+                        }
+                        try {
+                          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                            redirectTo: `${window.location.origin}/reset-password`,
+                          });
+                          if (error) throw error;
+                          toast.success("Password reset email sent. Check your inbox.");
+                        } catch (err: any) {
+                          toast.error(err.message || "Failed to send reset email");
+                        }
+                      }}
+                      className="mt-3 w-full text-center text-sm text-primary hover:underline"
+                    >
+                      Forgot your password?
+                    </button>
+                  )}
+
+                  <p className="mt-4 text-xs text-muted-foreground text-center">
+                    {mode === "login"
+                      ? "Don't have an account? Switch to Create Account above."
+                      : "Already have an account? Switch to Sign In above."}
+                  </p>
+                </>
               )}
-
-              <p className="mt-4 text-xs text-muted-foreground text-center">
-                {mode === "login"
-                  ? "Don't have an account? Switch to Create Account above."
-                  : "Already have an account? Switch to Sign In above."}
-              </p>
             </div>
 
             {/* Mobile feature hints */}
