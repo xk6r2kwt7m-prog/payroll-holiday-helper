@@ -8,6 +8,8 @@ import {
   Search, Clock, Copy, CheckCircle2, Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
+import type { StandardsMetadata } from "@/data/training-standards/types";
 import { usePlatformModules, useAdaptModule, COMPLETION_TYPES } from "@/hooks/useTrainingModules";
 import { LIBRARY_CATEGORIES, useQuizQuestions } from "@/hooks/useTrainingLibrary";
 import { usePermission } from "@/hooks/useRolePermissions";
@@ -190,7 +192,11 @@ function PlatformModuleDetail({ module, open, onOpenChange, onAdapt, isAdapting,
             </div>
           )}
 
-          {/* Adapt Button */}
+          {/* Admin-only standards metadata */}
+          {canManage && module.standards_metadata && (
+            <WhyThisMattersPanel metadata={module.standards_metadata as StandardsMetadata} />
+          )}
+
           {canManage && (
             <div className="pt-2 border-t border-border">
               <Button onClick={onAdapt} disabled={isAdapting} className="w-full gap-2">

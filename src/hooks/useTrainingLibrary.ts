@@ -6,6 +6,7 @@ import { useNotifyEvent } from "@/hooks/useNotifyEvent";
 import { toast } from "sonner";
 import { assertPermission } from "@/lib/permission-guard";
 import type { Json } from "@/integrations/supabase/types";
+import type { StandardsMetadata } from "@/data/training-standards/types";
 
 // ─── DB-aligned types ───
 
@@ -56,6 +57,7 @@ export interface TrainingLibraryItem {
   estimated_minutes: number | null;
   is_mandatory: boolean;
   pass_mark: number | null;
+  standards_metadata: StandardsMetadata | null;
   retry_limit: number | null;
 }
 

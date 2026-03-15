@@ -5847,6 +5847,7 @@ export type Database = {
           review_date: string | null
           source_module_id: string | null
           source_type: string
+          standards_metadata: Json | null
           status: string
           summary: string | null
           target_departments: string[] | null
@@ -5889,6 +5890,7 @@ export type Database = {
           review_date?: string | null
           source_module_id?: string | null
           source_type?: string
+          standards_metadata?: Json | null
           status?: string
           summary?: string | null
           target_departments?: string[] | null
@@ -5931,6 +5933,7 @@ export type Database = {
           review_date?: string | null
           source_module_id?: string | null
           source_type?: string
+          standards_metadata?: Json | null
           status?: string
           summary?: string | null
           target_departments?: string[] | null

@@ -36,6 +36,8 @@ import { usePermission } from "@/hooks/useRolePermissions";
 import { exportToCsv } from "@/lib/csv-export";
 import { writeTrainingAudit } from "@/hooks/useTrainingLibrary";
 import { toast } from "sonner";
+import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
+import { OPERATIONAL_AREA_LABELS, type OperationalArea } from "@/data/training-standards/types";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -50,6 +52,8 @@ export function TrainingLibraryManager() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [opAreaFilter, setOpAreaFilter] = useState("all");
+  const [mandatoryFilter, setMandatoryFilter] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<TrainingLibraryItem | null>(null);
 
   // Only show tenant modules + adapted in main library
@@ -61,7 +65,9 @@ export function TrainingLibraryManager() {
     const matchesCat = categoryFilter === "all" || item.category === categoryFilter;
     const matchesSource = sourceFilter === "all" || item.source_type === sourceFilter;
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-    return matchesSearch && matchesCat && matchesSource && matchesStatus;
+    const matchesOpArea = opAreaFilter === "all" || (item.standards_metadata as any)?.operational_area === opAreaFilter;
+    const matchesMandatory = !mandatoryFilter || item.is_mandatory;
+    return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory;
   });
 
   const getAssignmentStats = (docId: string) => {
@@ -169,7 +175,16 @@ export function TrainingLibraryManager() {
           ))}
 
           {/* Source filter */}
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-1.5 items-center">
+            <Select value={opAreaFilter} onValueChange={setOpAreaFilter}>
+              <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue placeholder="Area" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Areas</SelectItem>
+                {(Object.entries(OPERATIONAL_AREA_LABELS) as [OperationalArea, string][]).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
               <SelectContent>
@@ -178,6 +193,13 @@ export function TrainingLibraryManager() {
                 <SelectItem value="adapted">Adapted</SelectItem>
               </SelectContent>
             </Select>
+            <button
+              onClick={() => setMandatoryFilter(!mandatoryFilter)}
+              className={cn("px-2 py-1 rounded-full text-[10px] font-medium border transition-all whitespace-nowrap",
+                mandatoryFilter ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-card text-muted-foreground border-border"
+              )}>
+              Mandatory
+            </button>
           </div>
         </div>
       </div>
@@ -503,6 +525,10 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   {module.published_at && <InfoRow label="Published" value={format(parseISO(module.published_at), "d MMM yyyy")} />}
                   {module.review_date && <InfoRow label="Review Due" value={format(parseISO(module.review_date), "d MMM yyyy")} />}
                 </div>
+                {/* Admin-only standards metadata */}
+                {canManage && module.standards_metadata && (
+                  <WhyThisMattersPanel metadata={module.standards_metadata} />
+                )}
                 {canEdit && (
                   <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="w-full mt-2">
                     Edit Module

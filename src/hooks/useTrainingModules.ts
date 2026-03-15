@@ -73,9 +73,7 @@ export function useAdaptModule() {
       if (fetchErr || !source) throw new Error("Platform module not found");
       const s = source as unknown as TrainingLibraryItem;
 
-      const { data: adapted, error: insertErr } = await supabase
-        .from("training_library")
-        .insert({
+      const insertPayload: Record<string, unknown> = {
           tenant_id: tenantId,
           title: s.title,
           description: s.description,
@@ -83,9 +81,9 @@ export function useAdaptModule() {
           category: s.category,
           content_type: s.content_type,
           content_url: s.content_url,
-          source_type: "adapted" as const,
+          source_type: "adapted",
           source_module_id: platformModuleId,
-          status: "draft" as const,
+          status: "draft",
           completion_type: s.completion_type,
           audience_scope: s.audience_scope,
           requires_acknowledgement: s.requires_acknowledgement,
@@ -103,7 +101,12 @@ export function useAdaptModule() {
           pass_mark: s.pass_mark,
           retry_limit: s.retry_limit,
           created_by: user?.id ?? null,
-        })
+          standards_metadata: s.standards_metadata ?? null,
+      };
+
+      const { data: adapted, error: insertErr } = await supabase
+        .from("training_library")
+        .insert(insertPayload as any)
         .select()
         .single();
       if (insertErr) throw insertErr;
