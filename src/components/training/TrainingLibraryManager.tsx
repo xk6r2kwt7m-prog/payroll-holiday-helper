@@ -58,7 +58,10 @@ import {
 } from "@/lib/governance-classification";
 import { GovernanceDashboard } from "@/components/training/GovernanceDashboard";
 import { ContentStrengthPanel } from "@/components/training/ContentStrengthPanel";
-import type { ServiceRiskLevel } from "@/data/training-standards/types";
+import { EffectivenessSection } from "@/components/training/EffectivenessSection";
+import { ModuleEffectivenessPanel } from "@/components/training/ModuleEffectivenessPanel";
+import { useTrainingEffectiveness } from "@/hooks/useTrainingEffectiveness";
+import type { ServiceRiskLevel, ReviewInsightTag } from "@/data/training-standards/types";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
