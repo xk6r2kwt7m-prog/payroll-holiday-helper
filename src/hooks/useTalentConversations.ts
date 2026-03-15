@@ -171,7 +171,7 @@ export function useWorkerConversations(enabled = true) {
         unread_count: unreadMap[c.id] || 0,
       })) as TalentConversation[];
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && enabled,
   });
 
   useEffect(() => {
