@@ -5836,6 +5836,8 @@ export type Database = {
           id: string
           is_active: boolean
           is_mandatory: boolean
+          last_reviewed_at: string | null
+          last_reviewed_by: string | null
           pass_mark: number | null
           previous_version_id: string | null
           published_at: string | null
@@ -5879,6 +5881,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_mandatory?: boolean
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
           pass_mark?: number | null
           previous_version_id?: string | null
           published_at?: string | null
@@ -5922,6 +5926,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_mandatory?: boolean
+          last_reviewed_at?: string | null
+          last_reviewed_by?: string | null
           pass_mark?: number | null
           previous_version_id?: string | null
           published_at?: string | null
@@ -5954,6 +5960,72 @@ export type Database = {
           },
           {
             foreignKeyName: "training_library_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_module_evidence: {
+        Row: {
+          confidence_level: string
+          created_at: string
+          created_by: string | null
+          document_id: string
+          evidence_type: string
+          id: string
+          is_active: boolean
+          source_notes: string | null
+          source_organisation: string | null
+          source_region: string | null
+          source_title: string
+          source_url: string | null
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence_level?: string
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          evidence_type?: string
+          id?: string
+          is_active?: boolean
+          source_notes?: string | null
+          source_organisation?: string | null
+          source_region?: string | null
+          source_title: string
+          source_url?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence_level?: string
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          evidence_type?: string
+          id?: string
+          is_active?: boolean
+          source_notes?: string | null
+          source_organisation?: string | null
+          source_region?: string | null
+          source_title?: string
+          source_url?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_module_evidence_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_module_evidence_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -6131,6 +6203,78 @@ export type Database = {
           },
           {
             foreignKeyName: "training_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_review_insights: {
+        Row: {
+          confidence_level: string
+          created_at: string
+          created_by: string | null
+          customer_impact: string | null
+          document_id: string | null
+          frequency_level: string
+          id: string
+          insight_tag: string
+          is_active: boolean
+          market_scope: string | null
+          operational_problem: string | null
+          review_channel: string | null
+          suggested_training_response: string | null
+          summary: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence_level?: string
+          created_at?: string
+          created_by?: string | null
+          customer_impact?: string | null
+          document_id?: string | null
+          frequency_level?: string
+          id?: string
+          insight_tag: string
+          is_active?: boolean
+          market_scope?: string | null
+          operational_problem?: string | null
+          review_channel?: string | null
+          suggested_training_response?: string | null
+          summary: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence_level?: string
+          created_at?: string
+          created_by?: string | null
+          customer_impact?: string | null
+          document_id?: string | null
+          frequency_level?: string
+          id?: string
+          insight_tag?: string
+          is_active?: boolean
+          market_scope?: string | null
+          operational_problem?: string | null
+          review_channel?: string | null
+          suggested_training_response?: string | null
+          summary?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_review_insights_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_review_insights_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

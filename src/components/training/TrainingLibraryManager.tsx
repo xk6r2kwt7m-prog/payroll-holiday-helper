@@ -37,7 +37,16 @@ import { exportToCsv } from "@/lib/csv-export";
 import { writeTrainingAudit } from "@/hooks/useTrainingLibrary";
 import { toast } from "sonner";
 import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
+import { EvidencePanel } from "@/components/training/EvidencePanel";
+import { ReviewInsightsPanel } from "@/components/training/ReviewInsightsPanel";
+import { EvidenceCompletenessBar } from "@/components/training/EvidenceCompletenessBar";
 import { OPERATIONAL_AREA_LABELS, type OperationalArea } from "@/data/training-standards/types";
+import {
+  COMPLETENESS_LABELS,
+  deriveEvidenceCompleteness,
+  useModuleEvidence,
+  type EvidenceCompletenessStatus,
+} from "@/hooks/useModuleEvidence";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -54,6 +63,7 @@ export function TrainingLibraryManager() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [opAreaFilter, setOpAreaFilter] = useState("all");
   const [mandatoryFilter, setMandatoryFilter] = useState(false);
+  const [evidenceFilter, setEvidenceFilter] = useState("all");
   const [selectedDoc, setSelectedDoc] = useState<TrainingLibraryItem | null>(null);
 
   // Only show tenant modules + adapted in main library
@@ -497,10 +507,11 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
         )}
 
         <Tabs value={detailTab} onValueChange={setDetailTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={cn("grid w-full", canManage ? "grid-cols-4" : "grid-cols-3")}>
             <TabsTrigger value="info">Info</TabsTrigger>
             <TabsTrigger value="assign">Assign ({existingAssignments.length})</TabsTrigger>
             {module.requires_quiz && <TabsTrigger value="quiz">Quiz</TabsTrigger>}
+            {canManage && <TabsTrigger value="standards">Standards</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="info" className="space-y-4 mt-3">
@@ -525,6 +536,15 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   {module.published_at && <InfoRow label="Published" value={format(parseISO(module.published_at), "d MMM yyyy")} />}
                   {module.review_date && <InfoRow label="Review Due" value={format(parseISO(module.review_date), "d MMM yyyy")} />}
                 </div>
+                {/* Admin-only evidence completeness */}
+                {canManage && (
+                  <EvidenceCompletenessBar
+                    documentId={module.id}
+                    lastReviewedAt={module.last_reviewed_at ?? null}
+                    lastReviewedBy={module.last_reviewed_by ?? null}
+                    canEdit={canEdit}
+                  />
+                )}
                 {/* Admin-only standards metadata */}
                 {canManage && module.standards_metadata && (
                   <WhyThisMattersPanel metadata={module.standards_metadata} />
@@ -760,6 +780,22 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
           {module.requires_quiz && (
             <TabsContent value="quiz" className="mt-3">
               <QuizBuilder moduleId={module.id} canEdit={canManage && !isPlatform} />
+            </TabsContent>
+          )}
+          {canManage && (
+            <TabsContent value="standards" className="space-y-3 mt-3">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Evidence & Research</p>
+              <EvidenceCompletenessBar
+                documentId={module.id}
+                lastReviewedAt={module.last_reviewed_at ?? null}
+                lastReviewedBy={module.last_reviewed_by ?? null}
+                canEdit={canEdit}
+              />
+              <EvidencePanel documentId={module.id} canEdit={canEdit} />
+              <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
+              {module.standards_metadata && (
+                <WhyThisMattersPanel metadata={module.standards_metadata} />
+              )}
             </TabsContent>
           )}
         </Tabs>

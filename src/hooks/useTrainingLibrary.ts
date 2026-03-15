@@ -59,6 +59,8 @@ export interface TrainingLibraryItem {
   pass_mark: number | null;
   standards_metadata: StandardsMetadata | null;
   retry_limit: number | null;
+  last_reviewed_at: string | null;
+  last_reviewed_by: string | null;
 }
 
 export interface TrainingAssignment {
