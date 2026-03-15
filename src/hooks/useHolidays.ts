@@ -13,9 +13,11 @@ export type HolidayBalanceInsert = TablesInsert<"holiday_balances">;
 export type HolidayBalanceUpdate = TablesUpdate<"holiday_balances">;
 
 export function useHolidayPayments(periodId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_payments", periodId],
+    queryKey: ["holiday_payments", tenantId, periodId],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("holiday_payments")
         .select(`
@@ -33,6 +35,7 @@ export function useHolidayPayments(periodId?: string) {
             end_date
           )
         `)
+        .eq("tenant_id", tenantId)
         .order("total", { ascending: false });
       
       if (periodId) {
@@ -44,6 +47,7 @@ export function useHolidayPayments(periodId?: string) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
