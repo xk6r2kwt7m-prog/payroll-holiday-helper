@@ -9,6 +9,7 @@ import {
   UserPlus, GraduationCap, Megaphone, ShieldAlert, ShieldCheck, Globe, Building2, FileBarChart, Sparkles, Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
