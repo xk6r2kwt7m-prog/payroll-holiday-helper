@@ -213,9 +213,9 @@ export function useMyApplications() {
   });
 }
 
+// ATOMIC APPLY — uses server-side RPC for transactional safety
 export function useApplyToVacancy() {
   const qc = useQueryClient();
-  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({
       vacancy_id,
@@ -226,37 +226,13 @@ export function useApplyToVacancy() {
       talent_profile_id: string;
       cover_message?: string;
     }) => {
-      // 1. Create application
-      const { data: app, error: appError } = await supabase
-        .from("talent_applications")
-        .insert({
-          vacancy_id,
-          talent_profile_id,
-          applicant_user_id: user!.id,
-          cover_message: cover_message || null,
-        } as any)
-        .select()
-        .single();
-      if (appError) throw appError;
-
-      // 2. Get vacancy tenant_id for conversation
-      const { data: vacancy } = await supabase
-        .from("talent_vacancies")
-        .select("tenant_id")
-        .eq("id", vacancy_id)
-        .single();
-
-      // 3. Create conversation thread
-      if (vacancy) {
-        await supabase.from("talent_conversations").insert({
-          conversation_type: "application",
-          application_id: app.id,
-          talent_profile_id,
-          employer_tenant_id: vacancy.tenant_id,
-        } as any);
-      }
-
-      return app;
+      const { data, error } = await supabase.rpc("apply_to_vacancy", {
+        _vacancy_id: vacancy_id,
+        _talent_profile_id: talent_profile_id,
+        _cover_message: cover_message || null,
+      });
+      if (error) throw error;
+      return data as { application_id: string; conversation_id: string };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my-applications"] });
@@ -285,5 +261,44 @@ export function useUpdateApplicationStatus() {
       qc.invalidateQueries({ queryKey: ["vacancy-applications"] });
       qc.invalidateQueries({ queryKey: ["my-applications"] });
     },
+  });
+}
+
+// Worker withdrawal
+export function useWithdrawApplication() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (applicationId: string) => {
+      const { data, error } = await supabase
+        .from("talent_applications")
+        .update({ status: "withdrawn" } as any)
+        .eq("id", applicationId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-applications"] });
+      qc.invalidateQueries({ queryKey: ["vacancy-applications"] });
+      qc.invalidateQueries({ queryKey: ["worker-conversations"] });
+    },
+  });
+}
+
+// Fetch conversation for a specific application (employer bridge)
+export function useApplicationConversation(applicationId: string | null) {
+  return useQuery({
+    queryKey: ["application-conversation", applicationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("talent_conversations")
+        .select("id")
+        .eq("application_id", applicationId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!applicationId,
   });
 }

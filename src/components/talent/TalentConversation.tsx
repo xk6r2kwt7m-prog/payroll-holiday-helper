@@ -1,13 +1,23 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, ArrowLeft, UserCheck, Calendar, ClipboardCheck, FileText, XCircle, Heart } from "lucide-react";
+import { Send, ArrowLeft, UserCheck, Calendar, ClipboardCheck, FileText, XCircle, Heart, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { useConversationMessages, useSendMessage, useMarkMessagesRead } from "@/hooks/useTalentConversations";
-import { useUpdateApplicationStatus } from "@/hooks/useVacancies";
+import { useUpdateApplicationStatus, useWithdrawApplication } from "@/hooks/useVacancies";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TalentConversationProps {
   conversationId: string;
@@ -51,16 +61,19 @@ export function TalentConversation({
   const sendMessage = useSendMessage();
   const markRead = useMarkMessagesRead();
   const updateStatus = useUpdateApplicationStatus();
+  const withdrawApp = useWithdrawApplication();
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom on new messages
+  const isWithdrawn = applicationStatus === "withdrawn";
+  const isRejected = applicationStatus === "rejected";
+  const isTerminal = isWithdrawn || isRejected;
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  // Mark messages as read on open
   useEffect(() => {
     if (conversationId) {
       markRead.mutate({
@@ -89,10 +102,15 @@ export function TalentConversation({
       sender_type: senderType,
       metadata: { action_type: action.type },
     });
-    // Update application status if applicable
     if (action.status && applicationId) {
       await updateStatus.mutateAsync({ id: applicationId, status: action.status });
     }
+  };
+
+  const handleWithdraw = async () => {
+    if (!applicationId) return;
+    await withdrawApp.mutateAsync(applicationId);
+    onBack();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -103,7 +121,7 @@ export function TalentConversation({
   };
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-12rem)]">
+    <div className="flex flex-col h-full max-h-[calc(100dvh-10rem)]">
       {/* Header */}
       <div className="flex items-center gap-3 pb-3 border-b border-border">
         <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={onBack}>
@@ -115,12 +133,49 @@ export function TalentConversation({
             <p className="text-[11px] text-muted-foreground truncate">Re: {vacancyTitle}</p>
           )}
         </div>
-        {applicationStatus && (
-          <Badge variant="outline" className="text-[10px] shrink-0 capitalize">
-            {applicationStatus.replace(/_/g, " ")}
-          </Badge>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {applicationStatus && (
+            <Badge variant="outline" className={cn(
+              "text-[10px] capitalize",
+              isWithdrawn && "bg-muted text-muted-foreground line-through",
+              isRejected && "bg-muted text-muted-foreground",
+            )}>
+              {applicationStatus.replace(/_/g, " ")}
+            </Badge>
+          )}
+          {/* Worker withdraw button */}
+          {senderType === "worker" && applicationId && !isTerminal && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" title="Withdraw application">
+                  <LogOut className="h-3.5 w-3.5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Withdraw application?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will withdraw your application{vacancyTitle ? ` for "${vacancyTitle}"` : ""}. The employer will see the withdrawal. This cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep application</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleWithdraw} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Withdraw
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
+
+      {/* Withdrawn banner */}
+      {isWithdrawn && (
+        <div className="text-center py-2 text-xs text-muted-foreground bg-muted/50 rounded-md mt-2">
+          {senderType === "worker" ? "You withdrew this application" : "Candidate withdrew their application"}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-3 space-y-2 min-h-0">
@@ -156,8 +211,8 @@ export function TalentConversation({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions (employer only) */}
-      {senderType === "employer" && applicationId && (
+      {/* Quick Actions (employer only, not on terminal states) */}
+      {senderType === "employer" && applicationId && !isTerminal && (
         <div className="flex gap-1.5 overflow-x-auto pb-2 pt-1 scrollbar-hide">
           {QUICK_ACTIONS.map((action) => (
             <Button
@@ -175,24 +230,30 @@ export function TalentConversation({
         </div>
       )}
 
-      {/* Input */}
-      <div className="flex gap-2 pt-2 border-t border-border">
-        <Input
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          className="flex-1 h-10 text-sm"
-        />
-        <Button
-          size="icon"
-          className="h-10 w-10 shrink-0"
-          onClick={handleSend}
-          disabled={!newMessage.trim() || sendMessage.isPending}
-        >
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Input — hidden for terminal states */}
+      {!isTerminal ? (
+        <div className="flex gap-2 pt-2 border-t border-border">
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            className="flex-1 h-10 text-sm"
+          />
+          <Button
+            size="icon"
+            className="h-10 w-10 shrink-0"
+            onClick={handleSend}
+            disabled={!newMessage.trim() || sendMessage.isPending}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="text-center py-2 text-xs text-muted-foreground border-t border-border mt-1">
+          This conversation is closed
+        </div>
+      )}
     </div>
   );
 }
