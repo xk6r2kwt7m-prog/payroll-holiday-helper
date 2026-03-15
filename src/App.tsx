@@ -42,6 +42,7 @@ import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
 import ResetPassword from "./pages/ResetPassword";
 import TalentPool from "./pages/TalentPool";
+import Vacancies from "./pages/Vacancies";
 import Workforce from "./pages/Workforce";
 import LabourCostPreview from "./pages/LabourCostPreview";
 import ShiftMarketplace from "./pages/ShiftMarketplace";
