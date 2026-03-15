@@ -117,7 +117,7 @@ export function useCreateEvidence() {
           source_notes: payload.source_notes ?? null,
           confidence_level: payload.confidence_level,
           created_by: user?.id ?? null,
-        } as Record<string, unknown>);
+        } as any);
       if (error) throw error;
       await writeTrainingAudit({
         tenant_id: tenantId!,
