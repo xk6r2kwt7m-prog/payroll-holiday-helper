@@ -158,12 +158,14 @@ export function useHolidayBalancesByYear(year: number) {
 
 // Get holiday payments for a specific leave year (by holiday_taken_date)
 export function useHolidayPaymentsByYear(year: number) {
+  const { tenantId } = useTenant();
   const leaveYearStart = `${year}-01-01`;
   const leaveYearEnd = `${year}-12-31`;
   
   return useQuery({
-    queryKey: ["holiday_payments", "year", year],
+    queryKey: ["holiday_payments", tenantId, "year", year],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_payments")
         .select(`
@@ -181,6 +183,7 @@ export function useHolidayPaymentsByYear(year: number) {
             end_date
           )
         `)
+        .eq("tenant_id", tenantId)
         .eq("leave_year_start", leaveYearStart)
         .eq("leave_year_end", leaveYearEnd)
         .order("holiday_taken_date", { ascending: false });
@@ -188,6 +191,7 @@ export function useHolidayPaymentsByYear(year: number) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
