@@ -4,8 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Activity, Check, X, Minus, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Activity, Check, X, Minus, RotateCcw } from "lucide-react";
 
 type SmokeStatus = "pass" | "fail" | "untested";
 
