@@ -31,7 +31,11 @@ export function QANotesArea({ sandboxId, initialNotes, initialStatus }: QANotesA
     setSaving(true);
     const { error } = await supabase
       .from("sandbox_tenants")
-      .update({ testing_notes: notes, qa_status: status || null } as any)
+      .update({
+        testing_notes: notes,
+        qa_status: status || null,
+        last_qa_note_at: new Date().toISOString(),
+      } as any)
       .eq("id", sandboxId);
     setSaving(false);
     if (error) {
