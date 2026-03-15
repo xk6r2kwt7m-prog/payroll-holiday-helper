@@ -65,7 +65,9 @@ export function TrainingLibraryManager() {
     const matchesCat = categoryFilter === "all" || item.category === categoryFilter;
     const matchesSource = sourceFilter === "all" || item.source_type === sourceFilter;
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-    return matchesSearch && matchesCat && matchesSource && matchesStatus;
+    const matchesOpArea = opAreaFilter === "all" || (item.standards_metadata as any)?.operational_area === opAreaFilter;
+    const matchesMandatory = !mandatoryFilter || item.is_mandatory;
+    return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory;
   });
 
   const getAssignmentStats = (docId: string) => {
