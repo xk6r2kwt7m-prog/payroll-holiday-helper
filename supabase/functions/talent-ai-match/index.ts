@@ -31,10 +31,12 @@ Deno.serve(async (req) => {
       .single();
     if (reqError) throw reqError;
 
-    // Fetch visible talent profiles — privacy-safe fields only, no internal HR data
-    let profileQuery = supabase
+    // Fetch visible talent profiles — privacy-safe fields only
+    // EXCLUDED: tenant_id, employee internal fields, visibility_mode='hidden'
+    // REMOVED: 'previous_employer_only' is no longer a valid visibility mode
+    const { data: profiles, error: profError } = await supabase
       .from("talent_profiles")
-      .select(`id, employee_id, tenant_id, talent_pool_status, visibility_mode,
+      .select(`id, talent_pool_status, visibility_mode,
         preferred_roles, preferred_locations, preferred_countries, preferred_regions,
         employment_type_preference, profile_summary, years_experience, languages,
         work_eligibility_countries, willing_to_relocate, willing_to_travel,
@@ -42,7 +44,6 @@ Deno.serve(async (req) => {
       .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"])
       .neq("visibility_mode", "hidden");
 
-    const { data: profiles, error: profError } = await profileQuery;
     if (profError) throw profError;
     if (!profiles || profiles.length === 0) {
       return new Response(JSON.stringify({ matches_created: 0, message: "No visible profiles found" }), {
@@ -57,16 +58,12 @@ Deno.serve(async (req) => {
 
     const visibleProfileIds = new Set<string>();
     for (const profile of profiles) {
-      // Check if profile is visible to requesting tenant
+      // 'all_approved' — visible to everyone
       if (profile.visibility_mode === "all_approved") {
         visibleProfileIds.add(profile.id);
         continue;
       }
-      if (profile.visibility_mode === "previous_employer_only" && profile.tenant_id === tenant_id) {
-        visibleProfileIds.add(profile.id);
-        continue;
-      }
-      // Check permissions
+      // 'selected_companies' or 'approved_country_region' — check permissions
       const perms = (permissions || []).filter((p: any) => p.talent_profile_id === profile.id);
       for (const perm of perms) {
         if (perm.allowed_tenant_id === tenant_id) {
@@ -91,7 +88,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Prepare AI prompt — privacy-safe data only, no internal HR fields
+    // Prepare AI prompt — privacy-safe data only, surname initial only
+    // NO tenant_id, NO employee_id, NO internal HR fields logged or sent
     const candidateSummaries = visibleProfiles.map((p: any) => ({
       id: p.id,
       name: `${p.employees.forename} ${p.employees.surname.charAt(0)}.`,
@@ -111,13 +109,11 @@ Deno.serve(async (req) => {
 
 Job Request:
 - Role: ${request.role}
-- Department: ${request.department || "Any"}
 - Location: ${request.location || "Any"}
 - Country: ${request.country || "Any"}
 - Region: ${request.region || "Any"}
 - Employment Type: ${request.employment_type || "Any"}
 - Required Skills: ${(request.required_skills || []).join(", ") || "None specified"}
-- Required Training: ${(request.required_training || []).join(", ") || "None specified"}
 
 Candidates:
 ${JSON.stringify(candidateSummaries, null, 2)}
@@ -208,7 +204,7 @@ For each candidate, assess:
 
     // Insert new matches
     const matchInserts = (matchResults.matches || [])
-      .filter((m: any) => m.match_score > 0.2) // Only include >20% matches
+      .filter((m: any) => m.match_score > 0.2)
       .map((m: any) => ({
         talent_request_id,
         talent_profile_id: m.candidate_id,
@@ -227,7 +223,7 @@ For each candidate, assess:
       if (insertError) throw insertError;
     }
 
-    // Log the action
+    // Audit log — only profile IDs and action, no raw payloads
     await supabase.from("talent_audit_log").insert(
       visibleProfiles
         .filter((p: any) => matchResults.matches?.some((m: any) => m.candidate_id === p.id))
@@ -239,6 +235,7 @@ For each candidate, assess:
         }))
     );
 
+    // Response — counts only, no profile data leaked
     return new Response(
       JSON.stringify({
         matches_created: matchInserts.length,
