@@ -408,8 +408,10 @@ export function useRebuildSandbox() {
       const cfg = { ...DEFAULT_CONFIG, ...seedConfig };
       const { testUsers } = await seedTenantData(cfg, tenantId, user.id);
 
-      // Update test_users on sandbox record
-      await supabase.from("sandbox_tenants").update({ test_users: testUsers } as any).eq("id", sandboxId);
+      await supabase.from("sandbox_tenants").update({
+        test_users: testUsers,
+        last_rebuilt_at: new Date().toISOString(),
+      } as any).eq("id", sandboxId);
 
       await logSandboxAudit(tenantId, user.id, "sandbox_rebuilt", { from_config: seedConfig });
     },
