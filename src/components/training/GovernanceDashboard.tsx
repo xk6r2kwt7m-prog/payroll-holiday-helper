@@ -146,6 +146,28 @@ export function GovernanceDashboard({ metrics, onFilterSelect, activeFilter, mod
           </div>
         )}
 
+        {/* Content gap badges */}
+        {contentGapCards.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <span className="text-[9px] text-muted-foreground/70 uppercase tracking-wider font-medium self-center mr-0.5">Gaps:</span>
+            {contentGapCards.map(card => (
+              <button
+                key={card.key}
+                onClick={() => onFilterSelect(card.key)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition-all",
+                  activeFilter === card.key
+                    ? "border-primary/40 bg-primary/10 ring-1 ring-primary/20"
+                    : "border-border bg-background hover:bg-muted/50",
+                )}
+              >
+                <span className={card.color}>{card.value}</span>
+                <span className="text-muted-foreground">{card.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Priority action queue */}
         {queueItems.length > 0 && (
           <div className="space-y-1.5 pt-1 border-t border-border">
