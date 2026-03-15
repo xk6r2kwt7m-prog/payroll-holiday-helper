@@ -1,7 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, XCircle, Clock, RotateCcw, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/hooks/useTenant";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface QAItem {
   id: string;
@@ -39,9 +53,45 @@ const QA_ITEMS: QAItem[] = [
 
 type CheckState = "pass" | "fail" | "untested";
 
+interface PersistedState {
+  checks: Record<string, CheckState>;
+  notes: Record<string, string>;
+}
+
+function getStorageKey(tenantId: string) {
+  return `training_qa_checklist:${tenantId}`;
+}
+
 export function TrainingQAChecklist() {
+  const { tenantId, tenantName } = useTenant();
   const [checks, setChecks] = useState<Record<string, CheckState>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
+
+  // Load persisted state on mount / tenant change
+  useEffect(() => {
+    if (!tenantId) return;
+    try {
+      const raw = localStorage.getItem(getStorageKey(tenantId));
+      if (raw) {
+        const parsed: PersistedState = JSON.parse(raw);
+        setChecks(parsed.checks || {});
+        setNotes(parsed.notes || {});
+      } else {
+        setChecks({});
+        setNotes({});
+      }
+    } catch {
+      setChecks({});
+      setNotes({});
+    }
+  }, [tenantId]);
+
+  // Persist on change
+  useEffect(() => {
+    if (!tenantId) return;
+    const state: PersistedState = { checks, notes };
+    localStorage.setItem(getStorageKey(tenantId), JSON.stringify(state));
+  }, [checks, notes, tenantId]);
 
   const toggle = (id: string) => {
     setChecks(prev => {
@@ -51,6 +101,26 @@ export function TrainingQAChecklist() {
     });
   };
 
+  const resetChecklist = useCallback(() => {
+    setChecks({});
+    setNotes({});
+    if (tenantId) localStorage.removeItem(getStorageKey(tenantId));
+    toast.success("Checklist reset");
+  }, [tenantId]);
+
+  const copySummary = useCallback(() => {
+    const totalChecked = Object.values(checks).filter(v => v !== "untested").length;
+    const totalPassed = Object.values(checks).filter(v => v === "pass").length;
+    const totalFailed = Object.values(checks).filter(v => v === "fail").length;
+    const failedItems = QA_ITEMS.filter(i => checks[i.id] === "fail");
+
+    let text = `Training QA Checklist\nTenant: ${tenantName || "Unknown"}\nPassed: ${totalPassed}\nFailed: ${totalFailed}\nUntested: ${QA_ITEMS.length - totalChecked}`;
+    if (failedItems.length > 0) {
+      text += `\n\nFailed items:\n${failedItems.map(i => `  - ${i.label}`).join("\n")}`;
+    }
+    navigator.clipboard.writeText(text).then(() => toast.success("Summary copied to clipboard"));
+  }, [checks, tenantName]);
+
   const categories = [...new Set(QA_ITEMS.map(i => i.category))];
   const totalChecked = Object.values(checks).filter(v => v !== "untested").length;
   const totalPassed = Object.values(checks).filter(v => v === "pass").length;
@@ -58,11 +128,45 @@ export function TrainingQAChecklist() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-sm font-bold text-foreground">Training Module QA Checklist</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          {totalChecked}/{QA_ITEMS.length} tested · {totalPassed} passed · {totalFailed} failed
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-foreground">Training Module QA Checklist</h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Use this before pilot, release, or major training changes.
+          </p>
+        </div>
+        <div className="flex gap-1.5 shrink-0">
+          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={copySummary}>
+            <Copy className="h-3 w-3" /> Copy
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1 text-destructive hover:text-destructive">
+                <RotateCcw className="h-3 w-3" /> Reset
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset QA Checklist?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will clear all pass/fail states and notes for this workspace. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={resetChecklist}>Reset</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
+
+      {/* Summary strip */}
+      <div className="flex gap-3 text-xs">
+        <span className="text-muted-foreground">{QA_ITEMS.length} items</span>
+        <span className="text-muted-foreground">{totalChecked} tested</span>
+        <span className="text-success font-medium">{totalPassed} passed</span>
+        {totalFailed > 0 && <span className="text-destructive font-medium">{totalFailed} failed</span>}
       </div>
 
       {categories.map(cat => (
