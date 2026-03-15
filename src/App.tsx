@@ -50,11 +50,15 @@ import ShiftMarketplace from "./pages/ShiftMarketplace";
 import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfUse from "./pages/TermsOfUse";
+import CookiePolicy from "./pages/CookiePolicy";
 import FohServiceTraining from "./pages/FohServiceTraining";
 import FohAllergyTraining from "./pages/FohAllergyTraining";
 import FohUpsellingTraining from "./pages/FohUpsellingTraining";
 import FohPrintableTraining from "./pages/FohPrintableTraining";
 import { CommandPalette } from "@/components/CommandPalette";
+import { CookieConsent } from "@/components/CookieConsent";
 
 const queryClient = new QueryClient();
 
