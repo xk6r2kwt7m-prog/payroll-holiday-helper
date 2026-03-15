@@ -5526,10 +5526,18 @@ export type Database = {
           due_date: string | null
           employee_id: string
           id: string
+          is_mandatory: boolean
+          module_version: number | null
           notes: string | null
           quiz_passed: boolean | null
           quiz_score: number | null
           reminder_count: number
+          score: number | null
+          signed_off_at: string | null
+          signed_off_by: string | null
+          signoff_checklist: Json | null
+          signoff_required: boolean
+          signoff_status: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -5545,10 +5553,18 @@ export type Database = {
           due_date?: string | null
           employee_id: string
           id?: string
+          is_mandatory?: boolean
+          module_version?: number | null
           notes?: string | null
           quiz_passed?: boolean | null
           quiz_score?: number | null
           reminder_count?: number
+          score?: number | null
+          signed_off_at?: string | null
+          signed_off_by?: string | null
+          signoff_checklist?: Json | null
+          signoff_required?: boolean
+          signoff_status?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
@@ -5564,10 +5580,18 @@ export type Database = {
           due_date?: string | null
           employee_id?: string
           id?: string
+          is_mandatory?: boolean
+          module_version?: number | null
           notes?: string | null
           quiz_passed?: boolean | null
           quiz_score?: number | null
           reminder_count?: number
+          score?: number | null
+          signed_off_at?: string | null
+          signed_off_by?: string | null
+          signoff_checklist?: Json | null
+          signoff_required?: boolean
+          signoff_status?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string
@@ -5736,9 +5760,66 @@ export type Database = {
           },
         ]
       }
+      training_files: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          module_id: string
+          tenant_id: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          module_id: string
+          tenant_id?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          module_id?: string
+          tenant_id?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_files_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_files_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_library: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
+          archived_at: string | null
+          audience_scope: string | null
           category: string
+          change_log: string | null
+          completion_type: string
           content_type: string
           content_url: string | null
           counts_toward_readiness: boolean
@@ -5746,25 +5827,41 @@ export type Database = {
           created_by: string | null
           description: string | null
           effective_date: string | null
+          estimated_minutes: number | null
           expiry_date: string | null
           file_path: string | null
           id: string
           is_active: boolean
+          is_mandatory: boolean
+          pass_mark: number | null
           previous_version_id: string | null
+          published_at: string | null
+          refresher_days: number | null
           requires_acknowledgement: boolean
           requires_completion: boolean
           requires_quiz: boolean
+          retry_limit: number | null
           review_date: string | null
+          source_module_id: string | null
+          source_type: string
+          status: string
+          summary: string | null
           target_departments: string[] | null
           target_locations: string[] | null
           target_roles: string[] | null
-          tenant_id: string
+          tenant_id: string | null
           title: string
           updated_at: string
           version: number
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          archived_at?: string | null
+          audience_scope?: string | null
           category?: string
+          change_log?: string | null
+          completion_type?: string
           content_type?: string
           content_url?: string | null
           counts_toward_readiness?: boolean
@@ -5772,25 +5869,41 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           effective_date?: string | null
+          estimated_minutes?: number | null
           expiry_date?: string | null
           file_path?: string | null
           id?: string
           is_active?: boolean
+          is_mandatory?: boolean
+          pass_mark?: number | null
           previous_version_id?: string | null
+          published_at?: string | null
+          refresher_days?: number | null
           requires_acknowledgement?: boolean
           requires_completion?: boolean
           requires_quiz?: boolean
+          retry_limit?: number | null
           review_date?: string | null
+          source_module_id?: string | null
+          source_type?: string
+          status?: string
+          summary?: string | null
           target_departments?: string[] | null
           target_locations?: string[] | null
           target_roles?: string[] | null
-          tenant_id: string
+          tenant_id?: string | null
           title: string
           updated_at?: string
           version?: number
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          archived_at?: string | null
+          audience_scope?: string | null
           category?: string
+          change_log?: string | null
+          completion_type?: string
           content_type?: string
           content_url?: string | null
           counts_toward_readiness?: boolean
@@ -5798,19 +5911,29 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           effective_date?: string | null
+          estimated_minutes?: number | null
           expiry_date?: string | null
           file_path?: string | null
           id?: string
           is_active?: boolean
+          is_mandatory?: boolean
+          pass_mark?: number | null
           previous_version_id?: string | null
+          published_at?: string | null
+          refresher_days?: number | null
           requires_acknowledgement?: boolean
           requires_completion?: boolean
           requires_quiz?: boolean
+          retry_limit?: number | null
           review_date?: string | null
+          source_module_id?: string | null
+          source_type?: string
+          status?: string
+          summary?: string | null
           target_departments?: string[] | null
           target_locations?: string[] | null
           target_roles?: string[] | null
-          tenant_id?: string
+          tenant_id?: string | null
           title?: string
           updated_at?: string
           version?: number
@@ -5838,30 +5961,36 @@ export type Database = {
           created_at: string
           display_order: number
           document_id: string
+          explanation: string | null
           id: string
           options: Json
           question: string
-          tenant_id: string
+          question_type: string
+          tenant_id: string | null
         }
         Insert: {
           correct_option?: number
           created_at?: string
           display_order?: number
           document_id: string
+          explanation?: string | null
           id?: string
           options?: Json
           question: string
-          tenant_id: string
+          question_type?: string
+          tenant_id?: string | null
         }
         Update: {
           correct_option?: number
           created_at?: string
           display_order?: number
           document_id?: string
+          explanation?: string | null
           id?: string
           options?: Json
           question?: string
-          tenant_id?: string
+          question_type?: string
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -5943,6 +6072,48 @@ export type Database = {
           },
           {
             foreignKeyName: "training_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_signoff_templates: {
+        Row: {
+          checklist: Json
+          created_at: string
+          id: string
+          module_id: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          checklist?: Json
+          created_at?: string
+          id?: string
+          module_id: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          checklist?: Json
+          created_at?: string
+          id?: string
+          module_id?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_signoff_templates_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_signoff_templates_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
