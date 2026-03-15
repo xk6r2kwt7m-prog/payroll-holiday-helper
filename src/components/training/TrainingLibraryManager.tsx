@@ -598,7 +598,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
         {canManage && (() => {
           const riskLevel = (module.standards_metadata as any)?.service_risk_level as string | undefined;
           if (riskLevel !== "high") return null;
-          const counts = govCounts[module.id] ?? { evidenceCount: 0, insightCount: 0 };
+          const counts = detailGovCounts[module.id] ?? { evidenceCount: 0, insightCount: 0 };
           const govInput: ModuleGovernanceInput = {
             lastReviewedAt: module.last_reviewed_at ?? null,
             counts,
