@@ -101,7 +101,7 @@ export function TrainingQAChecklist() {
 
   // ── Load ──
   useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId) { clearAll(); return; }
     try {
       const raw = localStorage.getItem(key(tenantId));
       if (raw) {
