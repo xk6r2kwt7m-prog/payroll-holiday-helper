@@ -36,6 +36,8 @@ import { usePermission } from "@/hooks/useRolePermissions";
 import { exportToCsv } from "@/lib/csv-export";
 import { writeTrainingAudit } from "@/hooks/useTrainingLibrary";
 import { toast } from "sonner";
+import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
+import { OPERATIONAL_AREA_LABELS, type OperationalArea } from "@/data/training-standards/types";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
