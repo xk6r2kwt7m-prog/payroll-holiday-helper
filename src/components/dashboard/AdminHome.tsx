@@ -115,7 +115,7 @@ export function AdminHome() {
   ];
 
   return (
-    <div className="space-y-5 max-w-2xl mx-auto pb-24">
+    <div className="space-y-5 max-w-2xl mx-auto pb-24 min-w-0 overflow-x-hidden">
       {/* Greeting */}
       <motion.div {...anim} transition={{ duration: 0.25 }}>
         <h1 className="text-xl font-bold text-foreground">
