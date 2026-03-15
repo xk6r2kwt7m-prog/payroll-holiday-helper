@@ -40,6 +40,7 @@ import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
 import { EvidencePanel } from "@/components/training/EvidencePanel";
 import { ReviewInsightsPanel } from "@/components/training/ReviewInsightsPanel";
 import { EvidenceCompletenessBar } from "@/components/training/EvidenceCompletenessBar";
+import { ModuleGovernanceSummary } from "@/components/training/ModuleGovernanceSummary";
 import { OPERATIONAL_AREA_LABELS, type OperationalArea } from "@/data/training-standards/types";
 import {
   COMPLETENESS_LABELS,
@@ -47,6 +48,8 @@ import {
   useModuleEvidence,
   type EvidenceCompletenessStatus,
 } from "@/hooks/useModuleEvidence";
+import { useGovernanceSummary } from "@/hooks/useGovernanceSummary";
+import { getReviewState } from "@/lib/review-governance";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
