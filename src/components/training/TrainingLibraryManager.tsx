@@ -348,6 +348,12 @@ export function TrainingLibraryManager() {
                       <Eye className="h-2.5 w-2.5" /> {itemGov.insightCount}
                     </Badge>
                   )}
+                  {/* High-risk badge */}
+                  {canManage && riskLevel === "high" && moduleHealth !== "ready" && (
+                    <Badge className="text-[9px] bg-destructive/10 text-destructive gap-0.5">
+                      <AlertTriangle className="h-2.5 w-2.5" /> High Risk
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="text-right shrink-0 flex items-center gap-2">
