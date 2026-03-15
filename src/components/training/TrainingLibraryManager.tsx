@@ -51,7 +51,11 @@ import {
 import { useGovernanceSummary } from "@/hooks/useGovernanceSummary";
 import { useReviewInsights } from "@/hooks/useReviewInsights";
 import { getReviewState } from "@/lib/review-governance";
-import { classifyGovernance, computeGovernanceMetrics, type GovernanceHealth } from "@/lib/governance-classification";
+import {
+  classifyGovernance, computeGovernanceMetrics, getGovernanceReasons,
+  getGovernanceRecommendation, GOVERNANCE_HEALTH_CONFIG,
+  type GovernanceHealth, type ModuleGovernanceInput,
+} from "@/lib/governance-classification";
 import { GovernanceDashboard } from "@/components/training/GovernanceDashboard";
 import type { ServiceRiskLevel } from "@/data/training-standards/types";
 import {
