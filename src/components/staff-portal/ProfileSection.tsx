@@ -38,7 +38,7 @@ export function ProfileSection({ employeeData, onSignOut }: ProfileSectionProps)
 
       {/* Talent Pool */}
       <Link
-        to="/talent-pool?tab=my-profile"
+        to={`${TALENT_POOL_ROUTE}?tab=my-profile`}
         className="flex items-center gap-3 w-full p-3.5 rounded-xl text-sm font-medium text-foreground hover:bg-primary/5 active:bg-primary/10 transition-colors border border-border"
       >
         <Sparkles className="h-5 w-5 text-primary" />
