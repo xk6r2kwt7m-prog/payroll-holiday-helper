@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/hooks/useTenant";
 
 const ACTION_STYLES: Record<string, string> = {
   INSERT: "bg-success/10 text-success",
@@ -16,18 +17,22 @@ const ACTION_STYLES: Record<string, string> = {
 
 export function AdminAuditLog() {
   const [search, setSearch] = useState("");
+  const { tenantId } = useTenant();
 
   const { data: logs = [], isLoading } = useQuery({
-    queryKey: ["admin-audit-log"],
+    queryKey: ["admin-audit-log", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("audit_log")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 
   const filtered = logs.filter((log) => {

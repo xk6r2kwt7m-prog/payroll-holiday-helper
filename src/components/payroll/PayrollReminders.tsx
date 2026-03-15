@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { SensitiveSection } from "@/components/ui/sensitive-field";
+import { useTenant } from "@/hooks/useTenant";
 
 interface PayrollRemindersProps {
   periodId: string;
@@ -12,19 +13,23 @@ interface PayrollRemindersProps {
 
 export function PayrollReminders({ periodId }: PayrollRemindersProps) {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   const { data: reminders = [] } = useQuery({
-    queryKey: ["payroll_reminders"],
+    queryKey: ["payroll_reminders", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("admin_notes")
         .select("*, employees(forename, surname)")
+        .eq("tenant_id", tenantId)
         .eq("status", "open")
         .like("note", "%NEXT PAYROLL ACTION%")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 
   const handleDismiss = async (id: string) => {
