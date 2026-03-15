@@ -192,7 +192,11 @@ function PlatformModuleDetail({ module, open, onOpenChange, onAdapt, isAdapting,
             </div>
           )}
 
-          {/* Adapt Button */}
+          {/* Admin-only standards metadata */}
+          {canManage && module.standards_metadata && (
+            <WhyThisMattersPanel metadata={module.standards_metadata as StandardsMetadata} />
+          )}
+
           {canManage && (
             <div className="pt-2 border-t border-border">
               <Button onClick={onAdapt} disabled={isAdapting} className="w-full gap-2">

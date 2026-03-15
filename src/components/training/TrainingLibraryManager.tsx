@@ -525,6 +525,10 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   {module.published_at && <InfoRow label="Published" value={format(parseISO(module.published_at), "d MMM yyyy")} />}
                   {module.review_date && <InfoRow label="Review Due" value={format(parseISO(module.review_date), "d MMM yyyy")} />}
                 </div>
+                {/* Admin-only standards metadata */}
+                {canManage && module.standards_metadata && (
+                  <WhyThisMattersPanel metadata={module.standards_metadata} />
+                )}
                 {canEdit && (
                   <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="w-full mt-2">
                     Edit Module
