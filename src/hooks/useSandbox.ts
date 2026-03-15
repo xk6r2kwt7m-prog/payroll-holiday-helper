@@ -213,15 +213,15 @@ export function useCreateSandbox() {
 
         // 5c. Seed talent profiles
         if (cfg.seedTalentProfiles && createdEmployeeIds.length >= 2) {
-          await supabase.from("talent_profiles").insert({
+          await supabase.from("talent_profiles").insert([{
             employee_id: createdEmployeeIds[0],
-            talent_pool_status: "open_to_work",
-            visibility_mode: "public",
-            seeking_visibility: "actively_looking",
+            talent_pool_status: "open_to_work" as any,
+            visibility_mode: "public" as any,
+            seeking_visibility: "actively_looking" as any,
             preferred_roles: ["Chef", "Kitchen Lead"],
             preferred_locations: ["London"],
             profile_summary: "Experienced chef seeking new opportunities in central London.",
-          });
+          }]);
           // Second employee: no talent profile (intentional gap for testing)
         }
 
