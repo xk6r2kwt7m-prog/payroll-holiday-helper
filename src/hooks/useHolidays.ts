@@ -386,16 +386,20 @@ export function useHolidayAdjustments(year?: number) {
 }
 
 export function useAllHolidayAdjustments() {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_adjustments", "all"],
+    queryKey: ["holiday_adjustments", tenantId, "all"],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_adjustments")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
