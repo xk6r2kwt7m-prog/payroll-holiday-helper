@@ -169,6 +169,47 @@ export function TrainingLibraryManager() {
           matchesEvidence = !!effRec && effRec.result_status === "insufficient_data";
           break;
         }
+        // Signal quality filters
+        case "sq_strong": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.qualityStatus === "strong";
+          break;
+        }
+        case "sq_acceptable": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.qualityStatus === "acceptable";
+          break;
+        }
+        case "sq_weak": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.qualityStatus === "weak";
+          break;
+        }
+        case "sq_unreliable": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.qualityStatus === "unreliable";
+          break;
+        }
+        case "sq_high_dupe": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.duplicateRisk === "high";
+          break;
+        }
+        case "sq_weak_attr": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.attributionStrength === "weak";
+          break;
+        }
+        case "sq_low_vol": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.volumeLevel === "low";
+          break;
+        }
+        case "sq_vague": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.vaguenessFlag === true;
+          break;
+        }
         default: matchesEvidence = true;
       }
     }
