@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   FileText, Shield, GraduationCap, CheckCircle2, Clock,
   AlertTriangle, ChevronRight, BookOpen, ExternalLink, Sparkles,
+  RotateCcw, Timer,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,35 @@ interface StaffTrainingViewProps {
   employeeId: string;
 }
 
+// ─── Status helpers ───
+
+type StaffStatus = "overdue" | "due_now" | "in_progress" | "awaiting_signoff" | "not_started" | "completed" | "failed";
+
+function getStaffStatus(a: TrainingAssignment): StaffStatus {
+  const isOverdue = a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0;
+  if (["completed", "acknowledged"].includes(a.status)) return "completed";
+  if (a.quiz_passed === false && a.quiz_score != null) return "failed";
+  if (a.signoff_required && a.status !== "completed" && !a.signed_off_at && (a.viewed_at || a.quiz_passed)) return "awaiting_signoff";
+  if (isOverdue && !["completed", "acknowledged", "cancelled"].includes(a.status)) return "overdue";
+  if (a.status === "viewed" || (a.quiz_score != null && !a.quiz_passed)) return "in_progress";
+  if (a.due_date && differenceInDays(parseISO(a.due_date), new Date()) <= 7 && differenceInDays(parseISO(a.due_date), new Date()) >= 0) return "due_now";
+  return "not_started";
+}
+
+function getStatusBadge(status: StaffStatus) {
+  const map: Record<StaffStatus, { label: string; className: string }> = {
+    overdue: { label: "Overdue", className: "bg-destructive/10 text-destructive" },
+    due_now: { label: "Due Soon", className: "bg-warning/10 text-warning" },
+    in_progress: { label: "In Progress", className: "bg-primary/10 text-primary" },
+    awaiting_signoff: { label: "Awaiting Sign-off", className: "bg-warning/10 text-warning" },
+    not_started: { label: "Not Started", className: "bg-muted text-muted-foreground" },
+    completed: { label: "Completed", className: "bg-success/10 text-success" },
+    failed: { label: "Failed", className: "bg-destructive/10 text-destructive" },
+  };
+  const s = map[status];
+  return <Badge className={cn("text-[10px]", s.className)}>{s.label}</Badge>;
+}
+
 export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
   const { data: assignments = [], isLoading } = useMyTrainingAssignments(employeeId);
   const updateAssignment = useUpdateAssignment();
@@ -35,16 +65,25 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
 
   if (isLoading) return <div className="text-center py-8 text-sm text-muted-foreground">Loading...</div>;
 
-  // Only show published training (staff should never see draft/archived)
+  // Only show published training
   const visibleAssignments = assignments.filter(a => {
     const lib = a.training_library;
     return lib && lib.status === "published";
   });
 
-  const pending = visibleAssignments.filter(a => !["completed", "acknowledged", "cancelled"].includes(a.status));
-  const completed = visibleAssignments.filter(a => ["completed", "acknowledged"].includes(a.status));
-  const overdue = pending.filter(a => a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0);
+  // Group assignments by status
+  const grouped = {
+    overdue: visibleAssignments.filter(a => getStaffStatus(a) === "overdue"),
+    due_now: visibleAssignments.filter(a => getStaffStatus(a) === "due_now"),
+    in_progress: visibleAssignments.filter(a => getStaffStatus(a) === "in_progress"),
+    awaiting_signoff: visibleAssignments.filter(a => getStaffStatus(a) === "awaiting_signoff"),
+    not_started: visibleAssignments.filter(a => getStaffStatus(a) === "not_started"),
+    failed: visibleAssignments.filter(a => getStaffStatus(a) === "failed"),
+    completed: visibleAssignments.filter(a => getStaffStatus(a) === "completed"),
+  };
 
+  const pending = visibleAssignments.filter(a => !["completed", "acknowledged"].includes(a.status));
+  const completed = visibleAssignments.filter(a => ["completed", "acknowledged"].includes(a.status));
   const completionRate = visibleAssignments.length > 0
     ? Math.round((completed.length / visibleAssignments.length) * 100)
     : 100;
@@ -71,8 +110,18 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
     }, { onSuccess: () => toast.success("Training completed") });
   };
 
+  const activeGroups: { key: string; title: string; items: TrainingAssignment[]; icon: React.ReactNode }[] = [
+    { key: "overdue", title: "Overdue", items: grouped.overdue, icon: <AlertTriangle className="h-4 w-4 text-destructive" /> },
+    { key: "due_now", title: "Due Soon", items: grouped.due_now, icon: <Clock className="h-4 w-4 text-warning" /> },
+    { key: "failed", title: "Failed — Retry Required", items: grouped.failed, icon: <RotateCcw className="h-4 w-4 text-destructive" /> },
+    { key: "in_progress", title: "In Progress", items: grouped.in_progress, icon: <Timer className="h-4 w-4 text-primary" /> },
+    { key: "awaiting_signoff", title: "Awaiting Manager Sign-off", items: grouped.awaiting_signoff, icon: <Shield className="h-4 w-4 text-warning" /> },
+    { key: "not_started", title: "Not Started", items: grouped.not_started, icon: <FileText className="h-4 w-4 text-muted-foreground" /> },
+  ].filter(g => g.items.length > 0);
+
   return (
     <div className="space-y-4">
+      {/* Progress Summary */}
       {visibleAssignments.length > 0 && (
         <motion.div {...anim}>
           <div className="rounded-xl bg-card border border-border p-4 shadow-sm">
@@ -83,38 +132,44 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
             <Progress value={completionRate} className="h-1.5 mb-2" />
             <div className="flex gap-4 text-[10px] text-muted-foreground uppercase tracking-wider">
               <span>{completed.length} done</span>
-              <span>{pending.length} pending</span>
-              {overdue.length > 0 && <span className="text-destructive font-medium">{overdue.length} overdue</span>}
+              <span>{pending.length} to do</span>
+              {grouped.overdue.length > 0 && <span className="text-destructive font-medium">{grouped.overdue.length} overdue</span>}
             </div>
           </div>
         </motion.div>
       )}
 
-      {overdue.length > 0 && (
-        <motion.div {...anim} transition={{ delay: 0.04 }}>
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/5 border border-destructive/10">
-            <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
-            <p className="text-xs text-destructive font-medium">{overdue.length} item{overdue.length > 1 ? "s" : ""} overdue</p>
+      {/* Grouped Sections */}
+      {activeGroups.map((group, gi) => (
+        <motion.div key={group.key} {...anim} transition={{ delay: 0.04 * gi }}>
+          <div className="flex items-center gap-2 mb-2">
+            {group.icon}
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              {group.title} ({group.items.length})
+            </h3>
           </div>
-        </motion.div>
-      )}
-
-      {pending.length > 0 && (
-        <motion.div {...anim} transition={{ delay: 0.06 }}>
-          <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">To Do ({pending.length})</h3>
           <div className="space-y-2">
-            {pending.map(a => (
-              <AssignmentCard key={a.id} assignment={a} onOpen={() => { handleMarkViewed(a); setSelectedAssignment(a); setShowQuiz(false); }} />
+            {group.items.map(a => (
+              <AssignmentCard
+                key={a.id}
+                assignment={a}
+                staffStatus={getStaffStatus(a)}
+                onOpen={() => { handleMarkViewed(a); setSelectedAssignment(a); setShowQuiz(false); }}
+              />
             ))}
           </div>
         </motion.div>
-      )}
+      ))}
 
-      {completed.length > 0 && (
+      {/* Completed */}
+      {grouped.completed.length > 0 && (
         <motion.div {...anim} transition={{ delay: 0.1 }}>
-          <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Completed ({completed.length})</h3>
+          <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+            <CheckCircle2 className="h-3.5 w-3.5 text-success inline mr-1.5" />
+            Completed ({grouped.completed.length})
+          </h3>
           <div className="space-y-1.5">
-            {completed.map(a => (
+            {grouped.completed.map(a => (
               <div key={a.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border shadow-sm opacity-70">
                 <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -131,6 +186,7 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
         </motion.div>
       )}
 
+      {/* Empty State */}
       {visibleAssignments.length === 0 && (
         <div className="text-center py-12 px-4">
           <div className="h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
@@ -143,6 +199,7 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
         </div>
       )}
 
+      {/* Detail Dialog */}
       {selectedAssignment && (
         <AssignmentDetailDialog
           assignment={selectedAssignment}
@@ -160,15 +217,23 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
   );
 }
 
-function AssignmentCard({ assignment, onOpen }: { assignment: TrainingAssignment; onOpen: () => void }) {
+// ─── Assignment Card ───
+
+function AssignmentCard({ assignment, staffStatus, onOpen }: {
+  assignment: TrainingAssignment;
+  staffStatus: StaffStatus;
+  onOpen: () => void;
+}) {
   const doc = assignment.training_library;
-  const isOverdue = assignment.due_date && differenceInDays(new Date(), parseISO(assignment.due_date)) > 0;
   const catLabel = LIBRARY_CATEGORIES.find(c => c.value === doc?.category)?.label || doc?.category;
+  const compLabel = COMPLETION_TYPES.find(c => c.value === doc?.completion_type)?.label;
 
   return (
     <button onClick={onOpen}
       className={cn("w-full flex items-center gap-3 p-3.5 rounded-xl border shadow-sm text-left transition-all active:bg-muted",
-        isOverdue ? "bg-destructive/5 border-destructive/15" : "bg-card border-border"
+        staffStatus === "overdue" ? "bg-destructive/5 border-destructive/15" :
+        staffStatus === "failed" ? "bg-destructive/5 border-destructive/15" :
+        "bg-card border-border"
       )}>
       <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
         doc?.completion_type === "quiz" ? "bg-accent/10" :
@@ -182,12 +247,19 @@ function AssignmentCard({ assignment, onOpen }: { assignment: TrainingAssignment
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-foreground truncate">{doc?.title || "Document"}</p>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          {getStatusBadge(staffStatus)}
           <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>
           {assignment.is_mandatory && <Badge className="text-[10px] bg-destructive/10 text-destructive">Required</Badge>}
+        </div>
+        <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+          {compLabel && <span>{compLabel}</span>}
+          {doc?.estimated_minutes && <span>{doc.estimated_minutes} min</span>}
           {assignment.due_date && (
-            <span className={cn("text-[10px]", isOverdue ? "text-destructive font-medium" : "text-muted-foreground")}>
-              {isOverdue ? "Overdue" : `Due ${format(parseISO(assignment.due_date), "d MMM")}`}
+            <span className={cn(staffStatus === "overdue" ? "text-destructive font-medium" : "")}>
+              {staffStatus === "overdue"
+                ? `${differenceInDays(new Date(), parseISO(assignment.due_date))}d overdue`
+                : `Due ${format(parseISO(assignment.due_date), "d MMM")}`}
             </span>
           )}
         </div>
@@ -196,6 +268,8 @@ function AssignmentCard({ assignment, onOpen }: { assignment: TrainingAssignment
     </button>
   );
 }
+
+// ─── Detail Dialog ───
 
 function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, onAcknowledge, onComplete, isPending, showQuiz, onStartQuiz }: {
   assignment: TrainingAssignment;
@@ -215,6 +289,7 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
   const needsQuiz = doc?.requires_quiz && !assignment.quiz_passed;
   const isInternalPage = doc?.content_type === "internal_page" && doc?.content_url;
   const needsSignoff = assignment.signoff_required && !assignment.signed_off_at;
+  const staffStatus = getStaffStatus(assignment);
 
   const handleOpenContent = () => {
     if (isInternalPage) navigate(doc.content_url!);
@@ -222,7 +297,7 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
       window.open(doc.content_url, "_blank", "noopener,noreferrer");
   };
 
-  // If showing quiz
+  // Quiz view
   if (showQuiz && needsQuiz && doc) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -243,11 +318,18 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>{doc?.title || "Document"}</DialogTitle></DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-base">{doc?.title || "Document"}</DialogTitle>
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            {getStatusBadge(staffStatus)}
+            {assignment.is_mandatory && <Badge className="text-[10px] bg-destructive/10 text-destructive">Required</Badge>}
+          </div>
+        </DialogHeader>
         <div className="space-y-4 pt-2">
           {doc?.summary && <p className="text-sm text-muted-foreground">{doc.summary}</p>}
 
+          {/* Content link */}
           {(isInternalPage || (doc?.content_type === "external_link" && doc?.content_url)) && (
             <Button onClick={handleOpenContent} variant="outline" className="w-full gap-2">
               {isInternalPage ? <><BookOpen className="h-4 w-4" /> Open Training Module</> :
@@ -255,6 +337,7 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
             </Button>
           )}
 
+          {/* Module info */}
           <div className="space-y-2 text-sm">
             {doc?.category && (
               <div className="flex justify-between">
@@ -277,7 +360,15 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
             {assignment.due_date && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Due Date</span>
-                <span className="font-medium">{format(parseISO(assignment.due_date), "d MMMM yyyy")}</span>
+                <span className={cn("font-medium", staffStatus === "overdue" ? "text-destructive" : "")}>
+                  {format(parseISO(assignment.due_date), "d MMMM yyyy")}
+                </span>
+              </div>
+            )}
+            {assignment.score != null && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Last Score</span>
+                <span className={cn("font-medium", assignment.quiz_passed ? "text-success" : "text-destructive")}>{assignment.score}%</span>
               </div>
             )}
           </div>
@@ -297,18 +388,19 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
           {/* Actions */}
           <div className="space-y-2 pt-2">
             {needsQuiz && (
-              <Button onClick={onStartQuiz} className="w-full gap-2">
-                <GraduationCap className="h-4 w-4" /> Take Quiz
+              <Button onClick={onStartQuiz} className="w-full gap-2" size="lg">
+                <GraduationCap className="h-4 w-4" />
+                {assignment.quiz_score != null ? "Retry Quiz" : "Take Quiz"}
               </Button>
             )}
             {needsAck && !needsQuiz && (
-              <Button onClick={onAcknowledge} disabled={isPending} className="w-full">
+              <Button onClick={onAcknowledge} disabled={isPending} className="w-full" size="lg">
                 <Shield className="h-4 w-4 mr-2" />
                 {isPending ? "Processing..." : "I Acknowledge This Document"}
               </Button>
             )}
             {needsCompletion && !needsAck && !needsQuiz && !needsSignoff && (
-              <Button onClick={onComplete} disabled={isPending} className="w-full">
+              <Button onClick={onComplete} disabled={isPending} className="w-full" size="lg">
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 {isPending ? "Processing..." : "Mark as Completed"}
               </Button>
