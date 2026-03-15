@@ -272,8 +272,8 @@ export function useCreateHolidayPayment() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
