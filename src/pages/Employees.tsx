@@ -232,7 +232,7 @@ const Employees = () => {
         </div>
 
         {/* Status Pills */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+        <div className="flex gap-1.5 flex-wrap pb-1">
           {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
             if (status === "archived" && !canManageLifecycle) return null;
             const count = counts[status];
