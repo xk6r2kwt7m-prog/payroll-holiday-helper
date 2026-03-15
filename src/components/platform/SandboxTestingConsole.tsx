@@ -321,7 +321,42 @@ export function SandboxTestingConsole() {
 
                     <Separator />
 
-                    {/* Actions */}
+                    {/* Freshness-aware primary action */}
+                    {getFreshness(sb) === "stale" && (
+                      <div className="flex items-center gap-2 bg-destructive/5 border border-destructive/20 rounded-md px-3 py-2">
+                        <Button
+                          size="sm"
+                          className="gap-1.5 text-xs"
+                          onClick={async () => {
+                            await rebuildSandbox.mutateAsync(sb.id);
+                            if (tenant?.id) {
+                              await handleImpersonate(tenant.id, tenant.name, "admin" as AppRole, "Company Admin");
+                            }
+                          }}
+                          disabled={rebuildSandbox.isPending}
+                        >
+                          {rebuildSandbox.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                          Rebuild & Test
+                        </Button>
+                        <span className="text-[11px] text-muted-foreground">Rebuilds data and opens as Admin</span>
+                      </div>
+                    )}
+                    {getFreshness(sb) === "needs_retest" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="gap-1.5 text-xs"
+                        onClick={() => {
+                          if (tenant?.id) {
+                            handleImpersonate(tenant.id, tenant.name, "admin" as AppRole, "Company Admin");
+                          }
+                        }}
+                      >
+                        <Eye className="h-3 w-3" /> Retest Now
+                      </Button>
+                    )}
+
+                    {/* Standard actions */}
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
