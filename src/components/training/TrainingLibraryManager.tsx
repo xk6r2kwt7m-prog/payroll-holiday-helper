@@ -19,12 +19,13 @@ import { cn } from "@/lib/utils";
 import {
   useTrainingLibrary,
   useCreateLibraryItem,
+  useUpdateLibraryItem,
   useTrainingAssignments,
   useCreateAssignments,
   LIBRARY_CATEGORIES,
   type TrainingLibraryItem,
 } from "@/hooks/useTrainingLibrary";
-import { useUpdateModuleStatus, COMPLETION_TYPES, MODULE_STATUSES, type ModuleStatus } from "@/hooks/useTrainingModules";
+import { useUpdateModuleStatus, COMPLETION_TYPES, MODULE_STATUSES, AUDIENCE_SCOPES, type ModuleStatus } from "@/hooks/useTrainingModules";
 import { useEmployees } from "@/hooks/useEmployees";
 import { AssignmentStatusBadge } from "@/components/training/AssignmentStatusBadge";
 import { QuizBuilder } from "@/components/training/QuizBuilder";
