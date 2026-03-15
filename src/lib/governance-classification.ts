@@ -1,9 +1,10 @@
 /**
  * Shared governance health classification for UGLŌ Standard modules.
- * Single source of truth — used by dashboard and list views.
+ * Single source of truth — used by dashboard, list, and detail views.
  */
 
-import { isReviewStale } from "@/lib/review-governance";
+import { isReviewStale, STALE_REVIEW_THRESHOLD_DAYS } from "@/lib/review-governance";
+import { differenceInDays, parseISO, format } from "date-fns";
 import type { GovernanceCounts } from "@/hooks/useGovernanceSummary";
 import type { ServiceRiskLevel } from "@/data/training-standards/types";
 
@@ -18,13 +19,6 @@ export interface ModuleGovernanceInput {
 
 /**
  * Classify a module's governance health.
- *
- * Rules (evaluated top-down, first match wins):
- * - ready:       reviewed (not stale) + ≥2 evidence + ≥1 insight
- * - stale:       was reviewed but review is now stale (>180 days)
- * - partial:     has some evidence or insights but not enough for ready
- * - weak:        reviewed but no evidence; or insights without evidence; or evidence without insights
- * - unreviewed:  never reviewed
  */
 export function classifyGovernance(input: ModuleGovernanceInput): GovernanceHealth {
   const { lastReviewedAt, counts } = input;
@@ -33,21 +27,12 @@ export function classifyGovernance(input: ModuleGovernanceInput): GovernanceHeal
   const wasReviewed = !!lastReviewedAt;
   const stale = isReviewStale(lastReviewedAt);
 
-  // Never reviewed at all
   if (!wasReviewed) return "unreviewed";
-
-  // Was reviewed but is now stale
   if (stale) return "stale";
-
-  // Reviewed + strong evidence + insights = ready
   if (hasEvidence && counts.evidenceCount >= 2 && hasInsights) return "ready";
-
-  // Reviewed but weak signals
-  if (!hasEvidence && !hasInsights) return "weak";          // reviewed but nothing supports it
-  if (hasInsights && !hasEvidence) return "weak";           // insights without evidence
-  if (hasEvidence && !hasInsights) return "partial";        // evidence but no review insights
-
-  // Has some evidence (1) + insights → partial
+  if (!hasEvidence && !hasInsights) return "weak";
+  if (hasInsights && !hasEvidence) return "weak";
+  if (hasEvidence && !hasInsights) return "partial";
   return "partial";
 }
 
@@ -59,9 +44,107 @@ export const GOVERNANCE_HEALTH_CONFIG: Record<GovernanceHealth, { label: string;
   unreviewed: { label: "Unreviewed",  color: "bg-muted text-muted-foreground",           description: "Never reviewed by an admin" },
 };
 
+// ─── Governance Reasons (human-readable explanations) ───
+
 /**
- * Compute aggregate governance metrics for a set of modules.
+ * Return specific, actionable reasons explaining why a module has its current health.
+ * Used in tooltips, queue rows, and the standards tab recommendation line.
  */
+export function getGovernanceReasons(input: ModuleGovernanceInput): string[] {
+  const { lastReviewedAt, counts } = input;
+  const reasons: string[] = [];
+
+  if (!lastReviewedAt) {
+    reasons.push("Never reviewed");
+  } else {
+    const daysAgo = differenceInDays(new Date(), parseISO(lastReviewedAt));
+    if (daysAgo > STALE_REVIEW_THRESHOLD_DAYS) {
+      reasons.push(`Reviewed ${daysAgo} days ago (stale after ${STALE_REVIEW_THRESHOLD_DAYS})`);
+    } else {
+      reasons.push(`Reviewed ${format(parseISO(lastReviewedAt), "d MMM yyyy")}`);
+    }
+  }
+
+  if (counts.evidenceCount === 0) {
+    reasons.push("No evidence sources");
+  } else if (counts.evidenceCount === 1) {
+    reasons.push("Only 1 evidence source (need ≥2 for ready)");
+  }
+
+  if (counts.insightCount === 0 && counts.evidenceCount > 0) {
+    reasons.push("Evidence exists but no review insights link it to training needs");
+  }
+  if (counts.insightCount > 0 && counts.evidenceCount === 0) {
+    reasons.push("Has insights but no evidence supports them");
+  }
+
+  return reasons;
+}
+
+/**
+ * Return a single recommended admin action based on governance state.
+ */
+export function getGovernanceRecommendation(input: ModuleGovernanceInput): string | null {
+  const health = classifyGovernance(input);
+  const { lastReviewedAt, counts } = input;
+
+  switch (health) {
+    case "unreviewed":
+      return "Recommended: review this module and add evidence sources";
+    case "stale":
+      return "Recommended: re-review this module — last review is over 180 days old";
+    case "weak":
+      if (counts.insightCount > 0 && counts.evidenceCount === 0) {
+        return "Recommended: add evidence sources to support existing insights";
+      }
+      return "Recommended: add evidence sources and review insights";
+    case "partial":
+      if (counts.evidenceCount < 2) {
+        return "Recommended: add more evidence sources (need ≥2 for ready)";
+      }
+      if (counts.insightCount === 0) {
+        return "Recommended: link review insights to training response";
+      }
+      return "Recommended: complete evidence and insight coverage";
+    case "ready":
+      return null;
+  }
+}
+
+// ─── Priority scoring for the action queue ───
+
+/**
+ * Priority score: lower = more urgent. Used to sort the action queue.
+ *
+ * Tiers:
+ *   0-9:   high-risk + weak/unreviewed
+ *   10-19: high-risk + stale
+ *   20-29: mandatory + weak/unreviewed
+ *   30-39: stale
+ *   40-49: weak
+ *   50-59: partial
+ *   100:   ready (excluded from queue)
+ */
+export function getGovernancePriority(input: ModuleGovernanceInput): number {
+  const health = classifyGovernance(input);
+  const isHighRisk = input.serviceRiskLevel === "high";
+
+  if (health === "ready") return 100;
+
+  if (isHighRisk && (health === "weak" || health === "unreviewed")) return 0;
+  if (isHighRisk && health === "stale") return 10;
+  if (isHighRisk && health === "partial") return 15;
+  if (input.isMandatory && (health === "weak" || health === "unreviewed")) return 20;
+  if (input.isMandatory && health === "stale") return 25;
+  if (health === "stale") return 30;
+  if (health === "weak") return 40;
+  if (health === "unreviewed") return 45;
+  if (health === "partial") return 50;
+  return 60;
+}
+
+// ─── Aggregate metrics ───
+
 export interface GovernanceMetrics {
   total: number;
   ready: number;
@@ -72,7 +155,7 @@ export interface GovernanceMetrics {
   evidenceNoInsights: number;
   insightsNoEvidence: number;
   mandatoryWeak: number;
-  highRiskConcern: number; // high-risk modules that are not ready
+  highRiskConcern: number;
 }
 
 export function computeGovernanceMetrics(
