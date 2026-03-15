@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, DollarSign, Calendar, CalendarClock, ChevronRight,
   Clock, Settings, MapPin, FileText, AlertTriangle, UserPlus,
-  ShieldAlert, BarChart3, CheckCircle2,
+  ShieldAlert, BarChart3, CheckCircle2, Sparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
