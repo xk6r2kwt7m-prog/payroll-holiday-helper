@@ -787,8 +787,8 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
               <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Evidence & Research</p>
               <EvidenceCompletenessBar
                 documentId={module.id}
-                lastReviewedAt={(module as any).last_reviewed_at ?? null}
-                lastReviewedBy={(module as any).last_reviewed_by ?? null}
+                lastReviewedAt={module.last_reviewed_at ?? null}
+                lastReviewedBy={module.last_reviewed_by ?? null}
                 canEdit={canEdit}
               />
               <EvidencePanel documentId={module.id} canEdit={canEdit} />
