@@ -593,6 +593,35 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
           </div>
         </SheetHeader>
 
+        {/* High-risk governance warning */}
+        {canManage && (() => {
+          const riskLevel = (module.standards_metadata as any)?.service_risk_level as string | undefined;
+          if (riskLevel !== "high") return null;
+          const counts = govCounts[module.id] ?? { evidenceCount: 0, insightCount: 0 };
+          const govInput: ModuleGovernanceInput = {
+            lastReviewedAt: module.last_reviewed_at ?? null,
+            counts,
+            isMandatory: module.is_mandatory,
+            serviceRiskLevel: riskLevel as ServiceRiskLevel,
+          };
+          const health = classifyGovernance(govInput);
+          if (health === "ready") return null;
+          const reasons = getGovernanceReasons(govInput);
+          return (
+            <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-medium text-destructive">High-risk module — governance {GOVERNANCE_HEALTH_CONFIG[health].label.toLowerCase()}</p>
+                  <ul className="text-[10px] text-destructive/80 mt-0.5 space-y-0.5">
+                    {reasons.map((r, i) => <li key={i}>• {r}</li>)}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Approval Actions */}
         {canManage && !isPlatform && (
           <div className="flex gap-2 mt-4 flex-wrap">
