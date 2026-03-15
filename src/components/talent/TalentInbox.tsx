@@ -5,16 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useEmployerConversations, useWorkerConversations, type TalentConversation as ConvType } from "@/hooks/useTalentConversations";
 import { TalentConversation } from "./TalentConversation";
-import { useAuth } from "@/hooks/useAuth";
 
 interface TalentInboxProps {
   mode: "employer" | "worker";
 }
 
 export function TalentInbox({ mode }: TalentInboxProps) {
-  const employerQuery = useEmployerConversations();
-  const workerQuery = useWorkerConversations();
-  const { user } = useAuth();
+  // Only fetch the relevant query for the active mode
+  const employerQuery = useEmployerConversations(mode === "employer");
+  const workerQuery = useWorkerConversations(mode === "worker");
 
   const conversations = mode === "employer"
     ? (employerQuery.data || [])
@@ -42,6 +41,8 @@ export function TalentInbox({ mode }: TalentInboxProps) {
     );
   }
 
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -49,9 +50,9 @@ export function TalentInbox({ mode }: TalentInboxProps) {
         <h3 className="text-sm font-semibold">
           {mode === "employer" ? "Applicant Messages" : "My Messages"}
         </h3>
-        {conversations.some((c) => (c.unread_count || 0) > 0) && (
+        {totalUnread > 0 && (
           <Badge variant="destructive" className="text-[9px] h-5 px-1.5">
-            {conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)} new
+            {totalUnread} new
           </Badge>
         )}
       </div>
@@ -83,44 +84,58 @@ export function TalentInbox({ mode }: TalentInboxProps) {
         </Card>
       )}
 
-      {conversations.map((conv) => (
-        <Card
-          key={conv.id}
-          className={cn(
-            "cursor-pointer hover:shadow-sm transition-shadow",
-            (conv.unread_count || 0) > 0 && "border-primary/30"
-          )}
-          onClick={() => setSelectedConv(conv)}
-        >
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className={cn(
-                    "text-sm truncate",
-                    (conv.unread_count || 0) > 0 ? "font-semibold" : "font-medium"
-                  )}>
-                    {conv.other_party_name}
-                  </p>
-                  {(conv.unread_count || 0) > 0 && (
-                    <Badge variant="destructive" className="text-[9px] h-4 px-1 shrink-0">
-                      {conv.unread_count}
-                    </Badge>
+      {conversations.map((conv) => {
+        const appStatus = (conv as any).talent_applications?.status;
+        const isTerminal = appStatus === "withdrawn" || appStatus === "rejected";
+
+        return (
+          <Card
+            key={conv.id}
+            className={cn(
+              "cursor-pointer hover:shadow-sm transition-shadow active:bg-muted/30",
+              (conv.unread_count || 0) > 0 && "border-primary/30",
+              isTerminal && "opacity-60",
+            )}
+            onClick={() => setSelectedConv(conv)}
+          >
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className={cn(
+                      "text-sm truncate",
+                      (conv.unread_count || 0) > 0 ? "font-semibold" : "font-medium"
+                    )}>
+                      {conv.other_party_name}
+                    </p>
+                    {(conv.unread_count || 0) > 0 && (
+                      <Badge variant="destructive" className="text-[9px] h-4 px-1 shrink-0">
+                        {conv.unread_count}
+                      </Badge>
+                    )}
+                    {appStatus && (
+                      <Badge variant="outline" className={cn(
+                        "text-[9px] capitalize shrink-0",
+                        isTerminal && "line-through text-muted-foreground",
+                      )}>
+                        {appStatus.replace(/_/g, " ")}
+                      </Badge>
+                    )}
+                  </div>
+                  {conv.vacancy_title && (
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      Re: {conv.vacancy_title}
+                    </p>
                   )}
                 </div>
-                {conv.vacancy_title && (
-                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                    Re: {conv.vacancy_title}
-                  </p>
-                )}
+                <p className="text-[10px] text-muted-foreground shrink-0">
+                  {new Date(conv.updated_at).toLocaleDateString()}
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground shrink-0">
-                {new Date(conv.updated_at).toLocaleDateString()}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

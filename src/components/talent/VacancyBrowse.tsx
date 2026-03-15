@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, Briefcase, MapPin } from "lucide-react";
+import { Search, Filter, Briefcase } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,14 +64,14 @@ export function VacancyBrowse() {
           <CollapsibleContent className="mt-3">
             <div className="flex flex-wrap gap-3 p-3 rounded-lg border border-border bg-muted/30">
               <Select value={countryFilter} onValueChange={setCountryFilter}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="Country" /></SelectTrigger>
+                <SelectTrigger className="w-full min-[380px]:w-[160px]"><SelectValue placeholder="Country" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Countries</SelectItem>
                   {countries.map((c) => <SelectItem key={c} value={c!}>{c}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Type" /></SelectTrigger>
+                <SelectTrigger className="w-full min-[380px]:w-[140px]"><SelectValue placeholder="Type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="permanent">Permanent</SelectItem>
@@ -95,8 +95,8 @@ export function VacancyBrowse() {
       </p>
 
       {isLoading && (
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-          {[...Array(4)].map((_, i) => (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-4"><div className="h-5 w-32 bg-muted rounded mb-2" /><div className="h-4 w-24 bg-muted rounded" /></CardContent>
             </Card>
@@ -113,6 +113,7 @@ export function VacancyBrowse() {
         </Card>
       )}
 
+      {/* Single column on mobile for readability */}
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
         {filtered.map((v) => (
           <VacancyCard
