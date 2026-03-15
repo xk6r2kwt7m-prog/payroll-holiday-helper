@@ -284,13 +284,53 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
   const { data: existingAssignments = [] } = useTrainingAssignments({ documentId: module.id });
   const createAssignments = useCreateAssignments();
   const updateStatus = useUpdateModuleStatus();
+  const updateItem = useUpdateLibraryItem();
   const canManage = usePermission("manage_training");
   const isPlatform = module.source_type === "platform" && module.tenant_id === null;
+  const isArchived = module.status === "archived";
+  const canEdit = canManage && !isPlatform && !isArchived;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [dueDate, setDueDate] = useState("");
   const [detailTab, setDetailTab] = useState("info");
   const [assignMode, setAssignMode] = useState<"individual" | "department" | "all">("individual");
   const [selectedDept, setSelectedDept] = useState("all");
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: module.title,
+    summary: module.summary || "",
+    description: module.description || "",
+    category: module.category,
+    completion_type: module.completion_type,
+    audience_scope: module.audience_scope || "all_staff",
+    is_mandatory: module.is_mandatory,
+    estimated_minutes: module.estimated_minutes ? String(module.estimated_minutes) : "",
+    refresher_days: module.refresher_days ? String(module.refresher_days) : "",
+    pass_mark: String(module.pass_mark || 80),
+  });
+
+  const handleSaveEdit = () => {
+    updateItem.mutate({
+      id: module.id,
+      updates: {
+        title: editForm.title,
+        summary: editForm.summary || null,
+        description: editForm.description || null,
+        category: editForm.category,
+        completion_type: editForm.completion_type,
+        audience_scope: editForm.audience_scope,
+        is_mandatory: editForm.is_mandatory,
+        estimated_minutes: editForm.estimated_minutes ? parseInt(editForm.estimated_minutes) : null,
+        refresher_days: editForm.refresher_days ? parseInt(editForm.refresher_days) : null,
+        pass_mark: parseInt(editForm.pass_mark) || 80,
+        requires_quiz: editForm.completion_type === "quiz" || editForm.completion_type === "blended",
+      } as any,
+    }, {
+      onSuccess: () => {
+        setEditMode(false);
+        onOpenChange(false);
+      },
+    });
+  };
 
   const activeEmployees = employees.filter(e => e.status === "active" || e.status === "starter" || (e.status as string) === "onboarding");
   const assignedEmployeeIds = new Set(existingAssignments.map(a => a.employee_id));
