@@ -75,7 +75,12 @@ const CompanyOnboarding = () => {
   if (!tenantResolved || tenantLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-2xl animate-pulse">
+            🥟
+          </div>
+          <p className="text-muted-foreground">Preparing workspace setup…</p>
+        </div>
       </div>
     );
   }
