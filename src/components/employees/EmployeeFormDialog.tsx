@@ -259,8 +259,13 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         setSavedEmployeeName(`${formData.forename} ${formData.surname}`);
         setTalentOptInOpen(true);
       }
-    } catch (error) {
-      toast.error(employee ? "Failed to update employee" : "Failed to create employee");
+    } catch (error: any) {
+      const msg = error?.message || error?.error?.message || "";
+      if (msg.includes("active talent pool profile")) {
+        toast.error("This employee has an active Talent Pool profile. Opt them out of the Talent Pool before removing account access.");
+      } else {
+        toast.error(employee ? "Failed to update employee" : "Failed to create employee");
+      }
     }
   };
 
