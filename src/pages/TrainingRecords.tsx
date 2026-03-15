@@ -8,6 +8,7 @@ import { TrainingCompletionDashboard } from "@/components/training/TrainingCompl
 import { ManagerComplianceDashboard } from "@/components/training/ManagerComplianceDashboard";
 import { PlatformModuleBrowser } from "@/components/training/PlatformModuleBrowser";
 import { StaffTrainingView } from "@/components/training/StaffTrainingView";
+import { TrainingQAChecklist } from "@/components/training/TrainingQAChecklist";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
