@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Search, MapPin, Briefcase, Filter, Globe, Star, Eye, MessageSquare } from "lucide-react";
+import { Search, Briefcase, Filter, Globe, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useTalentProfiles, useCreateInterestAction, type TalentProfile } from "@/hooks/useTalentPool";
+import { useTalentProfiles, type TalentProfile } from "@/hooks/useTalentPool";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "sonner";
+import { ContactCandidateSheet } from "./ContactCandidateSheet";
+import { TalentConversation } from "./TalentConversation";
 
 const STATUS_COLORS: Record<string, string> = {
   available_now: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
@@ -25,15 +26,15 @@ const STATUS_LABELS: Record<string, string> = {
 export function TalentSearch() {
   const [searchQuery, setSearchQuery] = useState("");
   const [countryFilter, setCountryFilter] = useState<string>("all");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [contactProfile, setContactProfile] = useState<TalentProfile | null>(null);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
 
   const { data: profiles = [], isLoading } = useTalentProfiles({
     country: countryFilter !== "all" ? countryFilter : undefined,
   });
 
-  const expressInterest = useCreateInterestAction();
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
 
   const filteredProfiles = profiles.filter((p) => {
     if (!searchQuery) return true;
@@ -48,21 +49,19 @@ export function TalentSearch() {
     );
   });
 
-  const handleExpressInterest = async (profile: TalentProfile) => {
-    try {
-      await expressInterest.mutateAsync({
-        talent_profile_id: profile.id,
-        action_type: "express_interest",
-        created_by: user?.id,
-      });
-      toast.success("Interest expressed successfully");
-    } catch {
-      toast.error("Failed to express interest");
-    }
-  };
-
-  // Collect unique countries for filters (department filter removed — internal HR data)
   const countries = [...new Set(profiles.flatMap((p) => p.preferred_countries || []))].sort();
+
+  // If viewing a conversation after unlock
+  if (activeConvId) {
+    return (
+      <TalentConversation
+        conversationId={activeConvId}
+        otherPartyName={contactProfile?.employee?.forename || "Candidate"}
+        senderType="employer"
+        onBack={() => { setActiveConvId(null); setContactProfile(null); }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -101,13 +100,8 @@ export function TalentSearch() {
                   ))}
                 </SelectContent>
               </Select>
-
               {countryFilter !== "all" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCountryFilter("all")}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setCountryFilter("all")}>
                   Clear filters
                 </Button>
               )}
@@ -116,12 +110,10 @@ export function TalentSearch() {
         </Collapsible>
       </div>
 
-      {/* Results count */}
       <p className="text-sm text-muted-foreground">
         {filteredProfiles.length} talent profile{filteredProfiles.length !== 1 ? "s" : ""} found
       </p>
 
-      {/* Loading */}
       {isLoading && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
@@ -136,7 +128,6 @@ export function TalentSearch() {
         </div>
       )}
 
-      {/* Empty */}
       {!isLoading && filteredProfiles.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
@@ -149,17 +140,27 @@ export function TalentSearch() {
         </Card>
       )}
 
-      {/* Profile Cards */}
       {!isLoading && filteredProfiles.length > 0 && (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredProfiles.map((profile) => (
             <TalentProfileCard
               key={profile.id}
               profile={profile}
-              onExpressInterest={() => handleExpressInterest(profile)}
+              isAdmin={isAdmin}
+              onContact={() => setContactProfile(profile)}
             />
           ))}
         </div>
+      )}
+
+      {/* Contact sheet */}
+      {contactProfile && (
+        <ContactCandidateSheet
+          open={!!contactProfile}
+          onOpenChange={(open) => { if (!open) setContactProfile(null); }}
+          profile={contactProfile}
+          onContactOpened={(convId) => setActiveConvId(convId)}
+        />
       )}
     </div>
   );
@@ -167,10 +168,12 @@ export function TalentSearch() {
 
 function TalentProfileCard({
   profile,
-  onExpressInterest,
+  isAdmin,
+  onContact,
 }: {
   profile: TalentProfile;
-  onExpressInterest: () => void;
+  isAdmin: boolean;
+  onContact: () => void;
 }) {
   const emp = profile.employee;
   const statusClass = STATUS_COLORS[profile.talent_pool_status] || "bg-muted text-muted-foreground";
@@ -196,7 +199,6 @@ function TalentProfileCard({
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
-        {/* Location & Country */}
         {(profile.preferred_locations?.length > 0 || profile.preferred_countries?.length > 0) && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Globe className="h-3.5 w-3.5 shrink-0" />
@@ -206,7 +208,6 @@ function TalentProfileCard({
           </div>
         )}
 
-        {/* Preferred roles */}
         {profile.preferred_roles?.length > 0 && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Briefcase className="h-3.5 w-3.5 shrink-0" />
@@ -214,7 +215,6 @@ function TalentProfileCard({
           </div>
         )}
 
-        {/* Employment type */}
         {profile.employment_type_preference?.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {profile.employment_type_preference.map((t) => (
@@ -225,27 +225,31 @@ function TalentProfileCard({
           </div>
         )}
 
-        {/* Summary */}
         {profile.profile_summary && (
           <p className="text-sm text-muted-foreground line-clamp-2">
             {profile.profile_summary}
           </p>
         )}
 
-        {/* Available from */}
         {profile.available_from && (
           <p className="text-xs text-muted-foreground">
             Available from: {new Date(profile.available_from).toLocaleDateString()}
           </p>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-2">
-          <Button size="sm" variant="outline" className="flex-1 text-xs gap-1.5" onClick={onExpressInterest}>
-            <Star className="h-3.5 w-3.5" />
-            Express Interest
-          </Button>
-        </div>
+        {/* Primary CTA: Contact Candidate (employer only) */}
+        {isAdmin && (
+          <div className="flex gap-2 pt-2">
+            <Button
+              size="sm"
+              className="flex-1 text-xs gap-1.5"
+              onClick={onContact}
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              Contact Candidate
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
