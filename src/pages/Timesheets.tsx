@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,8 @@ import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDi
 import { useI18n } from "@/hooks/useI18n";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { usePermission } from "@/hooks/useRolePermissions";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Timesheets() {
   const { t } = useI18n();
@@ -28,6 +30,15 @@ export default function Timesheets() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [reviewEntry, setReviewEntry] = useState<any>(null);
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
+
+  const resetPageState = useCallback(() => {
+    setSelectedBranch("all");
+    setStatusFilter("pending");
+    setSelectedIds([]);
+    setReviewEntry(null);
+    setShowFlaggedOnly(false);
+  }, []);
+  const { tenantReady, assertTenantMatch } = useTenantGuard(resetPageState);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -109,6 +120,17 @@ export default function Timesheets() {
       default: return "";
     }
   };
+
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 import { DollarSign, Clock, FileText, FileDown } from "lucide-react";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
@@ -33,6 +33,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
@@ -46,6 +48,14 @@ const Payroll = () => {
   
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
+
+  // Reset page-local state on tenant switch
+  const resetPageState = useCallback(() => {
+    setSelectedPeriodId(null);
+    setReportBuilderOpen(false);
+  }, []);
+  const { tenantReady, assertTenantMatch } = useTenantGuard(resetPageState);
+
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
@@ -286,6 +296,23 @@ const Payroll = () => {
       toast.error(t("payroll.failed_pdf"));
     }
   };
+
+  // DEV: assert tenant match on payroll data
+  if (entries.length > 0) assertTenantMatch(entries, "payroll_entries");
+
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4 max-w-7xl mx-auto w-full">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
+          </div>
+          <Skeleton className="h-64" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

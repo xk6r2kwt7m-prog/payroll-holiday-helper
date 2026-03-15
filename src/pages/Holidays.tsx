@@ -41,6 +41,8 @@ import { useI18n } from "@/hooks/useI18n";
 import { HolidayRequestQueue } from "@/components/holidays/HolidayRequestQueue";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const HOLIDAY_DISPLAY_DEFAULTS = {
   showBalanceSummary: true,
@@ -79,6 +81,15 @@ const Holidays = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [formulaBreakdownData, setFormulaBreakdownData] = useState<FormulaBreakdownData | null>(null);
   const [formulaOpen, setFormulaOpen] = useState(false);
+
+  // Reset page-local state on tenant switch
+  const resetPageState = useCallback(() => {
+    setSearchQuery("");
+    setDepartmentFilter("all");
+    setSelectedEmployeeId(null);
+    setFormulaOpen(false);
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
 
   // Allow deep-linking to specific tab (e.g. from Manager Home → "Review" link)
   useEffect(() => {

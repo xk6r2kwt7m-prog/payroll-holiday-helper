@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { format, addDays, isSameDay } from "date-fns";
@@ -25,6 +25,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { CalendarClock } from "lucide-react";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ViewMode = "week" | "day";
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
@@ -48,6 +50,14 @@ export default function Schedule() {
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedDept, setSelectedDept] = useState("FOH");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
+
+  // Reset page-local state on tenant switch
+  const resetPageState = useCallback(() => {
+    setSelectedBranch("");
+    setSelectedDept("FOH");
+    setQuickFilter("all");
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
 
   // Apply stored default view preference on first load
   useEffect(() => {
@@ -183,6 +193,17 @@ export default function Schedule() {
           secondaryLabel="View Locations"
           secondaryHref="/locations"
         />
+      </AppLayout>
+    );
+  }
+
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4 p-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-96" />
+        </div>
       </AppLayout>
     );
   }

@@ -26,18 +26,22 @@ export interface ReturnToWorkForm {
 }
 
 export function useReturnToWorkForms(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["return_to_work_forms", employeeId],
+    queryKey: ["return_to_work_forms", tenantId, employeeId],
     queryFn: async () => {
+      if (!tenantId) return [] as ReturnToWorkForm[];
       let q = supabase
         .from("return_to_work_forms" as any)
         .select("*, employees(forename, surname, department)")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
       if (employeeId) q = q.eq("employee_id", employeeId);
       const { data, error } = await q;
       if (error) throw error;
       return (data || []) as unknown as ReturnToWorkForm[];
     },
+    enabled: !!tenantId,
   });
 }
 
