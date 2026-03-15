@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, ArrowLeft, UserCheck, Calendar, ClipboardCheck, FileText, XCircle, Heart, LogOut } from "lucide-react";
+import { Send, ArrowLeft, UserCheck, Calendar, ClipboardCheck, FileText, XCircle, Heart, LogOut, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ interface TalentConversationProps {
   vacancyTitle?: string | null;
   applicationId?: string | null;
   applicationStatus?: string;
+  conversationStatus?: string;
   senderType: "employer" | "worker";
   onBack: () => void;
 }
@@ -45,6 +46,7 @@ const MESSAGE_TYPE_LABELS: Record<string, string> = {
   offer: "🎉 Job Offer",
   rejection: "Outcome Update",
   keep_warm: "💛 Talent Bench",
+  outbound_intro: "👋 Introduction",
   text: "",
 };
 
@@ -54,6 +56,7 @@ export function TalentConversation({
   vacancyTitle,
   applicationId,
   applicationStatus,
+  conversationStatus,
   senderType,
   onBack,
 }: TalentConversationProps) {
@@ -68,7 +71,13 @@ export function TalentConversation({
 
   const isWithdrawn = applicationStatus === "withdrawn";
   const isRejected = applicationStatus === "rejected";
-  const isTerminal = isWithdrawn || isRejected;
+  const isBlocked = conversationStatus === "blocked";
+  const isPendingAcceptance = conversationStatus === "pending_acceptance";
+  const isTerminal = isWithdrawn || isRejected || isBlocked;
+
+  // Employer can message in pending outbound (candidate hasn't accepted yet)
+  // Worker cannot message until accepted
+  const canSend = !isTerminal && !(isPendingAcceptance && senderType === "worker");
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -134,6 +143,12 @@ export function TalentConversation({
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
+          {isPendingAcceptance && (
+            <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-200">
+              <Clock className="h-2.5 w-2.5 mr-1" />
+              Pending
+            </Badge>
+          )}
           {applicationStatus && (
             <Badge variant="outline" className={cn(
               "text-[10px] capitalize",
@@ -143,7 +158,6 @@ export function TalentConversation({
               {applicationStatus.replace(/_/g, " ")}
             </Badge>
           )}
-          {/* Worker withdraw button */}
           {senderType === "worker" && applicationId && !isTerminal && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -170,10 +184,20 @@ export function TalentConversation({
         </div>
       </div>
 
-      {/* Withdrawn banner */}
+      {/* Status banners */}
       {isWithdrawn && (
         <div className="text-center py-2 text-xs text-muted-foreground bg-muted/50 rounded-md mt-2">
           {senderType === "worker" ? "You withdrew this application" : "Candidate withdrew their application"}
+        </div>
+      )}
+      {isPendingAcceptance && senderType === "employer" && (
+        <div className="text-center py-2 text-xs text-muted-foreground bg-amber-500/5 border border-amber-200 rounded-md mt-2">
+          Waiting for candidate to accept your contact request
+        </div>
+      )}
+      {isBlocked && (
+        <div className="text-center py-2 text-xs text-muted-foreground bg-muted/50 rounded-md mt-2">
+          This conversation has been closed
         </div>
       )}
 
@@ -181,7 +205,11 @@ export function TalentConversation({
       <div className="flex-1 overflow-y-auto py-3 space-y-2 min-h-0">
         {isLoading && <p className="text-xs text-muted-foreground text-center py-8">Loading messages...</p>}
         {!isLoading && messages.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center py-8">No messages yet. Start the conversation!</p>
+          <p className="text-xs text-muted-foreground text-center py-8">
+            {isPendingAcceptance && senderType === "employer"
+              ? "Your intro message has been sent. Waiting for candidate response."
+              : "No messages yet. Start the conversation!"}
+          </p>
         )}
         {messages.map((msg) => {
           const isOwn = msg.sender_user_id === user?.id;
@@ -211,7 +239,7 @@ export function TalentConversation({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions (employer only, not on terminal states) */}
+      {/* Quick Actions (employer only, on application conversations, not terminal) */}
       {senderType === "employer" && applicationId && !isTerminal && (
         <div className="flex gap-1.5 overflow-x-auto pb-2 pt-1 scrollbar-hide">
           {QUICK_ACTIONS.map((action) => (
@@ -230,8 +258,8 @@ export function TalentConversation({
         </div>
       )}
 
-      {/* Input — hidden for terminal states */}
-      {!isTerminal ? (
+      {/* Input */}
+      {canSend ? (
         <div className="flex gap-2 pt-2 border-t border-border">
           <Input
             value={newMessage}
@@ -251,7 +279,9 @@ export function TalentConversation({
         </div>
       ) : (
         <div className="text-center py-2 text-xs text-muted-foreground border-t border-border mt-1">
-          This conversation is closed
+          {isPendingAcceptance && senderType === "worker"
+            ? "Accept the contact request to start messaging"
+            : "This conversation is closed"}
         </div>
       )}
     </div>
