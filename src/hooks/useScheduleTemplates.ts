@@ -24,12 +24,15 @@ export interface ScheduleTemplateShift {
 }
 
 export function useScheduleTemplates(branch?: string, department?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["schedule_templates", branch, department],
+    queryKey: ["schedule_templates", tenantId, branch, department],
     queryFn: async () => {
+      if (!tenantId) return [] as ScheduleTemplate[];
       let query = supabase
         .from("schedule_templates")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
       if (branch) query = query.eq("branch", branch);
       if (department) query = query.eq("department", department);
@@ -37,6 +40,7 @@ export function useScheduleTemplates(branch?: string, department?: string) {
       if (error) throw error;
       return data as unknown as ScheduleTemplate[];
     },
+    enabled: !!tenantId,
   });
 }
 
@@ -58,6 +62,7 @@ export function useScheduleTemplateShifts(templateId?: string) {
 
 export function useSaveScheduleTemplate() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async ({
       name,
@@ -75,7 +80,7 @@ export function useSaveScheduleTemplate() {
       // Create template
       const { data: template, error: tErr } = await supabase
         .from("schedule_templates")
-        .insert({ name, branch, department, created_by: user?.id } as any)
+        .insert({ name, branch, department, tenant_id: tenantId!, created_by: user?.id } as any)
         .select()
         .single();
       if (tErr) throw tErr;
