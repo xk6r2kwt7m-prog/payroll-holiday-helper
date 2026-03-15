@@ -292,11 +292,11 @@ export function TrainingComplianceReport() {
   const handleAssignSingle = useCallback(async (g: GapRow) => {
     const k = gapKey(g);
     const dueDate = singleDueDates.get(k);
-    await createAssignments.mutateAsync([{
+    await createAssignments.mutateAsync({ assignments: [{
       document_id: g.moduleId,
       employee_id: g.employeeId,
       due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : undefined,
-    }]);
+    }], assignmentSource: "direct" });
     setSelectedGaps(prev => { const n = new Set(prev); n.delete(k); return n; });
     setSingleDueDates(prev => { const n = new Map(prev); n.delete(k); return n; });
   }, [createAssignments, singleDueDates]);
