@@ -1120,6 +1120,11 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
         reviewInsightTags={(module.standards_metadata as any)?.review_insight_tags as ReviewInsightTag[] | undefined}
       />
 
+      {/* Signal Quality */}
+      <ModuleSignalQualityPanel
+        quality={sqByModule.get(module.id) ?? null}
+      />
+
       {module.standards_metadata && (
         <WhyThisMattersPanel metadata={module.standards_metadata as StandardsMetadata} />
       )}
