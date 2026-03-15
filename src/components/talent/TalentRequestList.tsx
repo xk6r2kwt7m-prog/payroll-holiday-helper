@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, FileText, Sparkles, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, FileText, Sparkles, ChevronRight, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -62,12 +62,26 @@ export function TalentRequestList() {
 
       {!isLoading && requests.length === 0 && (
         <Card>
-          <CardContent className="p-8 text-center">
-            <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No talent requests yet</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Create a request to find suitable candidates
-            </p>
+          <CardContent className="p-10 text-center space-y-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mx-auto">
+              <FileText className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground">No talent requests yet</p>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+                Talent requests let you describe a role you're hiring for and use AI matching to find suitable candidates from the talent pool.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+              <Button size="sm" className="gap-1.5" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4" /> Create First Request
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5" asChild>
+                <a href="#" onClick={(e) => { e.preventDefault(); /* parent handles tab switch */ }}>
+                  <Search className="h-4 w-4" /> Browse Talent
+                </a>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

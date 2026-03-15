@@ -130,12 +130,18 @@ export function TalentSearch() {
 
       {!isLoading && filteredProfiles.length === 0 && (
         <Card>
-          <CardContent className="p-12 text-center">
-            <Search className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No talent profiles match your criteria</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Try adjusting your filters or search terms
-            </p>
+          <CardContent className="p-10 text-center space-y-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mx-auto">
+              <Search className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium text-foreground">No talent profiles found</p>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+                {searchQuery || countryFilter !== "all"
+                  ? "No profiles match your current search or filters. Try broadening your criteria."
+                  : "There are no visible talent profiles yet. Profiles appear here when former staff opt in via their Staff Portal and set their visibility to public."}
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
