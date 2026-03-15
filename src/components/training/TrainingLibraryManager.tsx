@@ -320,13 +320,16 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
       Array.from(selectedIds);
     if (targetIds.length === 0) return;
     createAssignments.mutate(
-      targetIds.map(empId => ({
-        document_id: module.id,
-        employee_id: empId,
-        due_date: dueDate || undefined,
-        is_mandatory: module.is_mandatory,
-        signoff_required: module.completion_type === "practical_signoff" || module.completion_type === "blended",
-      })),
+      {
+        assignments: targetIds.map(empId => ({
+          document_id: module.id,
+          employee_id: empId,
+          due_date: dueDate || undefined,
+          is_mandatory: module.is_mandatory,
+          signoff_required: module.completion_type === "practical_signoff" || module.completion_type === "blended",
+        })),
+        assignmentSource: assignMode === "all" ? "all_staff" : assignMode === "department" ? "department" : "direct",
+      },
       { onSuccess: () => { setSelectedIds(new Set()); } }
     );
   };

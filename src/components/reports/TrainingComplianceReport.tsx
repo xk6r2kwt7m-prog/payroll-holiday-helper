@@ -304,13 +304,14 @@ export function TrainingComplianceReport() {
   const handleAssignSelected = useCallback(async () => {
     const toAssign = assignableGaps.filter(g => selectedGaps.has(gapKey(g)));
     if (toAssign.length === 0) return;
-    await createAssignments.mutateAsync(
-      toAssign.map(g => ({
+    await createAssignments.mutateAsync({
+      assignments: toAssign.map(g => ({
         document_id: g.moduleId,
         employee_id: g.employeeId,
         due_date: bulkDueDate ? format(bulkDueDate, "yyyy-MM-dd") : undefined,
-      }))
-    );
+      })),
+      assignmentSource: "direct",
+    });
     setSelectedGaps(new Set());
     setBulkDueDate(undefined);
   }, [assignableGaps, selectedGaps, createAssignments, bulkDueDate]);
