@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  BookOpen, Plus, Trash2, ExternalLink, ShieldCheck, AlertTriangle, ChevronDown, ChevronUp,
+  BookOpen, Plus, Trash2, ExternalLink, ChevronDown, ChevronUp, AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -24,11 +24,26 @@ import {
   type EvidenceType,
   type ConfidenceLevel,
 } from "@/hooks/useModuleEvidence";
+import {
+  validateEvidenceForm,
+  isDuplicateEvidence,
+  type EvidenceValidationResult,
+} from "@/lib/evidence-validation";
 
 interface Props {
   documentId: string;
   canEdit: boolean;
 }
+
+const EMPTY_FORM = {
+  source_title: "",
+  evidence_type: "official_guidance" as EvidenceType,
+  source_organisation: "",
+  source_region: "",
+  source_url: "",
+  source_notes: "",
+  confidence_level: "medium" as ConfidenceLevel,
+};
 
 export function EvidencePanel({ documentId, canEdit }: Props) {
   const { data: evidence = [], isLoading } = useModuleEvidence(documentId);
@@ -36,37 +51,46 @@ export function EvidencePanel({ documentId, canEdit }: Props) {
   const deleteEvidence = useDeleteEvidence();
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState(true);
-
-  const [form, setForm] = useState({
-    source_title: "",
-    evidence_type: "official_guidance" as EvidenceType,
-    source_organisation: "",
-    source_region: "",
-    source_url: "",
-    source_notes: "",
-    confidence_level: "medium" as ConfidenceLevel,
-  });
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [validation, setValidation] = useState<EvidenceValidationResult | null>(null);
 
   const handleSubmit = () => {
-    if (!form.source_title.trim()) return;
+    const result = validateEvidenceForm(form);
+
+    // Duplicate check
+    const existingTitles = activeEvidence.map(e => e.source_title);
+    if (isDuplicateEvidence(existingTitles, form.source_title)) {
+      result.errors.push("An evidence source with this exact title already exists.");
+      result.valid = false;
+    }
+
+    setValidation(result);
+    if (!result.valid) return;
+
     createEvidence.mutate({
       document_id: documentId,
-      source_title: form.source_title,
+      source_title: form.source_title.trim(),
       evidence_type: form.evidence_type,
-      source_organisation: form.source_organisation || undefined,
-      source_region: form.source_region || undefined,
-      source_url: form.source_url || undefined,
-      source_notes: form.source_notes || undefined,
+      source_organisation: form.source_organisation.trim() || undefined,
+      source_region: form.source_region.trim() || undefined,
+      source_url: form.source_url.trim() || undefined,
+      source_notes: form.source_notes.trim() || undefined,
       confidence_level: form.confidence_level,
     }, {
       onSuccess: () => {
-        setForm({ source_title: "", evidence_type: "official_guidance", source_organisation: "", source_region: "", source_url: "", source_notes: "", confidence_level: "medium" });
+        setForm({ ...EMPTY_FORM });
+        setValidation(null);
         setShowForm(false);
       },
     });
   };
 
   const activeEvidence = evidence.filter(e => e.is_active);
+
+  const confidenceBadgeClass = (level: string) =>
+    level === "high" ? "bg-success/10 text-success" :
+    level === "medium" ? "bg-warning/10 text-warning" :
+    "bg-muted text-muted-foreground";
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-muted/10 p-3">
@@ -98,19 +122,17 @@ export function EvidencePanel({ documentId, canEdit }: Props) {
                   <Badge variant="outline" className="text-[9px]">
                     {EVIDENCE_TYPE_OPTIONS.find(o => o.value === ev.evidence_type)?.label}
                   </Badge>
-                  <Badge className={cn("text-[9px]",
-                    ev.confidence_level === "high" ? "bg-success/10 text-success" :
-                    ev.confidence_level === "medium" ? "bg-warning/10 text-warning" :
-                    "bg-muted text-muted-foreground"
-                  )}>
+                  <Badge className={cn("text-[9px]", confidenceBadgeClass(ev.confidence_level))}>
                     {ev.confidence_level} confidence
                   </Badge>
                 </div>
                 {ev.source_organisation && (
-                  <p className="text-[10px] text-muted-foreground">{ev.source_organisation}{ev.source_region ? ` · ${ev.source_region}` : ""}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {ev.source_organisation}{ev.source_region ? ` · ${ev.source_region}` : ""}
+                  </p>
                 )}
                 {ev.source_notes && (
-                  <p className="text-[10px] text-muted-foreground italic">{ev.source_notes}</p>
+                  <p className="text-[10px] text-muted-foreground italic line-clamp-2">{ev.source_notes}</p>
                 )}
                 <p className="text-[9px] text-muted-foreground">Added {format(parseISO(ev.created_at), "d MMM yyyy")}</p>
               </div>
@@ -135,13 +157,29 @@ export function EvidencePanel({ documentId, canEdit }: Props) {
           ))}
 
           {canEdit && !showForm && (
-            <Button variant="outline" size="sm" className="w-full text-xs gap-1" onClick={() => setShowForm(true)}>
+            <Button variant="outline" size="sm" className="w-full text-xs gap-1" onClick={() => { setShowForm(true); setValidation(null); }}>
               <Plus className="h-3 w-3" /> Add Evidence Source
             </Button>
           )}
 
           {showForm && (
             <div className="space-y-2 p-2 rounded-md border border-primary/20 bg-primary/5">
+              {/* Validation feedback */}
+              {validation && (validation.errors.length > 0 || validation.warnings.length > 0) && (
+                <div className="space-y-1">
+                  {validation.errors.map((e, i) => (
+                    <p key={`e-${i}`} className="text-[10px] text-destructive flex items-start gap-1">
+                      <AlertTriangle className="h-3 w-3 shrink-0 mt-px" /> {e}
+                    </p>
+                  ))}
+                  {validation.warnings.map((w, i) => (
+                    <p key={`w-${i}`} className="text-[10px] text-warning flex items-start gap-1">
+                      <AlertTriangle className="h-3 w-3 shrink-0 mt-px" /> {w}
+                    </p>
+                  ))}
+                </div>
+              )}
+
               <div>
                 <Label className="text-[10px]">Source Title *</Label>
                 <Input value={form.source_title} onChange={e => setForm(f => ({ ...f, source_title: e.target.value }))} className="h-7 text-xs" placeholder="e.g. FSA Allergen Guidance 2024" />
@@ -182,13 +220,13 @@ export function EvidencePanel({ documentId, canEdit }: Props) {
               </div>
               <div>
                 <Label className="text-[10px]">Notes</Label>
-                <Textarea value={form.source_notes} onChange={e => setForm(f => ({ ...f, source_notes: e.target.value }))} className="text-xs min-h-[40px]" rows={2} />
+                <Textarea value={form.source_notes} onChange={e => setForm(f => ({ ...f, source_notes: e.target.value }))} className="text-xs min-h-[40px]" rows={2} placeholder="Why is this source relevant? What does it confirm?" />
               </div>
               <div className="flex gap-2">
                 <Button size="sm" className="flex-1 text-xs h-7" onClick={handleSubmit} disabled={createEvidence.isPending || !form.source_title.trim()}>
                   {createEvidence.isPending ? "Adding…" : "Add"}
                 </Button>
-                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => { setShowForm(false); setValidation(null); }}>Cancel</Button>
               </div>
             </div>
           )}
