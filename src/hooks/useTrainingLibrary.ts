@@ -174,6 +174,12 @@ export function useUpdateLibraryItem() {
         .update(updates as any)
         .eq("id", id);
       if (error) throw error;
+      // Audit log for module edit
+      await supabase.from("training_audit_log" as any).insert({
+        tenant_id: tenantId,
+        document_id: id,
+        action: "module_edited",
+      } as any);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["training_library"] });

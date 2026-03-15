@@ -252,6 +252,15 @@ export function TrainingCompletionDashboard({ highlightEmployeeId, highlightModu
                   {a.due_date && ` · Due ${format(parseISO(a.due_date), "d MMM")}`}
                   {a.score != null && ` · Score: ${a.score}%`}
                 </p>
+                {(a as any).assignment_source && (a as any).assignment_source !== "direct" && (
+                  <Badge variant="outline" className="text-[9px] mt-0.5">
+                    {(a as any).assignment_source === "department" ? "Dept" :
+                     (a as any).assignment_source === "all_staff" ? "All Staff" :
+                     (a as any).assignment_source === "retrain" ? "Retrain" :
+                     (a as any).assignment_source === "auto_new_starter" ? "Auto" :
+                     (a as any).assignment_source}
+                  </Badge>
+                )}
               </div>
               <AssignmentStatusBadge status={a.status} isOverdue={!!isOverdue} signoffPending={signoffPending} />
             </div>
