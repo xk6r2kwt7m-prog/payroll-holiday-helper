@@ -113,6 +113,7 @@ export function TrainingLibraryManager() {
       { header: "Refresher Days", accessor: (m: TrainingLibraryItem) => m.refresher_days ?? "" },
     ], filtered);
     toast.success("Library exported");
+    if (tenantId) writeTrainingAudit({ tenant_id: tenantId, action: "csv_exported", metadata: { type: "training_library", count: filtered.length } });
   };
 
   return (
