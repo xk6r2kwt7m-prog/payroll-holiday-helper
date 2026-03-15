@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { usePayrollAudit, type AuditFinding, type AuditSeverity } from "@/hooks/usePayrollAudit";
+import { useTenant } from "@/hooks/useTenant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

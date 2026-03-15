@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { usePayrollAudit } from "@/hooks/usePayrollAudit";
+import { useTenant } from "@/hooks/useTenant";
 import { ShieldCheck, ShieldAlert, ShieldX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
