@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { format, addDays, isSameDay } from "date-fns";
