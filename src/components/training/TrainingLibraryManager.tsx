@@ -213,6 +213,16 @@ export function TrainingLibraryManager() {
               )}>
               Mandatory
             </button>
+            {canManage && (
+              <Select value={evidenceFilter} onValueChange={setEvidenceFilter}>
+                <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue placeholder="Evidence" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Evidence</SelectItem>
+                  <SelectItem value="reviewed">Reviewed</SelectItem>
+                  <SelectItem value="not_reviewed">Not Reviewed</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
       </div>
