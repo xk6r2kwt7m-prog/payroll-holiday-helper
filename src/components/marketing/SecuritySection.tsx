@@ -6,7 +6,7 @@ const POINTS = [
   { icon: FileText, title: "Audit trail visibility", desc: "Key actions — payroll changes, document verifications, approvals — are logged and available for review." },
   { icon: Eye, title: "Candidate privacy controls", desc: "Talent Pool profiles display first name and surname initial only. Full identity is shared only when the candidate chooses." },
   { icon: Lock, title: "Sensitive data masking", desc: "Financial data and personal records are masked by default and require intentional interaction to reveal." },
-  { icon: Shield, title: "Designed with privacy in mind", desc: "Data is transmitted securely, access is scoped to the minimum required, and unnecessary exposure is avoided by design." },
+  { icon: Shield, title: "Privacy by design", desc: "Access is scoped to the minimum required. Unnecessary data exposure is avoided throughout the platform." },
 ];
 
 interface SecuritySectionProps {

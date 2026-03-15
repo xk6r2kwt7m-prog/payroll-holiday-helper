@@ -322,11 +322,11 @@ const Auth = () => {
       {/* ═══════ Trust content below the fold ═══════ */}
       <div className="border-t border-border">
         {/* Why choose us */}
-        <section className="max-w-6xl mx-auto px-6 py-14 sm:py-20">
-          <div className="text-center mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground">Why choose UGLŌ?</h2>
-            <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-              Built around how hospitality actually operates — not how office software thinks it should.
+        <section className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+          <div className="text-center mb-8 sm:mb-10">
+            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Why choose UGLŌ?</h2>
+            <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto">
+              Designed around how hospitality teams actually work.
             </p>
           </div>
           <ValueCards />
@@ -334,12 +334,12 @@ const Auth = () => {
 
         {/* Employer + Candidate conversion */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-5xl mx-auto px-6 py-14 sm:py-20">
-            <div className="text-center mb-10">
-              <h2 className="text-xl sm:text-2xl font-bold text-foreground">Who it's for</h2>
-              <p className="text-sm text-muted-foreground mt-2">One platform, two perspectives.</p>
+          <div className="max-w-5xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+            <div className="text-center mb-8 sm:mb-10">
+              <h2 className="text-lg sm:text-2xl font-bold text-foreground">Who it's for</h2>
+              <p className="text-sm text-muted-foreground mt-1.5">One platform, two perspectives.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <EmployerConversion />
               <CandidateConversion />
             </div>
@@ -347,21 +347,21 @@ const Auth = () => {
         </section>
 
         {/* Pricing */}
-        <section className="max-w-6xl mx-auto px-6 py-14 sm:py-20">
-          <div className="text-center mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground">Pricing</h2>
-            <p className="text-sm text-muted-foreground mt-2">Clear, honest, and designed to grow with your team.</p>
+        <section className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+          <div className="text-center mb-8 sm:mb-10">
+            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Pricing</h2>
+            <p className="text-sm text-muted-foreground mt-1.5">Transparent and designed to grow with your team.</p>
           </div>
           <PricingSection />
         </section>
 
         {/* Security */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-6xl mx-auto px-6 py-14 sm:py-20">
-            <div className="text-center mb-10">
-              <h2 className="text-xl sm:text-2xl font-bold text-foreground">Security & Privacy</h2>
-              <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-                Data separation, role-based access, and audit visibility — built in from the start.
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+            <div className="text-center mb-8 sm:mb-10">
+              <h2 className="text-lg sm:text-2xl font-bold text-foreground">Security & privacy</h2>
+              <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto">
+                Data separation, role-based access, and audit visibility — included from the start.
               </p>
             </div>
             <SecuritySection />
@@ -369,31 +369,31 @@ const Auth = () => {
         </section>
 
         {/* FAQ */}
-        <section className="max-w-3xl mx-auto px-6 py-14 sm:py-20">
-          <div className="text-center mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground">Frequently asked questions</h2>
-            <p className="text-sm text-muted-foreground mt-2">Common questions from operators and candidates.</p>
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+          <div className="text-center mb-8 sm:mb-10">
+            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Frequently asked questions</h2>
+            <p className="text-sm text-muted-foreground mt-1.5">Common questions from operators and candidates.</p>
           </div>
           <FAQ />
         </section>
 
         {/* Footer */}
         <footer className="border-t border-border bg-card">
-          <div className="max-w-6xl mx-auto px-6 py-8">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-6 sm:py-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <img src={ugloIcon} alt="UGLŌ" className="h-6 w-6 rounded-lg" />
                 <span className="text-sm font-semibold text-foreground">UGLŌ</span>
                 <span className="text-xs text-muted-foreground">· Hospitality People Platform</span>
               </div>
-              <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-                <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-                <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-                <Link to="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
+              <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+                <Link to="/privacy" className="hover:text-foreground transition-colors py-1">Privacy</Link>
+                <Link to="/terms" className="hover:text-foreground transition-colors py-1">Terms</Link>
+                <Link to="/cookies" className="hover:text-foreground transition-colors py-1">Cookies</Link>
                 <CookieSettingsButton />
               </nav>
             </div>
-            <p className="text-[10px] text-muted-foreground/50 text-center mt-6">
+            <p className="text-[10px] text-muted-foreground/50 text-center mt-5">
               © {new Date().getFullYear()} UGLŌ. All rights reserved.
             </p>
           </div>

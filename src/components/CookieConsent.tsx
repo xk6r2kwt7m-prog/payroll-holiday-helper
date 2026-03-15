@@ -101,8 +101,8 @@ export function CookieConsent() {
           ) : (
             <>
               <Button size="sm" onClick={accept} className="text-xs">Accept all</Button>
-              <Button size="sm" variant="outline" onClick={reject} className="text-xs">Reject non-essential</Button>
-              <Button size="sm" variant="ghost" onClick={() => setManaging(true)} className="text-xs">Manage</Button>
+              <Button size="sm" variant="outline" onClick={reject} className="text-xs">Reject optional</Button>
+              <Button size="sm" variant="ghost" onClick={() => setManaging(true)} className="text-xs">Manage cookies</Button>
             </>
           )}
         </div>
