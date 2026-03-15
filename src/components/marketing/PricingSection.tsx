@@ -1,12 +1,12 @@
 import { Check } from "lucide-react";
 
 const POINTS = [
-  "Simple, transparent pricing structure",
-  "Free inbound hiring — post vacancies and receive applications at no cost",
-  "Paid outbound contact only when proactively reaching passive candidates",
-  "No per-feature paywalls or hidden charges",
-  "Suitable for single-site teams and multi-location groups",
-  "Start with what you need and add modules as your team grows",
+  "Simple, transparent pricing — no hidden fees",
+  "Post vacancies and receive applications at no cost",
+  "Outbound contact credits only when reaching passive candidates",
+  "No per-feature paywalls",
+  "Works for single-site teams and multi-location groups",
+  "Start with what you need — add modules as you grow",
 ];
 
 interface PricingSectionProps {
