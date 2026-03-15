@@ -1,29 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, XCircle, Clock, RotateCcw, Copy, ChevronDown, ShieldCheck, AlertTriangle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTenant } from "@/hooks/useTenant";
 import { toast } from "sonner";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-interface QAItem {
-  id: string;
-  label: string;
-  category: string;
-}
+interface QAItem { id: string; label: string; category: string; }
 
 const QA_ITEMS: QAItem[] = [
   { id: "create_module", label: "Create a new tenant module (Draft)", category: "Library" },
@@ -59,20 +49,23 @@ interface PersistedState {
   checks: Record<string, CheckState>;
   notes: Record<string, string>;
   lastUpdated: string | null;
+  checkedBy: string;
+  signedOff: boolean;
+  signedOffAt: string | null;
+  signedOffBy: string | null;
 }
 
-function getStorageKey(tenantId: string) {
-  return `training_qa_checklist:${tenantId}`;
-}
+const EMPTY_STATE: PersistedState = {
+  checks: {}, notes: {}, lastUpdated: null,
+  checkedBy: "", signedOff: false, signedOffAt: null, signedOffBy: null,
+};
 
-function formatTimestamp(iso: string | null): string {
+function storageKey(tenantId: string) { return `training_qa_checklist:${tenantId}`; }
+
+function fmtTs(iso: string | null): string {
   if (!iso) return "Never";
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  } catch {
-    return "Unknown";
-  }
+  try { return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
+  catch { return "Unknown"; }
 }
 
 export function TrainingQAChecklist() {
@@ -80,106 +73,114 @@ export function TrainingQAChecklist() {
   const [checks, setChecks] = useState<Record<string, CheckState>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [checkedBy, setCheckedBy] = useState("");
+  const [signedOff, setSignedOff] = useState(false);
+  const [signedOffAt, setSignedOffAt] = useState<string | null>(null);
+  const [signedOffBy, setSignedOffBy] = useState<string | null>(null);
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
 
-  // Load persisted state on mount / tenant change
+  // Load
   useEffect(() => {
     if (!tenantId) return;
     try {
-      const raw = localStorage.getItem(getStorageKey(tenantId));
+      const raw = localStorage.getItem(storageKey(tenantId));
       if (raw) {
-        const parsed: PersistedState = JSON.parse(raw);
-        setChecks(parsed.checks || {});
-        setNotes(parsed.notes || {});
-        setLastUpdated(parsed.lastUpdated || null);
+        const p: PersistedState = { ...EMPTY_STATE, ...JSON.parse(raw) };
+        setChecks(p.checks); setNotes(p.notes); setLastUpdated(p.lastUpdated);
+        setCheckedBy(p.checkedBy); setSignedOff(p.signedOff);
+        setSignedOffAt(p.signedOffAt); setSignedOffBy(p.signedOffBy);
       } else {
-        setChecks({});
-        setNotes({});
-        setLastUpdated(null);
+        setChecks({}); setNotes({}); setLastUpdated(null);
+        setCheckedBy(""); setSignedOff(false); setSignedOffAt(null); setSignedOffBy(null);
       }
     } catch {
-      setChecks({});
-      setNotes({});
-      setLastUpdated(null);
+      setChecks({}); setNotes({}); setLastUpdated(null);
+      setCheckedBy(""); setSignedOff(false); setSignedOffAt(null); setSignedOffBy(null);
     }
     setOpenNotes({});
   }, [tenantId]);
 
-  // Persist on change
+  // Persist
   useEffect(() => {
     if (!tenantId) return;
-    const state: PersistedState = { checks, notes, lastUpdated };
-    localStorage.setItem(getStorageKey(tenantId), JSON.stringify(state));
-  }, [checks, notes, lastUpdated, tenantId]);
+    const s: PersistedState = { checks, notes, lastUpdated, checkedBy, signedOff, signedOffAt, signedOffBy };
+    localStorage.setItem(storageKey(tenantId), JSON.stringify(s));
+  }, [checks, notes, lastUpdated, checkedBy, signedOff, signedOffAt, signedOffBy, tenantId]);
 
-  const touchTimestamp = useCallback(() => {
-    setLastUpdated(new Date().toISOString());
+  const invalidateSignOff = useCallback(() => {
+    setSignedOff(false); setSignedOffAt(null); setSignedOffBy(null);
   }, []);
+
+  const touch = useCallback(() => {
+    setLastUpdated(new Date().toISOString());
+    invalidateSignOff();
+  }, [invalidateSignOff]);
 
   const toggle = (id: string) => {
     setChecks(prev => {
-      const current = prev[id] || "untested";
-      const next: CheckState = current === "untested" ? "pass" : current === "pass" ? "fail" : "untested";
+      const cur = prev[id] || "untested";
+      const next: CheckState = cur === "untested" ? "pass" : cur === "pass" ? "fail" : "untested";
       return { ...prev, [id]: next };
     });
-    touchTimestamp();
+    touch();
   };
 
-  const updateNote = (id: string, value: string) => {
-    setNotes(prev => ({ ...prev, [id]: value }));
-    touchTimestamp();
-  };
-
-  const toggleNoteOpen = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOpenNotes(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  const updateNote = (id: string, v: string) => { setNotes(prev => ({ ...prev, [id]: v })); touch(); };
+  const updateCheckedBy = (v: string) => { setCheckedBy(v); touch(); };
 
   const resetChecklist = useCallback(() => {
-    setChecks({});
-    setNotes({});
-    setLastUpdated(null);
-    setOpenNotes({});
-    if (tenantId) localStorage.removeItem(getStorageKey(tenantId));
+    setChecks({}); setNotes({}); setLastUpdated(null); setOpenNotes({});
+    setCheckedBy(""); invalidateSignOff();
+    if (tenantId) localStorage.removeItem(storageKey(tenantId));
     toast.success("Checklist reset");
-  }, [tenantId]);
+  }, [tenantId, invalidateSignOff]);
+
+  const totalChecked = Object.values(checks).filter(v => v !== "untested").length;
+  const totalPassed = Object.values(checks).filter(v => v === "pass").length;
+  const totalFailed = Object.values(checks).filter(v => v === "fail").length;
+  const allTestedNoneFailed = totalChecked === QA_ITEMS.length && totalFailed === 0;
+  const canSignOff = allTestedNoneFailed && !signedOff && checkedBy.trim().length > 0;
+
+  const doSignOff = () => {
+    const now = new Date().toISOString();
+    setSignedOff(true); setSignedOffAt(now); setSignedOffBy(checkedBy.trim());
+    setLastUpdated(now);
+    toast.success("Signed off — ready for pilot");
+  };
 
   const copySummary = useCallback(() => {
-    const totalChecked = Object.values(checks).filter(v => v !== "untested").length;
-    const totalPassed = Object.values(checks).filter(v => v === "pass").length;
-    const totalFailed = Object.values(checks).filter(v => v === "fail").length;
     const totalUntested = QA_ITEMS.length - totalChecked;
     const failedItems = QA_ITEMS.filter(i => checks[i.id] === "fail");
     const now = new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
-    let text = `Training QA Checklist\nTenant: ${tenantName || "Unknown"}\nExported: ${now}\n\nPassed: ${totalPassed}\nFailed: ${totalFailed}\nUntested: ${totalUntested}`;
+    let t = `Training QA Checklist\nTenant: ${tenantName || "Unknown"}\nExported: ${now}`;
+    if (checkedBy.trim()) t += `\nChecked by: ${checkedBy.trim()}`;
+    if (signedOff) t += `\nSigned off by: ${signedOffBy} on ${fmtTs(signedOffAt)}`;
+    if (lastUpdated) t += `\nLast updated: ${fmtTs(lastUpdated)}`;
+    t += `\n\nPassed: ${totalPassed}\nFailed: ${totalFailed}\nUntested: ${totalUntested}`;
     if (failedItems.length > 0) {
-      text += `\n\nFailed items:`;
+      t += `\n\nFailed items:`;
       failedItems.forEach(i => {
-        text += `\n  ✗ ${i.label}`;
-        const note = notes[i.id]?.trim();
-        if (note) text += `\n    Note: ${note}`;
+        t += `\n  ✗ ${i.label}`;
+        const n = notes[i.id]?.trim();
+        if (n) t += `\n    Note: ${n}`;
       });
     }
-
-    navigator.clipboard.writeText(text).then(
+    navigator.clipboard.writeText(t).then(
       () => toast.success("Summary copied to clipboard"),
       () => toast.error("Failed to copy — clipboard access denied")
     );
-  }, [checks, notes, tenantName]);
+  }, [checks, notes, tenantName, checkedBy, signedOff, signedOffBy, signedOffAt, lastUpdated, totalChecked, totalPassed, totalFailed]);
 
   const categories = [...new Set(QA_ITEMS.map(i => i.category))];
-  const totalChecked = Object.values(checks).filter(v => v !== "untested").length;
-  const totalPassed = Object.values(checks).filter(v => v === "pass").length;
-  const totalFailed = Object.values(checks).filter(v => v === "fail").length;
 
-  // Readiness status
-  const readiness: { label: string; variant: "default" | "destructive" | "outline"; icon: React.ReactNode } =
-    totalChecked === QA_ITEMS.length && totalFailed === 0
-      ? { label: "Ready for Pilot", variant: "default", icon: <ShieldCheck className="h-3.5 w-3.5" /> }
+  const readiness = signedOff
+    ? { label: "Signed Off", variant: "default" as const, icon: <ShieldCheck className="h-3.5 w-3.5" /> }
+    : allTestedNoneFailed
+      ? { label: "Ready for Pilot", variant: "default" as const, icon: <ShieldCheck className="h-3.5 w-3.5" /> }
       : totalFailed > 0
-        ? { label: "Needs Review", variant: "destructive", icon: <AlertTriangle className="h-3.5 w-3.5" /> }
-        : { label: "In Progress", variant: "outline", icon: <Loader2 className="h-3.5 w-3.5" /> };
+        ? { label: "Needs Review", variant: "destructive" as const, icon: <AlertTriangle className="h-3.5 w-3.5" /> }
+        : { label: "In Progress", variant: "outline" as const, icon: <Loader2 className="h-3.5 w-3.5" /> };
 
   return (
     <div className="space-y-4">
@@ -195,6 +196,11 @@ export function TrainingQAChecklist() {
           <p className="text-[11px] text-muted-foreground">
             Use this before pilot, release, or major training changes.
           </p>
+          {signedOff && signedOffBy && (
+            <p className="text-[11px] text-success font-medium">
+              Signed off by {signedOffBy} on {fmtTs(signedOffAt)}
+            </p>
+          )}
         </div>
         <div className="flex gap-1.5 shrink-0">
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={copySummary}>
@@ -210,7 +216,7 @@ export function TrainingQAChecklist() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Reset QA Checklist?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will clear all pass/fail states and notes for this workspace. This cannot be undone.
+                  This will clear all pass/fail states, notes, tester name, and sign-off for this workspace. This cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -222,6 +228,17 @@ export function TrainingQAChecklist() {
         </div>
       </div>
 
+      {/* Checked by */}
+      <div className="flex items-center gap-2">
+        <label className="text-xs font-medium text-muted-foreground shrink-0">Checked by</label>
+        <Input
+          value={checkedBy}
+          onChange={(e) => updateCheckedBy(e.target.value)}
+          placeholder="Your name"
+          className="h-7 text-xs max-w-[200px]"
+        />
+      </div>
+
       {/* Summary strip */}
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs">
         <span className="text-muted-foreground">{QA_ITEMS.length} items</span>
@@ -229,11 +246,11 @@ export function TrainingQAChecklist() {
         <span className="text-success font-medium">{totalPassed} passed</span>
         {totalFailed > 0 && <span className="text-destructive font-medium">{totalFailed} failed</span>}
         {lastUpdated && (
-          <span className="text-muted-foreground">· Last updated: {formatTimestamp(lastUpdated)}</span>
+          <span className="text-muted-foreground">· Last updated: {fmtTs(lastUpdated)}</span>
         )}
       </div>
 
-      {/* Items by category */}
+      {/* Items */}
       {categories.map(cat => (
         <div key={cat} className="space-y-1.5">
           <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{cat}</p>
@@ -241,17 +258,14 @@ export function TrainingQAChecklist() {
             const state = checks[item.id] || "untested";
             const noteOpen = !!openNotes[item.id];
             const hasNote = !!notes[item.id]?.trim();
-
             return (
               <Collapsible key={item.id} open={noteOpen}>
-                <div
-                  className={cn(
-                    "w-full rounded-lg border text-sm transition-all",
-                    state === "pass" ? "bg-success/5 border-success/20" :
-                    state === "fail" ? "bg-destructive/5 border-destructive/20" :
-                    "bg-card border-border"
-                  )}
-                >
+                <div className={cn(
+                  "w-full rounded-lg border text-sm transition-all",
+                  state === "pass" ? "bg-success/5 border-success/20" :
+                  state === "fail" ? "bg-destructive/5 border-destructive/20" :
+                  "bg-card border-border"
+                )}>
                   <div className="flex items-center gap-2.5 p-2.5">
                     <button onClick={() => toggle(item.id)} className="flex items-center gap-2.5 flex-1 text-left min-w-0">
                       {state === "pass" ? <CheckCircle2 className="h-4 w-4 text-success shrink-0" /> :
@@ -265,15 +279,13 @@ export function TrainingQAChecklist() {
                       )}>{item.label}</span>
                     </button>
                     <div className="flex items-center gap-1 shrink-0">
-                      {hasNote && !noteOpen && (
-                        <span className="text-[9px] text-muted-foreground">📝</span>
-                      )}
+                      {hasNote && !noteOpen && <span className="text-[9px] text-muted-foreground">📝</span>}
                       <Badge variant="outline" className="text-[9px]">
                         {state === "untested" ? "Click to test" : state}
                       </Badge>
                       <CollapsibleTrigger asChild>
                         <button
-                          onClick={(e) => toggleNoteOpen(item.id, e)}
+                          onClick={(e) => { e.stopPropagation(); setOpenNotes(p => ({ ...p, [item.id]: !p[item.id] })); }}
                           className="h-6 w-6 flex items-center justify-center rounded hover:bg-muted/50 text-muted-foreground"
                         >
                           <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", noteOpen && "rotate-180")} />
@@ -299,15 +311,27 @@ export function TrainingQAChecklist() {
         </div>
       ))}
 
+      {/* Footer status */}
       {totalFailed > 0 && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
           <p className="text-xs font-medium text-destructive">{totalFailed} item{totalFailed !== 1 ? "s" : ""} failed — review before pilot</p>
         </div>
       )}
 
-      {totalChecked === QA_ITEMS.length && totalFailed === 0 && (
-        <div className="rounded-lg border border-success/20 bg-success/5 p-3">
+      {allTestedNoneFailed && !signedOff && (
+        <div className="rounded-lg border border-success/20 bg-success/5 p-3 flex items-center justify-between gap-3">
           <p className="text-xs font-medium text-success">All {QA_ITEMS.length} checks passed ✓</p>
+          <Button size="sm" className="h-7 text-xs gap-1" onClick={doSignOff} disabled={!canSignOff}>
+            <ShieldCheck className="h-3.5 w-3.5" /> Mark Ready for Pilot
+          </Button>
+        </div>
+      )}
+
+      {signedOff && (
+        <div className="rounded-lg border border-success/20 bg-success/5 p-3">
+          <p className="text-xs font-medium text-success">
+            ✓ Signed off by {signedOffBy} on {fmtTs(signedOffAt)} — ready for pilot
+          </p>
         </div>
       )}
     </div>
