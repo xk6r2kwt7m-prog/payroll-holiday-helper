@@ -5763,6 +5763,98 @@ export type Database = {
           },
         ]
       }
+      training_effectiveness_records: {
+        Row: {
+          baseline_signal_count: number
+          confidence_level: string
+          created_at: string
+          delta_count: number
+          delta_percent: number
+          employee_id: string | null
+          evaluation_type: string
+          evaluation_window_days: number
+          id: string
+          location_id: string | null
+          measured_at: string
+          module_id: string
+          notes: string | null
+          post_training_signal_count: number
+          result_status: string
+          signal_types: string[]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          baseline_signal_count?: number
+          confidence_level?: string
+          created_at?: string
+          delta_count?: number
+          delta_percent?: number
+          employee_id?: string | null
+          evaluation_type?: string
+          evaluation_window_days?: number
+          id?: string
+          location_id?: string | null
+          measured_at?: string
+          module_id: string
+          notes?: string | null
+          post_training_signal_count?: number
+          result_status?: string
+          signal_types?: string[]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          baseline_signal_count?: number
+          confidence_level?: string
+          created_at?: string
+          delta_count?: number
+          delta_percent?: number
+          employee_id?: string | null
+          evaluation_type?: string
+          evaluation_window_days?: number
+          id?: string
+          location_id?: string | null
+          measured_at?: string
+          module_id?: string
+          notes?: string | null
+          post_training_signal_count?: number
+          result_status?: string
+          signal_types?: string[]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_effectiveness_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_effectiveness_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_effectiveness_records_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_effectiveness_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_files: {
         Row: {
           created_at: string
