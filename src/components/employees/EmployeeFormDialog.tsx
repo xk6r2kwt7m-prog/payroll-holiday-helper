@@ -32,7 +32,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const [activeTab, setActiveTab] = useState("personal");
   const [selectedBranches, setSelectedBranches] = useState<BranchType[]>([]);
   const [primaryBranch, setPrimaryBranch] = useState<BranchType | undefined>();
-  const [savedEmployeeName, setSavedEmployeeName] = useState("");
+  
   const [formData, setFormData] = useState({
     forename: "",
     surname: "",
