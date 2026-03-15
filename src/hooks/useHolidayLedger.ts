@@ -19,9 +19,10 @@ export interface HolidayLedgerEntry {
 }
 
 export function useHolidayLedger(employeeId?: string, leaveYearStart?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_ledger", employeeId, leaveYearStart],
-    enabled: !!employeeId,
+    queryKey: ["holiday_ledger", tenantId, employeeId, leaveYearStart],
+    enabled: !!employeeId && !!tenantId,
     queryFn: async () => {
       let query = supabase
         .from("holiday_ledger")

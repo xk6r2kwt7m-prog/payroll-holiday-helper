@@ -13,8 +13,9 @@ export interface EmployeeSkill {
 }
 
 export function useEmployeeSkills(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["employee_skills", employeeId],
+    queryKey: ["employee_skills", tenantId, employeeId],
     queryFn: async () => {
       if (!employeeId) return [] as EmployeeSkill[];
       const { data, error } = await supabase

@@ -56,6 +56,7 @@ export function useTodayLabourCost(date: string) {
           id, clock_in_time, clock_out_time, total_hours, status,
           employees (id, forename, surname, hourly_rate, department)
         `)
+        .eq("tenant_id", tenantId)
         .gte("clock_in_time", `${date}T00:00:00`)
         .lte("clock_in_time", `${date}T23:59:59`)
         .order("clock_in_time", { ascending: false });

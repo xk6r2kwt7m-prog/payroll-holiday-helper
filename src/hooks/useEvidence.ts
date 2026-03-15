@@ -74,9 +74,11 @@ export function useEvidenceFiles(filters?: { employeeId?: string; requestId?: st
   return useQuery({
     queryKey: ["evidence_files", tenantId, filters],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("evidence_files" as any)
         .select("*, employees(id, forename, surname), evidence_requests(id, title, request_type)")
+        .eq("tenant_id", tenantId)
         .order("uploaded_at", { ascending: false });
       if (filters?.employeeId) query = query.eq("employee_id", filters.employeeId);
       if (filters?.requestId) query = query.eq("request_id", filters.requestId);
