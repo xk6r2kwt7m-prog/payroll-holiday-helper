@@ -68,6 +68,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [tenantTimezone, setTenantTimezone] = useState<string | null>(null);
   const [tenantStatus, setTenantStatus] = useState<string | null>(null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+  const [tenantRole, setTenantRole] = useState<string | null>(null);
   const [enabledModules, setEnabledModules] = useState<EnabledModules | null>(null);
   const [loading, setLoading] = useState(true);
   const [tenantResolved, setTenantResolved] = useState(false);
