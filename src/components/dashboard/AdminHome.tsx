@@ -27,7 +27,7 @@ const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
 export function AdminHome() {
   const { t } = useI18n();
-  const { tenantName } = useTenant();
+  const { tenantName, tenantId } = useTenant();
   const setupHealth = useSetupHealth();
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
@@ -41,16 +41,19 @@ export function AdminHome() {
   const { data: shifts = [] } = useShifts(weekStart, weekEnd);
 
   const { data: todayEntries = [] } = useQuery({
-    queryKey: ["today_clock_ins_admin", todayStr],
+    queryKey: ["today_clock_ins_admin", tenantId, todayStr],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("time_entries")
         .select("*, employees!inner(forename, surname, department)")
+        .eq("tenant_id", tenantId)
         .gte("clock_in_time", `${todayStr}T00:00:00`)
         .lte("clock_in_time", `${todayStr}T23:59:59`);
       if (error) throw error;
       return data || [];
     },
+    enabled: !!tenantId,
   });
 
   const activeEmployees = employees.filter(e => e.status === "active").length;

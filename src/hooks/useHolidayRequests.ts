@@ -63,9 +63,11 @@ export function useAllHolidayRequests() {
   return useQuery({
     queryKey: ["all_holiday_requests", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_requests" as any)
         .select("*, employees(forename, surname, department)")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
