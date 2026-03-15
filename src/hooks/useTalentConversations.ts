@@ -103,7 +103,7 @@ export function useEmployerConversations(enabled = true) {
 }
 
 // Worker inbox — conversations for their talent profile
-export function useWorkerConversations() {
+export function useWorkerConversations(enabled = true) {
   const { user } = useAuth();
   const qc = useQueryClient();
 
