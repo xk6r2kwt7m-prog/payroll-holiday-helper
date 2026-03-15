@@ -169,6 +169,11 @@ export interface GovernanceMetrics {
   insightsNoEvidence: number;
   mandatoryWeak: number;
   highRiskConcern: number;
+  /** Content-level gap counts for admin readiness view */
+  noEvidence: number;
+  noInsights: number;
+  noScenarios: number;
+  noLearningOutcomes: number;
 }
 
 export function computeGovernanceMetrics(
