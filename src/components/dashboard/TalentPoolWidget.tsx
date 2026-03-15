@@ -64,7 +64,7 @@ export function TalentPoolWidget() {
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Talent Pool</h2>
-        <Link to="/talent-pool?tab=browse" className="text-xs text-primary font-medium flex items-center gap-0.5">
+        <Link to={`${TALENT_POOL_ROUTE}?tab=browse`} className="text-xs text-primary font-medium flex items-center gap-0.5">
           View all <ChevronRight className="h-3 w-3" />
         </Link>
       </div>

@@ -49,7 +49,7 @@ const navGroups: NavGroup[] = [
       { icon: Users, label: "Employees", path: "/employees", minRole: "supervisor", permissionKey: "view_employees" },
       { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager", permissionKey: "manage_lifecycle" },
       { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin", permissionKey: "manage_lifecycle" },
-      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
+      { icon: Sparkles, label: "Talent Pool", path: TALENT_POOL_ROUTE, minRole: "staff" },
       { icon: Briefcase, label: "Hiring", path: "/vacancies", minRole: "admin" },
     ],
   },

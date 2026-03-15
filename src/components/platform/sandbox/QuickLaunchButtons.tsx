@@ -2,13 +2,14 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useImpersonation } from "@/hooks/useImpersonation";
 import { LayoutDashboard, Users, Briefcase, UserCircle, CreditCard, FlaskConical } from "lucide-react";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 
 const QUICK_LINKS = [
   { label: "Dashboard", path: "/", icon: <LayoutDashboard className="h-3 w-3" /> },
   { label: "Hiring", path: "/vacancies", icon: <Users className="h-3 w-3" /> },
-  { label: "Talent Pool", path: "/talent-pool", icon: <Briefcase className="h-3 w-3" /> },
+  { label: "Talent Pool", path: TALENT_POOL_ROUTE, icon: <Briefcase className="h-3 w-3" /> },
   { label: "Staff Portal", path: "/staff-portal", icon: <UserCircle className="h-3 w-3" /> },
-  { label: "Billing", path: "/talent-pool?tab=billing", icon: <CreditCard className="h-3 w-3" /> },
+  { label: "Billing", path: `${TALENT_POOL_ROUTE}?tab=billing`, icon: <CreditCard className="h-3 w-3" /> },
 ];
 
 export function QuickLaunchButtons() {
