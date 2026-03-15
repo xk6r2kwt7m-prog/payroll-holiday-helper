@@ -297,6 +297,23 @@ const Payroll = () => {
     }
   };
 
+  // DEV: assert tenant match on payroll data
+  if (entries.length > 0) assertTenantMatch(entries, "payroll_entries");
+
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4 max-w-7xl mx-auto w-full">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
+          </div>
+          <Skeleton className="h-64" />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-4 sm:space-y-5 max-w-7xl mx-auto w-full min-w-0">

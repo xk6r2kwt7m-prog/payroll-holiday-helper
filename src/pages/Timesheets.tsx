@@ -31,6 +31,15 @@ export default function Timesheets() {
   const [reviewEntry, setReviewEntry] = useState<any>(null);
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
 
+  const resetPageState = useCallback(() => {
+    setSelectedBranch("all");
+    setStatusFilter("pending");
+    setSelectedIds([]);
+    setReviewEntry(null);
+    setShowFlaggedOnly(false);
+  }, []);
+  const { tenantReady, assertTenantMatch } = useTenantGuard(resetPageState);
+
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
 
