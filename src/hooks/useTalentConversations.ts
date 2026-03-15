@@ -285,9 +285,10 @@ export function useMarkMessagesRead() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["employer-conversations"] });
       qc.invalidateQueries({ queryKey: ["worker-conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversation-messages", vars.conversationId] });
     },
   });
 }
