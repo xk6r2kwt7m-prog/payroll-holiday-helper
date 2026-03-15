@@ -1,10 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTrainingRecords, useAddTrainingRecord, useDeleteTrainingRecord, CERTIFICATION_TYPES } from "@/hooks/useTrainingRecords";
 import { TrainingLibraryManager } from "@/components/training/TrainingLibraryManager";
 import { TrainingCompletionDashboard } from "@/components/training/TrainingCompletionDashboard";
+import { ManagerComplianceDashboard } from "@/components/training/ManagerComplianceDashboard";
+import { PlatformModuleBrowser } from "@/components/training/PlatformModuleBrowser";
 import { StaffTrainingView } from "@/components/training/StaffTrainingView";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { GraduationCap, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, BookOpen, ClipboardCheck } from "lucide-react";
+import { GraduationCap, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, BookOpen, ClipboardCheck, Sparkles, BarChart3 } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,10 +29,8 @@ export default function TrainingRecords() {
   const { role } = useAuth();
   const userLevel = getRoleLevel(role);
   const isManagerOrAbove = userLevel >= getRoleLevel("manager");
-  const canManageTraining = usePermission("manage_training");
   const { employeeId } = useCurrentEmployee();
 
-  // Staff view — only show their assigned training
   if (!isManagerOrAbove) {
     return (
       <AppLayout>
@@ -62,7 +62,6 @@ export default function TrainingRecords() {
     );
   }
 
-  // Manager/Admin view — full library, tracking, certifications
   return <TrainingAdminView />;
 }
 
@@ -71,11 +70,8 @@ function TrainingAdminView() {
   const urlTab = searchParams.get("tab");
   const deepLinkEmployee = searchParams.get("employee") || undefined;
   const deepLinkModule = searchParams.get("module") || undefined;
-
-  // Controlled tab state — syncs from URL on every param change
   const [activeTab, setActiveTab] = useState(urlTab || "library");
 
-  // Re-sync when URL params change (e.g. navigating from Gaps tab while already on /training)
   const paramKey = `${urlTab}::${deepLinkEmployee}::${deepLinkModule}`;
   const [lastParamKey, setLastParamKey] = useState(paramKey);
   if (paramKey !== lastParamKey) {
@@ -97,19 +93,12 @@ function TrainingAdminView() {
 
   const activeEmployees = employees.filter(e => e.status === "active" || e.status === "starter");
 
-  const expiringRecords = useMemo(() => {
-    const now = new Date();
-    return records.filter(r => {
-      if (!r.expiry_date) return false;
-      const days = differenceInDays(parseISO(r.expiry_date), now);
-      return days <= 60 && days >= 0;
-    }).sort((a, b) => new Date(a.expiry_date!).getTime() - new Date(b.expiry_date!).getTime());
-  }, [records]);
-
-  const expiredRecords = useMemo(() => {
-    const now = new Date();
-    return records.filter(r => r.expiry_date && differenceInDays(parseISO(r.expiry_date), now) < 0);
-  }, [records]);
+  const expiringRecords = records.filter(r => {
+    if (!r.expiry_date) return false;
+    const days = differenceInDays(parseISO(r.expiry_date), new Date());
+    return days <= 60 && days >= 0;
+  });
+  const expiredRecords = records.filter(r => r.expiry_date && differenceInDays(parseISO(r.expiry_date), new Date()) < 0);
 
   const handleSubmit = () => {
     if (!form.employee_id || !form.certification_name || !form.date_obtained) return;
@@ -143,20 +132,28 @@ function TrainingAdminView() {
       <div className="space-y-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Training & Documents</h1>
-            <p className="text-muted-foreground text-sm">Manage training, policies, certifications, and document assignments</p>
+            <h1 className="text-2xl font-bold text-foreground">Training & Learning</h1>
+            <p className="text-muted-foreground text-sm">Manage training modules, assignments, quizzes, and compliance</p>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="library" className="gap-1.5"><BookOpen className="h-4 w-4" /> Library</TabsTrigger>
-            <TabsTrigger value="tracking" className="gap-1.5"><ClipboardCheck className="h-4 w-4" /> Tracking</TabsTrigger>
-            <TabsTrigger value="certifications" className="gap-1.5"><GraduationCap className="h-4 w-4" /> Certifications</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
+            <TabsList className="inline-flex w-auto min-w-full sm:w-full sm:grid sm:grid-cols-5">
+              <TabsTrigger value="library" className="gap-1.5 text-xs sm:text-sm"><BookOpen className="h-4 w-4" /><span className="hidden sm:inline">Library</span><span className="sm:hidden">Lib</span></TabsTrigger>
+              <TabsTrigger value="platform" className="gap-1.5 text-xs sm:text-sm"><Sparkles className="h-4 w-4" /><span className="hidden sm:inline">UGLŌ Standard</span><span className="sm:hidden">UGLŌ</span></TabsTrigger>
+              <TabsTrigger value="tracking" className="gap-1.5 text-xs sm:text-sm"><ClipboardCheck className="h-4 w-4" /><span className="hidden sm:inline">Tracking</span><span className="sm:hidden">Track</span></TabsTrigger>
+              <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="h-4 w-4" /><span className="hidden sm:inline">Compliance</span><span className="sm:hidden">Comp</span></TabsTrigger>
+              <TabsTrigger value="certifications" className="gap-1.5 text-xs sm:text-sm"><GraduationCap className="h-4 w-4" /><span className="hidden sm:inline">Certs</span><span className="sm:hidden">Certs</span></TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="library" className="mt-4">
             <TrainingLibraryManager />
+          </TabsContent>
+
+          <TabsContent value="platform" className="mt-4">
+            <PlatformModuleBrowser />
           </TabsContent>
 
           <TabsContent value="tracking" className="mt-4">
@@ -164,6 +161,10 @@ function TrainingAdminView() {
               highlightEmployeeId={activeTab === "tracking" ? deepLinkEmployee : undefined}
               highlightModuleId={activeTab === "tracking" ? deepLinkModule : undefined}
             />
+          </TabsContent>
+
+          <TabsContent value="compliance" className="mt-4">
+            <ManagerComplianceDashboard />
           </TabsContent>
 
           <TabsContent value="certifications" className="mt-4">
@@ -175,43 +176,43 @@ function TrainingAdminView() {
                     <DialogTrigger asChild>
                       <Button size="sm" className="gap-2"><Plus className="h-4 w-4" /> Add Record</Button>
                     </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader><DialogTitle>Add Training Record</DialogTitle></DialogHeader>
-                    <div className="space-y-4 pt-2">
-                      <div>
-                        <Label>Employee</Label>
-                        <Select value={form.employee_id} onValueChange={v => setForm(f => ({ ...f, employee_id: v }))}>
-                          <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
-                          <SelectContent>
-                            {activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.forename} {e.surname}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+                    <DialogContent>
+                      <DialogHeader><DialogTitle>Add Training Record</DialogTitle></DialogHeader>
+                      <div className="space-y-4 pt-2">
+                        <div>
+                          <Label>Employee</Label>
+                          <Select value={form.employee_id} onValueChange={v => setForm(f => ({ ...f, employee_id: v }))}>
+                            <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                            <SelectContent>
+                              {activeEmployees.map(e => <SelectItem key={e.id} value={e.id}>{e.forename} {e.surname}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Certification Type</Label>
+                          <Select value={form.certification_type} onValueChange={v => {
+                            const ct = CERTIFICATION_TYPES.find(c => c.value === v);
+                            setForm(f => ({ ...f, certification_type: v, certification_name: ct?.label || f.certification_name }));
+                          }}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {CERTIFICATION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div><Label>Certification Name</Label><Input value={form.certification_name} onChange={e => setForm(f => ({ ...f, certification_name: e.target.value }))} /></div>
+                        <div><Label>Provider</Label><Input value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} /></div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><Label>Date Obtained</Label><Input type="date" value={form.date_obtained} onChange={e => setForm(f => ({ ...f, date_obtained: e.target.value }))} /></div>
+                          <div><Label>Expiry Date</Label><Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} /></div>
+                        </div>
+                        <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+                        <Button onClick={handleSubmit} disabled={addRecord.isPending} className="w-full">
+                          {addRecord.isPending ? "Saving..." : "Add Record"}
+                        </Button>
                       </div>
-                      <div>
-                        <Label>Certification Type</Label>
-                        <Select value={form.certification_type} onValueChange={v => {
-                          const ct = CERTIFICATION_TYPES.find(c => c.value === v);
-                          setForm(f => ({ ...f, certification_type: v, certification_name: ct?.label || f.certification_name }));
-                        }}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {CERTIFICATION_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div><Label>Certification Name</Label><Input value={form.certification_name} onChange={e => setForm(f => ({ ...f, certification_name: e.target.value }))} placeholder="e.g. Level 2 Food Hygiene" /></div>
-                      <div><Label>Provider</Label><Input value={form.provider} onChange={e => setForm(f => ({ ...f, provider: e.target.value }))} placeholder="e.g. Highfield" /></div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div><Label>Date Obtained</Label><Input type="date" value={form.date_obtained} onChange={e => setForm(f => ({ ...f, date_obtained: e.target.value }))} /></div>
-                        <div><Label>Expiry Date</Label><Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} /></div>
-                      </div>
-                      <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
-                      <Button onClick={handleSubmit} disabled={addRecord.isPending} className="w-full">
-                        {addRecord.isPending ? "Saving..." : "Add Record"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
                 )}
               </div>
 
@@ -241,10 +242,7 @@ function TrainingAdminView() {
                       </div>
                       <h3 className="text-base font-semibold text-foreground mb-1">No certification records</h3>
                       <p className="text-sm text-muted-foreground max-w-xs">
-                        Track food hygiene certificates, first aid qualifications, and other mandatory training for your team.
-                      </p>
-                      <p className="text-xs text-muted-foreground/70 mt-1.5 max-w-xs">
-                        The system will alert you when certifications are expiring so renewals aren't missed.
+                        Track food hygiene certificates, first aid qualifications, and other mandatory training.
                       </p>
                     </div>
                   )}
@@ -254,20 +252,20 @@ function TrainingAdminView() {
                     const certType = CERTIFICATION_TYPES.find(c => c.value === r.certification_type);
                     return (
                       <div key={r.id} className="flex items-center justify-between px-5 py-3 hover:bg-muted/30">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="h-8 w-8 shrink-0">
                             <AvatarFallback className="bg-primary/10 text-primary text-xs">{emp?.forename?.[0]}{emp?.surname?.[0]}</AvatarFallback>
                           </Avatar>
-                          <div>
-                            <p className="text-sm font-medium text-card-foreground">{name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {r.certification_name} {r.provider && `· ${r.provider}`} · Obtained {format(parseISO(r.date_obtained), "d MMM yyyy")}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-card-foreground truncate">{name}</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {r.certification_name} {r.provider && `· ${r.provider}`} · {format(parseISO(r.date_obtained), "d MMM yyyy")}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           {getExpiryBadge(r.expiry_date)}
-                          <Badge variant="outline" className="text-xs">{certType?.label || r.certification_type}</Badge>
+                          <Badge variant="outline" className="text-xs hidden sm:inline-flex">{certType?.label || r.certification_type}</Badge>
                           {canManageTraining && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteRecord.mutate(r.id)}>
                               <Trash2 className="h-3.5 w-3.5" />
