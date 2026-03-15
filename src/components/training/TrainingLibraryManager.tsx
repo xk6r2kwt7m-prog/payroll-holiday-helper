@@ -430,6 +430,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
   const updateStatus = useUpdateModuleStatus();
   const updateItem = useUpdateLibraryItem();
   const canManage = usePermission("manage_training");
+  const { data: detailGovCounts = {} } = useGovernanceSummary(canManage);
   const isPlatform = module.source_type === "platform" && module.tenant_id === null;
   const isArchived = module.status === "archived";
   const canEdit = canManage && !isPlatform && !isArchived;
