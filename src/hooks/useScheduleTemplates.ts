@@ -62,6 +62,7 @@ export function useScheduleTemplateShifts(templateId?: string) {
 
 export function useSaveScheduleTemplate() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async ({
       name,
@@ -79,7 +80,7 @@ export function useSaveScheduleTemplate() {
       // Create template
       const { data: template, error: tErr } = await supabase
         .from("schedule_templates")
-        .insert({ name, branch, department, created_by: user?.id } as any)
+        .insert({ name, branch, department, tenant_id: tenantId!, created_by: user?.id } as any)
         .select()
         .single();
       if (tErr) throw tErr;
