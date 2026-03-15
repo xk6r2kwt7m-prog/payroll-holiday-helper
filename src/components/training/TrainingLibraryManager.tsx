@@ -6,13 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   BookOpen, Plus, FileText, Shield, GraduationCap, AlertTriangle,
   CheckCircle2, Clock, Search, Sparkles, Eye, Users, MoreVertical,
-  ThumbsUp, Send, Archive, Download,
+  ThumbsUp, Send, Archive, Download, AlertCircle,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ import { QuizBuilder } from "@/components/training/QuizBuilder";
 import { useTenant } from "@/hooks/useTenant";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { exportToCsv } from "@/lib/csv-export";
+import { writeTrainingAudit } from "@/hooks/useTrainingLibrary";
 import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
