@@ -61,7 +61,7 @@ export function GovernanceDashboard({ metrics, onFilterSelect, activeFilter, mod
   if (metrics.total === 0) return null;
 
   const hasActiveGovFilter = activeFilter !== "all" && (
-    activeFilter.startsWith("gov_") || activeFilter.startsWith("no_") || activeFilter.startsWith("eff_") || ["stale", "not_reviewed"].includes(activeFilter)
+    activeFilter.startsWith("gov_") || activeFilter.startsWith("no_") || activeFilter.startsWith("eff_") || activeFilter.startsWith("sq_") || ["stale", "not_reviewed"].includes(activeFilter)
   );
 
   const cards: MetricCard[] = [

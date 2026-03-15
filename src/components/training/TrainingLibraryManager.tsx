@@ -60,7 +60,10 @@ import { GovernanceDashboard } from "@/components/training/GovernanceDashboard";
 import { ContentStrengthPanel } from "@/components/training/ContentStrengthPanel";
 import { EffectivenessSection } from "@/components/training/EffectivenessSection";
 import { ModuleEffectivenessPanel } from "@/components/training/ModuleEffectivenessPanel";
+import { SignalQualitySection } from "@/components/training/SignalQualitySection";
+import { ModuleSignalQualityPanel } from "@/components/training/ModuleSignalQualityPanel";
 import { useTrainingEffectiveness } from "@/hooks/useTrainingEffectiveness";
+import { useSignalQuality } from "@/hooks/useSignalQuality";
 import type { ServiceRiskLevel, ReviewInsightTag } from "@/data/training-standards/types";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -74,6 +77,7 @@ export function TrainingLibraryManager() {
   const { tenantId } = useTenant();
   const { data: govCounts = {} } = useGovernanceSummary(canManage);
   const { metrics: effMetrics, latestByModule: effByModule, records: effRecords } = useTrainingEffectiveness(canManage);
+  const { metrics: sqMetrics, qualityByModule: sqByModule } = useSignalQuality(canManage, govCounts);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -163,6 +167,47 @@ export function TrainingLibraryManager() {
         case "eff_insufficient": {
           const effRec = effByModule.get(item.id);
           matchesEvidence = !!effRec && effRec.result_status === "insufficient_data";
+          break;
+        }
+        // Signal quality filters
+        case "sq_strong": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.qualityStatus === "strong";
+          break;
+        }
+        case "sq_acceptable": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.qualityStatus === "acceptable";
+          break;
+        }
+        case "sq_weak": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.qualityStatus === "weak";
+          break;
+        }
+        case "sq_unreliable": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.qualityStatus === "unreliable";
+          break;
+        }
+        case "sq_high_dupe": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.duplicateRisk === "high";
+          break;
+        }
+        case "sq_weak_attr": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.attributionStrength === "weak";
+          break;
+        }
+        case "sq_low_vol": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.volumeLevel === "low";
+          break;
+        }
+        case "sq_vague": {
+          const sq = sqByModule.get(item.id);
+          matchesEvidence = !!sq && sq.vaguenessFlag === true;
           break;
         }
         default: matchesEvidence = true;
@@ -259,6 +304,15 @@ export function TrainingLibraryManager() {
       {canManage && (
         <EffectivenessSection
           metrics={effMetrics}
+          activeFilter={evidenceFilter}
+          onFilterSelect={setEvidenceFilter}
+        />
+      )}
+
+      {/* Admin signal quality dashboard */}
+      {canManage && (
+        <SignalQualitySection
+          metrics={sqMetrics}
           activeFilter={evidenceFilter}
           onFilterSelect={setEvidenceFilter}
         />
@@ -1006,6 +1060,8 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
   const { data: evidence = [] } = useModuleEvidence(module.id);
   const { data: insights = [] } = useReviewInsights(module.id);
   const { latestByModule: effByModule, records: allEffRecords } = useTrainingEffectiveness(true);
+  const { data: govCountsForQuality = {} } = useGovernanceSummary(true);
+  const { qualityByModule: sqByModule } = useSignalQuality(true, govCountsForQuality);
   const activeEvidence = evidence.filter(e => e.is_active);
   const activeInsights = insights.filter(i => i.is_active);
 
@@ -1062,6 +1118,11 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
         record={effByModule.get(module.id) ?? null}
         allRecords={allEffRecords.filter(r => r.module_id === module.id)}
         reviewInsightTags={(module.standards_metadata as any)?.review_insight_tags as ReviewInsightTag[] | undefined}
+      />
+
+      {/* Signal Quality */}
+      <ModuleSignalQualityPanel
+        quality={sqByModule.get(module.id) ?? null}
       />
 
       {module.standards_metadata && (
