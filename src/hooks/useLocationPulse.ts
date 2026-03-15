@@ -43,6 +43,7 @@ function worstStatus(...statuses: PulseStatus[]): PulseStatus {
  * Aggregates operational data per branch into a pulse summary.
  */
 export function useLocationPulse(): { data: LocationPulse[]; isLoading: boolean } {
+  const { tenantId } = useTenant();
   const { data: employees = [], isLoading: empLoading } = useEmployees();
   const { data: branches = [], isLoading: brLoading } = useAllEmployeeBranches();
   const { data: absences = [], isLoading: absLoading } = useAbsenceRecords();
@@ -55,40 +56,49 @@ export function useLocationPulse(): { data: LocationPulse[]; isLoading: boolean 
   // Shifts for today
   const { data: todayShifts = [], isLoading: shLoading } = useShifts(today, today);
 
-  // Onboarding progress (all)
+  // Onboarding progress (tenant-scoped)
   const { data: onboardingProgress = [], isLoading: obLoading } = useQuery({
-    queryKey: ["onboarding_progress_all"],
+    queryKey: ["onboarding_progress_all", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("onboarding_progress")
         .select("employee_id, completed")
+        .eq("tenant_id", tenantId);
       if (error) throw error;
       return data || [];
     },
+    enabled: !!tenantId,
   });
 
-  // Contract signatures (unsigned contracts)
+  // Contract signatures (tenant-scoped)
   const { data: documents = [], isLoading: docLoading } = useQuery({
-    queryKey: ["employee_documents_contracts"],
+    queryKey: ["employee_documents_contracts", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("employee_documents")
         .select("id, employee_id, document_type")
+        .eq("tenant_id", tenantId)
         .eq("document_type", "contract");
       if (error) throw error;
       return data || [];
     },
+    enabled: !!tenantId,
   });
 
   const { data: signatures = [], isLoading: sigLoading } = useQuery({
-    queryKey: ["contract_signatures_all"],
+    queryKey: ["contract_signatures_all", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("contract_signatures")
-        .select("employee_document_id");
+        .select("employee_document_id")
+        .eq("tenant_id", tenantId);
       if (error) throw error;
       return data || [];
     },
+    enabled: !!tenantId,
   });
 
   const isLoading = empLoading || brLoading || absLoading || trLoading || prLoading || shLoading || obLoading || docLoading || sigLoading;
