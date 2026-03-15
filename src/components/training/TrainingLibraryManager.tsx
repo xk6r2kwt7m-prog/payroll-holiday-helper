@@ -782,6 +782,22 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
               <QuizBuilder moduleId={module.id} canEdit={canManage && !isPlatform} />
             </TabsContent>
           )}
+          {canManage && (
+            <TabsContent value="standards" className="space-y-3 mt-3">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Evidence & Research</p>
+              <EvidenceCompletenessBar
+                documentId={module.id}
+                lastReviewedAt={(module as any).last_reviewed_at ?? null}
+                lastReviewedBy={(module as any).last_reviewed_by ?? null}
+                canEdit={canEdit}
+              />
+              <EvidencePanel documentId={module.id} canEdit={canEdit} />
+              <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
+              {module.standards_metadata && (
+                <WhyThisMattersPanel metadata={module.standards_metadata} />
+              )}
+            </TabsContent>
+          )}
         </Tabs>
       </SheetContent>
     </Sheet>
