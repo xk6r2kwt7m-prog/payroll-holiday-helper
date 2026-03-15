@@ -48,6 +48,14 @@ const Payroll = () => {
   
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
+
+  // Reset page-local state on tenant switch
+  const resetPageState = useCallback(() => {
+    setSelectedPeriodId(null);
+    setReportBuilderOpen(false);
+  }, []);
+  const { tenantReady, assertTenantMatch } = useTenantGuard(resetPageState);
+
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
