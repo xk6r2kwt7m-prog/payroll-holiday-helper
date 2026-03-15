@@ -32,7 +32,11 @@ interface TenantContextType {
   tenantCountry: string | null;
   tenantTimezone: string | null;
   tenantStatus: string | null;
+  /** The current user's role within the active tenant (e.g. 'company_admin', 'manager', 'staff'). */
+  tenantRole: string | null;
   isPlatformAdmin: boolean;
+  /** True if user is company_admin in current tenant OR a platform admin. */
+  isTenantAdmin: boolean;
   enabledModules: EnabledModules | null;
   loading: boolean;
   tenantResolved: boolean;
