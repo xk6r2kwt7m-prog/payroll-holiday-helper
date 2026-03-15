@@ -58,7 +58,10 @@ import {
 } from "@/lib/governance-classification";
 import { GovernanceDashboard } from "@/components/training/GovernanceDashboard";
 import { ContentStrengthPanel } from "@/components/training/ContentStrengthPanel";
-import type { ServiceRiskLevel } from "@/data/training-standards/types";
+import { EffectivenessSection } from "@/components/training/EffectivenessSection";
+import { ModuleEffectivenessPanel } from "@/components/training/ModuleEffectivenessPanel";
+import { useTrainingEffectiveness } from "@/hooks/useTrainingEffectiveness";
+import type { ServiceRiskLevel, ReviewInsightTag } from "@/data/training-standards/types";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -70,6 +73,7 @@ export function TrainingLibraryManager() {
   const canManage = usePermission("manage_training");
   const { tenantId } = useTenant();
   const { data: govCounts = {} } = useGovernanceSummary(canManage);
+  const { metrics: effMetrics, latestByModule: effByModule, records: effRecords } = useTrainingEffectiveness(canManage);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -133,6 +137,32 @@ export function TrainingLibraryManager() {
         case "no_learning_outcomes": {
           const meta2 = item.standards_metadata as any;
           matchesEvidence = !meta2?.learning_outcomes || meta2.learning_outcomes.length === 0;
+          break;
+        }
+        // Effectiveness filters
+        case "eff_strong": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.delta_percent <= -40;
+          break;
+        }
+        case "eff_improved": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.delta_percent < -15 && effRec.delta_percent > -40;
+          break;
+        }
+        case "eff_unchanged": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.delta_percent >= -15 && effRec.delta_percent <= 15;
+          break;
+        }
+        case "eff_declined": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.delta_percent > 15;
+          break;
+        }
+        case "eff_insufficient": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.result_status === "insufficient_data";
           break;
         }
         default: matchesEvidence = true;
@@ -222,6 +252,15 @@ export function TrainingLibraryManager() {
             const mod = tenantModules.find(m => m.id === id);
             if (mod) setSelectedDoc(mod);
           }}
+        />
+      )}
+
+      {/* Admin effectiveness dashboard */}
+      {canManage && (
+        <EffectivenessSection
+          metrics={effMetrics}
+          activeFilter={evidenceFilter}
+          onFilterSelect={setEvidenceFilter}
         />
       )}
 
@@ -966,6 +1005,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem; canEdit: boolean }) {
   const { data: evidence = [] } = useModuleEvidence(module.id);
   const { data: insights = [] } = useReviewInsights(module.id);
+  const { latestByModule: effByModule, records: allEffRecords } = useTrainingEffectiveness(true);
   const activeEvidence = evidence.filter(e => e.is_active);
   const activeInsights = insights.filter(i => i.is_active);
 
@@ -1016,6 +1056,14 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
       />
       <EvidencePanel documentId={module.id} canEdit={canEdit} />
       <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
+
+      {/* Training Effectiveness */}
+      <ModuleEffectivenessPanel
+        record={effByModule.get(module.id) ?? null}
+        allRecords={allEffRecords.filter(r => r.module_id === module.id)}
+        reviewInsightTags={(module.standards_metadata as any)?.review_insight_tags as ReviewInsightTag[] | undefined}
+      />
+
       {module.standards_metadata && (
         <WhyThisMattersPanel metadata={module.standards_metadata as StandardsMetadata} />
       )}
