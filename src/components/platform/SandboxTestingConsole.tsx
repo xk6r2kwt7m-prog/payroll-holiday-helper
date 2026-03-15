@@ -14,8 +14,9 @@ import { QATestChecklist } from "./QATestChecklist";
 import { ScenarioButtons } from "./sandbox/ScenarioButtons";
 import { RunOrderBlock } from "./sandbox/RunOrderBlock";
 import { SmokeTestPanel } from "./sandbox/SmokeTestPanel";
-import { SandboxStatusSummary } from "./sandbox/SandboxStatusSummary";
+import { SandboxStatusSummary, FreshnessBadge } from "./sandbox/SandboxStatusSummary";
 import { QANotesArea } from "./sandbox/QANotesArea";
+import { QuickLaunchButtons } from "./sandbox/QuickLaunchButtons";
 import { toast } from "sonner";
 import {
   Plus, Trash2, RotateCcw, Eye, Loader2, FlaskConical,
