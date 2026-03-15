@@ -6,18 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useSandboxTenants, useCreateSandbox, useDeleteSandbox, useResetSandbox, type SandboxConfig } from "@/hooks/useSandbox";
+import { useSandboxTenants, useCreateSandbox, useDeleteSandbox, useResetSandbox, useRebuildSandbox, type SandboxConfig } from "@/hooks/useSandbox";
 import { useImpersonation } from "@/hooks/useImpersonation";
 import { QATestChecklist } from "./QATestChecklist";
-import { supabase } from "@/integrations/supabase/client";
+import { ScenarioButtons } from "./sandbox/ScenarioButtons";
+import { RunOrderBlock } from "./sandbox/RunOrderBlock";
+import { SmokeTestPanel } from "./sandbox/SmokeTestPanel";
+import { SandboxStatusSummary } from "./sandbox/SandboxStatusSummary";
+import { QANotesArea } from "./sandbox/QANotesArea";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, RotateCcw, Eye, Users, Building2,
-  Loader2, FlaskConical, UserCog, ChevronDown, ChevronUp,
-  Clipboard, StickyNote,
+  Plus, Trash2, RotateCcw, Eye, Loader2, FlaskConical,
+  UserCog, ChevronDown, ChevronUp, Clipboard, RefreshCw,
 } from "lucide-react";
 import type { AppRole } from "@/lib/roles";
 
@@ -38,14 +40,14 @@ export function SandboxTestingConsole() {
   const createSandbox = useCreateSandbox();
   const deleteSandbox = useDeleteSandbox();
   const resetSandbox = useResetSandbox();
+  const rebuildSandbox = useRebuildSandbox();
   const impersonation = useImpersonation();
 
   const [showCreate, setShowCreate] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [notesMap, setNotesMap] = useState<Record<string, string>>({});
   const [showChecklist, setShowChecklist] = useState(false);
+  const [showRunOrder, setShowRunOrder] = useState(false);
 
-  // Create form state
   const [config, setConfig] = useState<Partial<SandboxConfig>>({
     tenantName: "Sandbox Restaurant",
     country: "GB",
@@ -68,20 +70,18 @@ export function SandboxTestingConsole() {
     setShowCreate(false);
   };
 
+  const handleScenarioSelect = (scenarioConfig: Partial<SandboxConfig>) => {
+    setConfig((prev) => ({ ...prev, ...scenarioConfig }));
+    setShowCreate(true);
+  };
+
   const handleImpersonate = async (tenantId: string, tenantName: string, role: AppRole, label: string) => {
     await impersonation.startImpersonation(tenantId, tenantName, { role, label });
     toast.success(`Now viewing as: ${label}`);
   };
 
-  const handleSaveNotes = async (sandboxId: string) => {
-    const notes = notesMap[sandboxId];
-    if (notes === undefined) return;
-    await supabase.from("sandbox_tenants").update({ testing_notes: notes }).eq("id", sandboxId);
-    toast.success("Notes saved");
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -91,17 +91,26 @@ export function SandboxTestingConsole() {
           </h2>
           <p className="text-sm text-muted-foreground">Create sandbox tenants, impersonate roles, and validate flows</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowChecklist(!showChecklist)} className="gap-2 text-sm">
-            <Clipboard className="h-4 w-4" />
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => setShowRunOrder(!showRunOrder)} className="gap-1.5 text-xs">
+            {showRunOrder ? "Hide" : "Run Order"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowChecklist(!showChecklist)} className="gap-1.5 text-xs">
+            <Clipboard className="h-3.5 w-3.5" />
             {showChecklist ? "Hide Checklist" : "QA Checklist"}
           </Button>
-          <Button onClick={() => setShowCreate(!showCreate)} className="gap-2">
-            <Plus className="h-4 w-4" />
+          <Button size="sm" onClick={() => setShowCreate(!showCreate)} className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" />
             Create Sandbox
           </Button>
         </div>
       </div>
+
+      {/* Scenario buttons */}
+      <ScenarioButtons onSelect={handleScenarioSelect} />
+
+      {/* Run Order */}
+      {showRunOrder && <RunOrderBlock />}
 
       {/* QA Checklist */}
       {showChecklist && <QATestChecklist />}
@@ -117,30 +126,25 @@ export function SandboxTestingConsole() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tenant Name</Label>
-                <Input
-                  value={config.tenantName || ""}
-                  onChange={e => setConfig(p => ({ ...p, tenantName: e.target.value }))}
-                />
+                <Input value={config.tenantName || ""} onChange={(e) => setConfig((p) => ({ ...p, tenantName: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label>Preset</Label>
-                <Select value={config.preset} onValueChange={v => setConfig(p => ({ ...p, preset: v }))}>
+                <Select value={config.preset} onValueChange={(v) => setConfig((p) => ({ ...p, preset: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {PRESETS.map(p => (
-                      <SelectItem key={p.value} value={p.value}>
-                        {p.label} — {p.desc}
-                      </SelectItem>
+                    {PRESETS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>{p.label} — {p.desc}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Setup State</Label>
-                <Select value={config.setupState} onValueChange={v => setConfig(p => ({ ...p, setupState: v as any }))}>
+                <Select value={config.setupState} onValueChange={(v) => setConfig((p) => ({ ...p, setupState: v as any }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {SETUP_STATES.map(s => (
+                    {SETUP_STATES.map((s) => (
                       <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -148,7 +152,7 @@ export function SandboxTestingConsole() {
               </div>
               <div className="space-y-2">
                 <Label>Country</Label>
-                <Select value={config.country} onValueChange={v => setConfig(p => ({ ...p, country: v }))}>
+                <Select value={config.country} onValueChange={(v) => setConfig((p) => ({ ...p, country: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="GB">United Kingdom</SelectItem>
@@ -161,7 +165,7 @@ export function SandboxTestingConsole() {
               </div>
               <div className="space-y-2">
                 <Label>Locations</Label>
-                <Select value={String(config.locationCount)} onValueChange={v => setConfig(p => ({ ...p, locationCount: Number(v) }))}>
+                <Select value={String(config.locationCount)} onValueChange={(v) => setConfig((p) => ({ ...p, locationCount: Number(v) }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">1 Location</SelectItem>
@@ -172,7 +176,7 @@ export function SandboxTestingConsole() {
               </div>
               <div className="space-y-2">
                 <Label>Payroll Frequency</Label>
-                <Select value={config.payrollFrequency} onValueChange={v => setConfig(p => ({ ...p, payrollFrequency: v }))}>
+                <Select value={config.payrollFrequency} onValueChange={(v) => setConfig((p) => ({ ...p, payrollFrequency: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly">Monthly</SelectItem>
@@ -185,45 +189,24 @@ export function SandboxTestingConsole() {
 
             <Separator />
 
-            {/* Seeding options */}
             <div>
               <Label className="text-sm font-medium mb-3 block">Sample Data Seeding</Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={config.serviceChargeEnabled}
-                    onCheckedChange={v => setConfig(p => ({ ...p, serviceChargeEnabled: v }))}
-                  />
-                  <Label className="text-sm">Service Charge</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={config.seedTalentProfiles}
-                    onCheckedChange={v => setConfig(p => ({ ...p, seedTalentProfiles: v }))}
-                  />
-                  <Label className="text-sm">Talent Profiles</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={config.seedVacancies}
-                    onCheckedChange={v => setConfig(p => ({ ...p, seedVacancies: v }))}
-                  />
-                  <Label className="text-sm">Sample Vacancies</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={config.seedPayrollPeriods}
-                    onCheckedChange={v => setConfig(p => ({ ...p, seedPayrollPeriods: v }))}
-                  />
-                  <Label className="text-sm">Payroll Periods</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    checked={config.seedArchivedLeaver}
-                    onCheckedChange={v => setConfig(p => ({ ...p, seedArchivedLeaver: v }))}
-                  />
-                  <Label className="text-sm">Archived Leaver</Label>
-                </div>
+                {[
+                  { key: "serviceChargeEnabled", label: "Service Charge" },
+                  { key: "seedTalentProfiles", label: "Talent Profiles" },
+                  { key: "seedVacancies", label: "Sample Vacancies" },
+                  { key: "seedPayrollPeriods", label: "Payroll Periods" },
+                  { key: "seedArchivedLeaver", label: "Archived Leaver" },
+                ].map((opt) => (
+                  <div key={opt.key} className="flex items-center gap-3">
+                    <Switch
+                      checked={!!(config as any)[opt.key]}
+                      onCheckedChange={(v) => setConfig((p) => ({ ...p, [opt.key]: v }))}
+                    />
+                    <Label className="text-sm">{opt.label}</Label>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -268,7 +251,7 @@ export function SandboxTestingConsole() {
                       <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="text-[10px] h-4">{sb.preset_name}</Badge>
                         <Badge variant="secondary" className="text-[10px] h-4">{sb.setup_state}</Badge>
-                        <span className="text-muted-foreground">{tenant?.country}</span>
+                        <span>{tenant?.country}</span>
                       </div>
                     </div>
                   </div>
@@ -282,7 +265,7 @@ export function SandboxTestingConsole() {
 
                 {isExpanded && (
                   <div className="border-t border-border px-4 pb-4 space-y-4">
-                    {/* Quick role switcher */}
+                    {/* Role switcher */}
                     <div className="pt-4">
                       <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
                         <UserCog className="h-4 w-4" /> Impersonate Role
@@ -313,51 +296,36 @@ export function SandboxTestingConsole() {
 
                     <Separator />
 
-                    {/* Info grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground">Service Charge</span>
-                        <p className="font-medium">{tenant?.service_charge_enabled ? "Enabled" : "Disabled"}</p>
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground">Modules</span>
-                        <p className="font-medium">
-                          {Object.entries(tenant?.enabled_modules || {}).filter(([, v]) => v).map(([k]) => k).join(", ")}
-                        </p>
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground">Created</span>
-                        <p className="font-medium">{new Date(sb.created_at).toLocaleDateString()}</p>
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="text-muted-foreground">Status</span>
-                        <p className="font-medium capitalize">{tenant?.status}</p>
-                      </div>
-                    </div>
+                    {/* Status summary */}
+                    <SandboxStatusSummary sandbox={sb} tenant={tenant} />
 
                     <Separator />
 
-                    {/* Testing notes */}
-                    <div className="space-y-2">
-                      <Label className="text-xs flex items-center gap-1.5">
-                        <StickyNote className="h-3 w-3" /> Testing Notes
-                      </Label>
-                      <Textarea
-                        placeholder="Record UX issues, bugs, or observations..."
-                        value={notesMap[sb.id] ?? sb.testing_notes ?? ""}
-                        onChange={e => setNotesMap(prev => ({ ...prev, [sb.id]: e.target.value }))}
-                        rows={3}
-                        className="text-xs"
-                      />
-                      <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => handleSaveNotes(sb.id)}>
-                        <Clipboard className="h-3 w-3" /> Save Notes
+                    {/* Smoke tests */}
+                    <SmokeTestPanel sandboxId={sb.id} />
+
+                    <Separator />
+
+                    {/* QA Notes */}
+                    <QANotesArea
+                      sandboxId={sb.id}
+                      initialNotes={sb.testing_notes || ""}
+                      initialStatus={sb.qa_status}
+                    />
+
+                    <Separator />
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 text-xs"
+                        onClick={() => rebuildSandbox.mutate(sb.id)}
+                        disabled={rebuildSandbox.isPending}
+                      >
+                        <RefreshCw className="h-3 w-3" /> Rebuild from Config
                       </Button>
-                    </div>
-
-                    <Separator />
-
-                    {/* Danger zone */}
-                    <div className="flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
@@ -371,14 +339,14 @@ export function SandboxTestingConsole() {
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button size="sm" variant="destructive" className="gap-1 text-xs">
-                            <Trash2 className="h-3 w-3" /> Delete Sandbox
+                            <Trash2 className="h-3 w-3" /> Delete
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete sandbox?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the sandbox tenant and all its data. This cannot be undone.
+                              This will permanently delete the sandbox tenant and all its data.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
