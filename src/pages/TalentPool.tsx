@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -12,12 +12,19 @@ import { MyApplications } from "@/components/talent/MyApplications";
 import { TalentBillingHistory } from "@/components/talent/TalentBillingHistory";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnTalentProfile } from "@/hooks/useTalentPool";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TalentPool = () => {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const { isAdmin } = useAuth();
   const { data: ownProfile } = useOwnTalentProfile();
+
+  const resetPageState = useCallback(() => {
+    // activeTab will re-resolve from resolveDefaultTab on next render
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
 
   const hasWorkerProfile = !!ownProfile;
   // Employer mode: admin without a worker profile; Worker mode: everyone else
@@ -43,6 +50,17 @@ const TalentPool = () => {
       setActiveTab(resolved);
     }
   }, [tabParam]);
+
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { usePayrollAudit, type AuditFinding, type AuditSeverity } from "@/hooks/usePayrollAudit";
 import { useTenant } from "@/hooks/useTenant";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -131,8 +133,14 @@ function CategoryCard({ category, stats }: {
 
 const PayrollAudit = () => {
   const { tenantId } = useTenant();
-  const { data: audit, isLoading, refetch, isFetching } = usePayrollAudit(true, tenantId);
   const [activeTab, setActiveTab] = useState("all");
+
+  const resetPageState = useCallback(() => {
+    setActiveTab("all");
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
+
+  const { data: audit, isLoading, refetch, isFetching } = usePayrollAudit(true, tenantId);
 
   const filteredFindings = audit?.findings.filter(f => {
     if (activeTab === "all") return true;
@@ -140,6 +148,17 @@ const PayrollAudit = () => {
     if (activeTab === "warnings") return f.severity === "warning";
     return f.category === activeTab;
   }) || [];
+
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
