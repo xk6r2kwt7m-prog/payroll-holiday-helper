@@ -268,6 +268,15 @@ export function TrainingLibraryManager() {
         />
       )}
 
+      {/* Admin signal quality dashboard */}
+      {canManage && (
+        <SignalQualitySection
+          metrics={sqMetrics}
+          activeFilter={evidenceFilter}
+          onFilterSelect={setEvidenceFilter}
+        />
+      )}
+
       {/* Search + Category */}
       <div className="space-y-2">
         <div className="flex gap-2">
