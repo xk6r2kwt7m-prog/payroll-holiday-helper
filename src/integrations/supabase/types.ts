@@ -3062,6 +3062,8 @@ export type Database = {
           created_by: string
           id: string
           preset_name: string
+          qa_status: string | null
+          seed_config: Json | null
           setup_state: string
           tenant_id: string
           test_users: Json
@@ -3073,6 +3075,8 @@ export type Database = {
           created_by: string
           id?: string
           preset_name?: string
+          qa_status?: string | null
+          seed_config?: Json | null
           setup_state?: string
           tenant_id: string
           test_users?: Json
@@ -3084,6 +3088,8 @@ export type Database = {
           created_by?: string
           id?: string
           preset_name?: string
+          qa_status?: string | null
+          seed_config?: Json | null
           setup_state?: string
           tenant_id?: string
           test_users?: Json
