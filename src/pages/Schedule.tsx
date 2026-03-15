@@ -51,6 +51,14 @@ export default function Schedule() {
   const [selectedDept, setSelectedDept] = useState("FOH");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
 
+  // Reset page-local state on tenant switch
+  const resetPageState = useCallback(() => {
+    setSelectedBranch("");
+    setSelectedDept("FOH");
+    setQuickFilter("all");
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
+
   // Apply stored default view preference on first load
   useEffect(() => {
     if (schedPrefs && !viewModeInitialized) {
