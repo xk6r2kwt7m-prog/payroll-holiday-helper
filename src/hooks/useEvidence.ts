@@ -8,9 +8,11 @@ export function useEvidenceRequests(employeeId?: string) {
   return useQuery({
     queryKey: ["evidence_requests", tenantId, employeeId],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("evidence_requests" as any)
         .select("*, employees(id, forename, surname)")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
       if (employeeId) query = query.eq("employee_id", employeeId);
       const { data, error } = await query;
