@@ -259,7 +259,7 @@ export function useCreateSandbox() {
               period_name: `${lastMonth.toLocaleString("en", { month: "long", year: "numeric" })}`,
               start_date: lastMonth.toISOString().split("T")[0],
               end_date: lastMonthEnd.toISOString().split("T")[0],
-              status: "closed",
+              status: "approved" as any,
             },
             {
               tenant_id: tenant.id,
