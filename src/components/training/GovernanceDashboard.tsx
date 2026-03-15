@@ -78,6 +78,13 @@ export function GovernanceDashboard({ metrics, onFilterSelect, activeFilter, mod
     { key: "gov_high_risk", label: "High-risk concern", value: metrics.highRiskConcern, icon: <AlertTriangle className="h-3.5 w-3.5" />, color: "text-warning", urgent: true },
   ].filter(c => c.value > 0);
 
+  const contentGapCards: MetricCard[] = [
+    { key: "no_evidence", label: "No evidence", value: metrics.noEvidence, icon: <BookOpen className="h-3.5 w-3.5" />, color: "text-muted-foreground" },
+    { key: "no_insights", label: "No insights", value: metrics.noInsights, icon: <Eye className="h-3.5 w-3.5" />, color: "text-muted-foreground" },
+    { key: "no_scenarios", label: "No scenarios", value: metrics.noScenarios, icon: <AlertCircle className="h-3.5 w-3.5" />, color: "text-muted-foreground" },
+    { key: "no_learning_outcomes", label: "No outcomes", value: metrics.noLearningOutcomes, icon: <AlertCircle className="h-3.5 w-3.5" />, color: "text-muted-foreground" },
+  ].filter(c => c.value > 0);
+
   // Build priority queue from modules
   const queueItems = (modules && govCounts) ? buildPriorityQueue(modules, govCounts) : [];
   const visibleQueue = queueExpanded ? queueItems : queueItems.slice(0, MAX_QUEUE_ITEMS);
