@@ -37,7 +37,16 @@ import { exportToCsv } from "@/lib/csv-export";
 import { writeTrainingAudit } from "@/hooks/useTrainingLibrary";
 import { toast } from "sonner";
 import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
+import { EvidencePanel } from "@/components/training/EvidencePanel";
+import { ReviewInsightsPanel } from "@/components/training/ReviewInsightsPanel";
+import { EvidenceCompletenessBar } from "@/components/training/EvidenceCompletenessBar";
 import { OPERATIONAL_AREA_LABELS, type OperationalArea } from "@/data/training-standards/types";
+import {
+  COMPLETENESS_LABELS,
+  deriveEvidenceCompleteness,
+  useModuleEvidence,
+  type EvidenceCompletenessStatus,
+} from "@/hooks/useModuleEvidence";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
