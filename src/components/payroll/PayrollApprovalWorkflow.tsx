@@ -59,12 +59,14 @@ export function PayrollApprovalWorkflow({
 }: PayrollApprovalWorkflowProps) {
   const currentStepIndex = workflowSteps.findIndex(s => s.status === period.status);
   const hasUnmatchedEmployees = period.notes?.includes("⚠ PENDING:");
+  const { tenantId } = useTenant();
   
   // Audit gate: run period-level audit for pending/draft periods
   const shouldAudit = period.status === "draft" || period.status === "pending";
   const { data: auditFindings = [], isLoading: auditLoading } = usePeriodAudit(
     shouldAudit ? period.id : undefined,
-    shouldAudit
+    shouldAudit,
+    tenantId
   );
   const auditErrors = auditFindings.filter(f => f.severity === "error");
   const auditWarnings = auditFindings.filter(f => f.severity === "warning");
