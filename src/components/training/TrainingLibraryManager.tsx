@@ -40,6 +40,7 @@ import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
 import { EvidencePanel } from "@/components/training/EvidencePanel";
 import { ReviewInsightsPanel } from "@/components/training/ReviewInsightsPanel";
 import { EvidenceCompletenessBar } from "@/components/training/EvidenceCompletenessBar";
+import { ModuleGovernanceSummary } from "@/components/training/ModuleGovernanceSummary";
 import { OPERATIONAL_AREA_LABELS, type OperationalArea } from "@/data/training-standards/types";
 import {
   COMPLETENESS_LABELS,
@@ -47,6 +48,9 @@ import {
   useModuleEvidence,
   type EvidenceCompletenessStatus,
 } from "@/hooks/useModuleEvidence";
+import { useGovernanceSummary } from "@/hooks/useGovernanceSummary";
+import { useReviewInsights } from "@/hooks/useReviewInsights";
+import { getReviewState } from "@/lib/review-governance";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -57,6 +61,7 @@ export function TrainingLibraryManager() {
   const updateStatus = useUpdateModuleStatus();
   const canManage = usePermission("manage_training");
   const { tenantId } = useTenant();
+  const { data: govCounts = {} } = useGovernanceSummary(canManage);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -78,8 +83,12 @@ export function TrainingLibraryManager() {
     const matchesOpArea = opAreaFilter === "all" || (item.standards_metadata as any)?.operational_area === opAreaFilter;
     const matchesMandatory = !mandatoryFilter || item.is_mandatory;
     const matchesEvidence = evidenceFilter === "all" ||
-      (evidenceFilter === "reviewed" && !!item.last_reviewed_at) ||
-      (evidenceFilter === "not_reviewed" && !item.last_reviewed_at);
+      (evidenceFilter === "reviewed" && !!item.last_reviewed_at && getReviewState(item.last_reviewed_at) === "current") ||
+      (evidenceFilter === "not_reviewed" && !item.last_reviewed_at) ||
+      (evidenceFilter === "stale" && getReviewState(item.last_reviewed_at) === "stale") ||
+      (evidenceFilter === "has_evidence" && (govCounts[item.id]?.evidenceCount ?? 0) > 0) ||
+      (evidenceFilter === "no_evidence" && (govCounts[item.id]?.evidenceCount ?? 0) === 0) ||
+      (evidenceFilter === "has_insights" && (govCounts[item.id]?.insightCount ?? 0) > 0);
     return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory && matchesEvidence;
   });
 
@@ -217,9 +226,13 @@ export function TrainingLibraryManager() {
               <Select value={evidenceFilter} onValueChange={setEvidenceFilter}>
                 <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue placeholder="Evidence" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Evidence</SelectItem>
+                  <SelectItem value="all">Governance</SelectItem>
                   <SelectItem value="reviewed">Reviewed</SelectItem>
-                  <SelectItem value="not_reviewed">Not Reviewed</SelectItem>
+                  <SelectItem value="not_reviewed">Never Reviewed</SelectItem>
+                  <SelectItem value="stale">Stale Review</SelectItem>
+                  <SelectItem value="has_evidence">Has Evidence</SelectItem>
+                  <SelectItem value="no_evidence">No Evidence</SelectItem>
+                  <SelectItem value="has_insights">Has Insights</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -246,6 +259,8 @@ export function TrainingLibraryManager() {
           const stats = getAssignmentStats(item.id);
           const catLabel = LIBRARY_CATEGORIES.find(c => c.value === item.category)?.label || item.category;
           const isPlatform = item.source_type === "platform";
+          const itemGov = canManage ? govCounts[item.id] : undefined;
+          const reviewState = canManage ? getReviewState(item.last_reviewed_at ?? null) : undefined;
           return (
             <div key={item.id}
               className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm cursor-pointer active:bg-muted transition-all"
@@ -269,9 +284,25 @@ export function TrainingLibraryManager() {
                   <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>
                   {item.is_mandatory && <Badge className="text-[10px] bg-destructive/10 text-destructive">Mandatory</Badge>}
                   {item.version > 1 && <Badge variant="secondary" className="text-[10px]">v{item.version}</Badge>}
-                  {canManage && item.last_reviewed_at && (
+                  {/* Admin governance indicators */}
+                  {canManage && reviewState === "current" && (
+                    <Badge variant="outline" className="text-[9px] text-success gap-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Reviewed
+                    </Badge>
+                  )}
+                  {canManage && reviewState === "stale" && (
+                    <Badge className="text-[9px] bg-warning/10 text-warning gap-0.5">
+                      <AlertTriangle className="h-2.5 w-2.5" /> Stale
+                    </Badge>
+                  )}
+                  {canManage && itemGov && itemGov.evidenceCount > 0 && (
                     <Badge variant="outline" className="text-[9px] text-muted-foreground gap-0.5">
-                      <Clock className="h-2.5 w-2.5" /> Reviewed
+                      <BookOpen className="h-2.5 w-2.5" /> {itemGov.evidenceCount}
+                    </Badge>
+                  )}
+                  {canManage && itemGov && itemGov.insightCount > 0 && (
+                    <Badge variant="outline" className="text-[9px] text-muted-foreground gap-0.5">
+                      <Eye className="h-2.5 w-2.5" /> {itemGov.insightCount}
                     </Badge>
                   )}
                 </div>
@@ -802,18 +833,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
           )}
           {canManage && (
             <TabsContent value="standards" className="space-y-3 mt-3">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Evidence & Research</p>
-              <EvidenceCompletenessBar
-                documentId={module.id}
-                lastReviewedAt={module.last_reviewed_at ?? null}
-                lastReviewedBy={module.last_reviewed_by ?? null}
-                canEdit={canEdit}
-              />
-              <EvidencePanel documentId={module.id} canEdit={canEdit} />
-              <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
-              {module.standards_metadata && (
-                <WhyThisMattersPanel metadata={module.standards_metadata} />
-              )}
+              <StandardsTabContent module={module} canEdit={canEdit} />
             </TabsContent>
           )}
         </Tabs>
@@ -831,7 +851,36 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ─── Add Module Dialog ───
+// ─── Standards Tab Content ───
+
+function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem; canEdit: boolean }) {
+  const { data: evidence = [] } = useModuleEvidence(module.id);
+  const { data: insights = [] } = useReviewInsights(module.id);
+  const activeEvidence = evidence.filter(e => e.is_active);
+  const activeInsights = insights.filter(i => i.is_active);
+
+  return (
+    <>
+      <ModuleGovernanceSummary
+        lastReviewedAt={module.last_reviewed_at ?? null}
+        counts={{ evidenceCount: activeEvidence.length, insightCount: activeInsights.length }}
+        evidence={evidence}
+      />
+      <EvidenceCompletenessBar
+        documentId={module.id}
+        lastReviewedAt={module.last_reviewed_at ?? null}
+        lastReviewedBy={module.last_reviewed_by ?? null}
+        canEdit={canEdit}
+      />
+      <EvidencePanel documentId={module.id} canEdit={canEdit} />
+      <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
+      {module.standards_metadata && (
+        <WhyThisMattersPanel metadata={module.standards_metadata} />
+      )}
+    </>
+  );
+}
+
 
 function AddModuleDialog() {
   const [open, setOpen] = useState(false);
