@@ -117,6 +117,7 @@ export function TrainingLibraryManager() {
         case "has_evidence": matchesEvidence = counts.evidenceCount > 0; break;
         case "no_evidence": matchesEvidence = counts.evidenceCount === 0; break;
         case "has_insights": matchesEvidence = counts.insightCount > 0; break;
+        case "no_insights": matchesEvidence = counts.insightCount === 0; break;
         // Governance dashboard filters
         case "gov_ready": matchesEvidence = health === "ready"; break;
         case "gov_weak": matchesEvidence = health === "weak"; break;
@@ -124,8 +125,6 @@ export function TrainingLibraryManager() {
         case "gov_mandatory_weak": matchesEvidence = item.is_mandatory && (health === "weak" || health === "unreviewed"); break;
         case "gov_high_risk": matchesEvidence = (item.standards_metadata as any)?.service_risk_level === "high" && health !== "ready"; break;
         // Content gap filters
-        case "no_evidence": matchesEvidence = counts.evidenceCount === 0; break;
-        case "no_insights": matchesEvidence = counts.insightCount === 0; break;
         case "no_scenarios": {
           const meta = item.standards_metadata as any;
           matchesEvidence = !meta?.scenario_examples || meta.scenario_examples.length === 0;
