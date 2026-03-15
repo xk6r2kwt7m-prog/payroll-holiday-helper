@@ -77,6 +77,20 @@ export function TrainingLibraryManager() {
   // Only show tenant modules + adapted in main library
   const tenantModules = library.filter(i => i.tenant_id !== null || i.source_type === "adapted");
 
+  // Governance metrics (admin-only, computed once)
+  const govMetrics = canManage ? computeGovernanceMetrics(tenantModules, govCounts) : null;
+
+  // Helper: classify a single module for filtering
+  const getModuleHealth = (item: TrainingLibraryItem): GovernanceHealth => {
+    const counts = govCounts[item.id] ?? { evidenceCount: 0, insightCount: 0 };
+    return classifyGovernance({
+      lastReviewedAt: item.last_reviewed_at ?? null,
+      counts,
+      isMandatory: item.is_mandatory,
+      serviceRiskLevel: (item.standards_metadata as any)?.service_risk_level,
+    });
+  };
+
   const filtered = tenantModules.filter(item => {
     const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.summary?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -85,13 +99,28 @@ export function TrainingLibraryManager() {
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     const matchesOpArea = opAreaFilter === "all" || (item.standards_metadata as any)?.operational_area === opAreaFilter;
     const matchesMandatory = !mandatoryFilter || item.is_mandatory;
-    const matchesEvidence = evidenceFilter === "all" ||
-      (evidenceFilter === "reviewed" && !!item.last_reviewed_at && getReviewState(item.last_reviewed_at) === "current") ||
-      (evidenceFilter === "not_reviewed" && !item.last_reviewed_at) ||
-      (evidenceFilter === "stale" && getReviewState(item.last_reviewed_at) === "stale") ||
-      (evidenceFilter === "has_evidence" && (govCounts[item.id]?.evidenceCount ?? 0) > 0) ||
-      (evidenceFilter === "no_evidence" && (govCounts[item.id]?.evidenceCount ?? 0) === 0) ||
-      (evidenceFilter === "has_insights" && (govCounts[item.id]?.insightCount ?? 0) > 0);
+
+    // Evidence / governance filters
+    let matchesEvidence = true;
+    if (evidenceFilter !== "all") {
+      const counts = govCounts[item.id] ?? { evidenceCount: 0, insightCount: 0 };
+      const health = getModuleHealth(item);
+      switch (evidenceFilter) {
+        case "reviewed": matchesEvidence = !!item.last_reviewed_at && getReviewState(item.last_reviewed_at) === "current"; break;
+        case "not_reviewed": matchesEvidence = !item.last_reviewed_at; break;
+        case "stale": matchesEvidence = getReviewState(item.last_reviewed_at ?? null) === "stale"; break;
+        case "has_evidence": matchesEvidence = counts.evidenceCount > 0; break;
+        case "no_evidence": matchesEvidence = counts.evidenceCount === 0; break;
+        case "has_insights": matchesEvidence = counts.insightCount > 0; break;
+        // Governance dashboard filters
+        case "gov_ready": matchesEvidence = health === "ready"; break;
+        case "gov_weak": matchesEvidence = health === "weak"; break;
+        case "gov_partial": matchesEvidence = health === "partial"; break;
+        case "gov_mandatory_weak": matchesEvidence = item.is_mandatory && (health === "weak" || health === "unreviewed"); break;
+        case "gov_high_risk": matchesEvidence = (item.standards_metadata as any)?.service_risk_level === "high" && health !== "ready"; break;
+        default: matchesEvidence = true;
+      }
+    }
     return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory && matchesEvidence;
   });
 
