@@ -18,6 +18,8 @@ import { EvidenceRequestDialog } from "@/components/attendance/EvidenceRequestDi
 import { useI18n } from "@/hooks/useI18n";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { usePermission } from "@/hooks/useRolePermissions";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Timesheets() {
   const { t } = useI18n();
