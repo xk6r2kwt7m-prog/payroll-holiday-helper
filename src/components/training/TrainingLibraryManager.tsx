@@ -1005,6 +1005,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem; canEdit: boolean }) {
   const { data: evidence = [] } = useModuleEvidence(module.id);
   const { data: insights = [] } = useReviewInsights(module.id);
+  const { latestByModule: effByModule, records: allEffRecords } = useTrainingEffectiveness(true);
   const activeEvidence = evidence.filter(e => e.is_active);
   const activeInsights = insights.filter(i => i.is_active);
 
