@@ -311,7 +311,30 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
     pass_mark: String(module.pass_mark || 80),
   });
 
+  const [showPublishWarning, setShowPublishWarning] = useState(false);
+
+  const isCriticalChange = module.status === "published" && editMode && (
+    editForm.completion_type !== module.completion_type ||
+    editForm.pass_mark !== String(module.pass_mark || 80) ||
+    editForm.is_mandatory !== module.is_mandatory
+  );
+
   const handleSaveEdit = () => {
+    if (module.status === "published" && !showPublishWarning) {
+      setShowPublishWarning(true);
+      return;
+    }
+    const changedFields = Object.keys(editForm).filter(k => {
+      const orig = k === "estimated_minutes" ? (module.estimated_minutes ? String(module.estimated_minutes) : "") :
+        k === "refresher_days" ? (module.refresher_days ? String(module.refresher_days) : "") :
+        k === "pass_mark" ? String(module.pass_mark || 80) :
+        k === "summary" ? (module.summary || "") :
+        k === "description" ? (module.description || "") :
+        k === "audience_scope" ? (module.audience_scope || "all_staff") :
+        (module as Record<string, unknown>)[k];
+      return (editForm as Record<string, unknown>)[k] !== orig;
+    });
+
     updateItem.mutate({
       id: module.id,
       updates: {
@@ -326,10 +349,12 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
         refresher_days: editForm.refresher_days ? parseInt(editForm.refresher_days) : null,
         pass_mark: parseInt(editForm.pass_mark) || 80,
         requires_quiz: editForm.completion_type === "quiz" || editForm.completion_type === "blended",
-      } as any,
+      },
+      changeSummary: `Fields changed: ${changedFields.join(", ") || "none"}`,
     }, {
       onSuccess: () => {
         setEditMode(false);
+        setShowPublishWarning(false);
         onOpenChange(false);
       },
     });
