@@ -2,6 +2,7 @@ import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2, Trash2, ShieldAle
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePeriodAudit, type AuditFinding } from "@/hooks/usePayrollAudit";
+import { useTenant } from "@/hooks/useTenant";
 import {
   AlertDialog,
   AlertDialogAction,
