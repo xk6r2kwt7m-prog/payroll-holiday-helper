@@ -136,11 +136,11 @@ export function AdminHome() {
       {/* KPI Strip — hide when all zeros for new tenants */}
       {!isNewTenant && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {kpis.map((kpi) => (
-              <Link key={kpi.label} to={kpi.path} className="rounded-xl bg-card border border-border p-3 text-center shadow-sm active:bg-muted transition-all">
-                <p className={cn("text-lg font-bold tabular-nums leading-none", kpi.color)}>{kpi.value}</p>
-                <p className="text-[10px] font-semibold text-muted-foreground mt-1.5 uppercase tracking-wider">{kpi.label}</p>
+              <Link key={kpi.label} to={kpi.path} className="rounded-xl bg-card border border-border p-3 text-center shadow-sm active:bg-muted transition-all min-w-0">
+                <p className={cn("text-lg font-bold tabular-nums leading-none truncate", kpi.color)}>{kpi.value}</p>
+                <p className="text-[10px] font-semibold text-muted-foreground mt-1.5 uppercase tracking-wider truncate">{kpi.label}</p>
               </Link>
             ))}
           </div>
