@@ -42,6 +42,7 @@ import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
 import ResetPassword from "./pages/ResetPassword";
 import TalentPool from "./pages/TalentPool";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 import Vacancies from "./pages/Vacancies";
 import Workforce from "./pages/Workforce";
 import LabourCostPreview from "./pages/LabourCostPreview";
@@ -137,7 +138,7 @@ const App = () => (
             <Route path="/locations" element={<ProtectedRoute requiredRole="admin"><Locations /></ProtectedRoute>} />
             <Route path="/locations/:branch" element={<ProtectedRoute requiredRole="admin"><LocationDashboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute requiredRole="admin" requiredPermission="access_admin_centre"><Settings /></ProtectedRoute>} />
-            <Route path="/talent-pool" element={<ProtectedRoute requiredRole="staff"><TalentPool /></ProtectedRoute>} />
+            <Route path={TALENT_POOL_ROUTE} element={<ProtectedRoute requiredRole="staff"><TalentPool /></ProtectedRoute>} />
             <Route path="/vacancies" element={<ProtectedRoute requiredRole="admin"><Vacancies /></ProtectedRoute>} />
 
             {/* FOH Training — staff+ */}

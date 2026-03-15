@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ChevronRight, Save, Loader2 } from "lucide-react";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 import { ProtectedBadge } from "./ProtectedBadge";
 import { toast } from "sonner";
 import { useTenantPreferences, useSaveTenantPreferences, type PreferenceCategory } from "@/hooks/useTenantPreferences";
@@ -239,7 +240,7 @@ export function TalentPoolSettings() {
       <ToggleRow label="Prompt leavers for opt-in" desc="Ask departing staff if they'd like to join the talent pool" checked={promptLeavers} onChange={setPromptLeavers} />
       <ToggleRow label="Share profiles regionally" desc="Allow other companies in your region to discover former staff (with consent)" checked={shareRegionally} onChange={setShareRegionally} />
       <Separator />
-      <SettingLink label="Talent Pool" description="Browse talent profiles and manage hiring requests" to="/talent-pool" />
+      <SettingLink label="Talent Pool" description="Browse talent profiles and manage hiring requests" to={TALENT_POOL_ROUTE} />
       <div className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/50 text-xs text-muted-foreground">
         🚧 Talent pool preferences are not yet enforced. Configuration will be connected in a future update.
       </div>

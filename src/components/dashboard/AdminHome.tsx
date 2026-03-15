@@ -15,6 +15,7 @@ import { formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { useI18n } from "@/hooks/useI18n";
 import { useTenant } from "@/hooks/useTenant";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 import { DocumentRequestsWidget } from "@/components/dashboard/DocumentRequestsWidget";
 import { TeamReadinessWidget } from "@/components/dashboard/TeamReadinessWidget";
 import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
@@ -105,7 +106,7 @@ export function AdminHome() {
 
   const moduleLinks = [
     { icon: Calendar, label: "Holidays", path: "/holidays", desc: `${pendingRequests.length} pending` },
-    { icon: Sparkles, label: "Talent Pool", path: "/talent-pool?tab=browse", desc: "Search candidates" },
+    { icon: Sparkles, label: "Talent Pool", path: `${TALENT_POOL_ROUTE}?tab=browse`, desc: "Search candidates" },
     { icon: UserPlus, label: "Onboarding", path: "/onboarding", desc: "Manage new starters" },
     { icon: MapPin, label: "Locations", path: "/locations", desc: "Branches & geofences" },
     { icon: FileText, label: "Contracts", path: "/contracts", desc: "Templates & signing" },

@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
-import { Users, Search, FileText, CreditCard, ChevronRight, Sparkles } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Search, FileText, CreditCard, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 
 export function TalentPoolWidget() {
   const { tenantId } = useTenant();
@@ -55,16 +55,16 @@ export function TalentPoolWidget() {
   ];
 
   const actions = [
-    { label: "View Talent", icon: Search, path: "/talent-pool?tab=browse", primary: true },
-    { label: "Requests", icon: FileText, path: "/talent-pool?tab=requests", primary: false },
-    { label: "Billing", icon: CreditCard, path: "/talent-pool?tab=billing", primary: false },
+    { label: "View Talent", icon: Search, path: `${TALENT_POOL_ROUTE}?tab=browse`, primary: true },
+    { label: "Requests", icon: FileText, path: `${TALENT_POOL_ROUTE}?tab=requests`, primary: false },
+    { label: "Billing", icon: CreditCard, path: `${TALENT_POOL_ROUTE}?tab=billing`, primary: false },
   ];
 
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Talent Pool</h2>
-        <Link to="/talent-pool?tab=browse" className="text-xs text-primary font-medium flex items-center gap-0.5">
+        <Link to={`${TALENT_POOL_ROUTE}?tab=browse`} className="text-xs text-primary font-medium flex items-center gap-0.5">
           View all <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
