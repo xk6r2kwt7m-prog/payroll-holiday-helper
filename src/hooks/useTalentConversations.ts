@@ -175,7 +175,7 @@ export function useWorkerConversations(enabled = true) {
   });
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !enabled) return;
     const channel = supabase
       .channel(`worker-conv-${user.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "talent_messages" }, () => {
@@ -183,7 +183,7 @@ export function useWorkerConversations(enabled = true) {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id, qc]);
+  }, [user?.id, enabled, qc]);
 
   return query;
 }
