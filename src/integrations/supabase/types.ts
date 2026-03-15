@@ -3061,6 +3061,10 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          last_impersonated_at: string | null
+          last_qa_note_at: string | null
+          last_rebuilt_at: string | null
+          last_smoke_test_at: string | null
           preset_name: string
           qa_status: string | null
           seed_config: Json | null
@@ -3074,6 +3078,10 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          last_impersonated_at?: string | null
+          last_qa_note_at?: string | null
+          last_rebuilt_at?: string | null
+          last_smoke_test_at?: string | null
           preset_name?: string
           qa_status?: string | null
           seed_config?: Json | null
@@ -3087,6 +3095,10 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          last_impersonated_at?: string | null
+          last_qa_note_at?: string | null
+          last_rebuilt_at?: string | null
+          last_smoke_test_at?: string | null
           preset_name?: string
           qa_status?: string | null
           seed_config?: Json | null

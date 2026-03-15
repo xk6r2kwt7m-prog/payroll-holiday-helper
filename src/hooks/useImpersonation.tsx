@@ -53,6 +53,9 @@ export function ImpersonationProvider({ children }: { children: ReactNode }) {
       impersonated_user_label: sandboxUser.label,
     }).select("id").single();
 
+    // Update last_impersonated_at on sandbox record
+    await supabase.from("sandbox_tenants").update({ last_impersonated_at: new Date().toISOString() } as any).eq("tenant_id", tenantId);
+
     setState({
       active: true,
       sandboxTenantId: tenantId,

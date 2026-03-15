@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { Activity, Check, X, Minus, RotateCcw } from "lucide-react";
 
 type SmokeStatus = "pass" | "fail" | "untested";
@@ -50,6 +51,8 @@ export function SmokeTestPanel({ sandboxId }: SmokeTestPanelProps) {
     const current = results[key] || "untested";
     const next = order[(order.indexOf(current) + 1) % order.length];
     setResults((prev) => ({ ...prev, [key]: next }));
+    // Fire-and-forget timestamp update
+    supabase.from("sandbox_tenants").update({ last_smoke_test_at: new Date().toISOString() } as any).eq("id", sandboxId).then();
   };
 
   const reset = () => {
