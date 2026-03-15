@@ -4034,6 +4034,112 @@ export type Database = {
           },
         ]
       }
+      talent_blocks: {
+        Row: {
+          blocked_tenant_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          talent_profile_id: string
+        }
+        Insert: {
+          blocked_tenant_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          talent_profile_id: string
+        }
+        Update: {
+          blocked_tenant_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          talent_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_blocks_blocked_tenant_id_fkey"
+            columns: ["blocked_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_blocks_talent_profile_id_fkey"
+            columns: ["talent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "talent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_contact_unlocks: {
+        Row: {
+          blocked_at: string | null
+          candidate_responded_at: string | null
+          candidate_response: string
+          conversation_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          purchase_id: string | null
+          talent_profile_id: string
+          tenant_id: string
+          unlocked_at: string
+          unlocked_by: string
+        }
+        Insert: {
+          blocked_at?: string | null
+          candidate_responded_at?: string | null
+          candidate_response?: string
+          conversation_id?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          purchase_id?: string | null
+          talent_profile_id: string
+          tenant_id: string
+          unlocked_at?: string
+          unlocked_by: string
+        }
+        Update: {
+          blocked_at?: string | null
+          candidate_responded_at?: string | null
+          candidate_response?: string
+          conversation_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          purchase_id?: string | null
+          talent_profile_id?: string
+          tenant_id?: string
+          unlocked_at?: string
+          unlocked_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_contact_unlocks_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "talent_credit_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_contact_unlocks_talent_profile_id_fkey"
+            columns: ["talent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "talent_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_contact_unlocks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talent_conversations: {
         Row: {
           application_id: string | null
@@ -4085,6 +4191,137 @@ export type Database = {
             columns: ["talent_profile_id"]
             isOneToOne: false
             referencedRelation: "talent_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_credit_packs: {
+        Row: {
+          created_at: string
+          credits: number
+          id: string
+          is_active: boolean
+          name: string
+          price_amount: number
+          price_currency: string
+          sort_order: number
+          updated_at: string
+          validity_days: number
+        }
+        Insert: {
+          created_at?: string
+          credits: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price_amount: number
+          price_currency?: string
+          sort_order?: number
+          updated_at?: string
+          validity_days?: number
+        }
+        Update: {
+          created_at?: string
+          credits?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_amount?: number
+          price_currency?: string
+          sort_order?: number
+          updated_at?: string
+          validity_days?: number
+        }
+        Relationships: []
+      }
+      talent_credit_purchases: {
+        Row: {
+          created_at: string
+          credits_purchased: number
+          credits_remaining: number
+          expires_at: string
+          id: string
+          pack_id: string
+          price_currency: string
+          price_paid: number
+          purchased_by: string
+          status: string
+          stripe_payment_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_purchased: number
+          credits_remaining: number
+          expires_at: string
+          id?: string
+          pack_id: string
+          price_currency?: string
+          price_paid: number
+          purchased_by: string
+          status?: string
+          stripe_payment_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_purchased?: number
+          credits_remaining?: number
+          expires_at?: string
+          id?: string
+          pack_id?: string
+          price_currency?: string
+          price_paid?: number
+          purchased_by?: string
+          status?: string
+          stripe_payment_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_credit_purchases_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "talent_credit_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_credit_purchases_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_credit_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_credit_wallets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -5758,9 +5995,18 @@ export type Database = {
         Args: { _conversation_id: string; _reader_sender_type: string }
         Returns: undefined
       }
+      purchase_talent_credits: { Args: { _pack_id: string }; Returns: Json }
+      respond_to_contact_request: {
+        Args: { _block_reason?: string; _response: string; _unlock_id: string }
+        Returns: Json
+      }
       seed_default_departments: {
         Args: { _tenant_id: string }
         Returns: undefined
+      }
+      unlock_talent_contact: {
+        Args: { _intro_message?: string; _talent_profile_id: string }
+        Returns: Json
       }
     }
     Enums: {
