@@ -28,7 +28,7 @@ export function TalentOptInDialog({
   const upsertProfile = useUpsertTalentProfile();
   const [optIn, setOptIn] = useState(false);
   const [form, setForm] = useState({
-    visibility_mode: "previous_employer_only",
+    visibility_mode: "all_approved",
     preferred_countries: "",
     preferred_locations: "",
     profile_summary: "",
