@@ -42,7 +42,8 @@ Deno.serve(async (req) => {
         work_eligibility_countries, willing_to_relocate, willing_to_travel,
         available_from, employees!inner(forename, surname)`)
       .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"])
-      .neq("visibility_mode", "hidden");
+      .neq("visibility_mode", "hidden")
+      .neq("tenant_id", tenant_id); // CRITICAL: Exclude profiles from requesting tenant (origin-tenant exclusion)
 
     if (profError) throw profError;
     if (!profiles || profiles.length === 0) {
