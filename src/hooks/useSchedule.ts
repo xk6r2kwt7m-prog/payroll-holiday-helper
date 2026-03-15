@@ -28,15 +28,18 @@ export function useBranchLocations() {
 }
 
 export function useShifts(startDate?: string, endDate?: string, branch?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["shifts", startDate, endDate, branch],
+    queryKey: ["shifts", tenantId, startDate, endDate, branch],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("shifts")
         .select(`
           *,
           employees (id, forename, surname, department, status)
         `)
+        .eq("tenant_id", tenantId)
         .order("start_time");
 
       if (startDate) query = query.gte("shift_date", startDate);
@@ -47,7 +50,7 @@ export function useShifts(startDate?: string, endDate?: string, branch?: string)
       if (error) throw error;
       return data;
     },
-    enabled: !!startDate,
+    enabled: !!startDate && !!tenantId,
   });
 }
 

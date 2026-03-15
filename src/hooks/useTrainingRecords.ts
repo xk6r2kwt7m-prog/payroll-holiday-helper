@@ -35,18 +35,22 @@ export const CERTIFICATION_TYPES = [
 ];
 
 export function useTrainingRecords(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["training_records", employeeId],
+    queryKey: ["training_records", tenantId, employeeId],
     queryFn: async () => {
+      if (!tenantId) return [] as TrainingRecord[];
       let q = supabase
         .from("training_records" as any)
         .select("*, employees(forename, surname, department)")
+        .eq("tenant_id", tenantId)
         .order("expiry_date", { ascending: true });
       if (employeeId) q = q.eq("employee_id", employeeId);
       const { data, error } = await q;
       if (error) throw error;
       return (data || []) as unknown as TrainingRecord[];
     },
+    enabled: !!tenantId,
   });
 }
 

@@ -28,16 +28,20 @@ export interface ReadReceipt {
 }
 
 export function useAnnouncements() {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["staff_announcements"],
+    queryKey: ["staff_announcements", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [] as Announcement[];
       const { data, error } = await supabase
         .from("staff_announcements" as any)
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as Announcement[];
     },
+    enabled: !!tenantId,
   });
 }
 

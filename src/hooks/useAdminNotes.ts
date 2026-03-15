@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenant } from "@/hooks/useTenant";
 
 export interface AdminNote {
   id: string;
@@ -15,12 +16,15 @@ export interface AdminNote {
 }
 
 export function useAdminNotes(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["admin_notes", employeeId],
+    queryKey: ["admin_notes", tenantId, employeeId],
     queryFn: async () => {
+      if (!tenantId) return [] as AdminNote[];
       let query = supabase
         .from("admin_notes" as any)
         .select("*, payroll_periods(period_name)")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       if (employeeId) {
@@ -31,7 +35,7 @@ export function useAdminNotes(employeeId?: string) {
       if (error) throw error;
       return (data || []) as unknown as AdminNote[];
     },
-    enabled: !!employeeId,
+    enabled: !!tenantId && !!employeeId,
   });
 }
 

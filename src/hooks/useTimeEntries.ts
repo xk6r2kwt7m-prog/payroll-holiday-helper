@@ -13,9 +13,11 @@ export function useTimeEntries(
   status?: string,
   branch?: string
 ) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["time_entries", startDate, endDate, status, branch],
+    queryKey: ["time_entries", tenantId, startDate, endDate, status, branch],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("time_entries")
         .select(`
@@ -23,6 +25,7 @@ export function useTimeEntries(
           employees (id, forename, surname, department, status),
           shifts (id, start_time, end_time, shift_date)
         `)
+        .eq("tenant_id", tenantId)
         .order("clock_in_time", { ascending: false });
 
       if (startDate) query = query.gte("clock_in_time", `${startDate}T00:00:00`);
@@ -34,6 +37,7 @@ export function useTimeEntries(
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
