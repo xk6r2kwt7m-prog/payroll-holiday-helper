@@ -16,22 +16,32 @@ import { useOwnTalentProfile } from "@/hooks/useTalentPool";
 const TalentPool = () => {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(
-    tabParam === "my-profile" ? "my-profile"
-    : tabParam === "inbox" ? "inbox"
-    : tabParam === "applications" ? "applications"
-    : "vacancies"
-  );
   const { isAdmin } = useAuth();
   const { data: ownProfile } = useOwnTalentProfile();
 
   const hasWorkerProfile = !!ownProfile;
-  const inboxMode = hasWorkerProfile ? "worker" : (isAdmin ? "employer" : "worker");
+  // Employer mode: admin without a worker profile; Worker mode: everyone else
+  const isEmployerView = isAdmin && !hasWorkerProfile;
+  const inboxMode = isEmployerView ? "employer" : "worker";
+
+  // Default tab: workers land on "vacancies", employers land on "browse" (talent search)
+  const resolveDefaultTab = () => {
+    if (tabParam === "my-profile") return "my-profile";
+    if (tabParam === "inbox") return "inbox";
+    if (tabParam === "applications") return "applications";
+    if (tabParam === "billing" && isAdmin) return "billing";
+    if (tabParam === "browse" && isAdmin) return "browse";
+    if (tabParam === "requests" && isAdmin) return "requests";
+    return isEmployerView ? "browse" : "vacancies";
+  };
+
+  const [activeTab, setActiveTab] = useState(resolveDefaultTab);
 
   useEffect(() => {
-    if (tabParam === "my-profile") setActiveTab("my-profile");
-    if (tabParam === "inbox") setActiveTab("inbox");
-    if (tabParam === "applications") setActiveTab("applications");
+    if (tabParam) {
+      const resolved = resolveDefaultTab();
+      setActiveTab(resolved);
+    }
   }, [tabParam]);
 
   return (
@@ -45,32 +55,39 @@ const TalentPool = () => {
             Talent Pool
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Discover opportunities and verified talent
+            {isEmployerView
+              ? "Search talent and manage hiring"
+              : "Discover opportunities and manage your profile"}
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="h-9 flex-wrap">
+            {/* === Candidate tabs (visible to all) === */}
             <TabsTrigger value="vacancies" className="text-xs gap-1">
               <Briefcase className="h-3.5 w-3.5" /> Jobs
             </TabsTrigger>
             <TabsTrigger value="applications" className="text-xs gap-1">
               <ClipboardList className="h-3.5 w-3.5" /> Applied
             </TabsTrigger>
-            <TabsTrigger value="browse" className="text-xs gap-1">
-              <Search className="h-3.5 w-3.5" /> Talent
-            </TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="requests" className="text-xs gap-1">
-                <FileText className="h-3.5 w-3.5" /> Requests
-              </TabsTrigger>
-            )}
             <TabsTrigger value="inbox" className="text-xs gap-1">
               <MessageSquare className="h-3.5 w-3.5" /> Inbox
             </TabsTrigger>
             <TabsTrigger value="my-profile" className="text-xs gap-1">
               <Users className="h-3.5 w-3.5" /> Profile
             </TabsTrigger>
+
+            {/* === Employer-only tabs (admin only) === */}
+            {isAdmin && (
+              <TabsTrigger value="browse" className="text-xs gap-1">
+                <Search className="h-3.5 w-3.5" /> Talent
+              </TabsTrigger>
+            )}
+            {isAdmin && (
+              <TabsTrigger value="requests" className="text-xs gap-1">
+                <FileText className="h-3.5 w-3.5" /> Requests
+              </TabsTrigger>
+            )}
             {isAdmin && (
               <TabsTrigger value="billing" className="text-xs gap-1">
                 <CreditCard className="h-3.5 w-3.5" /> Billing
@@ -78,6 +95,7 @@ const TalentPool = () => {
             )}
           </TabsList>
 
+          {/* Candidate content */}
           <TabsContent value="vacancies" className="mt-4">
             <VacancyBrowse />
           </TabsContent>
@@ -86,16 +104,6 @@ const TalentPool = () => {
             <MyApplications />
           </TabsContent>
 
-          <TabsContent value="browse" className="mt-4">
-            <TalentSearch />
-          </TabsContent>
-
-          {isAdmin && (
-            <TabsContent value="requests" className="mt-4">
-              <TalentRequestList />
-            </TabsContent>
-          )}
-
           <TabsContent value="inbox" className="mt-4">
             <TalentInbox mode={inboxMode} />
           </TabsContent>
@@ -103,6 +111,19 @@ const TalentPool = () => {
           <TabsContent value="my-profile" className="mt-4">
             <TalentProfileManager />
           </TabsContent>
+
+          {/* Employer content */}
+          {isAdmin && (
+            <TabsContent value="browse" className="mt-4">
+              <TalentSearch />
+            </TabsContent>
+          )}
+
+          {isAdmin && (
+            <TabsContent value="requests" className="mt-4">
+              <TalentRequestList />
+            </TabsContent>
+          )}
 
           {isAdmin && (
             <TabsContent value="billing" className="mt-4">
