@@ -72,13 +72,16 @@ export function useEmployerConversations() {
         });
       }
 
+      // C1 FIX: Only expose forename + surname initial to employer
       return (data || []).map((c: any) => ({
         ...c,
         other_party_name: c.talent_profiles?.employees
-          ? `${c.talent_profiles.employees.forename} ${c.talent_profiles.employees.surname?.charAt(0) || ""}.`
+          ? `${c.talent_profiles.employees.forename} ${c.talent_profiles.employees.surname?.charAt(0)?.toUpperCase() || ""}.`
           : "Candidate",
         vacancy_title: c.talent_applications?.talent_vacancies?.title || null,
         unread_count: unreadMap[c.id] || 0,
+        // Strip raw join data to prevent accidental full surname access
+        talent_profiles: undefined,
       })) as TalentConversation[];
     },
     enabled: !!tenantId,
@@ -271,19 +274,15 @@ export function useSendMessage() {
   });
 }
 
-// Mark messages as read
+// C2 FIX: Mark messages as read via security-definer RPC (no direct UPDATE)
 export function useMarkMessagesRead() {
   const qc = useQueryClient();
-  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ conversationId, senderType }: { conversationId: string; senderType: string }) => {
-      const { error } = await supabase
-        .from("talent_messages")
-        .update({ read_at: new Date().toISOString() } as any)
-        .eq("conversation_id", conversationId)
-        .eq("sender_type", senderType)
-        .is("read_at", null)
-        .neq("sender_user_id", user!.id);
+      const { error } = await supabase.rpc("mark_talent_messages_read", {
+        _conversation_id: conversationId,
+        _reader_sender_type: senderType,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
