@@ -71,6 +71,11 @@ const TalentPool = () => {
             <TabsTrigger value="my-profile" className="text-xs gap-1">
               <Users className="h-3.5 w-3.5" /> Profile
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="billing" className="text-xs gap-1">
+                <CreditCard className="h-3.5 w-3.5" /> Billing
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="vacancies" className="mt-4">
