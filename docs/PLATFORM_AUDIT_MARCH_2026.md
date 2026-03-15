@@ -162,7 +162,7 @@ Includes:
 | `EvidenceRequestDialog` | Request evidence | Attendance evidence request |
 | `CreateDocumentRequestDialog` | Request document | Document request creation |
 | `GenerateReferenceLetterDialog` | Generate letter | Reference letter generator |
-| `TalentOptInDialog` | Talent opt-in | Talent pool registration |
+| ~~`TalentOptInDialog`~~ | ~~Talent opt-in~~ | Removed — replaced by worker self-activation in TalentProfileManager |
 | `PlanUpgradeDialog` | Upgrade plan | Subscription upgrade prompt |
 | `CommandPalette` | ⌘K | Global search and navigation |
 
