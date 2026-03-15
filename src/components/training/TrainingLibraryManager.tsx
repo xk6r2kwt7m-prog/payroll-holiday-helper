@@ -51,7 +51,11 @@ import {
 import { useGovernanceSummary } from "@/hooks/useGovernanceSummary";
 import { useReviewInsights } from "@/hooks/useReviewInsights";
 import { getReviewState } from "@/lib/review-governance";
-import { classifyGovernance, computeGovernanceMetrics, type GovernanceHealth } from "@/lib/governance-classification";
+import {
+  classifyGovernance, computeGovernanceMetrics, getGovernanceReasons,
+  getGovernanceRecommendation, GOVERNANCE_HEALTH_CONFIG,
+  type GovernanceHealth, type ModuleGovernanceInput,
+} from "@/lib/governance-classification";
 import { GovernanceDashboard } from "@/components/training/GovernanceDashboard";
 import type { ServiceRiskLevel } from "@/data/training-standards/types";
 import {
@@ -199,6 +203,12 @@ export function TrainingLibraryManager() {
           metrics={govMetrics}
           activeFilter={evidenceFilter}
           onFilterSelect={setEvidenceFilter}
+          modules={tenantModules}
+          govCounts={govCounts}
+          onModuleOpen={(id) => {
+            const mod = tenantModules.find(m => m.id === id);
+            if (mod) setSelectedDoc(mod);
+          }}
         />
       )}
 
@@ -420,6 +430,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
   const updateStatus = useUpdateModuleStatus();
   const updateItem = useUpdateLibraryItem();
   const canManage = usePermission("manage_training");
+  const { data: detailGovCounts = {} } = useGovernanceSummary(canManage);
   const isPlatform = module.source_type === "platform" && module.tenant_id === null;
   const isArchived = module.status === "archived";
   const canEdit = canManage && !isPlatform && !isArchived;
@@ -582,6 +593,35 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
             {module.version > 1 && <Badge variant="secondary" className="text-[10px]">v{module.version}</Badge>}
           </div>
         </SheetHeader>
+
+        {/* High-risk governance warning */}
+        {canManage && (() => {
+          const riskLevel = (module.standards_metadata as any)?.service_risk_level as string | undefined;
+          if (riskLevel !== "high") return null;
+          const counts = detailGovCounts[module.id] ?? { evidenceCount: 0, insightCount: 0 };
+          const govInput: ModuleGovernanceInput = {
+            lastReviewedAt: module.last_reviewed_at ?? null,
+            counts,
+            isMandatory: module.is_mandatory,
+            serviceRiskLevel: riskLevel as ServiceRiskLevel,
+          };
+          const health = classifyGovernance(govInput);
+          if (health === "ready") return null;
+          const reasons = getGovernanceReasons(govInput);
+          return (
+            <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-medium text-destructive">High-risk module — governance {GOVERNANCE_HEALTH_CONFIG[health].label.toLowerCase()}</p>
+                  <ul className="text-[10px] text-destructive/80 mt-0.5 space-y-0.5">
+                    {reasons.map((r, i) => <li key={i}>• {r}</li>)}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Approval Actions */}
         {canManage && !isPlatform && (
@@ -908,8 +948,32 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
   const activeEvidence = evidence.filter(e => e.is_active);
   const activeInsights = insights.filter(i => i.is_active);
 
+  // Governance recommendation
+  const riskLevel = (module.standards_metadata as any)?.service_risk_level as ServiceRiskLevel | undefined;
+  const govInput: ModuleGovernanceInput = {
+    lastReviewedAt: module.last_reviewed_at ?? null,
+    counts: { evidenceCount: activeEvidence.length, insightCount: activeInsights.length },
+    isMandatory: module.is_mandatory,
+    serviceRiskLevel: riskLevel,
+  };
+  const recommendation = getGovernanceRecommendation(govInput);
+  const reasons = getGovernanceReasons(govInput);
+  const health = classifyGovernance(govInput);
+
   return (
     <>
+      {/* Recommendation line */}
+      {recommendation && (
+        <div className="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1">
+          <p className="text-[11px] font-medium text-foreground">{recommendation}</p>
+          <div className="flex flex-wrap gap-1">
+            {reasons.map((r, i) => (
+              <span key={i} className="text-[9px] text-muted-foreground">• {r}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <ModuleGovernanceSummary
         lastReviewedAt={module.last_reviewed_at ?? null}
         counts={{ evidenceCount: activeEvidence.length, insightCount: activeInsights.length }}
