@@ -57,6 +57,7 @@ export interface TrainingLibraryItem {
   estimated_minutes: number | null;
   is_mandatory: boolean;
   pass_mark: number | null;
+  standards_metadata: StandardsMetadata | null;
   retry_limit: number | null;
 }
 
