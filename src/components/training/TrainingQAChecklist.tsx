@@ -404,7 +404,7 @@ export function TrainingQAChecklist() {
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowSignOffDialog(false)}>Cancel</Button>
-            <Button onClick={doSignOff} className="gap-1">
+            <Button onClick={doSignOff} disabled={!canSignOff} className="gap-1">
               <ShieldCheck className="h-3.5 w-3.5" /> Confirm Sign-off
             </Button>
           </DialogFooter>
