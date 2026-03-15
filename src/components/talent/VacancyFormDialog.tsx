@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,31 +14,49 @@ interface VacancyFormDialogProps {
   vacancy?: Vacancy | null;
 }
 
+const EMPTY_FORM = {
+  title: "",
+  description: "",
+  location: "",
+  country: "",
+  employment_type: "permanent",
+  hourly_rate_min: "",
+  hourly_rate_max: "",
+  urgency: "normal",
+  start_date: "",
+};
+
 export function VacancyFormDialog({ open, onOpenChange, vacancy }: VacancyFormDialogProps) {
   const createVacancy = useCreateVacancy();
   const updateVacancy = useUpdateVacancy();
   const isEdit = !!vacancy;
 
-  const [form, setForm] = useState({
-    title: vacancy?.title || "",
-    description: vacancy?.description || "",
-    location: vacancy?.location || "",
-    country: vacancy?.country || "",
-    employment_type: vacancy?.employment_type || "permanent",
-    hourly_rate_min: vacancy?.hourly_rate_min?.toString() || "",
-    hourly_rate_max: vacancy?.hourly_rate_max?.toString() || "",
-    urgency: vacancy?.urgency || "normal",
-    start_date: vacancy?.start_date || "",
-  });
+  const [form, setForm] = useState({ ...EMPTY_FORM });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Reset form when dialog opens or vacancy changes
+  useEffect(() => {
+    if (open) {
+      setForm(vacancy ? {
+        title: vacancy.title || "",
+        description: vacancy.description || "",
+        location: vacancy.location || "",
+        country: vacancy.country || "",
+        employment_type: vacancy.employment_type || "permanent",
+        hourly_rate_min: vacancy.hourly_rate_min?.toString() || "",
+        hourly_rate_max: vacancy.hourly_rate_max?.toString() || "",
+        urgency: vacancy.urgency || "normal",
+        start_date: vacancy.start_date || "",
+      } : { ...EMPTY_FORM });
+    }
+  }, [open, vacancy]);
+
+  const handleSubmit = async (publish = false) => {
     if (!form.title.trim()) {
       toast.error("Job title is required");
       return;
     }
 
-    const payload = {
+    const payload: any = {
       title: form.title,
       description: form.description || null,
       location: form.location || null,
@@ -50,13 +68,18 @@ export function VacancyFormDialog({ open, onOpenChange, vacancy }: VacancyFormDi
       start_date: form.start_date || null,
     };
 
+    if (publish) {
+      payload.status = "published";
+      payload.published_at = new Date().toISOString();
+    }
+
     try {
       if (isEdit) {
         await updateVacancy.mutateAsync({ id: vacancy.id, ...payload });
-        toast.success("Vacancy updated");
+        toast.success(publish ? "Vacancy published" : "Vacancy updated");
       } else {
         await createVacancy.mutateAsync(payload);
-        toast.success("Vacancy created as draft");
+        toast.success(publish ? "Vacancy published!" : "Vacancy saved as draft");
       }
       onOpenChange(false);
     } catch {
@@ -64,13 +87,15 @@ export function VacancyFormDialog({ open, onOpenChange, vacancy }: VacancyFormDi
     }
   };
 
+  const isPending = createVacancy.isPending || updateVacancy.isPending;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Vacancy" : "Post a Vacancy"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label>Job Title *</Label>
             <Input
@@ -85,12 +110,13 @@ export function VacancyFormDialog({ open, onOpenChange, vacancy }: VacancyFormDi
             <Textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              rows={3}
+              rows={4}
               placeholder="What does this role involve? What are you looking for?"
+              className="text-sm"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Location</Label>
               <Input
@@ -109,9 +135,9 @@ export function VacancyFormDialog({ open, onOpenChange, vacancy }: VacancyFormDi
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Employment Type</Label>
+              <Label>Type</Label>
               <Select value={form.employment_type} onValueChange={(v) => setForm({ ...form, employment_type: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -129,19 +155,20 @@ export function VacancyFormDialog({ open, onOpenChange, vacancy }: VacancyFormDi
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High — hiring soon</SelectItem>
+                  <SelectItem value="urgent">Urgent — need someone now</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Hourly Rate Min (£)</Label>
               <Input
                 type="number"
                 step="0.01"
+                inputMode="decimal"
                 value={form.hourly_rate_min}
                 onChange={(e) => setForm({ ...form, hourly_rate_min: e.target.value })}
                 placeholder="e.g. 12.00"
@@ -152,6 +179,7 @@ export function VacancyFormDialog({ open, onOpenChange, vacancy }: VacancyFormDi
               <Input
                 type="number"
                 step="0.01"
+                inputMode="decimal"
                 value={form.hourly_rate_max}
                 onChange={(e) => setForm({ ...form, hourly_rate_max: e.target.value })}
                 placeholder="e.g. 16.00"
@@ -168,13 +196,31 @@ export function VacancyFormDialog({ open, onOpenChange, vacancy }: VacancyFormDi
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={createVacancy.isPending || updateVacancy.isPending}>
-              {isEdit ? "Save Changes" : "Create Draft"}
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+              Cancel
             </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => handleSubmit(false)}
+              disabled={isPending}
+              className="w-full sm:w-auto"
+            >
+              {isEdit ? "Save Changes" : "Save Draft"}
+            </Button>
+            {(!isEdit || vacancy?.status === "draft") && (
+              <Button
+                type="button"
+                onClick={() => handleSubmit(true)}
+                disabled={isPending}
+                className="w-full sm:w-auto"
+              >
+                {isPending ? "Saving..." : "Save & Publish"}
+              </Button>
+            )}
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

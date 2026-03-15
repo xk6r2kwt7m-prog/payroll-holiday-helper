@@ -33,7 +33,7 @@ export interface TalentMessage {
 }
 
 // Employer inbox — conversations for their tenant
-export function useEmployerConversations() {
+export function useEmployerConversations(enabled = true) {
   const { tenantId } = useTenant();
   const qc = useQueryClient();
 
@@ -84,12 +84,12 @@ export function useEmployerConversations() {
         talent_profiles: undefined,
       })) as TalentConversation[];
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && enabled,
   });
 
-  // Realtime subscription
+  // Realtime subscription — only when enabled
   useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId || !enabled) return;
     const channel = supabase
       .channel(`employer-conv-${tenantId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "talent_messages" }, () => {
@@ -97,13 +97,13 @@ export function useEmployerConversations() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [tenantId, qc]);
+  }, [tenantId, enabled, qc]);
 
   return query;
 }
 
 // Worker inbox — conversations for their talent profile
-export function useWorkerConversations() {
+export function useWorkerConversations(enabled = true) {
   const { user } = useAuth();
   const qc = useQueryClient();
 
@@ -171,11 +171,11 @@ export function useWorkerConversations() {
         unread_count: unreadMap[c.id] || 0,
       })) as TalentConversation[];
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && enabled,
   });
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !enabled) return;
     const channel = supabase
       .channel(`worker-conv-${user.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "talent_messages" }, () => {
@@ -183,7 +183,7 @@ export function useWorkerConversations() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id, qc]);
+  }, [user?.id, enabled, qc]);
 
   return query;
 }
@@ -285,9 +285,10 @@ export function useMarkMessagesRead() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["employer-conversations"] });
       qc.invalidateQueries({ queryKey: ["worker-conversations"] });
+      qc.invalidateQueries({ queryKey: ["conversation-messages", vars.conversationId] });
     },
   });
 }
