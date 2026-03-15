@@ -257,7 +257,7 @@ export function SandboxTestingConsole() {
                   </div>
                   <div className="flex items-center gap-2">
                     {impersonation.active && impersonation.sandboxTenantId === tenant?.id && (
-                      <Badge className="bg-amber-500 text-amber-950">Active</Badge>
+                      <Badge className="bg-primary text-primary-foreground">Active</Badge>
                     )}
                     {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </div>

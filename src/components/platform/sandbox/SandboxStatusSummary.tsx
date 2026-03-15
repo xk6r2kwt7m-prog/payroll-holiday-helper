@@ -10,7 +10,7 @@ function BoolBadge({ value, label }: { value: boolean; label: string }) {
   return (
     <div className="flex items-center gap-1.5 text-xs">
       {value ? (
-        <Check className="h-3 w-3 text-green-600" />
+        <Check className="h-3 w-3 text-primary" />
       ) : (
         <X className="h-3 w-3 text-muted-foreground" />
       )}
