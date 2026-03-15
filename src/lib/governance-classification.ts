@@ -169,6 +169,11 @@ export interface GovernanceMetrics {
   insightsNoEvidence: number;
   mandatoryWeak: number;
   highRiskConcern: number;
+  /** Content-level gap counts for admin readiness view */
+  noEvidence: number;
+  noInsights: number;
+  noScenarios: number;
+  noLearningOutcomes: number;
 }
 
 export function computeGovernanceMetrics(
@@ -176,13 +181,14 @@ export function computeGovernanceMetrics(
     id: string;
     last_reviewed_at: string | null;
     is_mandatory: boolean;
-    standards_metadata: { service_risk_level?: ServiceRiskLevel; operational_area?: string } | null;
+    standards_metadata: { service_risk_level?: ServiceRiskLevel; operational_area?: string; scenario_examples?: string[]; learning_outcomes?: string[] } | null;
   }>,
   govCounts: Record<string, GovernanceCounts>,
 ): GovernanceMetrics {
   const m: GovernanceMetrics = {
     total: modules.length, ready: 0, stale: 0, partial: 0, weak: 0, unreviewed: 0,
     evidenceNoInsights: 0, insightsNoEvidence: 0, mandatoryWeak: 0, highRiskConcern: 0,
+    noEvidence: 0, noInsights: 0, noScenarios: 0, noLearningOutcomes: 0,
   };
 
   for (const mod of modules) {
@@ -201,6 +207,13 @@ export function computeGovernanceMetrics(
     if (counts.insightCount > 0 && counts.evidenceCount === 0) m.insightsNoEvidence++;
     if (mod.is_mandatory && (health === "weak" || health === "unreviewed")) m.mandatoryWeak++;
     if (riskLevel === "high" && health !== "ready") m.highRiskConcern++;
+
+    // Content-level gap tracking
+    if (counts.evidenceCount === 0) m.noEvidence++;
+    if (counts.insightCount === 0) m.noInsights++;
+    const meta = mod.standards_metadata as any;
+    if (!meta?.scenario_examples || meta.scenario_examples.length === 0) m.noScenarios++;
+    if (!meta?.learning_outcomes || meta.learning_outcomes.length === 0) m.noLearningOutcomes++;
   }
 
   return m;

@@ -61,7 +61,7 @@ export function GovernanceDashboard({ metrics, onFilterSelect, activeFilter, mod
   if (metrics.total === 0) return null;
 
   const hasActiveGovFilter = activeFilter !== "all" && (
-    activeFilter.startsWith("gov_") || ["stale", "not_reviewed"].includes(activeFilter)
+    activeFilter.startsWith("gov_") || activeFilter.startsWith("no_") || ["stale", "not_reviewed"].includes(activeFilter)
   );
 
   const cards: MetricCard[] = [
@@ -76,6 +76,13 @@ export function GovernanceDashboard({ metrics, onFilterSelect, activeFilter, mod
   const alertCards: MetricCard[] = [
     { key: "gov_mandatory_weak", label: "Mandatory at risk", value: metrics.mandatoryWeak, icon: <ShieldAlert className="h-3.5 w-3.5" />, color: "text-destructive", urgent: true },
     { key: "gov_high_risk", label: "High-risk concern", value: metrics.highRiskConcern, icon: <AlertTriangle className="h-3.5 w-3.5" />, color: "text-warning", urgent: true },
+  ].filter(c => c.value > 0);
+
+  const contentGapCards: MetricCard[] = [
+    { key: "no_evidence", label: "No evidence", value: metrics.noEvidence, icon: <BookOpen className="h-3.5 w-3.5" />, color: "text-muted-foreground" },
+    { key: "no_insights", label: "No insights", value: metrics.noInsights, icon: <Eye className="h-3.5 w-3.5" />, color: "text-muted-foreground" },
+    { key: "no_scenarios", label: "No scenarios", value: metrics.noScenarios, icon: <AlertCircle className="h-3.5 w-3.5" />, color: "text-muted-foreground" },
+    { key: "no_learning_outcomes", label: "No outcomes", value: metrics.noLearningOutcomes, icon: <AlertCircle className="h-3.5 w-3.5" />, color: "text-muted-foreground" },
   ].filter(c => c.value > 0);
 
   // Build priority queue from modules
@@ -132,6 +139,28 @@ export function GovernanceDashboard({ metrics, onFilterSelect, activeFilter, mod
                 )}
               >
                 <span className={card.color}>{card.icon}</span>
+                <span className={card.color}>{card.value}</span>
+                <span className="text-muted-foreground">{card.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Content gap badges */}
+        {contentGapCards.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <span className="text-[9px] text-muted-foreground/70 uppercase tracking-wider font-medium self-center mr-0.5">Gaps:</span>
+            {contentGapCards.map(card => (
+              <button
+                key={card.key}
+                onClick={() => onFilterSelect(card.key)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition-all",
+                  activeFilter === card.key
+                    ? "border-primary/40 bg-primary/10 ring-1 ring-primary/20"
+                    : "border-border bg-background hover:bg-muted/50",
+                )}
+              >
                 <span className={card.color}>{card.value}</span>
                 <span className="text-muted-foreground">{card.label}</span>
               </button>

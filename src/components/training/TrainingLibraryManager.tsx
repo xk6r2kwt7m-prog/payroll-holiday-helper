@@ -123,6 +123,19 @@ export function TrainingLibraryManager() {
         case "gov_partial": matchesEvidence = health === "partial"; break;
         case "gov_mandatory_weak": matchesEvidence = item.is_mandatory && (health === "weak" || health === "unreviewed"); break;
         case "gov_high_risk": matchesEvidence = (item.standards_metadata as any)?.service_risk_level === "high" && health !== "ready"; break;
+        // Content gap filters
+        case "no_evidence": matchesEvidence = counts.evidenceCount === 0; break;
+        case "no_insights": matchesEvidence = counts.insightCount === 0; break;
+        case "no_scenarios": {
+          const meta = item.standards_metadata as any;
+          matchesEvidence = !meta?.scenario_examples || meta.scenario_examples.length === 0;
+          break;
+        }
+        case "no_learning_outcomes": {
+          const meta2 = item.standards_metadata as any;
+          matchesEvidence = !meta2?.learning_outcomes || meta2.learning_outcomes.length === 0;
+          break;
+        }
         default: matchesEvidence = true;
       }
     }
