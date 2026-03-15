@@ -250,6 +250,7 @@ function ShiftCountdown({ shiftStart }: { shiftStart: string }) {
 
 export function StaffHome() {
   const { employee, employeeId, isLinked } = useCurrentEmployee();
+  const tenantId = employee?.tenant_id ?? null;
   const [gpsStatus, setGpsStatus] = useState<"loading" | "granted" | "denied" | "unavailable">("loading");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedBranch, setSelectedBranch] = useState("");
