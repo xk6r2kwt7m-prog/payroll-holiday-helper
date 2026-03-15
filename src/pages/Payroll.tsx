@@ -33,6 +33,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
