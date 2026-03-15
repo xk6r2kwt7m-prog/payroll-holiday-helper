@@ -88,9 +88,11 @@ export function useAllHolidayPayments() {
 }
 
 export function useHolidayBalances(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_balances", employeeId],
+    queryKey: ["holiday_balances", tenantId, employeeId],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("holiday_balances")
         .select(`
@@ -103,6 +105,7 @@ export function useHolidayBalances(employeeId?: string) {
             status
           )
         `)
+        .eq("tenant_id", tenantId)
         .order("leave_year_start", { ascending: false });
       
       if (employeeId) {
@@ -114,6 +117,7 @@ export function useHolidayBalances(employeeId?: string) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
