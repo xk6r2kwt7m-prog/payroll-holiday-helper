@@ -13,6 +13,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useShifts } from "@/hooks/useSchedule";
 import { useAllHolidayRequests } from "@/hooks/useHolidayRequests";
 import { useI18n } from "@/hooks/useI18n";
+import { useTenant } from "@/hooks/useTenant";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
 import { FindCoverSheet } from "@/components/workforce/FindCoverSheet";
 import { EmergencyCoverTool } from "@/components/workforce/EmergencyCoverTool";
