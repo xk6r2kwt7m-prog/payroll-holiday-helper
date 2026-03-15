@@ -323,7 +323,7 @@ export function useUpdateHolidayBalance() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["holiday_balances"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_balances", tenantId] });
     },
   });
 }
