@@ -48,6 +48,7 @@ export function TalentInbox({ mode }: TalentInboxProps) {
         applicationStatus={
           (selectedConv as any).talent_applications?.status || undefined
         }
+        conversationStatus={(selectedConv as any).status || undefined}
         senderType={mode}
         onBack={() => setSelectedConv(null)}
       />
