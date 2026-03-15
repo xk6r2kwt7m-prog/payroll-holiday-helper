@@ -13,6 +13,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useShifts } from "@/hooks/useSchedule";
 import { useAllHolidayRequests } from "@/hooks/useHolidayRequests";
 import { useI18n } from "@/hooks/useI18n";
+import { useTenant } from "@/hooks/useTenant";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
 import { FindCoverSheet } from "@/components/workforce/FindCoverSheet";
 import { EmergencyCoverTool } from "@/components/workforce/EmergencyCoverTool";
@@ -24,6 +25,7 @@ const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
 export function ManagerHome() {
   const { t } = useI18n();
+  const { tenantId } = useTenant();
   const { data: employees = [] } = useEmployees();
   const activeEmployees = employees.filter(e => e.status === "active");
   const newStarters = employees.filter(e => e.status === "starter" || (e.status as string) === "onboarding");
@@ -36,17 +38,20 @@ export function ManagerHome() {
   const { data: holidayRequests = [] } = useAllHolidayRequests();
 
   const { data: todayEntries = [] } = useQuery({
-    queryKey: ["today_clock_ins", todayStr],
+    queryKey: ["today_clock_ins", tenantId, todayStr],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("time_entries")
         .select("*, employees!inner(forename, surname, department)")
+        .eq("tenant_id", tenantId)
         .gte("clock_in_time", `${todayStr}T00:00:00`)
         .lte("clock_in_time", `${todayStr}T23:59:59`)
         .order("clock_in_time", { ascending: false });
       if (error) throw error;
       return data || [];
     },
+    enabled: !!tenantId,
   });
 
   const todayShifts = shifts.filter((s: any) => s.shift_date === todayStr);
