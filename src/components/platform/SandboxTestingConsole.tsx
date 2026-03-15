@@ -14,7 +14,7 @@ import { QATestChecklist } from "./QATestChecklist";
 import { ScenarioButtons } from "./sandbox/ScenarioButtons";
 import { RunOrderBlock } from "./sandbox/RunOrderBlock";
 import { SmokeTestPanel } from "./sandbox/SmokeTestPanel";
-import { SandboxStatusSummary, FreshnessBadge } from "./sandbox/SandboxStatusSummary";
+import { SandboxStatusSummary, FreshnessBadge, getRecommendedFor } from "./sandbox/SandboxStatusSummary";
 import { QANotesArea } from "./sandbox/QANotesArea";
 import { QuickLaunchButtons } from "./sandbox/QuickLaunchButtons";
 import { toast } from "sonner";
