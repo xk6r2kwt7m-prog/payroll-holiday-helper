@@ -51,11 +51,19 @@ export function ManagerComplianceDashboard() {
     setExpandedSection(expandedSection === key ? null : key);
   };
 
-  const handleSignoff = (assignmentId: string, passed: boolean) => {
-    managerSignoff.mutate({ assignmentId, passed, notes: signoffNotes }, {
+  const handleSignoff = (assignment: any, passed: boolean) => {
+    managerSignoff.mutate({
+      assignmentId: assignment.id,
+      passed,
+      notes: signoffNotes,
+      createRetrain: !passed && retrainOnFail,
+      employeeId: assignment.employee_id,
+      documentId: assignment.document_id,
+    }, {
       onSuccess: () => {
         setSignoffTarget(null);
         setSignoffNotes("");
+        setRetrainOnFail(true);
       },
     });
   };
