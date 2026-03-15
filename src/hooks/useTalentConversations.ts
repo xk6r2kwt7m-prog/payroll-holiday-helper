@@ -87,9 +87,9 @@ export function useEmployerConversations(enabled = true) {
     enabled: !!tenantId && enabled,
   });
 
-  // Realtime subscription
+  // Realtime subscription — only when enabled
   useEffect(() => {
-    if (!tenantId) return;
+    if (!tenantId || !enabled) return;
     const channel = supabase
       .channel(`employer-conv-${tenantId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "talent_messages" }, () => {
@@ -97,7 +97,7 @@ export function useEmployerConversations(enabled = true) {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [tenantId, qc]);
+  }, [tenantId, enabled, qc]);
 
   return query;
 }
