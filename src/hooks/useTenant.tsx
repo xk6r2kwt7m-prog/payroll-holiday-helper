@@ -100,11 +100,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const commitTenantSelection = useCallback((selectedTenantId: string, tenant: any) => {
+  const commitTenantSelection = useCallback((selectedTenantId: string, tenant: any, role?: string) => {
     // Nuclear cache clear — prevents cross-tenant data leakage
     queryClient.removeQueries();
 
     applyTenantData(tenant, selectedTenantId);
+    setTenantRole(role || null);
     setShowTenantPicker(false);
     setAvailableTenants([]);
     setTenantResolved(true);
