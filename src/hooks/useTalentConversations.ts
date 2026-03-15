@@ -84,7 +84,7 @@ export function useEmployerConversations(enabled = true) {
         talent_profiles: undefined,
       })) as TalentConversation[];
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && enabled,
   });
 
   // Realtime subscription
