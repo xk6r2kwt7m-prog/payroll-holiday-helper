@@ -50,11 +50,15 @@ import ShiftMarketplace from "./pages/ShiftMarketplace";
 import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfUse from "./pages/TermsOfUse";
+import CookiePolicy from "./pages/CookiePolicy";
 import FohServiceTraining from "./pages/FohServiceTraining";
 import FohAllergyTraining from "./pages/FohAllergyTraining";
 import FohUpsellingTraining from "./pages/FohUpsellingTraining";
 import FohPrintableTraining from "./pages/FohPrintableTraining";
 import { CommandPalette } from "@/components/CommandPalette";
+import { CookieConsent } from "@/components/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +79,9 @@ const App = () => (
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/cookies" element={<CookiePolicy />} />
             <Route path="/onboard" element={<CompanyOnboarding />} />
             <Route path="/select-workspace" element={<SelectWorkspace />} />
             <Route path="/sign/:token" element={<SignContract />} />
@@ -152,6 +159,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <CookieConsent />
           </PrivacyShieldProvider>
           </ImpersonationProvider>
           </I18nProvider>
