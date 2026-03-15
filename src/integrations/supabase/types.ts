@@ -5746,6 +5746,10 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: boolean
       }
+      mark_talent_messages_read: {
+        Args: { _conversation_id: string; _reader_sender_type: string }
+        Returns: undefined
+      }
       seed_default_departments: {
         Args: { _tenant_id: string }
         Returns: undefined
