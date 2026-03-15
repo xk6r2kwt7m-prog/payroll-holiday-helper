@@ -294,6 +294,11 @@ export function SandboxTestingConsole() {
                           </Button>
                         ))}
                       </div>
+                      {impersonation.active && impersonation.sandboxTenantId === tenant?.id && (
+                        <div className="mt-2">
+                          <QuickLaunchButtons />
+                        </div>
+                      )}
                     </div>
 
                     <Separator />
