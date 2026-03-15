@@ -854,16 +854,15 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem; canEdit: boolean }) {
   const { data: evidence = [] } = useModuleEvidence(module.id);
-  const govCounts: import("@/hooks/useGovernanceSummary").GovernanceCounts = {
-    evidenceCount: evidence.filter(e => e.is_active).length,
-    insightCount: 0, // will be populated by the component below
-  };
+  const { data: insights = [] } = useReviewInsights(module.id);
+  const activeEvidence = evidence.filter(e => e.is_active);
+  const activeInsights = insights.filter(i => i.is_active);
 
   return (
     <>
       <ModuleGovernanceSummary
         lastReviewedAt={module.last_reviewed_at ?? null}
-        counts={govCounts}
+        counts={{ evidenceCount: activeEvidence.length, insightCount: activeInsights.length }}
         evidence={evidence}
       />
       <EvidenceCompletenessBar
