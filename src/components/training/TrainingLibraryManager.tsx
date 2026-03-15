@@ -850,7 +850,37 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ─── Add Module Dialog ───
+// ─── Standards Tab Content ───
+
+function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem; canEdit: boolean }) {
+  const { data: evidence = [] } = useModuleEvidence(module.id);
+  const govCounts: import("@/hooks/useGovernanceSummary").GovernanceCounts = {
+    evidenceCount: evidence.filter(e => e.is_active).length,
+    insightCount: 0, // will be populated by the component below
+  };
+
+  return (
+    <>
+      <ModuleGovernanceSummary
+        lastReviewedAt={module.last_reviewed_at ?? null}
+        counts={govCounts}
+        evidence={evidence}
+      />
+      <EvidenceCompletenessBar
+        documentId={module.id}
+        lastReviewedAt={module.last_reviewed_at ?? null}
+        lastReviewedBy={module.last_reviewed_by ?? null}
+        canEdit={canEdit}
+      />
+      <EvidencePanel documentId={module.id} canEdit={canEdit} />
+      <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
+      {module.standards_metadata && (
+        <WhyThisMattersPanel metadata={module.standards_metadata} />
+      )}
+    </>
+  );
+}
+
 
 function AddModuleDialog() {
   const [open, setOpen] = useState(false);
