@@ -52,6 +52,7 @@ export const GOVERNANCE_HEALTH_CONFIG: Record<GovernanceHealth, { label: string;
  */
 export function getGovernanceReasons(input: ModuleGovernanceInput): string[] {
   const { lastReviewedAt, counts } = input;
+  const health = classifyGovernance(input);
   const reasons: string[] = [];
 
   if (!lastReviewedAt) {
@@ -59,23 +60,35 @@ export function getGovernanceReasons(input: ModuleGovernanceInput): string[] {
   } else {
     const daysAgo = differenceInDays(new Date(), parseISO(lastReviewedAt));
     if (daysAgo > STALE_REVIEW_THRESHOLD_DAYS) {
-      reasons.push(`Reviewed ${daysAgo} days ago (stale after ${STALE_REVIEW_THRESHOLD_DAYS})`);
+      reasons.push(`Reviewed ${daysAgo} days ago — stale after ${STALE_REVIEW_THRESHOLD_DAYS}`);
     } else {
       reasons.push(`Reviewed ${format(parseISO(lastReviewedAt), "d MMM yyyy")}`);
     }
   }
 
-  if (counts.evidenceCount === 0) {
-    reasons.push("No evidence sources");
-  } else if (counts.evidenceCount === 1) {
-    reasons.push("Only 1 evidence source (need ≥2 for ready)");
-  }
-
-  if (counts.insightCount === 0 && counts.evidenceCount > 0) {
-    reasons.push("Evidence exists but no review insights link it to training needs");
-  }
-  if (counts.insightCount > 0 && counts.evidenceCount === 0) {
-    reasons.push("Has insights but no evidence supports them");
+  // Specific partial explanations
+  if (health === "partial") {
+    if (counts.evidenceCount < 2) {
+      reasons.push(`Only ${counts.evidenceCount} evidence source — need ≥2 for ready`);
+    }
+    if (counts.evidenceCount > 0 && counts.insightCount === 0) {
+      reasons.push("Evidence attached but no review insights connect it to training needs");
+    }
+    if (counts.insightCount > 0 && counts.evidenceCount === 1) {
+      reasons.push("Insights exist but evidence is thin — add more sources");
+    }
+  } else {
+    if (counts.evidenceCount === 0) {
+      reasons.push("No evidence sources");
+    } else if (counts.evidenceCount === 1) {
+      reasons.push("Only 1 evidence source — need ≥2 for ready");
+    }
+    if (counts.insightCount === 0 && counts.evidenceCount > 0) {
+      reasons.push("Evidence exists but no review insights link it to training needs");
+    }
+    if (counts.insightCount > 0 && counts.evidenceCount === 0) {
+      reasons.push("Has insights but no evidence supports them");
+    }
   }
 
   return reasons;

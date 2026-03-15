@@ -210,7 +210,16 @@ function buildPriorityQueue(modules: ModuleForQueue[], govCounts: Record<string,
     });
   }
 
-  items.sort((a, b) => a.priority - b.priority);
+  items.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    // Tie-breakers: never reviewed first, then older review, fewer evidence, fewer insights, alpha
+    const aTime = a.lastReviewedAt ? new Date(a.lastReviewedAt).getTime() : 0;
+    const bTime = b.lastReviewedAt ? new Date(b.lastReviewedAt).getTime() : 0;
+    if (aTime !== bTime) return aTime - bTime; // 0 (never) sorts first, then oldest
+    if (a.evidenceCount !== b.evidenceCount) return a.evidenceCount - b.evidenceCount;
+    if (a.insightCount !== b.insightCount) return a.insightCount - b.insightCount;
+    return a.title.localeCompare(b.title);
+  });
   return items;
 }
 
@@ -218,25 +227,24 @@ function QueueRow({ item, onOpen }: { item: QueueItem; onOpen?: (id: string) => 
   const healthConfig = GOVERNANCE_HEALTH_CONFIG[item.health];
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border bg-background p-2 text-xs">
+    <div className="flex items-center gap-2 rounded-lg border border-border bg-background p-2 text-xs min-w-0 overflow-hidden">
       <div className="flex-1 min-w-0 space-y-0.5">
         <p className="font-medium text-foreground truncate text-[11px]">{item.title}</p>
         <div className="flex items-center gap-1 flex-wrap">
-          <Badge className={cn("text-[8px] px-1.5 py-0", healthConfig.color)}>{healthConfig.label}</Badge>
-          {item.isHighRisk && <Badge className="text-[8px] px-1.5 py-0 bg-destructive/10 text-destructive">High Risk</Badge>}
-          {item.isMandatory && <Badge className="text-[8px] px-1.5 py-0 bg-destructive/10 text-destructive">Mandatory</Badge>}
-          <span className="text-[9px] text-muted-foreground">
+          <Badge className={cn("text-[8px] px-1.5 py-0 shrink-0", healthConfig.color)}>{healthConfig.label}</Badge>
+          {item.isHighRisk && <Badge className="text-[8px] px-1.5 py-0 shrink-0 bg-destructive/10 text-destructive">High Risk</Badge>}
+          {item.isMandatory && <Badge className="text-[8px] px-1.5 py-0 shrink-0 bg-destructive/10 text-destructive">Mandatory</Badge>}
+          <span className="text-[9px] text-muted-foreground shrink-0">
             {item.evidenceCount}e · {item.insightCount}i
           </span>
         </div>
-        {/* Show first reason as helper text */}
         {item.reasons.length > 0 && (
           <p className="text-[9px] text-muted-foreground truncate">{item.reasons[0]}</p>
         )}
       </div>
       {onOpen && (
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={() => onOpen(item.id)}>
-          <ExternalLink className="h-3 w-3" />
+        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 shrink-0" onClick={() => onOpen(item.id)}>
+          <ExternalLink className="h-3.5 w-3.5" />
         </Button>
       )}
     </div>

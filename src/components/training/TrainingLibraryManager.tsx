@@ -277,10 +277,13 @@ export function TrainingLibraryManager() {
               <Select value={evidenceFilter} onValueChange={setEvidenceFilter}>
                 <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue placeholder="Evidence" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Governance</SelectItem>
+                  <SelectItem value="all">All Governance</SelectItem>
+                  <SelectItem value="gov_ready">Ready</SelectItem>
+                  <SelectItem value="gov_partial">Partial</SelectItem>
+                  <SelectItem value="gov_weak">Weak</SelectItem>
+                  <SelectItem value="not_reviewed">Unreviewed</SelectItem>
+                  <SelectItem value="stale">Stale</SelectItem>
                   <SelectItem value="reviewed">Reviewed</SelectItem>
-                  <SelectItem value="not_reviewed">Never Reviewed</SelectItem>
-                  <SelectItem value="stale">Stale Review</SelectItem>
                   <SelectItem value="has_evidence">Has Evidence</SelectItem>
                   <SelectItem value="no_evidence">No Evidence</SelectItem>
                   <SelectItem value="has_insights">Has Insights</SelectItem>
@@ -612,9 +615,14 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
             <div className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-medium text-destructive">High-risk module — governance {GOVERNANCE_HEALTH_CONFIG[health].label.toLowerCase()}</p>
-                  <ul className="text-[10px] text-destructive/80 mt-0.5 space-y-0.5">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-destructive">
+                    High-risk module — governance {GOVERNANCE_HEALTH_CONFIG[health].label.toLowerCase()}
+                  </p>
+                  <p className="text-[10px] text-destructive/80 mt-0.5">
+                    This module can still be published, but governance support is incomplete. Review evidence and insights before relying on it for compliance-sensitive use.
+                  </p>
+                  <ul className="text-[10px] text-destructive/70 mt-1 space-y-0.5">
                     {reasons.map((r, i) => <li key={i}>• {r}</li>)}
                   </ul>
                 </div>
