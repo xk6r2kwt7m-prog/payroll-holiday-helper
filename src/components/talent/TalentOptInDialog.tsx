@@ -101,12 +101,11 @@ export function TalentOptInDialog({
                   onValueChange={(v) => setForm({ ...form, visibility_mode: v })}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="previous_employer_only">Previous Employer Only</SelectItem>
-                    <SelectItem value="selected_companies">Selected Companies</SelectItem>
-                    <SelectItem value="approved_country_region">Approved Country/Region</SelectItem>
-                    <SelectItem value="all_approved">All Approved Companies</SelectItem>
-                  </SelectContent>
+                   <SelectContent>
+                     <SelectItem value="selected_companies">Selected Companies</SelectItem>
+                     <SelectItem value="approved_country_region">Approved Country/Region</SelectItem>
+                     <SelectItem value="all_approved">All Approved Companies</SelectItem>
+                   </SelectContent>
                 </Select>
               </div>
 
