@@ -6,13 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   BookOpen, Plus, FileText, Shield, GraduationCap, AlertTriangle,
   CheckCircle2, Clock, Search, Sparkles, Eye, Users, MoreVertical,
-  ThumbsUp, Send, Archive, Download,
+  ThumbsUp, Send, Archive, Download, AlertCircle,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,8 @@ import {
   useCreateAssignments,
   LIBRARY_CATEGORIES,
   type TrainingLibraryItem,
+  type TrainingCompletionType,
+  type AssignmentSource,
 } from "@/hooks/useTrainingLibrary";
 import { useUpdateModuleStatus, COMPLETION_TYPES, MODULE_STATUSES, AUDIENCE_SCOPES, type ModuleStatus } from "@/hooks/useTrainingModules";
 import { useEmployees } from "@/hooks/useEmployees";
@@ -32,6 +34,7 @@ import { QuizBuilder } from "@/components/training/QuizBuilder";
 import { useTenant } from "@/hooks/useTenant";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { exportToCsv } from "@/lib/csv-export";
+import { writeTrainingAudit } from "@/hooks/useTrainingLibrary";
 import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -110,6 +113,7 @@ export function TrainingLibraryManager() {
       { header: "Refresher Days", accessor: (m: TrainingLibraryItem) => m.refresher_days ?? "" },
     ], filtered);
     toast.success("Library exported");
+    if (tenantId) writeTrainingAudit({ tenant_id: tenantId, action: "csv_exported", metadata: { type: "training_library", count: filtered.length } });
   };
 
   return (
@@ -308,7 +312,30 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
     pass_mark: String(module.pass_mark || 80),
   });
 
+  const [showPublishWarning, setShowPublishWarning] = useState(false);
+
+  const isCriticalChange = module.status === "published" && editMode && (
+    editForm.completion_type !== module.completion_type ||
+    editForm.pass_mark !== String(module.pass_mark || 80) ||
+    editForm.is_mandatory !== module.is_mandatory
+  );
+
   const handleSaveEdit = () => {
+    if (module.status === "published" && !showPublishWarning) {
+      setShowPublishWarning(true);
+      return;
+    }
+    const changedFields = Object.keys(editForm).filter(k => {
+      const orig = k === "estimated_minutes" ? (module.estimated_minutes ? String(module.estimated_minutes) : "") :
+        k === "refresher_days" ? (module.refresher_days ? String(module.refresher_days) : "") :
+        k === "pass_mark" ? String(module.pass_mark || 80) :
+        k === "summary" ? (module.summary || "") :
+        k === "description" ? (module.description || "") :
+        k === "audience_scope" ? (module.audience_scope || "all_staff") :
+        (module as unknown as Record<string, unknown>)[k];
+      return (editForm as Record<string, unknown>)[k] !== orig;
+    });
+
     updateItem.mutate({
       id: module.id,
       updates: {
@@ -323,10 +350,12 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
         refresher_days: editForm.refresher_days ? parseInt(editForm.refresher_days) : null,
         pass_mark: parseInt(editForm.pass_mark) || 80,
         requires_quiz: editForm.completion_type === "quiz" || editForm.completion_type === "blended",
-      } as any,
+      },
+      changeSummary: `Fields changed: ${changedFields.join(", ") || "none"}`,
     }, {
       onSuccess: () => {
         setEditMode(false);
+        setShowPublishWarning(false);
         onOpenChange(false);
       },
     });
@@ -355,11 +384,26 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
     }
   };
 
+  const [showAssignConfirm, setShowAssignConfirm] = useState(false);
+
+  const getAssignTargetCount = () => {
+    if (assignMode === "all") return unassignedEmployees.length;
+    if (assignMode === "department") return filteredUnassigned.length;
+    return selectedIds.size;
+  };
+
+  const getAssignSourceLabel = (): string => {
+    if (assignMode === "all") return "All Staff";
+    if (assignMode === "department") return `Department: ${selectedDept}`;
+    return "Individual";
+  };
+
   const handleAssign = () => {
     const targetIds = assignMode === "all" ? unassignedEmployees.map(e => e.id) :
       assignMode === "department" ? filteredUnassigned.map(e => e.id) :
       Array.from(selectedIds);
     if (targetIds.length === 0) return;
+    setShowAssignConfirm(false);
     createAssignments.mutate(
       {
         assignments: targetIds.map(empId => ({
@@ -369,7 +413,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
           is_mandatory: module.is_mandatory,
           signoff_required: module.completion_type === "practical_signoff" || module.completion_type === "blended",
         })),
-        assignmentSource: assignMode === "all" ? "all_staff" : assignMode === "department" ? "department" : "direct",
+        assignmentSource: (assignMode === "all" ? "all_staff" : assignMode === "department" ? "department" : "direct") as AssignmentSource,
       },
       { onSuccess: () => { setSelectedIds(new Set()); } }
     );
@@ -480,7 +524,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   </div>
                   <div>
                     <Label className="text-xs">Completion Type</Label>
-                    <Select value={editForm.completion_type} onValueChange={v => setEditForm(f => ({ ...f, completion_type: v }))}>
+                    <Select value={editForm.completion_type} onValueChange={v => setEditForm(f => ({ ...f, completion_type: v as TrainingCompletionType }))}>
                       <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                       <SelectContent>{COMPLETION_TYPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                     </Select>
@@ -517,12 +561,36 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   <span className="text-xs font-medium">Mandatory</span>
                   <Switch checked={editForm.is_mandatory} onCheckedChange={v => setEditForm(f => ({ ...f, is_mandatory: v }))} />
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleSaveEdit} disabled={updateItem.isPending || !editForm.title.trim()} className="flex-1" size="sm">
-                    {updateItem.isPending ? "Saving..." : "Save Changes"}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setEditMode(false)}>Cancel</Button>
-                </div>
+                {/* Published edit warning */}
+                {showPublishWarning && (
+                  <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-warning">This module is published</p>
+                        <p className="text-[11px] text-warning/80">
+                          {isCriticalChange
+                            ? "You are changing pass mark, completion type, or mandatory status. This may affect staff with active assignments."
+                            : "Changes will apply immediately to this published module."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveEdit} disabled={updateItem.isPending} size="sm" variant={isCriticalChange ? "destructive" : "default"} className="flex-1">
+                        {updateItem.isPending ? "Saving..." : "Confirm & Save"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowPublishWarning(false)}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+                {!showPublishWarning && (
+                  <div className="flex gap-2">
+                    <Button onClick={handleSaveEdit} disabled={updateItem.isPending || !editForm.title.trim()} className="flex-1" size="sm">
+                      {updateItem.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => { setEditMode(false); setShowPublishWarning(false); }}>Cancel</Button>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
@@ -624,12 +692,35 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                 {((assignMode === "individual" && selectedIds.size > 0) ||
                   assignMode === "all" ||
                   (assignMode === "department" && filteredUnassigned.length > 0)) && (
-                  <Button onClick={handleAssign} disabled={createAssignments.isPending} className="w-full">
-                    {createAssignments.isPending ? "Assigning..." :
-                      assignMode === "individual" ? `Assign to ${selectedIds.size} employee${selectedIds.size > 1 ? "s" : ""}` :
-                      assignMode === "all" ? `Assign to all ${unassignedEmployees.length} staff` :
-                      `Assign to ${filteredUnassigned.length} in ${selectedDept}`}
-                  </Button>
+                  <>
+                    <Button onClick={() => setShowAssignConfirm(true)} disabled={createAssignments.isPending} className="w-full">
+                      {createAssignments.isPending ? "Assigning..." :
+                        `Assign to ${getAssignTargetCount()} staff`}
+                    </Button>
+
+                    {/* Assignment Confirmation Dialog */}
+                    <Dialog open={showAssignConfirm} onOpenChange={setShowAssignConfirm}>
+                      <DialogContent className="sm:max-w-sm">
+                        <DialogHeader>
+                          <DialogTitle>Confirm Assignment</DialogTitle>
+                          <DialogDescription>Review before assigning training.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-2 text-sm py-2">
+                          <div className="flex justify-between"><span className="text-muted-foreground">Module</span><span className="font-medium text-foreground truncate max-w-[200px]">{module.title}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Staff</span><span className="font-medium text-foreground">{getAssignTargetCount()} employee{getAssignTargetCount() !== 1 ? "s" : ""}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Source</span><Badge variant="outline" className="text-[10px]">{getAssignSourceLabel()}</Badge></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Due Date</span><span className="font-medium text-foreground">{dueDate ? format(parseISO(dueDate), "d MMM yyyy") : "No deadline"}</span></div>
+                          {module.is_mandatory && <div className="flex justify-between"><span className="text-muted-foreground">Mandatory</span><Badge className="text-[10px] bg-destructive/10 text-destructive">Yes</Badge></div>}
+                        </div>
+                        <DialogFooter className="gap-2">
+                          <Button variant="outline" onClick={() => setShowAssignConfirm(false)}>Cancel</Button>
+                          <Button onClick={handleAssign} disabled={createAssignments.isPending}>
+                            {createAssignments.isPending ? "Assigning..." : "Confirm"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
                 )}
               </>
             )}
