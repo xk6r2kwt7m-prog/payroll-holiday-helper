@@ -225,9 +225,13 @@ export function TrainingLibraryManager() {
               <Select value={evidenceFilter} onValueChange={setEvidenceFilter}>
                 <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue placeholder="Evidence" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Evidence</SelectItem>
+                  <SelectItem value="all">Governance</SelectItem>
                   <SelectItem value="reviewed">Reviewed</SelectItem>
-                  <SelectItem value="not_reviewed">Not Reviewed</SelectItem>
+                  <SelectItem value="not_reviewed">Never Reviewed</SelectItem>
+                  <SelectItem value="stale">Stale Review</SelectItem>
+                  <SelectItem value="has_evidence">Has Evidence</SelectItem>
+                  <SelectItem value="no_evidence">No Evidence</SelectItem>
+                  <SelectItem value="has_insights">Has Insights</SelectItem>
                 </SelectContent>
               </Select>
             )}
