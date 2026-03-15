@@ -197,6 +197,17 @@ export default function Schedule() {
     );
   }
 
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4 p-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-96" />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="flex flex-col h-full -m-4 sm:-m-6">

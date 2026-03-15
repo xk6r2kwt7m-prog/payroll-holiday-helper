@@ -82,6 +82,15 @@ const Holidays = () => {
   const [formulaBreakdownData, setFormulaBreakdownData] = useState<FormulaBreakdownData | null>(null);
   const [formulaOpen, setFormulaOpen] = useState(false);
 
+  // Reset page-local state on tenant switch
+  const resetPageState = useCallback(() => {
+    setSearchQuery("");
+    setDepartmentFilter("all");
+    setSelectedEmployeeId(null);
+    setFormulaOpen(false);
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
+
   // Allow deep-linking to specific tab (e.g. from Manager Home → "Review" link)
   useEffect(() => {
     const tab = searchParams.get("tab") as SubTab | null;
