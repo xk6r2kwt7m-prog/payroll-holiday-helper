@@ -832,18 +832,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
           )}
           {canManage && (
             <TabsContent value="standards" className="space-y-3 mt-3">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Evidence & Research</p>
-              <EvidenceCompletenessBar
-                documentId={module.id}
-                lastReviewedAt={module.last_reviewed_at ?? null}
-                lastReviewedBy={module.last_reviewed_by ?? null}
-                canEdit={canEdit}
-              />
-              <EvidencePanel documentId={module.id} canEdit={canEdit} />
-              <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
-              {module.standards_metadata && (
-                <WhyThisMattersPanel metadata={module.standards_metadata} />
-              )}
+              <StandardsTabContent module={module} canEdit={canEdit} />
             </TabsContent>
           )}
         </Tabs>
