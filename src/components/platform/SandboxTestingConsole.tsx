@@ -321,89 +321,134 @@ export function SandboxTestingConsole() {
 
                     <Separator />
 
-                    {/* Freshness-aware primary action */}
-                    {getFreshness(sb) === "stale" && (
-                      <div className="flex items-center gap-2 bg-destructive/5 border border-destructive/20 rounded-md px-3 py-2">
-                        <Button
-                          size="sm"
-                          className="gap-1.5 text-xs"
-                          onClick={async () => {
-                            await rebuildSandbox.mutateAsync(sb.id);
-                            if (tenant?.id) {
-                              await handleImpersonate(tenant.id, tenant.name, "admin" as AppRole, "Company Admin");
-                            }
-                          }}
-                          disabled={rebuildSandbox.isPending}
-                        >
-                          {rebuildSandbox.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                          Rebuild & Test
-                        </Button>
-                        <span className="text-[11px] text-muted-foreground">Rebuilds data and opens as Admin</span>
-                      </div>
-                    )}
-                    {getFreshness(sb) === "needs_retest" && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="gap-1.5 text-xs"
-                        onClick={() => {
-                          if (tenant?.id) {
-                            handleImpersonate(tenant.id, tenant.name, "admin" as AppRole, "Company Admin");
-                          }
-                        }}
-                      >
-                        <Eye className="h-3 w-3" /> Retest Now
-                      </Button>
-                    )}
+                    {(() => {
+                      const freshness = getFreshness(sb);
+                      const isBusy = rebuildSandbox.isPending || resetSandbox.isPending;
+                      const alreadyInSameSandboxAsAdmin =
+                        impersonation.active &&
+                        impersonation.sandboxTenantId === tenant?.id &&
+                        impersonation.impersonatedRole === "admin";
+                      const inSameSandboxDifferentRole =
+                        impersonation.active &&
+                        impersonation.sandboxTenantId === tenant?.id &&
+                        impersonation.impersonatedRole !== "admin";
 
-                    {/* Standard actions */}
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 text-xs"
-                        onClick={() => rebuildSandbox.mutate(sb.id)}
-                        disabled={rebuildSandbox.isPending}
-                      >
-                        <RefreshCw className="h-3 w-3" /> Rebuild from Config
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="gap-1 text-xs"
-                        onClick={() => resetSandbox.mutate(tenant?.id)}
-                        disabled={resetSandbox.isPending}
-                      >
-                        <RotateCcw className="h-3 w-3" /> Reset Data
-                      </Button>
+                      const impersonateAsAdmin = () => {
+                        if (tenant?.id) handleImpersonate(tenant.id, tenant.name, "admin" as AppRole, "Company Admin");
+                      };
 
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="destructive" className="gap-1 text-xs">
-                            <Trash2 className="h-3 w-3" /> Delete
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete sandbox?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete the sandbox tenant and all its data.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => {
-                                if (impersonation.sandboxTenantId === tenant?.id) impersonation.stopImpersonation();
-                                deleteSandbox.mutate(tenant?.id);
-                              }}
+                      return (
+                        <div className="space-y-3">
+                          {/* Priority action area */}
+                          {freshness === "stale" && (
+                            <div className="flex items-center gap-3 bg-destructive/5 border border-destructive/20 rounded-md px-3 py-2.5">
+                              <Button
+                                size="sm"
+                                className="gap-1.5 text-xs flex-shrink-0"
+                                disabled={isBusy}
+                                onClick={async () => {
+                                  try {
+                                    await rebuildSandbox.mutateAsync(sb.id);
+                                    if (tenant?.id) impersonateAsAdmin();
+                                  } catch { /* toast already shown by hook */ }
+                                }}
+                              >
+                                {rebuildSandbox.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                Rebuild & Test
+                              </Button>
+                              <span className="text-[11px] text-muted-foreground leading-tight">
+                                Rebuilds seeded data and opens the sandbox as Company Admin
+                              </span>
+                            </div>
+                          )}
+
+                          {freshness === "needs_retest" && (
+                            <div className="flex items-center gap-3">
+                              {alreadyInSameSandboxAsAdmin ? (
+                                <Button size="sm" variant="secondary" className="gap-1.5 text-xs" disabled>
+                                  <Eye className="h-3 w-3" /> Already in this sandbox
+                                </Button>
+                              ) : inSameSandboxDifferentRole ? (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="gap-1.5 text-xs"
+                                  disabled={isBusy}
+                                  onClick={impersonateAsAdmin}
+                                >
+                                  <UserCog className="h-3 w-3" /> Switch to Admin
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="gap-1.5 text-xs"
+                                  disabled={isBusy}
+                                  onClick={impersonateAsAdmin}
+                                >
+                                  <Eye className="h-3 w-3" /> Retest Now
+                                </Button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Standard action area */}
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1 text-xs"
+                              onClick={() => rebuildSandbox.mutate(sb.id)}
+                              disabled={isBusy}
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                              <RefreshCw className="h-3 w-3" /> Rebuild Only
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1 text-xs"
+                              onClick={() => resetSandbox.mutate(tenant?.id)}
+                              disabled={isBusy}
+                            >
+                              <RotateCcw className="h-3 w-3" /> Reset Data
+                            </Button>
+
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="destructive" className="gap-1 text-xs ml-auto" disabled={isBusy}>
+                                  <Trash2 className="h-3 w-3" /> Delete
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete sandbox?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete the sandbox tenant and all its data.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => {
+                                      if (impersonation.sandboxTenantId === tenant?.id) impersonation.stopImpersonation();
+                                      deleteSandbox.mutate(tenant?.id);
+                                    }}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+
+                          {/* Helper text */}
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-muted-foreground">
+                            <span>Rebuild Only — re-seeds without switching view</span>
+                            <span>Reset Data — clears activity, keeps tenant</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </Card>
