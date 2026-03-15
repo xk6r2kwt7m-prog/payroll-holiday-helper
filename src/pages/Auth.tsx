@@ -96,7 +96,11 @@ const Auth = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Account created! Please check your email to verify your address.");
+      setSignupEmail(email);
+      setSignupComplete(true);
+      setFullName("");
+      setEmail("");
+      setPassword("");
     }
   };
 
