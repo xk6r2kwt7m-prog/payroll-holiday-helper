@@ -58,8 +58,8 @@ export function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-[100] p-4 sm:p-6">
-      <div className="max-w-lg mx-auto rounded-xl border border-border bg-card shadow-lg p-5 space-y-4">
+    <div className="fixed bottom-0 inset-x-0 z-[100] p-3 sm:p-6">
+      <div className="max-w-lg mx-auto rounded-xl border border-border bg-card shadow-lg p-4 sm:p-5 space-y-3 sm:space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-sm font-semibold text-foreground">Cookie preferences</h3>
