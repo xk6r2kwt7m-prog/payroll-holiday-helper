@@ -77,6 +77,7 @@ export function TrainingLibraryManager() {
   const { tenantId } = useTenant();
   const { data: govCounts = {} } = useGovernanceSummary(canManage);
   const { metrics: effMetrics, latestByModule: effByModule, records: effRecords } = useTrainingEffectiveness(canManage);
+  const { metrics: sqMetrics, qualityByModule: sqByModule } = useSignalQuality(canManage, govCounts);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
