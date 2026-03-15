@@ -175,7 +175,16 @@ export function TrainingLibraryManager() {
           ))}
 
           {/* Source filter */}
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-1.5 items-center">
+            <Select value={opAreaFilter} onValueChange={setOpAreaFilter}>
+              <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue placeholder="Area" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Areas</SelectItem>
+                {(Object.entries(OPERATIONAL_AREA_LABELS) as [OperationalArea, string][]).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
               <SelectContent>
@@ -184,6 +193,13 @@ export function TrainingLibraryManager() {
                 <SelectItem value="adapted">Adapted</SelectItem>
               </SelectContent>
             </Select>
+            <button
+              onClick={() => setMandatoryFilter(!mandatoryFilter)}
+              className={cn("px-2 py-1 rounded-full text-[10px] font-medium border transition-all whitespace-nowrap",
+                mandatoryFilter ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-card text-muted-foreground border-border"
+              )}>
+              Mandatory
+            </button>
           </div>
         </div>
       </div>
