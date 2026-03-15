@@ -123,12 +123,14 @@ export function useHolidayBalances(employeeId?: string) {
 
 // Get holiday balances for a specific leave year
 export function useHolidayBalancesByYear(year: number) {
+  const { tenantId } = useTenant();
   const leaveYearStart = `${year}-01-01`;
   const leaveYearEnd = `${year}-12-31`;
   
   return useQuery({
-    queryKey: ["holiday_balances", "year", year],
+    queryKey: ["holiday_balances", tenantId, "year", year],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_balances")
         .select(`
@@ -142,6 +144,7 @@ export function useHolidayBalancesByYear(year: number) {
             hourly_rate
           )
         `)
+        .eq("tenant_id", tenantId)
         .eq("leave_year_start", leaveYearStart)
         .eq("leave_year_end", leaveYearEnd)
         .order("hours_accrued", { ascending: false });
@@ -149,6 +152,7 @@ export function useHolidayBalancesByYear(year: number) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
