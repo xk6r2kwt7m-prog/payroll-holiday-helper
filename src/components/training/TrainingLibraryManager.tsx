@@ -1056,6 +1056,14 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
       />
       <EvidencePanel documentId={module.id} canEdit={canEdit} />
       <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
+
+      {/* Training Effectiveness */}
+      <ModuleEffectivenessPanel
+        record={effByModule.get(module.id) ?? null}
+        allRecords={allEffRecords.filter(r => r.module_id === module.id)}
+        reviewInsightTags={(module.standards_metadata as any)?.review_insight_tags as ReviewInsightTag[] | undefined}
+      />
+
       {module.standards_metadata && (
         <WhyThisMattersPanel metadata={module.standards_metadata as StandardsMetadata} />
       )}
