@@ -116,7 +116,7 @@ export function useAdaptModule() {
         .eq("document_id", platformModuleId);
 
       if (questions && questions.length > 0) {
-        const copiedQuestions = (questions as unknown as Array<{ question: string; question_type: string; options: unknown; correct_option: number; explanation: string | null; display_order: number }>).map(q => ({
+        const copiedQuestions = (questions as unknown as Array<{ question: string; question_type: string; options: Json; correct_option: number; explanation: string | null; display_order: number }>).map(q => ({
           document_id: adaptedModule.id,
           tenant_id: tenantId,
           question: q.question,
