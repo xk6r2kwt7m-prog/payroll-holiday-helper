@@ -274,19 +274,15 @@ export function useSendMessage() {
   });
 }
 
-// Mark messages as read
+// C2 FIX: Mark messages as read via security-definer RPC (no direct UPDATE)
 export function useMarkMessagesRead() {
   const qc = useQueryClient();
-  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ conversationId, senderType }: { conversationId: string; senderType: string }) => {
-      const { error } = await supabase
-        .from("talent_messages")
-        .update({ read_at: new Date().toISOString() } as any)
-        .eq("conversation_id", conversationId)
-        .eq("sender_type", senderType)
-        .is("read_at", null)
-        .neq("sender_user_id", user!.id);
+      const { error } = await supabase.rpc("mark_talent_messages_read", {
+        _conversation_id: conversationId,
+        _reader_sender_type: senderType,
+      });
       if (error) throw error;
     },
     onSuccess: () => {

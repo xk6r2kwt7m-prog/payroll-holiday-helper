@@ -159,6 +159,7 @@ export function useVacancyApplications(vacancyId: string) {
   return useQuery({
     queryKey: ["vacancy-applications", vacancyId],
     queryFn: async () => {
+      // C1 FIX: Only select forename for privacy — surname initial derived server-side
       const { data, error } = await supabase
         .from("talent_applications")
         .select(`*, talent_profiles(
@@ -168,6 +169,7 @@ export function useVacancyApplications(vacancyId: string) {
         .eq("vacancy_id", vacancyId)
         .order("applied_at", { ascending: false });
       if (error) throw error;
+      // C1: Never expose full surname to employer — only initial
       return (data || []).map((a: any) => ({
         ...a,
         talent_profile: a.talent_profiles ? {
@@ -179,10 +181,12 @@ export function useVacancyApplications(vacancyId: string) {
           employee: {
             forename: a.talent_profiles.employees?.forename || "",
             surname_initial: a.talent_profiles.employees?.surname
-              ? a.talent_profiles.employees.surname.charAt(0) + "."
+              ? a.talent_profiles.employees.surname.charAt(0).toUpperCase() + "."
               : "",
           },
         } : undefined,
+        // Strip raw join data to prevent accidental surname access
+        talent_profiles: undefined,
       })) as Application[];
     },
     enabled: !!vacancyId,

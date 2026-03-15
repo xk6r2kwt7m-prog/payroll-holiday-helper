@@ -9,6 +9,7 @@ import { TalentProfileManager } from "@/components/talent/TalentProfileManager";
 import { VacancyBrowse } from "@/components/talent/VacancyBrowse";
 import { TalentInbox } from "@/components/talent/TalentInbox";
 import { useAuth } from "@/hooks/useAuth";
+import { useOwnTalentProfile } from "@/hooks/useTalentPool";
 
 const TalentPool = () => {
   const [searchParams] = useSearchParams();
@@ -19,6 +20,12 @@ const TalentPool = () => {
     : "vacancies"
   );
   const { isAdmin } = useAuth();
+  const { data: ownProfile } = useOwnTalentProfile();
+
+  // Determine inbox mode: if user has a talent profile, show worker inbox
+  // even if they are also an admin (they use /vacancies for employer inbox)
+  const hasWorkerProfile = !!ownProfile;
+  const inboxMode = hasWorkerProfile ? "worker" : (isAdmin ? "employer" : "worker");
 
   useEffect(() => {
     if (tabParam === "my-profile") setActiveTab("my-profile");
@@ -76,7 +83,7 @@ const TalentPool = () => {
           )}
 
           <TabsContent value="inbox" className="mt-4">
-            <TalentInbox mode={isAdmin ? "employer" : "worker"} />
+            <TalentInbox mode={inboxMode} />
           </TabsContent>
 
           <TabsContent value="my-profile" className="mt-4">
