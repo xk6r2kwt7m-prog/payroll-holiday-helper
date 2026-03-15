@@ -42,6 +42,8 @@ const features = [
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [signupComplete, setSignupComplete] = useState(false);
+  const [signupEmail, setSignupEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
