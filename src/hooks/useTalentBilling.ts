@@ -72,10 +72,11 @@ export function useTalentBillingSummary() {
 
       const purchases = (purchasesRes.data || []) as PurchaseRecord[];
       const unlocks = (unlocksRes.data || []) as UnlockRecord[];
+      const ledger = (ledgerRes.data || []) as CreditLedgerEntry[];
 
-      const totalPurchased = purchases.reduce((s, p) => s + (p.status === "paid" ? p.credits_purchased : 0), 0);
-      const totalUsed = unlocks.length;
-      const totalExpired = purchases.reduce((s, p) => s + (p.status === "expired" ? p.credits_purchased - p.credits_remaining : 0), 0);
+      const totalPurchased = purchases.reduce((s, p) => s + (["paid", "expired", "refunded"].includes(p.status) ? p.credits_purchased : 0), 0);
+      const totalUsed = ledger.filter(e => e.entry_type === "credit_consumed").length;
+      const totalExpired = Math.abs(ledger.filter(e => e.entry_type === "credit_expired").reduce((s, e) => s + e.amount, 0));
       const activeUnlocks = unlocks.filter(u => new Date(u.expires_at) > new Date() && !["blocked", "expired"].includes(u.candidate_response)).length;
 
       return {
