@@ -153,7 +153,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       throw new Error("Selected workspace is no longer available");
     }
 
-    commitTenantSelection(membership.tenant_id, membership.tenants as any);
+    commitTenantSelection(membership.tenant_id, membership.tenants as any, (membership as any).role);
   }, [user, commitTenantSelection]);
 
   const openWorkspacePicker = useCallback(() => {
