@@ -540,8 +540,8 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                 {canManage && (
                   <EvidenceCompletenessBar
                     documentId={module.id}
-                    lastReviewedAt={(module as any).last_reviewed_at ?? null}
-                    lastReviewedBy={(module as any).last_reviewed_by ?? null}
+                    lastReviewedAt={module.last_reviewed_at ?? null}
+                    lastReviewedBy={module.last_reviewed_by ?? null}
                     canEdit={canEdit}
                   />
                 )}
