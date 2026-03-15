@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Users, Search, FileText, Sparkles, Briefcase, MessageSquare, ClipboardList } from "lucide-react";
+import { Users, Search, FileText, Sparkles, Briefcase, MessageSquare, ClipboardList, CreditCard } from "lucide-react";
 import { TalentSearch } from "@/components/talent/TalentSearch";
 import { TalentRequestList } from "@/components/talent/TalentRequestList";
 import { TalentProfileManager } from "@/components/talent/TalentProfileManager";
 import { VacancyBrowse } from "@/components/talent/VacancyBrowse";
 import { TalentInbox } from "@/components/talent/TalentInbox";
 import { MyApplications } from "@/components/talent/MyApplications";
+import { TalentBillingHistory } from "@/components/talent/TalentBillingHistory";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnTalentProfile } from "@/hooks/useTalentPool";
 
