@@ -81,6 +81,10 @@ const PlatformAdmin = () => {
           <TabsContent value="sandbox" className="mt-6">
             <SandboxTestingConsole />
           </TabsContent>
+
+          <TabsContent value="talent-billing" className="mt-6">
+            <TalentBillingAdmin />
+          </TabsContent>
         </Tabs>
       </div>
     </AppLayout>

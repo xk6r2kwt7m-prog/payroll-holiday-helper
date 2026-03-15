@@ -103,6 +103,12 @@ const TalentPool = () => {
           <TabsContent value="my-profile" className="mt-4">
             <TalentProfileManager />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="billing" className="mt-4">
+              <TalentBillingHistory />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>
