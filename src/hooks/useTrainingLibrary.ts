@@ -230,7 +230,8 @@ export function useCreateAssignments() {
   const { tenantId } = useTenant();
   const { notifyMany } = useNotifyEvent();
   return useMutation({
-    mutationFn: async (assignments: Array<{ document_id: string; employee_id: string; due_date?: string; notes?: string; is_mandatory?: boolean; signoff_required?: boolean }>) => {
+    mutationFn: async (payload: { assignments: Array<{ document_id: string; employee_id: string; due_date?: string; notes?: string; is_mandatory?: boolean; signoff_required?: boolean }>; assignmentSource?: string }) => {
+      const { assignments, assignmentSource = "direct" } = payload;
       await assertPermission("manage_training", tenantId!);
 
       const pairs = assignments.map(a => ({ doc: a.document_id, emp: a.employee_id }));
