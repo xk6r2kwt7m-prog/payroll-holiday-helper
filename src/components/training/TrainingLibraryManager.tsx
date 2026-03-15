@@ -229,6 +229,15 @@ export function TrainingLibraryManager() {
         />
       )}
 
+      {/* Admin effectiveness dashboard */}
+      {canManage && (
+        <EffectivenessSection
+          metrics={effMetrics}
+          activeFilter={evidenceFilter}
+          onFilterSelect={setEvidenceFilter}
+        />
+      )}
+
       {/* Search + Category */}
       <div className="space-y-2">
         <div className="flex gap-2">
