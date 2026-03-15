@@ -227,6 +227,11 @@ export function AdminHome() {
         </div>
       </motion.div>
 
+      {/* Talent Pool */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.22 }}>
+        <TalentPoolWidget />
+      </motion.div>
+
       {/* Who's Working */}
       {clockedInNow.length > 0 && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.24 }}>
