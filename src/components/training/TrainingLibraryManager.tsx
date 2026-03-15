@@ -269,6 +269,11 @@ export function TrainingLibraryManager() {
                   <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>
                   {item.is_mandatory && <Badge className="text-[10px] bg-destructive/10 text-destructive">Mandatory</Badge>}
                   {item.version > 1 && <Badge variant="secondary" className="text-[10px]">v{item.version}</Badge>}
+                  {canManage && item.last_reviewed_at && (
+                    <Badge variant="outline" className="text-[9px] text-muted-foreground gap-0.5">
+                      <Clock className="h-2.5 w-2.5" /> Reviewed
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="text-right shrink-0 flex items-center gap-2">
