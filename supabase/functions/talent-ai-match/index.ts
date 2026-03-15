@@ -224,15 +224,15 @@ For each candidate, assess:
       if (insertError) throw insertError;
     }
 
-    // Audit log — only profile IDs and action, no raw payloads
+    // Audit log — only profile IDs and action type, no tenant_id or raw payloads
+    // to prevent cross-company inference
     await supabase.from("talent_audit_log").insert(
       visibleProfiles
         .filter((p: any) => matchResults.matches?.some((m: any) => m.candidate_id === p.id))
         .map((p: any) => ({
           talent_profile_id: p.id,
           action: "ai_match_evaluated",
-          new_data: { talent_request_id, tenant_id },
-          tenant_id,
+          new_data: { talent_request_id },
         }))
     );
 
