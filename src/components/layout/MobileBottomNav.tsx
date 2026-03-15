@@ -59,7 +59,7 @@ const staffMoreGroups: MoreGroup[] = [
     title: "Work",
     items: [
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
-      { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
+      { icon: Sparkles, label: "Talent Pool", path: TALENT_POOL_ROUTE, minRole: "staff" },
     ],
   },
 ];
