@@ -3,32 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 
+// Privacy-safe public profile shape — no tenant_id, no employee_id in browse results
 export interface TalentProfile {
   id: string;
-  employee_id: string;
-  tenant_id: string;
   talent_pool_status: string;
-  seeking_visibility: string;
-  visibility_mode: string;
   available_from: string | null;
   preferred_roles: string[];
   preferred_locations: string[];
   preferred_countries: string[];
   preferred_regions: string[];
   employment_type_preference: string[];
-  contact_visibility: boolean;
   profile_summary: string | null;
   years_experience: number | null;
   languages: string[];
   work_eligibility_countries: string[];
   willing_to_relocate: boolean;
   willing_to_travel: boolean;
-  preferred_work_radius_km: number | null;
-  open_to_work_flag: boolean;
-  opted_in_at: string | null;
-  opted_out_at: string | null;
-  created_at: string;
-  updated_at: string;
   // Joined fields — privacy-safe subset only
   employee?: {
     forename: string;
@@ -69,27 +59,25 @@ export interface TalentMatch {
   talent_profile?: TalentProfile;
 }
 
-// Fetch visible talent profiles for the current tenant
+// Privacy-safe browse query — strips tenant_id, employee_id, internal fields
 export function useTalentProfiles(filters?: {
   country?: string;
-  role?: string;
 }) {
   const { tenantId } = useTenant();
   return useQuery({
     queryKey: ["talent-profiles", tenantId, filters],
     queryFn: async () => {
-      // Privacy-safe browse query — only hiring-relevant fields, no internal HR data
       let query: any = supabase
         .from("talent_profiles")
         .select(`
-          id, employee_id, tenant_id, talent_pool_status, available_from,
+          id, talent_pool_status, available_from,
           preferred_roles, preferred_locations, preferred_countries, preferred_regions,
           employment_type_preference, profile_summary, years_experience, languages,
           work_eligibility_countries, willing_to_relocate, willing_to_travel,
-          preferred_work_radius_km, contact_visibility,
           employees!inner(forename, surname)
         `)
-        .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"]);
+        .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"])
+        .neq("visibility_mode", "hidden");
 
       if (filters?.country) {
         query = query.contains("preferred_countries", [filters.country]);
@@ -97,8 +85,22 @@ export function useTalentProfiles(filters?: {
 
       const { data, error } = await query.order("updated_at", { ascending: false });
       if (error) throw error;
+      // Strip to privacy-safe shape — no tenant_id, no employee_id
       return (data || []).map((d: any) => ({
-        ...d,
+        id: d.id,
+        talent_pool_status: d.talent_pool_status,
+        available_from: d.available_from,
+        preferred_roles: d.preferred_roles || [],
+        preferred_locations: d.preferred_locations || [],
+        preferred_countries: d.preferred_countries || [],
+        preferred_regions: d.preferred_regions || [],
+        employment_type_preference: d.employment_type_preference || [],
+        profile_summary: d.profile_summary,
+        years_experience: d.years_experience,
+        languages: d.languages || [],
+        work_eligibility_countries: d.work_eligibility_countries || [],
+        willing_to_relocate: d.willing_to_relocate,
+        willing_to_travel: d.willing_to_travel,
         employee: {
           forename: d.employees?.forename || "",
           surname_initial: d.employees?.surname ? d.employees.surname.charAt(0) + "." : "",
@@ -109,7 +111,7 @@ export function useTalentProfiles(filters?: {
   });
 }
 
-// Fetch own talent profile (for self-service)
+// Fetch own talent profile (for self-service) — full fields for the owner
 export function useOwnTalentProfile() {
   const { user } = useAuth();
   return useQuery({
@@ -130,7 +132,7 @@ export function useOwnTalentProfile() {
         .maybeSingle();
 
       if (error) throw error;
-      return data as TalentProfile | null;
+      return data as any | null;
     },
     enabled: !!user?.id,
   });
@@ -141,7 +143,6 @@ export function useUpsertTalentProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (profile: Record<string, any> & { employee_id: string; tenant_id: string }) => {
-      // Check existing
       const { data: existing } = await supabase
         .from("talent_profiles")
         .select("id")
@@ -211,7 +212,7 @@ export function useCreateTalentRequest() {
   });
 }
 
-// Talent request matches
+// Talent request matches — privacy-safe: no tenant_id/employee_id in profile
 export function useTalentMatches(requestId: string) {
   return useQuery({
     queryKey: ["talent-matches", requestId],
@@ -222,27 +223,50 @@ export function useTalentMatches(requestId: string) {
           id, talent_pool_status, preferred_roles, preferred_locations,
           preferred_countries, profile_summary, years_experience, languages,
           employment_type_preference, available_from,
+          willing_to_relocate, willing_to_travel,
+          work_eligibility_countries,
           employees!inner(forename, surname)
         )`)
         .eq("talent_request_id", requestId)
         .order("match_score", { ascending: false });
       if (error) throw error;
       return (data || []).map((d: any) => ({
-        ...d,
+        id: d.id,
+        talent_request_id: d.talent_request_id,
+        talent_profile_id: d.talent_profile_id,
+        match_score: d.match_score,
+        geography_match: d.geography_match,
+        visibility_match: d.visibility_match,
+        skill_match: d.skill_match,
+        match_reasoning: d.match_reasoning,
+        status: d.status,
+        created_at: d.created_at,
         talent_profile: d.talent_profiles ? {
-          ...d.talent_profiles,
+          id: d.talent_profiles.id,
+          talent_pool_status: d.talent_profiles.talent_pool_status,
+          preferred_roles: d.talent_profiles.preferred_roles || [],
+          preferred_locations: d.talent_profiles.preferred_locations || [],
+          preferred_countries: d.talent_profiles.preferred_countries || [],
+          profile_summary: d.talent_profiles.profile_summary,
+          years_experience: d.talent_profiles.years_experience,
+          languages: d.talent_profiles.languages || [],
+          employment_type_preference: d.talent_profiles.employment_type_preference || [],
+          available_from: d.talent_profiles.available_from,
+          willing_to_relocate: d.talent_profiles.willing_to_relocate,
+          willing_to_travel: d.talent_profiles.willing_to_travel,
+          work_eligibility_countries: d.talent_profiles.work_eligibility_countries || [],
           employee: {
             forename: d.talent_profiles.employees?.forename || "",
             surname_initial: d.talent_profiles.employees?.surname ? d.talent_profiles.employees.surname.charAt(0) + "." : "",
           },
-        } : undefined,
+        } as TalentProfile : undefined,
       })) as TalentMatch[];
     },
     enabled: !!requestId,
   });
 }
 
-// Interest actions
+// Interest actions — uses talent_profile_id (safe public identifier)
 export function useCreateInterestAction() {
   const qc = useQueryClient();
   const { tenantId } = useTenant();
@@ -268,7 +292,7 @@ export function useCreateInterestAction() {
   });
 }
 
-// Visibility permissions
+// Visibility permissions — employee self-service only
 export function useVisibilityPermissions(profileId: string) {
   return useQuery({
     queryKey: ["talent-visibility-permissions", profileId],
@@ -299,7 +323,6 @@ export function useManageVisibilityPermissions() {
         visibility_level?: string;
       }>;
     }) => {
-      // Delete existing and replace
       await supabase
         .from("talent_visibility_permissions")
         .delete()
