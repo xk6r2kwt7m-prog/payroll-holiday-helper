@@ -140,12 +140,15 @@ function TrainingAdminView() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
-            <TabsList className="inline-flex w-auto min-w-full sm:w-full sm:grid sm:grid-cols-5">
+            <TabsList className={cn("inline-flex w-auto min-w-full sm:w-full", canManageTraining ? "sm:grid sm:grid-cols-6" : "sm:grid sm:grid-cols-5")}>
               <TabsTrigger value="library" className="gap-1.5 text-xs sm:text-sm"><BookOpen className="h-4 w-4" /><span className="hidden sm:inline">Library</span><span className="sm:hidden">Lib</span></TabsTrigger>
               <TabsTrigger value="platform" className="gap-1.5 text-xs sm:text-sm"><Sparkles className="h-4 w-4" /><span className="hidden sm:inline">UGLŌ Standard</span><span className="sm:hidden">UGLŌ</span></TabsTrigger>
               <TabsTrigger value="tracking" className="gap-1.5 text-xs sm:text-sm"><ClipboardCheck className="h-4 w-4" /><span className="hidden sm:inline">Tracking</span><span className="sm:hidden">Track</span></TabsTrigger>
               <TabsTrigger value="compliance" className="gap-1.5 text-xs sm:text-sm"><BarChart3 className="h-4 w-4" /><span className="hidden sm:inline">Compliance</span><span className="sm:hidden">Comp</span></TabsTrigger>
               <TabsTrigger value="certifications" className="gap-1.5 text-xs sm:text-sm"><GraduationCap className="h-4 w-4" /><span className="hidden sm:inline">Certs</span><span className="sm:hidden">Certs</span></TabsTrigger>
+              {canManageTraining && (
+                <TabsTrigger value="qa" className="gap-1.5 text-xs sm:text-sm"><FlaskConical className="h-4 w-4" /><span className="hidden sm:inline">QA</span><span className="sm:hidden">QA</span></TabsTrigger>
+              )}
             </TabsList>
           </div>
 
