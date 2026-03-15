@@ -24,6 +24,8 @@ import {
   useCreateAssignments,
   LIBRARY_CATEGORIES,
   type TrainingLibraryItem,
+  type TrainingCompletionType,
+  type AssignmentSource,
 } from "@/hooks/useTrainingLibrary";
 import { useUpdateModuleStatus, COMPLETION_TYPES, MODULE_STATUSES, AUDIENCE_SCOPES, type ModuleStatus } from "@/hooks/useTrainingModules";
 import { useEmployees } from "@/hooks/useEmployees";
