@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import {
   BookOpen, Plus, FileText, Shield, GraduationCap, AlertTriangle,
   CheckCircle2, Clock, Search, Sparkles, Eye, Users, MoreVertical,
-  ThumbsUp, Send, Archive,
+  ThumbsUp, Send, Archive, Download,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,8 @@ import { AssignmentStatusBadge } from "@/components/training/AssignmentStatusBad
 import { QuizBuilder } from "@/components/training/QuizBuilder";
 import { useTenant } from "@/hooks/useTenant";
 import { usePermission } from "@/hooks/useRolePermissions";
+import { exportToCsv } from "@/lib/csv-export";
+import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -46,11 +48,12 @@ export function TrainingLibraryManager() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedDoc, setSelectedDoc] = useState<TrainingLibraryItem | null>(null);
 
-  // Only show tenant modules + adapted in main library (platform shown in UGLŌ Standard tab)
+  // Only show tenant modules + adapted in main library
   const tenantModules = library.filter(i => i.tenant_id !== null || i.source_type === "adapted");
 
   const filtered = tenantModules.filter(item => {
-    const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.summary?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCat = categoryFilter === "all" || item.category === categoryFilter;
     const matchesSource = sourceFilter === "all" || item.source_type === sourceFilter;
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
@@ -84,17 +87,48 @@ export function TrainingLibraryManager() {
     updateStatus.mutate({ id, status });
   };
 
+  // Status counts
+  const statusCounts = {
+    all: tenantModules.length,
+    draft: tenantModules.filter(m => m.status === "draft").length,
+    under_review: tenantModules.filter(m => m.status === "under_review").length,
+    approved: tenantModules.filter(m => m.status === "approved").length,
+    published: tenantModules.filter(m => m.status === "published").length,
+    archived: tenantModules.filter(m => m.status === "archived").length,
+  };
+
+  const handleExportModules = () => {
+    exportToCsv("training-library", [
+      { header: "Title", accessor: (m: TrainingLibraryItem) => m.title },
+      { header: "Category", accessor: (m: TrainingLibraryItem) => LIBRARY_CATEGORIES.find(c => c.value === m.category)?.label || m.category },
+      { header: "Status", accessor: (m: TrainingLibraryItem) => m.status },
+      { header: "Source", accessor: (m: TrainingLibraryItem) => m.source_type },
+      { header: "Type", accessor: (m: TrainingLibraryItem) => m.completion_type },
+      { header: "Version", accessor: (m: TrainingLibraryItem) => m.version },
+      { header: "Mandatory", accessor: (m: TrainingLibraryItem) => m.is_mandatory ? "Yes" : "No" },
+      { header: "Refresher Days", accessor: (m: TrainingLibraryItem) => m.refresher_days ?? "" },
+    ], filtered);
+    toast.success("Library exported");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-foreground">Training Library</h2>
-          <p className="text-xs text-muted-foreground">{filtered.length} modules</p>
+          <p className="text-xs text-muted-foreground">{filtered.length} module{filtered.length !== 1 ? "s" : ""}</p>
         </div>
-        {canManage && <AddModuleDialog />}
+        <div className="flex gap-2 shrink-0">
+          {canManage && filtered.length > 0 && (
+            <Button variant="outline" size="sm" onClick={handleExportModules} className="gap-1.5 text-xs hidden sm:flex">
+              <Download className="h-3.5 w-3.5" /> Export
+            </Button>
+          )}
+          {canManage && <AddModuleDialog />}
+        </div>
       </div>
 
-      {/* Filters */}
+      {/* Search + Category */}
       <div className="space-y-2">
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -109,18 +143,37 @@ export function TrainingLibraryManager() {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Status chips with counts */}
         <div className="flex gap-1.5 flex-wrap">
           {[
-            { key: "all", label: "All" },
-            { key: "draft", label: "Draft" },
-            { key: "published", label: "Published" },
-            { key: "archived", label: "Archived" },
-          ].map(s => (
+            { key: "all", label: "All", count: statusCounts.all },
+            { key: "draft", label: "Draft", count: statusCounts.draft },
+            { key: "under_review", label: "Review", count: statusCounts.under_review },
+            { key: "approved", label: "Approved", count: statusCounts.approved },
+            { key: "published", label: "Published", count: statusCounts.published },
+            { key: "archived", label: "Archived", count: statusCounts.archived },
+          ].filter(s => s.key === "all" || s.count > 0).map(s => (
             <button key={s.key} onClick={() => setStatusFilter(s.key)}
               className={cn("px-3 py-1 rounded-full text-xs font-medium border transition-all",
                 statusFilter === s.key ? "bg-primary/10 text-primary border-primary/20" : "bg-card text-muted-foreground border-border"
-              )}>{s.label}</button>
+              )}>
+              {s.label}
+              {s.count > 0 && <span className="ml-1 tabular-nums font-bold">{s.count}</span>}
+            </button>
           ))}
+
+          {/* Source filter */}
+          <div className="ml-auto">
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="h-7 w-[100px] text-xs"><SelectValue placeholder="Source" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                <SelectItem value="tenant">Tenant</SelectItem>
+                <SelectItem value="adapted">Adapted</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -129,16 +182,19 @@ export function TrainingLibraryManager() {
         {filtered.length === 0 && (
           <div className="text-center py-12">
             <BookOpen className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-            <h3 className="text-sm font-semibold text-foreground mb-1">No training modules yet</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-1">
+              {tenantModules.length === 0 ? "No training modules yet" : "No modules match your filters"}
+            </h3>
             <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              Upload your first SOP or start from the UGLŌ standard library.
+              {tenantModules.length === 0
+                ? "Upload your first SOP, create a new module, or adapt one from the UGLŌ standard library."
+                : "Try adjusting your search or status filters."}
             </p>
           </div>
         )}
         {filtered.map(item => {
           const stats = getAssignmentStats(item.id);
           const catLabel = LIBRARY_CATEGORIES.find(c => c.value === item.category)?.label || item.category;
-          const compType = COMPLETION_TYPES.find(c => c.value === item.completion_type)?.label || item.completion_type;
           const isPlatform = item.source_type === "platform";
           return (
             <div key={item.id}
@@ -232,10 +288,17 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [dueDate, setDueDate] = useState("");
   const [detailTab, setDetailTab] = useState("info");
+  const [assignMode, setAssignMode] = useState<"individual" | "department" | "all">("individual");
+  const [selectedDept, setSelectedDept] = useState("all");
 
   const activeEmployees = employees.filter(e => e.status === "active" || e.status === "starter" || (e.status as string) === "onboarding");
   const assignedEmployeeIds = new Set(existingAssignments.map(a => a.employee_id));
   const unassignedEmployees = activeEmployees.filter(e => !assignedEmployeeIds.has(e.id));
+  const departments = Array.from(new Set(activeEmployees.map(e => e.department).filter(Boolean)));
+
+  const filteredUnassigned = assignMode === "department" && selectedDept !== "all"
+    ? unassignedEmployees.filter(e => e.department === selectedDept)
+    : unassignedEmployees;
 
   const toggleEmployee = (id: string) => {
     const newSet = new Set(selectedIds);
@@ -243,10 +306,21 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
     setSelectedIds(newSet);
   };
 
+  const selectAll = () => {
+    if (selectedIds.size === filteredUnassigned.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredUnassigned.map(e => e.id)));
+    }
+  };
+
   const handleAssign = () => {
-    if (selectedIds.size === 0) return;
+    const targetIds = assignMode === "all" ? unassignedEmployees.map(e => e.id) :
+      assignMode === "department" ? filteredUnassigned.map(e => e.id) :
+      Array.from(selectedIds);
+    if (targetIds.length === 0) return;
     createAssignments.mutate(
-      Array.from(selectedIds).map(empId => ({
+      targetIds.map(empId => ({
         document_id: module.id,
         employee_id: empId,
         due_date: dueDate || undefined,
@@ -259,6 +333,18 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
 
   const catLabel = LIBRARY_CATEGORIES.find(c => c.value === module.category)?.label || module.category;
   const compLabel = COMPLETION_TYPES.find(c => c.value === module.completion_type)?.label || module.completion_type;
+
+  const handleExportAssignments = () => {
+    exportToCsv(`assignments-${module.title.replace(/\s+/g, "-").toLowerCase()}`, [
+      { header: "Employee", accessor: (a: any) => `${a.employees?.forename} ${a.employees?.surname}` },
+      { header: "Department", accessor: (a: any) => a.employees?.department },
+      { header: "Status", accessor: (a: any) => a.status },
+      { header: "Due Date", accessor: (a: any) => a.due_date ? format(parseISO(a.due_date), "dd/MM/yyyy") : "" },
+      { header: "Completed", accessor: (a: any) => a.completed_at ? format(parseISO(a.completed_at), "dd/MM/yyyy") : "" },
+      { header: "Score", accessor: (a: any) => a.score ?? "" },
+    ], existingAssignments);
+    toast.success("Assignments exported");
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -275,6 +361,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
             <Badge variant="outline" className="text-[10px]">{compLabel}</Badge>
             {module.source_type === "adapted" && <Badge className="text-[10px] bg-accent/10 text-accent-foreground">Adapted from UGLŌ</Badge>}
             {isPlatform && <Badge className="text-[10px] bg-primary/10 text-primary">UGLŌ Standard</Badge>}
+            {module.version > 1 && <Badge variant="secondary" className="text-[10px]">v{module.version}</Badge>}
           </div>
         </SheetHeader>
 
@@ -313,10 +400,18 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
               <InfoRow label="Version" value={`v${module.version}`} />
               <InfoRow label="Audience" value={module.audience_scope?.replace("_", " ")} />
               {module.estimated_minutes && <InfoRow label="Est. Time" value={`${module.estimated_minutes} min`} />}
-              {module.refresher_days && <InfoRow label="Refresher" value={`Every ${module.refresher_days} days`} />}
+              {module.refresher_days && (
+                <InfoRow label="Refresher" value={
+                  module.refresher_days === 365 ? "Annual" :
+                  module.refresher_days === 180 ? "Every 6 months" :
+                  `Every ${module.refresher_days} days`
+                } />
+              )}
               {module.pass_mark && module.requires_quiz && <InfoRow label="Pass Mark" value={`${module.pass_mark}%`} />}
               {module.is_mandatory && <InfoRow label="Mandatory" value="Yes" />}
+              {module.source_module_id && <InfoRow label="Source" value="Adapted from UGLŌ Standard" />}
               {module.published_at && <InfoRow label="Published" value={format(parseISO(module.published_at), "d MMM yyyy")} />}
+              {module.review_date && <InfoRow label="Review Due" value={format(parseISO(module.review_date), "d MMM yyyy")} />}
             </div>
           </TabsContent>
 
@@ -324,16 +419,24 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
             {/* Existing assignments */}
             {existingAssignments.length > 0 && (
               <div className="space-y-1.5 mb-4">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Assigned</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Assigned</p>
+                  {canManage && (
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1" onClick={handleExportAssignments}>
+                      <Download className="h-3 w-3" /> CSV
+                    </Button>
+                  )}
+                </div>
                 {existingAssignments.map(a => {
                   const isOverdue = a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0 && a.status === "assigned";
+                  const signoffPending = a.signoff_required && !a.signed_off_at && a.status !== "cancelled";
                   return (
                     <div key={a.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{a.employees?.forename} {a.employees?.surname}</p>
                         <p className="text-[10px] text-muted-foreground">{a.employees?.department}</p>
                       </div>
-                      <AssignmentStatusBadge status={a.status} isOverdue={!!isOverdue} />
+                      <AssignmentStatusBadge status={a.status} isOverdue={!!isOverdue} signoffPending={signoffPending} />
                     </div>
                   );
                 })}
@@ -344,24 +447,76 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
             {module.status === "published" && canManage && (
               <>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Add Assignments</p>
-                <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 w-[160px]" placeholder="Due date" />
-                <div className="space-y-1 max-h-[250px] overflow-y-auto">
-                  {unassignedEmployees.map(emp => (
-                    <label key={emp.id} className={cn("flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors",
-                      selectedIds.has(emp.id) ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50"
-                    )}>
-                      <input type="checkbox" checked={selectedIds.has(emp.id)} onChange={() => toggleEmployee(emp.id)} className="rounded" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{emp.forename} {emp.surname}</p>
-                        <p className="text-[10px] text-muted-foreground">{emp.department}</p>
-                      </div>
-                    </label>
+
+                {/* Assignment mode */}
+                <div className="flex gap-1.5 flex-wrap">
+                  {(["individual", "department", "all"] as const).map(mode => (
+                    <button key={mode} onClick={() => { setAssignMode(mode); setSelectedIds(new Set()); }}
+                      className={cn("px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                        assignMode === mode ? "bg-primary/10 text-primary border-primary/20" : "bg-card text-muted-foreground border-border"
+                      )}>
+                      {mode === "individual" ? "Individual" : mode === "department" ? "Department" : "All Staff"}
+                    </button>
                   ))}
-                  {unassignedEmployees.length === 0 && <p className="text-center py-4 text-sm text-muted-foreground">All employees assigned</p>}
                 </div>
-                {selectedIds.size > 0 && (
+
+                {/* Department picker */}
+                {assignMode === "department" && (
+                  <Select value={selectedDept} onValueChange={setSelectedDept}>
+                    <SelectTrigger className="h-8"><SelectValue placeholder="Select department" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
+                      {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8" placeholder="Due date (optional)" />
+
+                {assignMode === "individual" && (
+                  <>
+                    {filteredUnassigned.length > 0 && (
+                      <button onClick={selectAll} className="text-[10px] text-primary font-medium">
+                        {selectedIds.size === filteredUnassigned.length ? "Deselect all" : "Select all"}
+                      </button>
+                    )}
+                    <div className="space-y-1 max-h-[250px] overflow-y-auto">
+                      {filteredUnassigned.map(emp => (
+                        <label key={emp.id} className={cn("flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors",
+                          selectedIds.has(emp.id) ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50"
+                        )}>
+                          <input type="checkbox" checked={selectedIds.has(emp.id)} onChange={() => toggleEmployee(emp.id)} className="rounded" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{emp.forename} {emp.surname}</p>
+                            <p className="text-[10px] text-muted-foreground">{emp.department}</p>
+                          </div>
+                        </label>
+                      ))}
+                      {filteredUnassigned.length === 0 && <p className="text-center py-4 text-sm text-muted-foreground">All employees assigned</p>}
+                    </div>
+                  </>
+                )}
+
+                {assignMode === "all" && (
+                  <p className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                    This will assign to all {unassignedEmployees.length} unassigned employee{unassignedEmployees.length !== 1 ? "s" : ""}.
+                  </p>
+                )}
+
+                {assignMode === "department" && selectedDept !== "all" && (
+                  <p className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                    {filteredUnassigned.length} unassigned in {selectedDept}
+                  </p>
+                )}
+
+                {((assignMode === "individual" && selectedIds.size > 0) ||
+                  assignMode === "all" ||
+                  (assignMode === "department" && filteredUnassigned.length > 0)) && (
                   <Button onClick={handleAssign} disabled={createAssignments.isPending} className="w-full">
-                    {createAssignments.isPending ? "Assigning..." : `Assign to ${selectedIds.size} employee${selectedIds.size > 1 ? "s" : ""}`}
+                    {createAssignments.isPending ? "Assigning..." :
+                      assignMode === "individual" ? `Assign to ${selectedIds.size} employee${selectedIds.size > 1 ? "s" : ""}` :
+                      assignMode === "all" ? `Assign to all ${unassignedEmployees.length} staff` :
+                      `Assign to ${filteredUnassigned.length} in ${selectedDept}`}
                   </Button>
                 )}
               </>
@@ -465,7 +620,18 @@ function AddModuleDialog() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label>Est. Minutes</Label><Input type="number" value={form.estimated_minutes} onChange={e => setForm(f => ({ ...f, estimated_minutes: e.target.value }))} /></div>
-            <div><Label>Refresher (days)</Label><Input type="number" value={form.refresher_days} onChange={e => setForm(f => ({ ...f, refresher_days: e.target.value }))} /></div>
+            <div>
+              <Label>Refresher</Label>
+              <Select value={form.refresher_days} onValueChange={v => setForm(f => ({ ...f, refresher_days: v }))}>
+                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Refresher</SelectItem>
+                  <SelectItem value="90">Every 90 Days</SelectItem>
+                  <SelectItem value="180">Every 6 Months</SelectItem>
+                  <SelectItem value="365">Annual</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {(form.completion_type === "quiz" || form.completion_type === "blended") && (
             <div><Label>Pass Mark (%)</Label><Input type="number" value={form.pass_mark} onChange={e => setForm(f => ({ ...f, pass_mark: e.target.value }))} /></div>
