@@ -287,6 +287,7 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
   const needsAck = doc?.requires_acknowledgement && !assignment.acknowledged_at;
   const needsCompletion = doc?.requires_completion && !assignment.completed_at;
   const needsQuiz = doc?.requires_quiz && !assignment.quiz_passed;
+  const quizPassed = assignment.quiz_passed === true;
   const isInternalPage = doc?.content_type === "internal_page" && doc?.content_url;
   const needsSignoff = assignment.signoff_required && !assignment.signed_off_at;
   const staffStatus = getStaffStatus(assignment);
@@ -297,23 +298,45 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
       window.open(doc.content_url, "_blank", "noopener,noreferrer");
   };
 
-  // Quiz view
-  if (showQuiz && needsQuiz && doc) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{doc.title} — Quiz</DialogTitle></DialogHeader>
-          <QuizTaker
-            moduleId={doc.id}
-            assignmentId={assignment.id}
-            employeeId={employeeId}
-            passMark={doc.pass_mark || 80}
-            retryLimit={doc.retry_limit || 3}
-            onComplete={() => onOpenChange(false)}
-          />
-        </DialogContent>
-      </Dialog>
-    );
+  // Quiz view — with lock guard
+  if (showQuiz && doc) {
+    // Defensive guard: don't show quiz if already passed
+    if (quizPassed) {
+      return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>{doc.title} — Quiz</DialogTitle></DialogHeader>
+            <QuizTaker
+              moduleId={doc.id}
+              assignmentId={assignment.id}
+              employeeId={employeeId}
+              passMark={doc.pass_mark || 80}
+              retryLimit={doc.retry_limit || 3}
+              quizPassed={true}
+              onComplete={() => onOpenChange(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      );
+    }
+    if (needsQuiz) {
+      return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>{doc.title} — Quiz</DialogTitle></DialogHeader>
+            <QuizTaker
+              moduleId={doc.id}
+              assignmentId={assignment.id}
+              employeeId={employeeId}
+              passMark={doc.pass_mark || 80}
+              retryLimit={doc.retry_limit || 3}
+              quizPassed={false}
+              onComplete={() => onOpenChange(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      );
+    }
   }
 
   return (
