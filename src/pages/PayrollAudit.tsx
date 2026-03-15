@@ -149,6 +149,17 @@ const PayrollAudit = () => {
     return f.category === activeTab;
   }) || [];
 
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64" />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">

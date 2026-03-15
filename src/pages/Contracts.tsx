@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,28 @@ import { FilePlus, FileCheck, FileText } from "lucide-react";
 import { ContractFormDialog } from "@/components/contracts/ContractFormDialog";
 import { SignedContractsList } from "@/components/contracts/SignedContractsList";
 import { useI18n } from "@/hooks/useI18n";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Contracts() {
   const [generateOpen, setGenerateOpen] = useState(false);
   const { t } = useI18n();
+
+  const resetPageState = useCallback(() => {
+    setGenerateOpen(false);
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
+
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
