@@ -203,6 +203,12 @@ export function TrainingLibraryManager() {
           metrics={govMetrics}
           activeFilter={evidenceFilter}
           onFilterSelect={setEvidenceFilter}
+          modules={tenantModules}
+          govCounts={govCounts}
+          onModuleOpen={(id) => {
+            const mod = tenantModules.find(m => m.id === id);
+            if (mod) setSelectedDoc(mod);
+          }}
         />
       )}
 
