@@ -331,7 +331,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
         k === "summary" ? (module.summary || "") :
         k === "description" ? (module.description || "") :
         k === "audience_scope" ? (module.audience_scope || "all_staff") :
-        (module as Record<string, unknown>)[k];
+        (module as unknown as Record<string, unknown>)[k];
       return (editForm as Record<string, unknown>)[k] !== orig;
     });
 
