@@ -82,8 +82,12 @@ export function TrainingLibraryManager() {
     const matchesOpArea = opAreaFilter === "all" || (item.standards_metadata as any)?.operational_area === opAreaFilter;
     const matchesMandatory = !mandatoryFilter || item.is_mandatory;
     const matchesEvidence = evidenceFilter === "all" ||
-      (evidenceFilter === "reviewed" && !!item.last_reviewed_at) ||
-      (evidenceFilter === "not_reviewed" && !item.last_reviewed_at);
+      (evidenceFilter === "reviewed" && !!item.last_reviewed_at && getReviewState(item.last_reviewed_at) === "current") ||
+      (evidenceFilter === "not_reviewed" && !item.last_reviewed_at) ||
+      (evidenceFilter === "stale" && getReviewState(item.last_reviewed_at) === "stale") ||
+      (evidenceFilter === "has_evidence" && (govCounts[item.id]?.evidenceCount ?? 0) > 0) ||
+      (evidenceFilter === "no_evidence" && (govCounts[item.id]?.evidenceCount ?? 0) === 0) ||
+      (evidenceFilter === "has_insights" && (govCounts[item.id]?.insightCount ?? 0) > 0);
     return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory && matchesEvidence;
   });
 
