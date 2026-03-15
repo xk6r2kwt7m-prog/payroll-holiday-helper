@@ -3932,6 +3932,60 @@ export type Database = {
           },
         ]
       }
+      talent_applications: {
+        Row: {
+          applicant_user_id: string
+          applied_at: string
+          cover_message: string | null
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          status: string
+          talent_profile_id: string
+          updated_at: string
+          vacancy_id: string
+        }
+        Insert: {
+          applicant_user_id: string
+          applied_at?: string
+          cover_message?: string | null
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          status?: string
+          talent_profile_id: string
+          updated_at?: string
+          vacancy_id: string
+        }
+        Update: {
+          applicant_user_id?: string
+          applied_at?: string
+          cover_message?: string | null
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          status?: string
+          talent_profile_id?: string
+          updated_at?: string
+          vacancy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_applications_talent_profile_id_fkey"
+            columns: ["talent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "talent_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_applications_vacancy_id_fkey"
+            columns: ["vacancy_id"]
+            isOneToOne: false
+            referencedRelation: "talent_vacancies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talent_audit_log: {
         Row: {
           action: string
@@ -3976,6 +4030,61 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_conversations: {
+        Row: {
+          application_id: string | null
+          conversation_type: string
+          created_at: string
+          employer_tenant_id: string
+          id: string
+          status: string
+          talent_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          application_id?: string | null
+          conversation_type?: string
+          created_at?: string
+          employer_tenant_id: string
+          id?: string
+          status?: string
+          talent_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string | null
+          conversation_type?: string
+          created_at?: string
+          employer_tenant_id?: string
+          id?: string
+          status?: string
+          talent_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_conversations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "talent_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_conversations_employer_tenant_id_fkey"
+            columns: ["employer_tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_conversations_talent_profile_id_fkey"
+            columns: ["talent_profile_id"]
+            isOneToOne: false
+            referencedRelation: "talent_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4031,6 +4140,50 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message_text: string | null
+          message_type: string
+          metadata: Json | null
+          read_at: string | null
+          sender_type: string
+          sender_user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_text?: string | null
+          message_type?: string
+          metadata?: Json | null
+          read_at?: string | null
+          sender_type: string
+          sender_user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_text?: string | null
+          message_type?: string
+          metadata?: Json | null
+          read_at?: string | null
+          sender_type?: string
+          sender_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "talent_conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -4253,6 +4406,80 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "talent_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talent_vacancies: {
+        Row: {
+          closes_at: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          employment_type: string | null
+          hourly_rate_max: number | null
+          hourly_rate_min: number | null
+          id: string
+          location: string | null
+          published_at: string | null
+          salary_max: number | null
+          salary_min: number | null
+          start_date: string | null
+          status: string
+          tenant_id: string
+          title: string
+          updated_at: string
+          urgency: string | null
+        }
+        Insert: {
+          closes_at?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          employment_type?: string | null
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
+          id?: string
+          location?: string | null
+          published_at?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          start_date?: string | null
+          status?: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+          urgency?: string | null
+        }
+        Update: {
+          closes_at?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          employment_type?: string | null
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
+          id?: string
+          location?: string | null
+          published_at?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          start_date?: string | null
+          status?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_vacancies_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
