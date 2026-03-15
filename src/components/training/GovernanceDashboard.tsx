@@ -210,7 +210,16 @@ function buildPriorityQueue(modules: ModuleForQueue[], govCounts: Record<string,
     });
   }
 
-  items.sort((a, b) => a.priority - b.priority);
+  items.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    // Tie-breakers: never reviewed first, then older review, fewer evidence, fewer insights, alpha
+    const aTime = a.lastReviewedAt ? new Date(a.lastReviewedAt).getTime() : 0;
+    const bTime = b.lastReviewedAt ? new Date(b.lastReviewedAt).getTime() : 0;
+    if (aTime !== bTime) return aTime - bTime; // 0 (never) sorts first, then oldest
+    if (a.evidenceCount !== b.evidenceCount) return a.evidenceCount - b.evidenceCount;
+    if (a.insightCount !== b.insightCount) return a.insightCount - b.insightCount;
+    return a.title.localeCompare(b.title);
+  });
   return items;
 }
 
