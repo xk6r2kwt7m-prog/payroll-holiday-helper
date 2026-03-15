@@ -79,6 +79,9 @@ const App = () => (
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/cookies" element={<CookiePolicy />} />
             <Route path="/onboard" element={<CompanyOnboarding />} />
             <Route path="/select-workspace" element={<SelectWorkspace />} />
             <Route path="/sign/:token" element={<SignContract />} />
