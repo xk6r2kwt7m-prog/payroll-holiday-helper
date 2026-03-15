@@ -139,6 +139,32 @@ export function TrainingLibraryManager() {
           matchesEvidence = !meta2?.learning_outcomes || meta2.learning_outcomes.length === 0;
           break;
         }
+        // Effectiveness filters
+        case "eff_strong": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.delta_percent <= -40;
+          break;
+        }
+        case "eff_improved": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.delta_percent < -15 && effRec.delta_percent > -40;
+          break;
+        }
+        case "eff_unchanged": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.delta_percent >= -15 && effRec.delta_percent <= 15;
+          break;
+        }
+        case "eff_declined": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.delta_percent > 15;
+          break;
+        }
+        case "eff_insufficient": {
+          const effRec = effByModule.get(item.id);
+          matchesEvidence = !!effRec && effRec.result_status === "insufficient_data";
+          break;
+        }
         default: matchesEvidence = true;
       }
     }
