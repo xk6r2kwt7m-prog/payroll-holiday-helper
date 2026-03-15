@@ -982,6 +982,14 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
         </div>
       )}
 
+      {/* Content Strength Assessment */}
+      <ContentStrengthPanel
+        metadata={module.standards_metadata as StandardsMetadata | null}
+        counts={{ evidenceCount: activeEvidence.length, insightCount: activeInsights.length }}
+        isHighRisk={riskLevel === "high"}
+        isMandatory={module.is_mandatory}
+      />
+
       <ModuleGovernanceSummary
         lastReviewedAt={module.last_reviewed_at ?? null}
         counts={{ evidenceCount: activeEvidence.length, insightCount: activeInsights.length }}
@@ -996,7 +1004,7 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
       <EvidencePanel documentId={module.id} canEdit={canEdit} />
       <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
       {module.standards_metadata && (
-        <WhyThisMattersPanel metadata={module.standards_metadata} />
+        <WhyThisMattersPanel metadata={module.standards_metadata as StandardsMetadata} />
       )}
     </>
   );
