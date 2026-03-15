@@ -77,7 +77,10 @@ export function TrainingLibraryManager() {
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     const matchesOpArea = opAreaFilter === "all" || (item.standards_metadata as any)?.operational_area === opAreaFilter;
     const matchesMandatory = !mandatoryFilter || item.is_mandatory;
-    return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory;
+    const matchesEvidence = evidenceFilter === "all" ||
+      (evidenceFilter === "reviewed" && !!item.last_reviewed_at) ||
+      (evidenceFilter === "not_reviewed" && !item.last_reviewed_at);
+    return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory && matchesEvidence;
   });
 
   const getAssignmentStats = (docId: string) => {
