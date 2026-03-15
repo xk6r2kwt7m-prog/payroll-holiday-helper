@@ -302,6 +302,8 @@ export function TrainingLibraryManager() {
           const isPlatform = item.source_type === "platform";
           const itemGov = canManage ? govCounts[item.id] : undefined;
           const reviewState = canManage ? getReviewState(item.last_reviewed_at ?? null) : undefined;
+          const riskLevel = (item.standards_metadata as any)?.service_risk_level as string | undefined;
+          const moduleHealth = canManage ? getModuleHealth(item) : undefined;
           return (
             <div key={item.id}
               className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm cursor-pointer active:bg-muted transition-all"
