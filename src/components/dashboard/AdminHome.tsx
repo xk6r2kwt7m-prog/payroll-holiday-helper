@@ -115,7 +115,7 @@ export function AdminHome() {
   ];
 
   return (
-    <div className="space-y-5 max-w-2xl mx-auto pb-24">
+    <div className="space-y-5 max-w-2xl mx-auto pb-24 min-w-0 overflow-x-hidden">
       {/* Greeting */}
       <motion.div {...anim} transition={{ duration: 0.25 }}>
         <h1 className="text-xl font-bold text-foreground">
@@ -136,11 +136,11 @@ export function AdminHome() {
       {/* KPI Strip — hide when all zeros for new tenants */}
       {!isNewTenant && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.04 }}>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {kpis.map((kpi) => (
-              <Link key={kpi.label} to={kpi.path} className="rounded-xl bg-card border border-border p-3 text-center shadow-sm active:bg-muted transition-all">
-                <p className={cn("text-lg font-bold tabular-nums leading-none", kpi.color)}>{kpi.value}</p>
-                <p className="text-[10px] font-semibold text-muted-foreground mt-1.5 uppercase tracking-wider">{kpi.label}</p>
+              <Link key={kpi.label} to={kpi.path} className="rounded-xl bg-card border border-border p-3 text-center shadow-sm active:bg-muted transition-all min-w-0">
+                <p className={cn("text-lg font-bold tabular-nums leading-none truncate", kpi.color)}>{kpi.value}</p>
+                <p className="text-[10px] font-semibold text-muted-foreground mt-1.5 uppercase tracking-wider truncate">{kpi.label}</p>
               </Link>
             ))}
           </div>
@@ -165,7 +165,7 @@ export function AdminHome() {
 
       {/* Quick Actions */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.12 }}>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-2 min-w-0">
           {quickLinks.map((a) => (
             <Link key={a.label} to={a.path} className="flex flex-col items-center gap-1.5 py-3 rounded-xl active:bg-muted transition-colors">
               <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl", a.bg)}>
@@ -214,9 +214,9 @@ export function AdminHome() {
       {/* Module Access */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.2 }}>
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Modules</h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {moduleLinks.map((mod) => (
-            <Link key={mod.label} to={mod.path} className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm active:bg-muted transition-all">
+            <Link key={mod.label} to={mod.path} className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm active:bg-muted transition-all min-w-0">
               <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                 <mod.icon className="h-4.5 w-4.5 text-foreground" />
               </div>

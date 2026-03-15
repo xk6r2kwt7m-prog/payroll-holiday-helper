@@ -195,7 +195,7 @@ const Employees = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-4 max-w-7xl mx-auto min-w-0 overflow-x-hidden">
+      <div className="space-y-4 max-w-7xl mx-auto min-w-0 w-full overflow-x-hidden">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="min-w-0">
@@ -232,7 +232,7 @@ const Employees = () => {
         </div>
 
         {/* Status Pills */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+        <div className="flex gap-1.5 flex-wrap pb-1">
           {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
             if (status === "archived" && !canManageLifecycle) return null;
             const count = counts[status];
@@ -243,7 +243,7 @@ const Employees = () => {
                 key={status}
                 onClick={() => setStatusFilter(status)}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap shrink-0",
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap",
                   isActive ? config.style + " shadow-sm" : "bg-card text-muted-foreground border-border/60 hover:border-border"
                 )}
               >
