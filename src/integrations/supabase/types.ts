@@ -5708,6 +5708,14 @@ export type Database = {
       }
     }
     Functions: {
+      apply_to_vacancy: {
+        Args: {
+          _cover_message?: string
+          _talent_profile_id: string
+          _vacancy_id: string
+        }
+        Returns: Json
+      }
       calculate_country_holiday_accrual: {
         Args: { _employee_id: string; _hours_worked: number }
         Returns: number
