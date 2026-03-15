@@ -352,9 +352,11 @@ export function useCreateHolidayBalance() {
 
 // Holiday adjustments hook
 export function useHolidayAdjustments(year?: number) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_adjustments", year],
+    queryKey: ["holiday_adjustments", tenantId, year],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("holiday_adjustments")
         .select(`
@@ -366,6 +368,7 @@ export function useHolidayAdjustments(year?: number) {
             department
           )
         `)
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       if (year) {
@@ -378,6 +381,7 @@ export function useHolidayAdjustments(year?: number) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
