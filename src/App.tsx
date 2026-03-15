@@ -57,6 +57,7 @@ import FohServiceTraining from "./pages/FohServiceTraining";
 import FohAllergyTraining from "./pages/FohAllergyTraining";
 import FohUpsellingTraining from "./pages/FohUpsellingTraining";
 import FohPrintableTraining from "./pages/FohPrintableTraining";
+import Integrations from "./pages/Integrations";
 import { CommandPalette } from "@/components/CommandPalette";
 import { CookieConsent } from "@/components/CookieConsent";
 
@@ -82,6 +83,7 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfUse />} />
             <Route path="/cookies" element={<CookiePolicy />} />
+            <Route path="/integrations" element={<Integrations />} />
             <Route path="/onboard" element={<CompanyOnboarding />} />
             <Route path="/select-workspace" element={<SelectWorkspace />} />
             <Route path="/sign/:token" element={<SignContract />} />
