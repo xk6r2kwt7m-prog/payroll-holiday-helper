@@ -21,6 +21,11 @@ const TalentPool = () => {
   const { isAdmin } = useAuth();
   const { data: ownProfile } = useOwnTalentProfile();
 
+  const resetPageState = useCallback(() => {
+    // activeTab will re-resolve from resolveDefaultTab on next render
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
+
   const hasWorkerProfile = !!ownProfile;
   // Employer mode: admin without a worker profile; Worker mode: everyone else
   const isEmployerView = isAdmin && !hasWorkerProfile;
