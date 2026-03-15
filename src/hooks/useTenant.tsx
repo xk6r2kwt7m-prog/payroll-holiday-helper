@@ -260,8 +260,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
             : null;
 
           if (savedMembership) {
-            
-            commitTenantSelection(savedMembership.tenant_id, savedMembership.tenants as any);
+            commitTenantSelection(savedMembership.tenant_id, savedMembership.tenants as any, savedMembership.role);
           } else {
             if (savedTenantId) {
               console.warn("[TenantProvider] Stale saved tenant ID removed:", savedTenantId);
