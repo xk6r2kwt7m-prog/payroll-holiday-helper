@@ -258,6 +258,8 @@ export function TrainingLibraryManager() {
           const stats = getAssignmentStats(item.id);
           const catLabel = LIBRARY_CATEGORIES.find(c => c.value === item.category)?.label || item.category;
           const isPlatform = item.source_type === "platform";
+          const itemGov = canManage ? govCounts[item.id] : undefined;
+          const reviewState = canManage ? getReviewState(item.last_reviewed_at ?? null) : undefined;
           return (
             <div key={item.id}
               className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm cursor-pointer active:bg-muted transition-all"
@@ -281,9 +283,25 @@ export function TrainingLibraryManager() {
                   <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>
                   {item.is_mandatory && <Badge className="text-[10px] bg-destructive/10 text-destructive">Mandatory</Badge>}
                   {item.version > 1 && <Badge variant="secondary" className="text-[10px]">v{item.version}</Badge>}
-                  {canManage && item.last_reviewed_at && (
+                  {/* Admin governance indicators */}
+                  {canManage && reviewState === "current" && (
+                    <Badge variant="outline" className="text-[9px] text-success gap-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Reviewed
+                    </Badge>
+                  )}
+                  {canManage && reviewState === "stale" && (
+                    <Badge className="text-[9px] bg-warning/10 text-warning gap-0.5">
+                      <AlertTriangle className="h-2.5 w-2.5" /> Stale
+                    </Badge>
+                  )}
+                  {canManage && itemGov && itemGov.evidenceCount > 0 && (
                     <Badge variant="outline" className="text-[9px] text-muted-foreground gap-0.5">
-                      <Clock className="h-2.5 w-2.5" /> Reviewed
+                      <BookOpen className="h-2.5 w-2.5" /> {itemGov.evidenceCount}
+                    </Badge>
+                  )}
+                  {canManage && itemGov && itemGov.insightCount > 0 && (
+                    <Badge variant="outline" className="text-[9px] text-muted-foreground gap-0.5">
+                      <Eye className="h-2.5 w-2.5" /> {itemGov.insightCount}
                     </Badge>
                   )}
                 </div>
