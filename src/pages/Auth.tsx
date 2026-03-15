@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,14 +9,15 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { motion } from "framer-motion";
 import {
-  CalendarDays,
-  Clock,
-  Users,
-  ShieldCheck,
-  ChartBar,
-  FileText,
+  CalendarDays, Clock, Users, ShieldCheck, ChartBar, FileText, ChevronDown,
 } from "lucide-react";
 import ugloIcon from "@/assets/uglo-icon.png";
+import { FAQ } from "@/components/marketing/FAQ";
+import { ValueCards } from "@/components/marketing/ValueCards";
+import { SecuritySection } from "@/components/marketing/SecuritySection";
+import { PricingSection } from "@/components/marketing/PricingSection";
+import { EmployerConversion, CandidateConversion } from "@/components/marketing/ConversionSections";
+import { CookieSettingsButton } from "@/components/CookieConsent";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -115,233 +116,282 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left branding panel — hidden on mobile */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary/[0.06]">
-        {/* Decorative circles */}
-        <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-primary/10" />
-        <div className="absolute bottom-12 -right-16 w-56 h-56 rounded-full bg-accent/10" />
+    <div className="min-h-screen bg-background">
+      {/* ═══════ Hero section ═══════ */}
+      <div className="flex min-h-screen">
+        {/* Left branding panel — hidden on mobile */}
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-primary/[0.06]">
+          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-primary/10" />
+          <div className="absolute bottom-12 -right-16 w-56 h-56 rounded-full bg-accent/10" />
 
-        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 w-full">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            {/* Logo */}
-            <div className="flex items-center gap-3 mb-10">
-              <img src={ugloIcon} alt="UGLŌ" className="h-14 w-14 rounded-2xl shadow-lg" />
-              <div>
-                <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                  UGLŌ
-                </h1>
-                <p className="text-sm text-muted-foreground font-medium">
-                  Hospitality People Platform
-                </p>
+          <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 w-full">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
+              <div className="flex items-center gap-3 mb-10">
+                <img src={ugloIcon} alt="UGLŌ" className="h-14 w-14 rounded-2xl shadow-lg" />
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground tracking-tight">UGLŌ</h1>
+                  <p className="text-sm text-muted-foreground font-medium">Hospitality People Platform</p>
+                </div>
               </div>
+
+              <h2 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-3">
+                Staff management,<br />
+                <span className="text-primary">beautifully simple.</span>
+              </h2>
+              <p className="text-muted-foreground mb-10 max-w-md">
+                Rotas, payroll, holidays & compliance — the all-in-one platform built for hospitality teams.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4">
+                {features.map((f, i) => (
+                  <motion.div
+                    key={f.label}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + i * 0.08 }}
+                    className="flex items-start gap-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/50 p-3"
+                  >
+                    <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary shrink-0">
+                      <f.icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground leading-tight">{f.label}</p>
+                      <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{f.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            <p className="mt-12 text-xs text-muted-foreground/60">
+              © {new Date().getFullYear()} UGLŌ · Hospitality People Platform
+            </p>
+          </div>
+        </div>
+
+        {/* Right login/signup panel */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="w-full max-w-md"
+          >
+            <div className="rounded-2xl bg-card shadow-elevated border border-border/40 p-8">
+              {/* Mobile logo */}
+              <div className="flex items-center justify-center gap-3 mb-8 lg:hidden">
+                <img src={ugloIcon} alt="UGLŌ" className="h-12 w-12 rounded-xl" />
+                <span className="text-2xl font-bold text-card-foreground">UGLŌ</span>
+              </div>
+
+              {/* Mode tabs */}
+              <div className="flex rounded-lg bg-muted p-1 mb-6">
+                <button
+                  type="button"
+                  onClick={() => { setMode("login"); setErrors({}); }}
+                  className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
+                    mode === "login"
+                      ? "bg-card text-card-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode("signup"); setErrors({}); }}
+                  className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
+                    mode === "signup"
+                      ? "bg-card text-card-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Create Account
+                </button>
+              </div>
+
+              <h1 className="text-xl font-semibold text-card-foreground text-center mb-1">
+                {mode === "login" ? "Welcome Back" : "Get Started"}
+              </h1>
+              <p className="text-muted-foreground text-center text-sm mb-6">
+                {mode === "login"
+                  ? "Sign in to your account"
+                  : "Create your account, then set up your company"}
+              </p>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === "signup" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="Jane Smith"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className={errors.fullName ? "border-destructive" : ""}
+                    />
+                    {errors.fullName && <p className="text-sm text-destructive">{errors.fullName}</p>}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={errors.email ? "border-destructive" : ""}
+                  />
+                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={errors.password ? "border-destructive" : ""}
+                  />
+                  {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                </div>
+
+                <Button type="submit" className="w-full gradient-primary" disabled={loading}>
+                  {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+                </Button>
+              </form>
+
+              {mode === "login" && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!email) {
+                      toast.error("Please enter your email address first");
+                      return;
+                    }
+                    try {
+                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      });
+                      if (error) throw error;
+                      toast.success("Password reset email sent. Check your inbox.");
+                    } catch (err: any) {
+                      toast.error(err.message || "Failed to send reset email");
+                    }
+                  }}
+                  className="mt-3 w-full text-center text-sm text-primary hover:underline"
+                >
+                  Forgot your password?
+                </button>
+              )}
+
+              <p className="mt-4 text-xs text-muted-foreground text-center">
+                {mode === "login"
+                  ? "Don't have an account? Switch to Create Account above."
+                  : "Already have an account? Switch to Sign In above."}
+              </p>
             </div>
 
-            {/* Tagline */}
-            <h2 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-3">
-              Staff management,<br />
-              <span className="text-primary">beautifully simple.</span>
-            </h2>
-            <p className="text-muted-foreground mb-10 max-w-md">
-              Rotas, payroll, holidays & compliance — the all-in-one platform built for hospitality teams.
-            </p>
-
-            {/* Feature grid */}
-            <div className="grid grid-cols-2 gap-4">
-              {features.map((f, i) => (
-                <motion.div
+            {/* Mobile feature hints */}
+            <div className="mt-6 grid grid-cols-3 gap-3 lg:hidden">
+              {features.slice(0, 3).map((f) => (
+                <div
                   key={f.label}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.08 }}
-                  className="flex items-start gap-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/50 p-3"
+                  className="flex flex-col items-center gap-1.5 rounded-xl bg-card/60 border border-border/30 p-3 text-center"
                 >
-                  <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary shrink-0">
-                    <f.icon className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground leading-tight">
-                      {f.label}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">
-                      {f.desc}
-                    </p>
-                  </div>
-                </motion.div>
+                  <f.icon className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-medium text-muted-foreground leading-tight">{f.label}</span>
+                </div>
               ))}
             </div>
           </motion.div>
 
-          {/* Footer */}
-          <p className="mt-12 text-xs text-muted-foreground/60">
-            © {new Date().getFullYear()} UGLŌ · Hospitality People Platform
-          </p>
+          {/* Scroll hint on mobile */}
+          <div className="mt-8 flex flex-col items-center gap-1 text-muted-foreground/50 lg:hidden">
+            <span className="text-[10px]">Learn more</span>
+            <ChevronDown className="h-4 w-4 animate-bounce" />
+          </div>
         </div>
       </div>
 
-      {/* Right login/signup panel */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-md"
-        >
-          <div className="rounded-2xl bg-card shadow-elevated border border-border/40 p-8">
-            {/* Mobile logo */}
-            <div className="flex items-center justify-center gap-3 mb-8 lg:hidden">
-              <img src={ugloIcon} alt="UGLŌ" className="h-12 w-12 rounded-xl" />
-              <span className="text-2xl font-bold text-card-foreground">
-                UGLŌ
-              </span>
-            </div>
-
-            {/* Mode tabs */}
-            <div className="flex rounded-lg bg-muted p-1 mb-6">
-              <button
-                type="button"
-                onClick={() => { setMode("login"); setErrors({}); }}
-                className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
-                  mode === "login"
-                    ? "bg-card text-card-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => { setMode("signup"); setErrors({}); }}
-                className={`flex-1 text-sm font-medium py-2 rounded-md transition-colors ${
-                  mode === "signup"
-                    ? "bg-card text-card-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
-
-            <h1 className="text-xl font-semibold text-card-foreground text-center mb-1">
-              {mode === "login" ? "Welcome Back" : "Get Started"}
-            </h1>
-            <p className="text-muted-foreground text-center text-sm mb-6">
-              {mode === "login"
-                ? "Sign in to your account"
-                : "Create your account, then set up your company"}
-            </p>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "signup" && (
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="Jane Smith"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className={errors.fullName ? "border-destructive" : ""}
-                  />
-                  {errors.fullName && (
-                    <p className="text-sm text-destructive">{errors.fullName}</p>
-                  )}
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={errors.email ? "border-destructive" : ""}
-                />
-                {errors.email && (
-                  <p className="text-sm text-destructive">{errors.email}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={errors.password ? "border-destructive" : ""}
-                />
-                {errors.password && (
-                  <p className="text-sm text-destructive">{errors.password}</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full gradient-primary"
-                disabled={loading}
-              >
-                {loading
-                  ? "Please wait..."
-                  : mode === "login"
-                  ? "Sign In"
-                  : "Create Account"}
-              </Button>
-            </form>
-
-            {mode === "login" && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!email) {
-                    toast.error("Please enter your email address first");
-                    return;
-                  }
-                  try {
-                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                      redirectTo: `${window.location.origin}/reset-password`,
-                    });
-                    if (error) throw error;
-                    toast.success("Password reset email sent. Check your inbox.");
-                  } catch (err: any) {
-                    toast.error(err.message || "Failed to send reset email");
-                  }
-                }}
-                className="mt-3 w-full text-center text-sm text-primary hover:underline"
-              >
-                Forgot your password?
-              </button>
-            )}
-
-            <p className="mt-4 text-xs text-muted-foreground text-center">
-              {mode === "login"
-                ? "Don't have an account? Switch to Create Account above."
-                : "Already have an account? Switch to Sign In above."}
+      {/* ═══════ Trust content below the fold ═══════ */}
+      <div className="border-t border-border">
+        {/* Why choose us */}
+        <section className="max-w-6xl mx-auto px-6 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-foreground">Why choose UGLŌ?</h2>
+            <p className="text-sm text-muted-foreground mt-2 max-w-lg mx-auto">
+              A workforce platform built around how hospitality actually operates — not how office software thinks it should.
             </p>
           </div>
+          <ValueCards />
+        </section>
 
-          {/* Mobile feature hints */}
-          <div className="mt-6 grid grid-cols-3 gap-3 lg:hidden">
-            {features.slice(0, 3).map((f) => (
-              <div
-                key={f.label}
-                className="flex flex-col items-center gap-1.5 rounded-xl bg-card/60 border border-border/30 p-3 text-center"
-              >
-                <f.icon className="h-4 w-4 text-primary" />
-                <span className="text-[10px] font-medium text-muted-foreground leading-tight">
-                  {f.label}
-                </span>
-              </div>
-            ))}
+        {/* Employer + Candidate conversion */}
+        <section className="bg-card border-y border-border">
+          <div className="max-w-5xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <EmployerConversion />
+            <CandidateConversion />
           </div>
-        </motion.div>
+        </section>
+
+        {/* Pricing */}
+        <section className="max-w-6xl mx-auto px-6 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-foreground">Pricing</h2>
+            <p className="text-sm text-muted-foreground mt-2">Clear, honest, and designed to scale with your team.</p>
+          </div>
+          <PricingSection />
+        </section>
+
+        {/* Security */}
+        <section className="bg-card border-y border-border">
+          <div className="max-w-6xl mx-auto px-6 py-16">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl font-bold text-foreground">Security & Privacy</h2>
+              <p className="text-sm text-muted-foreground mt-2 max-w-lg mx-auto">
+                Designed with data separation, role-based access, and audit visibility from the ground up.
+              </p>
+            </div>
+            <SecuritySection />
+          </div>
+        </section>
+
+        {/* FAQ */}
+        <section className="max-w-3xl mx-auto px-6 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-foreground">Frequently asked questions</h2>
+            <p className="text-sm text-muted-foreground mt-2">Everything you need to know before getting started.</p>
+          </div>
+          <FAQ />
+        </section>
+
+        {/* Footer */}
+        <footer className="border-t border-border bg-card">
+          <div className="max-w-6xl mx-auto px-6 py-8">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <img src={ugloIcon} alt="UGLŌ" className="h-6 w-6 rounded-lg" />
+                <span className="text-sm font-semibold text-foreground">UGLŌ</span>
+                <span className="text-xs text-muted-foreground">· Hospitality People Platform</span>
+              </div>
+              <nav className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                <Link to="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+                <Link to="/terms" className="hover:text-foreground">Terms of Use</Link>
+                <Link to="/cookies" className="hover:text-foreground">Cookie Notice</Link>
+                <CookieSettingsButton />
+              </nav>
+            </div>
+            <p className="text-[10px] text-muted-foreground/60 text-center mt-6">
+              © {new Date().getFullYear()} UGLŌ. All rights reserved.
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   );
