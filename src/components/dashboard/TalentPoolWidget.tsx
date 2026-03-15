@@ -2,9 +2,9 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
-import { Users, Search, FileText, CreditCard, ChevronRight, Sparkles } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Search, FileText, CreditCard, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 
 export function TalentPoolWidget() {
   const { tenantId } = useTenant();
