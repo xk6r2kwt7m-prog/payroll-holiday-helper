@@ -8,6 +8,7 @@ import { useShifts } from "@/hooks/useSchedule";
 import { format, differenceInDays, isToday, isFuture, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useTenant } from "@/hooks/useTenant";
 
 export type PulseStatus = "green" | "amber" | "red";
 
