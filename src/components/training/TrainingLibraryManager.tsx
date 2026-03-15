@@ -193,6 +193,15 @@ export function TrainingLibraryManager() {
         </div>
       </div>
 
+      {/* Admin governance dashboard */}
+      {canManage && govMetrics && govMetrics.total > 0 && (
+        <GovernanceDashboard
+          metrics={govMetrics}
+          activeFilter={evidenceFilter}
+          onFilterSelect={setEvidenceFilter}
+        />
+      )}
+
       {/* Search + Category */}
       <div className="space-y-2">
         <div className="flex gap-2">
