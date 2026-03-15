@@ -8,6 +8,8 @@ import {
   Search, Clock, Copy, CheckCircle2, Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
+import type { StandardsMetadata } from "@/data/training-standards/types";
 import { usePlatformModules, useAdaptModule, COMPLETION_TYPES } from "@/hooks/useTrainingModules";
 import { LIBRARY_CATEGORIES, useQuizQuestions } from "@/hooks/useTrainingLibrary";
 import { usePermission } from "@/hooks/useRolePermissions";
