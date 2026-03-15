@@ -41,7 +41,7 @@ import { EvidencePanel } from "@/components/training/EvidencePanel";
 import { ReviewInsightsPanel } from "@/components/training/ReviewInsightsPanel";
 import { EvidenceCompletenessBar } from "@/components/training/EvidenceCompletenessBar";
 import { ModuleGovernanceSummary } from "@/components/training/ModuleGovernanceSummary";
-import { OPERATIONAL_AREA_LABELS, type OperationalArea } from "@/data/training-standards/types";
+import { OPERATIONAL_AREA_LABELS, type OperationalArea, type StandardsMetadata } from "@/data/training-standards/types";
 import {
   COMPLETENESS_LABELS,
   deriveEvidenceCompleteness,
