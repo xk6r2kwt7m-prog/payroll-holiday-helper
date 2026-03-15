@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -12,6 +12,8 @@ import { MyApplications } from "@/components/talent/MyApplications";
 import { TalentBillingHistory } from "@/components/talent/TalentBillingHistory";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnTalentProfile } from "@/hooks/useTalentPool";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TalentPool = () => {
   const [searchParams] = useSearchParams();
