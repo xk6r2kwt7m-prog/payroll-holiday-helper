@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { ChevronRight, Save, Loader2 } from "lucide-react";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 import { ProtectedBadge } from "./ProtectedBadge";
 import { toast } from "sonner";
 import { useTenantPreferences, useSaveTenantPreferences, type PreferenceCategory } from "@/hooks/useTenantPreferences";
