@@ -125,7 +125,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     );
 
     if (cached) {
-      commitTenantSelection(cached.tenant_id, cached.tenants);
+      commitTenantSelection(cached.tenant_id, cached.tenants, cached.role);
       return;
     }
 
