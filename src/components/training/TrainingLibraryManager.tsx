@@ -667,12 +667,35 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                 {((assignMode === "individual" && selectedIds.size > 0) ||
                   assignMode === "all" ||
                   (assignMode === "department" && filteredUnassigned.length > 0)) && (
-                  <Button onClick={handleAssign} disabled={createAssignments.isPending} className="w-full">
-                    {createAssignments.isPending ? "Assigning..." :
-                      assignMode === "individual" ? `Assign to ${selectedIds.size} employee${selectedIds.size > 1 ? "s" : ""}` :
-                      assignMode === "all" ? `Assign to all ${unassignedEmployees.length} staff` :
-                      `Assign to ${filteredUnassigned.length} in ${selectedDept}`}
-                  </Button>
+                  <>
+                    <Button onClick={() => setShowAssignConfirm(true)} disabled={createAssignments.isPending} className="w-full">
+                      {createAssignments.isPending ? "Assigning..." :
+                        `Assign to ${getAssignTargetCount()} staff`}
+                    </Button>
+
+                    {/* Assignment Confirmation Dialog */}
+                    <Dialog open={showAssignConfirm} onOpenChange={setShowAssignConfirm}>
+                      <DialogContent className="sm:max-w-sm">
+                        <DialogHeader>
+                          <DialogTitle>Confirm Assignment</DialogTitle>
+                          <DialogDescription>Review before assigning training.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-2 text-sm py-2">
+                          <div className="flex justify-between"><span className="text-muted-foreground">Module</span><span className="font-medium text-foreground truncate max-w-[200px]">{module.title}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Staff</span><span className="font-medium text-foreground">{getAssignTargetCount()} employee{getAssignTargetCount() !== 1 ? "s" : ""}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Source</span><Badge variant="outline" className="text-[10px]">{getAssignSourceLabel()}</Badge></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Due Date</span><span className="font-medium text-foreground">{dueDate ? format(parseISO(dueDate), "d MMM yyyy") : "No deadline"}</span></div>
+                          {module.is_mandatory && <div className="flex justify-between"><span className="text-muted-foreground">Mandatory</span><Badge className="text-[10px] bg-destructive/10 text-destructive">Yes</Badge></div>}
+                        </div>
+                        <DialogFooter className="gap-2">
+                          <Button variant="outline" onClick={() => setShowAssignConfirm(false)}>Cancel</Button>
+                          <Button onClick={handleAssign} disabled={createAssignments.isPending}>
+                            {createAssignments.isPending ? "Assigning..." : "Confirm"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
                 )}
               </>
             )}
