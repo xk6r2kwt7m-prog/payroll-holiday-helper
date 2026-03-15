@@ -53,9 +53,11 @@ export function useHolidayPayments(periodId?: string) {
 
 // Get all holiday payments for all employees across all periods
 export function useAllHolidayPayments() {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_payments", "all"],
+    queryKey: ["holiday_payments", tenantId, "all"],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_payments")
         .select(`
@@ -75,11 +77,13 @@ export function useAllHolidayPayments() {
             end_date
           )
         `)
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
