@@ -165,7 +165,7 @@ export function AdminHome() {
 
       {/* Quick Actions */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.12 }}>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-2 min-w-0">
           {quickLinks.map((a) => (
             <Link key={a.label} to={a.path} className="flex flex-col items-center gap-1.5 py-3 rounded-xl active:bg-muted transition-colors">
               <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl", a.bg)}>
