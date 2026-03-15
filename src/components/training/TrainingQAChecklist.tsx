@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +48,10 @@ const QA_ITEMS: QAItem[] = [
 
 type CheckState = "pass" | "fail" | "untested";
 
+const QA_VERSION = 1;
+
 interface PersistedState {
+  version: number;
   checks: Record<string, CheckState>;
   notes: Record<string, string>;
   lastUpdated: string | null;
@@ -59,6 +62,7 @@ interface PersistedState {
 }
 
 const EMPTY: PersistedState = {
+  version: QA_VERSION,
   checks: {}, notes: {}, lastUpdated: null,
   checkedBy: "", signedOff: false, signedOffAt: null, signedOffBy: null,
 };
@@ -99,6 +103,10 @@ export function TrainingQAChecklist() {
     setOpenNotes({});
   }, [clearSignOff]);
 
+  // ── Debounced persist ref ──
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (persistTimerRef.current) clearTimeout(persistTimerRef.current); }, []);
+
   // ── Load ──
   useEffect(() => {
     if (!tenantId) { clearAll(); return; }
@@ -106,6 +114,7 @@ export function TrainingQAChecklist() {
       const raw = localStorage.getItem(key(tenantId));
       if (raw) {
         const p: PersistedState = { ...EMPTY, ...JSON.parse(raw) };
+        if (p.version !== QA_VERSION) { clearAll(); localStorage.removeItem(key(tenantId)); return; }
         setChecks(p.checks); setNotes(p.notes); setLastUpdated(p.lastUpdated);
         setCheckedBy(p.checkedBy); setSignedOff(p.signedOff);
         setSignedOffAt(p.signedOffAt); setSignedOffBy(p.signedOffBy);
@@ -114,11 +123,14 @@ export function TrainingQAChecklist() {
     setOpenNotes({});
   }, [tenantId, clearAll]);
 
-  // ── Persist ──
+  // ── Persist (debounced) ──
   useEffect(() => {
     if (!tenantId) return;
-    const s: PersistedState = { checks, notes, lastUpdated, checkedBy, signedOff, signedOffAt, signedOffBy };
-    localStorage.setItem(key(tenantId), JSON.stringify(s));
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(() => {
+      const s: PersistedState = { version: QA_VERSION, checks, notes, lastUpdated, checkedBy, signedOff, signedOffAt, signedOffBy };
+      localStorage.setItem(key(tenantId), JSON.stringify(s));
+    }, 400);
   }, [checks, notes, lastUpdated, checkedBy, signedOff, signedOffAt, signedOffBy, tenantId]);
 
   // ── Touch (invalidates sign-off) ──
@@ -188,6 +200,10 @@ export function TrainingQAChecklist() {
         const n = notes[i.id]?.trim();
         if (n) t += `\n    Note: ${n}`;
       });
+    }
+    if (!navigator.clipboard) {
+      toast.error("Clipboard not available in this browser");
+      return;
     }
     navigator.clipboard.writeText(t).then(
       () => toast.success("Summary copied to clipboard"),
