@@ -11,6 +11,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface QAItem { id: string; label: string; category: string; }
@@ -55,12 +58,12 @@ interface PersistedState {
   signedOffBy: string | null;
 }
 
-const EMPTY_STATE: PersistedState = {
+const EMPTY: PersistedState = {
   checks: {}, notes: {}, lastUpdated: null,
   checkedBy: "", signedOff: false, signedOffAt: null, signedOffBy: null,
 };
 
-function storageKey(tenantId: string) { return `training_qa_checklist:${tenantId}`; }
+function key(tenantId: string) { return `training_qa_checklist:${tenantId}`; }
 
 function fmtTs(iso: string | null): string {
   if (!iso) return "Never";
@@ -78,43 +81,51 @@ export function TrainingQAChecklist() {
   const [signedOffAt, setSignedOffAt] = useState<string | null>(null);
   const [signedOffBy, setSignedOffBy] = useState<string | null>(null);
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
+  const [showSignOffDialog, setShowSignOffDialog] = useState(false);
 
-  // Load
+  // ── Shared clear helper ──
+  const clearSignOff = useCallback(() => {
+    setSignedOff(false);
+    setSignedOffAt(null);
+    setSignedOffBy(null);
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setChecks({});
+    setNotes({});
+    setLastUpdated(null);
+    setCheckedBy("");
+    clearSignOff();
+    setOpenNotes({});
+  }, [clearSignOff]);
+
+  // ── Load ──
   useEffect(() => {
     if (!tenantId) return;
     try {
-      const raw = localStorage.getItem(storageKey(tenantId));
+      const raw = localStorage.getItem(key(tenantId));
       if (raw) {
-        const p: PersistedState = { ...EMPTY_STATE, ...JSON.parse(raw) };
+        const p: PersistedState = { ...EMPTY, ...JSON.parse(raw) };
         setChecks(p.checks); setNotes(p.notes); setLastUpdated(p.lastUpdated);
         setCheckedBy(p.checkedBy); setSignedOff(p.signedOff);
         setSignedOffAt(p.signedOffAt); setSignedOffBy(p.signedOffBy);
-      } else {
-        setChecks({}); setNotes({}); setLastUpdated(null);
-        setCheckedBy(""); setSignedOff(false); setSignedOffAt(null); setSignedOffBy(null);
-      }
-    } catch {
-      setChecks({}); setNotes({}); setLastUpdated(null);
-      setCheckedBy(""); setSignedOff(false); setSignedOffAt(null); setSignedOffBy(null);
-    }
+      } else { clearAll(); }
+    } catch { clearAll(); }
     setOpenNotes({});
-  }, [tenantId]);
+  }, [tenantId, clearAll]);
 
-  // Persist
+  // ── Persist ──
   useEffect(() => {
     if (!tenantId) return;
     const s: PersistedState = { checks, notes, lastUpdated, checkedBy, signedOff, signedOffAt, signedOffBy };
-    localStorage.setItem(storageKey(tenantId), JSON.stringify(s));
+    localStorage.setItem(key(tenantId), JSON.stringify(s));
   }, [checks, notes, lastUpdated, checkedBy, signedOff, signedOffAt, signedOffBy, tenantId]);
 
-  const invalidateSignOff = useCallback(() => {
-    setSignedOff(false); setSignedOffAt(null); setSignedOffBy(null);
-  }, []);
-
+  // ── Touch (invalidates sign-off) ──
   const touch = useCallback(() => {
     setLastUpdated(new Date().toISOString());
-    invalidateSignOff();
-  }, [invalidateSignOff]);
+    clearSignOff();
+  }, [clearSignOff]);
 
   const toggle = (id: string) => {
     setChecks(prev => {
@@ -129,12 +140,12 @@ export function TrainingQAChecklist() {
   const updateCheckedBy = (v: string) => { setCheckedBy(v); touch(); };
 
   const resetChecklist = useCallback(() => {
-    setChecks({}); setNotes({}); setLastUpdated(null); setOpenNotes({});
-    setCheckedBy(""); invalidateSignOff();
-    if (tenantId) localStorage.removeItem(storageKey(tenantId));
+    clearAll();
+    if (tenantId) localStorage.removeItem(key(tenantId));
     toast.success("Checklist reset");
-  }, [tenantId, invalidateSignOff]);
+  }, [tenantId, clearAll]);
 
+  // ── Derived ──
   const totalChecked = Object.values(checks).filter(v => v !== "untested").length;
   const totalPassed = Object.values(checks).filter(v => v === "pass").length;
   const totalFailed = Object.values(checks).filter(v => v === "fail").length;
@@ -143,17 +154,29 @@ export function TrainingQAChecklist() {
 
   const doSignOff = () => {
     const now = new Date().toISOString();
-    setSignedOff(true); setSignedOffAt(now); setSignedOffBy(checkedBy.trim());
+    setSignedOff(true);
+    setSignedOffAt(now);
+    setSignedOffBy(checkedBy.trim());
     setLastUpdated(now);
+    setShowSignOffDialog(false);
     toast.success("Signed off — ready for pilot");
   };
 
+  // ── Copy ──
   const copySummary = useCallback(() => {
     const totalUntested = QA_ITEMS.length - totalChecked;
     const failedItems = QA_ITEMS.filter(i => checks[i.id] === "fail");
     const now = new Date().toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 
-    let t = `Training QA Checklist\nTenant: ${tenantName || "Unknown"}\nExported: ${now}`;
+    const status = signedOff
+      ? "Ready for pilot"
+      : allTestedNoneFailed
+        ? "Awaiting sign-off"
+        : totalFailed > 0
+          ? "Needs review"
+          : "In progress";
+
+    let t = `Training QA Checklist\nTenant: ${tenantName || "Unknown"}\nExported: ${now}\nStatus: ${status}`;
     if (checkedBy.trim()) t += `\nChecked by: ${checkedBy.trim()}`;
     if (signedOff) t += `\nSigned off by: ${signedOffBy} on ${fmtTs(signedOffAt)}`;
     if (lastUpdated) t += `\nLast updated: ${fmtTs(lastUpdated)}`;
@@ -170,8 +193,9 @@ export function TrainingQAChecklist() {
       () => toast.success("Summary copied to clipboard"),
       () => toast.error("Failed to copy — clipboard access denied")
     );
-  }, [checks, notes, tenantName, checkedBy, signedOff, signedOffBy, signedOffAt, lastUpdated, totalChecked, totalPassed, totalFailed]);
+  }, [checks, notes, tenantName, checkedBy, signedOff, signedOffBy, signedOffAt, lastUpdated, totalChecked, totalPassed, totalFailed, allTestedNoneFailed]);
 
+  // ── Readiness badge ──
   const categories = [...new Set(QA_ITEMS.map(i => i.category))];
 
   const readiness = signedOff
@@ -311,7 +335,7 @@ export function TrainingQAChecklist() {
         </div>
       ))}
 
-      {/* Footer status */}
+      {/* Footer status blocks */}
       {totalFailed > 0 && (
         <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
           <p className="text-xs font-medium text-destructive">{totalFailed} item{totalFailed !== 1 ? "s" : ""} failed — review before pilot</p>
@@ -321,19 +345,71 @@ export function TrainingQAChecklist() {
       {allTestedNoneFailed && !signedOff && (
         <div className="rounded-lg border border-success/20 bg-success/5 p-3 flex items-center justify-between gap-3">
           <p className="text-xs font-medium text-success">All {QA_ITEMS.length} checks passed ✓</p>
-          <Button size="sm" className="h-7 text-xs gap-1" onClick={doSignOff} disabled={!canSignOff}>
+          <Button
+            size="sm"
+            className="h-7 text-xs gap-1"
+            onClick={() => setShowSignOffDialog(true)}
+            disabled={!canSignOff}
+          >
             <ShieldCheck className="h-3.5 w-3.5" /> Mark Ready for Pilot
           </Button>
         </div>
       )}
 
       {signedOff && (
-        <div className="rounded-lg border border-success/20 bg-success/5 p-3">
-          <p className="text-xs font-medium text-success">
-            ✓ Signed off by {signedOffBy} on {fmtTs(signedOffAt)} — ready for pilot
+        <div className="rounded-xl border-2 border-success/30 bg-success/5 p-4 space-y-1">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-success" />
+            <p className="text-sm font-semibold text-success">Ready for pilot</p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Signed off by <span className="font-medium text-foreground">{signedOffBy}</span> on {fmtTs(signedOffAt)}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Any checklist change will automatically revoke this sign-off.
           </p>
         </div>
       )}
+
+      {/* Sign-off confirmation dialog */}
+      <Dialog open={showSignOffDialog} onOpenChange={setShowSignOffDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm QA Sign-off</DialogTitle>
+            <DialogDescription>
+              You are about to mark this training module checklist as ready for pilot.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Workspace</span>
+              <span className="font-medium text-foreground">{tenantName || "—"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Checked by</span>
+              <span className="font-medium text-foreground">{checkedBy.trim() || "—"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total items</span>
+              <span className="font-medium text-foreground">{QA_ITEMS.length}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Passed</span>
+              <span className="font-medium text-success">{totalPassed}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Failed</span>
+              <span className={cn("font-medium", totalFailed > 0 ? "text-destructive" : "text-foreground")}>{totalFailed}</span>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowSignOffDialog(false)}>Cancel</Button>
+            <Button onClick={doSignOff} className="gap-1">
+              <ShieldCheck className="h-3.5 w-3.5" /> Confirm Sign-off
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
