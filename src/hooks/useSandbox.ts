@@ -15,6 +15,10 @@ export interface SandboxConfig {
   serviceChargeEnabled: boolean;
   setupState: "new_signup" | "half_configured" | "fully_configured";
   preset: string;
+  seedTalentProfiles?: boolean;
+  seedVacancies?: boolean;
+  seedPayrollPeriods?: boolean;
+  seedArchivedLeaver?: boolean;
 }
 
 const DEFAULT_CONFIG: SandboxConfig = {
@@ -29,9 +33,23 @@ const DEFAULT_CONFIG: SandboxConfig = {
   serviceChargeEnabled: false,
   setupState: "fully_configured",
   preset: "small_restaurant",
+  seedTalentProfiles: false,
+  seedVacancies: false,
+  seedPayrollPeriods: false,
+  seedArchivedLeaver: false,
 };
 
-const SAMPLE_EMPLOYEES: Record<string, Array<{ forename: string; surname: string; department: string; hourly_rate: number; role_label: string }>> = {
+interface SampleEmployee {
+  forename: string;
+  surname: string;
+  department: string;
+  hourly_rate: number;
+  role_label: string;
+  hasTalentProfile?: boolean;
+  isLeaver?: boolean;
+}
+
+const SAMPLE_EMPLOYEES: Record<string, SampleEmployee[]> = {
   small_restaurant: [
     { forename: "Alex", surname: "Chen", department: "kitchen", hourly_rate: 14.50, role_label: "Head Chef" },
     { forename: "Maria", surname: "Santos", department: "front_of_house", hourly_rate: 12.00, role_label: "Server" },
@@ -57,6 +75,22 @@ const BRANCHES_BY_SIZE: Record<number, string[]> = {
   2: ["Fitzrovia", "Carnaby"],
   3: ["Fitzrovia", "Carnaby", "Brixton"],
 };
+
+async function logSandboxAudit(
+  tenantId: string,
+  userId: string,
+  event: string,
+  metadata: Record<string, unknown> = {}
+) {
+  await supabase.from("audit_log").insert({
+    action: "INSERT" as any,
+    table_name: "sandbox_tenants",
+    record_id: tenantId,
+    tenant_id: tenantId,
+    user_id: userId,
+    new_data: { event, sandbox: true, ...metadata },
+  });
+}
 
 export function useSandboxTenants() {
   return useQuery({
@@ -108,7 +142,10 @@ export function useCreateSandbox() {
         is_active: true,
       });
 
-      // 3. Create branches
+      // 3. Seed default departments
+      await supabase.rpc("seed_default_departments", { _tenant_id: tenant.id });
+
+      // 4. Create branches
       const branches = BRANCHES_BY_SIZE[Math.min(cfg.locationCount, 3)] || ["Main"];
       for (const branch of branches) {
         await supabase.from("branch_locations").insert({
@@ -120,13 +157,15 @@ export function useCreateSandbox() {
         });
       }
 
-      // 4. Create sample employees if preset has data
+      // 5. Create sample employees if preset has data
       const employees = SAMPLE_EMPLOYEES[cfg.preset] || SAMPLE_EMPLOYEES.small_restaurant;
       const testUsers: Array<{ label: string; role: string; employee_id?: string }> = [
         { label: "Company Admin", role: "admin" },
         { label: "Manager", role: "manager" },
         { label: "Supervisor", role: "supervisor" },
       ];
+
+      const createdEmployeeIds: string[] = [];
 
       if (cfg.setupState !== "new_signup" && employees.length > 0) {
         for (const emp of employees) {
@@ -142,6 +181,7 @@ export function useCreateSandbox() {
           }).select("id").single();
 
           if (empData) {
+            createdEmployeeIds.push(empData.id);
             await supabase.from("employee_branches").insert({
               tenant_id: tenant.id,
               employee_id: empData.id,
@@ -151,16 +191,91 @@ export function useCreateSandbox() {
           }
         }
 
-        // Add staff test user entries
         testUsers.push(
           { label: `Staff – ${employees[0]?.role_label || "Kitchen"}`, role: "staff" },
           { label: `Staff – ${employees[1]?.role_label || "FOH"}`, role: "staff" },
         );
+
+        // 5b. Seed archived leaver
+        if (cfg.seedArchivedLeaver) {
+          const { data: leaverData } = await supabase.from("employees").insert({
+            tenant_id: tenant.id,
+            forename: "Dana",
+            surname: "Fletcher",
+            department: "front_of_house" as any,
+            hourly_rate: 11.00,
+            status: "archived" as any,
+            archived_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+            end_date: new Date(Date.now() - 37 * 86400000).toISOString().split("T")[0],
+          }).select("id").single();
+          if (leaverData) createdEmployeeIds.push(leaverData.id);
+        }
+
+        // 5c. Seed talent profiles
+        if (cfg.seedTalentProfiles && createdEmployeeIds.length >= 2) {
+          await supabase.from("talent_profiles").insert([{
+            employee_id: createdEmployeeIds[0],
+            tenant_id: tenant.id,
+            talent_pool_status: "open_to_work" as any,
+            visibility_mode: "public" as any,
+            seeking_visibility: "actively_looking" as any,
+            preferred_roles: ["Chef", "Kitchen Lead"],
+            preferred_locations: ["London"],
+            profile_summary: "Experienced chef seeking new opportunities in central London.",
+          }]);
+          // Second employee: no talent profile (intentional gap for testing)
+        }
+
+        // 5d. Seed vacancies
+        if (cfg.seedVacancies) {
+          const vacancyData = [
+            { title: "Sous Chef", description: "Looking for an experienced sous chef to join our kitchen team.", employment_type: "full_time", location: branches[0], country: cfg.country },
+            { title: "Waitstaff", description: "Friendly and experienced servers needed for busy restaurant.", employment_type: "part_time", location: branches[0], country: cfg.country },
+          ];
+          for (const v of vacancyData) {
+            await supabase.from("talent_vacancies").insert({
+              tenant_id: tenant.id,
+              created_by: user.id,
+              title: v.title,
+              description: v.description,
+              employment_type: v.employment_type,
+              location: v.location,
+              country: v.country,
+              status: "published",
+            });
+          }
+        }
+
+        // 5e. Seed payroll periods
+        if (cfg.seedPayrollPeriods) {
+          const now = new Date();
+          const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const lastMonthEnd = new Date(thisMonth.getTime() - 86400000);
+          const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+          await supabase.from("payroll_periods").insert([
+            {
+              tenant_id: tenant.id,
+              period_name: `${lastMonth.toLocaleString("en", { month: "long", year: "numeric" })}`,
+              start_date: lastMonth.toISOString().split("T")[0],
+              end_date: lastMonthEnd.toISOString().split("T")[0],
+              status: "approved" as any,
+            },
+            {
+              tenant_id: tenant.id,
+              period_name: `${thisMonth.toLocaleString("en", { month: "long", year: "numeric" })}`,
+              start_date: thisMonth.toISOString().split("T")[0],
+              end_date: thisMonthEnd.toISOString().split("T")[0],
+              status: "draft",
+            },
+          ]);
+        }
       } else {
         testUsers.push({ label: "Staff 1", role: "staff" }, { label: "Staff 2", role: "staff" });
       }
 
-      // 5. Create company settings if not new_signup
+      // 6. Create company settings if not new_signup
       if (cfg.setupState !== "new_signup") {
         await supabase.from("company_settings").insert({
           tenant_id: tenant.id,
@@ -169,7 +284,7 @@ export function useCreateSandbox() {
         });
       }
 
-      // 6. Register as sandbox
+      // 7. Register as sandbox
       const { error: sandboxErr } = await supabase.from("sandbox_tenants").insert({
         tenant_id: tenant.id,
         created_by: user.id,
@@ -178,6 +293,17 @@ export function useCreateSandbox() {
         test_users: testUsers,
       });
       if (sandboxErr) throw sandboxErr;
+
+      // 8. Audit log
+      await logSandboxAudit(tenant.id, user.id, "sandbox_created", {
+        preset: cfg.preset,
+        setup_state: cfg.setupState,
+        employees_seeded: createdEmployeeIds.length,
+        talent_profiles: cfg.seedTalentProfiles,
+        vacancies: cfg.seedVacancies,
+        payroll_periods: cfg.seedPayrollPeriods,
+        archived_leaver: cfg.seedArchivedLeaver,
+      });
 
       return { tenantId: tenant.id, tenantName: tenant.name, testUsers };
     },
@@ -193,12 +319,14 @@ export function useCreateSandbox() {
 
 export function useDeleteSandbox() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (tenantId: string) => {
-      // Delete in order: sandbox record, then tenant (cascades)
+      if (user) {
+        await logSandboxAudit(tenantId, user.id, "sandbox_deleted");
+      }
       await supabase.from("sandbox_tenants").delete().eq("tenant_id", tenantId);
-      // Delete tenant members, employees, etc. via cascade
       const { error } = await supabase.from("tenants").delete().eq("id", tenantId);
       if (error) throw error;
     },
@@ -214,18 +342,27 @@ export function useDeleteSandbox() {
 
 export function useResetSandbox() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (tenantId: string) => {
-      // Delete all employees, shifts, payroll data for this tenant
+      // Delete operational data
       await Promise.all([
         supabase.from("shifts").delete().eq("tenant_id", tenantId),
         supabase.from("holiday_requests").delete().eq("tenant_id", tenantId),
         supabase.from("absence_records").delete().eq("tenant_id", tenantId),
         supabase.from("time_entries").delete().eq("tenant_id", tenantId),
+        supabase.from("talent_contact_unlocks").delete().eq("tenant_id", tenantId),
+        supabase.from("talent_credit_purchases").delete().eq("tenant_id", tenantId),
+        supabase.from("talent_credit_ledger").delete().eq("tenant_id", tenantId),
+        supabase.from("talent_credit_wallets").delete().eq("tenant_id", tenantId),
       ]);
-      // Reset employees
+      // Reset employees (cascades talent profiles, documents, etc.)
       await supabase.from("employees").delete().eq("tenant_id", tenantId);
+
+      if (user) {
+        await logSandboxAudit(tenantId, user.id, "sandbox_reset");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sandbox-tenants"] });
