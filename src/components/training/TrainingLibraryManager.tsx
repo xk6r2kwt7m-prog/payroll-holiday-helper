@@ -507,10 +507,11 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
         )}
 
         <Tabs value={detailTab} onValueChange={setDetailTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={cn("grid w-full", canManage ? "grid-cols-4" : "grid-cols-3")}>
             <TabsTrigger value="info">Info</TabsTrigger>
             <TabsTrigger value="assign">Assign ({existingAssignments.length})</TabsTrigger>
             {module.requires_quiz && <TabsTrigger value="quiz">Quiz</TabsTrigger>}
+            {canManage && <TabsTrigger value="standards">Standards</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="info" className="space-y-4 mt-3">
