@@ -185,6 +185,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setTenantTimezone(null);
       setTenantStatus(null);
       setIsPlatformAdmin(false);
+      setTenantRole(null);
       setEnabledModules(null);
       setTenantResolved(false);
       setMembershipCount(-1);
