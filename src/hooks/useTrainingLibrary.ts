@@ -258,10 +258,23 @@ export function useCreateAssignments() {
         return;
       }
 
+      // Resolve module versions for each unique document
+      const docVersions = new Map<string, number>();
+      for (const docId of docIds) {
+        const { data: mod } = await supabase
+          .from("training_library" as any)
+          .select("version")
+          .eq("id", docId)
+          .single();
+        docVersions.set(docId, (mod as any)?.version || 1);
+      }
+
       const rows = filtered.map(a => ({
         ...a,
         tenant_id: tenantId,
         status: "assigned",
+        assignment_source: assignmentSource || "direct",
+        module_version: docVersions.get(a.document_id) || 1,
       }));
       const { error } = await supabase.from("training_assignments" as any).insert(rows as any);
       if (error) throw error;
