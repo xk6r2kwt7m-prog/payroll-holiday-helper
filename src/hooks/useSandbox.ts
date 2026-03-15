@@ -398,8 +398,8 @@ export function useRebuildSandbox() {
         .single();
       if (sbErr || !sb) throw new Error("Sandbox not found");
 
-      const tenantId = sb.tenants?.id || sb.tenant_id;
-      const seedConfig = (sb.seed_config || {}) as Partial<SandboxConfig>;
+      const tenantId = (sb as any).tenants?.id || sb.tenant_id;
+      const seedConfig = ((sb as any).seed_config || {}) as Partial<SandboxConfig>;
 
       // Clear all operational data
       await clearTenantOperationalData(tenantId);
