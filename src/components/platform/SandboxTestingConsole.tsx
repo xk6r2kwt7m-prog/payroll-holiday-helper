@@ -252,6 +252,7 @@ export function SandboxTestingConsole() {
                       <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="text-[10px] h-4">{sb.preset_name}</Badge>
                         <Badge variant="secondary" className="text-[10px] h-4">{sb.setup_state}</Badge>
+                        <FreshnessBadge sandbox={sb} />
                         <span>{tenant?.country}</span>
                       </div>
                     </div>
