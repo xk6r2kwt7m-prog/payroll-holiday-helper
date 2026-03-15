@@ -11,11 +11,12 @@ import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useSandboxTenants, useCreateSandbox, useDeleteSandbox, useResetSandbox, type SandboxConfig } from "@/hooks/useSandbox";
 import { useImpersonation } from "@/hooks/useImpersonation";
+import { QATestChecklist } from "./QATestChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, RotateCcw, Eye, Shield, Users, Building2,
-  MapPin, Loader2, FlaskConical, UserCog, ChevronDown, ChevronUp,
+  Plus, Trash2, RotateCcw, Eye, Users, Building2,
+  Loader2, FlaskConical, UserCog, ChevronDown, ChevronUp,
   Clipboard, StickyNote,
 } from "lucide-react";
 import type { AppRole } from "@/lib/roles";
@@ -42,6 +43,7 @@ export function SandboxTestingConsole() {
   const [showCreate, setShowCreate] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
+  const [showChecklist, setShowChecklist] = useState(false);
 
   // Create form state
   const [config, setConfig] = useState<Partial<SandboxConfig>>({
@@ -55,6 +57,10 @@ export function SandboxTestingConsole() {
     serviceChargeEnabled: false,
     setupState: "fully_configured",
     preset: "small_restaurant",
+    seedTalentProfiles: false,
+    seedVacancies: false,
+    seedPayrollPeriods: false,
+    seedArchivedLeaver: false,
   });
 
   const handleCreate = async () => {
@@ -77,26 +83,35 @@ export function SandboxTestingConsole() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <FlaskConical className="h-5 w-5 text-primary" />
             Sandbox Testing Console
           </h2>
-          <p className="text-sm text-muted-foreground">Create sandbox tenants, impersonate roles, and test the platform</p>
+          <p className="text-sm text-muted-foreground">Create sandbox tenants, impersonate roles, and validate flows</p>
         </div>
-        <Button onClick={() => setShowCreate(!showCreate)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Create Sandbox
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowChecklist(!showChecklist)} className="gap-2 text-sm">
+            <Clipboard className="h-4 w-4" />
+            {showChecklist ? "Hide Checklist" : "QA Checklist"}
+          </Button>
+          <Button onClick={() => setShowCreate(!showCreate)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Sandbox
+          </Button>
+        </div>
       </div>
+
+      {/* QA Checklist */}
+      {showChecklist && <QATestChecklist />}
 
       {/* Create form */}
       {showCreate && (
         <Card className="border-primary/30 bg-primary/5">
           <CardHeader>
             <CardTitle className="text-base">New Sandbox Tenant</CardTitle>
-            <CardDescription>Configure a test environment</CardDescription>
+            <CardDescription>Configure a test environment with optional sample data</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,13 +182,51 @@ export function SandboxTestingConsole() {
                 </Select>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={config.serviceChargeEnabled}
-                onCheckedChange={v => setConfig(p => ({ ...p, serviceChargeEnabled: v }))}
-              />
-              <Label>Service Charge Enabled</Label>
+
+            <Separator />
+
+            {/* Seeding options */}
+            <div>
+              <Label className="text-sm font-medium mb-3 block">Sample Data Seeding</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={config.serviceChargeEnabled}
+                    onCheckedChange={v => setConfig(p => ({ ...p, serviceChargeEnabled: v }))}
+                  />
+                  <Label className="text-sm">Service Charge</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={config.seedTalentProfiles}
+                    onCheckedChange={v => setConfig(p => ({ ...p, seedTalentProfiles: v }))}
+                  />
+                  <Label className="text-sm">Talent Profiles</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={config.seedVacancies}
+                    onCheckedChange={v => setConfig(p => ({ ...p, seedVacancies: v }))}
+                  />
+                  <Label className="text-sm">Sample Vacancies</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={config.seedPayrollPeriods}
+                    onCheckedChange={v => setConfig(p => ({ ...p, seedPayrollPeriods: v }))}
+                  />
+                  <Label className="text-sm">Payroll Periods</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={config.seedArchivedLeaver}
+                    onCheckedChange={v => setConfig(p => ({ ...p, seedArchivedLeaver: v }))}
+                  />
+                  <Label className="text-sm">Archived Leaver</Label>
+                </div>
+              </div>
             </div>
+
             <div className="flex gap-2 pt-2">
               <Button onClick={handleCreate} disabled={createSandbox.isPending} className="gap-2">
                 {createSandbox.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -212,11 +265,10 @@ export function SandboxTestingConsole() {
                     <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-lg">🧪</div>
                     <div>
                       <div className="font-medium text-foreground">{tenant?.name || "Unknown"}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        <MapPin className="h-3 w-3" /> {tenant?.country}
-                        <span>·</span>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="text-[10px] h-4">{sb.preset_name}</Badge>
                         <Badge variant="secondary" className="text-[10px] h-4">{sb.setup_state}</Badge>
+                        <span className="text-muted-foreground">{tenant?.country}</span>
                       </div>
                     </div>
                   </div>
