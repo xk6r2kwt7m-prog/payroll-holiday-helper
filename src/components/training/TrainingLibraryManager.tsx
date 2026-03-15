@@ -383,11 +383,26 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
     }
   };
 
+  const [showAssignConfirm, setShowAssignConfirm] = useState(false);
+
+  const getAssignTargetCount = () => {
+    if (assignMode === "all") return unassignedEmployees.length;
+    if (assignMode === "department") return filteredUnassigned.length;
+    return selectedIds.size;
+  };
+
+  const getAssignSourceLabel = (): string => {
+    if (assignMode === "all") return "All Staff";
+    if (assignMode === "department") return `Department: ${selectedDept}`;
+    return "Individual";
+  };
+
   const handleAssign = () => {
     const targetIds = assignMode === "all" ? unassignedEmployees.map(e => e.id) :
       assignMode === "department" ? filteredUnassigned.map(e => e.id) :
       Array.from(selectedIds);
     if (targetIds.length === 0) return;
+    setShowAssignConfirm(false);
     createAssignments.mutate(
       {
         assignments: targetIds.map(empId => ({
@@ -397,7 +412,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
           is_mandatory: module.is_mandatory,
           signoff_required: module.completion_type === "practical_signoff" || module.completion_type === "blended",
         })),
-        assignmentSource: assignMode === "all" ? "all_staff" : assignMode === "department" ? "department" : "direct",
+        assignmentSource: (assignMode === "all" ? "all_staff" : assignMode === "department" ? "department" : "direct") as AssignmentSource,
       },
       { onSuccess: () => { setSelectedIds(new Set()); } }
     );
