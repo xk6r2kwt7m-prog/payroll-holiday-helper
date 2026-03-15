@@ -15,6 +15,7 @@ import { formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { useI18n } from "@/hooks/useI18n";
 import { useTenant } from "@/hooks/useTenant";
 import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlertsPanel";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 import { DocumentRequestsWidget } from "@/components/dashboard/DocumentRequestsWidget";
 import { TeamReadinessWidget } from "@/components/dashboard/TeamReadinessWidget";
 import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
