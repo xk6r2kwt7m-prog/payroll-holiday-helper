@@ -64,20 +64,36 @@ export function useCreditWallet() {
   });
 }
 
-// Purchase credits
+// Purchase credits — DEPRECATED: use useCreatePurchase + useFinalisePurchase from useTalentBilling.ts
+// Kept only for backward compatibility; do NOT use for new code.
 export function usePurchaseCredits() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (packId: string) => {
-      const { data, error } = await supabase.rpc("purchase_talent_credits", {
+      // Now creates pending purchase and immediately finalises (test mode)
+      const { data: pending, error: createErr } = await supabase.rpc("purchase_talent_credits", {
         _pack_id: packId,
       });
-      if (error) throw error;
-      return data as { purchase_id: string; credits_added: number; wallet_balance: number };
+      if (createErr) throw createErr;
+      const p = pending as { purchase_id: string; credits: number };
+
+      const { data: result, error: finalErr } = await supabase.rpc("finalise_talent_purchase", {
+        _purchase_id: p.purchase_id,
+        _new_status: "paid",
+      });
+      if (finalErr) throw finalErr;
+      const r = result as { credits_added?: number; wallet_balance?: number };
+
+      return {
+        purchase_id: p.purchase_id,
+        credits_added: r.credits_added || p.credits,
+        wallet_balance: r.wallet_balance || 0,
+      };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["talent-credit-wallet"] });
       qc.invalidateQueries({ queryKey: ["talent-credit-purchases"] });
+      qc.invalidateQueries({ queryKey: ["talent-billing-summary"] });
     },
   });
 }
