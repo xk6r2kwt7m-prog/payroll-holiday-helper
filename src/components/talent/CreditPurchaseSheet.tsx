@@ -12,7 +12,8 @@ import {
   DrawerFooter,
   DrawerClose,
 } from "@/components/ui/drawer";
-import { useCreditPacks, usePurchaseCredits, type CreditPack } from "@/hooks/useOutboundContact";
+import { useCreditPacks, type CreditPack } from "@/hooks/useOutboundContact";
+import { useCreatePurchase, useFinalisePurchase } from "@/hooks/useTalentBilling";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -24,21 +25,33 @@ interface CreditPurchaseSheetProps {
 
 export function CreditPurchaseSheet({ open, onOpenChange, onPurchased }: CreditPurchaseSheetProps) {
   const { data: packs = [], isLoading } = useCreditPacks();
-  const purchase = usePurchaseCredits();
+  const createPurchase = useCreatePurchase();
+  const finalise = useFinalisePurchase();
   const [selectedPack, setSelectedPack] = useState<string | null>(null);
 
   const handlePurchase = async () => {
     if (!selectedPack) return;
     try {
-      const result = await purchase.mutateAsync(selectedPack);
-      toast.success(`${result.credits_added} contacts added to your wallet`);
-      onPurchased?.(result.wallet_balance);
+      // Step 1: Create pending purchase
+      const pending = await createPurchase.mutateAsync(selectedPack);
+
+      // Step 2: In test mode, immediately finalise as paid
+      // Future Stripe flow: redirect to Checkout, webhook calls finalise
+      const result = await finalise.mutateAsync({
+        purchaseId: pending.purchase_id,
+        status: "paid",
+      });
+
+      toast.success(`${result.credits_added || pending.credits} contacts added to your wallet`);
+      onPurchased?.(result.wallet_balance || 0);
       onOpenChange(false);
       setSelectedPack(null);
     } catch {
       toast.error("Purchase failed. Please try again.");
     }
   };
+
+  const isPending = createPurchase.isPending || finalise.isPending;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -80,17 +93,17 @@ export function CreditPurchaseSheet({ open, onOpenChange, onPurchased }: CreditP
         <DrawerFooter className="pt-4">
           <Button
             onClick={handlePurchase}
-            disabled={!selectedPack || purchase.isPending}
+            disabled={!selectedPack || isPending}
             className="w-full gap-2"
           >
             <Zap className="h-4 w-4" />
-            {purchase.isPending ? "Processing..." : "Purchase Credits"}
+            {isPending ? "Processing..." : "Purchase Credits"}
           </Button>
           <DrawerClose asChild>
             <Button variant="outline">Cancel</Button>
           </DrawerClose>
           <p className="text-[10px] text-muted-foreground text-center">
-            Stripe payment will be integrated in Phase 2c. Credits are currently granted immediately for testing.
+            Test mode: credits granted immediately. Stripe payment will be added when connected.
           </p>
         </DrawerFooter>
       </DrawerContent>

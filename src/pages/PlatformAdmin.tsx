@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useTenant } from "@/hooks/useTenant";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, BarChart3, Shield, Loader2, FlaskConical } from "lucide-react";
+import { Building2, BarChart3, Shield, Loader2, FlaskConical, CreditCard } from "lucide-react";
 import { PlatformOverview } from "@/components/platform/PlatformOverview";
 import { TenantManagement } from "@/components/platform/TenantManagement";
 import { PlatformAnalytics } from "@/components/platform/PlatformAnalytics";
 import { PermissionVisualizer } from "@/components/platform/PermissionVisualizer";
 import { SandboxTestingConsole } from "@/components/platform/SandboxTestingConsole";
+import { TalentBillingAdmin } from "@/components/platform/TalentBillingAdmin";
 
 const PlatformAdmin = () => {
   const { isPlatformAdmin, loading } = useTenant();
@@ -56,6 +57,9 @@ const PlatformAdmin = () => {
             <TabsTrigger value="sandbox" className="gap-2">
               <FlaskConical className="h-4 w-4" /> Sandbox
             </TabsTrigger>
+            <TabsTrigger value="talent-billing" className="gap-2">
+              <CreditCard className="h-4 w-4" /> Talent Billing
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
@@ -76,6 +80,10 @@ const PlatformAdmin = () => {
 
           <TabsContent value="sandbox" className="mt-6">
             <SandboxTestingConsole />
+          </TabsContent>
+
+          <TabsContent value="talent-billing" className="mt-6">
+            <TalentBillingAdmin />
           </TabsContent>
         </Tabs>
       </div>

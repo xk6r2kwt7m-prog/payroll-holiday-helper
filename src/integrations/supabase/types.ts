@@ -4195,6 +4195,67 @@ export type Database = {
           },
         ]
       }
+      talent_credit_ledger: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          entry_type: string
+          id: string
+          idempotency_key: string | null
+          purchase_id: string | null
+          reason: string | null
+          tenant_id: string
+          unlock_id: string | null
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          entry_type: string
+          id?: string
+          idempotency_key?: string | null
+          purchase_id?: string | null
+          reason?: string | null
+          tenant_id: string
+          unlock_id?: string | null
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          entry_type?: string
+          id?: string
+          idempotency_key?: string | null
+          purchase_id?: string | null
+          reason?: string | null
+          tenant_id?: string
+          unlock_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talent_credit_ledger_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "talent_credit_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_credit_ledger_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talent_credit_ledger_unlock_id_fkey"
+            columns: ["unlock_id"]
+            isOneToOne: false
+            referencedRelation: "talent_contact_unlocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talent_credit_packs: {
         Row: {
           created_at: string
@@ -4236,45 +4297,69 @@ export type Database = {
       }
       talent_credit_purchases: {
         Row: {
+          cancelled_at: string | null
           created_at: string
           credits_purchased: number
           credits_remaining: number
+          expired_at: string | null
           expires_at: string
+          failed_at: string | null
           id: string
+          idempotency_key: string | null
           pack_id: string
+          paid_at: string | null
+          payment_method: string | null
           price_currency: string
           price_paid: number
           purchased_by: string
+          refunded_at: string | null
           status: string
           stripe_payment_id: string | null
+          stripe_session_id: string | null
           tenant_id: string
         }
         Insert: {
+          cancelled_at?: string | null
           created_at?: string
           credits_purchased: number
           credits_remaining: number
+          expired_at?: string | null
           expires_at: string
+          failed_at?: string | null
           id?: string
+          idempotency_key?: string | null
           pack_id: string
+          paid_at?: string | null
+          payment_method?: string | null
           price_currency?: string
           price_paid: number
           purchased_by: string
+          refunded_at?: string | null
           status?: string
           stripe_payment_id?: string | null
+          stripe_session_id?: string | null
           tenant_id: string
         }
         Update: {
+          cancelled_at?: string | null
           created_at?: string
           credits_purchased?: number
           credits_remaining?: number
+          expired_at?: string | null
           expires_at?: string
+          failed_at?: string | null
           id?: string
+          idempotency_key?: string | null
           pack_id?: string
+          paid_at?: string | null
+          payment_method?: string | null
           price_currency?: string
           price_paid?: number
           purchased_by?: string
+          refunded_at?: string | null
           status?: string
           stripe_payment_id?: string | null
+          stripe_session_id?: string | null
           tenant_id?: string
         }
         Relationships: [
@@ -5961,6 +6046,11 @@ export type Database = {
         Args: { hours_worked: number }
         Returns: number
       }
+      expire_talent_credits: { Args: never; Returns: Json }
+      finalise_talent_purchase: {
+        Args: { _actor_id?: string; _new_status: string; _purchase_id: string }
+        Returns: Json
+      }
       has_any_role: { Args: never; Returns: boolean }
       has_role: {
         Args: {
@@ -5996,6 +6086,7 @@ export type Database = {
         Returns: undefined
       }
       purchase_talent_credits: { Args: { _pack_id: string }; Returns: Json }
+      reconcile_talent_wallet: { Args: { _tenant_id: string }; Returns: Json }
       respond_to_contact_request: {
         Args: { _block_reason?: string; _response: string; _unlock_id: string }
         Returns: Json
