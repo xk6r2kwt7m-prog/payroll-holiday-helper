@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, FileText, Sparkles, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, FileText, Sparkles, ChevronRight, Loader2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
