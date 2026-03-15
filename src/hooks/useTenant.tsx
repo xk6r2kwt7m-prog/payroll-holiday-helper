@@ -96,6 +96,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const commitTenantSelection = useCallback((selectedTenantId: string, tenant: any) => {
+    // Nuclear cache clear — prevents cross-tenant data leakage
+    queryClient.removeQueries();
+
     applyTenantData(tenant, selectedTenantId);
     setShowTenantPicker(false);
     setAvailableTenants([]);
@@ -103,7 +106,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setLoading(false);
     localStorage.setItem("uglo_selected_tenant", selectedTenantId);
     
-  }, [applyTenantData]);
+  }, [applyTenantData, queryClient]);
 
   /**
    * Select a tenant from the picker.
