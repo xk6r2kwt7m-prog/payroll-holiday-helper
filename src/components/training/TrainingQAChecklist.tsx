@@ -201,6 +201,10 @@ export function TrainingQAChecklist() {
         if (n) t += `\n    Note: ${n}`;
       });
     }
+    if (!navigator.clipboard) {
+      toast.error("Clipboard not available in this browser");
+      return;
+    }
     navigator.clipboard.writeText(t).then(
       () => toast.success("Summary copied to clipboard"),
       () => toast.error("Failed to copy — clipboard access denied")
