@@ -21,6 +21,7 @@ export function ManagerComplianceDashboard() {
   const [expandedSection, setExpandedSection] = useState<string | null>("overdue");
   const [signoffTarget, setSignoffTarget] = useState<string | null>(null);
   const [signoffNotes, setSignoffNotes] = useState("");
+  const [retrainOnFail, setRetrainOnFail] = useState(true);
   const [deptFilter, setDeptFilter] = useState("all");
 
   if (stats.isLoading) {
