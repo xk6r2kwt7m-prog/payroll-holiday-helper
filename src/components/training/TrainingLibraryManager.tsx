@@ -60,7 +60,10 @@ import { GovernanceDashboard } from "@/components/training/GovernanceDashboard";
 import { ContentStrengthPanel } from "@/components/training/ContentStrengthPanel";
 import { EffectivenessSection } from "@/components/training/EffectivenessSection";
 import { ModuleEffectivenessPanel } from "@/components/training/ModuleEffectivenessPanel";
+import { SignalQualitySection } from "@/components/training/SignalQualitySection";
+import { ModuleSignalQualityPanel } from "@/components/training/ModuleSignalQualityPanel";
 import { useTrainingEffectiveness } from "@/hooks/useTrainingEffectiveness";
+import { useSignalQuality } from "@/hooks/useSignalQuality";
 import type { ServiceRiskLevel, ReviewInsightTag } from "@/data/training-standards/types";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
