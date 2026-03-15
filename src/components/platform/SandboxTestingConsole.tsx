@@ -245,7 +245,7 @@ export function SandboxTestingConsole() {
                   onClick={() => setExpandedId(isExpanded ? null : sb.id)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-lg">🧪</div>
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg">🧪</div>
                     <div>
                       <div className="font-medium text-foreground">{tenant?.name || "Unknown"}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
