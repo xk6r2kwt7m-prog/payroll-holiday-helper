@@ -103,6 +103,7 @@ export function useAdaptModule() {
           pass_mark: s.pass_mark,
           retry_limit: s.retry_limit,
           created_by: user?.id ?? null,
+          standards_metadata: s.standards_metadata ?? null,
         })
         .select()
         .single();
