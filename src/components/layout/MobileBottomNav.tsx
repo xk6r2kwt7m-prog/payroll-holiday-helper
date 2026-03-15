@@ -6,6 +6,7 @@ import {
   ClipboardList, CheckCircle2, User, Shield, FileText, CalendarDays, Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TALENT_POOL_ROUTE } from "@/lib/routes";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
