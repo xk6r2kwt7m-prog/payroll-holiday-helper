@@ -32,7 +32,11 @@ interface TenantContextType {
   tenantCountry: string | null;
   tenantTimezone: string | null;
   tenantStatus: string | null;
+  /** The current user's role within the active tenant (e.g. 'company_admin', 'manager', 'staff'). */
+  tenantRole: string | null;
   isPlatformAdmin: boolean;
+  /** True if user is company_admin in current tenant OR a platform admin. */
+  isTenantAdmin: boolean;
   enabledModules: EnabledModules | null;
   loading: boolean;
   tenantResolved: boolean;
@@ -64,6 +68,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [tenantTimezone, setTenantTimezone] = useState<string | null>(null);
   const [tenantStatus, setTenantStatus] = useState<string | null>(null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+  const [tenantRole, setTenantRole] = useState<string | null>(null);
   const [enabledModules, setEnabledModules] = useState<EnabledModules | null>(null);
   const [loading, setLoading] = useState(true);
   const [tenantResolved, setTenantResolved] = useState(false);
@@ -95,11 +100,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const commitTenantSelection = useCallback((selectedTenantId: string, tenant: any) => {
+  const commitTenantSelection = useCallback((selectedTenantId: string, tenant: any, role?: string) => {
     // Nuclear cache clear — prevents cross-tenant data leakage
     queryClient.removeQueries();
 
     applyTenantData(tenant, selectedTenantId);
+    setTenantRole(role || null);
     setShowTenantPicker(false);
     setAvailableTenants([]);
     setTenantResolved(true);
@@ -119,7 +125,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     );
 
     if (cached) {
-      commitTenantSelection(cached.tenant_id, cached.tenants);
+      commitTenantSelection(cached.tenant_id, cached.tenants, cached.role);
       return;
     }
 
@@ -130,7 +136,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     
     const { data: membership, error: membershipError } = await supabase
       .from("tenant_members")
-      .select("tenant_id, tenants(id, name, country, timezone, status, enabled_modules)")
+      .select("tenant_id, role, tenants(id, name, country, timezone, status, enabled_modules)")
       .eq("user_id", user.id)
       .eq("tenant_id", selectedTenantId)
       .eq("is_active", true)
@@ -147,7 +153,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       throw new Error("Selected workspace is no longer available");
     }
 
-    commitTenantSelection(membership.tenant_id, membership.tenants as any);
+    commitTenantSelection(membership.tenant_id, membership.tenants as any, (membership as any).role);
   }, [user, commitTenantSelection]);
 
   const openWorkspacePicker = useCallback(() => {
@@ -179,6 +185,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setTenantTimezone(null);
       setTenantStatus(null);
       setIsPlatformAdmin(false);
+      setTenantRole(null);
       setEnabledModules(null);
       setTenantResolved(false);
       setMembershipCount(-1);
@@ -246,16 +253,14 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
         if (count === 1) {
           const m = memberships![0];
-          
-          commitTenantSelection(m.tenant_id, m.tenants as any);
+          commitTenantSelection(m.tenant_id, m.tenants as any, m.role);
         } else {
           const savedMembership = savedTenantId
             ? memberships!.find((m) => m.tenant_id === savedTenantId)
             : null;
 
           if (savedMembership) {
-            
-            commitTenantSelection(savedMembership.tenant_id, savedMembership.tenants as any);
+            commitTenantSelection(savedMembership.tenant_id, savedMembership.tenants as any, savedMembership.role);
           } else {
             if (savedTenantId) {
               console.warn("[TenantProvider] Stale saved tenant ID removed:", savedTenantId);
@@ -295,7 +300,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         tenantCountry,
         tenantTimezone,
         tenantStatus,
+        tenantRole,
         isPlatformAdmin,
+        isTenantAdmin: isPlatformAdmin || tenantRole === "company_admin",
         enabledModules,
         loading,
         tenantResolved,

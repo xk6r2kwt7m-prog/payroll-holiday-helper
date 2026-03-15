@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, DollarSign, Calendar, CalendarClock, ChevronRight,
   Clock, Settings, MapPin, FileText, AlertTriangle, UserPlus,
-  ShieldAlert, BarChart3, CheckCircle2,
+  ShieldAlert, BarChart3, CheckCircle2, Sparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlerts
 import { DocumentRequestsWidget } from "@/components/dashboard/DocumentRequestsWidget";
 import { TeamReadinessWidget } from "@/components/dashboard/TeamReadinessWidget";
 import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
+import { TalentPoolWidget } from "@/components/dashboard/TalentPoolWidget";
 import { useSetupHealth } from "@/hooks/useSetupHealth";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
@@ -104,6 +105,7 @@ export function AdminHome() {
 
   const moduleLinks = [
     { icon: Calendar, label: "Holidays", path: "/holidays", desc: `${pendingRequests.length} pending` },
+    { icon: Sparkles, label: "Talent Pool", path: "/talent?tab=browse", desc: "Search candidates" },
     { icon: UserPlus, label: "Onboarding", path: "/onboarding", desc: "Manage new starters" },
     { icon: MapPin, label: "Locations", path: "/locations", desc: "Branches & geofences" },
     { icon: FileText, label: "Contracts", path: "/contracts", desc: "Templates & signing" },
@@ -224,6 +226,11 @@ export function AdminHome() {
             </Link>
           ))}
         </div>
+      </motion.div>
+
+      {/* Talent Pool */}
+      <motion.div {...anim} transition={{ duration: 0.25, delay: 0.22 }}>
+        <TalentPoolWidget />
       </motion.div>
 
       {/* Who's Working */}
