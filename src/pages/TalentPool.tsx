@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Users, Search, FileText, Sparkles, Briefcase, MessageSquare } from "lucide-react";
+import { Users, Search, FileText, Sparkles, Briefcase, MessageSquare, ClipboardList } from "lucide-react";
 import { TalentSearch } from "@/components/talent/TalentSearch";
 import { TalentRequestList } from "@/components/talent/TalentRequestList";
 import { TalentProfileManager } from "@/components/talent/TalentProfileManager";
 import { VacancyBrowse } from "@/components/talent/VacancyBrowse";
 import { TalentInbox } from "@/components/talent/TalentInbox";
+import { MyApplications } from "@/components/talent/MyApplications";
 import { useAuth } from "@/hooks/useAuth";
 import { useOwnTalentProfile } from "@/hooks/useTalentPool";
 
@@ -17,19 +18,19 @@ const TalentPool = () => {
   const [activeTab, setActiveTab] = useState(
     tabParam === "my-profile" ? "my-profile"
     : tabParam === "inbox" ? "inbox"
+    : tabParam === "applications" ? "applications"
     : "vacancies"
   );
   const { isAdmin } = useAuth();
   const { data: ownProfile } = useOwnTalentProfile();
 
-  // Determine inbox mode: if user has a talent profile, show worker inbox
-  // even if they are also an admin (they use /vacancies for employer inbox)
   const hasWorkerProfile = !!ownProfile;
   const inboxMode = hasWorkerProfile ? "worker" : (isAdmin ? "employer" : "worker");
 
   useEffect(() => {
     if (tabParam === "my-profile") setActiveTab("my-profile");
     if (tabParam === "inbox") setActiveTab("inbox");
+    if (tabParam === "applications") setActiveTab("applications");
   }, [tabParam]);
 
   return (
@@ -52,6 +53,9 @@ const TalentPool = () => {
             <TabsTrigger value="vacancies" className="text-xs gap-1">
               <Briefcase className="h-3.5 w-3.5" /> Jobs
             </TabsTrigger>
+            <TabsTrigger value="applications" className="text-xs gap-1">
+              <ClipboardList className="h-3.5 w-3.5" /> Applied
+            </TabsTrigger>
             <TabsTrigger value="browse" className="text-xs gap-1">
               <Search className="h-3.5 w-3.5" /> Talent
             </TabsTrigger>
@@ -70,6 +74,10 @@ const TalentPool = () => {
 
           <TabsContent value="vacancies" className="mt-4">
             <VacancyBrowse />
+          </TabsContent>
+
+          <TabsContent value="applications" className="mt-4">
+            <MyApplications />
           </TabsContent>
 
           <TabsContent value="browse" className="mt-4">
