@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 export function AuditHealthWidget() {
-  const { data: audit, isLoading } = usePayrollAudit();
+  const { tenantId } = useTenant();
+  const { data: audit, isLoading } = usePayrollAudit(true, tenantId);
 
   if (isLoading) {
     return (
