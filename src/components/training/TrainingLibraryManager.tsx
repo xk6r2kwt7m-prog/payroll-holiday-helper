@@ -8,9 +8,11 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   BookOpen, Plus, FileText, Shield, GraduationCap, AlertTriangle,
-  CheckCircle2, Clock, Eye, Users, Search, Upload, Sparkles,
+  CheckCircle2, Clock, Search, Sparkles, Eye, Users, MoreVertical,
+  ThumbsUp, Send, Archive,
 } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -22,23 +24,37 @@ import {
   LIBRARY_CATEGORIES,
   type TrainingLibraryItem,
 } from "@/hooks/useTrainingLibrary";
+import { useUpdateModuleStatus, COMPLETION_TYPES, MODULE_STATUSES, type ModuleStatus } from "@/hooks/useTrainingModules";
 import { useEmployees } from "@/hooks/useEmployees";
 import { AssignmentStatusBadge } from "@/components/training/AssignmentStatusBadge";
+import { QuizBuilder } from "@/components/training/QuizBuilder";
 import { useTenant } from "@/hooks/useTenant";
-
-// ─── Library Manager ───
+import { usePermission } from "@/hooks/useRolePermissions";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function TrainingLibraryManager() {
   const { data: library = [] } = useTrainingLibrary();
   const { data: assignments = [] } = useTrainingAssignments();
+  const updateStatus = useUpdateModuleStatus();
+  const canManage = usePermission("manage_training");
+  const { tenantId } = useTenant();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedDoc, setSelectedDoc] = useState<TrainingLibraryItem | null>(null);
 
-  const filtered = library.filter(item => {
+  // Only show tenant modules + adapted in main library (platform shown in UGLŌ Standard tab)
+  const tenantModules = library.filter(i => i.tenant_id !== null || i.source_type === "adapted");
+
+  const filtered = tenantModules.filter(item => {
     const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCat = categoryFilter === "all" || item.category === categoryFilter;
-    return matchesSearch && matchesCat;
+    const matchesSource = sourceFilter === "all" || item.source_type === sourceFilter;
+    const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+    return matchesSearch && matchesCat && matchesSource && matchesStatus;
   });
 
   const getAssignmentStats = (docId: string) => {
@@ -53,79 +69,103 @@ export function TrainingLibraryManager() {
     };
   };
 
+  const getStatusBadge = (status: string) => {
+    const s = MODULE_STATUSES.find(ms => ms.value === status);
+    return <Badge className={cn("text-[10px]", s?.color || "bg-muted text-muted-foreground")}>{s?.label || status}</Badge>;
+  };
+
+  const getSourceBadge = (sourceType: string) => {
+    if (sourceType === "platform") return <Badge className="text-[10px] bg-primary/10 text-primary">UGLŌ</Badge>;
+    if (sourceType === "adapted") return <Badge className="text-[10px] bg-accent/10 text-accent-foreground">Adapted</Badge>;
+    return null;
+  };
+
+  const handleStatusChange = (id: string, status: ModuleStatus) => {
+    updateStatus.mutate({ id, status });
+  };
+
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-bold text-foreground">Document Library</h2>
-          <p className="text-xs text-muted-foreground">{library.length} documents</p>
+          <h2 className="text-lg font-bold text-foreground">Training Library</h2>
+          <p className="text-xs text-muted-foreground">{filtered.length} modules</p>
         </div>
-        <AddDocumentDialog />
+        {canManage && <AddModuleDialog />}
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search documents..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="pl-10 h-9"
-          />
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Search modules..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 h-9" />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[130px] h-9"><SelectValue placeholder="Category" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {LIBRARY_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[140px] h-9">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {LIBRARY_CATEGORIES.map(c => (
-              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-1.5 flex-wrap">
+          {[
+            { key: "all", label: "All" },
+            { key: "draft", label: "Draft" },
+            { key: "published", label: "Published" },
+            { key: "archived", label: "Archived" },
+          ].map(s => (
+            <button key={s.key} onClick={() => setStatusFilter(s.key)}
+              className={cn("px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                statusFilter === s.key ? "bg-primary/10 text-primary border-primary/20" : "bg-card text-muted-foreground border-border"
+              )}>{s.label}</button>
+          ))}
+        </div>
       </div>
 
-      {/* Document List */}
+      {/* Module List */}
       <div className="space-y-2">
         {filtered.length === 0 && (
           <div className="text-center py-12">
             <BookOpen className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">No documents yet</p>
+            <h3 className="text-sm font-semibold text-foreground mb-1">No training modules yet</h3>
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              Upload your first SOP or start from the UGLŌ standard library.
+            </p>
           </div>
         )}
         {filtered.map(item => {
           const stats = getAssignmentStats(item.id);
           const catLabel = LIBRARY_CATEGORIES.find(c => c.value === item.category)?.label || item.category;
+          const compType = COMPLETION_TYPES.find(c => c.value === item.completion_type)?.label || item.completion_type;
+          const isPlatform = item.source_type === "platform";
           return (
-            <div
-              key={item.id}
+            <div key={item.id}
               className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm cursor-pointer active:bg-muted transition-all"
               onClick={() => setSelectedDoc(item)}
             >
-              <div className={cn(
-                "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-                item.content_type === "internal_page" ? "bg-primary/10" :
-                item.requires_quiz ? "bg-accent/10" :
-                item.requires_acknowledgement ? "bg-warning/10" :
-                "bg-primary/10"
+              <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
+                item.completion_type === "quiz" ? "bg-accent/10" :
+                item.completion_type === "practical_signoff" ? "bg-warning/10" :
+                item.completion_type === "blended" ? "bg-primary/10" : "bg-muted"
               )}>
-                {item.content_type === "internal_page" ? <BookOpen className="h-5 w-5 text-primary" /> :
-                 item.requires_quiz ? <GraduationCap className="h-5 w-5 text-accent" /> :
-                 item.requires_acknowledgement ? <Shield className="h-5 w-5 text-warning" /> :
-                 <FileText className="h-5 w-5 text-primary" />}
+                {item.completion_type === "quiz" ? <GraduationCap className="h-5 w-5 text-accent-foreground" /> :
+                 item.completion_type === "practical_signoff" ? <Shield className="h-5 w-5 text-warning" /> :
+                 item.completion_type === "blended" ? <Sparkles className="h-5 w-5 text-primary" /> :
+                 <FileText className="h-5 w-5 text-muted-foreground" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
-                <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  {getStatusBadge(item.status)}
+                  {getSourceBadge(item.source_type)}
                   <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>
+                  {item.is_mandatory && <Badge className="text-[10px] bg-destructive/10 text-destructive">Mandatory</Badge>}
                   {item.version > 1 && <Badge variant="secondary" className="text-[10px]">v{item.version}</Badge>}
-                  {item.counts_toward_readiness && <Badge className="text-[10px] bg-primary/10 text-primary">Readiness</Badge>}
                 </div>
               </div>
-              <div className="text-right shrink-0">
+              <div className="text-right shrink-0 flex items-center gap-2">
                 {stats.total > 0 ? (
                   <div className="text-[10px] text-muted-foreground space-y-0.5">
                     <p>{stats.completed}/{stats.total} done</p>
@@ -134,16 +174,40 @@ export function TrainingLibraryManager() {
                 ) : (
                   <p className="text-[10px] text-muted-foreground">Not assigned</p>
                 )}
+                {canManage && !isPlatform && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><MoreVertical className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
+                      {item.status === "draft" && (
+                        <DropdownMenuItem onClick={() => handleStatusChange(item.id, "approved")}>
+                          <ThumbsUp className="h-4 w-4 mr-2" /> Approve
+                        </DropdownMenuItem>
+                      )}
+                      {(item.status === "approved" || item.status === "draft") && (
+                        <DropdownMenuItem onClick={() => handleStatusChange(item.id, "published")}>
+                          <Send className="h-4 w-4 mr-2" /> Publish
+                        </DropdownMenuItem>
+                      )}
+                      {item.status === "published" && (
+                        <DropdownMenuItem onClick={() => handleStatusChange(item.id, "archived")}>
+                          <Archive className="h-4 w-4 mr-2" /> Archive
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Assignment Sheet for selected document */}
+      {/* Module Detail Sheet */}
       {selectedDoc && (
-        <AssignDocumentDialog
-          document={selectedDoc}
+        <ModuleDetailSheet
+          module={selectedDoc}
           open={!!selectedDoc}
           onOpenChange={open => !open && setSelectedDoc(null)}
         />
@@ -152,144 +216,26 @@ export function TrainingLibraryManager() {
   );
 }
 
-// ─── Add Document Dialog ───
+// ─── Module Detail Sheet ───
 
-function AddDocumentDialog() {
-  const [open, setOpen] = useState(false);
-  const createItem = useCreateLibraryItem();
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    category: "training",
-    content_type: "document" as "document" | "internal_page" | "external_link",
-    content_url: "",
-    requires_acknowledgement: false,
-    requires_completion: false,
-    requires_quiz: false,
-    counts_toward_readiness: false,
-    effective_date: "",
-    expiry_date: "",
-  });
-
-  const handleSubmit = () => {
-    if (!form.title.trim()) return;
-    createItem.mutate({
-      title: form.title,
-      description: form.description || null,
-      category: form.category,
-      content_type: form.content_type,
-      content_url: form.content_url || null,
-      requires_acknowledgement: form.requires_acknowledgement,
-      requires_completion: form.requires_completion,
-      requires_quiz: form.requires_quiz,
-      counts_toward_readiness: form.counts_toward_readiness,
-      effective_date: form.effective_date || null,
-      expiry_date: form.expiry_date || null,
-    } as any, {
-      onSuccess: () => {
-        setOpen(false);
-        setForm({ title: "", description: "", category: "training", content_type: "document", content_url: "", requires_acknowledgement: false, requires_completion: false, requires_quiz: false, counts_toward_readiness: false, effective_date: "", expiry_date: "" });
-      },
-    });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" /> Add Document
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>Add to Library</DialogTitle></DialogHeader>
-        <div className="space-y-4 pt-2">
-          <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Allergen Awareness Guide" /></div>
-          <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Brief description..." rows={2} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Category</Label>
-              <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {LIBRARY_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Content Type</Label>
-              <Select value={form.content_type} onValueChange={v => setForm(f => ({ ...f, content_type: v as any }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="document">Document</SelectItem>
-                  <SelectItem value="internal_page">Internal Page</SelectItem>
-                  <SelectItem value="external_link">External Link</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {form.content_type !== "document" && (
-            <div>
-              <Label>{form.content_type === "internal_page" ? "Page Route" : "URL"}</Label>
-              <Input
-                value={form.content_url}
-                onChange={e => setForm(f => ({ ...f, content_url: e.target.value }))}
-                placeholder={form.content_type === "internal_page" ? "/foh/service" : "https://..."}
-              />
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label>Effective Date</Label><Input type="date" value={form.effective_date} onChange={e => setForm(f => ({ ...f, effective_date: e.target.value }))} /></div>
-            <div><Label>Expiry Date</Label><Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} /></div>
-          </div>
-          <div className="space-y-3 pt-1">
-            <div className="flex items-center justify-between">
-              <div><p className="text-xs font-medium">Requires Acknowledgement</p><p className="text-[10px] text-muted-foreground">Staff must confirm they've read it</p></div>
-              <Switch checked={form.requires_acknowledgement} onCheckedChange={v => setForm(f => ({ ...f, requires_acknowledgement: v }))} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div><p className="text-xs font-medium">Requires Completion</p><p className="text-[10px] text-muted-foreground">Must be marked as completed</p></div>
-              <Switch checked={form.requires_completion} onCheckedChange={v => setForm(f => ({ ...f, requires_completion: v }))} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div><p className="text-xs font-medium">Requires Quiz</p><p className="text-[10px] text-muted-foreground">Must pass knowledge check</p></div>
-              <Switch checked={form.requires_quiz} onCheckedChange={v => setForm(f => ({ ...f, requires_quiz: v }))} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div><p className="text-xs font-medium">Counts Toward Readiness</p><p className="text-[10px] text-muted-foreground">Blocks work readiness if incomplete</p></div>
-              <Switch checked={form.counts_toward_readiness} onCheckedChange={v => setForm(f => ({ ...f, counts_toward_readiness: v }))} />
-            </div>
-          </div>
-          <Button onClick={handleSubmit} disabled={createItem.isPending} className="w-full">
-            {createItem.isPending ? "Adding..." : "Add to Library"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Assign Document Dialog ───
-
-function AssignDocumentDialog({ document, open, onOpenChange }: {
-  document: TrainingLibraryItem;
+function ModuleDetailSheet({ module, open, onOpenChange }: {
+  module: TrainingLibraryItem;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const { data: employees = [] } = useEmployees();
-  const { data: existingAssignments = [] } = useTrainingAssignments({ documentId: document.id });
+  const { data: existingAssignments = [] } = useTrainingAssignments({ documentId: module.id });
   const createAssignments = useCreateAssignments();
+  const updateStatus = useUpdateModuleStatus();
+  const canManage = usePermission("manage_training");
+  const isPlatform = module.source_type === "platform" && module.tenant_id === null;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [dueDate, setDueDate] = useState("");
-  const [assignFilter, setAssignFilter] = useState("all");
+  const [detailTab, setDetailTab] = useState("info");
 
   const activeEmployees = employees.filter(e => e.status === "active" || e.status === "starter" || (e.status as string) === "onboarding");
   const assignedEmployeeIds = new Set(existingAssignments.map(a => a.employee_id));
-
-  const filteredEmployees = activeEmployees.filter(e => {
-    if (assignedEmployeeIds.has(e.id)) return false;
-    if (assignFilter === "all") return true;
-    return e.department === assignFilter;
-  });
+  const unassignedEmployees = activeEmployees.filter(e => !assignedEmployeeIds.has(e.id));
 
   const toggleEmployee = (id: string) => {
     const newSet = new Set(selectedIds);
@@ -297,99 +243,249 @@ function AssignDocumentDialog({ document, open, onOpenChange }: {
     setSelectedIds(newSet);
   };
 
-  const selectAll = () => setSelectedIds(new Set(filteredEmployees.map(e => e.id)));
-
   const handleAssign = () => {
     if (selectedIds.size === 0) return;
     createAssignments.mutate(
       Array.from(selectedIds).map(empId => ({
-        document_id: document.id,
+        document_id: module.id,
         employee_id: empId,
         due_date: dueDate || undefined,
+        is_mandatory: module.is_mandatory,
+        signoff_required: module.completion_type === "practical_signoff" || module.completion_type === "blended",
       })),
-      { onSuccess: () => { setSelectedIds(new Set()); onOpenChange(false); } }
+      { onSuccess: () => { setSelectedIds(new Set()); } }
     );
   };
 
-  const catLabel = LIBRARY_CATEGORIES.find(c => c.value === document.category)?.label || document.category;
+  const catLabel = LIBRARY_CATEGORIES.find(c => c.value === module.category)?.label || module.category;
+  const compLabel = COMPLETION_TYPES.find(c => c.value === module.completion_type)?.label || module.completion_type;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-base">{document.title}</DialogTitle>
-          <div className="flex items-center gap-2 mt-1">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="text-base pr-6">{module.title}</SheetTitle>
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            {MODULE_STATUSES.find(s => s.value === module.status) && (
+              <Badge className={cn("text-[10px]", MODULE_STATUSES.find(s => s.value === module.status)?.color)}>
+                {MODULE_STATUSES.find(s => s.value === module.status)?.label}
+              </Badge>
+            )}
             <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>
-            {document.requires_acknowledgement && <Badge className="text-[10px] bg-warning/10 text-warning">Acknowledgement</Badge>}
-            {document.requires_quiz && <Badge className="text-[10px] bg-accent/10 text-accent">Quiz</Badge>}
+            <Badge variant="outline" className="text-[10px]">{compLabel}</Badge>
+            {module.source_type === "adapted" && <Badge className="text-[10px] bg-accent/10 text-accent-foreground">Adapted from UGLŌ</Badge>}
+            {isPlatform && <Badge className="text-[10px] bg-primary/10 text-primary">UGLŌ Standard</Badge>}
           </div>
-        </DialogHeader>
+        </SheetHeader>
 
-        <Tabs defaultValue="assign" className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="assign">Assign</TabsTrigger>
-            <TabsTrigger value="tracking">Tracking ({existingAssignments.length})</TabsTrigger>
+        {/* Approval Actions */}
+        {canManage && !isPlatform && (
+          <div className="flex gap-2 mt-4 flex-wrap">
+            {module.status === "draft" && (
+              <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: module.id, status: "approved" })} disabled={updateStatus.isPending}>
+                <ThumbsUp className="h-4 w-4 mr-1" /> Approve
+              </Button>
+            )}
+            {(module.status === "draft" || module.status === "approved") && (
+              <Button size="sm" onClick={() => updateStatus.mutate({ id: module.id, status: "published" })} disabled={updateStatus.isPending}>
+                <Send className="h-4 w-4 mr-1" /> Publish
+              </Button>
+            )}
+            {module.status === "published" && (
+              <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: module.id, status: "archived" })} disabled={updateStatus.isPending}>
+                <Archive className="h-4 w-4 mr-1" /> Archive
+              </Button>
+            )}
+          </div>
+        )}
+
+        <Tabs value={detailTab} onValueChange={setDetailTab} className="mt-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="info">Info</TabsTrigger>
+            <TabsTrigger value="assign">Assign ({existingAssignments.length})</TabsTrigger>
+            {module.requires_quiz && <TabsTrigger value="quiz">Quiz</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="assign" className="flex-1 overflow-y-auto space-y-3 mt-3">
-            <div className="flex gap-2">
-              <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 w-[160px]" placeholder="Due date" />
-              <Button variant="outline" size="sm" onClick={selectAll} className="text-xs h-8">Select All</Button>
+          <TabsContent value="info" className="space-y-4 mt-3">
+            {module.summary && <p className="text-sm text-muted-foreground">{module.summary}</p>}
+            {module.description && <p className="text-sm text-foreground">{module.description}</p>}
+            <div className="space-y-2 text-sm">
+              <InfoRow label="Version" value={`v${module.version}`} />
+              <InfoRow label="Audience" value={module.audience_scope?.replace("_", " ")} />
+              {module.estimated_minutes && <InfoRow label="Est. Time" value={`${module.estimated_minutes} min`} />}
+              {module.refresher_days && <InfoRow label="Refresher" value={`Every ${module.refresher_days} days`} />}
+              {module.pass_mark && module.requires_quiz && <InfoRow label="Pass Mark" value={`${module.pass_mark}%`} />}
+              {module.is_mandatory && <InfoRow label="Mandatory" value="Yes" />}
+              {module.published_at && <InfoRow label="Published" value={format(parseISO(module.published_at), "d MMM yyyy")} />}
             </div>
-            <div className="space-y-1 max-h-[300px] overflow-y-auto">
-              {filteredEmployees.map(emp => (
-                <label
-                  key={emp.id}
-                  className={cn(
-                    "flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors",
-                    selectedIds.has(emp.id) ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50"
-                  )}
-                >
-                  <input type="checkbox" checked={selectedIds.has(emp.id)} onChange={() => toggleEmployee(emp.id)} className="rounded" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{emp.forename} {emp.surname}</p>
-                    <p className="text-[10px] text-muted-foreground">{emp.department}</p>
-                  </div>
-                </label>
-              ))}
-              {filteredEmployees.length === 0 && (
-                <p className="text-center py-6 text-sm text-muted-foreground">All employees already assigned</p>
-              )}
-            </div>
-            {selectedIds.size > 0 && (
-              <Button onClick={handleAssign} disabled={createAssignments.isPending} className="w-full">
-                {createAssignments.isPending ? "Assigning..." : `Assign to ${selectedIds.size} employee${selectedIds.size > 1 ? "s" : ""}`}
-              </Button>
+          </TabsContent>
+
+          <TabsContent value="assign" className="space-y-3 mt-3">
+            {/* Existing assignments */}
+            {existingAssignments.length > 0 && (
+              <div className="space-y-1.5 mb-4">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Assigned</p>
+                {existingAssignments.map(a => {
+                  const isOverdue = a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0 && a.status === "assigned";
+                  return (
+                    <div key={a.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{a.employees?.forename} {a.employees?.surname}</p>
+                        <p className="text-[10px] text-muted-foreground">{a.employees?.department}</p>
+                      </div>
+                      <AssignmentStatusBadge status={a.status} isOverdue={!!isOverdue} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* New assignments */}
+            {module.status === "published" && canManage && (
+              <>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Add Assignments</p>
+                <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="h-8 w-[160px]" placeholder="Due date" />
+                <div className="space-y-1 max-h-[250px] overflow-y-auto">
+                  {unassignedEmployees.map(emp => (
+                    <label key={emp.id} className={cn("flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors",
+                      selectedIds.has(emp.id) ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50"
+                    )}>
+                      <input type="checkbox" checked={selectedIds.has(emp.id)} onChange={() => toggleEmployee(emp.id)} className="rounded" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{emp.forename} {emp.surname}</p>
+                        <p className="text-[10px] text-muted-foreground">{emp.department}</p>
+                      </div>
+                    </label>
+                  ))}
+                  {unassignedEmployees.length === 0 && <p className="text-center py-4 text-sm text-muted-foreground">All employees assigned</p>}
+                </div>
+                {selectedIds.size > 0 && (
+                  <Button onClick={handleAssign} disabled={createAssignments.isPending} className="w-full">
+                    {createAssignments.isPending ? "Assigning..." : `Assign to ${selectedIds.size} employee${selectedIds.size > 1 ? "s" : ""}`}
+                  </Button>
+                )}
+              </>
+            )}
+            {module.status !== "published" && (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">Module must be published before assigning to staff.</p>
+              </div>
             )}
           </TabsContent>
 
-          <TabsContent value="tracking" className="flex-1 overflow-y-auto mt-3">
-            <div className="space-y-1.5">
-              {existingAssignments.length === 0 && (
-                <p className="text-center py-6 text-sm text-muted-foreground">No assignments yet</p>
-              )}
-              {existingAssignments.map(a => {
-                const isOverdue = a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0 && a.status === "assigned";
-                return (
-                  <div key={a.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {a.employees?.forename} {a.employees?.surname}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {a.employees?.department}
-                        {a.due_date && ` · Due ${format(parseISO(a.due_date), "d MMM")}`}
-                      </p>
-                    </div>
-                    <AssignmentStatusBadge status={a.status} isOverdue={!!isOverdue} />
-                  </div>
-                );
-              })}
-            </div>
-          </TabsContent>
+          {module.requires_quiz && (
+            <TabsContent value="quiz" className="mt-3">
+              <QuizBuilder moduleId={module.id} canEdit={canManage && !isPlatform} />
+            </TabsContent>
+          )}
         </Tabs>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-foreground capitalize">{value}</span>
+    </div>
+  );
+}
+
+// ─── Add Module Dialog ───
+
+function AddModuleDialog() {
+  const [open, setOpen] = useState(false);
+  const createItem = useCreateLibraryItem();
+  const [form, setForm] = useState({
+    title: "", description: "", summary: "", category: "training",
+    content_type: "document" as "document" | "internal_page" | "external_link",
+    content_url: "", completion_type: "read_acknowledge",
+    audience_scope: "all_staff",
+    requires_acknowledgement: true, requires_completion: true,
+    requires_quiz: false, counts_toward_readiness: false,
+    is_mandatory: false, estimated_minutes: "",
+    refresher_days: "", pass_mark: "80",
+  });
+
+  const handleSubmit = () => {
+    if (!form.title.trim()) return;
+    createItem.mutate({
+      title: form.title,
+      description: form.description || null,
+      summary: form.summary || null,
+      category: form.category,
+      content_type: form.content_type,
+      content_url: form.content_url || null,
+      completion_type: form.completion_type,
+      audience_scope: form.audience_scope,
+      requires_acknowledgement: form.requires_acknowledgement,
+      requires_completion: form.requires_completion,
+      requires_quiz: form.completion_type === "quiz" || form.completion_type === "blended",
+      counts_toward_readiness: form.counts_toward_readiness,
+      is_mandatory: form.is_mandatory,
+      estimated_minutes: form.estimated_minutes ? parseInt(form.estimated_minutes) : null,
+      refresher_days: form.refresher_days ? parseInt(form.refresher_days) : null,
+      pass_mark: parseInt(form.pass_mark) || 80,
+    } as any, {
+      onSuccess: () => {
+        setOpen(false);
+        setForm({ title: "", description: "", summary: "", category: "training", content_type: "document", content_url: "", completion_type: "read_acknowledge", audience_scope: "all_staff", requires_acknowledgement: true, requires_completion: true, requires_quiz: false, counts_toward_readiness: false, is_mandatory: false, estimated_minutes: "", refresher_days: "", pass_mark: "80" });
+      },
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> New Module</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>Create Training Module</DialogTitle></DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Allergen Awareness" /></div>
+          <div><Label>Summary</Label><Input value={form.summary} onChange={e => setForm(f => ({ ...f, summary: e.target.value }))} placeholder="One-line summary" /></div>
+          <div><Label>Description</Label><Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Category</Label>
+              <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{LIBRARY_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Completion Type</Label>
+              <Select value={form.completion_type} onValueChange={v => setForm(f => ({ ...f, completion_type: v, requires_quiz: v === "quiz" || v === "blended" }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{COMPLETION_TYPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Est. Minutes</Label><Input type="number" value={form.estimated_minutes} onChange={e => setForm(f => ({ ...f, estimated_minutes: e.target.value }))} /></div>
+            <div><Label>Refresher (days)</Label><Input type="number" value={form.refresher_days} onChange={e => setForm(f => ({ ...f, refresher_days: e.target.value }))} /></div>
+          </div>
+          {(form.completion_type === "quiz" || form.completion_type === "blended") && (
+            <div><Label>Pass Mark (%)</Label><Input type="number" value={form.pass_mark} onChange={e => setForm(f => ({ ...f, pass_mark: e.target.value }))} /></div>
+          )}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <div><p className="text-xs font-medium">Mandatory</p><p className="text-[10px] text-muted-foreground">Required for all assigned staff</p></div>
+              <Switch checked={form.is_mandatory} onCheckedChange={v => setForm(f => ({ ...f, is_mandatory: v }))} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div><p className="text-xs font-medium">Counts Toward Readiness</p><p className="text-[10px] text-muted-foreground">Blocks work readiness if incomplete</p></div>
+              <Switch checked={form.counts_toward_readiness} onCheckedChange={v => setForm(f => ({ ...f, counts_toward_readiness: v }))} />
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground">Module will be created as Draft. Review and publish when ready.</p>
+          <Button onClick={handleSubmit} disabled={createItem.isPending} className="w-full">
+            {createItem.isPending ? "Creating..." : "Create Module"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
-

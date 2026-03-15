@@ -10,9 +10,10 @@ export type TrainingContentType = "document" | "internal_page" | "external_link"
 
 export interface TrainingLibraryItem {
   id: string;
-  tenant_id: string;
+  tenant_id: string | null;
   title: string;
   description: string | null;
+  summary: string | null;
   category: string;
   content_type: TrainingContentType;
   content_url: string | null;
@@ -33,6 +34,22 @@ export interface TrainingLibraryItem {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Enhanced fields
+  source_type: "platform" | "tenant" | "adapted";
+  source_module_id: string | null;
+  status: string;
+  completion_type: string;
+  audience_scope: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  published_at: string | null;
+  archived_at: string | null;
+  change_log: string | null;
+  refresher_days: number | null;
+  estimated_minutes: number | null;
+  is_mandatory: boolean;
+  pass_mark: number;
+  retry_limit: number;
 }
 
 export interface TrainingAssignment {
@@ -53,6 +70,15 @@ export interface TrainingAssignment {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  // Enhanced fields
+  signoff_required: boolean;
+  signoff_status: string | null;
+  signed_off_by: string | null;
+  signed_off_at: string | null;
+  signoff_checklist: any;
+  module_version: number;
+  is_mandatory: boolean;
+  score: number | null;
   training_library?: TrainingLibraryItem;
   employees?: { forename: string; surname: string; department: string };
 }
@@ -60,10 +86,12 @@ export interface TrainingAssignment {
 export interface QuizQuestion {
   id: string;
   document_id: string;
-  tenant_id: string;
+  tenant_id: string | null;
   question: string;
+  question_type: string;
   options: string[];
   correct_option: number;
+  explanation: string | null;
   display_order: number;
 }
 
@@ -91,7 +119,7 @@ export function useTrainingLibrary() {
       const { data, error } = await supabase
         .from("training_library" as any)
         .select("*")
-        .eq("tenant_id", tenantId)
+        .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -104,26 +132,32 @@ export function useTrainingLibrary() {
 export function useCreateLibraryItem() {
   const qc = useQueryClient();
   const { tenantId } = useTenant();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (item: Partial<TrainingLibraryItem>) => {
       await assertPermission("manage_training", tenantId!);
       const { data, error } = await supabase
         .from("training_library" as any)
-        .insert({ ...item, tenant_id: tenantId } as any)
+        .insert({
+          ...item,
+          tenant_id: tenantId,
+          source_type: "tenant",
+          status: "draft",
+          created_by: user?.id,
+        } as any)
         .select()
         .single();
       if (error) throw error;
-      // Audit
       await supabase.from("training_audit_log" as any).insert({
         tenant_id: tenantId,
         document_id: (data as any).id,
-        action: "document_uploaded",
+        action: "document_created",
       } as any);
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["training_library"] });
-      toast.success("Document added to library");
+      toast.success("Module created as Draft");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -143,7 +177,7 @@ export function useUpdateLibraryItem() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["training_library"] });
-      toast.success("Document updated");
+      toast.success("Module updated");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -196,10 +230,9 @@ export function useCreateAssignments() {
   const { tenantId } = useTenant();
   const { notifyMany } = useNotifyEvent();
   return useMutation({
-    mutationFn: async (assignments: Array<{ document_id: string; employee_id: string; due_date?: string; notes?: string }>) => {
+    mutationFn: async (assignments: Array<{ document_id: string; employee_id: string; due_date?: string; notes?: string; is_mandatory?: boolean; signoff_required?: boolean }>) => {
       await assertPermission("manage_training", tenantId!);
 
-      // Deduplicate: check for existing active assignments
       const pairs = assignments.map(a => ({ doc: a.document_id, emp: a.employee_id }));
       const empIds = [...new Set(pairs.map(p => p.emp))];
       const docIds = [...new Set(pairs.map(p => p.doc))];
@@ -234,10 +267,8 @@ export function useCreateAssignments() {
       if (error) throw error;
 
       const skipped = assignments.length - filtered.length;
-      if (skipped > 0) {
-        toast.info(`${skipped} duplicate assignment(s) skipped`);
-      }
-      // Audit
+      if (skipped > 0) toast.info(`${skipped} duplicate(s) skipped`);
+
       const auditRows = filtered.map(a => ({
         tenant_id: tenantId,
         document_id: a.document_id,
@@ -246,27 +277,22 @@ export function useCreateAssignments() {
       }));
       await supabase.from("training_audit_log" as any).insert(auditRows as any);
 
-      // Notify assigned employees
+      // Notify
       if (tenantId) {
-        // Fetch document titles for notification messages
-        const docIds = [...new Set(assignments.map(a => a.document_id))];
         const { data: docs } = await supabase
           .from("training_library" as any)
           .select("id, title")
           .in("id", docIds);
         const titleMap = new Map((docs || []).map((d: any) => [d.id, d.title]));
 
-        // Fetch employee user_ids
-        const empIds = [...new Set(assignments.map(a => a.employee_id))];
         const { data: emps } = await supabase
           .from("employees" as any)
           .select("id, user_id")
           .in("id", empIds);
         const userMap = new Map((emps || []).map((e: any) => [e.id, e.user_id]));
 
-        // Group by employee for a single notification per person
         const byEmployee = new Map<string, string[]>();
-        for (const a of assignments) {
+        for (const a of filtered) {
           const uid = userMap.get(a.employee_id);
           if (!uid) continue;
           if (!byEmployee.has(uid)) byEmployee.set(uid, []);
@@ -281,11 +307,7 @@ export function useCreateAssignments() {
             ? "Please complete this as soon as possible."
             : `Items: ${titles.join(", ")}`;
           await notifyMany(
-            [userId],
-            "training_assigned",
-            title,
-            body,
-            "/staff",
+            [userId], "training_assigned", title, body, "/staff",
             { document_count: titles.length }
           );
         }
@@ -296,7 +318,7 @@ export function useCreateAssignments() {
       qc.invalidateQueries({ queryKey: ["my_training_assignments"] });
       qc.invalidateQueries({ queryKey: ["employee_readiness"] });
       qc.invalidateQueries({ queryKey: ["team_readiness"] });
-      toast.success("Document(s) assigned");
+      toast.success("Training assigned");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -319,7 +341,6 @@ export function useUpdateAssignment() {
         .update(updates as any)
         .eq("id", id);
       if (error) throw error;
-      // Audit
       await supabase.from("training_audit_log" as any).insert({
         tenant_id: tenantId,
         document_id: documentId,
@@ -328,20 +349,17 @@ export function useUpdateAssignment() {
         action,
       } as any);
 
-      // Notify admins/managers when training is completed
       if (action === "completed" && employeeId && documentId) {
-        // Fetch employee name and document title
         const [{ data: emp }, { data: doc }] = await Promise.all([
           supabase.from("employees" as any).select("forename, surname").eq("id", employeeId).single(),
           supabase.from("training_library" as any).select("title").eq("id", documentId).single(),
         ]);
         const empName = emp ? `${(emp as any).forename} ${(emp as any).surname}` : "An employee";
         const docTitle = doc ? (doc as any).title : "training";
-
         await notifyAdmins(
           "training_completed",
           `${empName} completed: ${docTitle}`,
-          `Training has been marked as complete.`,
+          "Training has been marked as complete.",
           "/training",
           { employee_id: employeeId, document_id: documentId }
         );
