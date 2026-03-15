@@ -26,6 +26,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { useTenant } from "@/hooks/useTenant";
 
 export function SettleLeaverDialog() {
   const [open, setOpen] = useState(false);
@@ -36,6 +37,7 @@ export function SettleLeaverDialog() {
   const [holidayDate, setHolidayDate] = useState("");
   const [notes, setNotes] = useState("");
   const [approved, setApproved] = useState(false);
+  const { tenantId } = useTenant();
 
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
@@ -43,26 +45,32 @@ export function SettleLeaverDialog() {
   const createPayment = useCreateHolidayPayment();
 
   const { data: allEntries = [] } = useQuery({
-    queryKey: ["payroll_entries", "all_accrual"],
+    queryKey: ["payroll_entries", "all_accrual", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("payroll_entries")
-        .select("employee_id, holiday_accrued_hours");
+        .select("employee_id, holiday_accrued_hours")
+        .eq("tenant_id", tenantId);
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 
   // Fetch adjustments
   const { data: adjustments = [] } = useQuery({
-    queryKey: ["holiday_adjustments"],
+    queryKey: ["holiday_adjustments", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_adjustments")
-        .select("*");
+        .select("*")
+        .eq("tenant_id", tenantId);
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 
   const leavers = useMemo(() =>

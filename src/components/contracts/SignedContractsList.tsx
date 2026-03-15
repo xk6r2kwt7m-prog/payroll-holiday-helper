@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentUploadDialog } from "@/components/employees/DocumentUploadDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ContractSigningActions } from "./ContractSigningActions";
+import { useTenant } from "@/hooks/useTenant";
 
 const deptStyles: Record<string, string> = {
   FOH: "bg-accent/10 text-accent",
@@ -27,6 +28,7 @@ const deptStyles: Record<string, string> = {
 
 export function SignedContractsList() {
   const { toast } = useToast();
+  const { tenantId } = useTenant();
   const { data: employees } = useEmployees();
   const [search, setSearch] = useState("");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
@@ -34,8 +36,9 @@ export function SignedContractsList() {
   const queryClient = useQueryClient();
 
   const { data: contracts, isLoading } = useQuery({
-    queryKey: ["all_contracts"],
+    queryKey: ["all_contracts", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("employee_documents")
         .select(`
@@ -47,12 +50,14 @@ export function SignedContractsList() {
             department
           )
         `)
+        .eq("tenant_id", tenantId)
         .eq("document_type", "contract")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 
   const filtered = contracts?.filter((c) => {
