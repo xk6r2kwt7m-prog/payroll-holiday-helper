@@ -480,7 +480,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   </div>
                   <div>
                     <Label className="text-xs">Completion Type</Label>
-                    <Select value={editForm.completion_type} onValueChange={v => setEditForm(f => ({ ...f, completion_type: v }))}>
+                    <Select value={editForm.completion_type} onValueChange={v => setEditForm(f => ({ ...f, completion_type: v as TrainingCompletionType }))}>
                       <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                       <SelectContent>{COMPLETION_TYPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                     </Select>
