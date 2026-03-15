@@ -18,6 +18,7 @@ import { OperationalAlertsPanel } from "@/components/dashboard/OperationalAlerts
 import { DocumentRequestsWidget } from "@/components/dashboard/DocumentRequestsWidget";
 import { TeamReadinessWidget } from "@/components/dashboard/TeamReadinessWidget";
 import { SetupHealthWidget } from "@/components/dashboard/SetupHealthWidget";
+import { TalentPoolWidget } from "@/components/dashboard/TalentPoolWidget";
 import { useSetupHealth } from "@/hooks/useSetupHealth";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
