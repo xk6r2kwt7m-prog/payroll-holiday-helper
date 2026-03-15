@@ -60,6 +60,7 @@ export function TrainingLibraryManager() {
   const updateStatus = useUpdateModuleStatus();
   const canManage = usePermission("manage_training");
   const { tenantId } = useTenant();
+  const { data: govCounts = {} } = useGovernanceSummary(canManage);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
