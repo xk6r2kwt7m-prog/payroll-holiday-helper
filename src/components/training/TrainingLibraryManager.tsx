@@ -57,6 +57,7 @@ import {
   type GovernanceHealth, type ModuleGovernanceInput,
 } from "@/lib/governance-classification";
 import { GovernanceDashboard } from "@/components/training/GovernanceDashboard";
+import { ContentStrengthPanel } from "@/components/training/ContentStrengthPanel";
 import type { ServiceRiskLevel } from "@/data/training-standards/types";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
