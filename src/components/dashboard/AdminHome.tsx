@@ -105,7 +105,7 @@ export function AdminHome() {
 
   const moduleLinks = [
     { icon: Calendar, label: "Holidays", path: "/holidays", desc: `${pendingRequests.length} pending` },
-    { icon: Sparkles, label: "Talent Pool", path: "/talent?tab=browse", desc: "Search candidates" },
+    { icon: Sparkles, label: "Talent Pool", path: "/talent-pool?tab=browse", desc: "Search candidates" },
     { icon: UserPlus, label: "Onboarding", path: "/onboarding", desc: "Manage new starters" },
     { icon: MapPin, label: "Locations", path: "/locations", desc: "Branches & geofences" },
     { icon: FileText, label: "Contracts", path: "/contracts", desc: "Templates & signing" },
