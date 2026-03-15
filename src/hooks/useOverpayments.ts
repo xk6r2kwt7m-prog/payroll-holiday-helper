@@ -35,9 +35,11 @@ export interface PayrollOverpayment {
 }
 
 export const useOverpayments = () => {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["payroll-overpayments"],
+    queryKey: ["payroll-overpayments", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [] as PayrollOverpayment[];
       const { data, error } = await supabase
         .from("payroll_overpayments" as any)
         .select(`
@@ -45,11 +47,13 @@ export const useOverpayments = () => {
           employees(id, forename, surname, department, status),
           payroll_periods!payroll_overpayments_payroll_period_id_fkey(id, period_name, start_date, end_date)
         `)
+        .eq("tenant_id", tenantId)
         .order("estimated_overpayment", { ascending: false });
 
       if (error) throw error;
       return data as unknown as PayrollOverpayment[];
     },
+    enabled: !!tenantId,
   });
 };
 
