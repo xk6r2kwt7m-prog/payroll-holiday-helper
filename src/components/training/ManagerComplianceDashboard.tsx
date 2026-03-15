@@ -250,18 +250,26 @@ export function ManagerComplianceDashboard() {
                     />
                     <div className="flex gap-2">
                       <Button size="sm" className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
-                        onClick={() => handleSignoff(a.id, true)}
+                        onClick={() => handleSignoff(a, true)}
                         disabled={managerSignoff.isPending}>
                         <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Pass
                       </Button>
                       <Button size="sm" variant="destructive" className="flex-1"
-                        onClick={() => handleSignoff(a.id, false)}
+                        onClick={() => handleSignoff(a, false)}
                         disabled={managerSignoff.isPending}>
-                        Fail — Retrain
+                        Fail
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setSignoffTarget(null); setSignoffNotes(""); }}>
+                      <Button size="sm" variant="ghost" onClick={() => { setSignoffTarget(null); setSignoffNotes(""); setRetrainOnFail(true); }}>
                         Cancel
                       </Button>
+                    </div>
+                    {/* Retrain toggle — only visible when failing */}
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border">
+                      <div className="flex items-center gap-2">
+                        <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-foreground font-medium">Create retrain assignment on fail</span>
+                      </div>
+                      <Switch checked={retrainOnFail} onCheckedChange={setRetrainOnFail} />
                     </div>
                   </div>
                 )}
