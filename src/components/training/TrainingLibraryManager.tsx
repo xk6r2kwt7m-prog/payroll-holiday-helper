@@ -52,6 +52,8 @@ export function TrainingLibraryManager() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [opAreaFilter, setOpAreaFilter] = useState("all");
+  const [mandatoryFilter, setMandatoryFilter] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<TrainingLibraryItem | null>(null);
 
   // Only show tenant modules + adapted in main library
