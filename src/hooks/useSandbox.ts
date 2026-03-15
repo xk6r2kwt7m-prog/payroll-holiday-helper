@@ -215,6 +215,7 @@ export function useCreateSandbox() {
         if (cfg.seedTalentProfiles && createdEmployeeIds.length >= 2) {
           await supabase.from("talent_profiles").insert([{
             employee_id: createdEmployeeIds[0],
+            tenant_id: tenant.id,
             talent_pool_status: "open_to_work" as any,
             visibility_mode: "public" as any,
             seeking_visibility: "actively_looking" as any,
