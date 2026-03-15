@@ -55,16 +55,16 @@ export function TalentPoolWidget() {
   ];
 
   const actions = [
-    { label: "View Talent", icon: Search, path: "/talent?tab=browse", primary: true },
-    { label: "Requests", icon: FileText, path: "/talent?tab=requests", primary: false },
-    { label: "Billing", icon: CreditCard, path: "/talent?tab=billing", primary: false },
+    { label: "View Talent", icon: Search, path: "/talent-pool?tab=browse", primary: true },
+    { label: "Requests", icon: FileText, path: "/talent-pool?tab=requests", primary: false },
+    { label: "Billing", icon: CreditCard, path: "/talent-pool?tab=billing", primary: false },
   ];
 
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Talent Pool</h2>
-        <Link to="/talent?tab=browse" className="text-xs text-primary font-medium flex items-center gap-0.5">
+        <Link to="/talent-pool?tab=browse" className="text-xs text-primary font-medium flex items-center gap-0.5">
           View all <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
