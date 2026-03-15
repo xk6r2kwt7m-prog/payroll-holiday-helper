@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { usePayrollAudit, type AuditFinding, type AuditSeverity } from "@/hooks/usePayrollAudit";
+import { useTenant } from "@/hooks/useTenant";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,7 +130,8 @@ function CategoryCard({ category, stats }: {
 }
 
 const PayrollAudit = () => {
-  const { data: audit, isLoading, refetch, isFetching } = usePayrollAudit();
+  const { tenantId } = useTenant();
+  const { data: audit, isLoading, refetch, isFetching } = usePayrollAudit(true, tenantId);
   const [activeTab, setActiveTab] = useState("all");
 
   const filteredFindings = audit?.findings.filter(f => {

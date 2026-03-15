@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 import { usePayrollAudit } from "@/hooks/usePayrollAudit";
+import { useTenant } from "@/hooks/useTenant";
 import { ShieldCheck, ShieldAlert, ShieldX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 export function AuditHealthWidget() {
-  const { data: audit, isLoading } = usePayrollAudit();
+  const { tenantId } = useTenant();
+  const { data: audit, isLoading } = usePayrollAudit(true, tenantId);
 
   if (isLoading) {
     return (

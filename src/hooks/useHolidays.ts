@@ -13,9 +13,11 @@ export type HolidayBalanceInsert = TablesInsert<"holiday_balances">;
 export type HolidayBalanceUpdate = TablesUpdate<"holiday_balances">;
 
 export function useHolidayPayments(periodId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_payments", periodId],
+    queryKey: ["holiday_payments", tenantId, periodId],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("holiday_payments")
         .select(`
@@ -33,6 +35,7 @@ export function useHolidayPayments(periodId?: string) {
             end_date
           )
         `)
+        .eq("tenant_id", tenantId)
         .order("total", { ascending: false });
       
       if (periodId) {
@@ -44,14 +47,17 @@ export function useHolidayPayments(periodId?: string) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
 // Get all holiday payments for all employees across all periods
 export function useAllHolidayPayments() {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_payments", "all"],
+    queryKey: ["holiday_payments", tenantId, "all"],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_payments")
         .select(`
@@ -71,18 +77,22 @@ export function useAllHolidayPayments() {
             end_date
           )
         `)
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
 export function useHolidayBalances(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_balances", employeeId],
+    queryKey: ["holiday_balances", tenantId, employeeId],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("holiday_balances")
         .select(`
@@ -95,6 +105,7 @@ export function useHolidayBalances(employeeId?: string) {
             status
           )
         `)
+        .eq("tenant_id", tenantId)
         .order("leave_year_start", { ascending: false });
       
       if (employeeId) {
@@ -106,17 +117,20 @@ export function useHolidayBalances(employeeId?: string) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
 // Get holiday balances for a specific leave year
 export function useHolidayBalancesByYear(year: number) {
+  const { tenantId } = useTenant();
   const leaveYearStart = `${year}-01-01`;
   const leaveYearEnd = `${year}-12-31`;
   
   return useQuery({
-    queryKey: ["holiday_balances", "year", year],
+    queryKey: ["holiday_balances", tenantId, "year", year],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_balances")
         .select(`
@@ -130,6 +144,7 @@ export function useHolidayBalancesByYear(year: number) {
             hourly_rate
           )
         `)
+        .eq("tenant_id", tenantId)
         .eq("leave_year_start", leaveYearStart)
         .eq("leave_year_end", leaveYearEnd)
         .order("hours_accrued", { ascending: false });
@@ -137,17 +152,20 @@ export function useHolidayBalancesByYear(year: number) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
 // Get holiday payments for a specific leave year (by holiday_taken_date)
 export function useHolidayPaymentsByYear(year: number) {
+  const { tenantId } = useTenant();
   const leaveYearStart = `${year}-01-01`;
   const leaveYearEnd = `${year}-12-31`;
   
   return useQuery({
-    queryKey: ["holiday_payments", "year", year],
+    queryKey: ["holiday_payments", tenantId, "year", year],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_payments")
         .select(`
@@ -165,6 +183,7 @@ export function useHolidayPaymentsByYear(year: number) {
             end_date
           )
         `)
+        .eq("tenant_id", tenantId)
         .eq("leave_year_start", leaveYearStart)
         .eq("leave_year_end", leaveYearEnd)
         .order("holiday_taken_date", { ascending: false });
@@ -172,14 +191,17 @@ export function useHolidayPaymentsByYear(year: number) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
 // Get all payroll entries with holiday accrual data — paginated to avoid 1000-row cap
 export function useAllPayrollEntriesWithHoliday() {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["payroll_entries", "holiday_summary"],
+    queryKey: ["payroll_entries", tenantId, "holiday_summary"],
     queryFn: async () => {
+      if (!tenantId) return [];
       const PAGE_SIZE = 1000;
       let allData: any[] = [];
       let from = 0;
@@ -212,6 +234,7 @@ export function useAllPayrollEntriesWithHoliday() {
               status
             )
           `)
+          .eq("tenant_id", tenantId)
           .order("created_at", { ascending: true })
           .range(from, from + PAGE_SIZE - 1);
 
@@ -224,6 +247,7 @@ export function useAllPayrollEntriesWithHoliday() {
 
       return allData;
     },
+    enabled: !!tenantId,
   });
 }
 
@@ -248,8 +272,8 @@ export function useCreateHolidayPayment() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
@@ -299,7 +323,7 @@ export function useUpdateHolidayBalance() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["holiday_balances"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_balances", tenantId] });
     },
   });
 }
@@ -321,16 +345,18 @@ export function useCreateHolidayBalance() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["holiday_balances"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_balances", tenantId] });
     },
   });
 }
 
 // Holiday adjustments hook
 export function useHolidayAdjustments(year?: number) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_adjustments", year],
+    queryKey: ["holiday_adjustments", tenantId, year],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("holiday_adjustments")
         .select(`
@@ -342,6 +368,7 @@ export function useHolidayAdjustments(year?: number) {
             department
           )
         `)
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
 
       if (year) {
@@ -354,20 +381,25 @@ export function useHolidayAdjustments(year?: number) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
 export function useAllHolidayAdjustments() {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["holiday_adjustments", "all"],
+    queryKey: ["holiday_adjustments", tenantId, "all"],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("holiday_adjustments")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { ModuleKey } from "@/components/ProtectedRoute";
@@ -56,6 +57,7 @@ const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 export function TenantProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [tenantName, setTenantName] = useState<string | null>(null);
   const [tenantCountry, setTenantCountry] = useState<string | null>(null);
@@ -94,6 +96,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const commitTenantSelection = useCallback((selectedTenantId: string, tenant: any) => {
+    // Nuclear cache clear — prevents cross-tenant data leakage
+    queryClient.removeQueries();
+
     applyTenantData(tenant, selectedTenantId);
     setShowTenantPicker(false);
     setAvailableTenants([]);
@@ -101,7 +106,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     setLoading(false);
     localStorage.setItem("uglo_selected_tenant", selectedTenantId);
     
-  }, [applyTenantData]);
+  }, [applyTenantData, queryClient]);
 
   /**
    * Select a tenant from the picker.

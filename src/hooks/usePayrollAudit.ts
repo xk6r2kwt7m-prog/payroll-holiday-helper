@@ -593,21 +593,21 @@ export async function runPeriodAudit(periodId: string): Promise<AuditFinding[]> 
   return findings;
 }
 
-export function usePayrollAudit(enabled = true) {
+export function usePayrollAudit(enabled = true, tenantId?: string | null) {
   return useQuery({
-    queryKey: ["payroll_audit"],
+    queryKey: ["payroll_audit", tenantId],
     queryFn: runFullAudit,
-    enabled,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: enabled && !!tenantId,
+    staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   });
 }
 
-export function usePeriodAudit(periodId: string | undefined, enabled = true) {
+export function usePeriodAudit(periodId: string | undefined, enabled = true, tenantId?: string | null) {
   return useQuery({
-    queryKey: ["payroll_audit", "period", periodId],
+    queryKey: ["payroll_audit", tenantId, "period", periodId],
     queryFn: () => runPeriodAudit(periodId!),
-    enabled: enabled && !!periodId,
+    enabled: enabled && !!periodId && !!tenantId,
     staleTime: 1000 * 60 * 2,
   });
 }

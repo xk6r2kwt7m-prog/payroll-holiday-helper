@@ -13,23 +13,28 @@ export type PayrollEntryInsert = TablesInsert<"payroll_entries">;
 export type PayrollEntryUpdate = TablesUpdate<"payroll_entries">;
 
 export function usePayrollPeriods() {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["payroll_periods"],
+    queryKey: ["payroll_periods", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [] as PayrollPeriod[];
       const { data, error } = await supabase
         .from("payroll_periods")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("start_date", { ascending: false });
       
       if (error) throw error;
       return data as PayrollPeriod[];
     },
+    enabled: !!tenantId,
   });
 }
 
 export function usePayrollPeriod(id: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["payroll_periods", id],
+    queryKey: ["payroll_periods", tenantId, id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payroll_periods")
@@ -40,14 +45,16 @@ export function usePayrollPeriod(id: string) {
       if (error) throw error;
       return data as PayrollPeriod | null;
     },
-    enabled: !!id,
+    enabled: !!id && !!tenantId,
   });
 }
 
 export function usePayrollEntries(periodId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["payroll_entries", periodId],
+    queryKey: ["payroll_entries", tenantId, periodId],
     queryFn: async () => {
+      if (!tenantId) return [];
       let query = supabase
         .from("payroll_entries")
         .select(`
@@ -65,7 +72,7 @@ export function usePayrollEntries(periodId?: string) {
             ni_number
           )
         `)
-        
+        .eq("tenant_id", tenantId)
         .order("total_pay", { ascending: false });
       
       if (periodId) {
@@ -77,6 +84,7 @@ export function usePayrollEntries(periodId?: string) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 
@@ -97,17 +105,18 @@ export function useCreatePayrollPeriod() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
 
 export function useUpdatePayrollPeriod() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: PayrollPeriodUpdate }) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const { data, error } = await supabase
         .from("payroll_periods")
         .update(updates)
@@ -119,17 +128,18 @@ export function useUpdatePayrollPeriod() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
 
 export function useSubmitPayrollForReview() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async (id: string) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase
@@ -147,23 +157,25 @@ export function useSubmitPayrollForReview() {
         action: "update" as const,
         table_name: "payroll_periods",
         record_id: id,
+        tenant_id: tenantId,
         new_data: { operation: "submit_for_review", status: "pending" },
       });
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
 
 export function useApprovePayrollPeriod() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async (id: string) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase
@@ -185,23 +197,25 @@ export function useApprovePayrollPeriod() {
         action: "approve" as const,
         table_name: "payroll_periods",
         record_id: id,
+        tenant_id: tenantId,
         new_data: { operation: "approve_and_lock" },
       });
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
 
 export function useReopenPayrollPeriod() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async (id: string) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       
       const { data, error } = await supabase
@@ -223,23 +237,25 @@ export function useReopenPayrollPeriod() {
         action: "update" as const,
         table_name: "payroll_periods",
         record_id: id,
+        tenant_id: tenantId,
         new_data: { operation: "reopen_period", previous_status: "approved" },
       });
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
 
 export function useCreatePayrollEntry() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async (entry: PayrollEntryInsert) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const { data, error } = await supabase
         .from("payroll_entries")
         .insert(entry)
@@ -250,17 +266,18 @@ export function useCreatePayrollEntry() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
     },
   });
 }
 
 export function useUpdatePayrollEntry() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: PayrollEntryUpdate }) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const { data, error } = await supabase
         .from("payroll_entries")
         .update(updates)
@@ -272,17 +289,18 @@ export function useUpdatePayrollEntry() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
     },
   });
 }
 
 export function useBulkUpdatePayrollEntries() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async (entries: { id: string; updates: PayrollEntryUpdate }[]) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const results = await Promise.all(
         entries.map(async ({ id, updates }) => {
           const { data, error } = await supabase
@@ -299,7 +317,7 @@ export function useBulkUpdatePayrollEntries() {
       return results;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
     },
   });
 }
@@ -395,18 +413,19 @@ export function useCopyPayrollPeriod() {
       return newPeriod;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
-      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
     },
   });
 }
 
 export function useDeletePayrollPeriod() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async (id: string) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
 
       // Delete entries first (foreign key constraint)
@@ -436,23 +455,25 @@ export function useDeletePayrollPeriod() {
         action: "delete" as const,
         table_name: "payroll_periods",
         record_id: id,
+        tenant_id: tenantId,
         new_data: { operation: "delete_draft_period" },
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
-      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
-      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
     },
   });
 }
 
 export function useMarkBankDetailsExported() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   
   return useMutation({
     mutationFn: async (entryIds: string[]) => {
-      await assertPermission("view_pay_data", null);
+      await assertPermission("view_pay_data", tenantId!);
       const { error } = await supabase
         .from("payroll_entries")
         .update({ bank_details_exported: true })
@@ -461,7 +482,7 @@ export function useMarkBankDetailsExported() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
     },
   });
 }

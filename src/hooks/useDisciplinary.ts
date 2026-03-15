@@ -42,18 +42,22 @@ export const CATEGORIES = [
 ];
 
 export function useDisciplinaryRecords(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["disciplinary_records", employeeId],
+    queryKey: ["disciplinary_records", tenantId, employeeId],
     queryFn: async () => {
+      if (!tenantId) return [] as DisciplinaryRecord[];
       let q = supabase
         .from("disciplinary_records" as any)
         .select("*, employees(forename, surname, department)")
+        .eq("tenant_id", tenantId)
         .order("incident_date", { ascending: false });
       if (employeeId) q = q.eq("employee_id", employeeId);
       const { data, error } = await q;
       if (error) throw error;
       return (data || []) as unknown as DisciplinaryRecord[];
     },
+    enabled: !!tenantId,
   });
 }
 

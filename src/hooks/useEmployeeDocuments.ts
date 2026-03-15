@@ -52,9 +52,11 @@ export function useEmployeeDocuments(employeeId?: string) {
 }
 
 export function useAllExpiringDocuments(daysAhead: number = 30) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["expiring_documents", daysAhead],
+    queryKey: ["expiring_documents", tenantId, daysAhead],
     queryFn: async () => {
+      if (!tenantId) return [];
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + daysAhead);
 
@@ -69,6 +71,7 @@ export function useAllExpiringDocuments(daysAhead: number = 30) {
             department
           )
         `)
+        .eq("tenant_id", tenantId)
         .not("expires_at", "is", null)
         .lte("expires_at", futureDate.toISOString().split("T")[0])
         .order("expires_at", { ascending: true });
@@ -76,6 +79,7 @@ export function useAllExpiringDocuments(daysAhead: number = 30) {
       if (error) throw error;
       return data;
     },
+    enabled: !!tenantId,
   });
 }
 

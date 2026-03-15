@@ -19,18 +19,22 @@ export interface AbsenceRecord {
 }
 
 export function useAbsenceRecords(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["absence_records", employeeId],
+    queryKey: ["absence_records", tenantId, employeeId],
     queryFn: async () => {
+      if (!tenantId) return [] as AbsenceRecord[];
       let q = supabase
         .from("absence_records" as any)
         .select("*, employees(forename, surname, department)")
+        .eq("tenant_id", tenantId)
         .order("start_date", { ascending: false });
       if (employeeId) q = q.eq("employee_id", employeeId);
       const { data, error } = await q;
       if (error) throw error;
       return (data || []) as unknown as AbsenceRecord[];
     },
+    enabled: !!tenantId,
   });
 }
 

@@ -27,12 +27,12 @@ import { useI18n } from "@/hooks/useI18n";
 
 export default function AdminDesktopDashboard() {
   const { t } = useI18n();
-  const { tenantName } = useTenant();
+  const { tenantName, tenantId } = useTenant();
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriod = periods[0];
   const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
-  const { data: audit } = usePayrollAudit();
+  const { data: audit } = usePayrollAudit(true, tenantId);
   const { data: employeeBranches = [] } = useAllEmployeeBranches();
   const { data: tenantBranches = [] } = useTenantBranches();
   const { data: leaveRules } = useLeaveRules();
