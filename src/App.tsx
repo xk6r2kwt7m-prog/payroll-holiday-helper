@@ -138,6 +138,7 @@ const App = () => (
             <Route path="/locations/:branch" element={<ProtectedRoute requiredRole="admin"><LocationDashboard /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute requiredRole="admin" requiredPermission="access_admin_centre"><Settings /></ProtectedRoute>} />
             <Route path="/talent-pool" element={<ProtectedRoute requiredRole="staff"><TalentPool /></ProtectedRoute>} />
+            <Route path="/vacancies" element={<ProtectedRoute requiredRole="admin"><Vacancies /></ProtectedRoute>} />
 
             {/* FOH Training — staff+ */}
             <Route path="/foh/service" element={<ProtectedRoute requiredRole="staff"><FohServiceTraining /></ProtectedRoute>} />
