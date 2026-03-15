@@ -267,17 +267,20 @@ export function StaffHome() {
   const { data: myShifts } = useShifts(weekStart, weekEnd);
 
   const { data: announcements = [] } = useQuery({
-    queryKey: ["staff_announcements_home"],
+    queryKey: ["staff_announcements_home", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("staff_announcements" as any)
         .select("*")
+        .eq("tenant_id", tenantId)
         .not("published_at", "is", null)
         .order("published_at", { ascending: false })
         .limit(3);
       if (error) throw error;
       return data as any[];
     },
+    enabled: !!tenantId,
   });
 
   // GPS
