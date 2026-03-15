@@ -34,7 +34,23 @@ export function TalentBillingHistory() {
     );
   }
 
-  if (!data) return null;
+  if (!data || (data.purchases.length === 0 && data.unlocks.length === 0 && data.ledger.length === 0 && data.balance === 0)) {
+    return (
+      <Card>
+        <CardContent className="p-10 text-center space-y-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mx-auto">
+            <Coins className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <p className="font-medium text-foreground">No billing activity yet</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+              Credits are used to unlock outbound contact with passive candidates. Inbound applications and replies are always free.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const fmt = (d: string) =>
     new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
