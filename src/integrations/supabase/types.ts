@@ -5520,6 +5520,7 @@ export type Database = {
           acknowledged_at: string | null
           assigned_at: string
           assigned_by: string | null
+          assignment_source: string
           completed_at: string | null
           created_at: string
           document_id: string
@@ -5547,6 +5548,7 @@ export type Database = {
           acknowledged_at?: string | null
           assigned_at?: string
           assigned_by?: string | null
+          assignment_source?: string
           completed_at?: string | null
           created_at?: string
           document_id: string
@@ -5574,6 +5576,7 @@ export type Database = {
           acknowledged_at?: string | null
           assigned_at?: string
           assigned_by?: string | null
+          assignment_source?: string
           completed_at?: string | null
           created_at?: string
           document_id?: string
@@ -5948,6 +5951,59 @@ export type Database = {
           },
           {
             foreignKeyName: "training_library_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_quiz_attempts: {
+        Row: {
+          answers_json: Json | null
+          assignment_id: string
+          attempt_number: number
+          completed_at: string
+          created_at: string
+          document_id: string
+          employee_id: string
+          id: string
+          passed: boolean
+          score: number
+          started_at: string | null
+          tenant_id: string
+        }
+        Insert: {
+          answers_json?: Json | null
+          assignment_id: string
+          attempt_number?: number
+          completed_at?: string
+          created_at?: string
+          document_id: string
+          employee_id: string
+          id?: string
+          passed?: boolean
+          score?: number
+          started_at?: string | null
+          tenant_id: string
+        }
+        Update: {
+          answers_json?: Json | null
+          assignment_id?: string
+          attempt_number?: number
+          completed_at?: string
+          created_at?: string
+          document_id?: string
+          employee_id?: string
+          id?: string
+          passed?: boolean
+          score?: number
+          started_at?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_quiz_attempts_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

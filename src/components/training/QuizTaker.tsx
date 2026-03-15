@@ -5,7 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, XCircle, GraduationCap, ArrowRight, ArrowLeft, RotateCcw, Clock, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuizQuestions, type QuizQuestion } from "@/hooks/useTrainingLibrary";
-import { useSubmitQuiz } from "@/hooks/useTrainingModules";
+import { useSubmitQuiz, useQuizAttempts } from "@/hooks/useTrainingModules";
+import { format, parseISO } from "date-fns";
 
 interface QuizTakerProps {
   moduleId: string;
@@ -13,20 +14,47 @@ interface QuizTakerProps {
   employeeId: string;
   passMark: number;
   retryLimit?: number;
-  attemptCount?: number;
+  quizPassed?: boolean;
   onComplete: () => void;
 }
 
-export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryLimit = 3, attemptCount = 0, onComplete }: QuizTakerProps) {
+export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryLimit = 3, quizPassed, onComplete }: QuizTakerProps) {
   const { data: questions = [], isLoading } = useQuizQuestions(moduleId);
+  const { data: attempts = [], isLoading: attemptsLoading } = useQuizAttempts(assignmentId);
   const submitQuiz = useSubmitQuiz();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showResults, setShowResults] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
-  if (isLoading) return <div className="text-center py-6 text-sm text-muted-foreground">Loading quiz…</div>;
+  // Quiz lock: if already passed, show locked state
+  if (quizPassed === true) {
+    return (
+      <div className="text-center py-8 space-y-3">
+        <div className="h-16 w-16 rounded-full bg-success/10 flex items-center justify-center mx-auto">
+          <Lock className="h-8 w-8 text-success" />
+        </div>
+        <h3 className="text-lg font-bold text-success">Quiz Already Passed</h3>
+        <p className="text-sm text-muted-foreground">You have already passed this quiz. No further attempts are needed.</p>
+        {attempts.length > 0 && (
+          <div className="mt-4 space-y-1.5 text-left">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Attempt History</p>
+            {attempts.map(att => (
+              <div key={att.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-xs">
+                <span>Attempt {att.attempt_number}</span>
+                <span className={cn("font-medium", att.passed ? "text-success" : "text-destructive")}>{att.score}%</span>
+                <span className="text-muted-foreground">{format(parseISO(att.completed_at), "d MMM yyyy")}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (isLoading || attemptsLoading) return <div className="text-center py-6 text-sm text-muted-foreground">Loading quiz…</div>;
   if (questions.length === 0) return (
     <div className="text-center py-8">
       <GraduationCap className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
@@ -34,6 +62,38 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
       <p className="text-xs text-muted-foreground mt-1">Your manager hasn't added questions to this quiz yet.</p>
     </div>
   );
+
+  // Attempt count from DB
+  const dbAttemptCount = attempts.length;
+  const currentAttemptNumber = dbAttemptCount + 1;
+  const attemptsUsed = dbAttemptCount + (submitted ? 1 : 0);
+  const attemptsRemaining = retryLimit - attemptsUsed;
+  const isLocked = attemptsRemaining <= 0 && !submitted;
+
+  // If locked (max attempts reached, none passed), show locked state
+  if (isLocked && !showResults) {
+    return (
+      <div className="text-center py-8 space-y-3">
+        <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+          <Lock className="h-8 w-8 text-destructive" />
+        </div>
+        <h3 className="text-lg font-bold text-destructive">No Attempts Remaining</h3>
+        <p className="text-sm text-muted-foreground">You have used all {retryLimit} attempts. Please contact your manager.</p>
+        {attempts.length > 0 && (
+          <div className="mt-4 space-y-1.5 text-left">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Attempt History</p>
+            {attempts.map(att => (
+              <div key={att.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-xs">
+                <span>Attempt {att.attempt_number}</span>
+                <span className={cn("font-medium", att.passed ? "text-success" : "text-destructive")}>{att.score}%</span>
+                <span className="text-muted-foreground">{format(parseISO(att.completed_at), "d MMM yyyy")}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const currentQ = questions[currentIndex];
   const totalAnswered = Object.keys(answers).length;
@@ -66,6 +126,8 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
       documentId: moduleId,
       score,
       passed,
+      attemptNumber: currentAttemptNumber,
+      answers,
     }, {
       onSuccess: () => {
         if (passed) setTimeout(onComplete, 2000);
@@ -80,9 +142,6 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
     setSubmitted(false);
     setShowReview(false);
   };
-
-  const attemptsUsed = attemptCount + (submitted ? 1 : 0);
-  const attemptsRemaining = retryLimit - attemptsUsed;
 
   // ─── Results View ───
   if (showResults) {
@@ -108,6 +167,7 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
           <p className="text-sm text-muted-foreground mt-1">
             {correct} of {questions.length} correct · Pass mark: {passMark}%
           </p>
+          <p className="text-xs text-muted-foreground mt-1">Attempt {currentAttemptNumber} of {retryLimit}</p>
           {passed && (
             <p className="text-xs text-success mt-2">Your training will be marked as completed.</p>
           )}
@@ -164,6 +224,26 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
           </div>
         )}
 
+        {/* Attempt History */}
+        {attempts.length > 0 && (
+          <>
+            <Button variant="ghost" onClick={() => setShowHistory(!showHistory)} className="w-full text-xs">
+              {showHistory ? "Hide History" : `Previous Attempts (${attempts.length})`}
+            </Button>
+            {showHistory && (
+              <div className="space-y-1.5">
+                {attempts.map(att => (
+                  <div key={att.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-xs">
+                    <span>Attempt {att.attempt_number}</span>
+                    <span className={cn("font-medium", att.passed ? "text-success" : "text-destructive")}>{att.score}%</span>
+                    <span className="text-muted-foreground">{format(parseISO(att.completed_at), "d MMM yyyy")}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
         {/* Retry button */}
         {!passed && attemptsRemaining > 0 && (
           <Button onClick={handleRetry} variant="outline" className="w-full gap-2" size="lg">
@@ -191,6 +271,12 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
           {currentIndex + 1} / {questions.length}
         </p>
       </div>
+
+      {dbAttemptCount > 0 && (
+        <p className="text-[10px] text-muted-foreground text-center">
+          Attempt {currentAttemptNumber} of {retryLimit}
+        </p>
+      )}
 
       <Progress value={progress} className="h-1.5" />
 

@@ -63,7 +63,6 @@ export function useAdaptModule() {
   return useMutation({
     mutationFn: async (platformModuleId: string) => {
       await assertPermission("manage_training", tenantId!);
-      // Fetch the platform module
       const { data: source, error: fetchErr } = await supabase
         .from("training_library" as any)
         .select("*")
@@ -72,7 +71,6 @@ export function useAdaptModule() {
       if (fetchErr || !source) throw new Error("Platform module not found");
       const s = source as any;
 
-      // Create adapted copy
       const { data: adapted, error: insertErr } = await supabase
         .from("training_library" as any)
         .insert({
@@ -108,7 +106,6 @@ export function useAdaptModule() {
         .single();
       if (insertErr) throw insertErr;
 
-      // Copy quiz questions
       const { data: questions } = await supabase
         .from("training_quiz_questions" as any)
         .select("*")
@@ -162,7 +159,6 @@ export function useUpdateModuleStatus() {
         .update(updates)
         .eq("id", id);
       if (error) throw error;
-      // Audit
       await supabase.from("training_audit_log" as any).insert({
         tenant_id: tenantId,
         document_id: id,
@@ -247,7 +243,37 @@ export function useDeleteQuizQuestion() {
   });
 }
 
-// ─── Submit Quiz ───
+// ─── Quiz Attempts ───
+
+export interface QuizAttempt {
+  id: string;
+  assignment_id: string;
+  score: number;
+  passed: boolean;
+  attempt_number: number;
+  completed_at: string;
+}
+
+export function useQuizAttempts(assignmentId?: string) {
+  const { tenantId } = useTenant();
+  return useQuery({
+    queryKey: ["training_quiz_attempts", assignmentId],
+    queryFn: async () => {
+      if (!assignmentId || !tenantId) return [];
+      const { data, error } = await supabase
+        .from("training_quiz_attempts" as any)
+        .select("*")
+        .eq("assignment_id", assignmentId)
+        .eq("tenant_id", tenantId)
+        .order("attempt_number", { ascending: true });
+      if (error) throw error;
+      return (data || []) as unknown as QuizAttempt[];
+    },
+    enabled: !!assignmentId && !!tenantId,
+  });
+}
+
+// ─── Submit Quiz (with attempt persistence) ───
 
 export function useSubmitQuiz() {
   const qc = useQueryClient();
@@ -259,13 +285,31 @@ export function useSubmitQuiz() {
       documentId,
       score,
       passed,
+      attemptNumber,
+      answers,
     }: {
       assignmentId: string;
       employeeId: string;
       documentId: string;
       score: number;
       passed: boolean;
+      attemptNumber: number;
+      answers?: Record<string, number>;
     }) => {
+      // 1. Persist the attempt
+      await supabase.from("training_quiz_attempts" as any).insert({
+        tenant_id: tenantId,
+        assignment_id: assignmentId,
+        employee_id: employeeId,
+        document_id: documentId,
+        score,
+        passed,
+        attempt_number: attemptNumber,
+        answers_json: answers ? JSON.stringify(answers) : null,
+        completed_at: new Date().toISOString(),
+      } as any);
+
+      // 2. Update assignment
       const updates: any = {
         quiz_score: score,
         quiz_passed: passed,
@@ -280,7 +324,8 @@ export function useSubmitQuiz() {
         .update(updates)
         .eq("id", assignmentId);
       if (error) throw error;
-      // Audit
+
+      // 3. Audit
       await supabase.from("training_audit_log" as any).insert({
         tenant_id: tenantId,
         document_id: documentId,
@@ -292,6 +337,7 @@ export function useSubmitQuiz() {
     onSuccess: (_, { passed }) => {
       qc.invalidateQueries({ queryKey: ["training_assignments"] });
       qc.invalidateQueries({ queryKey: ["my_training_assignments"] });
+      qc.invalidateQueries({ queryKey: ["training_quiz_attempts"] });
       if (passed) toast.success("Quiz passed! Training completed.");
       else toast.error("Quiz not passed. Please review and try again.");
     },
@@ -299,7 +345,7 @@ export function useSubmitQuiz() {
   });
 }
 
-// ─── Manager Signoff ───
+// ─── Manager Signoff (with explicit retrain option) ───
 
 export function useManagerSignoff() {
   const qc = useQueryClient();
@@ -310,10 +356,16 @@ export function useManagerSignoff() {
       assignmentId,
       passed,
       notes,
+      createRetrain,
+      employeeId,
+      documentId,
     }: {
       assignmentId: string;
       passed: boolean;
       notes?: string;
+      createRetrain?: boolean;
+      employeeId?: string;
+      documentId?: string;
     }) => {
       await assertPermission("manage_training", tenantId!);
       const updates: any = {
@@ -331,10 +383,72 @@ export function useManagerSignoff() {
         .update(updates)
         .eq("id", assignmentId);
       if (error) throw error;
+
+      // Audit sign-off
+      await supabase.from("training_audit_log" as any).insert({
+        tenant_id: tenantId,
+        assignment_id: assignmentId,
+        employee_id: employeeId,
+        document_id: documentId,
+        action: passed ? "signoff_passed" : "signoff_failed",
+      } as any);
+
+      // Create retrain assignment if explicitly chosen on fail
+      if (!passed && createRetrain && employeeId && documentId && tenantId) {
+        // Check for existing active assignment to prevent duplicates
+        const { data: existingRetrain } = await supabase
+          .from("training_assignments" as any)
+          .select("id")
+          .eq("tenant_id", tenantId)
+          .eq("employee_id", employeeId)
+          .eq("document_id", documentId)
+          .eq("assignment_source", "retrain")
+          .not("status", "in", '("completed","cancelled")')
+          .maybeSingle();
+
+        if (!existingRetrain) {
+          // Get module version
+          const { data: mod } = await supabase
+            .from("training_library" as any)
+            .select("version, is_mandatory, completion_type")
+            .eq("id", documentId)
+            .single();
+
+          const { error: retrainErr } = await supabase
+            .from("training_assignments" as any)
+            .insert({
+              tenant_id: tenantId,
+              document_id: documentId,
+              employee_id: employeeId,
+              status: "assigned",
+              assignment_source: "retrain",
+              module_version: (mod as any)?.version || 1,
+              is_mandatory: (mod as any)?.is_mandatory || false,
+              signoff_required: (mod as any)?.completion_type === "practical_signoff" || (mod as any)?.completion_type === "blended",
+              notes: "Retraining required after failed sign-off",
+            } as any);
+          if (retrainErr) throw retrainErr;
+
+          // Audit retrain
+          await supabase.from("training_audit_log" as any).insert({
+            tenant_id: tenantId,
+            document_id: documentId,
+            employee_id: employeeId,
+            action: "retrain_assigned",
+          } as any);
+        }
+      }
     },
-    onSuccess: (_, { passed }) => {
+    onSuccess: (_, { passed, createRetrain }) => {
       qc.invalidateQueries({ queryKey: ["training_assignments"] });
-      toast.success(passed ? "Sign-off approved" : "Sign-off failed — retraining required");
+      qc.invalidateQueries({ queryKey: ["my_training_assignments"] });
+      if (passed) {
+        toast.success("Sign-off approved");
+      } else if (createRetrain) {
+        toast.success("Sign-off failed — retraining assigned");
+      } else {
+        toast.success("Sign-off failed");
+      }
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -372,7 +486,6 @@ export function useComplianceStats() {
   const complianceRate = total > 0 ? Math.round((completed / total) * 100) : 100;
   const mandatoryRate = mandatory.length > 0 ? Math.round((mandatoryComplete / mandatory.length) * 100) : 100;
 
-  // Group by department
   const byDepartment = new Map<string, { total: number; completed: number }>();
   for (const a of assignments) {
     const dept = (a as any).employees?.department || "Unknown";

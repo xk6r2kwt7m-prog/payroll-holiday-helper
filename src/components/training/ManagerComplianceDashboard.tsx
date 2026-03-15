@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, CheckCircle2, Clock, Users, BarChart3, Shield, Download, ChevronDown, ChevronUp } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { AlertTriangle, CheckCircle2, Clock, Users, BarChart3, Shield, Download, ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useComplianceStats } from "@/hooks/useTrainingModules";
 import { AssignmentStatusBadge } from "@/components/training/AssignmentStatusBadge";
@@ -20,6 +21,7 @@ export function ManagerComplianceDashboard() {
   const [expandedSection, setExpandedSection] = useState<string | null>("overdue");
   const [signoffTarget, setSignoffTarget] = useState<string | null>(null);
   const [signoffNotes, setSignoffNotes] = useState("");
+  const [retrainOnFail, setRetrainOnFail] = useState(true);
   const [deptFilter, setDeptFilter] = useState("all");
 
   if (stats.isLoading) {
@@ -49,11 +51,19 @@ export function ManagerComplianceDashboard() {
     setExpandedSection(expandedSection === key ? null : key);
   };
 
-  const handleSignoff = (assignmentId: string, passed: boolean) => {
-    managerSignoff.mutate({ assignmentId, passed, notes: signoffNotes }, {
+  const handleSignoff = (assignment: any, passed: boolean) => {
+    managerSignoff.mutate({
+      assignmentId: assignment.id,
+      passed,
+      notes: signoffNotes,
+      createRetrain: !passed && retrainOnFail,
+      employeeId: assignment.employee_id,
+      documentId: assignment.document_id,
+    }, {
       onSuccess: () => {
         setSignoffTarget(null);
         setSignoffNotes("");
+        setRetrainOnFail(true);
       },
     });
   };
@@ -240,18 +250,26 @@ export function ManagerComplianceDashboard() {
                     />
                     <div className="flex gap-2">
                       <Button size="sm" className="flex-1 bg-success hover:bg-success/90 text-success-foreground"
-                        onClick={() => handleSignoff(a.id, true)}
+                        onClick={() => handleSignoff(a, true)}
                         disabled={managerSignoff.isPending}>
                         <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Pass
                       </Button>
                       <Button size="sm" variant="destructive" className="flex-1"
-                        onClick={() => handleSignoff(a.id, false)}
+                        onClick={() => handleSignoff(a, false)}
                         disabled={managerSignoff.isPending}>
-                        Fail — Retrain
+                        Fail
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setSignoffTarget(null); setSignoffNotes(""); }}>
+                      <Button size="sm" variant="ghost" onClick={() => { setSignoffTarget(null); setSignoffNotes(""); setRetrainOnFail(true); }}>
                         Cancel
                       </Button>
+                    </div>
+                    {/* Retrain toggle — only visible when failing */}
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border">
+                      <div className="flex items-center gap-2">
+                        <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-foreground font-medium">Create retrain assignment on fail</span>
+                      </div>
+                      <Switch checked={retrainOnFail} onCheckedChange={setRetrainOnFail} />
                     </div>
                   </div>
                 )}

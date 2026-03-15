@@ -19,12 +19,13 @@ import { cn } from "@/lib/utils";
 import {
   useTrainingLibrary,
   useCreateLibraryItem,
+  useUpdateLibraryItem,
   useTrainingAssignments,
   useCreateAssignments,
   LIBRARY_CATEGORIES,
   type TrainingLibraryItem,
 } from "@/hooks/useTrainingLibrary";
-import { useUpdateModuleStatus, COMPLETION_TYPES, MODULE_STATUSES, type ModuleStatus } from "@/hooks/useTrainingModules";
+import { useUpdateModuleStatus, COMPLETION_TYPES, MODULE_STATUSES, AUDIENCE_SCOPES, type ModuleStatus } from "@/hooks/useTrainingModules";
 import { useEmployees } from "@/hooks/useEmployees";
 import { AssignmentStatusBadge } from "@/components/training/AssignmentStatusBadge";
 import { QuizBuilder } from "@/components/training/QuizBuilder";
@@ -283,13 +284,53 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
   const { data: existingAssignments = [] } = useTrainingAssignments({ documentId: module.id });
   const createAssignments = useCreateAssignments();
   const updateStatus = useUpdateModuleStatus();
+  const updateItem = useUpdateLibraryItem();
   const canManage = usePermission("manage_training");
   const isPlatform = module.source_type === "platform" && module.tenant_id === null;
+  const isArchived = module.status === "archived";
+  const canEdit = canManage && !isPlatform && !isArchived;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [dueDate, setDueDate] = useState("");
   const [detailTab, setDetailTab] = useState("info");
   const [assignMode, setAssignMode] = useState<"individual" | "department" | "all">("individual");
   const [selectedDept, setSelectedDept] = useState("all");
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: module.title,
+    summary: module.summary || "",
+    description: module.description || "",
+    category: module.category,
+    completion_type: module.completion_type,
+    audience_scope: module.audience_scope || "all_staff",
+    is_mandatory: module.is_mandatory,
+    estimated_minutes: module.estimated_minutes ? String(module.estimated_minutes) : "",
+    refresher_days: module.refresher_days ? String(module.refresher_days) : "",
+    pass_mark: String(module.pass_mark || 80),
+  });
+
+  const handleSaveEdit = () => {
+    updateItem.mutate({
+      id: module.id,
+      updates: {
+        title: editForm.title,
+        summary: editForm.summary || null,
+        description: editForm.description || null,
+        category: editForm.category,
+        completion_type: editForm.completion_type,
+        audience_scope: editForm.audience_scope,
+        is_mandatory: editForm.is_mandatory,
+        estimated_minutes: editForm.estimated_minutes ? parseInt(editForm.estimated_minutes) : null,
+        refresher_days: editForm.refresher_days ? parseInt(editForm.refresher_days) : null,
+        pass_mark: parseInt(editForm.pass_mark) || 80,
+        requires_quiz: editForm.completion_type === "quiz" || editForm.completion_type === "blended",
+      } as any,
+    }, {
+      onSuccess: () => {
+        setEditMode(false);
+        onOpenChange(false);
+      },
+    });
+  };
 
   const activeEmployees = employees.filter(e => e.status === "active" || e.status === "starter" || (e.status as string) === "onboarding");
   const assignedEmployeeIds = new Set(existingAssignments.map(a => a.employee_id));
@@ -320,13 +361,16 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
       Array.from(selectedIds);
     if (targetIds.length === 0) return;
     createAssignments.mutate(
-      targetIds.map(empId => ({
-        document_id: module.id,
-        employee_id: empId,
-        due_date: dueDate || undefined,
-        is_mandatory: module.is_mandatory,
-        signoff_required: module.completion_type === "practical_signoff" || module.completion_type === "blended",
-      })),
+      {
+        assignments: targetIds.map(empId => ({
+          document_id: module.id,
+          employee_id: empId,
+          due_date: dueDate || undefined,
+          is_mandatory: module.is_mandatory,
+          signoff_required: module.completion_type === "practical_signoff" || module.completion_type === "blended",
+        })),
+        assignmentSource: assignMode === "all" ? "all_staff" : assignMode === "department" ? "department" : "direct",
+      },
       { onSuccess: () => { setSelectedIds(new Set()); } }
     );
   };
@@ -394,25 +438,93 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
           </TabsList>
 
           <TabsContent value="info" className="space-y-4 mt-3">
-            {module.summary && <p className="text-sm text-muted-foreground">{module.summary}</p>}
-            {module.description && <p className="text-sm text-foreground">{module.description}</p>}
-            <div className="space-y-2 text-sm">
-              <InfoRow label="Version" value={`v${module.version}`} />
-              <InfoRow label="Audience" value={module.audience_scope?.replace("_", " ")} />
-              {module.estimated_minutes && <InfoRow label="Est. Time" value={`${module.estimated_minutes} min`} />}
-              {module.refresher_days && (
-                <InfoRow label="Refresher" value={
-                  module.refresher_days === 365 ? "Annual" :
-                  module.refresher_days === 180 ? "Every 6 months" :
-                  `Every ${module.refresher_days} days`
-                } />
-              )}
-              {module.pass_mark && module.requires_quiz && <InfoRow label="Pass Mark" value={`${module.pass_mark}%`} />}
-              {module.is_mandatory && <InfoRow label="Mandatory" value="Yes" />}
-              {module.source_module_id && <InfoRow label="Source" value="Adapted from UGLŌ Standard" />}
-              {module.published_at && <InfoRow label="Published" value={format(parseISO(module.published_at), "d MMM yyyy")} />}
-              {module.review_date && <InfoRow label="Review Due" value={format(parseISO(module.review_date), "d MMM yyyy")} />}
-            </div>
+            {!editMode ? (
+              <>
+                {module.summary && <p className="text-sm text-muted-foreground">{module.summary}</p>}
+                {module.description && <p className="text-sm text-foreground">{module.description}</p>}
+                <div className="space-y-2 text-sm">
+                  <InfoRow label="Version" value={`v${module.version}`} />
+                  <InfoRow label="Audience" value={module.audience_scope?.replace("_", " ")} />
+                  {module.estimated_minutes && <InfoRow label="Est. Time" value={`${module.estimated_minutes} min`} />}
+                  {module.refresher_days && (
+                    <InfoRow label="Refresher" value={
+                      module.refresher_days === 365 ? "Annual" :
+                      module.refresher_days === 180 ? "Every 6 months" :
+                      `Every ${module.refresher_days} days`
+                    } />
+                  )}
+                  {module.pass_mark && module.requires_quiz && <InfoRow label="Pass Mark" value={`${module.pass_mark}%`} />}
+                  {module.is_mandatory && <InfoRow label="Mandatory" value="Yes" />}
+                  {module.source_module_id && <InfoRow label="Source" value="Adapted from UGLŌ Standard" />}
+                  {module.published_at && <InfoRow label="Published" value={format(parseISO(module.published_at), "d MMM yyyy")} />}
+                  {module.review_date && <InfoRow label="Review Due" value={format(parseISO(module.review_date), "d MMM yyyy")} />}
+                </div>
+                {canEdit && (
+                  <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="w-full mt-2">
+                    Edit Module
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div className="space-y-3">
+                <div><Label className="text-xs">Title</Label><Input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} /></div>
+                <div><Label className="text-xs">Summary</Label><Input value={editForm.summary} onChange={e => setEditForm(f => ({ ...f, summary: e.target.value }))} /></div>
+                <div><Label className="text-xs">Description</Label><Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} rows={2} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Category</Label>
+                    <Select value={editForm.category} onValueChange={v => setEditForm(f => ({ ...f, category: v }))}>
+                      <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>{LIBRARY_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Completion Type</Label>
+                    <Select value={editForm.completion_type} onValueChange={v => setEditForm(f => ({ ...f, completion_type: v }))}>
+                      <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>{COMPLETION_TYPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Audience</Label>
+                    <Select value={editForm.audience_scope} onValueChange={v => setEditForm(f => ({ ...f, audience_scope: v }))}>
+                      <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>{AUDIENCE_SCOPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label className="text-xs">Est. Minutes</Label><Input type="number" value={editForm.estimated_minutes} onChange={e => setEditForm(f => ({ ...f, estimated_minutes: e.target.value }))} className="h-8" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Refresher</Label>
+                    <Select value={editForm.refresher_days} onValueChange={v => setEditForm(f => ({ ...f, refresher_days: v }))}>
+                      <SelectTrigger className="h-8"><SelectValue placeholder="None" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No Refresher</SelectItem>
+                        <SelectItem value="90">Every 90 Days</SelectItem>
+                        <SelectItem value="180">Every 6 Months</SelectItem>
+                        <SelectItem value="365">Annual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(editForm.completion_type === "quiz" || editForm.completion_type === "blended") && (
+                    <div><Label className="text-xs">Pass Mark (%)</Label><Input type="number" value={editForm.pass_mark} onChange={e => setEditForm(f => ({ ...f, pass_mark: e.target.value }))} className="h-8" /></div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-xs font-medium">Mandatory</span>
+                  <Switch checked={editForm.is_mandatory} onCheckedChange={v => setEditForm(f => ({ ...f, is_mandatory: v }))} />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSaveEdit} disabled={updateItem.isPending || !editForm.title.trim()} className="flex-1" size="sm">
+                    {updateItem.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setEditMode(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="assign" className="space-y-3 mt-3">
