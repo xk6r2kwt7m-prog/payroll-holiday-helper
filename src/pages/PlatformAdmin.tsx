@@ -57,6 +57,9 @@ const PlatformAdmin = () => {
             <TabsTrigger value="sandbox" className="gap-2">
               <FlaskConical className="h-4 w-4" /> Sandbox
             </TabsTrigger>
+            <TabsTrigger value="talent-billing" className="gap-2">
+              <CreditCard className="h-4 w-4" /> Talent Billing
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
