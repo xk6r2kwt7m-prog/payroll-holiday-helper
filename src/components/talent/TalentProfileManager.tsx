@@ -155,6 +155,19 @@ export function TalentProfileManager() {
 
   return (
     <div className="space-y-4 max-w-2xl">
+      {/* Privacy Notice */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Shield className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">Your profile is private and worker-owned</p>
+              <p>Your former employer cannot see, edit, or track your marketplace activity. Only companies you allow can view your anonymised profile (first name + surname initial only).</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Opt-in Control */}
       <Card>
         <CardHeader className="pb-3">

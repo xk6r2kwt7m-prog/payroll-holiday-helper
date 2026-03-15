@@ -83,9 +83,8 @@ export function TalentRequestList() {
               <div>
                 <h3 className="font-medium">{req.role}</h3>
                 <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                  {req.department && <span>{req.department}</span>}
-                  {req.location && <span>• {req.location}</span>}
-                  {req.country && <span>• {req.country}</span>}
+                  {req.location && <span>{req.location}</span>}
+                  {req.country && <span>{req.location ? "• " : ""}{req.country}</span>}
                 </div>
               </div>
               <div className="flex items-center gap-2">

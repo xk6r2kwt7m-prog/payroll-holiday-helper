@@ -26,11 +26,12 @@ export interface TalentProfile {
   };
 }
 
+// TalentRequest — tenant_id kept for internal request scoping (admin's own requests)
+// department intentionally excluded from public-facing payloads
 export interface TalentRequest {
   id: string;
-  tenant_id: string;
+  tenant_id: string; // needed for request ownership, never exposed cross-tenant
   role: string;
-  department: string | null;
   location: string | null;
   region: string | null;
   country: string | null;

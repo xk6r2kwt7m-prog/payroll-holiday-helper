@@ -42,7 +42,8 @@ Deno.serve(async (req) => {
         work_eligibility_countries, willing_to_relocate, willing_to_travel,
         available_from, employees!inner(forename, surname)`)
       .in("talent_pool_status", ["open_to_work", "available_now", "available_from_date"])
-      .neq("visibility_mode", "hidden");
+      .neq("visibility_mode", "hidden")
+      .neq("tenant_id", tenant_id); // CRITICAL: Exclude profiles from requesting tenant (origin-tenant exclusion)
 
     if (profError) throw profError;
     if (!profiles || profiles.length === 0) {
@@ -223,15 +224,15 @@ For each candidate, assess:
       if (insertError) throw insertError;
     }
 
-    // Audit log — only profile IDs and action, no raw payloads
+    // Audit log — only profile IDs and action type, no tenant_id or raw payloads
+    // to prevent cross-company inference
     await supabase.from("talent_audit_log").insert(
       visibleProfiles
         .filter((p: any) => matchResults.matches?.some((m: any) => m.candidate_id === p.id))
         .map((p: any) => ({
           talent_profile_id: p.id,
           action: "ai_match_evaluated",
-          new_data: { talent_request_id, tenant_id },
-          tenant_id,
+          new_data: { talent_request_id },
         }))
     );
 
@@ -244,7 +245,8 @@ For each candidate, assess:
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("talent-ai-match error:", err);
+    // Sanitised error — no candidate payloads logged
+    console.error("talent-ai-match error:", err instanceof Error ? err.message : "Unknown error");
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

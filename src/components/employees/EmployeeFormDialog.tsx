@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck, Globe } from "lucide-react";
-import { TalentOptInDialog } from "@/components/talent/TalentOptInDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -33,9 +32,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const [activeTab, setActiveTab] = useState("personal");
   const [selectedBranches, setSelectedBranches] = useState<BranchType[]>([]);
   const [primaryBranch, setPrimaryBranch] = useState<BranchType | undefined>();
-  const [talentOptInOpen, setTalentOptInOpen] = useState(false);
-  const [savedEmployeeId, setSavedEmployeeId] = useState<string | null>(null);
-  const [savedEmployeeName, setSavedEmployeeName] = useState("");
+  
   const [formData, setFormData] = useState({
     forename: "",
     surname: "",
@@ -251,13 +248,12 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       setOpen(false);
       onSuccess?.();
 
-      // Trigger talent pool opt-in when status changes to leaver
+      // Privacy: Worker must self-activate their own Talent Pool profile.
+      // Admin marking someone as leaver does NOT create/trigger a profile.
       const wasLeaver = employee?.status === "leaver";
       const isNowLeaver = formData.status === "leaver";
       if (isNowLeaver && !wasLeaver) {
-        setSavedEmployeeId(employeeId);
-        setSavedEmployeeName(`${formData.forename} ${formData.surname}`);
-        setTalentOptInOpen(true);
+        toast.info("If this employee wishes to join the Talent Pool, they can activate their own profile from their Staff Portal.");
       }
     } catch (error: any) {
       const msg = error?.message || error?.error?.message || "";
@@ -889,15 +885,6 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         </form>
       </DialogContent>
     </Dialog>
-    {savedEmployeeId && tenantId && (
-      <TalentOptInDialog
-        open={talentOptInOpen}
-        onOpenChange={setTalentOptInOpen}
-        employeeId={savedEmployeeId}
-        employeeName={savedEmployeeName}
-        tenantId={tenantId}
-      />
-    )}
     </>
   );
 }
