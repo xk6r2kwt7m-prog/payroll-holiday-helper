@@ -133,8 +133,14 @@ function CategoryCard({ category, stats }: {
 
 const PayrollAudit = () => {
   const { tenantId } = useTenant();
-  const { data: audit, isLoading, refetch, isFetching } = usePayrollAudit(true, tenantId);
   const [activeTab, setActiveTab] = useState("all");
+
+  const resetPageState = useCallback(() => {
+    setActiveTab("all");
+  }, []);
+  const { tenantReady } = useTenantGuard(resetPageState);
+
+  const { data: audit, isLoading, refetch, isFetching } = usePayrollAudit(true, tenantId);
 
   const filteredFindings = audit?.findings.filter(f => {
     if (activeTab === "all") return true;
