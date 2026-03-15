@@ -1,14 +1,17 @@
 /**
  * Admin-only "Why This Matters" panel for training module detail views.
  * Shows standards framework metadata — evidence basis, operational failures
- * prevented, learning outcomes, and review insight tags.
+ * prevented, learning outcomes, key behaviours, and review insight tags.
  *
  * This component is ONLY shown to users with manage_training permission.
  * Staff never see this metadata.
  */
 
 import { Badge } from "@/components/ui/badge";
-import { ShieldAlert, BookOpen, Target, AlertTriangle, Eye, Lightbulb } from "lucide-react";
+import {
+  ShieldAlert, BookOpen, Target, AlertTriangle, Eye, Lightbulb,
+  CheckSquare, XOctagon, Binoculars, Users,
+} from "lucide-react";
 import type { StandardsMetadata } from "@/data/training-standards/types";
 import {
   EVIDENCE_BASIS_LABELS,
@@ -28,7 +31,10 @@ export function WhyThisMattersPanel({ metadata }: Props) {
     metadata.operational_failures_prevented?.length ||
     metadata.learning_outcomes?.length ||
     metadata.evidence_basis ||
-    metadata.review_insight_tags?.length;
+    metadata.review_insight_tags?.length ||
+    metadata.key_behaviours?.length ||
+    metadata.common_failure_points?.length ||
+    metadata.manager_observation_points?.length;
 
   if (!hasContent) return null;
 
@@ -72,6 +78,20 @@ export function WhyThisMattersPanel({ metadata }: Props) {
         )}
       </div>
 
+      {/* Role Relevance */}
+      {metadata.role_relevance && metadata.role_relevance.length > 0 && (
+        <div>
+          <p className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
+            <Users className="h-3 w-3" /> Role Relevance
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {metadata.role_relevance.map((role, i) => (
+              <Badge key={i} variant="outline" className="text-[10px]">{role}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Customer Impact */}
       {metadata.customer_impact_areas && metadata.customer_impact_areas.length > 0 && (
         <div>
@@ -101,6 +121,40 @@ export function WhyThisMattersPanel({ metadata }: Props) {
         </div>
       )}
 
+      {/* Key Behaviours */}
+      {metadata.key_behaviours && metadata.key_behaviours.length > 0 && (
+        <div>
+          <p className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
+            <CheckSquare className="h-3 w-3" /> Key Behaviours Expected
+          </p>
+          <ul className="space-y-0.5">
+            {metadata.key_behaviours.map((b, i) => (
+              <li key={i} className="text-[11px] text-foreground flex items-start gap-1.5">
+                <span className="text-success font-bold shrink-0">✓</span>
+                {b}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Common Failure Points */}
+      {metadata.common_failure_points && metadata.common_failure_points.length > 0 && (
+        <div>
+          <p className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
+            <XOctagon className="h-3 w-3" /> Common Failure Points
+          </p>
+          <ul className="space-y-0.5">
+            {metadata.common_failure_points.map((f, i) => (
+              <li key={i} className="text-[11px] text-foreground flex items-start gap-1.5">
+                <span className="text-destructive font-bold shrink-0">✗</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Operational Failures Prevented */}
       {metadata.operational_failures_prevented && metadata.operational_failures_prevented.length > 0 && (
         <div>
@@ -110,6 +164,23 @@ export function WhyThisMattersPanel({ metadata }: Props) {
               <li key={i} className="text-[11px] text-foreground flex items-start gap-1.5">
                 <AlertTriangle className="h-3 w-3 text-warning shrink-0 mt-0.5" />
                 {f}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Manager Observation Points */}
+      {metadata.manager_observation_points && metadata.manager_observation_points.length > 0 && (
+        <div>
+          <p className="text-[10px] text-muted-foreground font-medium mb-1 flex items-center gap-1">
+            <Binoculars className="h-3 w-3" /> Manager Observation Points
+          </p>
+          <ul className="space-y-0.5">
+            {metadata.manager_observation_points.map((p, i) => (
+              <li key={i} className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
+                <span className="text-primary shrink-0">?</span>
+                {p}
               </li>
             ))}
           </ul>

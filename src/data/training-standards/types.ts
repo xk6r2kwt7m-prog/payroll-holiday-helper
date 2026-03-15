@@ -56,6 +56,14 @@ export interface StandardsMetadata {
   scenario_examples?: string[];
   why_this_matters?: string;
   operational_failures_prevented?: string[];
+  /** Observable behaviours expected from trained staff */
+  key_behaviours?: string[];
+  /** Common ways this standard fails in practice */
+  common_failure_points?: string[];
+  /** What managers should look for during service to assess competence */
+  manager_observation_points?: string[];
+  /** Which roles this module is most relevant to */
+  role_relevance?: string[];
 }
 
 /**

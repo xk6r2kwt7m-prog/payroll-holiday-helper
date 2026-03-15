@@ -41,7 +41,7 @@ import { EvidencePanel } from "@/components/training/EvidencePanel";
 import { ReviewInsightsPanel } from "@/components/training/ReviewInsightsPanel";
 import { EvidenceCompletenessBar } from "@/components/training/EvidenceCompletenessBar";
 import { ModuleGovernanceSummary } from "@/components/training/ModuleGovernanceSummary";
-import { OPERATIONAL_AREA_LABELS, type OperationalArea } from "@/data/training-standards/types";
+import { OPERATIONAL_AREA_LABELS, type OperationalArea, type StandardsMetadata } from "@/data/training-standards/types";
 import {
   COMPLETENESS_LABELS,
   deriveEvidenceCompleteness,
@@ -57,6 +57,7 @@ import {
   type GovernanceHealth, type ModuleGovernanceInput,
 } from "@/lib/governance-classification";
 import { GovernanceDashboard } from "@/components/training/GovernanceDashboard";
+import { ContentStrengthPanel } from "@/components/training/ContentStrengthPanel";
 import type { ServiceRiskLevel } from "@/data/training-standards/types";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -982,6 +983,14 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
         </div>
       )}
 
+      {/* Content Strength Assessment */}
+      <ContentStrengthPanel
+        metadata={module.standards_metadata as StandardsMetadata | null}
+        counts={{ evidenceCount: activeEvidence.length, insightCount: activeInsights.length }}
+        isHighRisk={riskLevel === "high"}
+        isMandatory={module.is_mandatory}
+      />
+
       <ModuleGovernanceSummary
         lastReviewedAt={module.last_reviewed_at ?? null}
         counts={{ evidenceCount: activeEvidence.length, insightCount: activeInsights.length }}
@@ -996,7 +1005,7 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
       <EvidencePanel documentId={module.id} canEdit={canEdit} />
       <ReviewInsightsPanel documentId={module.id} canEdit={canEdit} />
       {module.standards_metadata && (
-        <WhyThisMattersPanel metadata={module.standards_metadata} />
+        <WhyThisMattersPanel metadata={module.standards_metadata as StandardsMetadata} />
       )}
     </>
   );

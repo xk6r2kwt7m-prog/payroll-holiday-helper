@@ -44,6 +44,7 @@ const complianceSafety: ModuleBlueprint[] = [
       scenario_examples: [
         "Customer states they have a 'nut allergy' — what follow-up question is required?",
         "Fryer used for items containing dairy — what must be communicated about other fried items?",
+        "Guest says 'I'm coeliac' — what kitchen and service steps are triggered?",
       ],
       why_this_matters: "Allergen mismanagement is the single highest-risk compliance failure in hospitality. Incorrect handling can result in anaphylaxis, fatalities, prosecution, and venue closure.",
       operational_failures_prevented: [
@@ -51,6 +52,25 @@ const complianceSafety: ModuleBlueprint[] = [
         "Cross-contamination from shared equipment",
         "Miscommunication between FOH and kitchen",
       ],
+      key_behaviours: [
+        "Always ask about allergies before taking an order",
+        "Never guess — check the allergen matrix or ask the kitchen",
+        "Use separate utensils and surfaces for allergen-free prep",
+        "Verbally confirm allergen requirements when delivering food to the table",
+      ],
+      common_failure_points: [
+        "Staff assuming they know the allergens in a dish without checking",
+        "Failing to communicate allergens when menu items change or specials are introduced",
+        "Not updating the allergen matrix when recipes change",
+        "Rushing during busy service and skipping allergen confirmation steps",
+      ],
+      manager_observation_points: [
+        "Are staff asking about allergies at order stage?",
+        "Is the allergen matrix up to date and accessible?",
+        "Are kitchen tickets flagging allergen requirements clearly?",
+        "Do staff escalate when unsure rather than guessing?",
+      ],
+      role_relevance: ["FOH servers", "Kitchen staff", "Runners", "Shift leads", "Head chef"],
     },
   },
   {
@@ -82,6 +102,7 @@ const complianceSafety: ModuleBlueprint[] = [
       scenario_examples: [
         "Delivery arrives at 8°C — is this acceptable for chilled goods?",
         "Staff member has a plaster on their hand — what additional step is required?",
+        "You sneeze while prepping food — what must you do before continuing?",
       ],
       why_this_matters: "Food safety violations are the most common cause of Environmental Health enforcement action. Poor hygiene directly causes foodborne illness outbreaks.",
       operational_failures_prevented: [
@@ -89,6 +110,25 @@ const complianceSafety: ModuleBlueprint[] = [
         "EHO enforcement notices or closure",
         "Customer complaints about hygiene standards",
       ],
+      key_behaviours: [
+        "Wash hands after every task change, break, and toilet visit",
+        "Probe-check temperatures on receipt, during holding, and before service",
+        "Wear clean uniform with hair tied back and no exposed jewellery",
+        "Report illness symptoms before starting a shift",
+      ],
+      common_failure_points: [
+        "Skipping handwashing between tasks during busy periods",
+        "Not probing deliveries on arrival",
+        "Wearing rings or watches in food prep areas",
+        "Coming to work while symptomatic and not disclosing",
+      ],
+      manager_observation_points: [
+        "Are handwashing facilities stocked and used?",
+        "Are temperature logs being completed accurately?",
+        "Are staff in correct, clean uniform?",
+        "Are illness reporting procedures being followed?",
+      ],
+      role_relevance: ["All kitchen staff", "FOH food handlers", "Prep staff", "Managers"],
     },
   },
   {
@@ -115,6 +155,7 @@ const complianceSafety: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Surface visually clean but not sanitised — is it safe for food prep?",
+        "Cleaning chemical runs out mid-shift — what is the correct substitute procedure?",
       ],
       why_this_matters: "Visible cleanliness directly affects customer perception and review scores. Correct sanitisation prevents bacterial contamination.",
       operational_failures_prevented: [
@@ -122,6 +163,25 @@ const complianceSafety: ModuleBlueprint[] = [
         "Negative hygiene ratings in customer reviews",
         "Failed EHO inspections",
       ],
+      key_behaviours: [
+        "Clean then sanitise — never skip the two-stage process",
+        "Use correct colour-coded cloths for different areas",
+        "Sign the cleaning schedule immediately after completing the task",
+        "Report empty chemical containers before they run out",
+      ],
+      common_failure_points: [
+        "Using the same cloth for multiple areas",
+        "Signing the cleaning schedule without actually completing the task",
+        "Not allowing sanitiser contact time before wiping",
+        "Using incorrect dilution ratios",
+      ],
+      manager_observation_points: [
+        "Are cleaning schedules being completed honestly and on time?",
+        "Are colour-coded cloths being used correctly?",
+        "Are chemical dilution stations set up properly?",
+        "Is the two-stage clean process being followed?",
+      ],
+      role_relevance: ["All staff", "KP", "Closing team"],
     },
   },
   {
@@ -147,12 +207,30 @@ const complianceSafety: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Wet floor near the pass during service — what immediate action is required?",
+        "Delivery of 20kg boxes arrives — what is the safe lifting procedure?",
       ],
       why_this_matters: "Slips and trips are the most common workplace injury in hospitality, leading to staff absence and potential liability claims.",
       operational_failures_prevented: [
         "Staff injuries from preventable hazards",
         "Liability claims from unreported hazards",
       ],
+      key_behaviours: [
+        "Clean spills immediately or place a wet floor sign and clean within 2 minutes",
+        "Bend at the knees and keep loads close to the body when lifting",
+        "Report broken or uneven floor surfaces immediately",
+        "Wear non-slip footwear at all times",
+      ],
+      common_failure_points: [
+        "Ignoring spills because 'someone else will get it'",
+        "Carrying too many items at once to save trips",
+        "Not wearing correct footwear",
+      ],
+      manager_observation_points: [
+        "Are spills being cleaned immediately?",
+        "Are staff wearing correct footwear?",
+        "Are walkways kept clear during service?",
+      ],
+      role_relevance: ["All staff"],
     },
   },
   {
@@ -181,12 +259,30 @@ const complianceSafety: ModuleBlueprint[] = [
       ],
       scenario_examples: [
         "Grease fire on the hob — which extinguisher type must NOT be used?",
+        "Fire alarm sounds during a full restaurant — what is your first action?",
       ],
       why_this_matters: "Fire safety training is a legal requirement. Incorrect response to fire can endanger lives and destroy businesses.",
       operational_failures_prevented: [
         "Delayed evacuation due to untrained staff",
         "Incorrect extinguisher use worsening a fire",
       ],
+      key_behaviours: [
+        "Know the location of all fire exits and extinguishers on your floor",
+        "Guide customers calmly toward exits during evacuation",
+        "Never use a lift during a fire",
+        "Report to the assembly point and confirm headcount",
+      ],
+      common_failure_points: [
+        "New starters not shown fire exits during induction",
+        "Fire exit routes blocked by deliveries or furniture",
+        "Staff unsure which extinguisher type to use",
+      ],
+      manager_observation_points: [
+        "Can every team member identify the nearest fire exit?",
+        "Are fire routes clear and unobstructed?",
+        "Has the team practised evacuation procedures recently?",
+      ],
+      role_relevance: ["All staff", "Shift leads", "Managers"],
     },
   },
   {
@@ -213,6 +309,7 @@ const complianceSafety: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Colleague makes repeated unwelcome comments — what is the correct first step?",
+        "A customer makes a discriminatory remark toward a team member — what should you do?",
       ],
       why_this_matters: "Workplace harassment and discrimination are legal liabilities. A respectful culture directly reduces staff turnover and improves team performance.",
       operational_failures_prevented: [
@@ -220,6 +317,22 @@ const complianceSafety: ModuleBlueprint[] = [
         "Staff attrition from hostile work environment",
         "Reputational damage",
       ],
+      key_behaviours: [
+        "Treat all colleagues and customers with dignity regardless of background",
+        "Speak up or report if you witness inappropriate behaviour",
+        "Never retaliate against someone who raises a concern",
+      ],
+      common_failure_points: [
+        "Normalising inappropriate 'banter' in kitchen culture",
+        "Managers dismissing complaints as oversensitivity",
+        "Not knowing who to report to or what counts as reportable",
+      ],
+      manager_observation_points: [
+        "Is the team culture respectful during service pressure?",
+        "Are complaints being taken seriously and documented?",
+        "Do staff know the reporting route?",
+      ],
+      role_relevance: ["All staff", "Managers"],
     },
   },
   {
@@ -245,12 +358,29 @@ const complianceSafety: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Customer slips on wet floor and injures their wrist — what must happen within 24 hours?",
+        "A near-miss where a knife falls from a shelf — does this need to be reported?",
       ],
       why_this_matters: "Under-reporting of incidents creates legal exposure and prevents pattern analysis that could prevent future accidents.",
       operational_failures_prevented: [
         "RIDDOR non-compliance",
         "Repeated incidents due to unreported patterns",
       ],
+      key_behaviours: [
+        "Report all incidents and near-misses, no matter how minor they seem",
+        "Record the time, location, people involved, and what happened",
+        "Escalate immediately if someone is injured or a customer is involved",
+      ],
+      common_failure_points: [
+        "Not reporting near-misses because 'nothing actually happened'",
+        "Incomplete incident records that miss key details",
+        "Not knowing the RIDDOR threshold for formal reporting",
+      ],
+      manager_observation_points: [
+        "Are staff reporting near-misses regularly?",
+        "Are incident forms being completed fully?",
+        "Is there a pattern of incidents in any area?",
+      ],
+      role_relevance: ["All staff", "Shift leads", "Managers"],
     },
   },
 ];
@@ -282,12 +412,30 @@ const fohServiceStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Three parties arrive simultaneously — how do you acknowledge all without ignoring any?",
+        "Guest arrives looking stressed and rushed — how do you adapt your greeting?",
       ],
       why_this_matters: "First impressions account for a disproportionate share of review sentiment. A poor greeting sets a negative frame for the entire visit.",
       operational_failures_prevented: [
         "Walk-aways from ignored guests",
         "Negative first-impression reviews",
       ],
+      key_behaviours: [
+        "Make eye contact and smile within 10 seconds of a guest entering",
+        "Verbal greeting within 30 seconds even if you cannot seat them immediately",
+        "Give an honest wait estimate — never say 'just a minute' if it will be longer",
+        "Walk guests to their table rather than pointing",
+      ],
+      common_failure_points: [
+        "Staff focused on phones or side tasks when guests arrive",
+        "Nobody 'owns' the door — everyone assumes someone else will greet",
+        "Giving vague or dishonest wait times",
+      ],
+      manager_observation_points: [
+        "How quickly are arriving guests acknowledged?",
+        "Is someone always positioned to see the entrance?",
+        "Are wait estimates accurate?",
+      ],
+      role_relevance: ["Host", "FOH servers", "Shift lead"],
     },
   },
   {
@@ -317,6 +465,7 @@ const fohServiceStandards: ModuleBlueprint[] = [
       ],
       scenario_examples: [
         "Customer changes their order after the ticket is sent — what is the correct process?",
+        "Guest says 'no onion' — do you write it as an allergy or a preference?",
       ],
       why_this_matters: "Order errors waste food, delay service, and are the most frequent cause of avoidable customer complaints.",
       operational_failures_prevented: [
@@ -324,6 +473,23 @@ const fohServiceStandards: ModuleBlueprint[] = [
         "Allergen information lost between FOH and kitchen",
         "Food waste from re-makes",
       ],
+      key_behaviours: [
+        "Repeat the full order back to the table before submitting",
+        "Write down orders — do not rely on memory",
+        "Clarify ambiguous requests immediately rather than guessing",
+        "Flag allergen modifications distinctly from preference modifications",
+      ],
+      common_failure_points: [
+        "Experienced servers relying on memory instead of writing orders down",
+        "Not distinguishing between allergen requests and preference requests",
+        "Sending the order before confirming with the table",
+      ],
+      manager_observation_points: [
+        "Are servers repeating orders back to guests?",
+        "How many re-makes are happening per service?",
+        "Are allergen modifications being flagged correctly on tickets?",
+      ],
+      role_relevance: ["FOH servers", "Runners", "Bar staff"],
     },
   },
   {
@@ -350,12 +516,30 @@ const fohServiceStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Kitchen ticket time is running 15 minutes over — at what point must you inform the table?",
+        "Guest asks 'where's our food?' — what is the ideal response sequence?",
       ],
       why_this_matters: "Unmanaged delays are the single most common theme in negative hospitality reviews. Proactive communication transforms delay perception.",
       operational_failures_prevented: [
         "Negative reviews citing long waits with no communication",
         "Escalated complaints from unmanaged expectations",
       ],
+      key_behaviours: [
+        "Update the table before they have to ask — the '10-minute rule'",
+        "Give a specific time estimate, not 'it's coming soon'",
+        "Offer a complimentary drink or snack if the wait exceeds 20 minutes",
+        "Check back after the food arrives to confirm satisfaction",
+      ],
+      common_failure_points: [
+        "Avoiding the table because you don't want to deliver bad news",
+        "Saying 'a few more minutes' repeatedly without checking the kitchen",
+        "Not knowing the actual ticket time",
+      ],
+      manager_observation_points: [
+        "Are servers proactively visiting tables with long ticket times?",
+        "Do servers know the current kitchen ticket time?",
+        "Are recovery gestures being used appropriately?",
+      ],
+      role_relevance: ["FOH servers", "Shift lead"],
     },
   },
   {
@@ -385,12 +569,31 @@ const fohServiceStandards: ModuleBlueprint[] = [
       ],
       scenario_examples: [
         "Guest is visibly upset about food quality — what are the first three things you do?",
+        "Customer posts a negative comment on social media while still in the restaurant — how do you respond?",
       ],
       why_this_matters: "How complaints are handled determines whether a dissatisfied customer becomes a vocal detractor or a loyal returning guest.",
       operational_failures_prevented: [
         "Complaint escalation to social media due to poor in-venue handling",
         "Repeated service failures from undocumented complaints",
       ],
+      key_behaviours: [
+        "Listen fully without interrupting or becoming defensive",
+        "Apologise sincerely — 'I'm sorry that happened' costs nothing",
+        "Offer a specific solution, not a vague promise",
+        "Follow up before the guest leaves to confirm resolution",
+      ],
+      common_failure_points: [
+        "Becoming defensive or making excuses",
+        "Passing the complaint to someone else without owning it first",
+        "Not documenting the complaint for future analysis",
+        "Over-promising a fix and under-delivering",
+      ],
+      manager_observation_points: [
+        "Do staff respond to complaints with empathy first?",
+        "Are complaints being documented at end of shift?",
+        "How often do complaints escalate to manager level unnecessarily?",
+      ],
+      role_relevance: ["FOH servers", "Shift lead", "Managers"],
     },
   },
   {
@@ -416,12 +619,30 @@ const fohServiceStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Table is sharing small plates — what is a natural way to suggest an additional item?",
+        "Guest asks 'what do you recommend?' — what makes a good vs bad answer?",
       ],
       why_this_matters: "Well-judged upselling increases average spend per head while improving guest satisfaction. Pushy upselling damages both.",
       operational_failures_prevented: [
         "Revenue loss from missed recommendation opportunities",
         "Guest discomfort from aggressive selling",
       ],
+      key_behaviours: [
+        "Know the menu well enough to make genuine personal recommendations",
+        "Read the table — rushed guests don't want a long pitch",
+        "Suggest items that complement what they've already ordered",
+        "Never push a more expensive option if the guest seems price-conscious",
+      ],
+      common_failure_points: [
+        "Recommending the most expensive item regardless of context",
+        "Using scripted language that sounds insincere",
+        "Not knowing the menu well enough to recommend anything",
+      ],
+      manager_observation_points: [
+        "Are servers recommending naturally or robotically?",
+        "Is average spend per head improving?",
+        "Are guests responding positively to suggestions?",
+      ],
+      role_relevance: ["FOH servers", "Bar staff"],
     },
   },
   {
@@ -448,12 +669,131 @@ const fohServiceStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Wrong dish served and guest has already tasted it — what are the immediate steps?",
+        "Drink spilled on a guest's clothing — what is the recovery protocol?",
       ],
       why_this_matters: "Effective recovery can produce higher satisfaction than if no error occurred. Poor recovery converts errors into lost customers.",
       operational_failures_prevented: [
         "Customer loss from unresolved errors",
         "Inconsistent compensation decisions",
       ],
+      key_behaviours: [
+        "Acknowledge the mistake immediately — never try to minimise it",
+        "Fix the problem as fast as possible without making the guest wait",
+        "Offer a specific gesture of goodwill, not 'let me see what I can do'",
+        "Check back to confirm the guest is satisfied with the resolution",
+      ],
+      common_failure_points: [
+        "Trying to hide or minimise mistakes instead of addressing them",
+        "Staff unsure what compensation they can offer without manager approval",
+        "Not following up after the fix to confirm guest satisfaction",
+      ],
+      manager_observation_points: [
+        "Do staff own mistakes or deflect?",
+        "Are recovery gestures proportionate to the problem?",
+        "Are mistake patterns being tracked and addressed?",
+      ],
+      role_relevance: ["FOH servers", "Runners", "Shift lead"],
+    },
+  },
+  {
+    title: "Queue Handling and Walk-in Management",
+    summary: "Managing walk-in queues, setting expectations, and preventing abandonment during busy periods.",
+    category: "sop",
+    completion_type: "read_acknowledge",
+    audience_scope: "foh",
+    estimated_minutes: 10,
+    refresher_days: 180,
+    requires_quiz: false,
+    is_mandatory: false,
+    standards_metadata: {
+      evidence_basis: "review_pattern",
+      operational_area: "foh",
+      service_risk_level: "medium",
+      customer_impact_areas: ["speed", "communication", "ambience"],
+      review_insight_tags: ["recurring_delay_issue", "staff_attitude_issue"],
+      learning_outcomes: [
+        "Communicate accurate wait times to queuing guests",
+        "Keep waiting guests engaged and informed",
+        "Decide when to stop accepting walk-ins rather than over-promising",
+      ],
+      quiz_themes: [],
+      scenario_examples: [
+        "Queue of 6 parties outside and current wait is 40 minutes — what do you tell the 7th party?",
+        "Guest has been waiting 20 minutes and their quoted wait was 15 — what do you do?",
+      ],
+      why_this_matters: "How a queue is managed determines whether waiting guests feel respected or abandoned. Bad queue experiences generate some of the most damaging reviews.",
+      operational_failures_prevented: [
+        "Guests leaving after unmanaged waits",
+        "Negative reviews about being ignored while waiting",
+        "Over-seating causing kitchen overload",
+      ],
+      key_behaviours: [
+        "Greet every person in the queue, not just the first",
+        "Give a realistic wait time — round up, not down",
+        "Check back with waiting guests every 10 minutes",
+        "Offer a menu or drink while they wait if possible",
+      ],
+      common_failure_points: [
+        "Nobody owning the queue — guests left standing with no information",
+        "Under-quoting wait times to avoid losing guests",
+        "Seating walk-ins ahead of earlier arrivals",
+      ],
+      manager_observation_points: [
+        "Is someone actively managing the queue during busy periods?",
+        "Are wait-time estimates accurate?",
+        "How many guests are walking away before being seated?",
+      ],
+      role_relevance: ["Host", "FOH servers", "Shift lead"],
+    },
+  },
+  {
+    title: "Ambience, Comfort and Customer Care",
+    summary: "Maintaining the physical environment and atmosphere that supports a positive guest experience.",
+    category: "sop",
+    completion_type: "read_acknowledge",
+    audience_scope: "foh",
+    estimated_minutes: 10,
+    refresher_days: null,
+    requires_quiz: false,
+    is_mandatory: false,
+    standards_metadata: {
+      evidence_basis: "review_pattern",
+      operational_area: "foh",
+      service_risk_level: "low",
+      customer_impact_areas: ["ambience", "cleanliness", "value_perception"],
+      review_insight_tags: ["ambience_issue", "cleanliness_issue"],
+      learning_outcomes: [
+        "Identify environmental factors that affect guest comfort",
+        "Take proactive steps to maintain ambience during service",
+        "Respond to guest comfort complaints appropriately",
+      ],
+      quiz_themes: [],
+      scenario_examples: [
+        "Music is too loud and a guest is struggling to hear their companion — what do you do?",
+        "Table is next to the kitchen door and gets a draught every time it opens — how do you handle this?",
+      ],
+      why_this_matters: "Ambience is a background factor that guests notice when it's wrong. Temperature, noise, lighting, and cleanliness all affect whether guests return.",
+      operational_failures_prevented: [
+        "Negative ambience reviews affecting overall rating",
+        "Guests leaving early due to discomfort",
+      ],
+      key_behaviours: [
+        "Scan the room regularly for temperature, lighting, and noise issues",
+        "Clear and reset tables promptly — don't let dirty plates sit",
+        "Adjust music volume based on the room's energy",
+        "Offer to move guests if they are uncomfortable",
+      ],
+      common_failure_points: [
+        "Not noticing environmental issues because staff are acclimatised",
+        "Leaving dirty tables visible for extended periods",
+        "Music volume not adjusted as the room fills or empties",
+      ],
+      manager_observation_points: [
+        "Is the dining room at the right temperature, volume, and lighting?",
+        "Are tables being cleared and reset within 3 minutes of departure?",
+        "Are staff scanning the room or only focused on their section?",
+      ],
+      role_relevance: ["FOH servers", "Host", "Shift lead", "Managers"],
     },
   },
 ];
@@ -485,6 +825,7 @@ const bohKitchenStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "FOH runner picks up a dish without checking the ticket — what risk does this create?",
+        "Two tables have similar orders but one has a nut allergy flag — what prevents a mix-up?",
       ],
       why_this_matters: "The pass is the highest-risk handover point in service. Errors here cascade into wrong dishes, allergen failures, and delayed service.",
       operational_failures_prevented: [
@@ -492,6 +833,23 @@ const bohKitchenStandards: ModuleBlueprint[] = [
         "Allergen dishes served without verification",
         "Cold food from delayed collection",
       ],
+      key_behaviours: [
+        "Call dishes to the pass with table number and any allergen flags",
+        "Runner repeats back the table number and dish description before collecting",
+        "No dish leaves the pass without ticket verification",
+        "Multi-course tables must have all dishes for a course ready before any are collected",
+      ],
+      common_failure_points: [
+        "Runners grabbing dishes without verbal confirmation",
+        "Allergen-flagged dishes not visually distinguished at the pass",
+        "Courses staggered because FOH collects dishes individually instead of waiting for the full course",
+      ],
+      manager_observation_points: [
+        "Is every dish leaving the pass with verbal confirmation?",
+        "Are allergen dishes clearly identifiable?",
+        "Are multi-course tables being coordinated properly?",
+      ],
+      role_relevance: ["Runners", "Kitchen pass", "Head chef", "Shift lead"],
     },
   },
   {
@@ -517,12 +875,30 @@ const bohKitchenStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Dish arrives at the pass with sauce spilled on the rim — what happens before it can leave?",
+        "Portion looks smaller than the reference photo — what do you do?",
       ],
       why_this_matters: "Visual presentation is the first quality signal guests experience. Inconsistent plating undermines perceived value.",
       operational_failures_prevented: [
         "Inconsistent customer experience between visits",
         "Negative reviews citing poor presentation",
       ],
+      key_behaviours: [
+        "Wipe plate rims before placing at the pass",
+        "Check portion size against the standard before sending",
+        "Reject any dish that does not match the reference standard",
+        "Maintain garnish freshness — wilted herbs or stale elements get replaced",
+      ],
+      common_failure_points: [
+        "Standards slipping during busy service because 'it's close enough'",
+        "No reference photos available for new or temporary staff",
+        "Garnish running out and dishes being sent without it",
+      ],
+      manager_observation_points: [
+        "Are dishes leaving the pass consistently matching the standard?",
+        "Are chefs self-checking before sending to the pass?",
+        "Are reference photos available and current?",
+      ],
+      role_relevance: ["Line chefs", "Head chef", "Kitchen pass"],
     },
   },
   {
@@ -553,12 +929,30 @@ const bohKitchenStandards: ModuleBlueprint[] = [
       ],
       scenario_examples: [
         "Hot holding unit reading drops to 58°C — what is the correct response?",
+        "Probe reads 72°C on a chicken breast — is it safe to serve?",
       ],
       why_this_matters: "Temperature control is the primary barrier against bacterial growth. Failures cause foodborne illness and EHO enforcement.",
       operational_failures_prevented: [
         "Serving food at unsafe temperatures",
         "Failed temperature records during EHO inspection",
       ],
+      key_behaviours: [
+        "Probe every batch of cooked food and record the reading",
+        "Check hot holding temperatures every 2 hours",
+        "Discard any food that has been in the danger zone for over 2 hours",
+        "Calibrate probes weekly and record the calibration",
+      ],
+      common_failure_points: [
+        "Probing the surface instead of the core",
+        "Recording temperatures without actually probing",
+        "Not discarding food that has dropped below safe holding",
+      ],
+      manager_observation_points: [
+        "Are temperature logs being completed with actual probe readings?",
+        "Are corrective actions being documented when readings are out of range?",
+        "Are probes being calibrated regularly?",
+      ],
+      role_relevance: ["All kitchen staff", "Head chef", "Prep staff"],
     },
   },
   {
@@ -588,12 +982,30 @@ const bohKitchenStandards: ModuleBlueprint[] = [
       ],
       scenario_examples: [
         "Raw chicken stored above cooked rice in the walk-in — what is the risk and the corrective action?",
+        "The same knife was used for raw fish and salad prep — what has gone wrong?",
       ],
       why_this_matters: "Cross-contamination is the leading cause of food poisoning outbreaks in commercial kitchens.",
       operational_failures_prevented: [
         "Bacterial cross-contamination between raw and ready-to-eat food",
         "Allergen cross-contact from shared prep surfaces",
       ],
+      key_behaviours: [
+        "Use the correct colour-coded board for every task",
+        "Store raw items below ready-to-eat items — always",
+        "Wash hands between handling different protein types",
+        "Use separate utensils for allergen-free preparation",
+      ],
+      common_failure_points: [
+        "Grabbing the nearest board instead of the correct colour",
+        "Storing items on the wrong shelf because 'there's no space'",
+        "Reusing utensils without washing between tasks",
+      ],
+      manager_observation_points: [
+        "Are colour-coded boards being used correctly?",
+        "Is storage separation maintained even when the fridge is full?",
+        "Are staff washing hands between protein types?",
+      ],
+      role_relevance: ["All kitchen staff", "Prep staff", "KP"],
     },
   },
   {
@@ -619,12 +1031,30 @@ const bohKitchenStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Unlabelled container of prepped sauce found in the fridge — what must happen?",
+        "Delivery arrives 30 minutes late with warm packaging — what do you check?",
       ],
       why_this_matters: "Poor stock rotation leads to food waste, serving expired ingredients, and EHO non-compliance.",
       operational_failures_prevented: [
         "Serving expired or degraded ingredients",
         "Unnecessary food waste from poor rotation",
       ],
+      key_behaviours: [
+        "New stock goes behind old stock — every time, no exceptions",
+        "Label every container with contents, date prepped, and use-by date",
+        "Check delivery temperatures on arrival and reject if out of range",
+        "Remove and discard any item past its use-by date",
+      ],
+      common_failure_points: [
+        "Putting new stock in front because it's quicker",
+        "Forgetting to label decanted items",
+        "Not checking delivery temperatures",
+      ],
+      manager_observation_points: [
+        "Is FIFO being followed in all fridges and dry stores?",
+        "Are all containers labelled with date and contents?",
+        "Are delivery checks being documented?",
+      ],
+      role_relevance: ["Kitchen staff", "Prep staff", "Receiving staff"],
     },
   },
   {
@@ -650,12 +1080,30 @@ const bohKitchenStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Batch of dumpling dough is noticeably thicker than usual — should you proceed or flag?",
+        "Ingredient colour looks different from normal — is this worth raising?",
       ],
       why_this_matters: "Catching quality issues before service prevents customer complaints and food waste from returns.",
       operational_failures_prevented: [
         "Sub-standard dishes reaching customers",
         "Wasted ingredients from late-stage rejections",
       ],
+      key_behaviours: [
+        "If something looks, smells, or feels different from normal — flag it",
+        "Speak up early in prep, not after a full batch is made",
+        "Ask for a taste check from a senior chef if unsure",
+        "Record recurring issues so they can be addressed in menu reviews",
+      ],
+      common_failure_points: [
+        "Junior staff staying quiet because they don't want to cause trouble",
+        "Issues only noticed after a full batch has been prepped",
+        "Nobody taste-testing dishes before service",
+      ],
+      manager_observation_points: [
+        "Do junior staff feel safe raising quality concerns?",
+        "Is taste-testing happening before every service?",
+        "Are recurring quality issues being tracked?",
+      ],
+      role_relevance: ["Line chefs", "Prep staff", "Head chef"],
     },
   },
 ];
@@ -686,12 +1134,30 @@ const managerStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Large walk-in party arrives with multiple allergies and no booking — what must be communicated immediately?",
+        "Lunch shift manager leaving and evening has a VIP booking — what goes in the handover?",
       ],
       why_this_matters: "Poor shift communication is the root cause of most operational failures during service. Clear briefings prevent avoidable errors.",
       operational_failures_prevented: [
         "Staff unaware of specials, allergens, or VIP tables",
         "Lost information between shift changes",
       ],
+      key_behaviours: [
+        "Hold a briefing before every service — even quiet shifts",
+        "Cover: covers, specials, 86s, allergen changes, VIPs, and one focus area",
+        "Write down handover notes — do not rely on verbal handover only",
+        "Update the team mid-service if anything significant changes",
+      ],
+      common_failure_points: [
+        "Skipping briefings on quiet shifts",
+        "Verbal-only handovers where information gets lost",
+        "Not updating the team when specials run out or allergens change",
+      ],
+      manager_observation_points: [
+        "Is a briefing happening before every service?",
+        "Are handover notes being written and read?",
+        "Does the team know the specials, 86s, and allergen changes?",
+      ],
+      role_relevance: ["Shift lead", "Head chef", "Restaurant manager"],
     },
   },
   {
@@ -721,12 +1187,30 @@ const managerStandards: ModuleBlueprint[] = [
       ],
       scenario_examples: [
         "Customer demands full refund after finding hair in food — what is the maximum resolution a shift lead can authorise?",
+        "Third complaint this week about the same dish — what action should be taken beyond individual recovery?",
       ],
       why_this_matters: "Inconsistent complaint handling erodes customer trust and creates unpredictable cost exposure for the business.",
       operational_failures_prevented: [
         "Over-compensation from unclear authority levels",
         "Under-compensation leading to negative reviews",
       ],
+      key_behaviours: [
+        "Take ownership of the table when a complaint requires escalation",
+        "Apply the compensation matrix consistently — do not improvise",
+        "Document every escalated complaint with outcome and cost",
+        "Review complaint patterns weekly and act on trends",
+      ],
+      common_failure_points: [
+        "Managers giving wildly different compensation for similar issues",
+        "Not documenting complaints, so patterns go unnoticed",
+        "Avoiding the table instead of taking ownership",
+      ],
+      manager_observation_points: [
+        "Are compensation decisions consistent across shifts?",
+        "Are complaint logs being maintained?",
+        "Are complaint trends being reviewed and acted on?",
+      ],
+      role_relevance: ["Shift lead", "Restaurant manager", "General manager"],
     },
   },
   {
@@ -752,12 +1236,30 @@ const managerStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Junior server is delivering dishes without explaining them — how do you intervene without embarrassing them?",
+        "A team member keeps forgetting to check back after delivering mains — what do you do during service vs after?",
       ],
       why_this_matters: "Effective in-service coaching accelerates staff development and reduces repeat errors. Poor coaching causes staff disengagement.",
       operational_failures_prevented: [
         "Repeated service errors from uncorrected behaviour",
         "Staff turnover from destructive feedback methods",
       ],
+      key_behaviours: [
+        "Correct privately and praise publicly",
+        "Give specific feedback — 'check back after 2 minutes' not 'be better'",
+        "Choose the right moment — don't coach during a rush unless safety is at risk",
+        "Follow up after service with a brief 1-to-1",
+      ],
+      common_failure_points: [
+        "Correcting staff in front of customers or colleagues",
+        "Giving vague feedback that staff cannot act on",
+        "Never following up, so the behaviour doesn't change",
+      ],
+      manager_observation_points: [
+        "Are managers correcting discreetly?",
+        "Are post-service follow-ups happening?",
+        "Is the team improving over time or repeating the same mistakes?",
+      ],
+      role_relevance: ["Shift lead", "Restaurant manager", "Head chef"],
     },
   },
   {
@@ -784,12 +1286,30 @@ const managerStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Guest-facing area has visible crumbs and fingerprints on glass — what priority level does this get during service?",
+        "Toilets haven't been checked in 2 hours during a busy evening — whose responsibility is this?",
       ],
       why_this_matters: "Cleanliness is consistently among the top three factors in hospitality reviews. Visible neglect signals low standards to guests.",
       operational_failures_prevented: [
         "Negative cleanliness reviews",
         "EHO observations about front-of-house hygiene",
       ],
+      key_behaviours: [
+        "Walk the floor every 30 minutes and check guest-facing areas",
+        "Check toilets every hour during service",
+        "Assign specific closing cleaning tasks to named individuals",
+        "Address cleanliness issues immediately, not at end of shift",
+      ],
+      common_failure_points: [
+        "Cleaning checks getting skipped during busy periods",
+        "Toilets not checked for hours during evening service",
+        "Closing tasks not assigned — everyone assumes someone else will do them",
+      ],
+      manager_observation_points: [
+        "Are floor walks happening regularly?",
+        "Are toilet checks logged?",
+        "Are closing tasks assigned and completed?",
+      ],
+      role_relevance: ["Shift lead", "Restaurant manager"],
     },
   },
   {
@@ -815,12 +1335,30 @@ const managerStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Staff member appears to be under the influence during service — what are the immediate steps?",
+        "You witness a team member shouting at a colleague in the kitchen — what do you do?",
       ],
       why_this_matters: "Failure to act on serious conduct issues creates legal liability, endangers staff and customers, and damages team morale.",
       operational_failures_prevented: [
         "Legal exposure from unaddressed misconduct",
         "Customer safety risks from impaired staff",
       ],
+      key_behaviours: [
+        "Act immediately on safety-critical conduct — do not wait until end of shift",
+        "Remove the individual from service if necessary, with a witness present",
+        "Document what you saw, when, who was present, and what action you took",
+        "Escalate to senior management or HR within 24 hours",
+      ],
+      common_failure_points: [
+        "Hoping the issue will resolve itself",
+        "Not documenting the incident in enough detail",
+        "Acting without a witness present",
+      ],
+      manager_observation_points: [
+        "Are managers confident about when to act?",
+        "Are incidents being documented properly?",
+        "Is there a clear escalation path that everyone knows?",
+      ],
+      role_relevance: ["Shift lead", "Restaurant manager", "General manager"],
     },
   },
   {
@@ -846,12 +1384,30 @@ const managerStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Friday evening with a 20-cover party booking and two new starters — what must the briefing cover?",
+        "A key ingredient has run out mid-day — how does the evening briefing address this?",
       ],
       why_this_matters: "A well-run briefing is the single most effective tool for preventing service errors. Teams that brief perform measurably better.",
       operational_failures_prevented: [
         "Staff unaware of key service information",
         "Allergen errors from unbriefed specials",
       ],
+      key_behaviours: [
+        "Brief every shift — no exceptions, even if the team is experienced",
+        "Follow the checklist: covers, allergens, specials, 86s, VIPs, focus",
+        "Make it interactive — ask the team questions, don't just lecture",
+        "End with a clear 'focus for this service' point",
+      ],
+      common_failure_points: [
+        "Skipping the briefing because 'the team already knows'",
+        "Briefings that run too long and lose the team's attention",
+        "Not covering allergen changes when specials are introduced",
+      ],
+      manager_observation_points: [
+        "Is a briefing happening before every service?",
+        "Does the briefing cover all checklist items?",
+        "Is the team engaged or disengaged during briefings?",
+      ],
+      role_relevance: ["Shift lead", "Head chef", "Restaurant manager"],
     },
   },
   {
@@ -878,12 +1434,183 @@ const managerStandards: ModuleBlueprint[] = [
       quiz_themes: [],
       scenario_examples: [
         "Kitchen is backed up, floor is short-staffed, and a complaint comes in — what gets prioritised?",
+        "You're running at 110% capacity — what do you stop accepting rather than dropping quality?",
       ],
       why_this_matters: "Busy periods are when standards most commonly slip. The reviews written after busy services have outsized impact on reputation.",
       operational_failures_prevented: [
         "Quality drop during peak trading",
         "Negative reviews from weekend/event service",
       ],
+      key_behaviours: [
+        "Define and communicate the 'non-negotiable three' for your venue",
+        "Stop accepting walk-ins before dropping quality — not after",
+        "Intervene early when you see the first signs of breakdown",
+        "Debrief after every high-pressure service to identify what slipped",
+      ],
+      common_failure_points: [
+        "Accepting more covers than the team can handle",
+        "Cutting corners on plating, cleanliness, or communication under pressure",
+        "Not debriefing after difficult services, so the same problems repeat",
+      ],
+      manager_observation_points: [
+        "Are standards being maintained during peak periods?",
+        "Is the team being protected from overload?",
+        "Are post-service debriefs happening?",
+      ],
+      role_relevance: ["Shift lead", "Restaurant manager", "Head chef"],
+    },
+  },
+  {
+    title: "Opening and Closing Discipline",
+    summary: "Structured checklists and accountability for opening and closing procedures across FOH and BOH.",
+    category: "sop",
+    completion_type: "practical_signoff",
+    audience_scope: "managers",
+    estimated_minutes: 15,
+    refresher_days: null,
+    requires_quiz: false,
+    is_mandatory: false,
+    standards_metadata: {
+      evidence_basis: "internal_best_practice",
+      operational_area: "management",
+      service_risk_level: "medium",
+      customer_impact_areas: ["cleanliness", "quality"],
+      review_insight_tags: ["cleanliness_issue"],
+      learning_outcomes: [
+        "Complete all opening checks before the venue is ready for guests",
+        "Complete all closing checks before leaving the venue",
+        "Assign accountability for each checklist item to a named person",
+      ],
+      quiz_themes: [],
+      scenario_examples: [
+        "Morning shift arrives and the close last night was incomplete — coffee machine not cleaned, floors not mopped. What process prevents this?",
+        "A new closer is unsure what's expected — how do you set them up for success?",
+      ],
+      why_this_matters: "Consistent opening and closing discipline prevents the cascade of problems that occur when a shift starts behind or a venue is left in poor condition.",
+      operational_failures_prevented: [
+        "Service starting with equipment not ready",
+        "Health and safety risks from incomplete closing procedures",
+        "Morning team losing time catching up on overnight failures",
+      ],
+      key_behaviours: [
+        "Use a printed or digital checklist — do not rely on memory",
+        "Sign off each item individually, not in bulk at the end",
+        "Report any issues found during opening checks immediately",
+        "Walk the venue after close to verify completion",
+      ],
+      common_failure_points: [
+        "Ticking everything as done without actually checking",
+        "Rushing closing because staff want to leave",
+        "No accountability when items are missed",
+      ],
+      manager_observation_points: [
+        "Are checklists being completed honestly?",
+        "Is the venue consistently ready at opening time?",
+        "Are closing issues being reported and addressed?",
+      ],
+      role_relevance: ["Shift lead", "Opening team", "Closing team"],
+    },
+  },
+  {
+    title: "Issue Spotting Before Customers Complain",
+    summary: "Proactive identification and resolution of service, quality, and environment issues before they escalate.",
+    category: "sop",
+    completion_type: "read_acknowledge",
+    audience_scope: "managers",
+    estimated_minutes: 10,
+    refresher_days: 180,
+    requires_quiz: false,
+    is_mandatory: false,
+    standards_metadata: {
+      evidence_basis: "review_pattern",
+      operational_area: "management",
+      service_risk_level: "medium",
+      customer_impact_areas: ["quality", "communication", "cleanliness", "speed"],
+      review_insight_tags: ["recurring_delay_issue", "cleanliness_issue", "food_temperature_issue"],
+      learning_outcomes: [
+        "Scan for problems before they become complaints",
+        "Identify body language signals that indicate guest dissatisfaction",
+        "Intervene proactively to fix issues before escalation",
+      ],
+      quiz_themes: [],
+      scenario_examples: [
+        "A table's food has been sitting untouched for 5 minutes — what does this signal and what do you do?",
+        "Two guests are looking around the room and trying to make eye contact with staff — what does this mean?",
+      ],
+      why_this_matters: "Most dissatisfied guests don't complain — they just don't come back. Proactive issue spotting catches problems before they become lost customers or negative reviews.",
+      operational_failures_prevented: [
+        "Silent dissatisfaction leading to lost customers",
+        "Issues only discovered through negative reviews after the fact",
+        "Complaint volume that could have been prevented",
+      ],
+      key_behaviours: [
+        "Scan every table in your section every 5 minutes",
+        "Look for untouched food, empty glasses, confused expressions, or guests looking around",
+        "Approach proactively — 'How is everything?' is good, 'I noticed you haven't touched your dish — is everything okay?' is better",
+        "Fix the issue before the guest has to ask",
+      ],
+      common_failure_points: [
+        "Only checking on tables when there's an obvious problem",
+        "Being too busy with tasks to observe the dining room",
+        "Asking 'is everything okay?' while walking past without stopping",
+      ],
+      manager_observation_points: [
+        "Are floor staff scanning their sections regularly?",
+        "Are proactive check-backs happening naturally?",
+        "How many complaints could have been caught earlier?",
+      ],
+      role_relevance: ["FOH servers", "Shift lead", "Restaurant manager"],
+    },
+  },
+  {
+    title: "Shift Handover Discipline",
+    summary: "Structured handover between departing and arriving shift teams to prevent information loss.",
+    category: "sop",
+    completion_type: "read_acknowledge",
+    audience_scope: "managers",
+    estimated_minutes: 10,
+    refresher_days: null,
+    requires_quiz: false,
+    is_mandatory: false,
+    standards_metadata: {
+      evidence_basis: "internal_best_practice",
+      operational_area: "management",
+      service_risk_level: "medium",
+      customer_impact_areas: ["speed", "communication", "allergen_confidence"],
+      review_insight_tags: ["recurring_delay_issue"],
+      learning_outcomes: [
+        "Complete a structured handover covering outstanding issues, prep status, and guest notes",
+        "Communicate any allergen, menu, or staffing changes to the incoming team",
+        "Ensure continuity of guest experience across shift changes",
+      ],
+      quiz_themes: [],
+      scenario_examples: [
+        "A table started their meal during lunch service and the evening shift is taking over — what must be communicated?",
+        "The lunch team ran out of a key ingredient — what does the evening team need to know?",
+      ],
+      why_this_matters: "Information lost during handover is one of the most common sources of service failure. Guests don't know or care that a shift change happened.",
+      operational_failures_prevented: [
+        "Guests having to repeat information to new staff",
+        "Menu items being sold when they're 86'd",
+        "Allergen requirements not communicated to the incoming team",
+      ],
+      key_behaviours: [
+        "Write a handover note — don't rely on verbal communication alone",
+        "Cover: outstanding tables, 86s, allergen specials, prep status, any issues",
+        "Introduce incoming staff to any ongoing guest situations",
+        "Allow 10 minutes of overlap between shifts for handover",
+      ],
+      common_failure_points: [
+        "Shift changes happening with zero handover",
+        "Verbal-only handovers that get forgotten immediately",
+        "No overlap time built into the schedule",
+      ],
+      manager_observation_points: [
+        "Is handover happening at every shift change?",
+        "Are handover notes being written and read?",
+        "Is there adequate overlap time in the schedule?",
+      ],
+      role_relevance: ["Shift lead", "Head chef", "Restaurant manager"],
     },
   },
 ];
