@@ -72,13 +72,16 @@ export function useEmployerConversations() {
         });
       }
 
+      // C1 FIX: Only expose forename + surname initial to employer
       return (data || []).map((c: any) => ({
         ...c,
         other_party_name: c.talent_profiles?.employees
-          ? `${c.talent_profiles.employees.forename} ${c.talent_profiles.employees.surname?.charAt(0) || ""}.`
+          ? `${c.talent_profiles.employees.forename} ${c.talent_profiles.employees.surname?.charAt(0)?.toUpperCase() || ""}.`
           : "Candidate",
         vacancy_title: c.talent_applications?.talent_vacancies?.title || null,
         unread_count: unreadMap[c.id] || 0,
+        // Strip raw join data to prevent accidental full surname access
+        talent_profiles: undefined,
       })) as TalentConversation[];
     },
     enabled: !!tenantId,
