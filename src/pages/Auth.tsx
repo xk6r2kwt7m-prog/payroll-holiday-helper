@@ -10,6 +10,7 @@ import { z } from "zod";
 import { motion } from "framer-motion";
 import {
   CalendarDays, Clock, Users, ShieldCheck, ChartBar, FileText, ChevronDown,
+  MailCheck,
 } from "lucide-react";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { FAQ } from "@/components/marketing/FAQ";
