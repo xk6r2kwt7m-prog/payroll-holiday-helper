@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { assertPermission } from "@/lib/permission-guard";
 import { writeTrainingAudit, type TrainingLibraryItem, type TrainingAssignment } from "@/hooks/useTrainingLibrary";
+import type { Json } from "@/integrations/supabase/types";
 
 // ─── Types ───
 
