@@ -44,7 +44,7 @@ export const CONFIDENCE_OPTIONS: { value: ConfidenceLevel; label: string }[] = [
   { value: "low", label: "Low" },
 ];
 
-// ─── Completeness helper ───
+// ─── Completeness helper (hardened) ───
 
 export function deriveEvidenceCompleteness(
   evidenceRecords: ModuleEvidence[],
@@ -52,9 +52,17 @@ export function deriveEvidenceCompleteness(
 ): EvidenceCompletenessStatus {
   const active = evidenceRecords.filter(e => e.is_active);
   if (active.length === 0) return "no_evidence";
+
   const hasHigh = active.some(e => e.confidence_level === "high");
-  if (lastReviewedAt && hasHigh) return "ready_for_use";
+  const hasOfficial = active.some(e => e.evidence_type === "official_guidance" || e.evidence_type === "mixed");
+  const hasMultipleSources = active.length >= 2;
+
+  // "ready_for_use" requires: reviewed + at least one high-confidence source + at least one official/mixed type + 2+ sources
+  if (lastReviewedAt && hasHigh && hasOfficial && hasMultipleSources) return "ready_for_use";
+
+  // "evidence_reviewed" requires review date set
   if (lastReviewedAt) return "evidence_reviewed";
+
   return "partial_evidence";
 }
 

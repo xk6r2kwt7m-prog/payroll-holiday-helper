@@ -77,7 +77,10 @@ export function TrainingLibraryManager() {
     const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     const matchesOpArea = opAreaFilter === "all" || (item.standards_metadata as any)?.operational_area === opAreaFilter;
     const matchesMandatory = !mandatoryFilter || item.is_mandatory;
-    return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory;
+    const matchesEvidence = evidenceFilter === "all" ||
+      (evidenceFilter === "reviewed" && !!item.last_reviewed_at) ||
+      (evidenceFilter === "not_reviewed" && !item.last_reviewed_at);
+    return matchesSearch && matchesCat && matchesSource && matchesStatus && matchesOpArea && matchesMandatory && matchesEvidence;
   });
 
   const getAssignmentStats = (docId: string) => {
@@ -210,6 +213,16 @@ export function TrainingLibraryManager() {
               )}>
               Mandatory
             </button>
+            {canManage && (
+              <Select value={evidenceFilter} onValueChange={setEvidenceFilter}>
+                <SelectTrigger className="h-7 w-[110px] text-xs"><SelectValue placeholder="Evidence" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Evidence</SelectItem>
+                  <SelectItem value="reviewed">Reviewed</SelectItem>
+                  <SelectItem value="not_reviewed">Not Reviewed</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
       </div>
@@ -256,6 +269,11 @@ export function TrainingLibraryManager() {
                   <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>
                   {item.is_mandatory && <Badge className="text-[10px] bg-destructive/10 text-destructive">Mandatory</Badge>}
                   {item.version > 1 && <Badge variant="secondary" className="text-[10px]">v{item.version}</Badge>}
+                  {canManage && item.last_reviewed_at && (
+                    <Badge variant="outline" className="text-[9px] text-muted-foreground gap-0.5">
+                      <Clock className="h-2.5 w-2.5" /> Reviewed
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="text-right shrink-0 flex items-center gap-2">
