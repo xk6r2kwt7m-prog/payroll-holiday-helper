@@ -48,7 +48,10 @@ const QA_ITEMS: QAItem[] = [
 
 type CheckState = "pass" | "fail" | "untested";
 
+const QA_VERSION = 1;
+
 interface PersistedState {
+  version: number;
   checks: Record<string, CheckState>;
   notes: Record<string, string>;
   lastUpdated: string | null;
@@ -59,6 +62,7 @@ interface PersistedState {
 }
 
 const EMPTY: PersistedState = {
+  version: QA_VERSION,
   checks: {}, notes: {}, lastUpdated: null,
   checkedBy: "", signedOff: false, signedOffAt: null, signedOffBy: null,
 };
