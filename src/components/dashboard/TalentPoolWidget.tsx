@@ -55,9 +55,9 @@ export function TalentPoolWidget() {
   ];
 
   const actions = [
-    { label: "View Talent", icon: Search, path: "/talent?tab=browse", primary: true },
-    { label: "Requests", icon: FileText, path: "/talent?tab=requests", primary: false },
-    { label: "Billing", icon: CreditCard, path: "/talent?tab=billing", primary: false },
+    { label: "View Talent", icon: Search, path: "/talent-pool?tab=browse", primary: true },
+    { label: "Requests", icon: FileText, path: "/talent-pool?tab=requests", primary: false },
+    { label: "Billing", icon: CreditCard, path: "/talent-pool?tab=billing", primary: false },
   ];
 
   return (
