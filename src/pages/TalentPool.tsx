@@ -2,56 +2,68 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Users, Search, FileText, Sparkles } from "lucide-react";
+import { Users, Search, FileText, Sparkles, Briefcase, MessageSquare } from "lucide-react";
 import { TalentSearch } from "@/components/talent/TalentSearch";
 import { TalentRequestList } from "@/components/talent/TalentRequestList";
 import { TalentProfileManager } from "@/components/talent/TalentProfileManager";
+import { VacancyBrowse } from "@/components/talent/VacancyBrowse";
+import { TalentInbox } from "@/components/talent/TalentInbox";
 import { useAuth } from "@/hooks/useAuth";
 
 const TalentPool = () => {
   const [searchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const [activeTab, setActiveTab] = useState(tabParam === "my-profile" ? "my-profile" : "browse");
+  const [activeTab, setActiveTab] = useState(
+    tabParam === "my-profile" ? "my-profile"
+    : tabParam === "inbox" ? "inbox"
+    : "vacancies"
+  );
   const { isAdmin } = useAuth();
 
   useEffect(() => {
     if (tabParam === "my-profile") setActiveTab("my-profile");
+    if (tabParam === "inbox") setActiveTab("inbox");
   }, [tabParam]);
 
   return (
     <AppLayout>
-      <div className="space-y-6 max-w-7xl mx-auto">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-in-left">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
-              Talent Pool
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Discover verified, privacy-safe talent from your network
-            </p>
-          </div>
+      <div className="space-y-4 max-w-7xl mx-auto">
+        <div className="animate-slide-in-left">
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+              <Sparkles className="h-4.5 w-4.5 text-primary" />
+            </div>
+            Talent Pool
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Discover opportunities and verified talent
+          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="h-10">
-            <TabsTrigger value="browse" className="text-xs sm:text-sm gap-1.5">
-              <Search className="h-4 w-4" />
-              Browse Talent
+          <TabsList className="h-9 flex-wrap">
+            <TabsTrigger value="vacancies" className="text-xs gap-1">
+              <Briefcase className="h-3.5 w-3.5" /> Jobs
+            </TabsTrigger>
+            <TabsTrigger value="browse" className="text-xs gap-1">
+              <Search className="h-3.5 w-3.5" /> Talent
             </TabsTrigger>
             {isAdmin && (
-              <TabsTrigger value="requests" className="text-xs sm:text-sm gap-1.5">
-                <FileText className="h-4 w-4" />
-                Requests
+              <TabsTrigger value="requests" className="text-xs gap-1">
+                <FileText className="h-3.5 w-3.5" /> Requests
               </TabsTrigger>
             )}
-            <TabsTrigger value="my-profile" className="text-xs sm:text-sm gap-1.5">
-              <Users className="h-4 w-4" />
-              My Profile
+            <TabsTrigger value="inbox" className="text-xs gap-1">
+              <MessageSquare className="h-3.5 w-3.5" /> Inbox
+            </TabsTrigger>
+            <TabsTrigger value="my-profile" className="text-xs gap-1">
+              <Users className="h-3.5 w-3.5" /> Profile
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="vacancies" className="mt-4">
+            <VacancyBrowse />
+          </TabsContent>
 
           <TabsContent value="browse" className="mt-4">
             <TalentSearch />
@@ -62,6 +74,10 @@ const TalentPool = () => {
               <TalentRequestList />
             </TabsContent>
           )}
+
+          <TabsContent value="inbox" className="mt-4">
+            <TalentInbox mode={isAdmin ? "employer" : "worker"} />
+          </TabsContent>
 
           <TabsContent value="my-profile" className="mt-4">
             <TalentProfileManager />

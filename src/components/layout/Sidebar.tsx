@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Calendar, DollarSign, Settings,
   ChevronLeft, ChevronRight, ChevronDown, LogOut, Shield, FileText,
   CalendarClock, ClipboardCheck, BarChart3, MapPin, Search, UserX,
-  UserPlus, GraduationCap, Megaphone, ShieldAlert, ShieldCheck, Globe, Building2, FileBarChart, Sparkles,
+  UserPlus, GraduationCap, Megaphone, ShieldAlert, ShieldCheck, Globe, Building2, FileBarChart, Sparkles, Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,6 +50,7 @@ const navGroups: NavGroup[] = [
       { icon: UserPlus, label: "Onboarding", path: "/onboarding", minRole: "manager", permissionKey: "manage_lifecycle" },
       { icon: ShieldAlert, label: "Disciplinary", path: "/disciplinary", minRole: "admin", permissionKey: "manage_lifecycle" },
       { icon: Sparkles, label: "Talent Pool", path: "/talent-pool", minRole: "staff" },
+      { icon: Briefcase, label: "Hiring", path: "/vacancies", minRole: "admin" },
     ],
   },
   {
