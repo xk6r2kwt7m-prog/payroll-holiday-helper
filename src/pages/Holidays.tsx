@@ -41,6 +41,8 @@ import { useI18n } from "@/hooks/useI18n";
 import { HolidayRequestQueue } from "@/components/holidays/HolidayRequestQueue";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const HOLIDAY_DISPLAY_DEFAULTS = {
   showBalanceSummary: true,
