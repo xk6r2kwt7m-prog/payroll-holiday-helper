@@ -36,8 +36,11 @@ export function ApplyDialog({ open, onOpenChange, vacancy }: ApplyDialogProps) {
       onOpenChange(false);
       setCoverMessage("");
     } catch (err: any) {
-      if (err?.message?.includes("duplicate") || err?.code === "23505") {
+      const msg = err?.message || "";
+      if (msg.includes("duplicate") || msg.includes("already applied") || err?.code === "23505") {
         toast.error("You've already applied to this vacancy");
+      } else if (msg.includes("not currently published")) {
+        toast.error("This vacancy is no longer accepting applications");
       } else {
         toast.error("Failed to apply");
       }
