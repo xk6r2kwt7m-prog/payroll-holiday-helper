@@ -560,12 +560,36 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   <span className="text-xs font-medium">Mandatory</span>
                   <Switch checked={editForm.is_mandatory} onCheckedChange={v => setEditForm(f => ({ ...f, is_mandatory: v }))} />
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleSaveEdit} disabled={updateItem.isPending || !editForm.title.trim()} className="flex-1" size="sm">
-                    {updateItem.isPending ? "Saving..." : "Save Changes"}
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setEditMode(false)}>Cancel</Button>
-                </div>
+                {/* Published edit warning */}
+                {showPublishWarning && (
+                  <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-medium text-warning">This module is published</p>
+                        <p className="text-[11px] text-warning/80">
+                          {isCriticalChange
+                            ? "You are changing pass mark, completion type, or mandatory status. This may affect staff with active assignments."
+                            : "Changes will apply immediately to this published module."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveEdit} disabled={updateItem.isPending} size="sm" variant={isCriticalChange ? "destructive" : "default"} className="flex-1">
+                        {updateItem.isPending ? "Saving..." : "Confirm & Save"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowPublishWarning(false)}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+                {!showPublishWarning && (
+                  <div className="flex gap-2">
+                    <Button onClick={handleSaveEdit} disabled={updateItem.isPending || !editForm.title.trim()} className="flex-1" size="sm">
+                      {updateItem.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => { setEditMode(false); setShowPublishWarning(false); }}>Cancel</Button>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
