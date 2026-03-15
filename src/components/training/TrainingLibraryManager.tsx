@@ -49,6 +49,7 @@ import {
   type EvidenceCompletenessStatus,
 } from "@/hooks/useModuleEvidence";
 import { useGovernanceSummary } from "@/hooks/useGovernanceSummary";
+import { useReviewInsights } from "@/hooks/useReviewInsights";
 import { getReviewState } from "@/lib/review-governance";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
