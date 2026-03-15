@@ -197,9 +197,11 @@ export function useHolidayPaymentsByYear(year: number) {
 
 // Get all payroll entries with holiday accrual data — paginated to avoid 1000-row cap
 export function useAllPayrollEntriesWithHoliday() {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["payroll_entries", "holiday_summary"],
+    queryKey: ["payroll_entries", tenantId, "holiday_summary"],
     queryFn: async () => {
+      if (!tenantId) return [];
       const PAGE_SIZE = 1000;
       let allData: any[] = [];
       let from = 0;
@@ -232,6 +234,7 @@ export function useAllPayrollEntriesWithHoliday() {
               status
             )
           `)
+          .eq("tenant_id", tenantId)
           .order("created_at", { ascending: true })
           .range(from, from + PAGE_SIZE - 1);
 
@@ -244,6 +247,7 @@ export function useAllPayrollEntriesWithHoliday() {
 
       return allData;
     },
+    enabled: !!tenantId,
   });
 }
 
