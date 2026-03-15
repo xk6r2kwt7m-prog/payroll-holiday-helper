@@ -948,8 +948,32 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
   const activeEvidence = evidence.filter(e => e.is_active);
   const activeInsights = insights.filter(i => i.is_active);
 
+  // Governance recommendation
+  const riskLevel = (module.standards_metadata as any)?.service_risk_level as ServiceRiskLevel | undefined;
+  const govInput: ModuleGovernanceInput = {
+    lastReviewedAt: module.last_reviewed_at ?? null,
+    counts: { evidenceCount: activeEvidence.length, insightCount: activeInsights.length },
+    isMandatory: module.is_mandatory,
+    serviceRiskLevel: riskLevel,
+  };
+  const recommendation = getGovernanceRecommendation(govInput);
+  const reasons = getGovernanceReasons(govInput);
+  const health = classifyGovernance(govInput);
+
   return (
     <>
+      {/* Recommendation line */}
+      {recommendation && (
+        <div className="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1">
+          <p className="text-[11px] font-medium text-foreground">{recommendation}</p>
+          <div className="flex flex-wrap gap-1">
+            {reasons.map((r, i) => (
+              <span key={i} className="text-[9px] text-muted-foreground">• {r}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <ModuleGovernanceSummary
         lastReviewedAt={module.last_reviewed_at ?? null}
         counts={{ evidenceCount: activeEvidence.length, insightCount: activeInsights.length }}
