@@ -330,7 +330,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             animate="animate"
             exit="exit"
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="flex-1 flex flex-col px-4 py-4 sm:px-6 sm:py-6 pb-24 md:pb-6"
+            className="flex-1 flex flex-col px-4 py-4 sm:px-6 sm:py-6 pb-24 md:pb-6 overflow-x-hidden"
           >
             {children}
           </motion.div>

@@ -243,7 +243,7 @@ const Employees = () => {
                 key={status}
                 onClick={() => setStatusFilter(status)}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap shrink-0",
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap",
                   isActive ? config.style + " shadow-sm" : "bg-card text-muted-foreground border-border/60 hover:border-border"
                 )}
               >

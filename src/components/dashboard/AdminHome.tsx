@@ -214,9 +214,9 @@ export function AdminHome() {
       {/* Module Access */}
       <motion.div {...anim} transition={{ duration: 0.25, delay: 0.2 }}>
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Modules</h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {moduleLinks.map((mod) => (
-            <Link key={mod.label} to={mod.path} className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm active:bg-muted transition-all">
+            <Link key={mod.label} to={mod.path} className="flex items-center gap-3 p-3.5 rounded-xl bg-card border border-border shadow-sm active:bg-muted transition-all min-w-0">
               <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
                 <mod.icon className="h-4.5 w-4.5 text-foreground" />
               </div>
