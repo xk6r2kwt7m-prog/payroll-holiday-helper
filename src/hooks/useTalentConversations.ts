@@ -33,7 +33,7 @@ export interface TalentMessage {
 }
 
 // Employer inbox — conversations for their tenant
-export function useEmployerConversations() {
+export function useEmployerConversations(enabled = true) {
   const { tenantId } = useTenant();
   const qc = useQueryClient();
 
