@@ -1,13 +1,13 @@
 import { AlertTriangle } from "lucide-react";
 
 const PAIN_POINTS = [
-  "Staff appear on the rota before they are fully ready",
+  "People appear on the rota before they are fully ready",
   "Overdue training or missing documents are noticed too late",
-  "Follow-up after incidents or compliance issues is inconsistent",
-  "Workforce, payroll, training and compliance sit in separate systems",
-  "Managers spend too much time checking, reconciling and chasing",
-  "There is limited visibility into who is actually operationally ready",
-  "Standards break down because accountability is weak or fragmented",
+  "Incidents are recorded, but follow-up is inconsistent",
+  "Training, compliance and workforce data live in different systems",
+  "Managers spend too much time checking and chasing",
+  "Headcount is visible, but readiness is not",
+  "Standards slip because accountability is too fragmented",
 ];
 
 interface SecuritySectionProps {

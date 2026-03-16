@@ -4,23 +4,23 @@ interface SectionProps {
   className?: string;
 }
 
-/* ── "Why this is different" differentiation blocks ── */
+/* ── "Why different" differentiation blocks ── */
 
 const DIFF_BLOCKS = [
   {
     icon: Building2,
     title: "Hospitality-first workflows",
-    desc: "Built around shifts, sites, service pressure and operational standards rather than office-based HR processes.",
+    desc: "Built around shifts, service pressure, sites, standards and operational accountability.",
   },
   {
     icon: Layers,
-    title: "Connected operational control",
-    desc: "Scheduling, payroll, training, compliance and operational signals are connected inside one platform instead of split across separate systems.",
+    title: "Connected control",
+    desc: "Scheduling, payroll, training, compliance and operational signals sit inside one connected platform instead of five disconnected places.",
   },
   {
     icon: Zap,
-    title: "Execution, not just administration",
-    desc: "UGLŌ helps managers follow through on tasks, standards and readiness instead of only storing employee data.",
+    title: "Follow-through, not just filing",
+    desc: "UGLŌ helps managers see what still needs action, not just what has already been recorded.",
   },
 ];
 
@@ -30,13 +30,19 @@ export function EmployerConversion({ className }: SectionProps) {
       <div className="space-y-4">
         <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
           <p>
-            Generic HR systems are built to manage employee records. Some rota tools help schedule shifts. Some payroll tools help process pay.
+            Generic HR software helps store employee information.
           </p>
           <p>
-            Hospitality operators need more than that.
+            Rota tools help schedule shifts.
           </p>
           <p>
-            UGLŌ connects workforce management with training, compliance and operational execution so managers can see not only who is working, but who is ready, what is overdue, where standards are slipping and what needs follow-up next.
+            Payroll tools help process pay.
+          </p>
+          <p>
+            But hospitality management is not only about storing records or producing a payslip. It is about keeping people ready, standards visible and follow-through consistent under real service pressure.
+          </p>
+          <p>
+            UGLŌ is different because it is built around hospitality execution.
           </p>
         </div>
 
@@ -65,11 +71,11 @@ export function EmployerConversion({ className }: SectionProps) {
 
 const OUTCOMES = [
   "Less fragmentation across workforce, training, compliance and operations",
-  "Stronger accountability for overdue tasks and follow-up",
+  "Stronger accountability for overdue actions and follow-up",
   "Clearer visibility over staff readiness and operational gaps",
-  "Tighter labour control through better planning and execution discipline",
-  "Fewer avoidable failures caused by missed training, poor follow-through or weak compliance visibility",
-  "Less management waste from chasing information across multiple tools",
+  "Better labour control through tighter planning and execution discipline",
+  "Fewer avoidable failures caused by missed training, missing documents or weak follow-through",
+  "Less management waste from checking, chasing and reconciling across multiple systems",
 ];
 
 export function CandidateConversion({ className }: SectionProps) {

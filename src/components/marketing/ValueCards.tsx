@@ -6,32 +6,32 @@ const CAPABILITIES = [
   {
     icon: CalendarDays,
     title: "Workforce and scheduling",
-    desc: "Manage employee records, rota planning, attendance visibility and shift coverage with workflows designed for hospitality teams.",
+    desc: "Plan rotas, manage employee records, track attendance visibility and keep staffing aligned to operational reality.",
   },
   {
     icon: Banknote,
     title: "Payroll and people administration",
-    desc: "Run payroll processes and core people administration without losing the operational context managers need day to day.",
+    desc: "Run payroll workflows and core people administration with clearer links to how the operation is actually being managed.",
   },
   {
     icon: GraduationCap,
     title: "Training and readiness",
-    desc: "Assign training, track completion, manage sign-off and make sure staff are not only scheduled, but prepared for the role they are working.",
+    desc: "Assign training, track completion, manage sign-off and make sure staff are prepared for the work they are scheduled to do.",
   },
   {
     icon: ShieldCheck,
     title: "Compliance and governance",
-    desc: "Manage onboarding, documents, right-to-work tracking, expiry visibility and compliance follow-through with clearer accountability.",
+    desc: "Track onboarding, right-to-work documents, expiry dates, compliance actions and accountability across the workforce.",
   },
   {
     icon: Activity,
     title: "Operational intelligence",
-    desc: "Use evidence, signal mapping, effectiveness logic and quality controls to understand where standards are working and where operational gaps are building.",
+    desc: "Use evidence, signal mapping, effectiveness logic and quality controls to understand where standards are holding and where issues are building.",
   },
   {
     icon: SlidersHorizontal,
     title: "Manager control",
-    desc: "Give managers one place to see what is overdue, what is weak, what needs action and where risk is starting to build.",
+    desc: "See what is overdue, what is weak, what is incomplete and what needs action next, without stitching the picture together manually.",
   },
 ];
 
