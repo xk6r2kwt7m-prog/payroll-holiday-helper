@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, UserCheck, UserMinus, X, Loader2 } from "lucide-react";
+import { Archive, UserCheck, UserMinus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useUpdateEmployee, useDeleteEmployee, type Employee } from "@/hooks/useEmployees";
+import { useUpdateEmployee, useArchiveEmployee, type Employee } from "@/hooks/useEmployees";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -27,12 +27,12 @@ interface BulkActionsBarProps {
 }
 
 export function BulkActionsBar({ selectedEmployees, onClearSelection }: BulkActionsBarProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   
   const updateEmployee = useUpdateEmployee();
-  const deleteEmployee = useDeleteEmployee();
+  const archiveEmployee = useArchiveEmployee();
   
   const count = selectedEmployees.length;
   
@@ -53,19 +53,19 @@ export function BulkActionsBar({ selectedEmployees, onClearSelection }: BulkActi
     }
   };
   
-  const handleBulkDelete = async () => {
-    setIsDeleting(true);
+  const handleBulkArchive = async () => {
+    setIsArchiving(true);
     try {
       await Promise.all(
-        selectedEmployees.map(emp => deleteEmployee.mutateAsync(emp.id))
+        selectedEmployees.map(emp => archiveEmployee.mutateAsync(emp.id))
       );
-      toast.success(`Deleted ${count} employees`);
+      toast.success(`Archived ${count} employees`);
       onClearSelection();
     } catch {
-      toast.error("Failed to delete some employees");
+      toast.error("Failed to archive some employees");
     } finally {
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
+      setIsArchiving(false);
+      setShowArchiveDialog(false);
     }
   };
   
@@ -106,13 +106,13 @@ export function BulkActionsBar({ selectedEmployees, onClearSelection }: BulkActi
         </DropdownMenu>
         
         <Button 
-          variant="destructive" 
+          variant="outline" 
           size="sm"
-          onClick={() => setShowDeleteDialog(true)}
-          disabled={isDeleting}
+          onClick={() => setShowArchiveDialog(true)}
+          disabled={isArchiving}
         >
-          {isDeleting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-          Delete
+          {isArchiving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Archive className="h-4 w-4 mr-2" />}
+          Archive
         </Button>
         
         <div className="h-4 w-px bg-border" />
@@ -122,21 +122,21 @@ export function BulkActionsBar({ selectedEmployees, onClearSelection }: BulkActi
         </Button>
       </div>
       
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog open={showArchiveDialog} onOpenChange={setShowArchiveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {count} employees?</AlertDialogTitle>
+            <AlertDialogTitle>Archive {count} employees?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. All selected employees and their associated data will be permanently removed.
+              Archived employees will be hidden from active views but all their records
+              (timesheets, payroll, documents, etc.) will be preserved for compliance and audit purposes.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleBulkDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleBulkArchive}
             >
-              {isDeleting ? "Deleting..." : "Delete All"}
+              {isArchiving ? "Archiving..." : "Archive All"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

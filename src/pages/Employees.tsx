@@ -12,12 +12,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useEmployees, useDeleteEmployee, type Employee } from "@/hooks/useEmployees";
+import { useEmployees, useDeleteEmployee, useArchiveEmployee, useUpdateEmployee, useEmployeeDependencies, type Employee } from "@/hooks/useEmployees";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { InviteEmployeeDialog } from "@/components/employees/InviteEmployeeDialog";
 import { EmployeeCard } from "@/components/employees/EmployeeCard";
 import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet";
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
+import { EmployeeDeleteDialog } from "@/components/employees/EmployeeDeleteDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { usePermission } from "@/hooks/useRolePermissions";
@@ -67,10 +68,13 @@ const Employees = () => {
   const includeArchived = statusFilter === "archived";
   const { data: employees = [], isLoading, error } = useEmployees(includeArchived);
   const deleteEmployee = useDeleteEmployee();
+  const archiveEmployee = useArchiveEmployee();
+  const updateEmployee = useUpdateEmployee();
   const { isAdmin } = useAuth();
   const canEdit = usePermission("edit_employees");
   const canManageLifecycle = usePermission("manage_lifecycle");
   const canViewSensitive = usePermission("reveal_sensitive");
+  const [pendingDeleteEmployee, setPendingDeleteEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     const dept = searchParams.get("dept") as Department;
@@ -129,13 +133,36 @@ const Employees = () => {
   const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every(e => selectedIds.has(e.id));
 
   const handleDelete = async (employee: Employee) => {
-    if (confirm(t("employees.confirm_delete", { name: `${employee.forename} ${employee.surname}` }))) {
-      try {
-        await deleteEmployee.mutateAsync(employee.id);
-        toast.success(t("employees.deleted_success", { name: `${employee.forename} ${employee.surname}` }));
-      } catch {
-        toast.error(t("employees.failed_delete"));
-      }
+    setPendingDeleteEmployee(employee);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteEmployee) return;
+    try {
+      await deleteEmployee.mutateAsync(pendingDeleteEmployee.id);
+      toast.success(`${pendingDeleteEmployee.forename} ${pendingDeleteEmployee.surname} has been permanently deleted.`);
+    } catch (err: any) {
+      toast.error(err?.message || t("employees.failed_delete"));
+    } finally {
+      setPendingDeleteEmployee(null);
+    }
+  };
+
+  const handleArchive = async (employee: Employee) => {
+    try {
+      await archiveEmployee.mutateAsync(employee.id);
+      toast.success(`${employee.forename} ${employee.surname} has been archived.`);
+    } catch {
+      toast.error("Failed to archive employee");
+    }
+  };
+
+  const handleMarkLeaver = async (employee: Employee) => {
+    try {
+      await updateEmployee.mutateAsync({ id: employee.id, updates: { status: "leaver" as any } });
+      toast.success(`${employee.forename} ${employee.surname} has been marked as a leaver.`);
+    } catch {
+      toast.error("Failed to update employee status");
     }
   };
 
@@ -418,6 +445,8 @@ const Employees = () => {
                     employee={employee}
                     isAdmin={canEdit && !isSelectionMode}
                     canViewSensitive={canViewSensitive}
+                    onArchive={handleArchive}
+                    onMarkLeaver={handleMarkLeaver} 
                     onDelete={handleDelete}
                     onViewDetails={handleViewDetails}
                     index={index}
@@ -442,6 +471,15 @@ const Employees = () => {
             onClearSelection={clearSelection}
           />
         )}
+
+        {/* Delete confirmation dialog with dependency check */}
+        <EmployeeDeleteDialog
+          employee={pendingDeleteEmployee}
+          onClose={() => setPendingDeleteEmployee(null)}
+          onConfirmDelete={handleConfirmDelete}
+          onArchiveInstead={handleArchive}
+          isDeleting={deleteEmployee.isPending}
+        />
       </div>
     </AppLayout>
   );
