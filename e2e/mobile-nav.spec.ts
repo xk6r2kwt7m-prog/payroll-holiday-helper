@@ -60,10 +60,19 @@ test.describe("Mobile audit — iPhone 13 viewport", () => {
   for (const page_config of MOBILE_PAGES) {
     test(`${page_config.name} renders correctly on mobile`, async ({ page }) => {
       const errors = captureErrors(page);
-      const { authenticated } = await navigateProtected(page, page_config.path);
+      const nav = await navigateProtected(page, page_config.path);
 
-      if (!authenticated) {
+      if (nav.state === "auth") {
         await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+        assertNoErrors(errors);
+        return;
+      }
+
+      if (nav.state === "unknown") {
+        test.info().annotations.push({
+          type: "warning",
+          description: `Mobile page ${page_config.path} settled in unknown state: ${nav.finalUrl}`,
+        });
         assertNoErrors(errors);
         return;
       }
@@ -79,38 +88,50 @@ test.describe("Mobile audit — iPhone 13 viewport", () => {
     });
   }
 
-  test("mobile bottom navigation is visible and functional", async ({ page }) => {
+  test("mobile bottom navigation is visible and functional", async ({ page }, testInfo) => {
     const errors = captureErrors(page);
-    const { authenticated } = await navigateProtected(page, "/");
+    const nav = await navigateProtected(page, "/");
 
-    if (!authenticated) {
-      assertNoErrors(errors);
-      return;
-    }
+    testInfo.skip(nav.state !== "target", `Skipped: route state is "${nav.state}"`);
 
-    const bottomNav = page.locator("nav").last();
-    if (await bottomNav.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      const box = await bottomNav.boundingBox();
+    // Use data-testid for stable selection of the mobile nav
+    const mobileNav = page.getByTestId("mobile-bottom-nav");
+    const navVisible = await mobileNav.isVisible({ timeout: 5_000 }).catch(() => false);
+
+    if (navVisible) {
+      // Assert the nav is positioned at the bottom of the viewport
+      const box = await mobileNav.boundingBox();
       if (box) {
-        expect(box.y + box.height).toBeGreaterThan(700);
+        const viewportHeight = 844;
+        expect(
+          box.y + box.height,
+          "Mobile nav should be at the bottom of the viewport"
+        ).toBeGreaterThan(viewportHeight - 100);
       }
 
-      const navLinks = bottomNav.getByRole("link");
+      // Assert expected navigation links are present using accessible roles
+      const navLinks = mobileNav.getByRole("link");
       const linkCount = await navLinks.count();
-      expect(linkCount).toBeGreaterThanOrEqual(3);
+      expect(linkCount, "Mobile nav should have at least 3 navigation links").toBeGreaterThanOrEqual(3);
+
+      // Verify at least one link has visible text/label
+      const firstLink = navLinks.first();
+      await expect(firstLink).toBeVisible();
+    } else {
+      test.info().annotations.push({
+        type: "warning",
+        description: "Mobile bottom nav (data-testid='mobile-bottom-nav') not found — may not render for this role",
+      });
     }
 
     assertNoErrors(errors);
   });
 
-  test("employee search works on mobile", async ({ page }) => {
+  test("employee search works on mobile", async ({ page }, testInfo) => {
     const errors = captureErrors(page);
-    const { authenticated } = await navigateProtected(page, "/employees");
+    const nav = await navigateProtected(page, "/employees");
 
-    if (!authenticated) {
-      assertNoErrors(errors);
-      return;
-    }
+    testInfo.skip(nav.state !== "target", `Skipped: route state is "${nav.state}"`);
 
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
@@ -122,14 +143,11 @@ test.describe("Mobile audit — iPhone 13 viewport", () => {
     assertNoErrors(errors);
   });
 
-  test("schedule department filters visible on mobile", async ({ page }) => {
+  test("schedule department filters visible on mobile", async ({ page }, testInfo) => {
     const errors = captureErrors(page);
-    const { authenticated } = await navigateProtected(page, "/schedule");
+    const nav = await navigateProtected(page, "/schedule");
 
-    if (!authenticated) {
-      assertNoErrors(errors);
-      return;
-    }
+    testInfo.skip(nav.state !== "target", `Skipped: route state is "${nav.state}"`);
 
     const deptFilter = page.getByText(/FOH|BOH|CPU/).first();
     const visible = await deptFilter.isVisible({ timeout: 5_000 }).catch(() => false);

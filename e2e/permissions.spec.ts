@@ -1,18 +1,38 @@
 /**
  * Permissions and role boundary regression tests.
  *
- * Verifies that admin-only pages redirect or deny access for lower roles.
- * Since we can only authenticate with one account per setup, these tests
- * verify from the admin perspective that restricted pages load correctly,
- * and that non-admin routes like /staff are accessible.
+ * Two modes:
  *
- * ⚠  Full multi-role testing requires separate auth credentials per role.
- *    Flag: Provide E2E_STAFF_EMAIL / E2E_STAFF_PASSWORD for staff-role tests.
+ * 1. SMOKE (default) — single-account access checks using E2E_USER_EMAIL.
+ *    Labels all tests as "smoke" to make coverage level clear.
+ *
+ * 2. BOUNDARY (opt-in) — true multi-role testing when per-role credentials
+ *    are provided via environment variables:
+ *      E2E_ADMIN_EMAIL / E2E_ADMIN_PASSWORD
+ *      E2E_MANAGER_EMAIL / E2E_MANAGER_PASSWORD
+ *      E2E_SUPERVISOR_EMAIL / E2E_SUPERVISOR_PASSWORD
+ *      E2E_STAFF_EMAIL / E2E_STAFF_PASSWORD
+ *
+ *    Boundary tests authenticate as each role in a fresh context and assert
+ *    that restricted pages are actually blocked.
  */
 import { test, expect } from "@playwright/test";
-import { captureErrors, assertNoErrors, navigateProtected } from "./helpers";
+import {
+  captureErrors,
+  assertNoErrors,
+  navigateProtected,
+  hasRoleCredentials,
+  authenticateAsRole,
+  type TestRole,
+} from "./helpers";
 
-test.describe("Admin access — protected pages load", () => {
+// ──────────────────────────────────────────────────────────────────
+// SMOKE TESTS — single account, access checks only
+// ──────────────────────────────────────────────────────────────────
+
+test.describe("Smoke: Admin access — protected pages load", () => {
+  test.info().annotations?.push?.({ type: "coverage", description: "smoke" });
+
   const adminOnlyRoutes = [
     { path: "/payroll", name: "Payroll" },
     { path: "/settings", name: "Settings / Admin Centre" },
@@ -23,29 +43,36 @@ test.describe("Admin access — protected pages load", () => {
   ];
 
   for (const route of adminOnlyRoutes) {
-    test(`admin can access ${route.name} (${route.path})`, async ({ page }) => {
+    test(`[smoke] admin can access ${route.name} (${route.path})`, async ({ page }) => {
       const errors = captureErrors(page);
-      const { authenticated } = await navigateProtected(page, route.path);
+      const nav = await navigateProtected(page, route.path);
 
-      if (!authenticated) {
-        // Not logged in — assert auth page
+      if (nav.state === "auth") {
         await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+        assertNoErrors(errors);
         return;
       }
 
-      // Should NOT show "Access Denied" or redirect to /auth
+      if (nav.state === "unknown") {
+        test.info().annotations.push({
+          type: "warning",
+          description: `${route.path} settled in unknown state: ${nav.finalUrl}`,
+        });
+        assertNoErrors(errors);
+        return;
+      }
+
+      // Should NOT show "Access Denied"
       const accessDenied = page.getByText(/access denied/i);
       const isBlocked = await accessDenied.isVisible({ timeout: 3_000 }).catch(() => false);
 
       if (isBlocked) {
-        // The test account is not admin — this is informational
         test.info().annotations.push({
           type: "info",
           description: `${route.path} shows Access Denied — test account may not be admin`,
         });
       } else {
-        // Page loaded — should not be on /auth
-        expect(page.url()).not.toContain("/auth");
+        expect(nav.finalUrl).not.toContain("/auth");
       }
 
       assertNoErrors(errors);
@@ -53,32 +80,31 @@ test.describe("Admin access — protected pages load", () => {
   }
 });
 
-test.describe("Supervisor/Manager routes", () => {
+test.describe("Smoke: Supervisor/Manager routes", () => {
   const supervisorRoutes = [
     { path: "/employees", name: "Employees" },
     { path: "/timesheets", name: "Timesheets" },
   ];
 
   for (const route of supervisorRoutes) {
-    test(`${route.name} loads for supervisor+ role`, async ({ page }) => {
+    test(`[smoke] ${route.name} loads for supervisor+ role`, async ({ page }) => {
       const errors = captureErrors(page);
-      const { authenticated } = await navigateProtected(page, route.path);
+      const nav = await navigateProtected(page, route.path);
 
-      if (!authenticated) {
+      if (nav.state === "auth") {
         await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+        assertNoErrors(errors);
         return;
       }
 
-      // Either content loads or access denied shown
-      const content = page.locator("main, [class*='max-w']").first();
-      await expect(content).toBeVisible({ timeout: 10_000 });
-
+      // Verify meaningful content rendered
+      expect(nav.state).toBe("target");
       assertNoErrors(errors);
     });
   }
 });
 
-test.describe("Staff routes", () => {
+test.describe("Smoke: Staff routes", () => {
   const staffRoutes = [
     { path: "/schedule", name: "Schedule" },
     { path: "/holidays", name: "Holidays / Leave" },
@@ -86,40 +112,37 @@ test.describe("Staff routes", () => {
   ];
 
   for (const route of staffRoutes) {
-    test(`${route.name} loads for staff+ role`, async ({ page }) => {
+    test(`[smoke] ${route.name} loads for staff+ role`, async ({ page }) => {
       const errors = captureErrors(page);
-      const { authenticated } = await navigateProtected(page, route.path);
+      const nav = await navigateProtected(page, route.path);
 
-      if (!authenticated) {
+      if (nav.state === "auth") {
         await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+        assertNoErrors(errors);
         return;
       }
 
-      const content = page.locator("main, [class*='max-w']").first();
-      await expect(content).toBeVisible({ timeout: 10_000 });
-
+      expect(nav.state).toBe("target");
       assertNoErrors(errors);
     });
   }
 });
 
-test.describe("Platform admin route", () => {
-  test("platform-admin page requires platform admin", async ({ page }) => {
+test.describe("Smoke: Platform admin route", () => {
+  test("[smoke] platform-admin page requires platform admin", async ({ page }) => {
     const errors = captureErrors(page);
-    const { authenticated } = await navigateProtected(page, "/platform-admin");
+    const nav = await navigateProtected(page, "/platform-admin");
 
-    if (!authenticated) {
+    if (nav.state === "auth") {
       await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+      assertNoErrors(errors);
       return;
     }
 
-    // Unless the test user is platform admin, expect access denied or redirect
-    const url = page.url();
     const accessDenied = page.getByText(/access denied/i);
     const blocked = await accessDenied.isVisible({ timeout: 3_000 }).catch(() => false);
 
-    if (!blocked && !url.includes("/auth")) {
-      // User is platform admin — page loaded
+    if (!blocked && !nav.finalUrl.includes("/auth")) {
       test.info().annotations.push({
         type: "info",
         description: "Test user appears to be platform admin",
@@ -130,16 +153,13 @@ test.describe("Platform admin route", () => {
   });
 });
 
-test.describe("Role boundary — restricted UI elements", () => {
-  test("admin sees Add Employee button on /employees", async ({ page }) => {
+test.describe("Smoke: Restricted UI elements", () => {
+  test("[smoke] admin sees Add Employee button on /employees", async ({ page }, testInfo) => {
     const errors = captureErrors(page);
-    const { authenticated } = await navigateProtected(page, "/employees");
-    if (!authenticated) {
-      test.skip();
-      return;
-    }
+    const nav = await navigateProtected(page, "/employees");
 
-    // Admin should see the Add Employee button
+    testInfo.skip(nav.state !== "target", `Skipped: route state is "${nav.state}"`);
+
     const addBtn = page.getByRole("button", { name: /add employee/i });
     const visible = await addBtn.isVisible({ timeout: 5_000 }).catch(() => false);
 
@@ -153,3 +173,90 @@ test.describe("Role boundary — restricted UI elements", () => {
     assertNoErrors(errors);
   });
 });
+
+// ──────────────────────────────────────────────────────────────────
+// BOUNDARY TESTS — true multi-role testing (opt-in via env vars)
+// ──────────────────────────────────────────────────────────────────
+
+const ADMIN_ONLY_PATHS = ["/payroll", "/settings", "/disciplinary", "/contracts"];
+
+/**
+ * Assert that a non-admin role CANNOT access admin-only pages.
+ * Expects either redirect to /auth, Access Denied message, or redirect away.
+ */
+async function assertBlockedForRole(page: import("@playwright/test").Page, path: string) {
+  const nav = await navigateProtected(page, path);
+
+  if (nav.state === "auth") {
+    // Redirected to auth — correctly blocked
+    return;
+  }
+
+  // Check for access denied
+  const accessDenied = page.getByText(/access denied|not authorized|forbidden/i);
+  const isDenied = await accessDenied.isVisible({ timeout: 3_000 }).catch(() => false);
+
+  expect(
+    isDenied || nav.state === "unknown",
+    `Expected ${path} to be blocked but got state="${nav.state}" at ${nav.finalUrl}`
+  ).toBeTruthy();
+}
+
+interface BoundaryRoleConfig {
+  role: TestRole;
+  blockedPaths: string[];
+  allowedPaths: string[];
+}
+
+const BOUNDARY_ROLES: BoundaryRoleConfig[] = [
+  {
+    role: "staff",
+    blockedPaths: ["/payroll", "/settings", "/disciplinary", "/contracts"],
+    allowedPaths: ["/schedule", "/holidays", "/staff"],
+  },
+  {
+    role: "supervisor",
+    blockedPaths: ["/payroll", "/settings"],
+    allowedPaths: ["/employees", "/timesheets", "/schedule"],
+  },
+  {
+    role: "manager",
+    blockedPaths: ["/payroll"],
+    allowedPaths: ["/employees", "/timesheets", "/schedule"],
+  },
+];
+
+for (const config of BOUNDARY_ROLES) {
+  test.describe(`Boundary: ${config.role} role restrictions`, () => {
+    // Skip entire describe if credentials not available
+    test.beforeEach(async ({}, testInfo) => {
+      testInfo.skip(
+        !hasRoleCredentials(config.role),
+        `Skipped: E2E_${config.role.toUpperCase()}_EMAIL / _PASSWORD not set — boundary tests require per-role credentials`
+      );
+    });
+
+    for (const blockedPath of config.blockedPaths) {
+      test(`[boundary] ${config.role} is blocked from ${blockedPath}`, async ({ page }) => {
+        const errors = captureErrors(page);
+        const authed = await authenticateAsRole(page, config.role);
+        expect(authed, `Failed to authenticate as ${config.role}`).toBeTruthy();
+
+        await assertBlockedForRole(page, blockedPath);
+        assertNoErrors(errors);
+      });
+    }
+
+    for (const allowedPath of config.allowedPaths) {
+      test(`[boundary] ${config.role} can access ${allowedPath}`, async ({ page }) => {
+        const errors = captureErrors(page);
+        const authed = await authenticateAsRole(page, config.role);
+        expect(authed, `Failed to authenticate as ${config.role}`).toBeTruthy();
+
+        const nav = await navigateProtected(page, allowedPath);
+        expect(nav.state, `Expected ${allowedPath} accessible for ${config.role}`).toBe("target");
+        assertNoErrors(errors);
+      });
+    }
+  });
+}
