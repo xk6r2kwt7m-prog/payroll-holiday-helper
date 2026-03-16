@@ -1,4 +1,4 @@
-import { Edit2, Trash2, Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus } from "lucide-react";
+import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

@@ -446,8 +446,7 @@ const Employees = () => {
                     isAdmin={canEdit && !isSelectionMode}
                     canViewSensitive={canViewSensitive}
                     onArchive={handleArchive}
-                    onMarkLeaver={handleMarkLeaver} 
-                    onDelete={handleDelete}
+                    onMarkLeaver={handleMarkLeaver}
                     onViewDetails={handleViewDetails}
                     index={index}
                   />
