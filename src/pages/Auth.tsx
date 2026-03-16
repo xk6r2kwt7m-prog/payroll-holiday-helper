@@ -160,8 +160,8 @@ const Auth = () => {
               </p>
 
               <div className="flex items-center gap-3 mb-10">
-                <Button className="gradient-primary">Book a demo</Button>
-                <Button variant="outline">See the platform</Button>
+                <Button className="gradient-primary" onClick={scrollToDemo}>Book a demo</Button>
+                <Button variant="outline" onClick={scrollToPlatform}>See the platform</Button>
               </div>
 
               {/* Trust strip */}
