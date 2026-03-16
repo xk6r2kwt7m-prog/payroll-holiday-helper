@@ -102,7 +102,7 @@ export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags
               {effectiveness.label}
             </Badge>
             <Badge variant="outline" className="text-[8px] px-1 py-0 ml-auto">
-              {record.confidence_level} confidence
+              {adjustedConfidence ?? record.confidence_level} confidence
             </Badge>
           </div>
 
