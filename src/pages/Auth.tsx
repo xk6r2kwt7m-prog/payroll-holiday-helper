@@ -57,6 +57,16 @@ const Auth = () => {
     if (user) navigate("/");
   }, [user, navigate]);
 
+  const scrollToPlatform = () => {
+    document.getElementById("platform-overview")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const scrollToDemo = () => {
+    setMode("signup");
+    setErrors({});
+    document.getElementById("auth-panel")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const handleLogin = async () => {
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
