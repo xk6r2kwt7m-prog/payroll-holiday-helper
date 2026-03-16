@@ -37,7 +37,7 @@ const trustStrip = [
   { icon: Banknote, label: "Supports UK payroll workflows" },
   { icon: GraduationCap, label: "Training and compliance built in" },
   { icon: ShieldCheck, label: "Tenant-isolated data" },
-  { icon: Activity, label: "Operational intelligence and controls included" },
+  { icon: Activity, label: "Operational intelligence included" },
 ];
 
 const Auth = () => {
@@ -141,21 +141,21 @@ const Auth = () => {
                 </div>
               </div>
 
-              <h1 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-3">
-                When workforce, training and compliance are disconnected,{" "}
-                <span className="text-primary">managers lose control</span>
+              <h1 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-4">
+                When staffing, training and compliance are disconnected,{" "}
+                <span className="text-primary">hospitality managers lose control.</span>
               </h1>
-              <p className="text-muted-foreground mb-8 max-w-md leading-relaxed">
-                In hospitality, the problem is rarely just payroll or rotas. It is the daily gap between who is scheduled, who is ready, what is overdue and what gets missed. UGLŌ helps restaurants, kitchens and multi-site teams bring staffing, training, compliance and operational follow-through into one system.
+              <p className="text-muted-foreground mb-8 max-w-md leading-relaxed text-[15px]">
+                UGLŌ helps restaurants, kitchens and multi-site hospitality teams manage rotas, payroll, training, compliance and operational follow-through in one connected system.
               </p>
 
               <div className="flex items-center gap-3 mb-10">
                 <Button className="gradient-primary">Book a demo</Button>
-                <Button variant="outline">See how it works</Button>
+                <Button variant="outline">See the platform</Button>
               </div>
 
               {/* Trust strip */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 {trustStrip.map((t, i) => (
                   <motion.div
                     key={t.label}
@@ -368,55 +368,48 @@ const Auth = () => {
       <div className="border-t border-border">
 
         {/* Mobile H1 — visible only on smaller screens where left panel is hidden */}
-        <section className="lg:hidden max-w-3xl mx-auto px-5 sm:px-6 py-10">
+        <section className="lg:hidden max-w-3xl mx-auto px-5 sm:px-6 pt-10 pb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight text-center">
-            When workforce, training and compliance are disconnected,{" "}
-            <span className="text-primary">managers lose control</span>
+            When staffing, training and compliance are disconnected,{" "}
+            <span className="text-primary">hospitality managers lose control.</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-3 text-center leading-relaxed max-w-lg mx-auto">
-            UGLŌ helps restaurants, kitchens and multi-site teams bring staffing, training, compliance and operational follow-through into one system.
+            UGLŌ helps restaurants, kitchens and multi-site teams manage rotas, payroll, training, compliance and operational follow-through in one connected system.
           </p>
         </section>
 
-        {/* 3 · Recognition — name the manager's reality */}
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-          <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-lg sm:text-2xl font-bold text-foreground leading-snug max-w-2xl mx-auto">
-              You do not lose time because managers are lazy. You lose time because the work is fragmented.
-            </h2>
-          </div>
-          <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-            <p>A team member is on the rota, but still has overdue training.</p>
-            <p>A document expires, but nobody spots it in time.</p>
-            <p>A problem happens in service, gets mentioned, then disappears into follow-up gaps.</p>
-            <p>Payroll closes, but the management work behind it has already cost hours.</p>
-            <p>
-              That is the real issue for many hospitality businesses. Not a lack of software. A lack of connected control.
-            </p>
-            <p>
-              Managers are left checking different systems, chasing people, reconciling information and trying to work out what matters most today.
+        {/* Recognition — name the manager's reality */}
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-2xl mx-auto text-center mb-6 sm:mb-8">
+            Hospitality managers do not struggle because they lack effort. They struggle because the work is fragmented.
+          </h2>
+          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p>A team member is on next week's rota, but still has overdue training.</p>
+            <p>A document expires, but nobody notices in time.</p>
+            <p>A service issue gets logged, but follow-up is inconsistent.</p>
+            <p>Payroll gets processed, but managers have already lost hours chasing the information behind it.</p>
+            <p className="text-foreground font-medium pt-1">
+              That is the real operational leak in many hospitality businesses: not a lack of software, but a lack of connected control.
             </p>
           </div>
         </section>
 
-        {/* 4 · Reframe — this is an operations control problem */}
+        {/* Reframe — this is an operations control problem */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-            <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-lg sm:text-2xl font-bold text-foreground">
-                This is not just an HR problem. It is an operations control problem.
-              </h2>
-            </div>
-            <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-              <p>Most workforce tools help with rotas, records and payroll. That matters, but it is only part of the job.</p>
-              <p>Hospitality operators also need to know:</p>
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-6 sm:mb-8">
+              This is not just an HR problem. It is an operations control problem.
+            </h2>
+            <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+              <p>Most workforce systems help with records, rotas and payroll. That matters, but it is only part of what hospitality managers need to control.</p>
+              <p>They also need to know:</p>
               <ul className="space-y-2 pl-1">
                 {[
-                  "who is actually ready to work",
+                  "who is ready to work",
                   "what training is overdue",
                   "where compliance risk is building",
                   "what standards are slipping",
-                  "what managers still need to follow through on",
+                  "what still needs follow-through",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
@@ -424,31 +417,27 @@ const Auth = () => {
                   </li>
                 ))}
               </ul>
-              <p>
-                UGLŌ is built around that reality. It connects workforce management with training, compliance and operational follow-through so managers can act earlier and run tighter operations.
-              </p>
+              <p className="text-foreground font-medium pt-1">UGLŌ is built around that reality.</p>
             </div>
           </div>
         </section>
 
-        {/* 5 · Solution — what UGLŌ gives managers */}
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-          <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-lg sm:text-2xl font-bold text-foreground">
-              UGLŌ gives managers one place to control the work behind the shift
-            </h2>
-          </div>
-          <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+        {/* Solution — one system for the work behind the shift */}
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-6 sm:mb-8">
+            One system for the management work behind the shift
+          </h2>
+          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
             <p>
-              Instead of splitting workforce, training, compliance and operational actions across separate tools, UGLŌ brings them together in one hospitality platform.
+              UGLŌ brings workforce management, training, compliance and operational follow-through into one place, so managers spend less time checking, chasing and stitching things together manually.
             </p>
-            <p>That means managers can move from:</p>
+            <p className="font-medium text-foreground">Managers move from:</p>
             <ul className="space-y-2 pl-1">
               {[
-                "chasing information to seeing what matters",
-                "reacting late to acting earlier",
-                "managing records to managing readiness",
-                "storing data to following through properly",
+                "chasing information → seeing what matters",
+                "reacting late → acting earlier",
+                "managing headcount → managing readiness",
+                "recording work → following through properly",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
                   <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
@@ -456,66 +445,63 @@ const Auth = () => {
                 </li>
               ))}
             </ul>
-            <p>This is software built to help managers run operations, not just update admin.</p>
           </div>
         </section>
 
-        {/* 6 · Capability overview */}
+        {/* Capability overview */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-            <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-lg sm:text-2xl font-bold text-foreground">What UGLŌ helps you control</h2>
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
               <p className="text-sm text-muted-foreground mt-1.5 max-w-lg mx-auto">
-                Workforce scheduling, payroll, training, compliance and operational intelligence — connected in one hospitality platform.
+                Scheduling, payroll, training, compliance and operational intelligence — connected in one hospitality platform.
               </p>
             </div>
             <ValueCards />
           </div>
         </section>
 
-        {/* 7 · Why different */}
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-          <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Why generic HR and rota tools are not enough for hospitality</h2>
-          </div>
+        {/* Why different */}
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-6 sm:mb-8">
+            Why generic HR and rota tools are not enough for hospitality
+          </h2>
           <EmployerConversion />
         </section>
 
-        {/* 8 · Business outcomes */}
+        {/* Business outcomes */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-            <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-lg sm:text-2xl font-bold text-foreground">What improves when managers have better control</h2>
-              <p className="text-sm text-muted-foreground mt-1.5">Operational outcomes from a connected workforce platform.</p>
-            </div>
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-2">
+              What improves when managers have better control
+            </h2>
+            <p className="text-sm text-muted-foreground text-center mb-6 sm:mb-8">
+              Better visibility is useful. Better follow-through is where the real value sits.
+            </p>
             <CandidateConversion />
           </div>
         </section>
 
-        {/* 9 · Pain points */}
-        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-          <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Problems hospitality managers recognise immediately</h2>
-            <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto">
-              Common operational failures that happen when workforce, training and compliance are not connected.
-            </p>
-          </div>
+        {/* Pain points */}
+        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-6 sm:mb-8">
+            Operational problems hospitality managers recognise immediately
+          </h2>
           <SecuritySection />
         </section>
 
-        {/* 10 · Final CTA */}
+        {/* Final CTA */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
             <PricingSection />
           </div>
         </section>
 
         {/* FAQ */}
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-          <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Frequently asked questions</h2>
-            <p className="text-sm text-muted-foreground mt-1.5">Common questions from hospitality operators.</p>
-          </div>
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-16">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-6 sm:mb-8">
+            Frequently asked questions
+          </h2>
           <FAQ />
         </section>
 
