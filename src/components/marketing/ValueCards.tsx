@@ -6,32 +6,32 @@ const CAPABILITIES = [
   {
     icon: CalendarDays,
     title: "Workforce and scheduling",
-    desc: "Plan rotas, manage employee records, track attendance visibility and keep staffing aligned to operational reality.",
+    desc: "Plan rotas, manage staffing visibility and keep labour aligned to operational reality.",
   },
   {
     icon: Banknote,
     title: "Payroll and people administration",
-    desc: "Run payroll workflows and core people administration with clearer links to how the operation is actually being managed.",
+    desc: "Run payroll workflows and core people administration without losing sight of what is happening operationally.",
   },
   {
     icon: GraduationCap,
     title: "Training and readiness",
-    desc: "Assign training, track completion, manage sign-off and make sure staff are prepared for the work they are scheduled to do.",
+    desc: "Track training, sign-off and completion so staff are prepared for the work they are scheduled to do.",
   },
   {
     icon: ShieldCheck,
     title: "Compliance and governance",
-    desc: "Track onboarding, right-to-work documents, expiry dates, compliance actions and accountability across the workforce.",
+    desc: "Manage documents, expiry dates, onboarding and compliance follow-through with clearer accountability.",
   },
   {
     icon: Activity,
     title: "Operational intelligence",
-    desc: "Use evidence, signal mapping, effectiveness logic and quality controls to understand where standards are holding and where issues are building.",
+    desc: "Connect standards, signals and effectiveness logic so managers can see where issues are building.",
   },
   {
     icon: SlidersHorizontal,
     title: "Manager control",
-    desc: "See what is overdue, what is weak, what is incomplete and what needs action next, without stitching the picture together manually.",
+    desc: "See what is overdue, incomplete, weak or unresolved without pulling the picture together manually.",
   },
 ];
 

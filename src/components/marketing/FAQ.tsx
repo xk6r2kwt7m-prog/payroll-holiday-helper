@@ -15,16 +15,16 @@ const FAQ_DATA = [
     a: "Restaurant operators, multi-site hospitality businesses, operations managers, general managers and directors who need stronger control over staffing, training, compliance and operational follow-through.",
   },
   {
-    q: "How is this different from a standard HR system?",
-    a: "Generic HR tools manage employee records. UGLŌ connects workforce management with training, compliance and operational execution so managers can see who is ready, what is overdue, where standards are slipping and what needs follow-up.",
+    q: "How is this different from standard HR software?",
+    a: "Generic HR tools manage employee records. UGLŌ connects workforce management with training, compliance and operational execution — so managers can see who is ready, what is overdue and what needs follow-up.",
   },
   {
     q: "Does it replace our rota and payroll tools?",
-    a: "It can. UGLŌ includes scheduling, rota planning and UK payroll workflow support. But it also adds training tracking, compliance governance and operational intelligence that standalone rota or payroll tools do not provide.",
+    a: "It can. UGLŌ includes scheduling, rota planning and UK payroll workflow support. It also adds training tracking, compliance governance and operational intelligence that standalone rota or payroll tools do not cover.",
   },
   {
     q: "Does it work for small teams?",
-    a: "Yes. It is designed for single-site teams and scales to multiple locations. You activate the modules you need.",
+    a: "Yes. It works for single-site teams and scales to multiple locations. You activate the modules you need.",
   },
   {
     q: "Can staff use it on mobile?",
@@ -32,7 +32,7 @@ const FAQ_DATA = [
   },
   {
     q: "How does training tracking work?",
-    a: "You assign training, track completion and manage sign-off. The system links training status to scheduling and operational readiness so managers can see who is prepared and who is not.",
+    a: "You assign training, track completion and manage sign-off. Training status links to scheduling and operational readiness so managers can see who is prepared and who is not.",
   },
   {
     q: "Is company data kept separate?",
@@ -44,7 +44,7 @@ const FAQ_DATA = [
   },
   {
     q: "How long does setup take?",
-    a: "Most teams are operational within an hour. Create an account, add employees and start building your first rota. Guided steps walk you through each module.",
+    a: "Most teams are operational within an hour. Create an account, add employees and start building your first rota.",
   },
 ];
 

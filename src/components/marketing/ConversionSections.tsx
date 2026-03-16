@@ -10,12 +10,12 @@ const DIFF_BLOCKS = [
   {
     icon: Building2,
     title: "Hospitality-first workflows",
-    desc: "Built around shifts, service pressure, sites, standards and operational accountability.",
+    desc: "Built around shifts, sites, service pressure and operational accountability.",
   },
   {
     icon: Layers,
     title: "Connected control",
-    desc: "Scheduling, payroll, training, compliance and operational signals sit inside one connected platform instead of five disconnected places.",
+    desc: "Scheduling, payroll, training, compliance and operational signals sit inside one connected platform instead of scattered across multiple tools.",
   },
   {
     icon: Zap,
@@ -29,21 +29,14 @@ export function EmployerConversion({ className }: SectionProps) {
     <div className={className}>
       <div className="space-y-4">
         <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+          <p>Generic HR systems help store employee records.</p>
+          <p>Rota tools help schedule shifts.</p>
+          <p>Payroll systems help process pay.</p>
+          <p className="text-foreground font-medium">But hospitality operators need more than that.</p>
           <p>
-            Generic HR software helps store employee information.
+            They need to know whether the team is ready, where compliance is weak, what standards are slipping and what managers still need to act on.
           </p>
-          <p>
-            Rota tools help schedule shifts.
-          </p>
-          <p>
-            Payroll tools help process pay.
-          </p>
-          <p>
-            But hospitality management is not only about storing records or producing a payslip. It is about keeping people ready, standards visible and follow-through consistent under real service pressure.
-          </p>
-          <p>
-            UGLŌ is different because it is built around hospitality execution.
-          </p>
+          <p>UGLŌ is built for that layer of operational control.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-3 mt-6">
@@ -73,9 +66,9 @@ const OUTCOMES = [
   "Less fragmentation across workforce, training, compliance and operations",
   "Stronger accountability for overdue actions and follow-up",
   "Clearer visibility over staff readiness and operational gaps",
-  "Better labour control through tighter planning and execution discipline",
-  "Fewer avoidable failures caused by missed training, missing documents or weak follow-through",
-  "Less management waste from checking, chasing and reconciling across multiple systems",
+  "Tighter labour control through better planning and execution discipline",
+  "Fewer avoidable failures from missed training, poor follow-through or weak compliance visibility",
+  "Less management waste from chasing information across multiple tools",
 ];
 
 export function CandidateConversion({ className }: SectionProps) {
