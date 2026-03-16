@@ -9,6 +9,7 @@ import { ManagerComplianceDashboard } from "@/components/training/ManagerComplia
 import { PlatformModuleBrowser } from "@/components/training/PlatformModuleBrowser";
 import { StaffTrainingView } from "@/components/training/StaffTrainingView";
 import { TrainingQAChecklist } from "@/components/training/TrainingQAChecklist";
+import { TrainingIntelligenceTab } from "@/components/training/TrainingIntelligenceTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { GraduationCap, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, BookOpen, ClipboardCheck, Sparkles, BarChart3, FlaskConical } from "lucide-react";
+import { GraduationCap, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, BookOpen, ClipboardCheck, Sparkles, BarChart3, FlaskConical, Brain } from "lucide-react";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
