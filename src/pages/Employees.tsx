@@ -132,13 +132,36 @@ const Employees = () => {
   const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every(e => selectedIds.has(e.id));
 
   const handleDelete = async (employee: Employee) => {
-    if (confirm(t("employees.confirm_delete", { name: `${employee.forename} ${employee.surname}` }))) {
-      try {
-        await deleteEmployee.mutateAsync(employee.id);
-        toast.success(t("employees.deleted_success", { name: `${employee.forename} ${employee.surname}` }));
-      } catch {
-        toast.error(t("employees.failed_delete"));
-      }
+    setPendingDeleteEmployee(employee);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteEmployee) return;
+    try {
+      await deleteEmployee.mutateAsync(pendingDeleteEmployee.id);
+      toast.success(`${pendingDeleteEmployee.forename} ${pendingDeleteEmployee.surname} has been permanently deleted.`);
+    } catch (err: any) {
+      toast.error(err?.message || t("employees.failed_delete"));
+    } finally {
+      setPendingDeleteEmployee(null);
+    }
+  };
+
+  const handleArchive = async (employee: Employee) => {
+    try {
+      await archiveEmployee.mutateAsync(employee.id);
+      toast.success(`${employee.forename} ${employee.surname} has been archived.`);
+    } catch {
+      toast.error("Failed to archive employee");
+    }
+  };
+
+  const handleMarkLeaver = async (employee: Employee) => {
+    try {
+      await updateEmployee.mutateAsync({ id: employee.id, updates: { status: "leaver" as any } });
+      toast.success(`${employee.forename} ${employee.surname} has been marked as a leaver.`);
+    } catch {
+      toast.error("Failed to update employee status");
     }
   };
 
