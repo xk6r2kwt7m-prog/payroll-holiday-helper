@@ -1,4 +1,4 @@
-import { Edit2, Trash2, Eye, MoreHorizontal, MapPin, Clock } from "lucide-react";
+import { Edit2, Trash2, Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,24 +19,22 @@ import { cn } from "@/lib/utils";
 import { SensitiveField } from "@/components/ui/sensitive-field";
 
 const statusStyles: Record<string, string> = {
-  active: "bg-success/10 text-success border-success/20",
-  leaver: "bg-destructive/10 text-destructive border-destructive/20",
-  starter: "bg-primary/10 text-primary border-primary/20",
+  active: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300",
+  starter: "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-300",
+  onboarding: "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/30 dark:text-amber-300",
+  leaver: "border-orange-300 bg-orange-50 text-orange-700 dark:border-orange-600 dark:bg-orange-900/30 dark:text-orange-300",
+  archived: "border-muted bg-muted/50 text-muted-foreground",
 };
 
 const statusLabels: Record<string, string> = {
   active: "Active",
-  leaver: "Leaver",
   starter: "Starter",
+  onboarding: "Onboarding",
+  leaver: "Leaver",
+  archived: "Archived",
 };
 
-const departmentStyles: Record<string, string> = {
-  FOH: "bg-accent/10 text-accent",
-  BOH: "bg-primary/10 text-primary",
-  CPU: "bg-warning/10 text-warning",
-};
-
-const departmentEmoji: Record<string, string> = {
+const deptEmoji: Record<string, string> = {
   FOH: "🍽️",
   BOH: "👨‍🍳",
   CPU: "🏭",
@@ -46,57 +44,52 @@ interface EmployeeCardProps {
   employee: Employee;
   isAdmin: boolean;
   canViewSensitive?: boolean;
-  onDelete: (employee: Employee) => void;
+  onArchive: (employee: Employee) => void;
+  onMarkLeaver: (employee: Employee) => void;
+  onDelete?: (employee: Employee) => void;
   onViewDetails: (employee: Employee) => void;
   index: number;
 }
 
-export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDelete, onViewDetails, index }: EmployeeCardProps) {
+export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onDelete, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
 
+  const isAlreadyArchived = !!employee.archived_at;
+  const isLeaver = employee.status === "leaver";
+
   return (
     <div
       className={cn(
-        "group rounded-xl bg-card p-3.5 shadow-sm transition-all duration-200",
-        "hover:shadow-md sm:hover:-translate-y-0.5 hover:border-primary/20 border border-border",
-        "animate-fade-in cursor-pointer min-w-0 overflow-hidden"
+        "group rounded-xl bg-card border border-border/50 shadow-card p-3.5 transition-all cursor-pointer hover:shadow-elevated hover:border-border",
+        isAlreadyArchived && "opacity-60"
       )}
-      style={{ animationDelay: `${Math.min(index, 6) * 30}ms` }}
       onClick={() => onViewDetails(employee)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter") onViewDetails(employee); }}
+      style={{ animationDelay: `${index * 30}ms` }}
     >
-      {/* Row 1: Avatar + Name + Status + Menu */}
-      <div className="flex items-center gap-3">
-        <Avatar className="h-9 w-9 ring-1 ring-background shadow-sm shrink-0">
-          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold text-sm">
-            {employee.forename[0]}{employee.surname[0]}
+      {/* Row 1: Avatar + Name + Status + Actions */}
+      <div className="flex items-center gap-3 min-w-0">
+        <Avatar className="h-9 w-9 shrink-0">
+          <AvatarFallback className="bg-primary/10 text-primary text-[13px] font-semibold">
+            {employee.forename?.[0]}{employee.surname?.[0]}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-foreground text-sm leading-tight truncate">
-              {employee.forename} {employee.surname}
-            </h3>
-            {employee.employee_ref && (
-              <span className="text-[10px] text-muted-foreground font-mono shrink-0">
-                #{employee.employee_ref}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={cn(
-              "inline-flex items-center gap-0.5 text-[11px] font-medium",
-              departmentStyles[employee.department]
-            )}>
-              {departmentEmoji[employee.department]} {employee.department}
-            </span>
+          <p className="text-[13px] font-semibold text-foreground truncate leading-tight">
+            {employee.forename} {employee.surname}
+          </p>
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground leading-tight mt-0.5">
+            <span>{deptEmoji[employee.department] || "📂"} {employee.department}</span>
             {branches.length > 0 && (
               <>
-                <span className="text-border">·</span>
-                <span className="text-[11px] text-muted-foreground flex items-center gap-0.5 truncate">
-                  <MapPin className="h-3 w-3 shrink-0" />
+                <span className="text-border">•</span>
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">
                   {branches.find(b => b.is_primary)?.branch || branches[0]?.branch}
                 </span>
               </>
@@ -124,17 +117,36 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewDetails(employee); }}>
                 <Eye className="h-4 w-4 mr-2" /> View Details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); onDelete(employee); }}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-2" /> Delete
-              </DropdownMenuItem>
+              {!isLeaver && !isAlreadyArchived && (
+                <DropdownMenuItem
+                  onClick={(e) => { e.stopPropagation(); onMarkLeaver(employee); }}
+                >
+                  <UserMinus className="h-4 w-4 mr-2" /> Mark as Leaver
+                </DropdownMenuItem>
+              )}
+              {!isAlreadyArchived && (
+                <DropdownMenuItem
+                  onClick={(e) => { e.stopPropagation(); onArchive(employee); }}
+                >
+                  <Archive className="h-4 w-4 mr-2" /> Archive
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); onDelete(employee); }}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Delete Permanently
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -143,68 +155,43 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onDe
       {/* Row 2: Compact protected pay — only for authorized */}
       {canViewSensitive && (
         <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-border flex-wrap min-w-0">
-          <div className="min-w-0">
-            <SensitiveField
-              fieldKey={`card-${employee.id}-hourly_rate`}
-              value={<span className="text-xs font-semibold text-foreground">{formatCurrency(Number(employee.hourly_rate))}/hr</span>}
-              category="compensation"
-              employeeId={employee.id}
-              mask="Rate •••"
-              size="sm"
-              inline
-            />
-          </div>
-          <div className="min-w-0">
-            <SensitiveField
-              fieldKey={`card-${employee.id}-service_charge`}
-              value={<span className="text-xs font-semibold text-foreground">SC {formatCurrency(Number(employee.service_charge || 0))}</span>}
-              category="compensation"
-              employeeId={employee.id}
-              mask="SC •••"
-              size="sm"
-              inline
-            />
-          </div>
-          {employee.ni_number && (
-            <SensitiveField
-              fieldKey={`card-${employee.id}-ni`}
-              value={<span className="font-mono text-[10px]">{employee.ni_number}</span>}
-              category="personal_id"
-              employeeId={employee.id}
-              mask="NI •••"
-              size="sm"
-              inline
-            />
+          <SensitiveField
+            value={formatCurrency(employee.hourly_rate)}
+            label="Rate"
+            size="sm"
+          />
+          {employee.pay_type && (
+            <Badge variant="secondary" className="text-[10px] h-4.5 px-1.5">
+              {employee.pay_type}
+            </Badge>
+          )}
+          {employee.service_charge_eligible && (
+            <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-amber-300 text-amber-700 dark:border-amber-600 dark:text-amber-300">
+              SC
+            </Badge>
           )}
         </div>
       )}
 
-      {/* Row 3: Admin quick actions */}
-      {isAdmin && (
-        <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-border min-w-0">
-          <EmployeeFormDialog
-            employee={employee}
-            trigger={
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 text-xs h-8 min-w-0"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Edit2 className="h-3 w-3 mr-1 shrink-0" /> <span className="truncate">Edit</span>
-              </Button>
-            }
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); onViewDetails(employee); }}
-            className="text-xs h-8 px-2.5 shrink-0"
-          >
-            <Eye className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
+      {/* Row 3: Contract / compliance flags */}
+      <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+        {employee.contract_country && (
+          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5">
+            {employee.contract_country}
+          </Badge>
+        )}
+        {employee.employee_ref && (
+          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 text-muted-foreground">
+            #{employee.employee_ref}
+          </Badge>
+        )}
+        {employee.start_date && (
+          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+            <Clock className="h-3 w-3" />
+            {new Date(employee.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "2-digit" })}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
