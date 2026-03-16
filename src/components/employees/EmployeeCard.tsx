@@ -136,17 +136,6 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
                   <Archive className="h-4 w-4 mr-2" /> Archive
                 </DropdownMenuItem>
               )}
-              {onDelete && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={(e) => { e.stopPropagation(); onDelete(employee); }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete Permanently
-                  </DropdownMenuItem>
-                </>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}

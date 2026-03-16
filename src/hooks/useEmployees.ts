@@ -107,28 +107,53 @@ export function useUpdateEmployee() {
  * Checked in order of operational importance.
  */
 const EMPLOYEE_DEPENDENCY_TABLES = [
+  // Operational / financial (highest importance)
   { table: "time_entries", label: "timesheets" },
   { table: "payroll_entries", label: "payroll records" },
+  { table: "payroll_overpayments", label: "payroll overpayments" },
   { table: "shifts", label: "shifts" },
+  { table: "schedule_template_shifts", label: "schedule templates" },
+  { table: "shift_alerts", label: "shift alerts" },
+  // Leave & absence
   { table: "holiday_requests", label: "holiday requests" },
   { table: "holiday_balances", label: "holiday balances" },
   { table: "holiday_adjustments", label: "holiday adjustments" },
+  { table: "holiday_ledger", label: "holiday ledger entries" },
+  { table: "holiday_payments", label: "holiday payments" },
+  { table: "holiday_integrity_log", label: "holiday audit entries" },
   { table: "absence_records", label: "absence records" },
+  { table: "return_to_work_forms", label: "return-to-work forms" },
+  // Documents & compliance
   { table: "employee_documents", label: "documents" },
   { table: "contract_signatures", label: "contract signatures" },
+  { table: "signing_tokens", label: "signing tokens" },
+  { table: "document_requests", label: "document requests" },
+  { table: "document_audit_log", label: "document audit entries" },
+  { table: "document_request_audit", label: "document request audit" },
+  { table: "evidence_files", label: "evidence files" },
+  { table: "evidence_requests", label: "evidence requests" },
+  // Disciplinary & notes
   { table: "disciplinary_records", label: "disciplinary records" },
   { table: "admin_notes", label: "admin notes" },
-  { table: "employee_changes", label: "change history" },
+  // Onboarding
   { table: "employee_onboarding_data", label: "onboarding data" },
+  { table: "onboarding_progress", label: "onboarding progress" },
+  // Training
+  { table: "training_assignments", label: "training assignments" },
+  { table: "training_records", label: "training records" },
+  { table: "training_audit_log", label: "training audit entries" },
+  { table: "training_effectiveness_records", label: "training effectiveness" },
+  { table: "training_quiz_attempts", label: "quiz attempts" },
+  // Profile & config
+  { table: "employee_changes", label: "change history" },
   { table: "employee_skills", label: "skills" },
   { table: "employee_availability", label: "availability" },
   { table: "employee_branches", label: "branch assignments" },
-  { table: "training_assignments", label: "training assignments" },
-  { table: "training_records", label: "training records" },
-  { table: "evidence_files", label: "evidence files" },
-  { table: "evidence_requests", label: "evidence requests" },
-  { table: "document_requests", label: "document requests" },
+  { table: "service_charge_employee_rates", label: "service charge rates" },
+  { table: "staff_transfers", label: "staff transfers" },
+  // Communication
   { table: "announcement_read_receipts", label: "announcement receipts" },
+  // Talent
   { table: "talent_profiles", label: "talent profiles" },
 ] as const;
 
