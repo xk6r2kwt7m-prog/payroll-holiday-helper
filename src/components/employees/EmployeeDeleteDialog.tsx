@@ -53,7 +53,7 @@ export function EmployeeDeleteDialog({
             </>
           ) : hasLinkedRecords ? (
             <>
-              <AlertDialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                 <ShieldAlert className="h-5 w-5" />
                 Cannot delete {fullName}
               </AlertDialogTitle>

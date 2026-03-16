@@ -168,7 +168,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
             </Badge>
           )}
           {employee.service_charge_eligible && (
-            <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-amber-300 text-amber-700 dark:border-amber-600 dark:text-amber-300">
+            <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-primary/30 text-primary">
               SC
             </Badge>
           )}
