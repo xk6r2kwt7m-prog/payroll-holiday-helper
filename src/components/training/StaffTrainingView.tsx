@@ -19,6 +19,8 @@ import {
 } from "@/hooks/useTrainingLibrary";
 import { COMPLETION_TYPES } from "@/hooks/useTrainingModules";
 import { QuizTaker } from "@/components/training/QuizTaker";
+import { LessonViewer } from "@/components/training/LessonViewer";
+import { getLessonContent } from "@/data/training-standards/lessons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
