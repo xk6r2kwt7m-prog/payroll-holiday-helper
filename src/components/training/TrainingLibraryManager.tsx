@@ -37,6 +37,7 @@ import { exportToCsv } from "@/lib/csv-export";
 import { writeTrainingAudit } from "@/hooks/useTrainingLibrary";
 import { toast } from "sonner";
 import { WhyThisMattersPanel } from "@/components/training/WhyThisMattersPanel";
+import { ModuleSignalMappingManager } from "@/components/training/ModuleSignalMappingManager";
 import { EvidencePanel } from "@/components/training/EvidencePanel";
 import { ReviewInsightsPanel } from "@/components/training/ReviewInsightsPanel";
 import { EvidenceCompletenessBar } from "@/components/training/EvidenceCompletenessBar";
@@ -800,6 +801,14 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                 {/* Admin-only standards metadata */}
                 {canManage && module.standards_metadata && (
                   <WhyThisMattersPanel metadata={module.standards_metadata} />
+                )}
+                {/* Admin-only signal mappings */}
+                {canManage && (
+                  <ModuleSignalMappingManager
+                    moduleId={module.id}
+                    standardsMetadata={module.standards_metadata as StandardsMetadata | null}
+                    readOnly={!canEdit}
+                  />
                 )}
                 {canEdit && (
                   <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="w-full mt-2">
