@@ -129,7 +129,7 @@ export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags
 
           {/* Recommendation */}
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            {effectiveness.recommendation}
+            {adjustedRecommendation ?? effectiveness.recommendation}
           </p>
 
           {/* Measured date */}
