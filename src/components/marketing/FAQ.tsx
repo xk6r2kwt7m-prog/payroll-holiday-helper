@@ -8,51 +8,43 @@ import {
 const FAQ_DATA = [
   {
     q: "What does UGLŌ do?",
-    a: "UGLŌ brings scheduling, payroll, holiday tracking, employee records, onboarding, training, and hiring into one platform — designed specifically for hospitality teams.",
+    a: "UGLŌ is a hospitality workforce operations platform. It brings scheduling, payroll, training, compliance, employee records and operational intelligence into one system built for restaurants, kitchens and multi-site hospitality teams.",
   },
   {
     q: "Who is it for?",
-    a: "Restaurants, cafés, bars, hotels, and hospitality operators who need to manage staff, schedules, and payroll without enterprise-grade complexity.",
+    a: "Restaurant operators, multi-site hospitality businesses, operations managers, general managers and directors who need stronger control over staffing, training, compliance and operational follow-through.",
   },
   {
-    q: "Why not just use spreadsheets?",
-    a: "Spreadsheets drift, nothing connects, and chasing updates wastes time. UGLŌ links rotas, timesheets, holiday balances, and payroll in one place.",
+    q: "How is this different from a standard HR system?",
+    a: "Generic HR tools manage employee records. UGLŌ connects workforce management with training, compliance and operational execution so managers can see who is ready, what is overdue, where standards are slipping and what needs follow-up.",
+  },
+  {
+    q: "Does it replace our rota and payroll tools?",
+    a: "It can. UGLŌ includes scheduling, rota planning and UK payroll workflow support. But it also adds training tracking, compliance governance and operational intelligence that standalone rota or payroll tools do not provide.",
   },
   {
     q: "Does it work for small teams?",
-    a: "Yes. It's designed for a single-site team and scales to multiple locations. You only activate the modules you need.",
+    a: "Yes. It is designed for single-site teams and scales to multiple locations. You activate the modules you need.",
   },
   {
     q: "Can staff use it on mobile?",
-    a: "Yes. The platform is mobile-first — staff can view schedules, clock in, request holidays, and manage their profile from any phone browser.",
+    a: "Yes. The platform is mobile-first. Staff can view schedules, clock in, manage training, request holidays and access their profile from any phone browser.",
   },
   {
-    q: "How does the Talent Pool work?",
-    a: "Hospitality workers can opt in to make themselves discoverable to employers. Employers can browse profiles, post vacancies, and receive applications — with built-in privacy controls throughout.",
-  },
-  {
-    q: "Are inbound applications free?",
-    a: "Yes. Posting vacancies and receiving applications costs nothing. Employers only pay when proactively reaching out to passive candidates.",
-  },
-  {
-    q: "How does candidate privacy work?",
-    a: "Candidates control their own visibility. Profiles display first name and surname initial only. Full identity is shared only when a candidate chooses to respond.",
+    q: "How does training tracking work?",
+    a: "You assign training, track completion and manage sign-off. The system links training status to scheduling and operational readiness so managers can see who is prepared and who is not.",
   },
   {
     q: "Is company data kept separate?",
-    a: "Yes. Each company operates in its own isolated workspace. Your employees, payroll, and documents are never visible to other organisations.",
+    a: "Yes. Each company operates in its own tenant-isolated workspace. Your employees, payroll and documents are never visible to other organisations.",
   },
   {
     q: "How is the platform secured?",
-    a: "The system includes role-based access controls, tenant-separated data storage, and audit logging for sensitive actions. Payroll and personal data are masked by default.",
+    a: "The system includes role-based access controls, tenant-separated data storage, audit logging for sensitive actions and data masking for payroll and personal records.",
   },
   {
     q: "How long does setup take?",
-    a: "Most teams are up and running within an hour. Create an account, add your employees, and build your first rota. Guided steps walk you through each part.",
-  },
-  {
-    q: "Can I try it before a full rollout?",
-    a: "Yes. You can set up your workspace, add a few team members, and explore the system at your own pace. There's no obligation to activate every module upfront.",
+    a: "Most teams are operational within an hour. Create an account, add employees and start building your first rota. Guided steps walk you through each module.",
   },
 ];
 
