@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useEmployees, useDeleteEmployee, useArchiveEmployee, useUpdateEmployee, useEmployeeDependencies, type Employee } from "@/hooks/useEmployees";
+import { useEmployees, useDeleteEmployee, useArchiveEmployee, useUpdateEmployee, type Employee } from "@/hooks/useEmployees";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { InviteEmployeeDialog } from "@/components/employees/InviteEmployeeDialog";
 import { EmployeeCard } from "@/components/employees/EmployeeCard";
