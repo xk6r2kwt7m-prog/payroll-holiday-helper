@@ -78,8 +78,21 @@ export function useModuleSignalMappings(moduleId?: string) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["module_signal_mappings", tenantId] });
+      if (tenantId) {
+        const action = variables.mapping_source === "manual" ? "manual_mapping_added" : "mapping_enabled";
+        writeTrainingAudit({
+          tenant_id: tenantId,
+          action,
+          metadata: {
+            module_id: variables.module_id,
+            signal_tag: variables.signal_tag,
+            mapping_source: variables.mapping_source,
+            is_active: variables.is_active,
+          },
+        });
+      }
     },
     onError: (err: any) => {
       toast.error("Failed to save mapping: " + (err.message || "Unknown error"));
