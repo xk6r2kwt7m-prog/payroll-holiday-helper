@@ -383,6 +383,14 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
         <div className="space-y-4 pt-2">
           {doc?.summary && <p className="text-sm text-muted-foreground">{doc.summary}</p>}
 
+          {/* Lesson content button */}
+          {lessonContent && (
+            <Button onClick={() => setShowLesson(true)} variant="default" className="w-full gap-2">
+              <BookOpen className="h-4 w-4" />
+              {lessonCompleted ? "Review Lesson" : "Start Lesson"}
+            </Button>
+          )}
+
           {/* Content link */}
           {(isInternalPage || (doc?.content_type === "external_link" && doc?.content_url)) && (
             <Button onClick={handleOpenContent} variant="outline" className="w-full gap-2">
