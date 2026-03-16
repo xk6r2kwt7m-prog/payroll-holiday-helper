@@ -45,7 +45,7 @@ function getScoreIcon(score: EffectivenessScore) {
   }
 }
 
-export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags }: Props) {
+export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags, signalQuality }: Props) {
   const signalTypes = getModuleSignalTypes(reviewInsightTags);
 
   // If no record and no signal types, show nothing
@@ -59,6 +59,14 @@ export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags
         evaluationType: record.evaluation_type as any,
       })
     : null;
+
+  // Adjust confidence and recommendation based on signal quality
+  const adjustedConfidence = (effectiveness && record && signalQuality)
+    ? adjustEffectivenessConfidence(record.confidence_level as "high" | "medium" | "low", signalQuality)
+    : record?.confidence_level ?? null;
+  const adjustedRecommendation = (effectiveness && signalQuality)
+    ? getQualityAdjustedRecommendation(effectiveness.recommendation, signalQuality)
+    : effectiveness?.recommendation ?? null;
 
   // Location breakdown (only location_level records)
   const locationRecords = allRecords.filter(r => r.evaluation_type === "location_level" && r.location_id);
