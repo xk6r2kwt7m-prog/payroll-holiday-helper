@@ -46,7 +46,7 @@ interface EmployeeCardProps {
   canViewSensitive?: boolean;
   onArchive: (employee: Employee) => void;
   onMarkLeaver: (employee: Employee) => void;
-  onDelete?: (employee: Employee) => void;
+  
   onViewDetails: (employee: Employee) => void;
   index: number;
 }
