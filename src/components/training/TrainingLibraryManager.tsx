@@ -802,6 +802,14 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                 {canManage && module.standards_metadata && (
                   <WhyThisMattersPanel metadata={module.standards_metadata} />
                 )}
+                {/* Admin-only signal mappings */}
+                {canManage && (
+                  <ModuleSignalMappingManager
+                    moduleId={module.id}
+                    standardsMetadata={module.standards_metadata as StandardsMetadata | null}
+                    readOnly={!canEdit}
+                  />
+                )}
                 {canEdit && (
                   <Button variant="outline" size="sm" onClick={() => setEditMode(true)} className="w-full mt-2">
                     Edit Module
