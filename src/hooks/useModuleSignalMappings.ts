@@ -109,8 +109,15 @@ export function useModuleSignalMappings(moduleId?: string) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["module_signal_mappings", tenantId] });
+      if (tenantId) {
+        writeTrainingAudit({
+          tenant_id: tenantId,
+          action: variables.is_active ? "mapping_enabled" : "mapping_disabled",
+          metadata: { mapping_id: variables.id, is_active: variables.is_active },
+        });
+      }
     },
     onError: (err: any) => {
       toast.error("Failed to toggle mapping: " + (err.message || "Unknown error"));
