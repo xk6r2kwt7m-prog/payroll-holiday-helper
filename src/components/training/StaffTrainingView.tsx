@@ -455,9 +455,22 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
               </div>
             )}
             {needsQuiz && !quizPassed && (
-              <Button onClick={onStartQuiz} className="w-full gap-2" size="lg">
+              <Button
+                onClick={() => {
+                  // If lesson exists and hasn't been read yet, show lesson first
+                  if (lessonContent && !lessonCompleted) {
+                    setShowLesson(true);
+                  } else {
+                    onStartQuiz();
+                  }
+                }}
+                className="w-full gap-2"
+                size="lg"
+              >
                 <GraduationCap className="h-4 w-4" />
-                {assignment.quiz_score != null ? "Retry Quiz" : "Take Quiz"}
+                {lessonContent && !lessonCompleted
+                  ? "Start Lesson & Quiz"
+                  : assignment.quiz_score != null ? "Retry Quiz" : "Take Quiz"}
               </Button>
             )}
             {needsAck && !needsQuiz && (
