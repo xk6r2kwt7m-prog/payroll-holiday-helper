@@ -285,6 +285,8 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
   onStartQuiz: () => void;
 }) {
   const navigate = useNavigate();
+  const [showLesson, setShowLesson] = useState(false);
+  const [lessonCompleted, setLessonCompleted] = useState(false);
   const doc = assignment.training_library;
   const needsAck = doc?.requires_acknowledgement && !assignment.acknowledged_at;
   const needsCompletion = doc?.requires_completion && !assignment.completed_at;
@@ -294,11 +296,38 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
   const needsSignoff = assignment.signoff_required && !assignment.signed_off_at;
   const staffStatus = getStaffStatus(assignment);
 
+  // Check for lesson content
+  const lessonContent = doc?.title ? getLessonContent(doc.title) : null;
+
   const handleOpenContent = () => {
     if (isInternalPage) navigate(doc.content_url!);
     else if (doc?.content_type === "external_link" && doc?.content_url)
       window.open(doc.content_url, "_blank", "noopener,noreferrer");
   };
+
+  // Lesson view — show before quiz if lesson content exists
+  if (showLesson && lessonContent && doc) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">{doc.title} — Lesson</DialogTitle>
+          </DialogHeader>
+          <LessonViewer
+            lesson={lessonContent}
+            onLessonComplete={() => {
+              setLessonCompleted(true);
+              setShowLesson(false);
+              // If quiz is needed, go to quiz; otherwise back to detail
+              if (needsQuiz && !quizPassed) {
+                onStartQuiz();
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // Quiz view — with lock guard
   if (showQuiz && doc) {
