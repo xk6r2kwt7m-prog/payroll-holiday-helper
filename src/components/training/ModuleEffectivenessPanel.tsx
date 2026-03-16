@@ -9,6 +9,11 @@ import { TrendingUp, TrendingDown, Minus, HelpCircle, Zap, MapPin } from "lucide
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import {
+  adjustEffectivenessConfidence,
+  getQualityAdjustedRecommendation,
+  type SignalQualityStatus,
+} from "@/lib/signal-quality";
+import {
   computeEffectiveness,
   SCORE_LABELS,
   SCORE_COLORS,
@@ -26,6 +31,8 @@ interface Props {
   allRecords: EffectivenessRecord[];
   /** Module's review_insight_tags from standards_metadata */
   reviewInsightTags: ReviewInsightTag[] | undefined | null;
+  /** Signal quality status for this module, used to adjust confidence */
+  signalQuality?: SignalQualityStatus | null;
 }
 
 function getScoreIcon(score: EffectivenessScore) {
@@ -38,7 +45,7 @@ function getScoreIcon(score: EffectivenessScore) {
   }
 }
 
-export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags }: Props) {
+export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags, signalQuality }: Props) {
   const signalTypes = getModuleSignalTypes(reviewInsightTags);
 
   // If no record and no signal types, show nothing
@@ -52,6 +59,14 @@ export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags
         evaluationType: record.evaluation_type as any,
       })
     : null;
+
+  // Adjust confidence and recommendation based on signal quality
+  const adjustedConfidence = (effectiveness && record && signalQuality)
+    ? adjustEffectivenessConfidence(record.confidence_level as "high" | "medium" | "low", signalQuality)
+    : record?.confidence_level ?? null;
+  const adjustedRecommendation = (effectiveness && signalQuality)
+    ? getQualityAdjustedRecommendation(effectiveness.recommendation, signalQuality)
+    : effectiveness?.recommendation ?? null;
 
   // Location breakdown (only location_level records)
   const locationRecords = allRecords.filter(r => r.evaluation_type === "location_level" && r.location_id);
@@ -87,7 +102,7 @@ export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags
               {effectiveness.label}
             </Badge>
             <Badge variant="outline" className="text-[8px] px-1 py-0 ml-auto">
-              {record.confidence_level} confidence
+              {adjustedConfidence ?? record.confidence_level} confidence
             </Badge>
           </div>
 
@@ -114,7 +129,7 @@ export function ModuleEffectivenessPanel({ record, allRecords, reviewInsightTags
 
           {/* Recommendation */}
           <p className="text-[10px] text-muted-foreground leading-relaxed">
-            {effectiveness.recommendation}
+            {adjustedRecommendation ?? effectiveness.recommendation}
           </p>
 
           {/* Measured date */}

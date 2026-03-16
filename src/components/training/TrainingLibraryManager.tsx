@@ -1118,6 +1118,7 @@ function StandardsTabContent({ module, canEdit }: { module: TrainingLibraryItem;
         record={effByModule.get(module.id) ?? null}
         allRecords={allEffRecords.filter(r => r.module_id === module.id)}
         reviewInsightTags={(module.standards_metadata as any)?.review_insight_tags as ReviewInsightTag[] | undefined}
+        signalQuality={sqByModule.get(module.id)?.qualityStatus ?? null}
       />
 
       {/* Signal Quality */}
