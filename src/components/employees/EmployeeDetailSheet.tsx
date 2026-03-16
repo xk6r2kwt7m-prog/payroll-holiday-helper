@@ -120,7 +120,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto" data-testid="employee-detail-sheet">
         <SheetHeader className="space-y-4 pb-6">
           {/* Header with avatar */}
           <div className="flex items-start gap-4">
