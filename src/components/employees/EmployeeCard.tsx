@@ -51,7 +51,7 @@ interface EmployeeCardProps {
   index: number;
 }
 
-export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onDelete, onViewDetails, index }: EmployeeCardProps) {
+export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
