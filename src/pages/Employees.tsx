@@ -470,6 +470,15 @@ const Employees = () => {
             onClearSelection={clearSelection}
           />
         )}
+
+        {/* Delete confirmation dialog with dependency check */}
+        <EmployeeDeleteDialog
+          employee={pendingDeleteEmployee}
+          onClose={() => setPendingDeleteEmployee(null)}
+          onConfirmDelete={handleConfirmDelete}
+          onArchiveInstead={handleArchive}
+          isDeleting={deleteEmployee.isPending}
+        />
       </div>
     </AppLayout>
   );
