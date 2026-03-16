@@ -9,6 +9,11 @@ import { TrendingUp, TrendingDown, Minus, HelpCircle, Zap, MapPin } from "lucide
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import {
+  adjustEffectivenessConfidence,
+  getQualityAdjustedRecommendation,
+  type SignalQualityStatus,
+} from "@/lib/signal-quality";
+import {
   computeEffectiveness,
   SCORE_LABELS,
   SCORE_COLORS,
