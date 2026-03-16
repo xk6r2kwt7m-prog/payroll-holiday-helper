@@ -20,29 +20,35 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
+    // Primary auth setup (E2E_USER_EMAIL)
     {
       name: "setup",
       testMatch: /auth\.setup\.ts/,
     },
+    // Per-role auth setup (optional env vars)
+    {
+      name: "setup-roles",
+      testMatch: /auth-roles\.setup\.ts/,
+    },
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"], storageState: authFile },
-      dependencies: ["setup"],
+      dependencies: ["setup", "setup-roles"],
     },
     {
       name: "firefox",
       use: { ...devices["Desktop Firefox"], storageState: authFile },
-      dependencies: ["setup"],
+      dependencies: ["setup", "setup-roles"],
     },
     {
       name: "webkit",
       use: { ...devices["Desktop Safari"], storageState: authFile },
-      dependencies: ["setup"],
+      dependencies: ["setup", "setup-roles"],
     },
     {
       name: "iphone-13",
       use: { ...devices["iPhone 13"], storageState: authFile },
-      dependencies: ["setup"],
+      dependencies: ["setup", "setup-roles"],
     },
   ],
   webServer: {
