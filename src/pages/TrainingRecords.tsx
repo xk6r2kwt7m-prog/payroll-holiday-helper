@@ -292,6 +292,11 @@ function TrainingAdminView() {
               <TrainingQAChecklist />
             </TabsContent>
           )}
+          {canManageTraining && (
+            <TabsContent value="intelligence" className="mt-4">
+              <TrainingIntelligenceTab />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>

@@ -134,9 +134,16 @@ export function useModuleSignalMappings(moduleId?: string) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["module_signal_mappings", tenantId] });
       toast.success("Mapping removed");
+      if (tenantId) {
+        writeTrainingAudit({
+          tenant_id: tenantId,
+          action: "manual_mapping_deleted",
+          metadata: { mapping_id: variables },
+        });
+      }
     },
     onError: (err: any) => {
       toast.error("Failed to delete mapping: " + (err.message || "Unknown error"));
