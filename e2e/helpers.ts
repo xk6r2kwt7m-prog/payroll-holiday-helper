@@ -3,12 +3,22 @@
  *
  * - Console error / pageerror capture
  * - Safe protected-route navigation with 3-state result
+ * - Per-role authentication utilities
  * - Assertion utilities
  */
 import { type Page, expect } from "@playwright/test";
+import fs from "fs";
+import path from "path";
+
+// ──────────────────────────────────────────────────────────────────
+// Error capture
+// ──────────────────────────────────────────────────────────────────
 
 /** Attach console + pageerror listeners, return arrays to assert later. */
-export function captureErrors(page: Page) {
+export function captureErrors(page: Page): {
+  consoleErrors: string[];
+  pageErrors: string[];
+} {
   const consoleErrors: string[] = [];
   const pageErrors: string[] = [];
 
@@ -32,10 +42,14 @@ export function assertNoErrors({
 }: {
   consoleErrors: string[];
   pageErrors: string[];
-}) {
+}): void {
   expect(pageErrors, "Uncaught page errors").toEqual([]);
   expect(consoleErrors, "Console errors").toEqual([]);
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Protected-route navigation
+// ──────────────────────────────────────────────────────────────────
 
 /**
  * Navigation result — 3 explicit states:
@@ -52,21 +66,35 @@ export interface NavResult {
 /**
  * Navigate to a protected route and wait for the route to fully settle.
  *
- * 1. goto the path with networkidle to let redirects + data loads finish
- * 2. check final URL to classify state
- * 3. if on target, wait for meaningful DOM content before returning
+ * Uses domcontentloaded (fast, reliable) plus explicit web-first
+ * assertions instead of the flaky networkidle strategy.
+ *
+ * Classification:
+ *  1. goto path with domcontentloaded
+ *  2. wait for SPA router to settle (poll URL for stability)
+ *  3. classify final URL:
+ *     a) /auth → "auth"
+ *     b) target route with visible content → "target"
+ *     c) anything else → "unknown"
  */
 export async function navigateProtected(
   page: Page,
   path: string,
-  /** Max time (ms) to wait for the route to settle */
+  /** Max time (ms) to wait for route to settle */
   timeout = 15_000
 ): Promise<NavResult> {
-  // Navigate and wait for network to quiet down
-  await page.goto(path, { waitUntil: "networkidle", timeout });
+  // Navigate with fast domcontentloaded — don't wait for every XHR
+  await page.goto(path, { waitUntil: "domcontentloaded", timeout });
 
-  // Give SPA routers an extra moment to finalize redirects
-  await page.waitForTimeout(1_000);
+  // Wait for SPA router to finalize redirects by polling URL stability
+  let previousUrl = "";
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    const currentUrl = page.url();
+    if (currentUrl === previousUrl) break;
+    previousUrl = currentUrl;
+    await page.waitForTimeout(300);
+  }
 
   const finalUrl = page.url();
   const url = new URL(finalUrl);
@@ -80,10 +108,15 @@ export async function navigateProtected(
   const normalizedTarget = path.replace(/\/$/, "") || "/";
   const normalizedFinal = url.pathname.replace(/\/$/, "") || "/";
 
-  if (normalizedFinal === normalizedTarget || normalizedFinal.startsWith(normalizedTarget + "/")) {
+  if (
+    normalizedFinal === normalizedTarget ||
+    normalizedFinal.startsWith(normalizedTarget + "/")
+  ) {
     // Wait for at least one meaningful element (not a blank white page)
     try {
-      await page.locator("main, [role='main'], h1, h2, table, [data-testid]").first()
+      await page
+        .locator("main, [role='main'], h1, h2, table, [data-testid]")
+        .first()
         .waitFor({ state: "visible", timeout: 10_000 });
       return { state: "target", finalUrl };
     } catch {
@@ -96,17 +129,19 @@ export async function navigateProtected(
   return { state: "unknown", finalUrl };
 }
 
+// ──────────────────────────────────────────────────────────────────
+// Unique names
+// ──────────────────────────────────────────────────────────────────
+
 /** Generate a unique-ish name for test entities to avoid collisions. */
-export function uniqueName(prefix = "E2E") {
+export function uniqueName(prefix = "E2E"): string {
   return `${prefix}_${Date.now().toString(36)}`;
 }
 
-/**
- * Multi-role authentication helper.
- *
- * Reads optional per-role credentials from environment variables.
- * Returns null if the role's credentials are not configured.
- */
+// ──────────────────────────────────────────────────────────────────
+// Multi-role authentication
+// ──────────────────────────────────────────────────────────────────
+
 export interface RoleCredentials {
   email: string;
   password: string;
@@ -115,7 +150,10 @@ export interface RoleCredentials {
 const ROLE_ENV_MAP = {
   admin: { email: "E2E_ADMIN_EMAIL", password: "E2E_ADMIN_PASSWORD" },
   manager: { email: "E2E_MANAGER_EMAIL", password: "E2E_MANAGER_PASSWORD" },
-  supervisor: { email: "E2E_SUPERVISOR_EMAIL", password: "E2E_SUPERVISOR_PASSWORD" },
+  supervisor: {
+    email: "E2E_SUPERVISOR_EMAIL",
+    password: "E2E_SUPERVISOR_PASSWORD",
+  },
   staff: { email: "E2E_STAFF_EMAIL", password: "E2E_STAFF_PASSWORD" },
 } as const;
 
@@ -135,8 +173,20 @@ export function hasRoleCredentials(role: TestRole): boolean {
 }
 
 /**
- * Authenticate as a specific role in a fresh browser context.
- * Returns the storageState path, or null if credentials missing.
+ * Path to the storageState file for a specific role.
+ * Stored in e2e/.auth/<role>.json alongside the primary user.json.
+ */
+export function roleAuthFile(role: TestRole): string {
+  return path.join(__dirname, ".auth", `${role}.json`);
+}
+
+/**
+ * Authenticate as a specific role and persist storageState to disk.
+ *
+ * If a cached storageState file already exists for this role it is reused
+ * (the auth setup project creates them once per run).
+ *
+ * Falls back to live login if no cached file exists.
  */
 export async function authenticateAsRole(
   page: Page,
@@ -145,13 +195,41 @@ export async function authenticateAsRole(
   const creds = getRoleCredentials(role);
   if (!creds) return false;
 
-  await page.goto("/auth");
+  const stateFile = roleAuthFile(role);
+
+  // If cached state exists, apply it and navigate to trigger session restore
+  if (fs.existsSync(stateFile)) {
+    try {
+      const state = JSON.parse(fs.readFileSync(stateFile, "utf-8"));
+      // Only reuse if the file has actual cookies/storage
+      if (state.cookies?.length > 0 || state.origins?.length > 0) {
+        await page.context().addCookies(state.cookies || []);
+        await page.goto("/", { waitUntil: "domcontentloaded" });
+        // Verify we're actually logged in
+        await page.waitForTimeout(1_000);
+        if (!page.url().includes("/auth")) {
+          return true;
+        }
+      }
+    } catch {
+      // Cached file corrupt — fall through to live login
+    }
+  }
+
+  // Live login
+  await page.goto("/auth", { waitUntil: "domcontentloaded" });
   await page.getByPlaceholder(/email/i).fill(creds.email);
   await page.getByPlaceholder(/password/i).fill(creds.password);
   await page.getByRole("button", { name: /sign in/i }).click();
 
   try {
-    await page.waitForURL((url) => !url.pathname.includes("/auth"), { timeout: 15_000 });
+    await page.waitForURL((url) => !url.pathname.includes("/auth"), {
+      timeout: 15_000,
+    });
+    // Persist for reuse in subsequent tests this run
+    const authDir = path.dirname(stateFile);
+    fs.mkdirSync(authDir, { recursive: true });
+    await page.context().storageState({ path: stateFile });
     return true;
   } catch {
     return false;

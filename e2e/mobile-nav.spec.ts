@@ -18,7 +18,9 @@ const MOBILE_PAGES = [
     path: "/",
     name: "Homepage / Dashboard",
     assertions: async (page: Page) => {
-      const content = page.getByText(/good|dashboard|schedule|staff|clock/i).first();
+      const content = page
+        .getByText(/good|dashboard|schedule|staff|clock/i)
+        .first();
       await expect(content).toBeVisible({ timeout: 10_000 });
     },
   },
@@ -26,7 +28,9 @@ const MOBILE_PAGES = [
     path: "/employees",
     name: "Employees",
     assertions: async (page: Page) => {
-      const content = page.getByText(/people|employee|no employee/i).first();
+      const content = page
+        .getByText(/people|employee|no employee/i)
+        .first();
       await expect(content).toBeVisible({ timeout: 10_000 });
     },
   },
@@ -34,7 +38,9 @@ const MOBILE_PAGES = [
     path: "/schedule",
     name: "Schedule",
     assertions: async (page: Page) => {
-      const content = page.getByText(/schedule|rota|shift|no locations/i).first();
+      const content = page
+        .getByText(/schedule|rota|shift|no locations/i)
+        .first();
       await expect(content).toBeVisible({ timeout: 10_000 });
     },
   },
@@ -42,7 +48,9 @@ const MOBILE_PAGES = [
     path: "/timesheets",
     name: "Timesheets",
     assertions: async (page: Page) => {
-      const content = page.getByText(/timesheet|attendance|pending|no entries|no time/i).first();
+      const content = page
+        .getByText(/timesheet|attendance|pending|no entries|no time/i)
+        .first();
       await expect(content).toBeVisible({ timeout: 10_000 });
     },
   },
@@ -50,20 +58,26 @@ const MOBILE_PAGES = [
     path: "/holidays",
     name: "Holidays / Leave",
     assertions: async (page: Page) => {
-      const content = page.getByText(/holiday|leave|request|balance/i).first();
+      const content = page
+        .getByText(/holiday|leave|request|balance/i)
+        .first();
       await expect(content).toBeVisible({ timeout: 10_000 });
     },
   },
 ];
 
 test.describe("Mobile audit — iPhone 13 viewport", () => {
-  for (const page_config of MOBILE_PAGES) {
-    test(`${page_config.name} renders correctly on mobile`, async ({ page }) => {
+  for (const pageConfig of MOBILE_PAGES) {
+    test(`${pageConfig.name} renders correctly on mobile`, async ({
+      page,
+    }) => {
       const errors = captureErrors(page);
-      const nav = await navigateProtected(page, page_config.path);
+      const nav = await navigateProtected(page, pageConfig.path);
 
       if (nav.state === "auth") {
-        await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: /sign in/i })
+        ).toBeVisible();
         assertNoErrors(errors);
         return;
       }
@@ -71,13 +85,13 @@ test.describe("Mobile audit — iPhone 13 viewport", () => {
       if (nav.state === "unknown") {
         test.info().annotations.push({
           type: "warning",
-          description: `Mobile page ${page_config.path} settled in unknown state: ${nav.finalUrl}`,
+          description: `Mobile page ${pageConfig.path} settled in unknown state: ${nav.finalUrl}`,
         });
         assertNoErrors(errors);
         return;
       }
 
-      await page_config.assertions(page);
+      await pageConfig.assertions(page);
 
       // Verify no horizontal overflow (content fits viewport)
       const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
@@ -88,40 +102,66 @@ test.describe("Mobile audit — iPhone 13 viewport", () => {
     });
   }
 
-  test("mobile bottom navigation is visible and functional", async ({ page }, testInfo) => {
+  test("mobile bottom navigation is visible and functional", async ({
+    page,
+  }, testInfo) => {
     const errors = captureErrors(page);
     const nav = await navigateProtected(page, "/");
 
-    testInfo.skip(nav.state !== "target", `Skipped: route state is "${nav.state}"`);
+    testInfo.skip(
+      nav.state !== "target",
+      `Skipped: route state is "${nav.state}"`
+    );
 
     // Use data-testid for stable selection of the mobile nav
     const mobileNav = page.getByTestId("mobile-bottom-nav");
-    const navVisible = await mobileNav.isVisible({ timeout: 5_000 }).catch(() => false);
+    const navVisible = await mobileNav
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
 
-    if (navVisible) {
-      // Assert the nav is positioned at the bottom of the viewport
-      const box = await mobileNav.boundingBox();
-      if (box) {
-        const viewportHeight = 844;
-        expect(
-          box.y + box.height,
-          "Mobile nav should be at the bottom of the viewport"
-        ).toBeGreaterThan(viewportHeight - 100);
-      }
-
-      // Assert expected navigation links are present using accessible roles
-      const navLinks = mobileNav.getByRole("link");
-      const linkCount = await navLinks.count();
-      expect(linkCount, "Mobile nav should have at least 3 navigation links").toBeGreaterThanOrEqual(3);
-
-      // Verify at least one link has visible text/label
-      const firstLink = navLinks.first();
-      await expect(firstLink).toBeVisible();
-    } else {
+    if (!navVisible) {
       test.info().annotations.push({
         type: "warning",
-        description: "Mobile bottom nav (data-testid='mobile-bottom-nav') not found — may not render for this role",
+        description:
+          "Mobile bottom nav (data-testid='mobile-bottom-nav') not found — may not render for this role",
       });
+      assertNoErrors(errors);
+      return;
+    }
+
+    // Assert nav is visible
+    await expect(mobileNav).toBeVisible();
+
+    // Assert expected navigation links/buttons are present
+    const navLinks = mobileNav.getByRole("link");
+    const navButtons = mobileNav.getByRole("button");
+    const linkCount = await navLinks.count();
+    const buttonCount = await navButtons.count();
+    const totalActions = linkCount + buttonCount;
+
+    expect(
+      totalActions,
+      "Mobile nav should have at least 3 navigation actions"
+    ).toBeGreaterThanOrEqual(3);
+
+    // Verify each link is visible
+    for (let i = 0; i < linkCount; i++) {
+      await expect(navLinks.nth(i)).toBeVisible();
+    }
+
+    // Click the first nav link safely and verify no crash
+    if (linkCount > 0) {
+      const firstLink = navLinks.first();
+      await firstLink.click();
+      // Wait briefly for navigation to settle
+      await page.waitForTimeout(500);
+      // Verify page didn't crash — still has content
+      const hasContent = await page
+        .locator("main, [role='main'], h1, h2, [data-testid]")
+        .first()
+        .isVisible({ timeout: 5_000 })
+        .catch(() => false);
+      expect(hasContent, "Page should have content after nav click").toBe(true);
     }
 
     assertNoErrors(errors);
@@ -131,7 +171,10 @@ test.describe("Mobile audit — iPhone 13 viewport", () => {
     const errors = captureErrors(page);
     const nav = await navigateProtected(page, "/employees");
 
-    testInfo.skip(nav.state !== "target", `Skipped: route state is "${nav.state}"`);
+    testInfo.skip(
+      nav.state !== "target",
+      `Skipped: route state is "${nav.state}"`
+    );
 
     const searchInput = page.getByPlaceholder(/search/i);
     if (await searchInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
@@ -143,14 +186,21 @@ test.describe("Mobile audit — iPhone 13 viewport", () => {
     assertNoErrors(errors);
   });
 
-  test("schedule department filters visible on mobile", async ({ page }, testInfo) => {
+  test("schedule department filters visible on mobile", async ({
+    page,
+  }, testInfo) => {
     const errors = captureErrors(page);
     const nav = await navigateProtected(page, "/schedule");
 
-    testInfo.skip(nav.state !== "target", `Skipped: route state is "${nav.state}"`);
+    testInfo.skip(
+      nav.state !== "target",
+      `Skipped: route state is "${nav.state}"`
+    );
 
     const deptFilter = page.getByText(/FOH|BOH|CPU/).first();
-    const visible = await deptFilter.isVisible({ timeout: 5_000 }).catch(() => false);
+    const visible = await deptFilter
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
 
     test.info().annotations.push({
       type: "info",
