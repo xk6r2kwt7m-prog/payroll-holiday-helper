@@ -5,33 +5,33 @@ import {
 const CAPABILITIES = [
   {
     icon: CalendarDays,
-    title: "Workforce and scheduling",
-    desc: "Plan rotas, manage staffing visibility and keep labour aligned to operational reality.",
+    title: "Workforce & scheduling",
+    desc: "Plan rotas, track attendance and keep labour aligned to what the operation actually needs.",
   },
   {
     icon: Banknote,
-    title: "Payroll and people administration",
-    desc: "Run payroll workflows and core people administration without losing sight of what is happening operationally.",
+    title: "Payroll & people admin",
+    desc: "Run payroll workflows alongside operational context — not in a silo disconnected from the floor.",
   },
   {
     icon: GraduationCap,
-    title: "Training and readiness",
-    desc: "Track training, sign-off and completion so staff are prepared for the work they are scheduled to do.",
+    title: "Training & readiness",
+    desc: "Know who is trained, who is overdue and who should not be on the rota yet.",
   },
   {
     icon: ShieldCheck,
-    title: "Compliance and governance",
-    desc: "Manage documents, expiry dates, onboarding and compliance follow-through with clearer accountability.",
+    title: "Compliance & governance",
+    desc: "Track documents, expiry dates, onboarding and right-to-work with clear accountability.",
   },
   {
     icon: Activity,
     title: "Operational intelligence",
-    desc: "Connect standards, signals and effectiveness logic so managers can see where issues are building.",
+    desc: "Surface where standards are holding and where issues are building — before they hit service.",
   },
   {
     icon: SlidersHorizontal,
     title: "Manager control",
-    desc: "See what is overdue, incomplete, weak or unresolved without pulling the picture together manually.",
+    desc: "One view of what is overdue, incomplete or unresolved. No more stitching the picture together manually.",
   },
 ];
 
@@ -46,7 +46,7 @@ export function ValueCards({ className }: ValueCardsProps) {
         {CAPABILITIES.map((v) => (
           <div
             key={v.title}
-            className="rounded-xl border border-border bg-card p-5 space-y-2.5"
+            className="rounded-xl border border-border bg-card p-5 space-y-2.5 hover:border-primary/30 transition-colors"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
               <v.icon className="h-[18px] w-[18px] text-primary" />
