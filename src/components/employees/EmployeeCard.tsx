@@ -156,8 +156,10 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
       {canViewSensitive && (
         <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-border flex-wrap min-w-0">
           <SensitiveField
+            fieldKey={`emp-${employee.id}-hourly_rate`}
             value={formatCurrency(employee.hourly_rate)}
-            label="Rate"
+            category="compensation"
+            employeeId={employee.id}
             size="sm"
           />
           {employee.pay_type && (
