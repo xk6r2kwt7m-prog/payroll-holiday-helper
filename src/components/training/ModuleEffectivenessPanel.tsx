@@ -15,9 +15,7 @@ import {
 } from "@/lib/signal-quality";
 import {
   computeEffectiveness,
-  SCORE_LABELS,
   SCORE_COLORS,
-  RESULT_LABELS,
   getModuleSignalTypes,
   type EffectivenessRecord,
   type EffectivenessScore,
