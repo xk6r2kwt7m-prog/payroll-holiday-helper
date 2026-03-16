@@ -190,7 +190,7 @@ const Auth = () => {
         </div>
 
         {/* Right login/signup panel */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div id="auth-panel" className="flex-1 flex flex-col items-center justify-center p-6">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
