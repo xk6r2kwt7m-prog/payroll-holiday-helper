@@ -57,6 +57,16 @@ const Auth = () => {
     if (user) navigate("/");
   }, [user, navigate]);
 
+  const scrollToPlatform = () => {
+    document.getElementById("platform-overview")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const scrollToDemo = () => {
+    setMode("signup");
+    setErrors({});
+    document.getElementById("auth-panel")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const handleLogin = async () => {
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
@@ -150,8 +160,8 @@ const Auth = () => {
               </p>
 
               <div className="flex items-center gap-3 mb-10">
-                <Button className="gradient-primary">Book a demo</Button>
-                <Button variant="outline">See the platform</Button>
+                <Button className="gradient-primary" onClick={scrollToDemo}>Book a demo</Button>
+                <Button variant="outline" onClick={scrollToPlatform}>See the platform</Button>
               </div>
 
               {/* Trust strip */}
@@ -180,7 +190,7 @@ const Auth = () => {
         </div>
 
         {/* Right login/signup panel */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div id="auth-panel" className="flex-1 flex flex-col items-center justify-center p-6">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -338,6 +348,9 @@ const Auth = () => {
                       ? "Don't have an account? Switch to Create Account above."
                       : "Already have an account? Switch to Sign In above."}
                   </p>
+                  <p className="mt-3 text-[11px] text-muted-foreground/70 text-center leading-relaxed">
+                    Want a walkthrough of the platform? Create an account or contact us to arrange a demo.
+                  </p>
                 </>
               )}
             </div>
@@ -377,8 +390,8 @@ const Auth = () => {
             Rotas, payroll, training, compliance and follow-through — connected in one hospitality system.
           </p>
           <div className="flex items-center justify-center gap-3 mt-5">
-            <Button className="gradient-primary" size="sm">Book a demo</Button>
-            <Button variant="outline" size="sm">See the platform</Button>
+            <Button className="gradient-primary" size="sm" onClick={scrollToDemo}>Book a demo</Button>
+            <Button variant="outline" size="sm" onClick={scrollToPlatform}>See the platform</Button>
           </div>
         </section>
 
@@ -456,7 +469,7 @@ const Auth = () => {
         </section>
 
         {/* Capability overview */}
-        <section className="bg-card/50 border-y border-border">
+        <section id="platform-overview" className="bg-card/50 border-y border-border scroll-mt-4">
           <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <div className="text-center mb-6 sm:mb-8">
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
@@ -498,7 +511,7 @@ const Auth = () => {
         {/* Final CTA */}
         <section className="bg-primary/[0.04] border-y border-border">
           <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
-            <PricingSection />
+            <PricingSection onBookDemo={scrollToDemo} onSeePlatform={scrollToPlatform} />
           </div>
         </section>
 
