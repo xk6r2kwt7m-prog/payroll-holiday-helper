@@ -19,6 +19,8 @@ import {
 } from "@/hooks/useTrainingLibrary";
 import { COMPLETION_TYPES } from "@/hooks/useTrainingModules";
 import { QuizTaker } from "@/components/training/QuizTaker";
+import { LessonViewer } from "@/components/training/LessonViewer";
+import { getLessonContent } from "@/data/training-standards/lessons";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
@@ -283,6 +285,8 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
   onStartQuiz: () => void;
 }) {
   const navigate = useNavigate();
+  const [showLesson, setShowLesson] = useState(false);
+  const [lessonCompleted, setLessonCompleted] = useState(false);
   const doc = assignment.training_library;
   const needsAck = doc?.requires_acknowledgement && !assignment.acknowledged_at;
   const needsCompletion = doc?.requires_completion && !assignment.completed_at;
@@ -292,11 +296,38 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
   const needsSignoff = assignment.signoff_required && !assignment.signed_off_at;
   const staffStatus = getStaffStatus(assignment);
 
+  // Check for lesson content
+  const lessonContent = doc?.title ? getLessonContent(doc.title) : null;
+
   const handleOpenContent = () => {
     if (isInternalPage) navigate(doc.content_url!);
     else if (doc?.content_type === "external_link" && doc?.content_url)
       window.open(doc.content_url, "_blank", "noopener,noreferrer");
   };
+
+  // Lesson view — show before quiz if lesson content exists
+  if (showLesson && lessonContent && doc) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">{doc.title} — Lesson</DialogTitle>
+          </DialogHeader>
+          <LessonViewer
+            lesson={lessonContent}
+            onLessonComplete={() => {
+              setLessonCompleted(true);
+              setShowLesson(false);
+              // If quiz is needed, go to quiz; otherwise back to detail
+              if (needsQuiz && !quizPassed) {
+                onStartQuiz();
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // Quiz view — with lock guard
   if (showQuiz && doc) {
@@ -351,6 +382,14 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
         </DialogHeader>
         <div className="space-y-4 pt-2">
           {doc?.summary && <p className="text-sm text-muted-foreground">{doc.summary}</p>}
+
+          {/* Lesson content button */}
+          {lessonContent && (
+            <Button onClick={() => setShowLesson(true)} variant="default" className="w-full gap-2">
+              <BookOpen className="h-4 w-4" />
+              {lessonCompleted ? "Review Lesson" : "Start Lesson"}
+            </Button>
+          )}
 
           {/* Content link */}
           {(isInternalPage || (doc?.content_type === "external_link" && doc?.content_url)) && (
@@ -416,9 +455,22 @@ function AssignmentDetailDialog({ assignment, employeeId, open, onOpenChange, on
               </div>
             )}
             {needsQuiz && !quizPassed && (
-              <Button onClick={onStartQuiz} className="w-full gap-2" size="lg">
+              <Button
+                onClick={() => {
+                  // If lesson exists and hasn't been read yet, show lesson first
+                  if (lessonContent && !lessonCompleted) {
+                    setShowLesson(true);
+                  } else {
+                    onStartQuiz();
+                  }
+                }}
+                className="w-full gap-2"
+                size="lg"
+              >
                 <GraduationCap className="h-4 w-4" />
-                {assignment.quiz_score != null ? "Retry Quiz" : "Take Quiz"}
+                {lessonContent && !lessonCompleted
+                  ? "Start Lesson & Quiz"
+                  : assignment.quiz_score != null ? "Retry Quiz" : "Take Quiz"}
               </Button>
             )}
             {needsAck && !needsQuiz && (
