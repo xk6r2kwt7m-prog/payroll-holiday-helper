@@ -1,4 +1,4 @@
-import { Edit2, Trash2, Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus } from "lucide-react";
+import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,12 +46,12 @@ interface EmployeeCardProps {
   canViewSensitive?: boolean;
   onArchive: (employee: Employee) => void;
   onMarkLeaver: (employee: Employee) => void;
-  onDelete?: (employee: Employee) => void;
+  
   onViewDetails: (employee: Employee) => void;
   index: number;
 }
 
-export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onDelete, onViewDetails, index }: EmployeeCardProps) {
+export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
@@ -135,17 +135,6 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
                 >
                   <Archive className="h-4 w-4 mr-2" /> Archive
                 </DropdownMenuItem>
-              )}
-              {onDelete && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={(e) => { e.stopPropagation(); onDelete(employee); }}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" /> Delete Permanently
-                  </DropdownMenuItem>
-                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
