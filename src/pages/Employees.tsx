@@ -67,10 +67,13 @@ const Employees = () => {
   const includeArchived = statusFilter === "archived";
   const { data: employees = [], isLoading, error } = useEmployees(includeArchived);
   const deleteEmployee = useDeleteEmployee();
+  const archiveEmployee = useArchiveEmployee();
+  const updateEmployee = useUpdateEmployee();
   const { isAdmin } = useAuth();
   const canEdit = usePermission("edit_employees");
   const canManageLifecycle = usePermission("manage_lifecycle");
   const canViewSensitive = usePermission("reveal_sensitive");
+  const [pendingDeleteEmployee, setPendingDeleteEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     const dept = searchParams.get("dept") as Department;
