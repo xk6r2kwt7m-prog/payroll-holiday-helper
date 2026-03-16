@@ -348,6 +348,9 @@ const Auth = () => {
                       ? "Don't have an account? Switch to Create Account above."
                       : "Already have an account? Switch to Sign In above."}
                   </p>
+                  <p className="mt-3 text-[11px] text-muted-foreground/70 text-center leading-relaxed">
+                    Want a walkthrough of the platform? Create an account or contact us to arrange a demo.
+                  </p>
                 </>
               )}
             </div>
