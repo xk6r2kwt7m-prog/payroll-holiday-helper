@@ -2,6 +2,7 @@
  * Hook for managing module-to-signal mappings.
  * Reads from module_signal_mappings table, provides CRUD mutations.
  * Admin-only — gated by caller's permission check.
+ * Includes audit logging for all mapping changes.
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import type { SignalMapping, MappingSource } from "@/lib/signal-mapping";
+import { writeTrainingAudit } from "@/hooks/useTrainingLibrary";
 import { toast } from "sonner";
 
 export function useModuleSignalMappings(moduleId?: string) {
@@ -76,8 +78,21 @@ export function useModuleSignalMappings(moduleId?: string) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["module_signal_mappings", tenantId] });
+      if (tenantId) {
+        const action = variables.mapping_source === "manual" ? "manual_mapping_added" : "mapping_enabled";
+        writeTrainingAudit({
+          tenant_id: tenantId,
+          action,
+          metadata: {
+            module_id: variables.module_id,
+            signal_tag: variables.signal_tag,
+            mapping_source: variables.mapping_source,
+            is_active: variables.is_active,
+          },
+        });
+      }
     },
     onError: (err: any) => {
       toast.error("Failed to save mapping: " + (err.message || "Unknown error"));
@@ -94,8 +109,15 @@ export function useModuleSignalMappings(moduleId?: string) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["module_signal_mappings", tenantId] });
+      if (tenantId) {
+        writeTrainingAudit({
+          tenant_id: tenantId,
+          action: variables.is_active ? "mapping_enabled" : "mapping_disabled",
+          metadata: { mapping_id: variables.id, is_active: variables.is_active },
+        });
+      }
     },
     onError: (err: any) => {
       toast.error("Failed to toggle mapping: " + (err.message || "Unknown error"));
@@ -112,9 +134,16 @@ export function useModuleSignalMappings(moduleId?: string) {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["module_signal_mappings", tenantId] });
       toast.success("Mapping removed");
+      if (tenantId) {
+        writeTrainingAudit({
+          tenant_id: tenantId,
+          action: "manual_mapping_deleted",
+          metadata: { mapping_id: variables },
+        });
+      }
     },
     onError: (err: any) => {
       toast.error("Failed to delete mapping: " + (err.message || "Unknown error"));
