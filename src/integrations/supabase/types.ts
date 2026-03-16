@@ -2353,6 +2353,56 @@ export type Database = {
           },
         ]
       }
+      module_signal_mappings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          mapping_source: string
+          module_id: string
+          notes: string | null
+          priority: number
+          signal_tag: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          mapping_source?: string
+          module_id: string
+          notes?: string | null
+          priority?: number
+          signal_tag: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          mapping_source?: string
+          module_id?: string
+          notes?: string | null
+          priority?: number
+          signal_tag?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_signal_mappings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           announcements: boolean
