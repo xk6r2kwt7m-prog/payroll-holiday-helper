@@ -31,6 +31,8 @@ interface Props {
   allRecords: EffectivenessRecord[];
   /** Module's review_insight_tags from standards_metadata */
   reviewInsightTags: ReviewInsightTag[] | undefined | null;
+  /** Signal quality status for this module, used to adjust confidence */
+  signalQuality?: SignalQualityStatus | null;
 }
 
 function getScoreIcon(score: EffectivenessScore) {
