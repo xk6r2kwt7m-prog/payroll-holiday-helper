@@ -466,7 +466,7 @@ const Auth = () => {
         </section>
 
         {/* Capability overview */}
-        <section className="bg-card/50 border-y border-border">
+        <section id="platform-overview" className="bg-card/50 border-y border-border scroll-mt-4">
           <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <div className="text-center mb-6 sm:mb-8">
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
