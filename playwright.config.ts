@@ -2,7 +2,6 @@ import { defineConfig, devices } from "@playwright/test";
 import dotenv from "dotenv";
 import path from "path";
 
-// Load test-specific env vars (E2E_USER_EMAIL, E2E_USER_PASSWORD, BASE_URL)
 dotenv.config({ path: path.resolve(__dirname, ".env.test") });
 
 const baseURL = process.env.BASE_URL || "http://localhost:5173";
@@ -21,13 +20,10 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
-    // --- Auth setup (runs first, saves storageState) ---
     {
       name: "setup",
       testMatch: /auth\.setup\.ts/,
     },
-
-    // --- Desktop browsers (depend on setup) ---
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"], storageState: authFile },
@@ -43,8 +39,6 @@ export default defineConfig({
       use: { ...devices["Desktop Safari"], storageState: authFile },
       dependencies: ["setup"],
     },
-
-    // --- Mobile (depends on setup) ---
     {
       name: "iphone-13",
       use: { ...devices["iPhone 13"], storageState: authFile },

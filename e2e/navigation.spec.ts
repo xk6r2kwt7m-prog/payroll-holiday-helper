@@ -1,51 +1,53 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Protected pages", () => {
-  /**
-   * When authenticated (E2E credentials set): pages should render
-   * meaningful content, not redirect back to /auth.
-   *
-   * When unauthenticated: the app's route guard should redirect to /auth.
-   * Both outcomes are valid depending on env setup.
-   */
-
-  test("/employees — shows content or redirects to /auth", async ({ page }) => {
+  test("/employees — shows employee content or redirects to /auth", async ({ page }) => {
     await page.goto("/employees");
     const url = page.url();
 
     if (url.includes("/auth")) {
-      // Unauthenticated — redirect is correct behaviour
       await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
     } else {
-      // Authenticated — verify employee-related content is present
+      // Verify employee-specific content
       await expect(
-        page.getByRole("heading").or(page.locator("table")).first()
+        page.getByRole("heading", { name: /employee/i })
+          .or(page.getByRole("columnheader", { name: /name|employee|department/i }))
+          .or(page.getByTestId("employees-page"))
+          .first()
       ).toBeVisible({ timeout: 10_000 });
     }
   });
 
-  test("/schedule — shows content or redirects to /auth", async ({ page }) => {
+  test("/schedule — shows schedule content or redirects to /auth", async ({ page }) => {
     await page.goto("/schedule");
     const url = page.url();
 
     if (url.includes("/auth")) {
       await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
     } else {
+      // Verify schedule-specific content
       await expect(
-        page.getByRole("heading").or(page.locator("[data-testid]")).first()
+        page.getByRole("heading", { name: /schedule|rota|shift/i })
+          .or(page.getByRole("grid"))
+          .or(page.getByTestId("schedule-page"))
+          .first()
       ).toBeVisible({ timeout: 10_000 });
     }
   });
 
-  test("/payroll — shows content or redirects to /auth", async ({ page }) => {
+  test("/payroll — shows payroll content or redirects to /auth", async ({ page }) => {
     await page.goto("/payroll");
     const url = page.url();
 
     if (url.includes("/auth")) {
       await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
     } else {
+      // Verify payroll-specific content
       await expect(
-        page.getByRole("heading").or(page.locator("table")).first()
+        page.getByRole("heading", { name: /payroll|pay run|salary/i })
+          .or(page.getByRole("columnheader", { name: /amount|gross|net|employee/i }))
+          .or(page.getByTestId("payroll-page"))
+          .first()
       ).toBeVisible({ timeout: 10_000 });
     }
   });
