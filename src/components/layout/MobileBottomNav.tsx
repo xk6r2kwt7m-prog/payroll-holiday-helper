@@ -189,7 +189,7 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border pb-safe">
+    <nav data-testid="mobile-bottom-nav" className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border pb-safe">
       <div className="flex items-center justify-around px-1 h-16">
         {visibleMainNav.map((item) => {
           const isActive = isNavActive(item);
