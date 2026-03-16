@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { motion } from "framer-motion";
 import {
-  CalendarDays, Clock, Users, ShieldCheck, ChartBar, FileText, ChevronDown,
-  MailCheck,
+  ChevronDown, MailCheck, Building2, Globe, Banknote, GraduationCap,
+  ShieldCheck, Activity,
 } from "lucide-react";
 import ugloIcon from "@/assets/uglo-icon.png";
 import { FAQ } from "@/components/marketing/FAQ";
@@ -31,13 +31,13 @@ const signupSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters").max(72),
 });
 
-const features = [
-  { icon: Clock, label: "Rota & Scheduling", desc: "Build rotas in minutes with smart templates & compliance checks" },
-  { icon: CalendarDays, label: "Holiday Management", desc: "Track entitlements, accruals & balances per leave year" },
-  { icon: ChartBar, label: "Payroll Processing", desc: "Accurate UK payroll with timesheets & service charge" },
-  { icon: Users, label: "Employee Records", desc: "Contracts, documents & onboarding in one place" },
-  { icon: ShieldCheck, label: "Compliance", desc: "UK Working Time Regulations & audit trails built in" },
-  { icon: FileText, label: "Reports & Analytics", desc: "Labour costs, schedule efficiency & payroll insights" },
+const trustStrip = [
+  { icon: Building2, label: "Built for hospitality teams" },
+  { icon: Globe, label: "Multi-site ready" },
+  { icon: Banknote, label: "Supports UK payroll workflows" },
+  { icon: GraduationCap, label: "Training and compliance built in" },
+  { icon: ShieldCheck, label: "Tenant-isolated data" },
+  { icon: Activity, label: "Operational intelligence included" },
 ];
 
 const Auth = () => {
@@ -137,41 +137,45 @@ const Auth = () => {
                 <img src={ugloIcon} alt="UGLŌ" className="h-14 w-14 rounded-2xl shadow-lg" />
                 <div>
                   <h1 className="text-2xl font-bold text-foreground tracking-tight">UGLŌ</h1>
-                  <p className="text-sm text-muted-foreground font-medium">Hospitality People Platform</p>
+                  <p className="text-sm text-muted-foreground font-medium">Hospitality Workforce Operations Platform</p>
                 </div>
               </div>
 
               <h2 className="text-3xl xl:text-4xl font-bold text-foreground leading-tight mb-3">
-                Staff management,<br />
-                <span className="text-primary">beautifully simple.</span>
+                Control labour, training,<br />
+                compliance and execution<br />
+                <span className="text-primary">in one hospitality platform.</span>
               </h2>
-              <p className="text-muted-foreground mb-10 max-w-md">
-                Rotas, payroll, holidays & compliance — the all-in-one platform built for hospitality teams.
+              <p className="text-muted-foreground mb-8 max-w-md leading-relaxed">
+                UGLŌ helps restaurants, kitchens and multi-site hospitality teams manage scheduling, payroll, training, compliance and operational follow-through in one system built for real shift operations.
               </p>
 
-              <div className="grid grid-cols-2 gap-4">
-                {features.map((f, i) => (
+              <div className="flex items-center gap-3 mb-10">
+                <Button className="gradient-primary">Book a demo</Button>
+                <Button variant="outline">See the platform</Button>
+              </div>
+
+              {/* Trust strip */}
+              <div className="grid grid-cols-2 gap-3">
+                {trustStrip.map((t, i) => (
                   <motion.div
-                    key={f.label}
+                    key={t.label}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 + i * 0.08 }}
-                    className="flex items-start gap-3 rounded-xl bg-card/70 backdrop-blur-sm border border-border/50 p-3"
+                    className="flex items-center gap-2.5 rounded-xl bg-card/70 backdrop-blur-sm border border-border/50 px-3 py-2.5"
                   >
-                    <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary shrink-0">
-                      <f.icon className="h-4 w-4" />
+                    <div className="rounded-lg bg-primary/10 p-1.5 text-primary shrink-0">
+                      <t.icon className="h-3.5 w-3.5" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground leading-tight">{f.label}</p>
-                      <p className="text-[11px] text-muted-foreground leading-snug mt-0.5">{f.desc}</p>
-                    </div>
+                    <p className="text-[11px] font-medium text-muted-foreground leading-tight">{t.label}</p>
                   </motion.div>
                 ))}
               </div>
             </motion.div>
 
             <p className="mt-12 text-xs text-muted-foreground/60">
-              © {new Date().getFullYear()} UGLŌ · Hospitality People Platform
+              © {new Date().getFullYear()} UGLŌ · Hospitality Workforce Operations Platform
             </p>
           </div>
         </div>
@@ -250,9 +254,9 @@ const Auth = () => {
                     </button>
                   </div>
 
-                  <h1 className="text-xl font-semibold text-card-foreground text-center mb-1">
+                  <h2 className="text-xl font-semibold text-card-foreground text-center mb-1">
                     {mode === "login" ? "Welcome Back" : "Get Started"}
-                  </h1>
+                  </h2>
                   <p className="text-muted-foreground text-center text-sm mb-6">
                     {mode === "login"
                       ? "Sign in to your account"
@@ -339,15 +343,15 @@ const Auth = () => {
               )}
             </div>
 
-            {/* Mobile feature hints */}
+            {/* Mobile trust strip hints */}
             <div className="mt-6 grid grid-cols-3 gap-3 lg:hidden">
-              {features.slice(0, 3).map((f) => (
+              {trustStrip.slice(0, 3).map((t) => (
                 <div
-                  key={f.label}
+                  key={t.label}
                   className="flex flex-col items-center gap-1.5 rounded-xl bg-card/60 border border-border/30 p-3 text-center"
                 >
-                  <f.icon className="h-4 w-4 text-primary" />
-                  <span className="text-[10px] font-medium text-muted-foreground leading-tight">{f.label}</span>
+                  <t.icon className="h-4 w-4 text-primary" />
+                  <span className="text-[10px] font-medium text-muted-foreground leading-tight">{t.label}</span>
                 </div>
               ))}
             </div>
@@ -361,52 +365,76 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* ═══════ Trust content below the fold ═══════ */}
+      {/* ═══════ Content below the fold ═══════ */}
       <div className="border-t border-border">
-        {/* Why choose us */}
-        <section className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+        {/* Why hospitality teams need more than HR software */}
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
           <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Why choose UGLŌ?</h2>
-            <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto">
-              Designed around how hospitality teams actually work.
+            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Why hospitality teams need more than HR software</h2>
+          </div>
+          <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Most workforce tools stop at rotas and payroll. They help you schedule people and pay them, but they do not help you make sure those people are trained, compliant and operationally ready.
+            </p>
+            <p>
+              UGLŌ is built differently. It connects workforce management with training, compliance and operational follow-through so managers can see what is happening across the operation, not just what has been recorded.
+            </p>
+            <p>
+              When scheduling, payroll, training and compliance sit in separate systems, things get missed. Staff are scheduled before they are ready. Follow-up actions slip. Compliance gaps stay hidden until they become operational problems.
+            </p>
+            <p>
+              UGLŌ brings those workflows into one platform so managers can act earlier, control more and spend less time chasing information across disconnected tools.
             </p>
           </div>
-          <ValueCards />
         </section>
 
-        {/* Employer + Candidate conversion */}
-        <section className="bg-card/50 border-y border-border">
-          <div className="max-w-5xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-            <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-lg sm:text-2xl font-bold text-foreground">Who it's for</h2>
-              <p className="text-sm text-muted-foreground mt-1.5">One platform, two perspectives.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <EmployerConversion />
-              <CandidateConversion />
-            </div>
-          </div>
-        </section>
-
-        {/* Pricing */}
-        <section className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
-          <div className="text-center mb-8 sm:mb-10">
-            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Pricing</h2>
-            <p className="text-sm text-muted-foreground mt-1.5">Transparent and designed to grow with your team.</p>
-          </div>
-          <PricingSection />
-        </section>
-
-        {/* Security */}
+        {/* What UGLŌ covers */}
         <section className="bg-card/50 border-y border-border">
           <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
             <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-lg sm:text-2xl font-bold text-foreground">Security & privacy</h2>
-              <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto">
-                Data separation, role-based access, and audit visibility — included from the start.
+              <h2 className="text-lg sm:text-2xl font-bold text-foreground">What UGLŌ covers</h2>
+              <p className="text-sm text-muted-foreground mt-1.5 max-w-lg mx-auto">
+                Workforce scheduling, payroll, training, compliance and operational intelligence — connected in one hospitality platform.
               </p>
             </div>
-            <SecuritySection />
+            <ValueCards />
+          </div>
+        </section>
+
+        {/* Built for hospitality operations, not generic HR */}
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+          <div className="text-center mb-8 sm:mb-10">
+            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Built for hospitality operations, not generic HR</h2>
+          </div>
+          <EmployerConversion />
+        </section>
+
+        {/* What operators get */}
+        <section className="bg-card/50 border-y border-border">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+            <div className="text-center mb-8 sm:mb-10">
+              <h2 className="text-lg sm:text-2xl font-bold text-foreground">What operators get</h2>
+              <p className="text-sm text-muted-foreground mt-1.5">Operational outcomes from a connected workforce platform.</p>
+            </div>
+            <CandidateConversion />
+          </div>
+        </section>
+
+        {/* Problems UGLŌ solves */}
+        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+          <div className="text-center mb-8 sm:mb-10">
+            <h2 className="text-lg sm:text-2xl font-bold text-foreground">Problems UGLŌ solves for hospitality managers</h2>
+            <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto">
+              Common operational failures that happen when workforce, training and compliance are not connected.
+            </p>
+          </div>
+          <SecuritySection />
+        </section>
+
+        {/* Final CTA */}
+        <section className="bg-card/50 border-y border-border">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
+            <PricingSection />
           </div>
         </section>
 
@@ -414,7 +442,7 @@ const Auth = () => {
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-20">
           <div className="text-center mb-8 sm:mb-10">
             <h2 className="text-lg sm:text-2xl font-bold text-foreground">Frequently asked questions</h2>
-            <p className="text-sm text-muted-foreground mt-1.5">Common questions from operators and candidates.</p>
+            <p className="text-sm text-muted-foreground mt-1.5">Common questions from hospitality operators.</p>
           </div>
           <FAQ />
         </section>
@@ -426,7 +454,7 @@ const Auth = () => {
               <div className="flex items-center gap-2">
                 <img src={ugloIcon} alt="UGLŌ" className="h-6 w-6 rounded-lg" />
                 <span className="text-sm font-semibold text-foreground">UGLŌ</span>
-                <span className="text-xs text-muted-foreground">· Hospitality People Platform</span>
+                <span className="text-xs text-muted-foreground">· Hospitality Workforce Operations Platform</span>
               </div>
               <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
                 <Link to="/privacy" className="hover:text-foreground transition-colors py-1">Privacy</Link>

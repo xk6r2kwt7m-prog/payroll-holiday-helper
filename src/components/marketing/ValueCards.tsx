@@ -1,16 +1,38 @@
 import {
-  Smartphone, Zap, Shield, BarChart3, Users, MessageSquare, ClipboardCheck, TrendingUp,
+  CalendarDays, Banknote, GraduationCap, ShieldCheck, Activity, SlidersHorizontal,
 } from "lucide-react";
 
-const VALUES = [
-  { icon: Zap, title: "Built for hospitality", desc: "Designed around the pace of restaurants, bars, and hotels — not generic office workflows." },
-  { icon: Smartphone, title: "Mobile-first", desc: "Staff and managers get full access from their phone browser. No app download needed." },
-  { icon: TrendingUp, title: "Faster than spreadsheets", desc: "Connected rotas, timesheets, and payroll replace manual data entry and copy-paste errors." },
-  { icon: ClipboardCheck, title: "Cleaner payroll and holidays", desc: "Accrual tracking, entitlement calculations, and pay period management in one place." },
-  { icon: BarChart3, title: "Better visibility", desc: "Labour cost tracking, schedule analytics, and team readiness — available at a glance." },
-  { icon: MessageSquare, title: "Structured hiring", desc: "Applications, privacy-controlled profiles, and auditable conversations in one workflow." },
-  { icon: Shield, title: "Audit trails included", desc: "Sensitive actions are logged. Payroll changes, document verifications, and approvals are traceable." },
-  { icon: Users, title: "Scales with you", desc: "Works for a single site. Grows to support multiple locations and larger teams." },
+const CAPABILITIES = [
+  {
+    icon: CalendarDays,
+    title: "Workforce and scheduling",
+    desc: "Manage employee records, rota planning, attendance visibility and shift coverage with workflows designed for hospitality teams.",
+  },
+  {
+    icon: Banknote,
+    title: "Payroll and people administration",
+    desc: "Run payroll processes and core people administration without losing the operational context managers need day to day.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Training and readiness",
+    desc: "Assign training, track completion, manage sign-off and make sure staff are not only scheduled, but prepared for the role they are working.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Compliance and governance",
+    desc: "Manage onboarding, documents, right-to-work tracking, expiry visibility and compliance follow-through with clearer accountability.",
+  },
+  {
+    icon: Activity,
+    title: "Operational intelligence",
+    desc: "Use evidence, signal mapping, effectiveness logic and quality controls to understand where standards are working and where operational gaps are building.",
+  },
+  {
+    icon: SlidersHorizontal,
+    title: "Manager control",
+    desc: "Give managers one place to see what is overdue, what is weak, what needs action and where risk is starting to build.",
+  },
 ];
 
 interface ValueCardsProps {
@@ -20,8 +42,8 @@ interface ValueCardsProps {
 export function ValueCards({ className }: ValueCardsProps) {
   return (
     <div className={className}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {VALUES.map((v) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {CAPABILITIES.map((v) => (
           <div
             key={v.title}
             className="rounded-xl border border-border bg-card p-5 space-y-2.5"

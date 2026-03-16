@@ -1,12 +1,13 @@
-import { Shield, Lock, Eye, Users, FileText, Server } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
-const POINTS = [
-  { icon: Server, title: "Separated workspaces", desc: "Each company operates in its own isolated environment. Employee records, payroll, and documents are not shared across organisations." },
-  { icon: Users, title: "Role-based access", desc: "Admins, managers, and staff each see only what their role requires. Sensitive data is gated behind permission checks." },
-  { icon: FileText, title: "Audit trail visibility", desc: "Key actions — payroll changes, document verifications, approvals — are logged and available for review." },
-  { icon: Eye, title: "Candidate privacy controls", desc: "Talent Pool profiles display first name and surname initial only. Full identity is shared only when the candidate chooses." },
-  { icon: Lock, title: "Sensitive data masking", desc: "Financial data and personal records are masked by default and require intentional interaction to reveal." },
-  { icon: Shield, title: "Privacy by design", desc: "Access is scoped to the minimum required. Unnecessary data exposure is avoided throughout the platform." },
+const PAIN_POINTS = [
+  "Staff appear on the rota before they are fully ready",
+  "Overdue training or missing documents are noticed too late",
+  "Follow-up after incidents or compliance issues is inconsistent",
+  "Workforce, payroll, training and compliance sit in separate systems",
+  "Managers spend too much time checking, reconciling and chasing",
+  "There is limited visibility into who is actually operationally ready",
+  "Standards break down because accountability is weak or fragmented",
 ];
 
 interface SecuritySectionProps {
@@ -16,16 +17,11 @@ interface SecuritySectionProps {
 export function SecuritySection({ className }: SecuritySectionProps) {
   return (
     <div className={className}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {POINTS.map((p) => (
-          <div key={p.title} className="flex gap-3.5 rounded-xl border border-border bg-card p-5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 mt-0.5">
-              <p.icon className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-foreground">{p.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed mt-1">{p.desc}</p>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {PAIN_POINTS.map((p) => (
+          <div key={p} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+            <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-sm text-muted-foreground leading-relaxed">{p}</p>
           </div>
         ))}
       </div>
