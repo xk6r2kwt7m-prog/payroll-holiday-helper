@@ -2612,6 +2612,59 @@ export type Database = {
           },
         ]
       }
+      operational_signals: {
+        Row: {
+          confidence: string | null
+          created_at: string
+          id: string
+          location_id: string | null
+          metadata: Json | null
+          severity: string | null
+          signal_date: string
+          signal_tag: string
+          source_record_id: string
+          source_table: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: string | null
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          metadata?: Json | null
+          severity?: string | null
+          signal_date: string
+          signal_tag: string
+          source_record_id: string
+          source_table: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: string | null
+          created_at?: string
+          id?: string
+          location_id?: string | null
+          metadata?: Json | null
+          severity?: string | null
+          signal_date?: string
+          signal_tag?: string
+          source_record_id?: string
+          source_table?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_signals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_entries: {
         Row: {
           adjustment_note: string | null
