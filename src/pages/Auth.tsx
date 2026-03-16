@@ -367,43 +367,53 @@ const Auth = () => {
       {/* ═══════ Content below the fold ═══════ */}
       <div className="border-t border-border">
 
-        {/* Mobile hero headline — uses h2 since H1 exists in desktop panel (always in DOM) */}
-        <section className="lg:hidden max-w-3xl mx-auto px-5 sm:px-6 pt-10 pb-4">
+        {/* Mobile hero headline — h2 since the single H1 lives in the desktop panel (always in DOM) */}
+        <section className="lg:hidden max-w-3xl mx-auto px-5 sm:px-6 pt-10 pb-2">
           <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight text-center">
             When staffing, training and compliance are disconnected,{" "}
-            <span className="text-primary">hospitality managers lose control.</span>
+            <span className="text-primary">managers lose control.</span>
           </h2>
-          <p className="text-sm text-muted-foreground mt-3 text-center leading-relaxed max-w-lg mx-auto">
-            Rotas, payroll, training, compliance and operational follow-through — connected in one system built for hospitality.
+          <p className="text-[13px] text-muted-foreground mt-3 text-center leading-relaxed max-w-sm mx-auto">
+            Rotas, payroll, training, compliance and follow-through — connected in one hospitality system.
           </p>
+          <div className="flex items-center justify-center gap-3 mt-5">
+            <Button className="gradient-primary" size="sm">Book a demo</Button>
+            <Button variant="outline" size="sm">See the platform</Button>
+          </div>
         </section>
 
-        {/* Recognition — name the manager's reality */}
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-2xl mx-auto text-center mb-5 sm:mb-7">
-            The problem is not effort. The problem is fragmentation.
+        {/* Recognition */}
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-6">
+            The problem is not effort. It is fragmentation.
           </h2>
-          <div className="space-y-2.5 text-sm text-muted-foreground leading-relaxed">
-            <p>Someone is on next week's rota but still has overdue training.</p>
-            <p>A document expires and nobody catches it in time.</p>
-            <p>A service issue gets logged but follow-up disappears.</p>
-            <p>Payroll closes, but managers have already lost hours chasing the information behind it.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {[
+              "Someone is on next week's rota — but still has overdue training.",
+              "A document expires — and nobody catches it in time.",
+              "A service issue gets logged — but follow-up disappears.",
+              "Payroll closes — but managers already lost hours chasing information.",
+            ].map((line) => (
+              <div key={line} className="rounded-xl border border-border bg-card/60 px-4 py-3">
+                <p className="text-sm text-muted-foreground leading-relaxed">{line}</p>
+              </div>
+            ))}
           </div>
-          <p className="text-sm text-foreground font-semibold mt-4">
+          <p className="text-sm text-foreground font-semibold mt-5 text-center">
             The real leak is not a lack of software. It is a lack of connected control.
           </p>
         </section>
 
-        {/* Reframe — operations control problem */}
+        {/* Reframe */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
-            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5 sm:mb-7">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
               This is not an HR problem. It is an operations control problem.
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-              Records, rotas and payroll matter — but they are only part of what hospitality managers need to control. They also need to know:
+            <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-5">
+              Records, rotas and payroll matter — but they are only part of the job. Hospitality managers also need to know:
             </p>
-            <ul className="space-y-2 pl-1 text-sm text-muted-foreground">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
               {[
                 "Who is actually ready to work",
                 "What training is overdue",
@@ -411,34 +421,34 @@ const Auth = () => {
                 "What standards are slipping",
                 "What still needs follow-through",
               ].map((item) => (
-                <li key={item} className="flex items-center gap-2.5">
+                <div key={item} className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                   <span>{item}</span>
-                </li>
+                </div>
               ))}
-            </ul>
-            <p className="text-sm text-foreground font-semibold mt-5">UGLŌ is built around that reality.</p>
+            </div>
+            <p className="text-sm text-foreground font-semibold mt-6 text-center">UGLŌ is built around that reality.</p>
           </div>
         </section>
 
-        {/* Solution — what changes */}
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5 sm:mb-7">
+        {/* Solution */}
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-3">
             One system for the work behind the shift
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed mb-5">
-            UGLŌ connects workforce management, training, compliance and operational follow-through — so managers spend less time checking, chasing and stitching things together.
+          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-6">
+            Workforce management, training, compliance and follow-through — connected so managers stop chasing and start controlling.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {[
               { from: "Chasing information", to: "Seeing what matters" },
               { from: "Reacting late", to: "Acting earlier" },
               { from: "Managing headcount", to: "Managing readiness" },
               { from: "Recording work", to: "Following through" },
             ].map((item) => (
-              <div key={item.from} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5">
-                <span className="text-xs text-muted-foreground line-through decoration-muted-foreground/40">{item.from}</span>
-                <span className="text-primary font-bold text-xs">→</span>
+              <div key={item.from} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 hover:border-primary/30 transition-colors">
+                <span className="text-xs text-muted-foreground/70 line-through">{item.from}</span>
+                <span className="text-primary font-bold text-sm">→</span>
                 <span className="text-xs text-foreground font-semibold">{item.to}</span>
               </div>
             ))}
@@ -447,58 +457,56 @@ const Auth = () => {
 
         {/* Capability overview */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <div className="text-center mb-6 sm:mb-8">
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
-              <p className="text-sm text-muted-foreground mt-1.5 max-w-md mx-auto">
-                Six connected modules. One hospitality platform.
-              </p>
+              <p className="text-[13px] text-muted-foreground mt-1.5">Six connected modules. One hospitality platform.</p>
             </div>
             <ValueCards />
           </div>
         </section>
 
         {/* Why different */}
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5 sm:mb-7">
-            Why generic HR and rota tools are not enough
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+            Why generic HR and rota tools fall short
           </h2>
           <EmployerConversion />
         </section>
 
         {/* Business outcomes */}
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
-            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-2">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-1.5">
               What improves when managers have better control
             </h2>
-            <p className="text-sm text-muted-foreground text-center mb-6 sm:mb-8">
-              Better visibility is useful. Better follow-through is where the real value sits.
+            <p className="text-[13px] text-muted-foreground text-center mb-6">
+              Better visibility helps. Better follow-through is where the value sits.
             </p>
             <CandidateConversion />
           </div>
         </section>
 
         {/* Pain points */}
-        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5 sm:mb-7">
+        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
             Problems hospitality managers recognise immediately
           </h2>
           <SecuritySection />
         </section>
 
         {/* Final CTA */}
-        <section className="bg-card/50 border-y border-border">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
+        <section className="bg-primary/[0.04] border-y border-border">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <PricingSection />
           </div>
         </section>
 
         {/* FAQ */}
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-8 sm:py-14">
-          <div className="text-center mb-6 sm:mb-8">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <div className="text-center mb-6">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">Common questions</h2>
-            <p className="text-sm text-muted-foreground mt-1">Straight answers for hospitality operators.</p>
+            <p className="text-[13px] text-muted-foreground mt-1">Straight answers for hospitality operators.</p>
           </div>
           <FAQ />
         </section>
