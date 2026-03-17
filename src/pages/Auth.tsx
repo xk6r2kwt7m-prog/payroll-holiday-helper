@@ -431,9 +431,6 @@ const Auth = () => {
               <h2 className="text-lg sm:text-xl font-bold text-foreground">
                 Questions hospitality managers are already asking
               </h2>
-              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">
-                Tap any question to see how connected control changes the answer.
-              </p>
             </div>
             <ManagerQuestions />
           </div>
