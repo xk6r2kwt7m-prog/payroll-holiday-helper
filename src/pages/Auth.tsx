@@ -513,12 +513,14 @@ const Auth = () => {
         </section>
         </ScrollReveal>
 
-        {/* Pain points */}
+        <ScrollReveal>
         <section className="max-w-4xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
             Problems hospitality managers recognise immediately
           </h2>
           <SecuritySection />
+        </section>
+        </ScrollReveal>
         </section>
 
         {/* Final CTA */}
