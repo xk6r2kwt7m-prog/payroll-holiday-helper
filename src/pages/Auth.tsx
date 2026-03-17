@@ -161,8 +161,8 @@ const Auth = () => {
               </p>
 
               <div className="flex items-center gap-3 mb-10">
-                <Button className="gradient-primary" onClick={scrollToDemo}>Book a demo</Button>
-                <Button variant="outline" onClick={scrollToPlatform}>See the platform</Button>
+                <Button className="gradient-primary hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all duration-150" onClick={scrollToDemo}>Book a demo</Button>
+                <Button variant="outline" className="hover:shadow-sm active:scale-[0.98] transition-all duration-150" onClick={scrollToPlatform}>See the platform</Button>
               </div>
 
               {/* Trust strip */}
