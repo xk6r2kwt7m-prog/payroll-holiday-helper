@@ -483,13 +483,6 @@ const Auth = () => {
           </div>
         </section>
         </ScrollReveal>
-              <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
-              <p className="text-[13px] text-muted-foreground mt-1.5">Six connected modules. One hospitality platform.</p>
-            </div>
-            <ValueCards />
-          </div>
-        </section>
-
         <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
