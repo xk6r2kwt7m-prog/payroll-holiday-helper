@@ -61,10 +61,10 @@ export function FAQ({ className, limit }: FAQProps) {
       <Accordion type="single" collapsible className="w-full">
         {items.map((item, i) => (
           <AccordionItem key={i} value={`faq-${i}`} className="border-border group/faq">
-            <AccordionTrigger className="text-sm font-medium text-foreground text-left hover:no-underline py-4 hover:text-primary transition-colors duration-150">
+            <AccordionTrigger className="text-sm font-medium text-foreground text-left hover:no-underline py-4 hover:text-primary/80 transition-colors duration-200">
               {item.q}
             </AccordionTrigger>
-            <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+            <AccordionContent className="text-[13px] text-muted-foreground leading-relaxed pb-4">
               {item.a}
             </AccordionContent>
           </AccordionItem>
