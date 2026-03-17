@@ -397,8 +397,8 @@ const Auth = () => {
         </section>
 
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-6">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-7">
             The problem is not effort. It is fragmentation.
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -408,12 +408,12 @@ const Auth = () => {
               "A service issue gets logged — but follow-up disappears.",
               "Payroll closes — but managers already lost hours chasing information.",
             ].map((line) => (
-              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-primary/30 hover:bg-card hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200">
+              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-destructive/20 hover:bg-destructive/[0.02] transition-all duration-200">
                 <p className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
               </div>
             ))}
           </div>
-          <p className="text-sm text-foreground font-semibold mt-5 text-center">
+          <p className="text-sm text-foreground font-semibold mt-6 text-center">
             The real leak is not a lack of software. It is a lack of connected control.
           </p>
         </section>
