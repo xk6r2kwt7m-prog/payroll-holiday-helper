@@ -396,7 +396,7 @@ const Auth = () => {
           </div>
         </section>
 
-        {/* Recognition */}
+        <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-6">
             The problem is not effort. It is fragmentation.
@@ -408,8 +408,8 @@ const Auth = () => {
               "A service issue gets logged — but follow-up disappears.",
               "Payroll closes — but managers already lost hours chasing information.",
             ].map((line) => (
-              <div key={line} className="rounded-xl border border-border bg-card/60 px-4 py-3">
-                <p className="text-sm text-muted-foreground leading-relaxed">{line}</p>
+              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-primary/30 hover:bg-card hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200">
+                <p className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
               </div>
             ))}
           </div>
@@ -417,6 +417,7 @@ const Auth = () => {
             The real leak is not a lack of software. It is a lack of connected control.
           </p>
         </section>
+        </ScrollReveal>
 
         {/* Reframe */}
         <section className="bg-card/50 border-y border-border">
