@@ -491,7 +491,7 @@ const Auth = () => {
             <div className="text-center mb-8 sm:mb-10">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The platform</p>
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
-              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">Six connected modules. Tap any card to see what managers gain.</p>
+              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">Six connected modules. One hospitality operations platform.</p>
             </div>
             <ValueCards />
           </div>
