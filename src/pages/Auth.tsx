@@ -161,8 +161,8 @@ const Auth = () => {
               </p>
 
               <div className="flex items-center gap-3 mb-10">
-                <Button className="gradient-primary hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all duration-150" onClick={scrollToDemo}>Book a demo</Button>
-                <Button variant="outline" className="hover:shadow-sm active:scale-[0.98] transition-all duration-150" onClick={scrollToPlatform}>See the platform</Button>
+                <Button className="gradient-primary shadow-sm hover:shadow-lg hover:brightness-105 active:scale-[0.97] transition-all duration-200 font-semibold" onClick={scrollToDemo}>Book a demo</Button>
+                <Button variant="outline" className="hover:bg-muted/50 active:scale-[0.97] transition-all duration-200" onClick={scrollToPlatform}>See the platform</Button>
               </div>
 
               {/* Trust strip */}
@@ -390,15 +390,15 @@ const Auth = () => {
           <p className="text-[13px] text-muted-foreground mt-3 text-center leading-relaxed max-w-sm mx-auto">
             Rotas, payroll, training, compliance and follow-through — connected in one hospitality system.
           </p>
-          <div className="flex items-center justify-center gap-3 mt-5">
-             <Button className="gradient-primary hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all duration-150" size="sm" onClick={scrollToDemo}>Book a demo</Button>
-             <Button variant="outline" size="sm" className="hover:shadow-sm active:scale-[0.98] transition-all duration-150" onClick={scrollToPlatform}>See the platform</Button>
-          </div>
+           <div className="flex items-center justify-center gap-3 mt-5">
+             <Button className="gradient-primary shadow-sm hover:shadow-lg hover:brightness-105 active:scale-[0.97] transition-all duration-200 font-semibold" size="sm" onClick={scrollToDemo}>Book a demo</Button>
+             <Button variant="outline" size="sm" className="hover:bg-muted/50 active:scale-[0.97] transition-all duration-200" onClick={scrollToPlatform}>See the platform</Button>
+           </div>
         </section>
 
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-6">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-7">
             The problem is not effort. It is fragmentation.
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -408,12 +408,12 @@ const Auth = () => {
               "A service issue gets logged — but follow-up disappears.",
               "Payroll closes — but managers already lost hours chasing information.",
             ].map((line) => (
-              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-primary/30 hover:bg-card hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200">
+              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-destructive/20 hover:bg-destructive/[0.02] transition-all duration-200">
                 <p className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
               </div>
             ))}
           </div>
-          <p className="text-sm text-foreground font-semibold mt-5 text-center">
+          <p className="text-sm text-foreground font-semibold mt-6 text-center">
             The real leak is not a lack of software. It is a lack of connected control.
           </p>
         </section>
@@ -421,7 +421,7 @@ const Auth = () => {
 
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
             <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
               This is not an HR problem. It is an operations control problem.
             </h2>
@@ -442,30 +442,33 @@ const Auth = () => {
                 </div>
               ))}
             </div>
-            <p className="text-sm text-foreground font-semibold mt-6 text-center">UGLŌ is built around that reality.</p>
+            <p className="text-sm text-foreground font-semibold mt-7 text-center">UGLŌ is built around that reality.</p>
           </div>
         </section>
         </ScrollReveal>
 
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-3">
             One system for the work behind the shift
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-6">
+          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-8">
             Workforce management, training, compliance and follow-through — connected so managers stop chasing and start controlling.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { from: "Chasing information", to: "Seeing what matters" },
               { from: "Reacting late", to: "Acting earlier" },
               { from: "Managing headcount", to: "Managing readiness" },
               { from: "Recording work", to: "Following through" },
             ].map((item) => (
-              <div key={item.from} className="group flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                <span className="text-xs text-muted-foreground/70 line-through group-hover:text-muted-foreground/40 transition-colors duration-200">{item.from}</span>
-                <span className="text-primary font-bold text-sm group-hover:scale-110 transition-transform duration-200">→</span>
-                <span className="text-xs text-foreground font-semibold group-hover:text-primary transition-colors duration-200">{item.to}</span>
+              <div key={item.from} className="group relative rounded-xl border border-border bg-card p-4 hover:border-primary/30 transition-all duration-300 overflow-hidden">
+                <div className="absolute inset-0 bg-primary/[0.04] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground/60 line-through group-hover:text-muted-foreground/30 transition-colors duration-300 shrink-0">{item.from}</span>
+                  <span className="text-primary/50 font-medium text-sm group-hover:text-primary transition-colors duration-300">→</span>
+                  <span className="text-sm text-foreground font-semibold group-hover:text-primary transition-colors duration-300">{item.to}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -474,10 +477,10 @@ const Auth = () => {
 
         <ScrollReveal>
         <section id="platform-overview" className="bg-card/50 border-y border-border scroll-mt-4">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
-            <div className="text-center mb-6 sm:mb-8">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
+            <div className="text-center mb-8 sm:mb-10">
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
-              <p className="text-[13px] text-muted-foreground mt-1.5">Six connected modules. One hospitality platform.</p>
+              <p className="text-[13px] text-muted-foreground mt-2">Six connected modules. One hospitality platform.</p>
             </div>
             <ValueCards />
           </div>

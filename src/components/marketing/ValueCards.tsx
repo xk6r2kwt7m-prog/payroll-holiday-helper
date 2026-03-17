@@ -46,13 +46,13 @@ export function ValueCards({ className }: ValueCardsProps) {
         {CAPABILITIES.map((v) => (
           <div
             key={v.title}
-            className="group rounded-xl border border-border bg-card p-5 space-y-2.5 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+            className="group rounded-xl border border-border bg-card p-5 space-y-2.5 hover:border-primary/20 hover:shadow-lg transition-all duration-300"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 group-hover:scale-105 transition-all duration-200">
-              <v.icon className="h-[18px] w-[18px] text-primary" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/8 group-hover:bg-primary/15 transition-colors duration-300">
+              <v.icon className="h-[18px] w-[18px] text-primary/70 group-hover:text-primary transition-colors duration-300" />
             </div>
-            <h3 className="text-sm font-semibold text-foreground">{v.title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">{v.desc}</p>
+            <h3 className="text-sm font-bold text-foreground tracking-tight">{v.title}</h3>
+            <p className="text-[13px] text-muted-foreground leading-relaxed">{v.desc}</p>
           </div>
         ))}
       </div>
