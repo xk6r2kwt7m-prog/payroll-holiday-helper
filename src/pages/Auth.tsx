@@ -531,13 +531,15 @@ const Auth = () => {
         </section>
         </ScrollReveal>
 
-        {/* FAQ */}
+        <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <div className="text-center mb-6">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">Common questions</h2>
             <p className="text-[13px] text-muted-foreground mt-1">Straight answers for hospitality operators.</p>
           </div>
           <FAQ />
+        </section>
+        </ScrollReveal>
         </section>
 
         {/* Footer */}
