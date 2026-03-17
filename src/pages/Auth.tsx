@@ -541,7 +541,7 @@ const Auth = () => {
         {/* ── Section 9: Final CTA ── */}
         <ScrollReveal>
         <section className="bg-primary/[0.04] border-y border-border">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-14 sm:py-18">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-24">
             <PricingSection onBookDemo={scrollToDemo} onSeePlatform={scrollToPlatform} />
           </div>
         </section>
@@ -549,10 +549,10 @@ const Auth = () => {
 
         {/* ── Section 10: FAQ ── */}
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
-          <div className="text-center mb-6">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+          <div className="text-center mb-8">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">Common questions</h2>
-            <p className="text-[13px] text-muted-foreground mt-1">Straight answers for hospitality operators.</p>
+            <p className="text-[13px] text-muted-foreground mt-1.5">Straight answers for hospitality operators.</p>
           </div>
           <FAQ />
         </section>

@@ -67,10 +67,10 @@ const OUTCOMES = [
 export function CandidateConversion({ className }: SectionProps) {
   return (
     <div className={className}>
-      <ul className="space-y-2.5">
+      <ul className="space-y-3">
         {OUTCOMES.map((o) => (
-          <li key={o} className="flex items-start gap-2.5 text-sm text-foreground">
-            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+          <li key={o} className="flex items-start gap-2.5 text-[13px] sm:text-sm text-foreground leading-relaxed">
+            <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
             <span>{o}</span>
           </li>
         ))}
