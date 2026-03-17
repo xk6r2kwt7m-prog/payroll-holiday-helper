@@ -1,25 +1,23 @@
-import { useState } from "react";
-
 const TRANSFORMATIONS = [
   {
     from: "Chasing information across systems",
     to: "Seeing what matters in one view",
-    detail: "No more switching between rota tools, HR systems, training trackers and spreadsheets to get a clear operational picture.",
+    detail: "No more switching between rota tools, HR systems, training trackers and spreadsheets.",
   },
   {
-    from: "Reacting to problems after they hit service",
+    from: "Reacting after problems hit service",
     to: "Acting on signals before they reach the floor",
-    detail: "Overdue training, expiring documents and staffing gaps surface automatically — not when a manager remembers to check.",
+    detail: "Overdue training, expiring documents and staffing gaps surface automatically.",
   },
   {
     from: "Managing headcount without knowing readiness",
     to: "Managing readiness alongside the rota",
-    detail: "Know who is trained, compliant and genuinely ready — not just who is available on the schedule.",
+    detail: "Know who is trained, compliant and genuinely ready — not just who is listed.",
   },
   {
     from: "Recording issues with no follow-through",
     to: "Connecting incidents to actions and accountability",
-    detail: "Every issue links to a follow-up, a deadline and an owner — so nothing disappears into a log.",
+    detail: "Every issue links to a follow-up, a deadline and an owner.",
   },
 ];
 
@@ -28,75 +26,42 @@ interface TransformationSectionProps {
 }
 
 export function TransformationSection({ className }: TransformationSectionProps) {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
-
   return (
     <div className={className}>
       <div className="space-y-3">
-        {TRANSFORMATIONS.map((item, i) => {
-          const isActive = activeIndex === i;
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setActiveIndex(isActive ? null : i)}
-              className={`group w-full text-left rounded-xl border overflow-hidden transition-all duration-300 ${
-                isActive
-                  ? "border-primary/30 shadow-md"
-                  : "border-border hover:border-primary/15"
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row">
-                {/* From state */}
-                <div className={`flex-1 p-4 sm:p-5 transition-all duration-300 ${
-                  isActive ? "bg-muted/40" : "bg-card"
-                }`}>
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1.5">Before</p>
-                  <p className={`text-sm leading-snug transition-colors duration-300 ${
-                    isActive ? "text-muted-foreground/50 line-through" : "text-muted-foreground"
-                  }`}>
-                    {item.from}
-                  </p>
-                </div>
-
-                {/* Divider */}
-                <div className={`hidden sm:flex items-center justify-center w-10 transition-colors duration-300 ${
-                  isActive ? "bg-primary/[0.06]" : "bg-muted/20"
-                }`}>
-                  <span className={`text-sm font-medium transition-colors duration-300 ${
-                    isActive ? "text-primary" : "text-muted-foreground/30"
-                  }`}>→</span>
-                </div>
-                <div className="sm:hidden h-px bg-border" />
-
-                {/* To state */}
-                <div className={`flex-1 p-4 sm:p-5 transition-all duration-300 ${
-                  isActive ? "bg-primary/[0.04]" : "bg-card"
-                }`}>
-                  <p className={`text-[10px] font-semibold uppercase tracking-widest mb-1.5 transition-colors duration-300 ${
-                    isActive ? "text-primary/60" : "text-muted-foreground/50"
-                  }`}>After</p>
-                  <p className={`text-sm font-semibold leading-snug transition-colors duration-300 ${
-                    isActive ? "text-primary" : "text-foreground"
-                  }`}>
-                    {item.to}
-                  </p>
-                </div>
+        {TRANSFORMATIONS.map((item, i) => (
+          <div
+            key={i}
+            className="group rounded-xl border border-border overflow-hidden hover:border-primary/20 transition-all duration-300"
+          >
+            <div className="flex flex-col sm:flex-row">
+              {/* Before */}
+              <div className="flex-1 p-4 sm:p-5 bg-muted/30 group-hover:bg-muted/40 transition-colors duration-300">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 mb-1">Before</p>
+                <p className="text-sm text-muted-foreground leading-snug group-hover:text-muted-foreground/60 group-hover:line-through transition-all duration-300">
+                  {item.from}
+                </p>
               </div>
 
-              {/* Expandable detail */}
-              <div className={`overflow-hidden transition-all duration-300 ${
-                isActive ? "max-h-28 opacity-100" : "max-h-0 opacity-0"
-              }`}>
-                <div className="px-4 sm:px-5 pb-4 pt-1 border-t border-primary/10">
-                  <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    {item.detail}
-                  </p>
-                </div>
+              {/* Arrow divider */}
+              <div className="hidden sm:flex items-center justify-center w-10 bg-muted/15 group-hover:bg-primary/[0.06] transition-colors duration-300">
+                <span className="text-sm text-muted-foreground/25 group-hover:text-primary transition-colors duration-300">→</span>
               </div>
-            </button>
-          );
-        })}
+              <div className="sm:hidden h-px bg-border" />
+
+              {/* After */}
+              <div className="flex-1 p-4 sm:p-5 bg-card group-hover:bg-primary/[0.03] transition-colors duration-300">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 group-hover:text-primary/50 mb-1 transition-colors duration-300">After</p>
+                <p className="text-sm font-semibold text-foreground leading-snug group-hover:text-primary transition-colors duration-300">
+                  {item.to}
+                </p>
+                <p className="text-[12px] text-muted-foreground/70 leading-relaxed mt-1.5">
+                  {item.detail}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
