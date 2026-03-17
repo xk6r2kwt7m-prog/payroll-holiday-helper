@@ -439,14 +439,14 @@ const Auth = () => {
 
         {/* ── Section 3: Reframe ── */}
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-4">
             This is not an HR problem. It is an operations control problem.
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-6">
+          <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-7">
             Records, rotas and payroll matter — but they are only part of the job. Hospitality managers also need to know:
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-lg mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
             {[
               "Who is actually ready to work",
               "What training is overdue",
@@ -455,14 +455,14 @@ const Auth = () => {
               "What still needs follow-through",
             ].map((item, i) => (
               <ScrollReveal key={item} delay={i * 60} direction="none">
-                <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2.5 text-[13px] sm:text-sm text-muted-foreground">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                   <span>{item}</span>
                 </div>
               </ScrollReveal>
             ))}
           </div>
-          <p className="text-sm text-foreground font-semibold mt-7 text-center">UGLŌ is built around that reality.</p>
+          <p className="text-sm text-foreground font-semibold mt-8 text-center">UGLŌ is built around that reality.</p>
         </section>
         </ScrollReveal>
 
