@@ -6,32 +6,32 @@ const CAPABILITIES = [
   {
     icon: CalendarDays,
     title: "Workforce & scheduling",
-    desc: "Plan rotas, track attendance and keep labour aligned to what the operation actually needs — not what a spreadsheet says.",
+    desc: "Plan rotas, track attendance and align labour to what the operation needs.",
   },
   {
     icon: Banknote,
     title: "Payroll & people admin",
-    desc: "Run payroll workflows with operational context attached, not buried in a separate system managers never open.",
+    desc: "Run payroll with operational context — not buried in a system managers never open.",
   },
   {
     icon: GraduationCap,
     title: "Training & readiness",
-    desc: "Know who is trained, who is overdue and who should not be on the rota yet — before it becomes a problem in service.",
+    desc: "Know who is trained, who is overdue and who should not be on the rota yet.",
   },
   {
     icon: ShieldCheck,
     title: "Compliance & governance",
-    desc: "Track documents, expiry dates, onboarding and right-to-work — with accountability that does not rely on memory.",
+    desc: "Track documents, expiry dates and right-to-work with real accountability.",
   },
   {
     icon: Activity,
     title: "Operational intelligence",
-    desc: "See where standards are holding and where issues are building, so managers act before problems reach the floor.",
+    desc: "See where standards hold and where issues are building — before service.",
   },
   {
     icon: SlidersHorizontal,
     title: "Manager control",
-    desc: "One view of what is overdue, incomplete or unresolved — no more pulling the picture together across five systems.",
+    desc: "One view of what is overdue, incomplete or unresolved across all modules.",
   },
 ];
 
