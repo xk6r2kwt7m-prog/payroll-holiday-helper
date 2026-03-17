@@ -532,7 +532,6 @@ const Auth = () => {
           <FAQ />
         </section>
         </ScrollReveal>
-        </section>
 
         {/* Footer */}
         <footer className="border-t border-border bg-card">
