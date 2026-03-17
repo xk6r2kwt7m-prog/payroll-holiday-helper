@@ -476,7 +476,7 @@ const Auth = () => {
                 From reactive management to operational control
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2">
-                Tap any row to see what changes when the systems are connected.
+                What changes when the systems are connected.
               </p>
             </div>
             <TransformationSection />
