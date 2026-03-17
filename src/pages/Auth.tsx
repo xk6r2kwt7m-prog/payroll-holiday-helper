@@ -400,23 +400,23 @@ const Auth = () => {
 
         {/* ── Section 1: Recognition — problem cards ── */}
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-7">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-8">
             The problem is not effort. It is fragmentation.
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               "Someone is on next week's rota — but still has overdue training.",
               "A document expires — and nobody catches it in time.",
               "A service issue gets logged — but follow-up disappears.",
               "Payroll closes — but managers already lost hours chasing information.",
             ].map((line) => (
-              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-muted-foreground/20 hover:bg-muted/30 transition-all duration-200">
-                <p className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
+              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3.5 hover:border-muted-foreground/20 hover:bg-muted/30 focus-within:ring-2 focus-within:ring-ring transition-all duration-200">
+                <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
               </div>
             ))}
           </div>
-          <p className="text-sm text-foreground font-semibold mt-6 text-center">
+          <p className="text-sm text-foreground font-semibold mt-7 text-center">
             The real leak is not a lack of software. It is a lack of connected control.
           </p>
         </section>
@@ -425,9 +425,9 @@ const Auth = () => {
         {/* ── Section 2: Question-led engagement ── */}
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-            <div className="text-center mb-8">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">Sound familiar?</p>
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <div className="text-center mb-9">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/70 mb-2">Sound familiar?</p>
               <h2 className="text-lg sm:text-xl font-bold text-foreground">
                 Questions hospitality managers are already asking
               </h2>
@@ -439,14 +439,14 @@ const Auth = () => {
 
         {/* ── Section 3: Reframe ── */}
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-4">
             This is not an HR problem. It is an operations control problem.
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-6">
+          <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-7">
             Records, rotas and payroll matter — but they are only part of the job. Hospitality managers also need to know:
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-lg mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
             {[
               "Who is actually ready to work",
               "What training is overdue",
@@ -455,27 +455,27 @@ const Auth = () => {
               "What still needs follow-through",
             ].map((item, i) => (
               <ScrollReveal key={item} delay={i * 60} direction="none">
-                <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2.5 text-[13px] sm:text-sm text-muted-foreground">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                   <span>{item}</span>
                 </div>
               </ScrollReveal>
             ))}
           </div>
-          <p className="text-sm text-foreground font-semibold mt-7 text-center">UGLŌ is built around that reality.</p>
+          <p className="text-sm text-foreground font-semibold mt-8 text-center">UGLŌ is built around that reality.</p>
         </section>
         </ScrollReveal>
 
         {/* ── Section 4: Transformation — before/after ── */}
         <ScrollReveal>
-        <section className="bg-primary/[0.02] border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-            <div className="text-center mb-8">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The shift</p>
+        <section className="bg-primary/[0.03] border-y border-border">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <div className="text-center mb-9">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/70 mb-2">The shift</p>
               <h2 className="text-lg sm:text-xl font-bold text-foreground">
                 From reactive management to operational control
               </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2">
+              <p className="text-[13px] text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2.5">
                 What changes when the systems are connected.
               </p>
             </div>
@@ -487,11 +487,11 @@ const Auth = () => {
         {/* ── Section 5: Platform capabilities ── */}
         <ScrollReveal>
         <section id="platform-overview" className="scroll-mt-4">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-            <div className="text-center mb-8 sm:mb-10">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The platform</p>
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <div className="text-center mb-9 sm:mb-11">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/70 mb-2">The platform</p>
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
-              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">Six connected modules. One hospitality operations platform.</p>
+              <p className="text-[13px] text-muted-foreground mt-2.5 max-w-md mx-auto">Six connected modules. One hospitality operations platform.</p>
             </div>
             <ValueCards />
           </div>
@@ -501,8 +501,8 @@ const Auth = () => {
         {/* ── Section 6: Why generic tools fail ── */}
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
-            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-6">
               Why generic HR and rota tools fall short
             </h2>
             <EmployerConversion />
@@ -512,12 +512,12 @@ const Auth = () => {
 
         {/* ── Section 7: Pain points ── */}
         <ScrollReveal>
-        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
-          <div className="text-center mb-6">
+        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+          <div className="text-center mb-8">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">
               Problems hospitality managers recognise immediately
             </h2>
-            <p className="text-[13px] text-muted-foreground mt-1.5">If more than two feel familiar, fragmentation is already costing you.</p>
+            <p className="text-[13px] text-muted-foreground mt-2">If more than two feel familiar, fragmentation is already costing you.</p>
           </div>
           <SecuritySection />
         </section>
@@ -526,11 +526,11 @@ const Auth = () => {
         {/* ── Section 8: Business outcomes ── */}
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
-            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-1.5">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-2">
               What improves when managers have better control
             </h2>
-            <p className="text-[13px] text-muted-foreground text-center mb-6">
+            <p className="text-[13px] text-muted-foreground text-center mb-7">
               Better visibility helps. Better follow-through is where the value sits.
             </p>
             <CandidateConversion />
@@ -541,7 +541,7 @@ const Auth = () => {
         {/* ── Section 9: Final CTA ── */}
         <ScrollReveal>
         <section className="bg-primary/[0.04] border-y border-border">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-14 sm:py-18">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-16 sm:py-24">
             <PricingSection onBookDemo={scrollToDemo} onSeePlatform={scrollToPlatform} />
           </div>
         </section>
@@ -549,10 +549,10 @@ const Auth = () => {
 
         {/* ── Section 10: FAQ ── */}
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
-          <div className="text-center mb-6">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+          <div className="text-center mb-8">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">Common questions</h2>
-            <p className="text-[13px] text-muted-foreground mt-1">Straight answers for hospitality operators.</p>
+            <p className="text-[13px] text-muted-foreground mt-1.5">Straight answers for hospitality operators.</p>
           </div>
           <FAQ />
         </section>

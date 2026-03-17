@@ -32,12 +32,13 @@ export function ManagerQuestions({ className }: ManagerQuestionsProps) {
         {QUESTIONS.map((q, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-2"
+            className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-2.5 hover:border-primary/15 focus-within:ring-2 focus-within:ring-ring transition-all duration-200"
+            tabIndex={0}
           >
-            <p className="text-sm sm:text-[15px] font-semibold text-foreground leading-snug">
+            <p className="text-[13px] sm:text-[15px] font-semibold text-foreground leading-snug">
               {q.question}
             </p>
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
+            <p className="text-[12px] sm:text-[13px] text-muted-foreground leading-relaxed">
               {q.insight}
             </p>
           </div>
