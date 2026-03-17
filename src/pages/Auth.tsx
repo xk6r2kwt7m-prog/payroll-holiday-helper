@@ -425,9 +425,9 @@ const Auth = () => {
         {/* ── Section 2: Question-led engagement ── */}
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-            <div className="text-center mb-8">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">Sound familiar?</p>
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <div className="text-center mb-9">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/70 mb-2">Sound familiar?</p>
               <h2 className="text-lg sm:text-xl font-bold text-foreground">
                 Questions hospitality managers are already asking
               </h2>
