@@ -400,23 +400,23 @@ const Auth = () => {
 
         {/* ── Section 1: Recognition — problem cards ── */}
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-7">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-8">
             The problem is not effort. It is fragmentation.
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               "Someone is on next week's rota — but still has overdue training.",
               "A document expires — and nobody catches it in time.",
               "A service issue gets logged — but follow-up disappears.",
               "Payroll closes — but managers already lost hours chasing information.",
             ].map((line) => (
-              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-muted-foreground/20 hover:bg-muted/30 transition-all duration-200">
-                <p className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
+              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3.5 hover:border-muted-foreground/20 hover:bg-muted/30 focus-within:ring-2 focus-within:ring-ring transition-all duration-200">
+                <p className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
               </div>
             ))}
           </div>
-          <p className="text-sm text-foreground font-semibold mt-6 text-center">
+          <p className="text-sm text-foreground font-semibold mt-7 text-center">
             The real leak is not a lack of software. It is a lack of connected control.
           </p>
         </section>
