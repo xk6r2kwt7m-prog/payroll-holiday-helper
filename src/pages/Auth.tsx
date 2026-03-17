@@ -499,7 +499,7 @@ const Auth = () => {
         </section>
         </ScrollReveal>
 
-        {/* Business outcomes */}
+        <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
           <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-1.5">
@@ -511,6 +511,7 @@ const Auth = () => {
             <CandidateConversion />
           </div>
         </section>
+        </ScrollReveal>
 
         {/* Pain points */}
         <section className="max-w-4xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
