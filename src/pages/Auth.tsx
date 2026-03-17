@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import { ScrollReveal } from "@/components/marketing/ScrollReveal";
 import {
   ChevronDown, MailCheck, Building2, Globe, Banknote, GraduationCap,
   ShieldCheck, Activity,
