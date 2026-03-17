@@ -490,13 +490,14 @@ const Auth = () => {
           </div>
         </section>
 
-        {/* Why different */}
+        <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
             Why generic HR and rota tools fall short
           </h2>
           <EmployerConversion />
         </section>
+        </ScrollReveal>
 
         {/* Business outcomes */}
         <section className="bg-card/50 border-y border-border">
