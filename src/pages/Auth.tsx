@@ -390,10 +390,10 @@ const Auth = () => {
           <p className="text-[13px] text-muted-foreground mt-3 text-center leading-relaxed max-w-sm mx-auto">
             Rotas, payroll, training, compliance and follow-through — connected in one hospitality system.
           </p>
-          <div className="flex items-center justify-center gap-3 mt-5">
-             <Button className="gradient-primary hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all duration-150" size="sm" onClick={scrollToDemo}>Book a demo</Button>
-             <Button variant="outline" size="sm" className="hover:shadow-sm active:scale-[0.98] transition-all duration-150" onClick={scrollToPlatform}>See the platform</Button>
-          </div>
+           <div className="flex items-center justify-center gap-3 mt-5">
+             <Button className="gradient-primary shadow-sm hover:shadow-lg hover:brightness-105 active:scale-[0.97] transition-all duration-200 font-semibold" size="sm" onClick={scrollToDemo}>Book a demo</Button>
+             <Button variant="outline" size="sm" className="hover:bg-muted/50 active:scale-[0.97] transition-all duration-200" onClick={scrollToPlatform}>See the platform</Button>
+           </div>
         </section>
 
         <ScrollReveal>
