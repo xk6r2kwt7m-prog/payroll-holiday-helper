@@ -398,6 +398,7 @@ const Auth = () => {
            </div>
         </section>
 
+        {/* ── Section 1: Recognition — problem cards ── */}
         <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
           <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-7">
@@ -410,7 +411,7 @@ const Auth = () => {
               "A service issue gets logged — but follow-up disappears.",
               "Payroll closes — but managers already lost hours chasing information.",
             ].map((line) => (
-              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-destructive/20 hover:bg-destructive/[0.02] transition-all duration-200">
+              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-muted-foreground/20 hover:bg-muted/30 transition-all duration-200">
                 <p className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
               </div>
             ))}
@@ -421,88 +422,114 @@ const Auth = () => {
         </section>
         </ScrollReveal>
 
+        {/* ── Section 2: Question-led engagement ── */}
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
           <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
-              This is not an HR problem. It is an operations control problem.
-            </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-5">
-              Records, rotas and payroll matter — but they are only part of the job. Hospitality managers also need to know:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-lg mx-auto">
-              {[
-                "Who is actually ready to work",
-                "What training is overdue",
-                "Where compliance risk is building",
-                "What standards are slipping",
-                "What still needs follow-through",
-              ].map((item) => (
-                <div key={item} className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">
+            <div className="text-center mb-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">Sound familiar?</p>
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">
+                Questions hospitality managers are already asking
+              </h2>
+              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">
+                Tap any question to see how connected control changes the answer.
+              </p>
+            </div>
+            <ManagerQuestions />
+          </div>
+        </section>
+        </ScrollReveal>
+
+        {/* ── Section 3: Reframe ── */}
+        <ScrollReveal>
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+            This is not an HR problem. It is an operations control problem.
+          </h2>
+          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-6">
+            Records, rotas and payroll matter — but they are only part of the job. Hospitality managers also need to know:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-lg mx-auto">
+            {[
+              "Who is actually ready to work",
+              "What training is overdue",
+              "Where compliance risk is building",
+              "What standards are slipping",
+              "What still needs follow-through",
+            ].map((item, i) => (
+              <ScrollReveal key={item} delay={i * 60} direction="none">
+                <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                   <span>{item}</span>
                 </div>
-              ))}
-            </div>
-            <p className="text-sm text-foreground font-semibold mt-7 text-center">UGLŌ is built around that reality.</p>
-          </div>
-        </section>
-        </ScrollReveal>
-
-        <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-          <div className="text-center mb-8">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The shift</p>
-            <h2 className="text-lg sm:text-xl font-bold text-foreground">
-              One system for the work behind the shift
-            </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2">
-              Workforce management, training, compliance and follow-through — connected so managers stop chasing and start controlling.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { from: "Chasing information", to: "Seeing what matters" },
-              { from: "Reacting late", to: "Acting earlier" },
-              { from: "Managing headcount", to: "Managing readiness" },
-              { from: "Recording work", to: "Following through" },
-            ].map((item) => (
-              <div key={item.from} className="group relative rounded-xl border border-border bg-card p-4 sm:p-5 hover:border-primary/30 transition-all duration-300 overflow-hidden">
-                <div className="absolute inset-0 bg-primary/[0.04] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative flex items-center gap-3">
-                  <span className="text-[13px] text-muted-foreground/50 line-through group-hover:text-muted-foreground/25 transition-colors duration-300 shrink-0">{item.from}</span>
-                  <span className="text-primary/40 text-sm group-hover:text-primary transition-colors duration-300">→</span>
-                  <span className="text-[13px] sm:text-sm text-foreground font-semibold group-hover:text-primary transition-colors duration-300">{item.to}</span>
-                </div>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
+          <p className="text-sm text-foreground font-semibold mt-7 text-center">UGLŌ is built around that reality.</p>
         </section>
         </ScrollReveal>
 
+        {/* ── Section 4: Transformation — before/after ── */}
         <ScrollReveal>
-        <section id="platform-overview" className="bg-card/50 border-y border-border scroll-mt-4">
+        <section className="bg-primary/[0.02] border-y border-border">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
+            <div className="text-center mb-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The shift</p>
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">
+                From reactive management to operational control
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2">
+                Tap any row to see what changes when the systems are connected.
+              </p>
+            </div>
+            <TransformationSection />
+          </div>
+        </section>
+        </ScrollReveal>
+
+        {/* ── Section 5: Platform capabilities ── */}
+        <ScrollReveal>
+        <section id="platform-overview" className="scroll-mt-4">
           <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
             <div className="text-center mb-8 sm:mb-10">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The platform</p>
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
-              <p className="text-[13px] text-muted-foreground mt-2">Six connected modules. One hospitality platform.</p>
+              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">Six connected modules. Tap any card to see what managers gain.</p>
             </div>
             <ValueCards />
           </div>
         </section>
         </ScrollReveal>
+
+        {/* ── Section 6: Why generic tools fail ── */}
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
-            Why generic HR and rota tools fall short
-          </h2>
-          <EmployerConversion />
+        <section className="bg-card/50 border-y border-border">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+              Why generic HR and rota tools fall short
+            </h2>
+            <EmployerConversion />
+          </div>
         </section>
         </ScrollReveal>
 
+        {/* ── Section 7: Pain points ── */}
+        <ScrollReveal>
+        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
+          <div className="text-center mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground">
+              Problems hospitality managers recognise immediately
+            </h2>
+            <p className="text-[13px] text-muted-foreground mt-1.5">If more than two feel familiar, fragmentation is already costing you.</p>
+          </div>
+          <SecuritySection />
+        </section>
+        </ScrollReveal>
+
+        {/* ── Section 8: Business outcomes ── */}
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
             <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-1.5">
               What improves when managers have better control
             </h2>
@@ -514,25 +541,18 @@ const Auth = () => {
         </section>
         </ScrollReveal>
 
-        <ScrollReveal>
-        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
-            Problems hospitality managers recognise immediately
-          </h2>
-          <SecuritySection />
-        </section>
-        </ScrollReveal>
-
+        {/* ── Section 9: Final CTA ── */}
         <ScrollReveal>
         <section className="bg-primary/[0.04] border-y border-border">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-14 sm:py-18">
             <PricingSection onBookDemo={scrollToDemo} onSeePlatform={scrollToPlatform} />
           </div>
         </section>
         </ScrollReveal>
 
+        {/* ── Section 10: FAQ ── */}
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
           <div className="text-center mb-6">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">Common questions</h2>
             <p className="text-[13px] text-muted-foreground mt-1">Straight answers for hospitality operators.</p>
