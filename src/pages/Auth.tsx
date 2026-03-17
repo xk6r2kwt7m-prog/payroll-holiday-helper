@@ -449,12 +449,15 @@ const Auth = () => {
 
         <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-3">
-            One system for the work behind the shift
-          </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-8">
-            Workforce management, training, compliance and follow-through — connected so managers stop chasing and start controlling.
-          </p>
+          <div className="text-center mb-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The shift</p>
+            <h2 className="text-lg sm:text-xl font-bold text-foreground">
+              One system for the work behind the shift
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2">
+              Workforce management, training, compliance and follow-through — connected so managers stop chasing and start controlling.
+            </p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { from: "Chasing information", to: "Seeing what matters" },
@@ -462,12 +465,12 @@ const Auth = () => {
               { from: "Managing headcount", to: "Managing readiness" },
               { from: "Recording work", to: "Following through" },
             ].map((item) => (
-              <div key={item.from} className="group relative rounded-xl border border-border bg-card p-4 hover:border-primary/30 transition-all duration-300 overflow-hidden">
+              <div key={item.from} className="group relative rounded-xl border border-border bg-card p-4 sm:p-5 hover:border-primary/30 transition-all duration-300 overflow-hidden">
                 <div className="absolute inset-0 bg-primary/[0.04] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground/60 line-through group-hover:text-muted-foreground/30 transition-colors duration-300 shrink-0">{item.from}</span>
-                  <span className="text-primary/50 font-medium text-sm group-hover:text-primary transition-colors duration-300">→</span>
-                  <span className="text-sm text-foreground font-semibold group-hover:text-primary transition-colors duration-300">{item.to}</span>
+                  <span className="text-[13px] text-muted-foreground/50 line-through group-hover:text-muted-foreground/25 transition-colors duration-300 shrink-0">{item.from}</span>
+                  <span className="text-primary/40 text-sm group-hover:text-primary transition-colors duration-300">→</span>
+                  <span className="text-[13px] sm:text-sm text-foreground font-semibold group-hover:text-primary transition-colors duration-300">{item.to}</span>
                 </div>
               </div>
             ))}
