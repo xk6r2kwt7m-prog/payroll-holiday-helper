@@ -431,9 +431,6 @@ const Auth = () => {
               <h2 className="text-lg sm:text-xl font-bold text-foreground">
                 Questions hospitality managers are already asking
               </h2>
-              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">
-                Tap any question to see how connected control changes the answer.
-              </p>
             </div>
             <ManagerQuestions />
           </div>
@@ -479,7 +476,7 @@ const Auth = () => {
                 From reactive management to operational control
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2">
-                Tap any row to see what changes when the systems are connected.
+                What changes when the systems are connected.
               </p>
             </div>
             <TransformationSection />
@@ -494,7 +491,7 @@ const Auth = () => {
             <div className="text-center mb-8 sm:mb-10">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The platform</p>
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
-              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">Six connected modules. Tap any card to see what managers gain.</p>
+              <p className="text-[13px] text-muted-foreground mt-2 max-w-md mx-auto">Six connected modules. One hospitality operations platform.</p>
             </div>
             <ValueCards />
           </div>
