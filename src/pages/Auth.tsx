@@ -523,7 +523,7 @@ const Auth = () => {
 
         <ScrollReveal>
         <section className="bg-primary/[0.04] border-y border-border">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
             <PricingSection onBookDemo={scrollToDemo} onSeePlatform={scrollToPlatform} />
           </div>
         </section>
