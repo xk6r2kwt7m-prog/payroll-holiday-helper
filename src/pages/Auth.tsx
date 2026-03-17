@@ -477,10 +477,10 @@ const Auth = () => {
 
         <ScrollReveal>
         <section id="platform-overview" className="bg-card/50 border-y border-border scroll-mt-4">
-          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
-            <div className="text-center mb-6 sm:mb-8">
+          <div className="max-w-6xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
+            <div className="text-center mb-8 sm:mb-10">
               <h2 className="text-lg sm:text-xl font-bold text-foreground">What UGLŌ helps you control</h2>
-              <p className="text-[13px] text-muted-foreground mt-1.5">Six connected modules. One hospitality platform.</p>
+              <p className="text-[13px] text-muted-foreground mt-2">Six connected modules. One hospitality platform.</p>
             </div>
             <ValueCards />
           </div>
