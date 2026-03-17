@@ -421,7 +421,7 @@ const Auth = () => {
 
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
             <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
               This is not an HR problem. It is an operations control problem.
             </h2>
@@ -442,7 +442,7 @@ const Auth = () => {
                 </div>
               ))}
             </div>
-            <p className="text-sm text-foreground font-semibold mt-6 text-center">UGLŌ is built around that reality.</p>
+            <p className="text-sm text-foreground font-semibold mt-7 text-center">UGLŌ is built around that reality.</p>
           </div>
         </section>
         </ScrollReveal>
