@@ -419,7 +419,7 @@ const Auth = () => {
         </section>
         </ScrollReveal>
 
-        {/* Reframe */}
+        <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
           <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
@@ -436,7 +436,7 @@ const Auth = () => {
                 "What standards are slipping",
                 "What still needs follow-through",
               ].map((item) => (
-                <div key={item} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <div key={item} className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                   <span>{item}</span>
                 </div>
@@ -445,6 +445,7 @@ const Auth = () => {
             <p className="text-sm text-foreground font-semibold mt-6 text-center">UGLŌ is built around that reality.</p>
           </div>
         </section>
+        </ScrollReveal>
 
         {/* Solution */}
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
