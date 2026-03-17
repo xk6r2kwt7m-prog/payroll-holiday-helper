@@ -447,7 +447,7 @@ const Auth = () => {
         </section>
         </ScrollReveal>
 
-        {/* Solution */}
+        <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-3">
             One system for the work behind the shift
@@ -462,14 +462,15 @@ const Auth = () => {
               { from: "Managing headcount", to: "Managing readiness" },
               { from: "Recording work", to: "Following through" },
             ].map((item) => (
-              <div key={item.from} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 hover:border-primary/30 transition-colors">
-                <span className="text-xs text-muted-foreground/70 line-through">{item.from}</span>
-                <span className="text-primary font-bold text-sm">→</span>
-                <span className="text-xs text-foreground font-semibold">{item.to}</span>
+              <div key={item.from} className="group flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <span className="text-xs text-muted-foreground/70 line-through group-hover:text-muted-foreground/40 transition-colors duration-200">{item.from}</span>
+                <span className="text-primary font-bold text-sm group-hover:scale-110 transition-transform duration-200">→</span>
+                <span className="text-xs text-foreground font-semibold group-hover:text-primary transition-colors duration-200">{item.to}</span>
               </div>
             ))}
           </div>
         </section>
+        </ScrollReveal>
 
         {/* Capability overview */}
         <section id="platform-overview" className="bg-card/50 border-y border-border scroll-mt-4">
