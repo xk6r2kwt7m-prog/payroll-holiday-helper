@@ -19,6 +19,8 @@ import { ValueCards } from "@/components/marketing/ValueCards";
 import { SecuritySection } from "@/components/marketing/SecuritySection";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { EmployerConversion, CandidateConversion } from "@/components/marketing/ConversionSections";
+import { ManagerQuestions } from "@/components/marketing/ManagerQuestions";
+import { TransformationSection } from "@/components/marketing/TransformationSection";
 import { CookieSettingsButton } from "@/components/CookieConsent";
 
 const loginSchema = z.object({
