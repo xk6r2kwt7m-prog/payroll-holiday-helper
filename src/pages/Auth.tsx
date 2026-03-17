@@ -468,14 +468,14 @@ const Auth = () => {
 
         {/* ── Section 4: Transformation — before/after ── */}
         <ScrollReveal>
-        <section className="bg-primary/[0.02] border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-            <div className="text-center mb-8">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary/70 mb-2">The shift</p>
+        <section className="bg-primary/[0.03] border-y border-border">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <div className="text-center mb-9">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/70 mb-2">The shift</p>
               <h2 className="text-lg sm:text-xl font-bold text-foreground">
                 From reactive management to operational control
               </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2">
+              <p className="text-[13px] text-muted-foreground leading-relaxed max-w-lg mx-auto mt-2.5">
                 What changes when the systems are connected.
               </p>
             </div>
