@@ -391,8 +391,8 @@ const Auth = () => {
             Rotas, payroll, training, compliance and follow-through — connected in one hospitality system.
           </p>
           <div className="flex items-center justify-center gap-3 mt-5">
-            <Button className="gradient-primary" size="sm" onClick={scrollToDemo}>Book a demo</Button>
-            <Button variant="outline" size="sm" onClick={scrollToPlatform}>See the platform</Button>
+             <Button className="gradient-primary hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all duration-150" size="sm" onClick={scrollToDemo}>Book a demo</Button>
+             <Button variant="outline" size="sm" className="hover:shadow-sm active:scale-[0.98] transition-all duration-150" onClick={scrollToPlatform}>See the platform</Button>
           </div>
         </section>
 
