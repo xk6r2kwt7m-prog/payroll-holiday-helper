@@ -514,7 +514,6 @@ const Auth = () => {
           <SecuritySection />
         </section>
         </ScrollReveal>
-        </section>
 
         <ScrollReveal>
         <section className="bg-primary/[0.04] border-y border-border">
