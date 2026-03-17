@@ -35,9 +35,9 @@ export function EmployerConversion({ className }: SectionProps) {
           {DIFF_BLOCKS.map((b) => (
             <div
               key={b.title}
-              className="flex gap-3.5 rounded-xl border border-border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
+              className="group flex gap-3.5 rounded-xl border border-border bg-card p-4 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 mt-0.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 group-hover:scale-105 transition-all duration-200 mt-0.5">
                 <b.icon className="h-4 w-4 text-primary" />
               </div>
               <div className="min-w-0">

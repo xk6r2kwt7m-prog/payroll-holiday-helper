@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import { ScrollReveal } from "@/components/marketing/ScrollReveal";
 import {
   ChevronDown, MailCheck, Building2, Globe, Banknote, GraduationCap,
   ShieldCheck, Activity,
@@ -160,8 +161,8 @@ const Auth = () => {
               </p>
 
               <div className="flex items-center gap-3 mb-10">
-                <Button className="gradient-primary" onClick={scrollToDemo}>Book a demo</Button>
-                <Button variant="outline" onClick={scrollToPlatform}>See the platform</Button>
+                <Button className="gradient-primary hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all duration-150" onClick={scrollToDemo}>Book a demo</Button>
+                <Button variant="outline" className="hover:shadow-sm active:scale-[0.98] transition-all duration-150" onClick={scrollToPlatform}>See the platform</Button>
               </div>
 
               {/* Trust strip */}
@@ -390,12 +391,12 @@ const Auth = () => {
             Rotas, payroll, training, compliance and follow-through — connected in one hospitality system.
           </p>
           <div className="flex items-center justify-center gap-3 mt-5">
-            <Button className="gradient-primary" size="sm" onClick={scrollToDemo}>Book a demo</Button>
-            <Button variant="outline" size="sm" onClick={scrollToPlatform}>See the platform</Button>
+             <Button className="gradient-primary hover:shadow-md hover:brightness-110 active:scale-[0.98] transition-all duration-150" size="sm" onClick={scrollToDemo}>Book a demo</Button>
+             <Button variant="outline" size="sm" className="hover:shadow-sm active:scale-[0.98] transition-all duration-150" onClick={scrollToPlatform}>See the platform</Button>
           </div>
         </section>
 
-        {/* Recognition */}
+        <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground leading-snug max-w-xl mx-auto text-center mb-6">
             The problem is not effort. It is fragmentation.
@@ -407,8 +408,8 @@ const Auth = () => {
               "A service issue gets logged — but follow-up disappears.",
               "Payroll closes — but managers already lost hours chasing information.",
             ].map((line) => (
-              <div key={line} className="rounded-xl border border-border bg-card/60 px-4 py-3">
-                <p className="text-sm text-muted-foreground leading-relaxed">{line}</p>
+              <div key={line} className="group rounded-xl border border-border bg-card/60 px-4 py-3 hover:border-primary/30 hover:bg-card hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200">
+                <p className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground/80 transition-colors duration-200">{line}</p>
               </div>
             ))}
           </div>
@@ -416,8 +417,9 @@ const Auth = () => {
             The real leak is not a lack of software. It is a lack of connected control.
           </p>
         </section>
+        </ScrollReveal>
 
-        {/* Reframe */}
+        <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
           <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
@@ -434,7 +436,7 @@ const Auth = () => {
                 "What standards are slipping",
                 "What still needs follow-through",
               ].map((item) => (
-                <div key={item} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <div key={item} className="flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                   <span>{item}</span>
                 </div>
@@ -443,8 +445,9 @@ const Auth = () => {
             <p className="text-sm text-foreground font-semibold mt-6 text-center">UGLŌ is built around that reality.</p>
           </div>
         </section>
+        </ScrollReveal>
 
-        {/* Solution */}
+        <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-3">
             One system for the work behind the shift
@@ -459,16 +462,17 @@ const Auth = () => {
               { from: "Managing headcount", to: "Managing readiness" },
               { from: "Recording work", to: "Following through" },
             ].map((item) => (
-              <div key={item.from} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 hover:border-primary/30 transition-colors">
-                <span className="text-xs text-muted-foreground/70 line-through">{item.from}</span>
-                <span className="text-primary font-bold text-sm">→</span>
-                <span className="text-xs text-foreground font-semibold">{item.to}</span>
+              <div key={item.from} className="group flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+                <span className="text-xs text-muted-foreground/70 line-through group-hover:text-muted-foreground/40 transition-colors duration-200">{item.from}</span>
+                <span className="text-primary font-bold text-sm group-hover:scale-110 transition-transform duration-200">→</span>
+                <span className="text-xs text-foreground font-semibold group-hover:text-primary transition-colors duration-200">{item.to}</span>
               </div>
             ))}
           </div>
         </section>
+        </ScrollReveal>
 
-        {/* Capability overview */}
+        <ScrollReveal>
         <section id="platform-overview" className="bg-card/50 border-y border-border scroll-mt-4">
           <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <div className="text-center mb-6 sm:mb-8">
@@ -478,16 +482,17 @@ const Auth = () => {
             <ValueCards />
           </div>
         </section>
-
-        {/* Why different */}
+        </ScrollReveal>
+        <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
             Why generic HR and rota tools fall short
           </h2>
           <EmployerConversion />
         </section>
+        </ScrollReveal>
 
-        {/* Business outcomes */}
+        <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
           <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-1.5">
@@ -499,23 +504,26 @@ const Auth = () => {
             <CandidateConversion />
           </div>
         </section>
+        </ScrollReveal>
 
-        {/* Pain points */}
+        <ScrollReveal>
         <section className="max-w-4xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
             Problems hospitality managers recognise immediately
           </h2>
           <SecuritySection />
         </section>
+        </ScrollReveal>
 
-        {/* Final CTA */}
+        <ScrollReveal>
         <section className="bg-primary/[0.04] border-y border-border">
           <div className="max-w-6xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
             <PricingSection onBookDemo={scrollToDemo} onSeePlatform={scrollToPlatform} />
           </div>
         </section>
+        </ScrollReveal>
 
-        {/* FAQ */}
+        <ScrollReveal>
         <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
           <div className="text-center mb-6">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">Common questions</h2>
@@ -523,6 +531,7 @@ const Auth = () => {
           </div>
           <FAQ />
         </section>
+        </ScrollReveal>
 
         {/* Footer */}
         <footer className="border-t border-border bg-card">
