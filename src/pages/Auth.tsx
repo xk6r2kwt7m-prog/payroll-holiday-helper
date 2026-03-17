@@ -501,8 +501,8 @@ const Auth = () => {
         {/* ── Section 6: Why generic tools fail ── */}
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
-            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-5">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-6">
               Why generic HR and rota tools fall short
             </h2>
             <EmployerConversion />
@@ -512,12 +512,12 @@ const Auth = () => {
 
         {/* ── Section 7: Pain points ── */}
         <ScrollReveal>
-        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
-          <div className="text-center mb-6">
+        <section className="max-w-4xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+          <div className="text-center mb-8">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">
               Problems hospitality managers recognise immediately
             </h2>
-            <p className="text-[13px] text-muted-foreground mt-1.5">If more than two feel familiar, fragmentation is already costing you.</p>
+            <p className="text-[13px] text-muted-foreground mt-2">If more than two feel familiar, fragmentation is already costing you.</p>
           </div>
           <SecuritySection />
         </section>
@@ -526,11 +526,11 @@ const Auth = () => {
         {/* ── Section 8: Business outcomes ── */}
         <ScrollReveal>
         <section className="bg-card/50 border-y border-border">
-          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-14">
-            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-1.5">
+          <div className="max-w-3xl mx-auto px-5 sm:px-6 py-14 sm:py-20">
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-2">
               What improves when managers have better control
             </h2>
-            <p className="text-[13px] text-muted-foreground text-center mb-6">
+            <p className="text-[13px] text-muted-foreground text-center mb-7">
               Better visibility helps. Better follow-through is where the value sits.
             </p>
             <CandidateConversion />
