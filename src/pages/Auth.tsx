@@ -448,24 +448,27 @@ const Auth = () => {
         </ScrollReveal>
 
         <ScrollReveal>
-        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-10 sm:py-14">
+        <section className="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
           <h2 className="text-lg sm:text-xl font-bold text-foreground text-center mb-3">
             One system for the work behind the shift
           </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-6">
+          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-lg mx-auto mb-8">
             Workforce management, training, compliance and follow-through — connected so managers stop chasing and start controlling.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { from: "Chasing information", to: "Seeing what matters" },
               { from: "Reacting late", to: "Acting earlier" },
               { from: "Managing headcount", to: "Managing readiness" },
               { from: "Recording work", to: "Following through" },
             ].map((item) => (
-              <div key={item.from} className="group flex items-center gap-3 rounded-xl border border-border bg-card p-3.5 hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                <span className="text-xs text-muted-foreground/70 line-through group-hover:text-muted-foreground/40 transition-colors duration-200">{item.from}</span>
-                <span className="text-primary font-bold text-sm group-hover:scale-110 transition-transform duration-200">→</span>
-                <span className="text-xs text-foreground font-semibold group-hover:text-primary transition-colors duration-200">{item.to}</span>
+              <div key={item.from} className="group relative rounded-xl border border-border bg-card p-4 hover:border-primary/30 transition-all duration-300 overflow-hidden">
+                <div className="absolute inset-0 bg-primary/[0.04] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="relative flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground/60 line-through group-hover:text-muted-foreground/30 transition-colors duration-300 shrink-0">{item.from}</span>
+                  <span className="text-primary/50 font-medium text-sm group-hover:text-primary transition-colors duration-300">→</span>
+                  <span className="text-sm text-foreground font-semibold group-hover:text-primary transition-colors duration-300">{item.to}</span>
+                </div>
               </div>
             ))}
           </div>
