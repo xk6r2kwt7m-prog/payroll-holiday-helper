@@ -25,8 +25,8 @@ const DIFF_BLOCKS = [
 export function EmployerConversion({ className }: SectionProps) {
   return (
     <div className={className}>
-      <div className="space-y-4">
-        <div className="text-sm text-muted-foreground leading-relaxed">
+      <div className="space-y-5">
+        <div className="text-[13px] sm:text-sm text-muted-foreground leading-relaxed">
           <p>Generic HR stores records. Rota tools schedule shifts. Payroll tools process pay.</p>
           <p className="text-foreground font-semibold mt-2">Hospitality operators need more than that.</p>
         </div>
@@ -35,14 +35,15 @@ export function EmployerConversion({ className }: SectionProps) {
           {DIFF_BLOCKS.map((b) => (
             <div
               key={b.title}
-              className="group flex gap-3.5 rounded-xl border border-border bg-card p-4 hover:border-primary/25 hover:shadow-sm transition-all duration-250"
+              className="group flex gap-3.5 rounded-xl border border-border bg-card p-4 hover:border-primary/25 hover:shadow-sm focus-within:ring-2 focus-within:ring-ring transition-all duration-200"
+              tabIndex={0}
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/8 group-hover:bg-primary/12 transition-colors duration-250 mt-0.5">
-                <b.icon className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors duration-250" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/[0.08] group-hover:bg-primary/[0.12] transition-colors duration-200 mt-0.5">
+                <b.icon className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors duration-200" />
               </div>
               <div className="min-w-0">
                 <h4 className="text-sm font-bold text-foreground tracking-tight">{b.title}</h4>
-                <p className="text-[13px] text-muted-foreground leading-relaxed mt-1">{b.desc}</p>
+                <p className="text-[12px] sm:text-[13px] text-muted-foreground leading-relaxed mt-1">{b.desc}</p>
               </div>
             </div>
           ))}
