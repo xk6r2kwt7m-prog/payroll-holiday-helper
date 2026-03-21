@@ -69,6 +69,7 @@ export function useUpdateOnboardingData() {
     },
     onSuccess: (_, { employeeId }) => {
       qc.invalidateQueries({ queryKey: ["employee_onboarding_data", employeeId] });
+      qc.invalidateQueries({ queryKey: ["employee_readiness"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
