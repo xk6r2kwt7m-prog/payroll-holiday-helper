@@ -22,7 +22,8 @@ import {
   useSigningTokens,
 } from "@/hooks/useContractSigning";
 import { useSendContractEmail } from "@/hooks/useSendContractEmail";
-import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown } from "lucide-react";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -32,6 +33,8 @@ interface ContractSigningActionsProps {
   contractSendStatus?: string | null;
   contractSentAt?: string | null;
   contractSentTo?: string | null;
+  finalSignedPdfUrl?: string | null;
+  filePath?: string | null;
 }
 
 export function ContractSigningActions({
@@ -42,6 +45,8 @@ export function ContractSigningActions({
   contractSendStatus,
   contractSentAt,
   contractSentTo,
+  finalSignedPdfUrl,
+  filePath,
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -93,6 +98,25 @@ export function ContractSigningActions({
     toast({ title: "Copied!", description: "Signing link copied to clipboard" });
   };
 
+  const handleViewFinalContract = async () => {
+    // If we have a stored URL, use it directly
+    if (finalSignedPdfUrl) {
+      window.open(finalSignedPdfUrl, "_blank");
+      return;
+    }
+    // Otherwise generate a fresh signed URL from the original file
+    if (filePath) {
+      const { data } = await supabase.storage
+        .from("employee-documents")
+        .createSignedUrl(filePath, 3600);
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, "_blank");
+      } else {
+        toast({ title: "Error", description: "Could not generate download link", variant: "destructive" });
+      }
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!generatedLink || !employeeEmail || !generatedTokenId) return;
 
@@ -136,9 +160,22 @@ export function ContractSigningActions({
       {/* Inline status badges */}
       <div className="flex items-center gap-1">
         {signingStage === "fully_signed" && (
-          <Badge className="bg-primary/10 text-primary border-0 text-[10px] gap-1">
-            <CheckCircle2 className="h-3 w-3" /> Fully Signed
-          </Badge>
+          <>
+            <Badge className="bg-primary/10 text-primary border-0 text-[10px] gap-1">
+              <CheckCircle2 className="h-3 w-3" /> Fully Signed
+            </Badge>
+            {(finalSignedPdfUrl || filePath) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleViewFinalContract}
+                title="View final signed contract"
+              >
+                <FileDown className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </>
         )}
         {signingStage === "employee_signed" && (
           <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
