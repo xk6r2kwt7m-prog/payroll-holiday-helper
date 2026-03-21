@@ -73,6 +73,7 @@ function computeFlags(entry: any): { type: "time" | "location" | "approval"; lab
 export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: TimesheetReviewPanelProps) {
   const [rejectNotes, setRejectNotes] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const approveEntries = useApproveTimeEntries();
   const rejectEntry = useRejectTimeEntry();
   const { data: evidenceFiles = [] } = useEvidenceFiles({ employeeId: entry?.employee_id });
