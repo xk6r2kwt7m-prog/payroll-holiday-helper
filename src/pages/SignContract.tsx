@@ -14,6 +14,7 @@ interface ContractInfo {
   document_url: string | null;
   document_hash: string | null;
   expires_at: string;
+  existing_signatures: string[];
 }
 
 type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "missing_signature" | "internal_error" | "missing_token" | string;
