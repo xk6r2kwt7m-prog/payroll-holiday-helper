@@ -490,8 +490,6 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         tenant_id: tenantId,
         errors: unmatchedNames.length > 0 ? { unmatched: unmatchedNames } : null,
       } as any);
-        errors: unmatchedNames.length > 0 ? { unmatched: unmatchedNames } : null,
-      } as any);
 
       setStep("done");
       setImportMessage(
