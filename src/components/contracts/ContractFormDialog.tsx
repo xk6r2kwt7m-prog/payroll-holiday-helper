@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useTenant } from "@/hooks/useTenant";
+import { ContractPreview } from "./ContractPreview";
 import { pdf } from "@react-pdf/renderer";
 import {
   Dialog,
@@ -432,56 +433,12 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
           {/* STEP 2: Confirm Details */}
           {step === "confirm" && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <User className="h-4 w-4 text-primary" /> Employee
-                </h3>
-                <div className="grid grid-cols-2 gap-y-2 text-sm">
-                  <span className="text-muted-foreground">Name</span>
-                  <span className="font-medium text-foreground">{variables.employeeName}</span>
-                  <span className="text-muted-foreground">Job Title</span>
-                  <span className="font-medium text-foreground">{variables.jobTitle}</span>
-                  {variables.homeAddress && (
-                    <>
-                      <span className="text-muted-foreground">Address</span>
-                      <span className="font-medium text-foreground">{variables.homeAddress}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-primary" /> Contract Terms
-                </h3>
-                <div className="grid grid-cols-2 gap-y-2 text-sm">
-                  <span className="text-muted-foreground">Department</span>
-                  <span className="font-medium text-foreground">
-                    {CONTRACT_TYPE_OPTIONS.find(o => o.value === contractType)?.emoji} {CONTRACT_TYPE_OPTIONS.find(o => o.value === contractType)?.label}
-                  </span>
-                  <span className="text-muted-foreground">Employment Type</span>
-                  <span className="font-medium text-foreground">{getEmploymentTypeLabel(variables.employmentType)}</span>
-                  <span className="text-muted-foreground">Start Date</span>
-                  <span className="font-medium text-foreground">
-                    {new Date(variables.effectiveDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                  </span>
-                  <span className="text-muted-foreground">Hourly Rate</span>
-                  <span className="font-medium text-foreground">£{variables.hourlyRate}/hr</span>
-                  <span className="text-muted-foreground">Weekly Hours</span>
-                  <span className="font-medium text-foreground">{variables.weeklyHours}h</span>
-                  <span className="text-muted-foreground">Notice Period</span>
-                  <span className="font-medium text-foreground capitalize">{variables.noticePeriod}</span>
-                  <span className="text-muted-foreground">Probation</span>
-                  <span className="font-medium text-foreground">{variables.probationPeriod}</span>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-primary" /> Work Location
-                </h3>
-                <p className="text-sm text-foreground">{variables.workLocation}</p>
-              </div>
+              <ContractPreview
+                variables={variables}
+                contractType={contractType}
+                companyLegalName={companyLegalName}
+                companyAddress={companyAddress}
+              />
 
               <div className="flex gap-2">
                 <Button
@@ -496,7 +453,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                   }}
                 >
                   <Eye className="h-4 w-4" />
-                  Preview Contract
+                  Preview PDF
                 </Button>
               </div>
 
