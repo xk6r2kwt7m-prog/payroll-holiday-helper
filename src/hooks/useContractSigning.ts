@@ -39,6 +39,8 @@ export function useGenerateSigningLink() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contract_signatures"] });
       queryClient.invalidateQueries({ queryKey: ["signing_tokens"] });
+      queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
     },
   });
 }

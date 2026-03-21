@@ -253,6 +253,8 @@ export function useApproveOnboarding() {
       qc.invalidateQueries({ queryKey: ["employee_onboarding_data"] });
       qc.invalidateQueries({ queryKey: ["onboarding-review-queue"] });
       qc.invalidateQueries({ queryKey: ["employees"] });
+      qc.invalidateQueries({ queryKey: ["employee_readiness"] });
+      qc.invalidateQueries({ queryKey: ["team_readiness"] });
       toast.success("Onboarding approved — employee is now active");
     },
     onError: (e: any) => toast.error(e.message),
