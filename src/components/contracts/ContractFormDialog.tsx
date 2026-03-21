@@ -94,8 +94,8 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
   const [generatingEmployeeLink, setGeneratingEmployeeLink] = useState(false);
   const [generatingEmployerLink, setGeneratingEmployerLink] = useState(false);
 
-  const activeEmployees = useMemo(
-    () => employees?.filter((e) => e.status === "active") || [],
+  const contractEligibleEmployees = useMemo(
+    () => employees?.filter((e) => ["active", "starter", "onboarding"].includes(e.status)) || [],
     [employees]
   );
 
