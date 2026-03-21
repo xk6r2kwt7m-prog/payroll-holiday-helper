@@ -12,7 +12,7 @@ function haversineDistance(
   lat2: number,
   lon2: number
 ): number {
-  const R = 6371000; // Earth radius in meters
+  const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, latitude, longitude, branch, shift_id, notes } = body;
+    const { action, latitude, longitude, branch, shift_id, notes, break_minutes } = body;
 
     if (!action || !["clock_in", "clock_out"].includes(action)) {
       return new Response(
@@ -69,10 +69,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get employee record for this user
+    // Get employee record for this user — includes tenant_id as server-side source of truth
     const { data: employee, error: empError } = await serviceClient
       .from("employees")
-      .select("id, department, status")
+      .select("id, department, status, tenant_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -95,10 +95,10 @@ Deno.serve(async (req) => {
     let branchToUse = branch;
 
     if (latitude && longitude) {
-      // Get branch locations
       const { data: branches } = await serviceClient
         .from("branch_locations")
-        .select("*");
+        .select("*")
+        .eq("tenant_id", employee.tenant_id);
 
       if (branches) {
         for (const b of branches) {
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
         .eq("status", "scheduled")
         .maybeSingle();
 
-      // Block clock-in if outside geofence (unless manager override later)
+      // Block clock-in if outside geofence
       if (!withinGeofence && latitude && longitude) {
         return new Response(
           JSON.stringify({
@@ -161,10 +161,12 @@ Deno.serve(async (req) => {
         );
       }
 
+      // FIX: Include tenant_id from the employee record (server-side source of truth)
       const { data: entry, error: insertError } = await serviceClient
         .from("time_entries")
         .insert({
           employee_id: employee.id,
+          tenant_id: employee.tenant_id,
           shift_id: shift_id || shift?.id || null,
           branch: branchToUse,
           department: employee.department,
@@ -180,6 +182,13 @@ Deno.serve(async (req) => {
         .single();
 
       if (insertError) {
+        // Handle duplicate constraint violation gracefully
+        if (insertError.code === "23505") {
+          return new Response(
+            JSON.stringify({ error: "Already clocked in. Please clock out first." }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         return new Response(
           JSON.stringify({ error: insertError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -220,15 +229,32 @@ Deno.serve(async (req) => {
         );
       }
 
+      const clockOutTime = new Date().toISOString();
+
+      // Validate clock-out is after clock-in
+      if (new Date(clockOutTime) <= new Date(activeEntry.clock_in_time)) {
+        return new Response(
+          JSON.stringify({ error: "Clock-out time cannot be before clock-in time" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const updatePayload: Record<string, unknown> = {
+        clock_out_time: clockOutTime,
+        clock_out_latitude: latitude || null,
+        clock_out_longitude: longitude || null,
+        clock_out_within_geofence: withinGeofence,
+        notes: notes || null,
+      };
+
+      // Persist break_minutes if provided by the client
+      if (typeof break_minutes === "number" && break_minutes >= 0) {
+        updatePayload.break_minutes = Math.round(break_minutes);
+      }
+
       const { data: updated, error: updateError } = await serviceClient
         .from("time_entries")
-        .update({
-          clock_out_time: new Date().toISOString(),
-          clock_out_latitude: latitude || null,
-          clock_out_longitude: longitude || null,
-          clock_out_within_geofence: withinGeofence,
-          notes: notes || null,
-        })
+        .update(updatePayload)
         .eq("id", activeEntry.id)
         .select()
         .single();
