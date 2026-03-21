@@ -359,6 +359,9 @@ const Payroll = () => {
               </p>
             )}
 
+            {/* Source / original timesheet download */}
+            {selectedPeriod && <PayrollSourceInfo periodId={selectedPeriod.id} />}
+
         {/* Period Selector */}
         {periods.length > 0 && (
           <div className="-mx-4 sm:mx-0 px-4 sm:px-0">
