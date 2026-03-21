@@ -148,7 +148,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       setSelectedBranches([]);
       setPrimaryBranch(undefined);
     }
-    setActiveTab("personal");
+    setActiveTab(defaultTab || "personal");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 

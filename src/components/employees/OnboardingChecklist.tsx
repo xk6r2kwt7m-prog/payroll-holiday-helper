@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   CheckCircle2, Clock, AlertTriangle, XCircle, Shield, ExternalLink,
   ArrowRight, User, FileText, CreditCard, Calendar, BookOpen, UserCheck,
-  ChevronDown, ChevronRight, Send, Link2, Mail
+  ChevronDown, ChevronRight, Send, Link2, Mail, MailCheck, UserX
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useEmployeeReadiness, type ReadinessStatus, type CriticalityTier } from "@/hooks/useOnboardingReadiness";
 import { useNavigate } from "react-router-dom";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
+import { useMyOnboardingData } from "@/hooks/useEmployeeOnboarding";
 import { toast } from "sonner";
 import type { Employee } from "@/hooks/useEmployees";
 
@@ -214,6 +215,7 @@ function TierGroup({ tier, headerLabel, color, checks, employeeId, onCheckClick 
 
 export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklistProps) {
   const { data: readiness, isLoading } = useEmployeeReadiness(employeeId);
+  const { data: onboardingData } = useMyOnboardingData(employeeId);
   const navigate = useNavigate();
   const { sendInviteEmail } = useInviteEmail();
 
@@ -246,6 +248,27 @@ export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklis
 
   const isLinked = !!employee?.user_id;
   const hasEmail = !!employee?.email;
+  const isOnboardingSubmitted = !!onboardingData?.submitted_at;
+  const isOnboardingApproved = !!onboardingData?.onboarding_approved_at;
+
+  // Derive account lifecycle status
+  type AccountStatus = "no_email" | "email_no_invite" | "invite_sent" | "linked" | "onboarding_submitted" | "onboarding_approved";
+  let accountStatus: AccountStatus;
+  if (isOnboardingApproved) accountStatus = "onboarding_approved";
+  else if (isOnboardingSubmitted) accountStatus = "onboarding_submitted";
+  else if (isLinked) accountStatus = "linked";
+  else if (hasEmail) accountStatus = "email_no_invite"; // simplified — could check invitations table
+  else accountStatus = "no_email";
+
+  const accountStatusConfig: Record<AccountStatus, { icon: any; label: string; color: string }> = {
+    no_email: { icon: UserX, label: "No email on file", color: "text-warning" },
+    email_no_invite: { icon: Mail, label: "Email on file · invite not sent", color: "text-muted-foreground" },
+    invite_sent: { icon: MailCheck, label: "Invite sent", color: "text-primary" },
+    linked: { icon: Link2, label: "Account linked", color: "text-success" },
+    onboarding_submitted: { icon: Shield, label: "Onboarding submitted · awaiting review", color: "text-accent" },
+    onboarding_approved: { icon: CheckCircle2, label: "Onboarding approved", color: "text-success" },
+  };
+  const acctCfg = accountStatusConfig[accountStatus];
 
   // Group checks by criticality tier
   const tiers: CriticalityTier[] = ["legal_critical", "start_critical", "payroll_critical", "rota_critical", "profile_only"];
@@ -276,16 +299,11 @@ export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklis
           </Badge>
         </div>
 
-        {/* Account linkage status */}
+        {/* Account lifecycle status */}
         {employee && (
           <div className="flex items-center gap-2 text-[11px]">
-            {isLinked ? (
-              <span className="flex items-center gap-1 text-success"><Link2 className="h-3 w-3" /> Account linked</span>
-            ) : hasEmail ? (
-              <span className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> Not linked yet</span>
-            ) : (
-              <span className="flex items-center gap-1 text-warning"><Mail className="h-3 w-3" /> No email on file</span>
-            )}
+            <acctCfg.icon className={cn("h-3 w-3", acctCfg.color)} />
+            <span className={acctCfg.color}>{acctCfg.label}</span>
           </div>
         )}
 
