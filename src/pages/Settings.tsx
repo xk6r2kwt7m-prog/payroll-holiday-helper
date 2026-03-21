@@ -80,6 +80,7 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
       { id: "departments", label: "Departments", description: "Team groupings and labels" },
       { id: "statuses", label: "Employee Lifecycle", description: "Status types and onboarding steps" },
       { id: "onboarding", label: "Onboarding Requirements", description: "What new starters must complete" },
+      { id: "user-linking", label: "Employee–User Linking", description: "Manually link auth accounts to employee records" },
     ],
   },
   {
