@@ -215,6 +215,7 @@ function TierGroup({ tier, headerLabel, color, checks, employeeId, onCheckClick 
 
 export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklistProps) {
   const { data: readiness, isLoading } = useEmployeeReadiness(employeeId);
+  const { data: onboardingData } = useMyOnboardingData(employeeId);
   const navigate = useNavigate();
   const { sendInviteEmail } = useInviteEmail();
 
@@ -247,6 +248,27 @@ export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklis
 
   const isLinked = !!employee?.user_id;
   const hasEmail = !!employee?.email;
+  const isOnboardingSubmitted = !!onboardingData?.submitted_at;
+  const isOnboardingApproved = !!onboardingData?.onboarding_approved_at;
+
+  // Derive account lifecycle status
+  type AccountStatus = "no_email" | "email_no_invite" | "invite_sent" | "linked" | "onboarding_submitted" | "onboarding_approved";
+  let accountStatus: AccountStatus;
+  if (isOnboardingApproved) accountStatus = "onboarding_approved";
+  else if (isOnboardingSubmitted) accountStatus = "onboarding_submitted";
+  else if (isLinked) accountStatus = "linked";
+  else if (hasEmail) accountStatus = "email_no_invite"; // simplified — could check invitations table
+  else accountStatus = "no_email";
+
+  const accountStatusConfig: Record<AccountStatus, { icon: any; label: string; color: string }> = {
+    no_email: { icon: UserX, label: "No email on file", color: "text-warning" },
+    email_no_invite: { icon: Mail, label: "Email on file · invite not sent", color: "text-muted-foreground" },
+    invite_sent: { icon: MailCheck, label: "Invite sent", color: "text-primary" },
+    linked: { icon: Link2, label: "Account linked", color: "text-success" },
+    onboarding_submitted: { icon: Shield, label: "Onboarding submitted · awaiting review", color: "text-accent" },
+    onboarding_approved: { icon: CheckCircle2, label: "Onboarding approved", color: "text-success" },
+  };
+  const acctCfg = accountStatusConfig[accountStatus];
 
   // Group checks by criticality tier
   const tiers: CriticalityTier[] = ["legal_critical", "start_critical", "payroll_critical", "rota_critical", "profile_only"];
