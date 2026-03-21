@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,9 @@ import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Contracts() {
-  const [generateOpen, setGenerateOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const preselectedEmployeeId = searchParams.get("employee") || undefined;
+  const [generateOpen, setGenerateOpen] = useState(Boolean(preselectedEmployeeId));
   const { t } = useI18n();
 
   const resetPageState = useCallback(() => {
@@ -61,7 +64,7 @@ export default function Contracts() {
         </Tabs>
       </div>
 
-      <ContractFormDialog open={generateOpen} onOpenChange={setGenerateOpen} />
+      <ContractFormDialog open={generateOpen} onOpenChange={setGenerateOpen} preselectedEmployeeId={preselectedEmployeeId} />
     </AppLayout>
   );
 }

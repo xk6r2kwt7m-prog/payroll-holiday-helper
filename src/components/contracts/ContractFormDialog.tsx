@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useTenant } from "@/hooks/useTenant";
 import { ContractPreview } from "./ContractPreview";
@@ -55,11 +55,12 @@ import { useLocationSettings } from "@/hooks/useLocationSettings";
 interface ContractFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preselectedEmployeeId?: string;
 }
 
 type Step = "fill" | "confirm" | "sign";
 
-export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogProps) {
+export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }: ContractFormDialogProps) {
   const { toast } = useToast();
   const { data: employees } = useEmployees();
   const { data: companySettings } = useCompanySettings();
@@ -98,6 +99,14 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
     () => employees?.filter((e) => ["active", "starter", "onboarding"].includes(e.status)) || [],
     [employees]
   );
+
+  useEffect(() => {
+    if (!open || !preselectedEmployeeId || !contractEligibleEmployees.length) return;
+    const match = contractEligibleEmployees.find((e) => e.id === preselectedEmployeeId);
+    if (match) {
+      handleEmployeeSelect(match.id);
+    }
+  }, [open, preselectedEmployeeId, contractEligibleEmployees]);
 
   const handleEmployeeSelect = (employeeId: string) => {
     setSelectedEmployeeId(employeeId);
