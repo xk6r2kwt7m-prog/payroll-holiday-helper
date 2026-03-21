@@ -304,8 +304,8 @@ export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklis
   const accountBadges: Record<AccountStatus, { icon: any; label: string; color: string }> = {
     no_email: { icon: UserX, label: "No email on file", color: "text-warning" },
     email_no_invite: { icon: Mail, label: "Email on file · no invite sent yet", color: "text-muted-foreground" },
-    invite_sent: { icon: MailCheck, label: "Invite sent · awaiting sign-up", color: "text-primary" },
-    invite_accepted: { icon: LogIn, label: "Invite accepted · not yet linked", color: "text-accent" },
+    invite_sent: { icon: MailCheck, label: "Invite email sent · awaiting sign-up", color: "text-primary" },
+    invite_accepted: { icon: LogIn, label: "Invite accepted · account not yet linked", color: "text-accent" },
     linked: { icon: Link2, label: "Account linked", color: "text-success" },
     onboarding_submitted: { icon: Shield, label: "Onboarding submitted · awaiting review", color: "text-accent" },
     onboarding_approved: { icon: CheckCircle2, label: "Onboarding approved", color: "text-success" },
