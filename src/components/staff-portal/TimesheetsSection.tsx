@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Clock, ChevronDown, ChevronUp, MapPin } from "lucide-react";
+import { Clock, ChevronDown, ChevronUp, MapPin, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
