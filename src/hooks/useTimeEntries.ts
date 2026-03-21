@@ -132,15 +132,16 @@ export function useUpdateBreakMinutes() {
 
 async function writeTimeEntryAudit(
   tenantId: string,
-  action: "approve" | "reject",
+  auditAction: "approve" | "reject",
   entryIds: string[],
   userId: string,
   notes?: string
 ) {
+  const actionValue: "approve" | "reject" = auditAction;
   await supabase.from("audit_log").insert(
     entryIds.map((id) => ({
-      action: (action === "approve" ? "approve" : "reject") as const,
-      table_name: "time_entries",
+      action: actionValue,
+      table_name: "time_entries" as const,
       record_id: id,
       tenant_id: tenantId,
       user_id: userId,
