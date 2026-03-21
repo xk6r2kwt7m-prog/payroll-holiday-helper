@@ -422,6 +422,11 @@ const Settings = () => {
             <OnboardingRequirementsConfig />
           </ConfigCard>
         )}
+        {activeSection === "user-linking" && (
+          <ConfigCard title="Employee–User Linking" description="Manually link or unlink auth user accounts to employee records. Use this when auto-linking fails due to email mismatches or duplicates.">
+            <EmployeeUserLinking />
+          </ConfigCard>
+        )}
 
         {/* ─── WORKPLACES GROUP ─── */}
         {activeSection === "locations" && (
