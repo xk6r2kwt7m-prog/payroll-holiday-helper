@@ -3,7 +3,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import type { Employee } from "@/hooks/useEmployees";
 
-export type ReadinessStatus = "ready" | "pending" | "pending_verification" | "blocked";
+// ─── Criticality classification ───────────────────────────────────────
+// legal_critical   → blocks work clearance (RTW)
+// start_critical   → blocks first-day readiness (contract, induction)
+// payroll_critical → blocks payroll processing (bank, DOB for age-band)
+// rota_critical    → blocks scheduling (availability, dept training)
+// profile_only     → nice-to-have (emergency contact, optional docs)
+export type CriticalityTier =
+  | "legal_critical"
+  | "start_critical"
+  | "payroll_critical"
+  | "rota_critical"
+  | "profile_only";
+
+// ─── Staged readiness status ──────────────────────────────────────────
+export type ReadinessStatus =
+  | "record_created"
+  | "onboarding_in_progress"
+  | "awaiting_employee_action"
+  | "awaiting_manager_review"
+  | "not_cleared_to_work"
+  | "not_ready_for_rota"
+  | "ready_to_schedule"
+  | "fully_onboarded";
 
 export interface OnboardingRequirement {
   id: string;
@@ -20,18 +42,93 @@ export interface RequirementCheck {
   label: string;
   is_critical: boolean;
   is_required: boolean;
+  criticality: CriticalityTier;
   status: "complete" | "pending_verification" | "missing";
+  /** Who needs to act: employee, manager, or system */
+  action_owner: "employee" | "manager" | "system";
+  /** Human-readable next action */
+  next_action?: string;
 }
 
 export interface EmployeeReadiness {
   employeeId: string;
   employeeName: string;
   status: ReadinessStatus;
+  statusLabel: string;
+  statusDescription: string;
+  nextAction?: string;
   score: number;
   checks: RequirementCheck[];
   missingCritical: string[];
   missingRequired: string[];
   pendingVerification: string[];
+  /** Manager can always continue onboarding regardless of status */
+  managerCanProgress: true;
+}
+
+// ─── Criticality map ──────────────────────────────────────────────────
+const CRITICALITY_MAP: Record<string, CriticalityTier> = {
+  right_to_work: "legal_critical",
+  contract_signed: "start_critical",
+  bank_details: "payroll_critical",
+  personal_information: "payroll_critical",
+  emergency_contact: "profile_only",
+  availability: "rota_critical",
+  training_records: "rota_critical",
+};
+
+function getCriticality(key: string, category?: string): CriticalityTier {
+  if (CRITICALITY_MAP[key]) return CRITICALITY_MAP[key];
+  // Training library items
+  if (key.startsWith("training_lib_")) {
+    if (category === "compliance") return "start_critical";
+    if (category === "induction") return "start_critical";
+    return "rota_critical";
+  }
+  return "profile_only";
+}
+
+// ─── Action owner logic ───────────────────────────────────────────────
+function getActionOwner(key: string, status: "complete" | "pending_verification" | "missing"): "employee" | "manager" | "system" {
+  if (status === "complete") return "system";
+  if (status === "pending_verification") return "manager";
+
+  switch (key) {
+    case "right_to_work":
+    case "personal_information":
+    case "bank_details":
+    case "emergency_contact":
+      return "employee"; // employee fills, or manager can do it
+    case "contract_signed":
+      return "manager";
+    case "availability":
+      return "employee";
+    case "training_records":
+      return "manager"; // manager assigns training
+    default:
+      if (key.startsWith("training_lib_")) return "employee"; // employee completes training
+      return "manager";
+  }
+}
+
+function getNextAction(key: string, status: "complete" | "pending_verification" | "missing"): string | undefined {
+  if (status === "complete") return undefined;
+  if (status === "pending_verification") {
+    if (key === "right_to_work") return "Review RTW documents";
+    return "Review submitted documents";
+  }
+  switch (key) {
+    case "personal_information": return "Complete personal details";
+    case "bank_details": return "Add bank details";
+    case "right_to_work": return "Upload RTW evidence";
+    case "contract_signed": return "Generate and send contract";
+    case "emergency_contact": return "Add emergency contact";
+    case "availability": return "Set availability";
+    case "training_records": return "Assign training";
+    default:
+      if (key.startsWith("training_lib_")) return "Complete training module";
+      return "Complete this item";
+  }
 }
 
 export function useTenantOnboardingRequirements() {
@@ -111,7 +208,6 @@ function buildTrainingAssignmentChecks(
   libraryItems: LibraryItemForReadiness[],
   assignments: any[]
 ): RequirementCheck[] {
-  // Filter library items that apply to this employee's department
   const applicable = libraryItems.filter(item => {
     if (!item.target_departments || item.target_departments.length === 0) return true;
     return item.target_departments.includes(employee.department);
@@ -124,23 +220,59 @@ function buildTrainingAssignmentChecks(
     if (assignment) {
       const ackOk = !item.requires_acknowledgement || !!assignment.acknowledged_at;
       const completionOk = !item.requires_completion || !!assignment.completed_at;
-      if (ackOk && completionOk) {
-        status = "complete";
-      }
+      if (ackOk && completionOk) status = "complete";
     }
 
-    // Compliance-category items are critical; others are required
-    const isCritical = item.category === "compliance";
+    const criticality = getCriticality(`training_lib_${item.id}`, item.category);
 
     return {
       key: `training_lib_${item.id}`,
       label: item.title,
-      is_critical: isCritical,
+      is_critical: item.category === "compliance",
       is_required: true,
+      criticality,
       status,
+      action_owner: getActionOwner(`training_lib_${item.id}`, status),
+      next_action: getNextAction(`training_lib_${item.id}`, status),
     };
   });
 }
+
+// ─── Status labels & descriptions ─────────────────────────────────────
+const STATUS_META: Record<ReadinessStatus, { label: string; description: string }> = {
+  record_created: {
+    label: "Record Created",
+    description: "Employee record exists. Setup can begin.",
+  },
+  onboarding_in_progress: {
+    label: "Onboarding In Progress",
+    description: "Setup is underway — some items are complete, others still pending.",
+  },
+  awaiting_employee_action: {
+    label: "Employee Action Required",
+    description: "Waiting for the employee to complete their part of onboarding.",
+  },
+  awaiting_manager_review: {
+    label: "Awaiting Manager Review",
+    description: "Documents submitted and need manager review before clearance.",
+  },
+  not_cleared_to_work: {
+    label: "Not Cleared to Work Yet",
+    description: "Legal or compliance items are outstanding. Manager can continue setup.",
+  },
+  not_ready_for_rota: {
+    label: "Not Ready for Rota",
+    description: "Scheduling prerequisites are missing. Other onboarding can continue.",
+  },
+  ready_to_schedule: {
+    label: "Ready to Schedule",
+    description: "All critical items are complete. Employee can be added to the rota.",
+  },
+  fully_onboarded: {
+    label: "Fully Onboarded",
+    description: "All onboarding requirements are complete.",
+  },
+};
 
 function computeReadiness(
   employeeId: string,
@@ -155,12 +287,64 @@ function computeReadiness(
   const missingRequired = checks.filter(c => c.is_required && c.status === "missing").map(c => c.label);
   const pendingVerification = checks.filter(c => c.status === "pending_verification").map(c => c.label);
 
-  let status: ReadinessStatus = "ready";
-  if (missingCritical.length > 0) status = "blocked";
-  else if (pendingVerification.length > 0) status = "pending_verification";
-  else if (missingRequired.length > 0) status = "pending";
+  // ── Determine staged status ──
+  const hasLegalMissing = checks.some(c => c.criticality === "legal_critical" && c.status !== "complete");
+  const hasStartMissing = checks.some(c => c.criticality === "start_critical" && c.status !== "complete");
+  const hasPayrollMissing = checks.some(c => c.criticality === "payroll_critical" && c.status !== "complete");
+  const hasRotaMissing = checks.some(c => c.criticality === "rota_critical" && c.status !== "complete");
+  const hasPendingVerification = pendingVerification.length > 0;
+  const hasEmployeeActions = checks.some(c => c.action_owner === "employee" && c.status === "missing");
+  const allComplete = score === 100 && !hasPendingVerification;
 
-  return { employeeId, employeeName, status, score, checks, missingCritical, missingRequired, pendingVerification };
+  let status: ReadinessStatus;
+  let nextAction: string | undefined;
+
+  if (allComplete) {
+    status = "fully_onboarded";
+  } else if (score === 0) {
+    status = "record_created";
+    nextAction = "Begin onboarding setup";
+  } else if (hasPendingVerification && !hasEmployeeActions && missingRequired.length === 0) {
+    status = "awaiting_manager_review";
+    nextAction = pendingVerification[0] ? `Review: ${pendingVerification[0]}` : "Review submitted items";
+  } else if (hasLegalMissing) {
+    status = "not_cleared_to_work";
+    const legalItem = checks.find(c => c.criticality === "legal_critical" && c.status !== "complete");
+    nextAction = legalItem?.next_action || "Complete legal requirements";
+  } else if (hasStartMissing || hasPayrollMissing) {
+    if (hasEmployeeActions) {
+      status = "awaiting_employee_action";
+      const empItem = checks.find(c => c.action_owner === "employee" && c.status === "missing");
+      nextAction = empItem?.next_action || "Employee needs to complete items";
+    } else {
+      status = "onboarding_in_progress";
+      const mgrItem = checks.find(c => c.action_owner === "manager" && c.status !== "complete");
+      nextAction = mgrItem?.next_action || "Continue setup";
+    }
+  } else if (hasRotaMissing) {
+    status = "not_ready_for_rota";
+    const rotaItem = checks.find(c => c.criticality === "rota_critical" && c.status !== "complete");
+    nextAction = rotaItem?.next_action || "Complete rota prerequisites";
+  } else {
+    status = "ready_to_schedule";
+  }
+
+  const meta = STATUS_META[status];
+
+  return {
+    employeeId,
+    employeeName,
+    status,
+    statusLabel: meta.label,
+    statusDescription: meta.description,
+    nextAction,
+    score,
+    checks,
+    missingCritical,
+    missingRequired,
+    pendingVerification,
+    managerCanProgress: true,
+  };
 }
 
 export function useEmployeeReadiness(employeeId?: string) {
@@ -179,13 +363,11 @@ export function useEmployeeReadiness(employeeId?: string) {
         supabase.from("contract_signatures").select("*").eq("employee_id", employeeId),
         supabase.from("employee_availability").select("*").eq("employee_id", employeeId),
         supabase.from("training_records" as any).select("*").eq("employee_id", employeeId),
-        // Fetch library items that count toward readiness
         supabase.from("training_library" as any)
           .select("id, title, category, target_departments, requires_acknowledgement, requires_completion")
           .eq("tenant_id", tenantId)
           .eq("is_active", true)
           .eq("counts_toward_readiness", true),
-        // Fetch this employee's training assignments
         supabase.from("training_assignments" as any)
           .select("document_id, status, acknowledged_at, completed_at")
           .eq("employee_id", employeeId)
@@ -203,18 +385,22 @@ export function useEmployeeReadiness(employeeId?: string) {
       const libraryItems = (libRes.data || []) as unknown as LibraryItemForReadiness[];
       const assignments = assignRes.data || [];
 
-      // Standard requirement checks
-      const standardChecks: RequirementCheck[] = requirements.map(req => ({
-        key: req.requirement_key,
-        label: req.requirement_label,
-        is_critical: req.is_critical,
-        is_required: req.is_required,
-        status: checkRequirement(req.requirement_key, employee, onboarding, docs, sigs, avail, training),
-      }));
+      const standardChecks: RequirementCheck[] = requirements.map(req => {
+        const status = checkRequirement(req.requirement_key, employee, onboarding, docs, sigs, avail, training);
+        const criticality = getCriticality(req.requirement_key);
+        return {
+          key: req.requirement_key,
+          label: req.requirement_label,
+          is_critical: req.is_critical,
+          is_required: req.is_required,
+          criticality,
+          status,
+          action_owner: getActionOwner(req.requirement_key, status),
+          next_action: getNextAction(req.requirement_key, status),
+        };
+      });
 
-      // Training library readiness checks
       const trainingChecks = buildTrainingAssignmentChecks(employee, libraryItems, assignments);
-
       const allChecks = [...standardChecks, ...trainingChecks];
 
       return computeReadiness(employeeId, `${employee.forename} ${employee.surname}`, allChecks);
@@ -241,13 +427,11 @@ export function useTeamReadiness(employees: Employee[]) {
         supabase.from("contract_signatures").select("*").eq("tenant_id", tenantId).in("employee_id", nonActiveIds),
         supabase.from("employee_onboarding_data" as any).select("*").eq("tenant_id", tenantId).in("employee_id", nonActiveIds),
         supabase.from("employee_availability").select("*").eq("tenant_id", tenantId).in("employee_id", nonActiveIds),
-        // Library items counting toward readiness
         supabase.from("training_library" as any)
           .select("id, title, category, target_departments, requires_acknowledgement, requires_completion")
           .eq("tenant_id", tenantId)
           .eq("is_active", true)
           .eq("counts_toward_readiness", true),
-        // All assignments for these employees
         supabase.from("training_assignments" as any)
           .select("document_id, employee_id, status, acknowledged_at, completed_at")
           .eq("tenant_id", tenantId)
@@ -270,18 +454,22 @@ export function useTeamReadiness(employees: Employee[]) {
         const empAvail = avail.filter((a: any) => a.employee_id === empId);
         const empAssignments = (allAssignments as any[]).filter((a: any) => a.employee_id === empId);
 
-        // Standard checks
-        const standardChecks: RequirementCheck[] = requirements.map(req => ({
-          key: req.requirement_key,
-          label: req.requirement_label,
-          is_critical: req.is_critical,
-          is_required: req.is_required,
-          status: checkRequirement(req.requirement_key, employee, empOnb, empDocs, empSigs, empAvail, []),
-        }));
+        const standardChecks: RequirementCheck[] = requirements.map(req => {
+          const status = checkRequirement(req.requirement_key, employee, empOnb, empDocs, empSigs, empAvail, []);
+          const criticality = getCriticality(req.requirement_key);
+          return {
+            key: req.requirement_key,
+            label: req.requirement_label,
+            is_critical: req.is_critical,
+            is_required: req.is_required,
+            criticality,
+            status,
+            action_owner: getActionOwner(req.requirement_key, status),
+            next_action: getNextAction(req.requirement_key, status),
+          };
+        });
 
-        // Training library readiness checks
         const trainingChecks = buildTrainingAssignmentChecks(employee, libraryItems, empAssignments);
-
         const allChecks = [...standardChecks, ...trainingChecks];
 
         return computeReadiness(empId, `${employee.forename} ${employee.surname}`, allChecks);

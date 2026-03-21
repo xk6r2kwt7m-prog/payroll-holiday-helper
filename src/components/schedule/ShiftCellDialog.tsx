@@ -156,14 +156,18 @@ export function ShiftCellDialog({
           </div>
         </div>
 
-        {/* Blocked employee warning */}
-        {readiness?.status === "blocked" && (
+        {/* Not-cleared / not-schedulable employee warning */}
+        {readiness && (readiness.status === "not_cleared_to_work" || readiness.status === "not_ready_for_rota") && (
           <div className="mx-5 mt-1 flex items-start gap-2 p-2.5 rounded-lg bg-destructive/5 border border-destructive/10">
             <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-medium text-destructive">Cannot schedule — critical requirement missing</p>
+              <p className="text-xs font-medium text-destructive">
+                {readiness.status === "not_cleared_to_work"
+                  ? "Not cleared to work — legal requirements outstanding"
+                  : "Not ready for rota — scheduling prerequisites missing"}
+              </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {readiness.missingCritical.join(", ")}
+                {readiness.missingCritical.length > 0 ? readiness.missingCritical.join(", ") : readiness.missingRequired.join(", ")}
               </p>
             </div>
           </div>

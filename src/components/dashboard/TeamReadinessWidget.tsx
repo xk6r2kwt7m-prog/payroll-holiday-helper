@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CheckCircle2, Clock, XCircle, Shield, ChevronRight, Users } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Shield, ChevronRight, Users, Calendar, User, UserCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -7,11 +7,29 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useTeamReadiness, type ReadinessStatus } from "@/hooks/useOnboardingReadiness";
 
 const statusConfig: Record<ReadinessStatus, { label: string; icon: any; color: string; bg: string }> = {
-  ready: { label: "Ready", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
-  pending: { label: "Pending", icon: Clock, color: "text-warning", bg: "bg-warning/10" },
-  pending_verification: { label: "Verifying", icon: Shield, color: "text-accent", bg: "bg-accent/10" },
-  blocked: { label: "Blocked", icon: XCircle, color: "text-destructive", bg: "bg-destructive/10" },
+  record_created: { label: "New", icon: User, color: "text-muted-foreground", bg: "bg-muted/50" },
+  onboarding_in_progress: { label: "In Progress", icon: Clock, color: "text-primary", bg: "bg-primary/10" },
+  awaiting_employee_action: { label: "Staff Action", icon: UserCheck, color: "text-warning", bg: "bg-warning/10" },
+  awaiting_manager_review: { label: "Review", icon: Shield, color: "text-accent", bg: "bg-accent/10" },
+  not_cleared_to_work: { label: "Not Cleared", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+  not_ready_for_rota: { label: "Not Schedulable", icon: Calendar, color: "text-warning", bg: "bg-warning/10" },
+  ready_to_schedule: { label: "Schedulable", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
+  fully_onboarded: { label: "Complete", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
 };
+
+// Statuses that count as "needs attention" in the dashboard widget
+const NEEDS_ATTENTION: ReadinessStatus[] = [
+  "record_created", "onboarding_in_progress", "awaiting_employee_action",
+  "awaiting_manager_review", "not_cleared_to_work", "not_ready_for_rota",
+];
+
+// Statuses shown as summary counts
+const SUMMARY_STATUSES: { key: string; label: string; filter: (s: ReadinessStatus) => boolean; icon: any; color: string; bg: string }[] = [
+  { key: "complete", label: "Ready", filter: s => s === "fully_onboarded" || s === "ready_to_schedule", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
+  { key: "progress", label: "In Progress", filter: s => s === "onboarding_in_progress" || s === "record_created", icon: Clock, color: "text-primary", bg: "bg-primary/10" },
+  { key: "action", label: "Action Needed", filter: s => s === "awaiting_employee_action" || s === "awaiting_manager_review", icon: Shield, color: "text-accent", bg: "bg-accent/10" },
+  { key: "blocked", label: "Not Cleared", filter: s => s === "not_cleared_to_work" || s === "not_ready_for_rota", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
+];
 
 export function TeamReadinessWidget() {
   const { data: employees = [] } = useEmployees();
@@ -19,14 +37,7 @@ export function TeamReadinessWidget() {
 
   if (readiness.length === 0) return null;
 
-  const counts = {
-    ready: readiness.filter(r => r.status === "ready").length,
-    pending: readiness.filter(r => r.status === "pending").length,
-    pending_verification: readiness.filter(r => r.status === "pending_verification").length,
-    blocked: readiness.filter(r => r.status === "blocked").length,
-  };
-
-  const needsAttention = readiness.filter(r => r.status !== "ready");
+  const needsAttention = readiness.filter(r => NEEDS_ATTENTION.includes(r.status));
 
   return (
     <div>
@@ -39,14 +50,13 @@ export function TeamReadinessWidget() {
 
       {/* Summary strip */}
       <div className="grid grid-cols-4 gap-1.5 mb-3">
-        {(Object.entries(counts) as [ReadinessStatus, number][]).map(([status, count]) => {
-          const config = statusConfig[status];
-          const Icon = config.icon;
+        {SUMMARY_STATUSES.map(({ key, label, filter, icon: Icon, color, bg }) => {
+          const count = readiness.filter(r => filter(r.status)).length;
           return (
-            <div key={status} className={cn("flex flex-col items-center py-2 rounded-lg", config.bg)}>
-              <Icon className={cn("h-4 w-4 mb-0.5", config.color)} />
+            <div key={key} className={cn("flex flex-col items-center py-2 rounded-lg", bg)}>
+              <Icon className={cn("h-4 w-4 mb-0.5", color)} />
               <span className="text-lg font-bold text-foreground tabular-nums">{count}</span>
-              <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{config.label}</span>
+              <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{label}</span>
             </div>
           );
         })}
