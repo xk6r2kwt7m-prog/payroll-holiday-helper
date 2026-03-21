@@ -43,7 +43,7 @@ export function useFindCover({
     const dayOfWeek = new Date(shiftDate + "T00:00:00").getDay();
 
     return employees
-      .filter((e) => e.status === "active")
+      .filter((e) => e.status === "active" || e.status === "starter")
       .map((emp): CoverCandidate | null => {
         const empBranches = allBranches.filter((b) => b.employee_id === emp.id);
         const allowedBranches = empBranches.map((b) => b.branch);

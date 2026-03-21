@@ -62,7 +62,7 @@ export function RotaGrid({
   const sensors = useSensors(pointerSensor, touchSensor);
 
   const deptEmployees = useMemo(
-    () => employees.filter((e) => e.department === department && e.status === "active"),
+    () => employees.filter((e) => e.department === department && (e.status === "active" || e.status === "starter")),
     [employees, department]
   );
 

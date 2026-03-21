@@ -97,7 +97,7 @@ export default function Schedule() {
   const schedule = useScheduleActions({ currentDate, selectedBranch, selectedDept });
 
   const activeEmployees = useMemo(
-    () => employees?.filter((e) => e.status === "active") || [],
+    () => employees?.filter((e) => e.status === "active" || e.status === "starter") || [],
     [employees]
   );
 

@@ -42,7 +42,7 @@ export function ScheduleSummary({
   const [isOpen, setIsOpen] = useState(false);
 
   const deptEmployees = useMemo(
-    () => employees.filter((e) => e.department === department && e.status === "active"),
+    () => employees.filter((e) => e.department === department && (e.status === "active" || e.status === "starter")),
     [employees, department]
   );
 
