@@ -79,6 +79,9 @@ export default function EmployeeOnboarding() {
   const uploadDocument = useUploadDocument();
   const upsertAvailability = useUpsertAvailability();
 
+  const [linkageReason, setLinkageReason] = useState<string | null>(null);
+  const [emailMatchExists, setEmailMatchExists] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -86,12 +89,30 @@ export default function EmployeeOnboarding() {
       .select("id, forename, surname, tenant_id, status")
       .eq("user_id", user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (data) {
           setEmployeeId(data.id);
           setTenantId(data.tenant_id);
           setEmployeeName(`${data.forename} ${data.surname}`);
           initOnboarding.mutate({ employeeId: data.id, tenantId: data.tenant_id });
+        } else if (user.email) {
+          // Check if there are employee records with matching email but not linked
+          const { data: matches } = await supabase
+            .from("employees")
+            .select("id")
+            .ilike("email", user.email)
+            .is("user_id", null);
+
+          if (matches && matches.length > 1) {
+            setLinkageReason("multiple_matches");
+            setEmailMatchExists(true);
+          } else if (matches && matches.length === 1) {
+            setLinkageReason("linkage_pending");
+            setEmailMatchExists(true);
+          } else {
+            setLinkageReason("no_match");
+          }
+          console.warn("[ONBOARDING] No linked employee for user", user.id, "email:", user.email, "matches:", matches?.length || 0);
         }
         setLoading(false);
       });
