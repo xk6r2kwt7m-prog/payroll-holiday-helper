@@ -696,7 +696,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
               <TabsContent value="branches" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    📍 Select the branch(es) where this employee works. {isNewEmployee && <span className="text-destructive font-medium">At least one branch is required.</span>}
+                    📍 Select the branch(es) where this employee works. Can be assigned later if needed.
                   </p>
                 </div>
 
