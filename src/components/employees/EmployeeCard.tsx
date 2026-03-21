@@ -195,25 +195,14 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
         </div>
       )}
 
-      {/* Row 3: Contract / compliance / linkage flags */}
+      {/* Row 3: Account access + compliance flags */}
       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-        {!employee.email && (
-          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-warning/40 text-warning bg-warning/5 gap-0.5">
-            <MailWarning className="h-3 w-3" />
-            No email
-          </Badge>
+        {linkage && (
+          <AccountAccessBadge
+            state={linkage.state}
+            description={linkage.description}
+          />
         )}
-        {employee.user_id ? (
-          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-success/40 text-success bg-success/5 gap-0.5">
-            <Link2 className="h-3 w-3" />
-            Linked
-          </Badge>
-        ) : employee.email ? (
-          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-muted-foreground/40 text-muted-foreground bg-muted/30 gap-0.5">
-            <Unlink className="h-3 w-3" />
-            Not linked
-          </Badge>
-        ) : null}
         {employee.contract_country && (
           <Badge variant="outline" className="text-[10px] h-4.5 px-1.5">
             {employee.contract_country}
