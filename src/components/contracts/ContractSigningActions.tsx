@@ -99,16 +99,12 @@ export function ContractSigningActions({
   };
 
   const handleViewFinalContract = async () => {
-    // If we have a stored URL, use it directly
-    if (finalSignedPdfUrl) {
-      window.open(finalSignedPdfUrl, "_blank");
-      return;
-    }
-    // Otherwise generate a fresh signed URL from the original file
-    if (filePath) {
+    // Always generate a fresh signed URL on-demand from the durable file path
+    const pathToUse = finalSignedFilePath || filePath;
+    if (pathToUse) {
       const { data } = await supabase.storage
         .from("employee-documents")
-        .createSignedUrl(filePath, 3600);
+        .createSignedUrl(pathToUse, 3600);
       if (data?.signedUrl) {
         window.open(data.signedUrl, "_blank");
       } else {
