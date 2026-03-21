@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Check, X, MapPin, Clock, AlertTriangle, FileText } from "lucide-react";
+import { Check, X, MapPin, Clock, AlertTriangle, FileText, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ClockEventLocations } from "@/components/attendance/LocationMapPreview";
 import { useApproveTimeEntries, useRejectTimeEntry } from "@/hooks/useTimeEntries";
 import { useEvidenceFiles } from "@/hooks/useEvidence";
 import { toast } from "sonner";
+import { ManagerTimesheetDialog } from "./ManagerTimesheetDialog";
 
 interface TimesheetReviewPanelProps {
   entry: any;
