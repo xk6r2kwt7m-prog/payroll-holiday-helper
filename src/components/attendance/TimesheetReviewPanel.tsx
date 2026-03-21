@@ -180,17 +180,14 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
           {/* Location */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Location Verification</p>
-            <LocationMapPreview
-              lat={entry.clock_in_latitude}
-              lng={entry.clock_in_longitude}
-              label="Clock-in"
-              withinGeofence={entry.clock_in_within_geofence}
-            />
-            <LocationMapPreview
-              lat={entry.clock_out_latitude}
-              lng={entry.clock_out_longitude}
-              label="Clock-out"
-              withinGeofence={entry.clock_out_within_geofence}
+            <ClockEventLocations
+              clockInLat={entry.clock_in_latitude}
+              clockInLng={entry.clock_in_longitude}
+              clockInGeofence={entry.clock_in_within_geofence}
+              clockOutLat={entry.clock_out_latitude}
+              clockOutLng={entry.clock_out_longitude}
+              clockOutGeofence={entry.clock_out_within_geofence}
+              showInlineMap
             />
             {branchLoc && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 bg-muted/30 rounded">
