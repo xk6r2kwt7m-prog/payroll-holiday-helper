@@ -94,14 +94,14 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
   const [generatingEmployeeLink, setGeneratingEmployeeLink] = useState(false);
   const [generatingEmployerLink, setGeneratingEmployerLink] = useState(false);
 
-  const activeEmployees = useMemo(
-    () => employees?.filter((e) => e.status === "active") || [],
+  const contractEligibleEmployees = useMemo(
+    () => employees?.filter((e) => ["active", "starter", "onboarding"].includes(e.status)) || [],
     [employees]
   );
 
   const handleEmployeeSelect = (employeeId: string) => {
     setSelectedEmployeeId(employeeId);
-    const emp = activeEmployees.find((e) => e.id === employeeId);
+    const emp = contractEligibleEmployees.find((e) => e.id === employeeId);
     if (emp) {
       const deptMap: Record<string, ContractType> = { FOH: "foh", BOH: "kitchen", CPU: "kitchen" };
       const autoType: ContractType = deptMap[emp.department] || "foh";
@@ -332,11 +332,15 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                         <SelectValue placeholder="Choose employee..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {activeEmployees.map((emp) => (
+                        {contractEligibleEmployees.map((emp) => (
                           <SelectItem key={emp.id} value={emp.id}>
                             {emp.forename} {emp.surname} — {emp.department}
+                            {emp.status !== "active" && ` (${emp.status})`}
                           </SelectItem>
                         ))}
+                        {contractEligibleEmployees.length === 0 && (
+                          <div className="px-3 py-2 text-xs text-muted-foreground">No employees found</div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>

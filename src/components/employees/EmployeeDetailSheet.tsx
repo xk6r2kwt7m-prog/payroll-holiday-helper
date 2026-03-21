@@ -1,4 +1,4 @@
-import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake } from "lucide-react";
+import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake, UserPlus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { EmployeeNotesSection } from "./EmployeeNotesSection";
 import { OnboardingChecklist } from "./OnboardingChecklist";
+import { EmployeeSetupStatus } from "./EmployeeSetupStatus";
 import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateReferenceLetterDialog";
 import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocumentRequestDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
@@ -309,6 +310,13 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
                 />
               </Section>
             </SensitiveSection>
+          )}
+
+          {/* Setup Status — actionable next steps for starters */}
+          {(employee.status === "starter" || (employee.status as string) === "onboarding") && (
+            <Section title="Setup Progress" icon={UserPlus}>
+              <EmployeeSetupStatus employee={employee} />
+            </Section>
           )}
 
           {/* Onboarding Readiness */}

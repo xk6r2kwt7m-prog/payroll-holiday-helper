@@ -782,7 +782,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
               <TabsContent value="rtw" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    🛂 Confirm the employee's right to work in the UK. Use the{" "}
+                    🛂 Right to work verification is required before the employee starts work, but it does not block record creation. Complete the check when ready.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Use the{" "}
                     <a 
                       href="https://www.gov.uk/view-right-to-work" 
                       target="_blank" 
@@ -791,22 +794,11 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                     >
                       GOV.UK Right to Work checker
                     </a>{" "}
-                    to verify their share code online.
+                    for share code verification, or record passport details for British/Irish citizens.
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="sharing_code">Share Code</Label>
-                  <Input
-                    id="sharing_code"
-                    value={formData.sharing_code}
-                    onChange={(e) => setFormData({ ...formData, sharing_code: e.target.value.toUpperCase() })}
-                    placeholder="e.g. W46 3FG 27R"
-                    maxLength={11}
-                    className="transition-all focus:ring-2 focus:ring-primary/20 uppercase font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground">9-character code from the employee's share code letter or email</p>
-                </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="settlement_status">Settlement Status</Label>
@@ -828,16 +820,42 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="residence_permit">Visa / Residence Permit Number</Label>
-                  <Input
-                    id="residence_permit"
-                    value={formData.residence_permit}
-                    onChange={(e) => setFormData({ ...formData, residence_permit: e.target.value })}
-                    placeholder="e.g. BRP number or visa ref"
-                    className="transition-all focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
+                {/* Conditional fields based on settlement status */}
+                {formData.settlement_status === "british_citizen" && (
+                  <div className="rounded-lg bg-success/5 border border-success/20 p-3">
+                    <p className="text-xs text-success font-medium">🇬🇧 British citizen — share code not required</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Record a valid UK passport number above to satisfy right to work checks. Alternatively, accept a birth certificate plus proof of NI number.
+                    </p>
+                  </div>
+                )}
+
+                {formData.settlement_status && formData.settlement_status !== "british_citizen" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="sharing_code">Share Code</Label>
+                      <Input
+                        id="sharing_code"
+                        value={formData.sharing_code}
+                        onChange={(e) => setFormData({ ...formData, sharing_code: e.target.value.toUpperCase() })}
+                        placeholder="e.g. W46 3FG 27R"
+                        maxLength={11}
+                        className="transition-all focus:ring-2 focus:ring-primary/20 uppercase font-mono"
+                      />
+                      <p className="text-xs text-muted-foreground">9-character code from the employee's share code letter or email</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="residence_permit">Visa / Residence Permit Number</Label>
+                      <Input
+                        id="residence_permit"
+                        value={formData.residence_permit}
+                        onChange={(e) => setFormData({ ...formData, residence_permit: e.target.value })}
+                        placeholder="e.g. BRP number or visa ref"
+                        className="transition-all focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="rtw_checked_date">RTW Check Date</Label>
