@@ -30,6 +30,23 @@ export function AccountLinkagePanel({ employee, isAdmin, onEditEmployee }: Accou
       toast.error("No email address on file. Add an email first.");
       return;
     }
+
+    // Create/update invitation DB record
+    try {
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      await supabase.from("tenant_invitations").upsert(
+        {
+          tenant_id: employee.tenant_id,
+          email: employee.email.toLowerCase(),
+          role: "staff" as any,
+          invited_by: currentUser?.id,
+        },
+        { onConflict: "tenant_id,email" }
+      );
+    } catch {
+      // Non-blocking — invitation record is supplementary
+    }
+
     const result = await sendInviteEmail({
       recipientEmail: employee.email,
       employeeName: `${employee.forename} ${employee.surname}`,
