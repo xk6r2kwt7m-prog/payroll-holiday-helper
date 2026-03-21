@@ -369,6 +369,31 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="john.smith@example.com"
+                    className="transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p className="text-xs text-muted-foreground">Used for rota notifications and invitations</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="date_of_birth">Date of Birth</Label>
+                  <Input
+                    id="date_of_birth"
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                    className="transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p className="text-xs text-muted-foreground">Required for age-based pay compliance</p>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="employee_ref">Employee Reference</Label>
                   <Input
                     id="employee_ref"
