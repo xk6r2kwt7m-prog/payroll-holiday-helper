@@ -12,6 +12,7 @@ import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocume
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
+import { checkPayRisk, type PayRiskResult } from "@/lib/age-band";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 
 const statusStyles: Record<string, string> = {
