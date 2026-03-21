@@ -39,6 +39,9 @@ export function ContractSigningActions({
   employeeId,
   employeeName,
   employeeEmail,
+  contractSendStatus,
+  contractSentAt,
+  contractSentTo,
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -46,7 +49,7 @@ export function ContractSigningActions({
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [generatedTokenId, setGeneratedTokenId] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [emailSent, setEmailSent] = useState(contractSendStatus === "sent");
 
   const generateLink = useGenerateSigningLink();
   const { sendContractEmail } = useSendContractEmail();
