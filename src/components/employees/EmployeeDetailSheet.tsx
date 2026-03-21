@@ -8,7 +8,6 @@ import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { EmployeeNotesSection } from "./EmployeeNotesSection";
 import { OnboardingChecklist } from "./OnboardingChecklist";
-import { EmployeeSetupStatus } from "./EmployeeSetupStatus";
 import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateReferenceLetterDialog";
 import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocumentRequestDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
@@ -316,17 +315,10 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             </SensitiveSection>
           )}
 
-          {/* Setup Status — actionable next steps for starters */}
+          {/* Unified Onboarding Panel — single source of truth for starters */}
           {(employee.status === "starter" || (employee.status as string) === "onboarding") && (
-            <Section title="Setup Progress" icon={UserPlus}>
-              <EmployeeSetupStatus employee={employee} />
-            </Section>
-          )}
-
-          {/* Onboarding Readiness */}
-          {(employee.status === "starter" || (employee.status as string) === "onboarding") && (
-            <Section title="Onboarding Readiness" icon={ClipboardCheck}>
-              <OnboardingChecklist employeeId={employee.id} />
+            <Section title="Onboarding Progress" icon={ClipboardCheck}>
+              <OnboardingChecklist employeeId={employee.id} employee={employee} />
             </Section>
           )}
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   CheckCircle2, Clock, AlertTriangle, XCircle, Shield, ExternalLink,
   ArrowRight, User, FileText, CreditCard, Calendar, BookOpen, UserCheck,
-  ChevronDown, ChevronRight
+  ChevronDown, ChevronRight, Send, Link2, Mail
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useEmployeeReadiness, type ReadinessStatus, type CriticalityTier } from "@/hooks/useOnboardingReadiness";
 import { useNavigate } from "react-router-dom";
+import { useInviteEmail } from "@/hooks/useInviteEmail";
+import { toast } from "sonner";
+import type { Employee } from "@/hooks/useEmployees";
 
 // ─── Status visual config ─────────────────────────────────────────────
 const statusConfig: Record<ReadinessStatus, {
@@ -120,6 +123,7 @@ function getCheckAction(key: string, employeeId: string): { path: string; label:
 
 interface OnboardingChecklistProps {
   employeeId: string;
+  employee?: Employee;
 }
 
 /**
@@ -208,9 +212,10 @@ function TierGroup({ tier, headerLabel, color, checks, employeeId, onCheckClick 
   );
 }
 
-export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
+export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklistProps) {
   const { data: readiness, isLoading } = useEmployeeReadiness(employeeId);
   const navigate = useNavigate();
+  const { sendInviteEmail } = useInviteEmail();
 
   if (isLoading || !readiness) return null;
 
@@ -221,6 +226,26 @@ export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
     const action = getCheckAction(key, employeeId);
     if (action) navigate(action.path);
   };
+
+  const handleSendInvite = async () => {
+    if (!employee?.email) {
+      toast.error("Add an email address first.");
+      return;
+    }
+    const result = await sendInviteEmail({
+      recipientEmail: employee.email,
+      employeeName: `${employee.forename} ${employee.surname}`,
+      tenantId: employee.tenant_id,
+    });
+    if (result.success) {
+      toast.success(`Invite sent to ${employee.email}`);
+    } else {
+      toast.error(`Invite failed: ${result.error || "Unknown error"}`);
+    }
+  };
+
+  const isLinked = !!employee?.user_id;
+  const hasEmail = !!employee?.email;
 
   // Group checks by criticality tier
   const tiers: CriticalityTier[] = ["legal_critical", "start_critical", "payroll_critical", "rota_critical", "profile_only"];
@@ -251,24 +276,55 @@ export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
           </Badge>
         </div>
 
-        {/* Next action prompt */}
-        {readiness.nextAction && (
-          <div
-            className={cn(
-              "flex items-center gap-2 p-2 rounded-md bg-background/60 border border-primary/10",
-              nextStepAction && "cursor-pointer hover:bg-background/80 transition-colors"
+        {/* Account linkage status */}
+        {employee && (
+          <div className="flex items-center gap-2 text-[11px]">
+            {isLinked ? (
+              <span className="flex items-center gap-1 text-success"><Link2 className="h-3 w-3" /> Account linked</span>
+            ) : hasEmail ? (
+              <span className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> Not linked yet</span>
+            ) : (
+              <span className="flex items-center gap-1 text-warning"><Mail className="h-3 w-3" /> No email on file</span>
             )}
-            onClick={() => nextStepAction && navigate(nextStepAction.path)}
-            role={nextStepAction ? "button" : undefined}
-          >
-            <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs font-medium text-primary">Next step</p>
-              <p className="text-[11px] text-muted-foreground">{readiness.nextAction}</p>
-            </div>
-            {nextStepAction && <ExternalLink className="h-3 w-3 text-primary/50 shrink-0" />}
           </div>
         )}
+
+        {/* Primary + Secondary action buttons */}
+        <div className="flex gap-2">
+          {nextStepAction && (
+            <Button
+              size="sm"
+              variant="default"
+              className="flex-1 h-8 text-xs gap-1.5"
+              onClick={() => navigate(nextStepAction.path)}
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+              {nextStepAction.label}
+            </Button>
+          )}
+          {employee && !isLinked && hasEmail && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={handleSendInvite}
+            >
+              <Send className="h-3.5 w-3.5" />
+              Send invite
+            </Button>
+          )}
+          {employee && !hasEmail && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => navigate(`/employees?edit=${employeeId}&tab=personal`)}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Add email
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Manager reassurance */}
