@@ -85,6 +85,7 @@ export function useCreateEmployee() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
     },
   });
 }
