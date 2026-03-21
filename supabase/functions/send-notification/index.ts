@@ -217,6 +217,21 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling</strong></p>`;
       break;
     }
+    case "contract_signing": {
+      const empFirstName = (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your contract is ready to sign</h2>
+        <p>Hi ${empFirstName},</p>
+        <p>Your contract is now ready.</p>
+        <p>Please review and sign it using the link below:</p>
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.signing_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Sign your contract</a>
+        </p>
+        <p>It only takes a couple of minutes and can be completed on your phone.</p>
+        <p>If you have any questions, just reply to this email.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
     case "test":
       body = `<h2>UglyOps HR Platform</h2><p>This confirms that the email notification system is working.</p><p><strong>Sent at:</strong> ${new Date().toISOString()}</p>`;
       break;
