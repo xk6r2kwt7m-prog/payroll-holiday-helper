@@ -55,6 +55,7 @@ import { useLocationSettings } from "@/hooks/useLocationSettings";
 interface ContractFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preselectedEmployeeId?: string;
 }
 
 type Step = "fill" | "confirm" | "sign";
