@@ -160,9 +160,22 @@ export function ContractSigningActions({
       {/* Inline status badges */}
       <div className="flex items-center gap-1">
         {signingStage === "fully_signed" && (
-          <Badge className="bg-primary/10 text-primary border-0 text-[10px] gap-1">
-            <CheckCircle2 className="h-3 w-3" /> Fully Signed
-          </Badge>
+          <>
+            <Badge className="bg-primary/10 text-primary border-0 text-[10px] gap-1">
+              <CheckCircle2 className="h-3 w-3" /> Fully Signed
+            </Badge>
+            {(finalSignedPdfUrl || filePath) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={handleViewFinalContract}
+                title="View final signed contract"
+              >
+                <FileDown className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </>
         )}
         {signingStage === "employee_signed" && (
           <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
