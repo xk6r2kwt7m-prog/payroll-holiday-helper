@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
-import { useActiveClockIn, useClockInOut, useMyTimeEntries } from "@/hooks/useTimeEntries";
+import { useActiveClockIn, useClockInOut, useMyTimeEntries, useUpdateBreakMinutes } from "@/hooks/useTimeEntries";
 import { useShifts, useBranchLocations } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, isTomorrow, differenceInMinutes } from "date-fns";
@@ -257,9 +257,11 @@ export function StaffHome() {
   const [elapsedTime, setElapsedTime] = useState("");
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [breakStartTime, setBreakStartTime] = useState<Date | null>(null);
+  const [accumulatedBreakMs, setAccumulatedBreakMs] = useState(0);
 
   const { data: activeEntry } = useActiveClockIn();
   const clockInOut = useClockInOut();
+  const updateBreak = useUpdateBreakMinutes();
   const { data: branches } = useBranchLocations();
 
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -345,19 +347,40 @@ export function StaffHome() {
 
   const handleClockOut = async () => {
     try {
-      await clockInOut.mutateAsync({ action: "clock_out", latitude: coords?.lat, longitude: coords?.lng });
+      // If still on break, end it first and calculate final break total
+      let totalBreakMs = accumulatedBreakMs;
+      if (isOnBreak && breakStartTime) {
+        totalBreakMs += Date.now() - breakStartTime.getTime();
+      }
+      const breakMins = Math.round(totalBreakMs / 60000);
+
+      await clockInOut.mutateAsync({
+        action: "clock_out",
+        latitude: coords?.lat,
+        longitude: coords?.lng,
+        break_minutes: breakMins > 0 ? breakMins : undefined,
+      });
       toast.success("Clocked out!");
       setIsOnBreak(false);
       setBreakStartTime(null);
+      setAccumulatedBreakMs(0);
     } catch (err: any) {
       toast.error(err.requires_override ? "Outside allowed area to clock out." : err.message);
     }
   };
 
   const handleBreak = () => {
-    if (isOnBreak) {
+    if (isOnBreak && breakStartTime) {
+      // End break: accumulate elapsed break time and persist
+      const breakMs = Date.now() - breakStartTime.getTime();
+      const newTotal = accumulatedBreakMs + breakMs;
+      setAccumulatedBreakMs(newTotal);
       setIsOnBreak(false);
       setBreakStartTime(null);
+      const totalMinutes = Math.round(newTotal / 60000);
+      if (activeEntry?.id) {
+        updateBreak.mutate({ entryId: activeEntry.id, breakMinutes: totalMinutes });
+      }
       toast.success("Break ended");
     } else {
       setIsOnBreak(true);

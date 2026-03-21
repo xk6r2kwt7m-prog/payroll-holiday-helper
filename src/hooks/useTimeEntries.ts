@@ -68,7 +68,7 @@ export function useActiveClockIn() {
       if (error) throw error;
       return data as TimeEntry | null;
     },
-    refetchInterval: 30000, // refresh every 30s
+    refetchInterval: 30000,
   });
 }
 
@@ -82,6 +82,7 @@ export function useClockInOut() {
       branch?: string;
       shift_id?: string;
       notes?: string;
+      break_minutes?: number;
     }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -112,6 +113,43 @@ export function useClockInOut() {
   });
 }
 
+export function useUpdateBreakMinutes() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ entryId, breakMinutes }: { entryId: string; breakMinutes: number }) => {
+      const { error } = await supabase
+        .from("time_entries")
+        .update({ break_minutes: Math.round(Math.max(0, breakMinutes)) })
+        .eq("id", entryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["active_clock_in"] });
+      queryClient.invalidateQueries({ queryKey: ["my_time_entries"] });
+    },
+  });
+}
+
+async function writeTimeEntryAudit(
+  tenantId: string,
+  auditAction: "approve" | "reject",
+  entryIds: string[],
+  userId: string,
+  notes?: string
+) {
+  const actionValue: "approve" | "reject" = auditAction;
+  await supabase.from("audit_log").insert(
+    entryIds.map((id) => ({
+      action: actionValue,
+      table_name: "time_entries" as const,
+      record_id: id,
+      tenant_id: tenantId,
+      user_id: userId,
+      new_data: { status: auditAction === "approve" ? "approved" : "rejected", ...(notes ? { notes } : {}) },
+    }))
+  );
+}
+
 export function useApproveTimeEntries() {
   const queryClient = useQueryClient();
   const { tenantId } = useTenant();
@@ -130,6 +168,9 @@ export function useApproveTimeEntries() {
         })
         .in("id", entryIds);
       if (error) throw error;
+
+      // Audit log
+      await writeTimeEntryAudit(tenantId!, "approve", entryIds, user.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time_entries"] });
@@ -143,12 +184,17 @@ export function useRejectTimeEntry() {
   return useMutation({
     mutationFn: async ({ id, notes }: { id: string; notes?: string }) => {
       await assertPermission("approve_timesheets", tenantId!);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
 
       const { error } = await supabase
         .from("time_entries")
         .update({ status: "rejected" as const, notes })
         .eq("id", id);
       if (error) throw error;
+
+      // Audit log
+      await writeTimeEntryAudit(tenantId!, "reject", [id], user.id, notes);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time_entries"] });
@@ -179,6 +225,18 @@ export function useManagerOverride() {
         .single();
 
       if (action === "clock_in") {
+        // Check for existing open clock-in before creating a new one
+        const { data: existingOpen } = await supabase
+          .from("time_entries")
+          .select("id")
+          .eq("employee_id", employeeId)
+          .eq("status", "clocked_in")
+          .maybeSingle();
+
+        if (existingOpen) {
+          throw new Error("Employee already has an active clock-in. Clock them out first.");
+        }
+
         const { data, error } = await supabase
           .from("time_entries")
           .insert({
@@ -194,7 +252,13 @@ export function useManagerOverride() {
           } as any)
           .select()
           .single();
-        if (error) throw error;
+        if (error) {
+          // Handle duplicate constraint at DB level too
+          if (error.code === "23505") {
+            throw new Error("Employee already has an active clock-in. Clock them out first.");
+          }
+          throw error;
+        }
         return data;
       } else {
         const { data: active } = await supabase
