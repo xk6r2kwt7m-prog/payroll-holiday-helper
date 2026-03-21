@@ -241,7 +241,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         setContractEmailSent(true);
         toast({
           title: "Contract sent",
-          description: `Contract submitted to ${employeeEmail}`,
+          description: `Contract sent to ${employeeEmail}`,
         });
       } else {
         toast({
