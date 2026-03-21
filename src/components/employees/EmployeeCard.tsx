@@ -1,4 +1,4 @@
-import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus, MailWarning, Send, Link2, Unlink } from "lucide-react";
+import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus, MailWarning, Send } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { ReadinessStatusBadge } from "./OnboardingChecklist";
+import { AccountAccessBadge } from "./AccountAccessBadge";
 import { useEmployeeReadiness } from "@/hooks/useOnboardingReadiness";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
+import { useAccountLinkage } from "@/hooks/useAccountLinkage";
 import { toast } from "sonner";
 import { formatCurrency } from "@/hooks/useHolidays";
 import { useEmployeeBranches, type BranchType } from "@/hooks/useBranches";
