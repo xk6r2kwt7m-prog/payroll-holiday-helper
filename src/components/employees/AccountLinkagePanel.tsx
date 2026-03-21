@@ -70,6 +70,9 @@ export function AccountLinkagePanel({ employee, isAdmin, onEditEmployee }: Accou
       });
       toast.success("Account unlinked successfully");
       queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
     } catch (err: any) {
       toast.error(err.message || "Failed to unlink account");
     }

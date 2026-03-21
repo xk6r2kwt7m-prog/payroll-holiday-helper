@@ -108,6 +108,7 @@ export function useUpdateEmployee() {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
       queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
     },
   });
 }
