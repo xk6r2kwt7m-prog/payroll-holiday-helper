@@ -134,7 +134,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
           );
           // Email notification for time change
           if (emp.email) {
-            sendNotification({
+            const sent = await sendNotification({
               to: emp.email,
               subject: `Shift time changed – ${shiftDate}`,
               type: "shift_update",
@@ -147,6 +147,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               },
               tenant_id: tenantId,
             });
+            if (!sent) toast.warning(`Shift updated but email to ${emp.forename} ${emp.surname} failed`);
           }
         }
       }
@@ -164,7 +165,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             { shift_id: id }
           );
           if (oldEmp.email) {
-            sendNotification({
+            const sent = await sendNotification({
               to: oldEmp.email,
               subject: `Shift removed – ${shiftDate}`,
               type: "shift_update",
@@ -177,6 +178,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               },
               tenant_id: tenantId,
             });
+            if (!sent) toast.warning(`Shift reassigned but email to ${oldEmp.forename} ${oldEmp.surname} failed`);
           }
         }
         // Notify new employee (shift assigned)
@@ -195,7 +197,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             );
           }
           if (newEmp?.email) {
-            sendNotification({
+            const sent = await sendNotification({
               to: newEmp.email,
               subject: `New shift assigned – ${shiftDate}`,
               type: "shift_update",
@@ -208,6 +210,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               },
               tenant_id: tenantId,
             });
+            if (!sent) toast.warning(`Shift assigned but email to ${newEmp.forename} ${newEmp.surname} failed`);
           }
         }
       }
@@ -243,7 +246,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               );
             }
             if (emp?.email) {
-              sendNotification({
+              const sent = await sendNotification({
                 to: emp.email,
                 subject: `Shift cancelled – ${shiftDate}`,
                 type: "shift_update",
@@ -256,6 +259,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
                 },
                 tenant_id: tenantId,
               });
+              if (!sent) toast.warning(`Shift cancelled but email to ${emp.forename} ${emp.surname} failed`);
             }
           }
         },

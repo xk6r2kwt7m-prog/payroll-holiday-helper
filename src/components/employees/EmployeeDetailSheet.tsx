@@ -119,7 +119,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
     ? Math.floor((Date.now() - new Date(employee.start_date).getTime()) / (1000 * 60 * 60 * 24 * 30))
     : null;
 
-  const dob = (employee as any).date_of_birth;
+  const dob = employee.date_of_birth;
   const payRisk: PayRiskResult | null = dob ? checkPayRisk(dob, employee.hourly_rate) : null;
 
   return (
@@ -214,10 +214,10 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
                   No email — cannot receive notifications
                 </div>
               )}
-              {canViewSensitive && (employee as any).date_of_birth && (
+              {canViewSensitive && employee.date_of_birth && (
                 <SensitiveInfoRow
                   label="Date of Birth"
-                  value={formatDate((employee as any).date_of_birth)}
+                  value={formatDate(employee.date_of_birth)}
                   fieldKey={`detail-${employee.id}-dob`}
                   category="personal_id"
                   employeeId={employee.id}
