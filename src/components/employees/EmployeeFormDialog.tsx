@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck, Globe } from "lucide-react";
+import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck, Globe, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRule
 import { useDepartments } from "@/hooks/useDepartments";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
+import { AvailabilityEditor as AvailabilityEditorLazy } from "@/components/workforce/AvailabilityEditor";
 import { useTenant } from "@/hooks/useTenant";
 import { usePlanLimits } from "@/hooks/useSubscription";
 
@@ -395,13 +396,14 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid grid-cols-7 mb-4">
+            <TabsList className="grid grid-cols-8 mb-4">
               <TabButton value="personal" icon={User} label="Personal" />
               <TabButton value="employment" icon={Building} label="Work" />
               <TabButton value="contract" icon={Globe} label="Contract" />
               <TabButton value="branches" icon={MapPin} label="Branches" />
               <TabButton value="rtw" icon={ShieldCheck} label="RTW" />
               <TabButton value="banking" icon={CreditCard} label="Banking" />
+              <TabButton value="availability" icon={Clock} label="Avail." />
               <TabButton value="notes" icon={FileText} label="Notes" />
             </TabsList>
 
@@ -960,6 +962,18 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                   />
                   <p className="text-xs text-muted-foreground">8 digit account number</p>
                 </div>
+              </TabsContent>
+
+              {/* Availability Tab */}
+              <TabsContent value="availability" className="space-y-4 mt-0">
+                {employee ? (
+                  <AvailabilityEditorLazy employeeId={employee.id} />
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Save the employee first, then set their availability.</p>
+                  </div>
+                )}
               </TabsContent>
 
               {/* Notes Tab */}

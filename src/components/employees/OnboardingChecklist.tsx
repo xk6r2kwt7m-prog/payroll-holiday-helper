@@ -110,7 +110,7 @@ function getCheckAction(key: string, employeeId: string): { path: string; label:
     case "emergency_contact":
       return { path: `/employees?edit=${employeeId}&tab=personal`, label: "Add emergency contact" };
     case "availability":
-      return { path: `/employees?edit=${employeeId}&tab=notes`, label: "Set availability" };
+      return { path: `/employees?edit=${employeeId}&tab=availability`, label: "Set availability" };
     case "training_records":
       return { path: `/training?tab=tracking&employee=${employeeId}`, label: "Assign training" };
     default:
