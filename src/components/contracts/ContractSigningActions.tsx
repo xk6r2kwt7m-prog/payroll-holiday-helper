@@ -33,7 +33,7 @@ interface ContractSigningActionsProps {
   contractSendStatus?: string | null;
   contractSentAt?: string | null;
   contractSentTo?: string | null;
-  finalSignedPdfUrl?: string | null;
+  finalSignedFilePath?: string | null;
   filePath?: string | null;
 }
 
