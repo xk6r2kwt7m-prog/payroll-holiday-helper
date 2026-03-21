@@ -278,11 +278,15 @@ function buildHtml(type: string, data: Record<string, string>): string {
     }
     case "contract_fully_signed": {
       const fsFirstName = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
+      const finalContractLink = data.final_contract_url
+        ? `<p style="margin:20px 0;"><a href="${data.final_contract_url}" style="display:inline-block;padding:12px 24px;background-color:#1a1a2e;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">View final contract</a></p>`
+        : `<p>Your final signed copy has been stored securely and is now available through your manager.</p>`;
       body = `
         <h2 style="color:#1a1a2e;margin:0 0 16px;">Your contract is now complete</h2>
         <p>Hi ${fsFirstName},</p>
         <p>Your contract has now been fully signed by both you and the employer.</p>
-        <p>A final signed copy has been stored in the system.</p>
+        <p>Your final signed copy has been stored securely and is now available.</p>
+        ${finalContractLink}
         <p><strong>Completed on:</strong> ${data.signed_at || new Date().toISOString()}</p>
         <p>If you have any questions, please contact your manager.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;

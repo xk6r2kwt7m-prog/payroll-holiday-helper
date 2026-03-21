@@ -45,6 +45,8 @@ export function ContractSigningActions({
   contractSendStatus,
   contractSentAt,
   contractSentTo,
+  finalSignedPdfUrl,
+  filePath,
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);

@@ -326,27 +326,33 @@ Deno.serve(async (req) => {
       });
 
       if (fullySignedNow) {
-        // FULLY SIGNED — send final completion email to employee
-        if (signedByEmail || (currentSignerType === "employer" && signingToken.employees?.email)) {
-          const recipientEmail = signingToken.employees?.email;
-          if (recipientEmail) {
-            try {
-              await supabase.functions.invoke("send-notification", {
-                body: {
-                  to: recipientEmail,
-                  subject: "Your contract is now complete",
-                  type: "contract_fully_signed",
-                  data: {
-                    employee_name: employeeName,
-                    first_name: firstName,
-                    signed_at: formattedDate,
-                  },
-                  tenant_id: signingToken.tenant_id,
+        // FULLY SIGNED — send final completion email to employee with secure link
+        const recipientEmail = signingToken.employees?.email;
+        if (recipientEmail) {
+          // Fetch the final signed URL we just stored
+          const { data: finalDoc } = await supabase
+            .from("employee_documents")
+            .select("final_signed_pdf_url")
+            .eq("id", signingToken.employee_document_id)
+            .maybeSingle();
+
+          try {
+            await supabase.functions.invoke("send-notification", {
+              body: {
+                to: recipientEmail,
+                subject: "Your contract is now complete",
+                type: "contract_fully_signed",
+                data: {
+                  employee_name: employeeName,
+                  first_name: firstName,
+                  signed_at: formattedDate,
+                  final_contract_url: (finalDoc as any)?.final_signed_pdf_url || "",
                 },
-              });
-            } catch (emailErr) {
-              console.error("Contract fully-signed email failed:", emailErr);
-            }
+                tenant_id: signingToken.tenant_id,
+              },
+            });
+          } catch (emailErr) {
+            console.error("Contract fully-signed email failed:", emailErr);
           }
         }
 
