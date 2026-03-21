@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useDepartments } from "@/hooks/useDepartments";
 
 type DepartmentType = string;
@@ -28,6 +29,7 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
   const { tenantId } = useTenant();
   const qc = useQueryClient();
   const { data: departments = [] } = useDepartments();
+  const { sendNotification } = useNotifications();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +75,24 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
           role: "staff" as any,
           invited_by: (await supabase.auth.getUser()).data.user?.id,
         });
+
+      // Actually send the invite email via Postmark
+      const loginUrl = `${window.location.origin}/auth`;
+      const emailSent = await sendNotification({
+        to: email.trim().toLowerCase(),
+        subject: `You've been invited to join UglyOps HR`,
+        type: "employee_invitation",
+        data: {
+          company_name: "UglyOps",
+          employee_name: `${forename.trim()} ${surname.trim()}`,
+          login_url: loginUrl,
+        },
+        tenant_id: tenantId,
+      });
+
+      if (!emailSent) {
+        console.warn("[INVITE] Employee record created but invite email failed to send");
+      }
 
       toast.success(`Invitation sent to ${forename} ${surname}`);
       qc.invalidateQueries({ queryKey: ["employees"] });
