@@ -216,6 +216,20 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
             </Select>
           </div>
 
+          {duplicateWarning && (
+            <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+              <p className="text-xs text-warning font-medium">{duplicateWarning}</p>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => { setDuplicateWarning(null); setDuplicateOverridden(true); }}>
+                  Continue Anyway
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="text-xs" onClick={() => { setDuplicateWarning(null); setOpen(false); }}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
               Cancel
