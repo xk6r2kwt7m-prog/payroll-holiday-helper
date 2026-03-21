@@ -469,8 +469,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="ni_number" className="flex items-center gap-1">
-                    National Insurance Number {isNewEmployee && <span className="text-destructive">*</span>}
+                  <Label htmlFor="ni_number">
+                    National Insurance Number
                   </Label>
                   <Input
                     id="ni_number"
@@ -480,7 +480,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                     maxLength={9}
                     className="transition-all focus:ring-2 focus:ring-primary/20 uppercase"
                   />
-                  <p className="text-xs text-muted-foreground">Format: 2 letters, 6 numbers, 1 letter</p>
+                  <p className="text-xs text-muted-foreground">Format: 2 letters, 6 numbers, 1 letter. Can be added later.</p>
                 </div>
               </TabsContent>
 
