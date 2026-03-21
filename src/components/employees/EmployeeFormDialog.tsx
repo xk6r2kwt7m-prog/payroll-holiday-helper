@@ -171,6 +171,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const { tenantId } = useTenant();
   const { data: allEmployees = [] } = useEmployees();
   const planLimits = usePlanLimits();
+  const queryClient = useQueryClient();
 
   const activeEmployeeCount = allEmployees.filter(e => e.status === "active").length;
   const [duplicateEmailWarning, setDuplicateEmailWarning] = useState<string | null>(null);
