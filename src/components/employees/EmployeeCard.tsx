@@ -57,9 +57,30 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
+  const { sendInviteEmail } = useInviteEmail();
 
   const isAlreadyArchived = !!employee.archived_at;
   const isLeaver = employee.status === "leaver";
+  const hasEmail = !!employee.email;
+  const hasNoUserLink = !employee.user_id;
+
+  const handleSendInvite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!employee.email) {
+      toast.error("No email address on file. Add an email first.");
+      return;
+    }
+    const result = await sendInviteEmail({
+      recipientEmail: employee.email,
+      employeeName: `${employee.forename} ${employee.surname}`,
+      tenantId: employee.tenant_id,
+    });
+    if (result.success) {
+      toast.success(`Invite email sent to ${employee.email}`);
+    } else {
+      toast.error(`Invite email failed: ${result.error || "Unknown error"}`);
+    }
+  };
 
   return (
     <div
