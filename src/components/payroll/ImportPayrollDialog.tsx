@@ -730,8 +730,10 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             {step === "done" ? "Close" : "Cancel"}
           </Button>
           {step === "preview" && (
-            <Button onClick={handleImport} disabled={importing || matchedEntries.length === 0}>
+            <Button onClick={handleImport} disabled={importing || matchedEntries.length === 0 || validationErrors.length > 0}>
               {importing ? "Importing..." : useExistingPeriod ? `Update ${matchedEntries.length} Entries` : `Import ${matchedEntries.length} Employees`}
+            </Button>
+          )}
             </Button>
           )}
         </div>
