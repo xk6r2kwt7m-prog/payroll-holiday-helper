@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Check, X, MapPin, Clock, AlertTriangle, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ClockEventLocations } from "@/components/attendance/LocationMapPreview";
 import { useApproveTimeEntries, useRejectTimeEntry } from "@/hooks/useTimeEntries";
 import { useEvidenceFiles } from "@/hooks/useEvidence";
 import { toast } from "sonner";
