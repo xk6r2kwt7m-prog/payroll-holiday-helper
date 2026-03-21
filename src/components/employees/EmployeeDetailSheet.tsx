@@ -119,13 +119,8 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
     ? Math.floor((Date.now() - new Date(employee.start_date).getTime()) / (1000 * 60 * 60 * 24 * 30))
     : null;
 
-  // Age-band pay risk check
   const dob = (employee as any).date_of_birth;
-  const payRisk = React.useMemo(() => {
-    if (!dob) return null;
-    const { checkPayRisk } = require("@/lib/age-band");
-    return checkPayRisk(dob, employee.hourly_rate);
-  }, [dob, employee.hourly_rate]);
+  const payRisk: PayRiskResult | null = dob ? checkPayRisk(dob, employee.hourly_rate) : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
