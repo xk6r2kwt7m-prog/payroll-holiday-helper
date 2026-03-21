@@ -141,13 +141,18 @@ export function ContractSigningActions({
                 <CheckCircle2 className="h-3 w-3" /> Employer
               </Badge>
             )}
+            {!employeeSigned && !employerSigned && (contractSendStatus === "sent" || emailSent) && (
+              <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
+                <Mail className="h-3 w-3" /> Sent
+              </Badge>
+            )}
           </>
         )}
         <Button
           variant="ghost"
           size="icon"
           className="h-9 w-9"
-          onClick={() => { setOpen(true); setGeneratedLink(null); setGeneratedTokenId(null); setEmailSent(false); }}
+          onClick={() => { setOpen(true); setGeneratedLink(null); setGeneratedTokenId(null); }}
           title="Send for signing"
         >
           <Send className="h-4 w-4" />
