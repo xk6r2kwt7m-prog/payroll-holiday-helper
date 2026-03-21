@@ -187,6 +187,9 @@ export function SignedContractsList() {
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   {new Date(contract.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  {(contract as any).contract_send_status === "sent" && (contract as any).contract_sent_to && (
+                    <span className="ml-2 text-amber-600">· Sent to {(contract as any).contract_sent_to}</span>
+                  )}
                 </p>
               </div>
 
@@ -196,6 +199,9 @@ export function SignedContractsList() {
                   employeeId={contract.employees?.id || ""}
                   employeeName={`${contract.employees?.forename} ${contract.employees?.surname}`}
                   employeeEmail={contract.employees?.email}
+                  contractSendStatus={(contract as any).contract_send_status}
+                  contractSentAt={(contract as any).contract_sent_at}
+                  contractSentTo={(contract as any).contract_sent_to}
                 />
                 <Button
                   variant="ghost"

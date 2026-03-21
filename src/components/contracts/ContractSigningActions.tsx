@@ -29,6 +29,9 @@ interface ContractSigningActionsProps {
   employeeId: string;
   employeeName: string;
   employeeEmail?: string | null;
+  contractSendStatus?: string | null;
+  contractSentAt?: string | null;
+  contractSentTo?: string | null;
 }
 
 export function ContractSigningActions({
@@ -36,6 +39,9 @@ export function ContractSigningActions({
   employeeId,
   employeeName,
   employeeEmail,
+  contractSendStatus,
+  contractSentAt,
+  contractSentTo,
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -43,7 +49,7 @@ export function ContractSigningActions({
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [generatedTokenId, setGeneratedTokenId] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const [emailSent, setEmailSent] = useState(contractSendStatus === "sent");
 
   const generateLink = useGenerateSigningLink();
   const { sendContractEmail } = useSendContractEmail();
@@ -135,13 +141,18 @@ export function ContractSigningActions({
                 <CheckCircle2 className="h-3 w-3" /> Employer
               </Badge>
             )}
+            {!employeeSigned && !employerSigned && (contractSendStatus === "sent" || emailSent) && (
+              <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
+                <Mail className="h-3 w-3" /> Sent
+              </Badge>
+            )}
           </>
         )}
         <Button
           variant="ghost"
           size="icon"
           className="h-9 w-9"
-          onClick={() => { setOpen(true); setGeneratedLink(null); setGeneratedTokenId(null); setEmailSent(false); }}
+          onClick={() => { setOpen(true); setGeneratedLink(null); setGeneratedTokenId(null); }}
           title="Send for signing"
         >
           <Send className="h-4 w-4" />
@@ -222,8 +233,15 @@ export function ContractSigningActions({
                   <p className="text-xs font-medium text-foreground mb-2">
                     {emailSent ? "✓ Contract sent" : "Signing Link Ready"}
                   </p>
-                  {emailSent && employeeEmail && (
-                    <p className="text-xs text-primary mb-2">Sent to {employeeEmail}</p>
+                  {emailSent && (contractSentTo || employeeEmail) && (
+                    <p className="text-xs text-primary mb-2">
+                      Sent to {contractSentTo || employeeEmail}
+                      {contractSentAt && (
+                        <span className="text-muted-foreground ml-1">
+                          · {new Date(contractSentAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        </span>
+                      )}
+                    </p>
                   )}
                 </div>
 

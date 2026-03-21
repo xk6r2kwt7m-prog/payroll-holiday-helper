@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface SendContractEmailParams {
   recipientEmail: string;
@@ -19,6 +20,7 @@ interface SendContractEmailResult {
 
 export function useSendContractEmail() {
   const { tenantId } = useTenant();
+  const queryClient = useQueryClient();
 
   const sendContractEmail = useCallback(
     async (params: SendContractEmailParams): Promise<SendContractEmailResult> => {
@@ -53,13 +55,40 @@ export function useSendContractEmail() {
 
         if (error) {
           console.error("[CONTRACT_EMAIL] Edge function error", error.message);
+          // Persist failure
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_send_status: "failed",
+              contract_send_error: error.message,
+            } as any)
+            .eq("id", employeeDocumentId);
           return { success: false, error: error.message };
         }
 
         if (data?.error) {
           console.error("[CONTRACT_EMAIL] Provider error", data.error);
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_send_status: "failed",
+              contract_send_error: data.error,
+            } as any)
+            .eq("id", employeeDocumentId);
           return { success: false, error: data.error };
         }
+
+        // Persist sent status on the document record
+        await supabase
+          .from("employee_documents")
+          .update({
+            contract_sent_at: new Date().toISOString(),
+            contract_sent_to: recipientEmail,
+            contract_send_status: "sent",
+            contract_send_error: null,
+            contract_last_token_id: signingTokenId,
+          } as any)
+          .eq("id", employeeDocumentId);
 
         // Log to audit
         try {
@@ -84,6 +113,11 @@ export function useSendContractEmail() {
           console.warn("[CONTRACT_EMAIL] Audit log failed (non-critical)", auditErr);
         }
 
+        // Invalidate queries so UI reflects new status
+        queryClient.invalidateQueries({ queryKey: ["all_contracts"] });
+        queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
+        queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
+
         console.log("[CONTRACT_EMAIL] Sent successfully", {
           messageId: data?.diagnostics?.message_id,
           provider: data?.diagnostics?.provider,
@@ -96,10 +130,20 @@ export function useSendContractEmail() {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error("[CONTRACT_EMAIL] Exception", msg);
+        // Persist failure
+        try {
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_send_status: "failed",
+              contract_send_error: msg,
+            } as any)
+            .eq("id", employeeDocumentId);
+        } catch { /* non-critical */ }
         return { success: false, error: msg };
       }
     },
-    [tenantId]
+    [tenantId, queryClient]
   );
 
   return { sendContractEmail };
