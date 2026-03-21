@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   CheckCircle2, Clock, AlertTriangle, XCircle, Shield, ExternalLink,
   ArrowRight, User, FileText, CreditCard, Calendar, BookOpen, UserCheck,
-  ChevronDown, ChevronRight
+  ChevronDown, ChevronRight, Send, Link2, Mail
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useEmployeeReadiness, type ReadinessStatus, type CriticalityTier } from "@/hooks/useOnboardingReadiness";
 import { useNavigate } from "react-router-dom";
+import { useInviteEmail } from "@/hooks/useInviteEmail";
+import { toast } from "sonner";
+import type { Employee } from "@/hooks/useEmployees";
 
 // ─── Status visual config ─────────────────────────────────────────────
 const statusConfig: Record<ReadinessStatus, {
