@@ -264,9 +264,10 @@ export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklis
       tenantId: employee.tenant_id,
     });
     if (result.success) {
-      toast.success(`Invite sent to ${employee.email}`);
+      toast.success(`Invite email submitted for ${employee.email}`);
+      qc.invalidateQueries({ queryKey: ["employee-invite-status"] });
     } else {
-      toast.error(`Invite failed: ${result.error || "Unknown error"}`);
+      toast.error(`Invite email failed: ${result.error || "Unknown error"}`);
     }
   };
 
