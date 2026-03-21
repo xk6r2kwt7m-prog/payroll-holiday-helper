@@ -9,12 +9,20 @@ import { FileText, CheckCircle2, AlertTriangle, Loader2, Download, ShieldCheck, 
 interface ContractInfo {
   signer_type: string;
   employee_name: string;
+  employee_email: string | null;
   document_name: string;
   document_url: string | null;
+  document_hash: string | null;
   expires_at: string;
 }
 
-type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "internal_error" | "missing_token" | string;
+type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "missing_signature" | "internal_error" | "missing_token" | string;
+
+const CONSENT_ITEMS = [
+  "I have read and understood this contract",
+  "I agree to sign this document electronically",
+  "This electronic signature represents my legal signature",
+];
 
 export default function SignContract() {
   const { token } = useParams<{ token: string }>();
@@ -22,11 +30,12 @@ export default function SignContract() {
   const [contractInfo, setContractInfo] = useState<ContractInfo | null>(null);
   const [errorCode, setErrorCode] = useState<ErrorCode | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [signerName, setSignerName] = useState("");
+  const [typedName, setTypedName] = useState("");
   const [signatureData, setSignatureData] = useState<string | null>(null);
-  const [consentAgreed, setConsentAgreed] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [signedAt, setSignedAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -39,15 +48,12 @@ export default function SignContract() {
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`,
         { method: "GET" }
       );
-
       const result = await response.json();
-
       if (!response.ok) {
         setErrorCode(result.error_code || "invalid_token");
         setErrorMessage(result.error || "Invalid link");
         return;
       }
-
       setContractInfo(result);
     } catch {
       setErrorCode("internal_error");
@@ -62,11 +68,13 @@ export default function SignContract() {
   }, []);
 
   const handleSign = async () => {
-    if (!signerName.trim() || !consentAgreed || !signatureData) return;
+    if (!typedName.trim() || !consentGiven || !signatureData) return;
 
     setSubmitting(true);
     setErrorCode(null);
     setErrorMessage(null);
+
+    const consentText = `I confirm that: ${CONSENT_ITEMS.join("; ")}.`;
 
     try {
       const response = await fetch(
@@ -75,9 +83,12 @@ export default function SignContract() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            signer_name: signerName.trim(),
-            consent_agreed: consentAgreed,
+            typed_name: typedName.trim(),
+            consent_given: true,
+            consent_text: consentText,
             signature_data: signatureData,
+            signature_type: "drawn",
+            document_hash: contractInfo?.document_hash || null,
           }),
         }
       );
@@ -91,6 +102,7 @@ export default function SignContract() {
       }
 
       setSigned(true);
+      setSignedAt(result.signed_at || new Date().toISOString());
     } catch {
       setErrorCode("internal_error");
       setErrorMessage("Something went wrong. Please try again.");
@@ -111,8 +123,20 @@ export default function SignContract() {
           <p className="text-muted-foreground">
             Thank you. Your signature has been recorded successfully.
           </p>
+          {signedAt && (
+            <p className="text-sm text-muted-foreground">
+              Signed on {new Date(signedAt).toLocaleDateString("en-GB", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
-            You may now close this page.
+            A confirmation email has been sent to you. You may now close this page.
           </p>
           <div className="rounded-lg bg-muted/50 border border-border p-3 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 inline mr-1" />
@@ -153,9 +177,7 @@ export default function SignContract() {
 
   if (!contractInfo) return null;
 
-  const canSubmit = signerName.trim().length > 0 && consentAgreed && !!signatureData && !submitting;
-
-  const consentText = `I, ${signerName.trim() || "[your name]"}, confirm that I have read and agree to the terms of this employment contract. By signing and submitting this form, I understand this constitutes a legally binding electronic signature under the Electronic Communications Act 2000.`;
+  const canSubmit = typedName.trim().length > 0 && consentGiven && !!signatureData && !submitting;
 
   return (
     <div className="min-h-screen bg-background">
@@ -222,8 +244,8 @@ export default function SignContract() {
               Type your full legal name *
             </label>
             <Input
-              value={signerName}
-              onChange={(e) => setSignerName(e.target.value)}
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
               placeholder="e.g. John Smith"
               className="text-base"
               autoComplete="name"
@@ -239,19 +261,27 @@ export default function SignContract() {
           </div>
 
           {/* Consent Statement */}
-          <div className="rounded-lg bg-muted/50 border border-border p-3 text-xs text-muted-foreground leading-relaxed">
-            {consentText}
+          <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
+            <p className="text-xs font-medium text-foreground">I confirm that:</p>
+            <ul className="space-y-1">
+              {CONSENT_ITEMS.map((item, i) => (
+                <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                  <span className="text-primary mt-0.5">•</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="flex items-start gap-3">
             <Checkbox
               id="consent"
-              checked={consentAgreed}
-              onCheckedChange={(checked) => setConsentAgreed(checked === true)}
+              checked={consentGiven}
+              onCheckedChange={(checked) => setConsentGiven(checked === true)}
               className="mt-0.5"
             />
-            <label htmlFor="consent" className="text-sm text-foreground cursor-pointer">
-              I confirm this is my signature and I agree to sign this contract electronically
+            <label htmlFor="consent" className="text-sm text-foreground cursor-pointer leading-snug">
+              I confirm this is my signature and I agree to sign this contract electronically under the UK Electronic Communications Act 2000
             </label>
           </div>
 
@@ -271,8 +301,8 @@ export default function SignContract() {
 
         {/* Legal footer */}
         <p className="text-[10px] text-muted-foreground text-center px-4">
-          Your signature, timestamp, and IP address will be recorded as proof of signing.
-          Valid under the UK Electronic Communications Act 2000.
+          Your signature, typed name, timestamp, IP address, and device information will be recorded as proof of signing.
+          This constitutes a legally binding electronic signature under the UK Electronic Communications Act 2000.
         </p>
       </div>
     </div>
@@ -307,7 +337,7 @@ function getErrorDisplay(errorCode: ErrorCode, errorMessage: string | null) {
         icon: <AlertTriangle className="h-8 w-8 text-destructive" />,
         bgClass: "bg-destructive/10",
         title: "Signature Failed",
-        message: errorMessage || "Failed to record your signature. Please try again.",
+        message: errorMessage || "Your signature could not be recorded. Please try again.",
       };
     default:
       return {
