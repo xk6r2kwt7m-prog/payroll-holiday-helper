@@ -196,6 +196,9 @@ export function SignedContractsList() {
                   employeeId={contract.employees?.id || ""}
                   employeeName={`${contract.employees?.forename} ${contract.employees?.surname}`}
                   employeeEmail={contract.employees?.email}
+                  contractSendStatus={(contract as any).contract_send_status}
+                  contractSentAt={(contract as any).contract_sent_at}
+                  contractSentTo={(contract as any).contract_sent_to}
                 />
                 <Button
                   variant="ghost"
