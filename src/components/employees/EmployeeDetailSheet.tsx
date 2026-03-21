@@ -1,4 +1,5 @@
 import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake, UserPlus } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
