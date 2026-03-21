@@ -16,6 +16,7 @@ import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRule
 import { useDepartments } from "@/hooks/useDepartments";
 import type { Database } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
+import { AvailabilityEditor as AvailabilityEditorLazy } from "@/components/workforce/AvailabilityEditor";
 import { useTenant } from "@/hooks/useTenant";
 import { usePlanLimits } from "@/hooks/useSubscription";
 
