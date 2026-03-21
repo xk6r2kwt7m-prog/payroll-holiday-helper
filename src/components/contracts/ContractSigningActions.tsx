@@ -223,7 +223,7 @@ export function ContractSigningActions({
                     {emailSent ? "✓ Contract sent" : "Signing Link Ready"}
                   </p>
                   {emailSent && employeeEmail && (
-                    <p className="text-xs text-primary mb-2">Submitted to {employeeEmail}</p>
+                    <p className="text-xs text-primary mb-2">Sent to {employeeEmail}</p>
                   )}
                 </div>
 
