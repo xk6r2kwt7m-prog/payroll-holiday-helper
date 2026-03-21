@@ -202,7 +202,7 @@ export function SignedContractsList() {
                   contractSendStatus={(contract as any).contract_send_status}
                   contractSentAt={(contract as any).contract_sent_at}
                   contractSentTo={(contract as any).contract_sent_to}
-                  finalSignedPdfUrl={(contract as any).final_signed_pdf_url}
+                  finalSignedFilePath={(contract as any).final_signed_pdf_url}
                   filePath={contract.file_path}
                 />
                 <Button

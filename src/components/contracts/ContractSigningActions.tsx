@@ -33,7 +33,7 @@ interface ContractSigningActionsProps {
   contractSendStatus?: string | null;
   contractSentAt?: string | null;
   contractSentTo?: string | null;
-  finalSignedPdfUrl?: string | null;
+  finalSignedFilePath?: string | null;
   filePath?: string | null;
 }
 
@@ -45,7 +45,7 @@ export function ContractSigningActions({
   contractSendStatus,
   contractSentAt,
   contractSentTo,
-  finalSignedPdfUrl,
+  finalSignedFilePath,
   filePath,
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
@@ -99,16 +99,12 @@ export function ContractSigningActions({
   };
 
   const handleViewFinalContract = async () => {
-    // If we have a stored URL, use it directly
-    if (finalSignedPdfUrl) {
-      window.open(finalSignedPdfUrl, "_blank");
-      return;
-    }
-    // Otherwise generate a fresh signed URL from the original file
-    if (filePath) {
+    // Always generate a fresh signed URL on-demand from the durable file path
+    const pathToUse = finalSignedFilePath || filePath;
+    if (pathToUse) {
       const { data } = await supabase.storage
         .from("employee-documents")
-        .createSignedUrl(filePath, 3600);
+        .createSignedUrl(pathToUse, 3600);
       if (data?.signedUrl) {
         window.open(data.signedUrl, "_blank");
       } else {
@@ -164,7 +160,7 @@ export function ContractSigningActions({
             <Badge className="bg-primary/10 text-primary border-0 text-[10px] gap-1">
               <CheckCircle2 className="h-3 w-3" /> Fully Signed
             </Badge>
-            {(finalSignedPdfUrl || filePath) && (
+            {(finalSignedFilePath || filePath) && (
               <Button
                 variant="ghost"
                 size="icon"

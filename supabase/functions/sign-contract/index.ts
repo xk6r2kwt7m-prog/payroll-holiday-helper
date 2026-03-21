@@ -246,31 +246,24 @@ Deno.serve(async (req) => {
 
       // Update employee_documents contract_send_status based on signing stage
       if (fullySignedNow) {
-        // Fetch the original document to get file_path for the final signed reference
+        // Fetch the original document to get file_path as the durable reference
         const { data: docRecord } = await supabase
           .from("employee_documents")
           .select("file_path")
           .eq("id", signingToken.employee_document_id)
           .maybeSingle();
 
-        // Generate a long-lived signed URL (30 days) for the final contract
-        let finalSignedUrl: string | null = null;
-        if (docRecord?.file_path) {
-          const { data: signedUrlData } = await supabase.storage
-            .from("employee-documents")
-            .createSignedUrl(docRecord.file_path, 60 * 60 * 24 * 30); // 30 days
-          finalSignedUrl = signedUrlData?.signedUrl || null;
-        }
-
         // Compute final document hash for integrity
         const finalContent = `${signingToken.employee_document_id}:${docRecord?.file_path || ""}:fully_signed:${signedAt}`;
         const finalHash = await sha256(finalContent);
 
+        // Store durable file path reference — NOT a temporary signed URL
+        // Signed access URLs are generated on-demand when viewing/downloading
         await supabase
           .from("employee_documents")
           .update({
             contract_send_status: "fully_signed",
-            final_signed_pdf_url: finalSignedUrl,
+            final_signed_pdf_url: docRecord?.file_path || null,
             final_document_hash: finalHash,
           } as any)
           .eq("id", signingToken.employee_document_id);
@@ -326,15 +319,17 @@ Deno.serve(async (req) => {
       });
 
       if (fullySignedNow) {
-        // FULLY SIGNED — send final completion email to employee with secure link
+        // FULLY SIGNED — send final completion email to employee
+        // Generate a fresh short-lived signed URL for the email download link
         const recipientEmail = signingToken.employees?.email;
         if (recipientEmail) {
-          // Fetch the final signed URL we just stored
-          const { data: finalDoc } = await supabase
-            .from("employee_documents")
-            .select("final_signed_pdf_url")
-            .eq("id", signingToken.employee_document_id)
-            .maybeSingle();
+          let emailDownloadUrl = "";
+          if (docRecord?.file_path) {
+            const { data: freshSignedUrl } = await supabase.storage
+              .from("employee-documents")
+              .createSignedUrl(docRecord.file_path, 60 * 60 * 24 * 7); // 7-day link for email
+            emailDownloadUrl = freshSignedUrl?.signedUrl || "";
+          }
 
           try {
             await supabase.functions.invoke("send-notification", {
@@ -346,7 +341,7 @@ Deno.serve(async (req) => {
                   employee_name: employeeName,
                   first_name: firstName,
                   signed_at: formattedDate,
-                  final_contract_url: (finalDoc as any)?.final_signed_pdf_url || "",
+                  final_contract_url: emailDownloadUrl,
                 },
                 tenant_id: signingToken.tenant_id,
               },
