@@ -81,6 +81,7 @@ export function useUpsertAvailability() {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["employee_availability"] });
+      qc.invalidateQueries({ queryKey: ["employee_readiness"] });
       toast.success("Availability updated");
     },
     onError: (e: any) => toast.error(e.message),
