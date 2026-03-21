@@ -276,7 +276,10 @@ export function useUpdatePayrollEntry() {
   const { tenantId } = useTenant();
   
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: PayrollEntryUpdate }) => {
+    mutationFn: async ({ id, updates, periodStatus }: { id: string; updates: PayrollEntryUpdate; periodStatus?: string }) => {
+      if (periodStatus === "approved") {
+        throw new Error("This payroll period is locked and cannot be edited. Reopen the period first.");
+      }
       await assertPermission("view_pay_data", tenantId!);
       const { data, error } = await supabase
         .from("payroll_entries")
@@ -285,11 +288,15 @@ export function useUpdatePayrollEntry() {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes("locked")) throw new Error("This payroll period is locked and cannot be edited. Reopen the period first.");
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
