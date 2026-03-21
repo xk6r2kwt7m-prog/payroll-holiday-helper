@@ -111,6 +111,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       setFormData({
         forename: "",
         surname: "",
+        email: "",
+        date_of_birth: "",
         department: "FOH" as DepartmentType,
         status: "starter" as EmployeeStatus,
         hourly_rate: "",
