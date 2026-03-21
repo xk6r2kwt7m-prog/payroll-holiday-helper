@@ -201,6 +201,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     }
 
     try {
+      const parsedRate = parseFloat(formData.hourly_rate);
       const employeeData: any = {
         tenant_id: tenantId,
         forename: formData.forename.trim(),
@@ -209,7 +210,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         date_of_birth: formData.date_of_birth || null,
         department: formData.department,
         status: formData.status,
-        hourly_rate: parseFloat(formData.hourly_rate),
+        hourly_rate: isNaN(parsedRate) ? 0 : parsedRate,
         service_charge: parseFloat(formData.service_charge) || 0,
         ni_number: formData.ni_number.trim() || null,
         bank_account_no: formData.bank_account_no.trim() || null,
