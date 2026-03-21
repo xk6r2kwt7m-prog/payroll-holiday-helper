@@ -60,6 +60,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
   const { sendInviteEmail } = useInviteEmail();
+  const { data: linkage } = useAccountLinkage(employee);
 
   const isAlreadyArchived = !!employee.archived_at;
   const isLeaver = employee.status === "leaver";
