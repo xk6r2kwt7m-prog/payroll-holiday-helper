@@ -214,7 +214,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
                   No email — cannot receive notifications
                 </div>
               )}
-              {canViewSensitive && (employee as any).date_of_birth && (
+              {canViewSensitive && employee.date_of_birth && (
                 <SensitiveInfoRow
                   label="Date of Birth"
                   value={formatDate((employee as any).date_of_birth)}
