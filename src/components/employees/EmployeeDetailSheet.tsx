@@ -7,6 +7,7 @@ import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { EmployeeNotesSection } from "./EmployeeNotesSection";
 import { OnboardingChecklist } from "./OnboardingChecklist";
+import { EmployeeSetupStatus } from "./EmployeeSetupStatus";
 import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateReferenceLetterDialog";
 import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocumentRequestDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
