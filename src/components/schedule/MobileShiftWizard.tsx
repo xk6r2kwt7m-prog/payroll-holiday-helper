@@ -434,7 +434,7 @@ export function MobileShiftWizard({
           {!showNextActions && step === "dept" && departments && (
             <div className="grid grid-cols-1 gap-2">
               {departments.filter(d => d !== "All").map((dept) => {
-                const deptEmpCount = employees.filter((e) => e.department === dept && e.status === "active").length;
+                const deptEmpCount = employees.filter((e) => e.department === dept && (e.status === "active" || e.status === "starter")).length;
                 return (
                   <button
                     key={dept}
