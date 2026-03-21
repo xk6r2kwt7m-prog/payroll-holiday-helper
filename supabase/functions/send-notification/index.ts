@@ -25,7 +25,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "payroll_approved" | "contract_signing" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -197,9 +197,30 @@ function buildHtml(type: string, data: Record<string, string>): string {
     case "shift_update":
       body = `<h2>Shift Update 📅</h2><p>${data.message}</p><p><strong>Date:</strong> ${data.shift_date}</p><p><strong>Time:</strong> ${data.start_time} – ${data.end_time}</p><p><strong>Location:</strong> ${data.branch}</p>`;
       break;
-    case "schedule_published":
-      body = `<h2>Schedule Published 📅</h2><p>A new schedule has been published for <strong>${data.branch || "your location"}</strong>.</p><p><strong>Week:</strong> ${data.week_label || "upcoming"}</p><p>Log in to view your shifts.</p>`;
+    case "schedule_published": {
+      const schedFirstName = (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your Rota is Ready</h2>
+        <p>Hi ${schedFirstName},</p>
+        <p>Your rota for <strong>${data.branch || "your location"}</strong> for the week <strong>${data.week || data.week_label || "upcoming"}</strong> is now available.</p>
+        <p>Use the link below to log in and view your shifts:</p>
+        ${data.login_url ? `<p style="text-align:center;margin:24px 0;"><a href="${data.login_url}" style="display:inline-block;padding:12px 28px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">View my rota</a></p>` : ""}
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling</strong></p>`;
       break;
+    }
+    case "schedule_published_setup_required": {
+      const setupFirstName = (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your Rota is Ready</h2>
+        <p>Hi ${setupFirstName},</p>
+        <p>Your rota has been prepared, but you need to complete your access to the UglyOps HR app before you can view your shifts.</p>
+        <p>Please use the link below to access or finish setting up your account:</p>
+        ${data.access_url ? `<p style="text-align:center;margin:24px 0;"><a href="${data.access_url}" style="display:inline-block;padding:12px 28px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Access my account</a></p>` : ""}
+        <p>Once your access is complete, you will be able to view your rota and other updates.</p>
+        <p style="color:#666;">If you have any difficulty, please contact your manager.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling</strong></p>`;
+      break;
+    }
     case "document_expiry":
       body = `<h2>Document Expiry Warning ⚠️</h2><p>A document for <strong>${data.employee_name}</strong> is expiring soon.</p><p><strong>Document:</strong> ${data.document_name}</p><p><strong>Expires:</strong> ${data.expiry_date}</p>`;
       break;
