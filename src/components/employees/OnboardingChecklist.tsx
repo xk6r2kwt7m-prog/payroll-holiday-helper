@@ -212,9 +212,10 @@ function TierGroup({ tier, headerLabel, color, checks, employeeId, onCheckClick 
   );
 }
 
-export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
+export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklistProps) {
   const { data: readiness, isLoading } = useEmployeeReadiness(employeeId);
   const navigate = useNavigate();
+  const { sendInviteEmail } = useInviteEmail();
 
   if (isLoading || !readiness) return null;
 
@@ -225,6 +226,26 @@ export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
     const action = getCheckAction(key, employeeId);
     if (action) navigate(action.path);
   };
+
+  const handleSendInvite = async () => {
+    if (!employee?.email) {
+      toast.error("Add an email address first.");
+      return;
+    }
+    const result = await sendInviteEmail({
+      recipientEmail: employee.email,
+      employeeName: `${employee.forename} ${employee.surname}`,
+      tenantId: employee.tenant_id,
+    });
+    if (result.success) {
+      toast.success(`Invite sent to ${employee.email}`);
+    } else {
+      toast.error(`Invite failed: ${result.error || "Unknown error"}`);
+    }
+  };
+
+  const isLinked = !!employee?.user_id;
+  const hasEmail = !!employee?.email;
 
   // Group checks by criticality tier
   const tiers: CriticalityTier[] = ["legal_critical", "start_critical", "payroll_critical", "rota_critical", "profile_only"];
