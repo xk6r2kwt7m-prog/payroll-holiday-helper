@@ -64,7 +64,7 @@ export function useSendContractEmail() {
         // Log to audit
         try {
           await supabase.from("audit_log").insert({
-            action: "INSERT" as const,
+            action: "create" as const,
             table_name: "contract_email_sent",
             record_id: signingTokenId,
             tenant_id: tenantId,
