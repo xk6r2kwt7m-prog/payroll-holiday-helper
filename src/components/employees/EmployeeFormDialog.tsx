@@ -178,33 +178,40 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       }
     }
 
-    // Validate required fields
-    if (!formData.forename.trim() || !formData.surname.trim() || !formData.hourly_rate) {
-      toast.error("Please fill in all required fields (name and hourly rate)");
+    // Pre-submit validation with clear field-level messages
+    const validationErrors: string[] = [];
+    if (!formData.forename.trim()) validationErrors.push("First name is required");
+    if (!formData.surname.trim()) validationErrors.push("Surname is required");
+    if (!formData.hourly_rate || isNaN(parseFloat(formData.hourly_rate))) validationErrors.push("A valid hourly rate is required");
+
+    if (isNewEmployee) {
+      if (!formData.ni_number.trim()) validationErrors.push("National Insurance Number is required");
+      if (!formData.sort_code.trim()) validationErrors.push("Sort code is required (Banking tab)");
+      if (!formData.bank_account_no.trim()) validationErrors.push("Account number is required (Banking tab)");
+      if (selectedBranches.length === 0) validationErrors.push("At least one branch must be selected");
+    }
+
+    if (validationErrors.length > 0) {
+      toast.error(validationErrors.join(". "));
+      // Navigate to the relevant tab for the first error
+      if (!formData.forename.trim() || !formData.surname.trim() || (!isNewEmployee ? false : !formData.ni_number.trim())) {
+        setActiveTab("personal");
+      } else if (isNewEmployee && (!formData.sort_code.trim() || !formData.bank_account_no.trim())) {
+        setActiveTab("banking");
+      } else if (isNewEmployee && selectedBranches.length === 0) {
+        setActiveTab("employment");
+      }
       return;
     }
 
-    // For new employees, require banking details
-    if (isNewEmployee) {
-      if (!formData.ni_number.trim()) {
-        toast.error("National Insurance Number is required for new employees");
-        setActiveTab("personal");
-        return;
-      }
-      if (!formData.sort_code.trim() || !formData.bank_account_no.trim()) {
-        toast.error("Bank details (sort code and account number) are required for new employees");
-        setActiveTab("banking");
-        return;
-      }
-      if (selectedBranches.length === 0) {
-        toast.error("Please select at least one branch for this employee");
-        setActiveTab("employment");
-        return;
-      }
+    if (!tenantId) {
+      toast.error("Session error: no organisation context. Please refresh and try again.");
+      return;
     }
 
     try {
       const employeeData: any = {
+        tenant_id: tenantId,
         forename: formData.forename.trim(),
         surname: formData.surname.trim(),
         email: formData.email.trim().toLowerCase() || null,
@@ -237,7 +244,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       let employeeId: string;
 
       if (employee) {
-        await updateEmployee.mutateAsync({ id: employee.id, updates: employeeData });
+        // Don't send tenant_id on updates
+        const { tenant_id: _omit, ...updateData } = employeeData;
+        await updateEmployee.mutateAsync({ id: employee.id, updates: updateData });
         employeeId = employee.id;
         toast.success("Employee updated successfully");
       } else {
@@ -257,18 +266,27 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       onSuccess?.();
 
       // Privacy: Worker must self-activate their own Talent Pool profile.
-      // Admin marking someone as leaver does NOT create/trigger a profile.
       const wasLeaver = employee?.status === "leaver";
       const isNowLeaver = formData.status === "leaver";
       if (isNowLeaver && !wasLeaver) {
         toast.info("If this employee wishes to join the Talent Pool, they can activate their own profile from their Staff Portal.");
       }
     } catch (error: any) {
-      const msg = error?.message || error?.error?.message || "";
+      const msg = error?.message || error?.error?.message || "Unknown error";
+      console.error("Employee save error:", msg);
+
       if (msg.includes("active talent pool profile")) {
         toast.error("This employee has an active Talent Pool profile. Opt them out of the Talent Pool before removing account access.");
+      } else if (msg.includes("violates row-level security")) {
+        toast.error("Permission denied: you do not have access to create or edit employees.");
+      } else if (msg.includes("duplicate key") || msg.includes("unique constraint")) {
+        toast.error("An employee with these details already exists. Check for duplicates.");
+      } else if (msg.includes("foreign key") || msg.includes("23503")) {
+        toast.error("A referenced record (e.g. department or branch) is invalid. Please check your selections.");
+      } else if (msg.includes("not-null") || msg.includes("23502")) {
+        toast.error(`A required field is missing: ${msg}`);
       } else {
-        toast.error(employee ? "Failed to update employee" : "Failed to create employee");
+        toast.error(`${employee ? "Failed to update" : "Failed to create"} employee: ${msg}`);
       }
     }
   };
