@@ -106,6 +106,8 @@ export function useUpdateEmployee() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
     },
   });
 }
