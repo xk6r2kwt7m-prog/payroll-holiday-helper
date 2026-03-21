@@ -105,6 +105,7 @@ export default function SignContract() {
 
       setSigned(true);
       setSignedAt(result.signed_at || new Date().toISOString());
+      setFullySigned(result.fully_signed === true);
     } catch {
       setErrorCode("internal_error");
       setErrorMessage("Something went wrong. Please try again.");
