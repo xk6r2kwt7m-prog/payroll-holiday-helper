@@ -242,6 +242,7 @@ export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklis
   const { data: inviteRecord } = useEmployeeInviteStatus(employee?.email, employee?.tenant_id);
   const navigate = useNavigate();
   const { sendInviteEmail } = useInviteEmail();
+  const qc = useQueryClient();
 
   if (isLoading || !readiness) return null;
 
