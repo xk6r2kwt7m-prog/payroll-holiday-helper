@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +69,12 @@ export function AttendanceReport() {
       { header: "Status", accessor: (r: any) => r.status },
       { header: "Scheduled Start", accessor: (r: any) => r.scheduled_start },
       { header: "Scheduled End", accessor: (r: any) => r.scheduled_end },
+      { header: "Clock-in Lat", accessor: (r: any) => r.clock_in_latitude },
+      { header: "Clock-in Lng", accessor: (r: any) => r.clock_in_longitude },
+      { header: "Clock-in Geofence", accessor: (r: any) => r.clock_in_within_geofence == null ? "" : r.clock_in_within_geofence ? "Yes" : "No" },
+      { header: "Clock-out Lat", accessor: (r: any) => r.clock_out_latitude },
+      { header: "Clock-out Lng", accessor: (r: any) => r.clock_out_longitude },
+      { header: "Clock-out Geofence", accessor: (r: any) => r.clock_out_within_geofence == null ? "" : r.clock_out_within_geofence ? "Yes" : "No" },
       { header: "Override", accessor: (r: any) => r.manager_override ? "Yes" : "No" },
     ], filtered);
   };
@@ -122,6 +129,7 @@ export function AttendanceReport() {
                   <TableHead>In</TableHead>
                   <TableHead>Out</TableHead>
                   <TableHead>Hours</TableHead>
+                  <TableHead className="hidden md:table-cell">Location</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -134,6 +142,18 @@ export function AttendanceReport() {
                     <TableCell className="text-xs">{e.clock_in_time ? format(new Date(e.clock_in_time), "HH:mm") : "–"}</TableCell>
                     <TableCell className="text-xs">{e.clock_out_time ? format(new Date(e.clock_out_time), "HH:mm") : "–"}</TableCell>
                     <TableCell className="text-xs font-medium">{e.total_hours ?? "–"}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {e.clock_in_latitude ? (
+                        <div className="flex items-center gap-1">
+                          <MapPin className={cn("h-3 w-3", e.clock_in_within_geofence === false ? "text-destructive" : "text-success")} />
+                          <span className="text-[10px] text-muted-foreground">
+                            {e.clock_in_within_geofence === false ? "Outside" : "OK"}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">No GPS</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn("text-[10px]", {
                         "text-warning border-warning/30": e.status === "pending",

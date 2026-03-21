@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Check, X, MapPin, Clock, AlertTriangle, FileText, Navigation } from "lucide-react";
+import { Check, X, MapPin, Clock, AlertTriangle, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ClockEventLocations } from "@/components/attendance/LocationMapPreview";
 import { useApproveTimeEntries, useRejectTimeEntry } from "@/hooks/useTimeEntries";
 import { useEvidenceFiles } from "@/hooks/useEvidence";
 import { toast } from "sonner";
@@ -66,34 +67,7 @@ function computeFlags(entry: any): { type: "time" | "location" | "approval"; lab
   return flags;
 }
 
-function LocationMapPreview({ lat, lng, label, withinGeofence }: { lat?: number; lng?: number; label: string; withinGeofence?: boolean | null }) {
-  if (!lat || !lng) return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 bg-muted/50 rounded">
-      <MapPin className="h-3 w-3" /> No location data for {label}
-    </div>
-  );
-
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium">{label}</span>
-        <Badge variant="outline" className={cn("text-[10px]", withinGeofence ? "text-success border-success/30" : "text-destructive border-destructive/30")}>
-          {withinGeofence ? "In geofence" : "Outside geofence"}
-        </Badge>
-      </div>
-      <a
-        href={`https://www.google.com/maps?q=${lat},${lng}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 p-2 bg-muted/50 rounded text-xs text-primary hover:bg-muted transition-colors"
-      >
-        <Navigation className="h-3 w-3" />
-        {lat.toFixed(5)}, {lng.toFixed(5)}
-        <span className="text-muted-foreground ml-auto">View on map →</span>
-      </a>
-    </div>
-  );
-}
+// LocationMapPreview is now imported from @/components/attendance/LocationMapPreview
 
 export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: TimesheetReviewPanelProps) {
   const [rejectNotes, setRejectNotes] = useState("");
@@ -206,17 +180,14 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
           {/* Location */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Location Verification</p>
-            <LocationMapPreview
-              lat={entry.clock_in_latitude}
-              lng={entry.clock_in_longitude}
-              label="Clock-in"
-              withinGeofence={entry.clock_in_within_geofence}
-            />
-            <LocationMapPreview
-              lat={entry.clock_out_latitude}
-              lng={entry.clock_out_longitude}
-              label="Clock-out"
-              withinGeofence={entry.clock_out_within_geofence}
+            <ClockEventLocations
+              clockInLat={entry.clock_in_latitude}
+              clockInLng={entry.clock_in_longitude}
+              clockInGeofence={entry.clock_in_within_geofence}
+              clockOutLat={entry.clock_out_latitude}
+              clockOutLng={entry.clock_out_longitude}
+              clockOutGeofence={entry.clock_out_within_geofence}
+              showInlineMap
             />
             {branchLoc && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 bg-muted/30 rounded">
