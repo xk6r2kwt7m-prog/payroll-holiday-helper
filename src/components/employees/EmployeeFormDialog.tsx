@@ -178,29 +178,20 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       }
     }
 
-    // Pre-submit validation with clear field-level messages
+    // Pre-submit validation — only truly mandatory fields for starter creation
     const validationErrors: string[] = [];
     if (!formData.forename.trim()) validationErrors.push("First name is required");
     if (!formData.surname.trim()) validationErrors.push("Surname is required");
-    if (!formData.hourly_rate || isNaN(parseFloat(formData.hourly_rate))) validationErrors.push("A valid hourly rate is required");
 
-    if (isNewEmployee) {
-      if (!formData.ni_number.trim()) validationErrors.push("National Insurance Number is required");
-      if (!formData.sort_code.trim()) validationErrors.push("Sort code is required (Banking tab)");
-      if (!formData.bank_account_no.trim()) validationErrors.push("Account number is required (Banking tab)");
-      if (selectedBranches.length === 0) validationErrors.push("At least one branch must be selected");
+    // For editing existing employees, hourly rate is always required
+    // For new starters, default to 0 if not provided (payroll readiness will flag it)
+    if (!isNewEmployee && (!formData.hourly_rate || isNaN(parseFloat(formData.hourly_rate)))) {
+      validationErrors.push("A valid hourly rate is required");
     }
 
     if (validationErrors.length > 0) {
       toast.error(validationErrors.join(". "));
-      // Navigate to the relevant tab for the first error
-      if (!formData.forename.trim() || !formData.surname.trim() || (!isNewEmployee ? false : !formData.ni_number.trim())) {
-        setActiveTab("personal");
-      } else if (isNewEmployee && (!formData.sort_code.trim() || !formData.bank_account_no.trim())) {
-        setActiveTab("banking");
-      } else if (isNewEmployee && selectedBranches.length === 0) {
-        setActiveTab("employment");
-      }
+      setActiveTab("personal");
       return;
     }
 
