@@ -95,7 +95,7 @@ export function ContractSigningActions({
         setEmailSent(true);
         toast({
           title: "Contract sent",
-          description: `Contract submitted to ${employeeEmail}`,
+          description: `Contract sent to ${employeeEmail}`,
         });
       } else {
         toast({
