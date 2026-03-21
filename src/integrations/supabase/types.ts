@@ -5535,6 +5535,8 @@ export type Database = {
       }
       time_entries: {
         Row: {
+          adjusted_by: string | null
+          adjustment_reason: string | null
           approved_at: string | null
           approved_by: string | null
           branch: string
@@ -5551,6 +5553,7 @@ export type Database = {
           department: string
           employee_id: string
           id: string
+          manager_adjusted: boolean
           manager_override: boolean | null
           notes: string | null
           override_reason: string | null
@@ -5563,6 +5566,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          adjusted_by?: string | null
+          adjustment_reason?: string | null
           approved_at?: string | null
           approved_by?: string | null
           branch: string
@@ -5579,6 +5584,7 @@ export type Database = {
           department: string
           employee_id: string
           id?: string
+          manager_adjusted?: boolean
           manager_override?: boolean | null
           notes?: string | null
           override_reason?: string | null
@@ -5591,6 +5597,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          adjusted_by?: string | null
+          adjustment_reason?: string | null
           approved_at?: string | null
           approved_by?: string | null
           branch?: string
@@ -5607,6 +5615,7 @@ export type Database = {
           department?: string
           employee_id?: string
           id?: string
+          manager_adjusted?: boolean
           manager_override?: boolean | null
           notes?: string | null
           override_reason?: string | null
