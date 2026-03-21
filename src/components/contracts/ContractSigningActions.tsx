@@ -22,7 +22,8 @@ import {
   useSigningTokens,
 } from "@/hooks/useContractSigning";
 import { useSendContractEmail } from "@/hooks/useSendContractEmail";
-import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown } from "lucide-react";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -32,6 +33,8 @@ interface ContractSigningActionsProps {
   contractSendStatus?: string | null;
   contractSentAt?: string | null;
   contractSentTo?: string | null;
+  finalSignedPdfUrl?: string | null;
+  filePath?: string | null;
 }
 
 export function ContractSigningActions({
