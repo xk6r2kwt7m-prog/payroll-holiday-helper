@@ -119,7 +119,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
     ? Math.floor((Date.now() - new Date(employee.start_date).getTime()) / (1000 * 60 * 60 * 24 * 30))
     : null;
 
-  const dob = (employee as any).date_of_birth;
+  const dob = employee.date_of_birth;
   const payRisk: PayRiskResult | null = dob ? checkPayRisk(dob, employee.hourly_rate) : null;
 
   return (
