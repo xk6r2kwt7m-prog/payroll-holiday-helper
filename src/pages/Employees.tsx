@@ -500,7 +500,7 @@ const Employees = () => {
         <EmployeeDetailSheet
           employee={selectedEmployee}
           open={detailSheetOpen}
-          onOpenChange={setDetailSheetOpen}
+          onOpenChange={handleDetailSheetClose}
           isAdmin={canEdit}
           canViewSensitive={canViewSensitive}
         />
