@@ -223,7 +223,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
       // Fetch shift before deleting to notify if published
       const { data: shift } = await supabase
         .from("shifts")
-        .select("*, employees(user_id, forename, surname)")
+        .select("*, employees(user_id, forename, surname, email)")
         .eq("id", id)
         .single();
 
@@ -232,15 +232,30 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
           toast.success("Shift deleted");
           if (shift?.is_published) {
             const emp = shift.employees as any;
+            const shiftDate = format(new Date(shift.shift_date + "T00:00:00"), "EEE d MMM");
+            const times = `${shift.start_time?.slice(0, 5)}–${shift.end_time?.slice(0, 5)}`;
             if (emp?.user_id) {
-              const shiftDate = format(new Date(shift.shift_date + "T00:00:00"), "EEE d MMM");
-              const times = `${shift.start_time?.slice(0, 5)}–${shift.end_time?.slice(0, 5)}`;
               await notifyShiftChange(
                 emp.user_id,
                 "Shift cancelled",
                 `Your ${shiftDate} shift (${times}) has been removed from the rota.`,
                 { shift_id: id }
               );
+            }
+            if (emp?.email) {
+              sendNotification({
+                to: emp.email,
+                subject: `Shift cancelled – ${shiftDate}`,
+                type: "shift_update",
+                data: {
+                  employee_name: `${emp.forename} ${emp.surname}`,
+                  message: `Your ${shiftDate} shift (${times}) has been removed from the rota.`,
+                  shift_date: shift.shift_date,
+                  start_time: shift.start_time,
+                  end_time: shift.end_time,
+                },
+                tenant_id: tenantId,
+              });
             }
           }
         },
