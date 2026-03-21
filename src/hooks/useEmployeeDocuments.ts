@@ -140,6 +140,7 @@ export function useUploadDocument() {
     onSuccess: async (data, { employeeId }) => {
       queryClient.invalidateQueries({ queryKey: ["employee_documents", employeeId] });
       queryClient.invalidateQueries({ queryKey: ["expiring_documents"] });
+      queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
 
       // Notify admins about new document upload
       if (tenantId) {
