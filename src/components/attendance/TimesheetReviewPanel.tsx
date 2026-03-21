@@ -230,6 +230,33 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
             </>
           )}
 
+          {/* Manager-adjusted indicator */}
+          {entry.manager_adjusted && (
+            <>
+              <Separator />
+              <div className="flex items-center gap-2 p-2 rounded bg-warning/10 border border-warning/20">
+                <Pencil className="h-3.5 w-3.5 text-warning" />
+                <div>
+                  <p className="text-xs font-medium text-warning">Manager-adjusted</p>
+                  {entry.adjustment_reason && (
+                    <p className="text-xs text-muted-foreground">{entry.adjustment_reason}</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Edit button for managers */}
+          <Separator />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowEditDialog(true)}
+            className="w-full"
+          >
+            <Pencil className="h-3.5 w-3.5 mr-2" /> Edit entry
+          </Button>
+
           {/* Actions */}
           {isPending && (
             <>
@@ -278,6 +305,13 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
             </div>
           )}
         </div>
+
+        {/* Manager edit dialog */}
+        <ManagerTimesheetDialog
+          open={showEditDialog}
+          onClose={() => setShowEditDialog(false)}
+          entry={entry}
+        />
       </SheetContent>
     </Sheet>
   );
