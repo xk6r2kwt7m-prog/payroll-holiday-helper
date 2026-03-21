@@ -207,6 +207,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       const employeeData: any = {
         forename: formData.forename.trim(),
         surname: formData.surname.trim(),
+        email: formData.email.trim().toLowerCase() || null,
+        date_of_birth: formData.date_of_birth || null,
         department: formData.department,
         status: formData.status,
         hourly_rate: parseFloat(formData.hourly_rate),
