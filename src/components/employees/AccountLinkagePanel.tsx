@@ -1,4 +1,5 @@
 import { AlertTriangle, Link2, Mail, Send, Unlink, Shield, ExternalLink } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AccountAccessBadge } from "./AccountAccessBadge";
