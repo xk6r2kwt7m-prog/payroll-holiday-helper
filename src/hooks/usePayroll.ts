@@ -317,7 +317,10 @@ export function useBulkUpdatePayrollEntries() {
             .select()
             .single();
           
-          if (error) throw error;
+          if (error) {
+            if (error.message?.includes("locked")) throw new Error("This payroll period is locked and cannot be edited. Reopen the period first.");
+            throw error;
+          }
           return data;
         })
       );
@@ -325,6 +328,7 @@ export function useBulkUpdatePayrollEntries() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
 }
