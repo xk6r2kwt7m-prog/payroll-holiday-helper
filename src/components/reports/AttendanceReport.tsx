@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Plus, Pencil } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ReportFilters } from "./ReportFilters";
 import { ReportSummaryBar } from "./ReportSummaryBar";
@@ -14,6 +15,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useManagerScope } from "@/hooks/useManagerScope";
 import { exportToCsv } from "@/lib/csv-export";
 import { cn } from "@/lib/utils";
+import { ManagerTimesheetDialog } from "@/components/attendance/ManagerTimesheetDialog";
 
 export function AttendanceReport() {
   const [branch, setBranch] = useState("all");
