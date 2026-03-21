@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -178,29 +179,20 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       }
     }
 
-    // Pre-submit validation with clear field-level messages
+    // Pre-submit validation — only truly mandatory fields for starter creation
     const validationErrors: string[] = [];
     if (!formData.forename.trim()) validationErrors.push("First name is required");
     if (!formData.surname.trim()) validationErrors.push("Surname is required");
-    if (!formData.hourly_rate || isNaN(parseFloat(formData.hourly_rate))) validationErrors.push("A valid hourly rate is required");
 
-    if (isNewEmployee) {
-      if (!formData.ni_number.trim()) validationErrors.push("National Insurance Number is required");
-      if (!formData.sort_code.trim()) validationErrors.push("Sort code is required (Banking tab)");
-      if (!formData.bank_account_no.trim()) validationErrors.push("Account number is required (Banking tab)");
-      if (selectedBranches.length === 0) validationErrors.push("At least one branch must be selected");
+    // For editing existing employees, hourly rate is always required
+    // For new starters, default to 0 if not provided (payroll readiness will flag it)
+    if (!isNewEmployee && (!formData.hourly_rate || isNaN(parseFloat(formData.hourly_rate)))) {
+      validationErrors.push("A valid hourly rate is required");
     }
 
     if (validationErrors.length > 0) {
       toast.error(validationErrors.join(". "));
-      // Navigate to the relevant tab for the first error
-      if (!formData.forename.trim() || !formData.surname.trim() || (!isNewEmployee ? false : !formData.ni_number.trim())) {
-        setActiveTab("personal");
-      } else if (isNewEmployee && (!formData.sort_code.trim() || !formData.bank_account_no.trim())) {
-        setActiveTab("banking");
-      } else if (isNewEmployee && selectedBranches.length === 0) {
-        setActiveTab("employment");
-      }
+      setActiveTab("personal");
       return;
     }
 
@@ -210,6 +202,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     }
 
     try {
+      const parsedRate = parseFloat(formData.hourly_rate);
       const employeeData: any = {
         tenant_id: tenantId,
         forename: formData.forename.trim(),
@@ -218,7 +211,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         date_of_birth: formData.date_of_birth || null,
         department: formData.department,
         status: formData.status,
-        hourly_rate: parseFloat(formData.hourly_rate),
+        hourly_rate: isNaN(parsedRate) ? 0 : parsedRate,
         service_charge: parseFloat(formData.service_charge) || 0,
         ni_number: formData.ni_number.trim() || null,
         bank_account_no: formData.bank_account_no.trim() || null,
@@ -252,27 +245,45 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       } else {
         const newEmployee = await createEmployee.mutateAsync(employeeData);
         employeeId = newEmployee.id;
-        
-        // Truthful message: Add Employee does NOT send any email
-        if (formData.email.trim()) {
-          toast.success(`Employee added as "${formData.status}". No email has been sent yet.`, {
-            description: "The view has been switched to show new starters. Use 'Invite Employee' to send a welcome email.",
-            duration: 6000,
-          });
-        } else {
-          toast.success(`Employee added as "${formData.status}". No email address was provided.`, {
-            description: "The view has been switched to show new starters.",
-            duration: 5000,
-          });
+
+        // Create onboarding record for starter
+        try {
+          await supabase
+            .from("employee_onboarding_data" as any)
+            .insert({
+              employee_id: employeeId,
+              tenant_id: tenantId,
+            } as any);
+        } catch (onbErr) {
+          console.warn("[ADD_EMPLOYEE] Onboarding record creation failed (non-blocking):", onbErr);
         }
+
+        // Build a summary of what's still pending
+        const pendingItems: string[] = [];
+        if (!formData.hourly_rate || parsedRate === 0) pendingItems.push("hourly rate");
+        if (!formData.bank_account_no.trim()) pendingItems.push("bank details");
+        if (!formData.ni_number.trim()) pendingItems.push("NI number");
+        if (!formData.settlement_status) pendingItems.push("right to work");
+        if (selectedBranches.length === 0) pendingItems.push("branch assignment");
+
+        const pendingNote = pendingItems.length > 0
+          ? `Still needed: ${pendingItems.join(", ")}.`
+          : "All basic details provided.";
+
+        toast.success(`Employee "${formData.forename.trim()} ${formData.surname.trim()}" created as starter.`, {
+          description: `No email sent. ${pendingNote} Use the employee profile to complete setup.`,
+          duration: 7000,
+        });
       }
 
-      // Update branches
-      await setEmployeeBranches.mutateAsync({
-        employeeId,
-        branches: selectedBranches,
-        primaryBranch: primaryBranch || selectedBranches[0],
-      });
+      // Update branches (only if any selected)
+      if (selectedBranches.length > 0) {
+        await setEmployeeBranches.mutateAsync({
+          employeeId,
+          branches: selectedBranches,
+          primaryBranch: primaryBranch || selectedBranches[0],
+        });
+      }
 
       setOpen(false);
       onSuccess?.();
@@ -458,8 +469,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="ni_number" className="flex items-center gap-1">
-                    National Insurance Number {isNewEmployee && <span className="text-destructive">*</span>}
+                  <Label htmlFor="ni_number">
+                    National Insurance Number
                   </Label>
                   <Input
                     id="ni_number"
@@ -469,7 +480,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                     maxLength={9}
                     className="transition-all focus:ring-2 focus:ring-primary/20 uppercase"
                   />
-                  <p className="text-xs text-muted-foreground">Format: 2 letters, 6 numbers, 1 letter</p>
+                  <p className="text-xs text-muted-foreground">Format: 2 letters, 6 numbers, 1 letter. Can be added later.</p>
                 </div>
               </TabsContent>
 
@@ -527,8 +538,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="hourly_rate" className="flex items-center gap-1">
-                      Hourly Rate (£) <span className="text-destructive">*</span>
+                    <Label htmlFor="hourly_rate">
+                      Hourly Rate (£)
                     </Label>
                     <Input
                       id="hourly_rate"
@@ -685,7 +696,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
               <TabsContent value="branches" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    📍 Select the branch(es) where this employee works. {isNewEmployee && <span className="text-destructive font-medium">At least one branch is required.</span>}
+                    📍 Select the branch(es) where this employee works. Can be assigned later if needed.
                   </p>
                 </div>
 
@@ -857,7 +868,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
               <TabsContent value="banking" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    🔒 Banking details are stored securely. {isNewEmployee && <span className="text-destructive font-medium">Required for new employees.</span>}
+                    🔒 Banking details are stored securely. Can be added later — payroll readiness will flag if missing.
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Bank details will only be included in the first payroll export of each month.
@@ -865,8 +876,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sort_code" className="flex items-center gap-1">
-                    Sort Code {isNewEmployee && <span className="text-destructive">*</span>}
+                  <Label htmlFor="sort_code">
+                    Sort Code
                   </Label>
                   <Input
                     id="sort_code"
@@ -889,8 +900,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bank_account_no" className="flex items-center gap-1">
-                    Account Number {isNewEmployee && <span className="text-destructive">*</span>}
+                  <Label htmlFor="bank_account_no">
+                    Account Number
                   </Label>
                   <Input
                     id="bank_account_no"
