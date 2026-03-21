@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, UserPlus, Eye, RefreshCw, Link2 } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, UserPlus, Eye, RefreshCw, Link2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateAccrual } from "@/hooks/useLeaveRules";
+import { useTenant } from "@/hooks/useTenant";
 import type { Database } from "@/integrations/supabase/types";
 
 type DepartmentType = string;
@@ -236,10 +237,12 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const [existingPeriodId, setExistingPeriodId] = useState<string | null>(null);
   const [useExistingPeriod, setUseExistingPeriod] = useState(false);
   const [manualMatches, setManualMatches] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
+  const { tenantId } = useTenant();
 
   // Detect existing draft period matching dates
   useEffect(() => {
@@ -257,12 +260,33 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
   const handleFileChange = useCallback(async (f: File | null) => {
     setFile(f);
+    setValidationErrors([]);
     if (!f) return;
 
     try {
       const text = await f.text();
       const rows = parseTimesheetCSV(text);
       const agg = aggregateByEmployee(rows, employees);
+      
+      // Validation checks
+      const errors: string[] = [];
+      for (const emp of agg) {
+        if (emp.totalHours < 0) {
+          errors.push(`${emp.csvName}: negative hours (${emp.totalHours})`);
+        }
+        if (isNaN(emp.totalHours)) {
+          errors.push(`${emp.csvName}: hours is not a valid number`);
+        }
+      }
+      // Check for duplicate employee matches
+      const matchedIds = agg.filter(e => e.matchedId).map(e => e.matchedId);
+      const duplicateIds = matchedIds.filter((id, i) => matchedIds.indexOf(id) !== i);
+      if (duplicateIds.length > 0) {
+        const dupNames = agg.filter(e => duplicateIds.includes(e.matchedId)).map(e => `${e.matchedForename} ${e.matchedSurname}`);
+        errors.push(`Duplicate employee match detected: ${[...new Set(dupNames)].join(", ")}`);
+      }
+      
+      setValidationErrors(errors);
       setAggregated(agg);
       setStep("preview");
     } catch (err) {
@@ -317,6 +341,14 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       toast.error("Please fill in all required fields");
       return;
     }
+    if (!tenantId) {
+      toast.error("No workspace selected");
+      return;
+    }
+    if (validationErrors.length > 0) {
+      toast.error("Please fix validation errors before importing");
+      return;
+    }
 
     setImporting(true);
     try {
@@ -351,10 +383,6 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           .delete()
           .eq("payroll_period_id", periodId);
       } else {
-        // Calculate period weeks
-        const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
-        const periodWeeks = Math.round((days / 7) * 10) / 10;
-
         const { data: period, error: periodError } = await supabase
           .from("payroll_periods")
           .insert({
@@ -366,6 +394,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             status: "draft" as const,
             imported_by: user?.id,
             notes: periodNotes,
+            tenant_id: tenantId,
           } as any)
           .select()
           .single();
@@ -406,27 +435,31 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             holiday_accrued_hours: holidayAccrued,
             total_pay: totalPay,
             notes: locNotes,
+            tenant_id: tenantId,
           } as any);
 
         if (entryError) throw entryError;
         entriesCreated++;
       }
 
-      // Update period totals
-      const totalPay = matchedEntries.reduce((s, e) => {
-        const h = e.totalHours;
-        const r = e.hourlyRate || 0;
-        const sc = e.serviceCharge || 0;
-        return s + h * r + h * sc;
-      }, 0);
+      // Period totals now auto-calculated by DB trigger (sync_payroll_period_totals)
+      // No manual total update needed
 
-      await supabase
-        .from("payroll_periods")
-        .update({
-          timesheet_total: totalPay,
-          grand_total: totalPay,
-        })
-        .eq("id", periodId);
+      // Store original CSV file in Supabase Storage
+      let storedFilePath: string | null = null;
+      if (file) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filePath = `${tenantId}/${periodId}/${timestamp}_${safeName}`;
+        const { error: uploadError } = await supabase.storage
+          .from("payroll-files")
+          .upload(filePath, file, { contentType: "text/csv", upsert: false });
+        if (uploadError) {
+          console.error("CSV storage failed (non-blocking):", uploadError);
+        } else {
+          storedFilePath = filePath;
+        }
+      }
 
       // Audit log
       await supabase.from("audit_log").insert({
@@ -434,22 +467,27 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         action: "import" as const,
         table_name: "payroll_periods",
         record_id: periodId,
+        tenant_id: tenantId,
         new_data: {
           operation: "csv_timesheet_import",
           period_name: periodName,
           entries_created: entriesCreated,
           unmatched_employees: unmatchedNames,
           source_file: file?.name || "unknown",
+          source_type: "manual_upload",
+          stored_file_path: storedFilePath,
         },
       });
 
-      // Create import record
+      // Create import record with file_path and tenant_id
       await supabase.from("payroll_imports").insert({
         payroll_period_id: periodId,
         file_name: file?.name || "CSV Import",
+        file_path: storedFilePath,
         imported_by: user?.id,
         import_status: "completed",
         records_imported: entriesCreated,
+        tenant_id: tenantId,
         errors: unmatchedNames.length > 0 ? { unmatched: unmatchedNames } : null,
       } as any);
 
@@ -484,6 +522,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setAggregated([]);
     setImportMessage("");
     setManualMatches({});
+    setValidationErrors([]);
   };
 
   return (
@@ -545,6 +584,25 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
         {step === "preview" && (
           <div className="flex-1 overflow-hidden flex flex-col gap-3 py-2">
+            {/* Source label */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Upload className="h-3 w-3" />
+              <span>Payroll source: <strong>Manual timesheet upload</strong> · {file?.name}</span>
+            </div>
+
+            {/* Validation errors */}
+            {validationErrors.length > 0 && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm">
+                <p className="font-medium text-destructive flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  {validationErrors.length} validation error(s) — fix before importing
+                </p>
+                <ul className="mt-1 space-y-0.5 text-xs text-destructive">
+                  {validationErrors.map((e, i) => <li key={i}>• {e}</li>)}
+                </ul>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 <strong>{matchedEntries.length}</strong> matched · <strong>{aggregated.reduce((s, e) => s + e.totalHours, 0).toFixed(1)}</strong> total hours
@@ -672,7 +730,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             {step === "done" ? "Close" : "Cancel"}
           </Button>
           {step === "preview" && (
-            <Button onClick={handleImport} disabled={importing || matchedEntries.length === 0}>
+            <Button onClick={handleImport} disabled={importing || matchedEntries.length === 0 || validationErrors.length > 0}>
               {importing ? "Importing..." : useExistingPeriod ? `Update ${matchedEntries.length} Entries` : `Import ${matchedEntries.length} Employees`}
             </Button>
           )}
