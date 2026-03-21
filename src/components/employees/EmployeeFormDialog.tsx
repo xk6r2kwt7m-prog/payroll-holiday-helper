@@ -900,8 +900,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bank_account_no" className="flex items-center gap-1">
-                    Account Number {isNewEmployee && <span className="text-destructive">*</span>}
+                  <Label htmlFor="bank_account_no">
+                    Account Number
                   </Label>
                   <Input
                     id="bank_account_no"
