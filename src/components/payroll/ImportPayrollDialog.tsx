@@ -179,13 +179,7 @@ function matchEmployee(
   );
   if (ciFullName) return { emp: ciFullName, matchMethod: "case_insensitive" };
 
-  // 3. Case-insensitive forename-only match (only if exactly one match)
-  const forenameMatches = sorted.filter(
-    (e) => e.forename.toLowerCase() === nameLower
-  );
-  if (forenameMatches.length === 1) return { emp: forenameMatches[0], matchMethod: "forename_only" };
-
-  // 4. Email match — if csvName looks like an email
+  // 3. Email match
   if (nameLower.includes("@")) {
     const emailMatch = sorted.find(
       (e) => e.email && e.email.toLowerCase() === nameLower
@@ -193,7 +187,7 @@ function matchEmployee(
     if (emailMatch) return { emp: emailMatch, matchMethod: "email" };
   }
 
-  // 5. NAME_MAP fallback (last resort)
+  // 4. NAME_MAP fallback (last resort)
   const mapped = NAME_MAP[nameLower];
   if (mapped) {
     const mapMatch = sorted.find(
