@@ -47,7 +47,8 @@ export function SignedContractsList() {
             id,
             forename,
             surname,
-            department
+            department,
+            email
           )
         `)
         .eq("tenant_id", tenantId)
@@ -194,6 +195,7 @@ export function SignedContractsList() {
                   documentId={contract.id}
                   employeeId={contract.employees?.id || ""}
                   employeeName={`${contract.employees?.forename} ${contract.employees?.surname}`}
+                  employeeEmail={contract.employees?.email}
                 />
                 <Button
                   variant="ghost"

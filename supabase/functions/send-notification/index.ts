@@ -25,7 +25,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "payroll_approved" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "payroll_approved" | "contract_signing" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -215,6 +215,21 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p>Your right to work documents, if submitted, will be reviewed by management before final approval.</p>
         <p style="color:#666;">If you have any difficulty accessing your account, or if you do not receive further updates, please contact your manager.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling</strong></p>`;
+      break;
+    }
+    case "contract_signing": {
+      const empFirstName = (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your contract is ready to sign</h2>
+        <p>Hi ${empFirstName},</p>
+        <p>Your contract is now ready.</p>
+        <p>Please review and sign it using the link below:</p>
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.signing_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Sign your contract</a>
+        </p>
+        <p>It only takes a couple of minutes and can be completed on your phone.</p>
+        <p>If you have any questions, just reply to this email.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
     case "test":

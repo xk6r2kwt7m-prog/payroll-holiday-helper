@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useUploadDocument } from "@/hooks/useEmployeeDocuments";
 import { useGenerateSigningLink } from "@/hooks/useContractSigning";
+import { useSendContractEmail } from "@/hooks/useSendContractEmail";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,6 +38,7 @@ import {
   FileText,
   Link2,
   Loader2,
+  Mail,
   MapPin,
   ShieldCheck,
   User,
@@ -67,6 +69,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const { tenantName } = useTenant();
   const uploadDocument = useUploadDocument();
   const generateSigningLink = useGenerateSigningLink();
+  const { sendContractEmail } = useSendContractEmail();
   const companyLegalName = companySettings?.company_name || tenantName || "Your Company";
   const companyAddress = companySettings?.address || "";
   const { data: locationSettings = [] } = useLocationSettings();
@@ -94,6 +97,9 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const [employerSignLink, setEmployerSignLink] = useState<string | null>(null);
   const [generatingEmployeeLink, setGeneratingEmployeeLink] = useState(false);
   const [generatingEmployerLink, setGeneratingEmployerLink] = useState(false);
+  const [sendingContractEmail, setSendingContractEmail] = useState(false);
+  const [contractEmailSent, setContractEmailSent] = useState(false);
+  const [employeeSignTokenId, setEmployeeSignTokenId] = useState<string | null>(null);
 
   const contractEligibleEmployees = useMemo(
     () => employees?.filter((e) => ["active", "starter", "onboarding"].includes(e.status)) || [],
@@ -204,10 +210,54 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
       const link = `${window.location.origin}/sign/${result.token}`;
       setLink(link);
+      if (signerType === "employee") {
+        setEmployeeSignTokenId(result.id);
+      }
     } catch {
       toast({ title: "Error", description: "Failed to generate link", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const selectedEmployee = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
+  const employeeEmail = selectedEmployee?.email;
+
+  const handleSendContractEmail = async () => {
+    if (!employeeSignLink || !employeeEmail || !savedDocumentId || !employeeSignTokenId) return;
+
+    setSendingContractEmail(true);
+    try {
+      const result = await sendContractEmail({
+        recipientEmail: employeeEmail,
+        employeeName: variables.employeeName,
+        signingUrl: employeeSignLink,
+        signingTokenId: employeeSignTokenId,
+        employeeId: selectedEmployeeId,
+        employeeDocumentId: savedDocumentId,
+      });
+
+      if (result.success) {
+        setContractEmailSent(true);
+        toast({
+          title: "Contract sent",
+          description: `Contract submitted to ${employeeEmail}`,
+        });
+      } else {
+        toast({
+          title: "Email failed",
+          description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Email failed",
+        description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingContractEmail(false);
     }
   };
 
@@ -223,6 +273,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       setSavedDocumentId(null);
       setEmployeeSignLink(null);
       setEmployerSignLink(null);
+      setContractEmailSent(false);
+      setEmployeeSignTokenId(null);
       setSelectedEmployeeId("");
       setVariables({
         employeeName: "",
@@ -495,9 +547,13 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     <p className="text-sm font-semibold text-foreground">👤 Employee Signature</p>
                     <p className="text-xs text-muted-foreground">Send to {variables.employeeName}</p>
                   </div>
-                  {employeeSignLink ? (
+                  {contractEmailSent ? (
                     <Badge className="bg-primary/10 text-primary border-0 text-xs gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Ready
+                      <CheckCircle2 className="h-3 w-3" /> Sent
+                    </Badge>
+                  ) : employeeSignLink ? (
+                    <Badge className="bg-primary/10 text-primary border-0 text-xs gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Ready to send
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="text-xs gap-1">
@@ -518,11 +574,40 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   </Button>
                 ) : (
                   <div className="space-y-2">
-                    <div className="bg-muted/50 rounded-lg border border-border p-2 text-xs text-muted-foreground break-all select-all">
-                      {employeeSignLink}
-                    </div>
+                    {/* Primary action: Send contract by email */}
+                    {employeeEmail && !contractEmailSent ? (
+                      <Button
+                        onClick={handleSendContractEmail}
+                        disabled={sendingContractEmail}
+                        className="w-full gradient-primary"
+                      >
+                        {sendingContractEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                        {sendingContractEmail ? "Sending..." : "Send contract"}
+                      </Button>
+                    ) : contractEmailSent ? (
+                      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
+                        <p className="text-xs font-medium text-primary">✓ Contract submitted to {employeeEmail}</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                        <p className="text-xs text-muted-foreground">
+                          No email on file.{" "}
+                          <button
+                            onClick={() => {
+                              onOpenChange(false);
+                              window.location.href = `/employees?edit=${selectedEmployeeId}&tab=personal`;
+                            }}
+                            className="text-primary hover:underline font-medium"
+                          >
+                            Add email to send contract
+                          </button>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Fallback: Copy link */}
                     <Button onClick={() => copyToClipboard(employeeSignLink)} variant="outline" size="sm" className="w-full">
-                      <Copy className="h-3 w-3" /> Copy Link
+                      <Copy className="h-3 w-3" /> Copy link
                     </Button>
                   </div>
                 )}

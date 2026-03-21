@@ -21,25 +21,32 @@ import {
   useContractSignatures,
   useSigningTokens,
 } from "@/hooks/useContractSigning";
-import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2 } from "lucide-react";
+import { useSendContractEmail } from "@/hooks/useSendContractEmail";
+import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail } from "lucide-react";
 
 interface ContractSigningActionsProps {
   documentId: string;
   employeeId: string;
   employeeName: string;
+  employeeEmail?: string | null;
 }
 
 export function ContractSigningActions({
   documentId,
   employeeId,
   employeeName,
+  employeeEmail,
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [signerType, setSignerType] = useState<"employee" | "employer">("employee");
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [generatedTokenId, setGeneratedTokenId] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const generateLink = useGenerateSigningLink();
+  const { sendContractEmail } = useSendContractEmail();
   const { data: signatures } = useContractSignatures(documentId);
   const { data: tokens } = useSigningTokens(documentId);
 
@@ -57,6 +64,8 @@ export function ContractSigningActions({
 
       const link = `${window.location.origin}/sign/${result.token}`;
       setGeneratedLink(link);
+      setGeneratedTokenId(result.id);
+      setEmailSent(false);
     } catch {
       toast({ title: "Error", description: "Failed to generate signing link", variant: "destructive" });
     }
@@ -66,6 +75,44 @@ export function ContractSigningActions({
     if (!generatedLink) return;
     navigator.clipboard.writeText(generatedLink);
     toast({ title: "Copied!", description: "Signing link copied to clipboard" });
+  };
+
+  const handleSendEmail = async () => {
+    if (!generatedLink || !employeeEmail || !generatedTokenId) return;
+
+    setSendingEmail(true);
+    try {
+      const result = await sendContractEmail({
+        recipientEmail: employeeEmail,
+        employeeName,
+        signingUrl: generatedLink,
+        signingTokenId: generatedTokenId,
+        employeeId,
+        employeeDocumentId: documentId,
+      });
+
+      if (result.success) {
+        setEmailSent(true);
+        toast({
+          title: "Contract sent",
+          description: `Contract submitted to ${employeeEmail}`,
+        });
+      } else {
+        toast({
+          title: "Email failed",
+          description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Email failed",
+        description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   return (
@@ -94,14 +141,14 @@ export function ContractSigningActions({
           variant="ghost"
           size="icon"
           className="h-9 w-9"
-          onClick={() => { setOpen(true); setGeneratedLink(null); }}
-          title="Generate signing link"
+          onClick={() => { setOpen(true); setGeneratedLink(null); setGeneratedTokenId(null); setEmailSent(false); }}
+          title="Send for signing"
         >
           <Send className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Dialog for generating links */}
+      {/* Dialog for generating links & sending */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -172,14 +219,34 @@ export function ContractSigningActions({
             ) : (
               <div className="space-y-3">
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-                  <p className="text-xs font-medium text-foreground mb-2">Signing Link Ready</p>
-                  <div className="bg-card rounded border border-border p-2 text-xs text-muted-foreground break-all select-all">
-                    {generatedLink}
-                  </div>
+                  <p className="text-xs font-medium text-foreground mb-2">
+                    {emailSent ? "✓ Contract sent" : "Signing Link Ready"}
+                  </p>
+                  {emailSent && employeeEmail && (
+                    <p className="text-xs text-primary mb-2">Submitted to {employeeEmail}</p>
+                  )}
                 </div>
+
+                {/* Primary: Send by email (employee only) */}
+                {signerType === "employee" && employeeEmail && !emailSent && (
+                  <Button onClick={handleSendEmail} disabled={sendingEmail} className="w-full gradient-primary">
+                    {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                    {sendingEmail ? "Sending..." : "Send contract"}
+                  </Button>
+                )}
+
+                {signerType === "employee" && !employeeEmail && (
+                  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      No email on file — copy the link to send manually
+                    </p>
+                  </div>
+                )}
+
+                {/* Fallback: Copy link */}
                 <Button onClick={copyLink} className="w-full" variant="outline">
                   <Copy className="h-4 w-4" />
-                  Copy Link
+                  Copy link
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center">
                   Share this link via WhatsApp, email, or any messenger. The signer does not need an account.
