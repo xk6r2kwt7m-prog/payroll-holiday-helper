@@ -123,6 +123,7 @@ function getCheckAction(key: string, employeeId: string): { path: string; label:
 
 interface OnboardingChecklistProps {
   employeeId: string;
+  employee?: Employee;
 }
 
 /**
