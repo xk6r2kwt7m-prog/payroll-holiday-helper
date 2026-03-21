@@ -255,6 +255,15 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             </div>
           </Section>
 
+          {/* Account Access & Linkage */}
+          <Section title="Account Access" icon={Shield}>
+            <AccountLinkagePanel
+              employee={employee}
+              isAdmin={isAdmin}
+              onEditEmployee={() => setEditOpen(true)}
+            />
+          </Section>
+
           {/* Employment Details */}
           <Section title="Employment" icon={Building}>
             <div className="space-y-1">
