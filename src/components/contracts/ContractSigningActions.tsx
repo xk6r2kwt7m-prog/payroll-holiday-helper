@@ -60,6 +60,16 @@ export function ContractSigningActions({
   const employerSigned = signatures?.some((s) => s.signer_type === "employer");
   const bothSigned = employeeSigned && employerSigned;
 
+  // Derive the contract signing stage for display
+  const getSigningStage = () => {
+    if (bothSigned) return "fully_signed";
+    if (employeeSigned && !employerSigned) return "employee_signed";
+    if (employerSigned && !employeeSigned) return "employer_signed";
+    if (contractSendStatus === "sent" || emailSent) return "sent";
+    return "draft";
+  };
+  const signingStage = getSigningStage();
+
   const handleGenerate = async () => {
     try {
       const result = await generateLink.mutateAsync({
