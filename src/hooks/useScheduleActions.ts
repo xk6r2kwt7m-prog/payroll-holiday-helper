@@ -282,9 +282,9 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
       });
       toast.success(`${selectedBranch} rota published — staff will be notified`);
 
-      // In-app notifications: notify all assigned staff for this week
+      // Gather unique employees with their access state
       const weekShifts = branchShifts.filter((s: any) => s.employee_id);
-      const uniqueEmployees = new Map<string, { userId: string | null; email: string | null; name: string }>();
+      const uniqueEmployees = new Map<string, { userId: string | null; email: string | null; name: string; employeeId: string }>();
       for (const s of weekShifts) {
         const emp = (s as any).employees;
         if (emp && !uniqueEmployees.has(s.employee_id)) {
@@ -292,13 +292,14 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             userId: emp.user_id,
             email: emp.email,
             name: `${emp.forename} ${emp.surname}`,
+            employeeId: s.employee_id,
           });
         }
       }
 
       const dateLabel = `${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")}`;
 
-      // In-app notifications
+      // In-app notifications (only for linked users who can actually see them)
       if (uniqueEmployees.size > 0 && tenantId) {
         const rows = Array.from(uniqueEmployees.values())
           .filter((e) => e.userId)
@@ -316,34 +317,66 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
         }
       }
 
-      // Email notifications to each employee with an email address
-      let emailsSent = 0;
+      // Categorise employees by access state and send appropriate emails
+      let emailsSentLinked = 0;
+      let emailsSentSetup = 0;
       let emailsFailed = 0;
+      let noEmailCount = 0;
+      let needsSetupCount = 0;
+
       for (const [, emp] of uniqueEmployees) {
-        if (!emp.email) continue;
-        const sent = await sendNotification({
-          to: emp.email,
-          subject: `Your rota is ready: ${selectedBranch} – ${dateLabel}`,
-          type: "schedule_published",
-          data: {
-            employee_name: emp.name,
-            branch: selectedBranch,
-            week: dateLabel,
-            message: `Your ${selectedBranch} schedule for ${dateLabel} has been published. Log in to view your shifts.`,
-            login_url: `${window.location.origin}/schedule`,
-          },
-          tenant_id: tenantId,
-        });
-        if (sent) emailsSent++;
-        else emailsFailed++;
+        // A: No email on file — skip entirely
+        if (!emp.email) {
+          noEmailCount++;
+          continue;
+        }
+
+        // D: Linked account exists — send full rota email with login link
+        if (emp.userId) {
+          const sent = await sendNotification({
+            to: emp.email,
+            subject: `Your rota is ready: ${selectedBranch} — ${dateLabel}`,
+            type: "schedule_published",
+            data: {
+              employee_name: emp.name,
+              branch: selectedBranch,
+              week: dateLabel,
+              login_url: `${window.location.origin}/schedule`,
+            },
+            tenant_id: tenantId,
+          });
+          if (sent) emailsSentLinked++;
+          else emailsFailed++;
+        } else {
+          // B/C: Email exists but no linked account — send setup-required email
+          needsSetupCount++;
+          const sent = await sendNotification({
+            to: emp.email,
+            subject: `Your rota is ready, but you need to complete your access`,
+            type: "schedule_published_setup_required",
+            data: {
+              employee_name: emp.name,
+              branch: selectedBranch,
+              week: dateLabel,
+              access_url: `${window.location.origin}/auth`,
+            },
+            tenant_id: tenantId,
+          });
+          if (sent) emailsSentSetup++;
+          else emailsFailed++;
+        }
       }
 
-      const noEmail = Array.from(uniqueEmployees.values()).filter((e) => !e.email).length;
-      if (emailsSent > 0) {
-        toast.success(`Rota email sent to ${emailsSent} staff member${emailsSent !== 1 ? "s" : ""}`);
+      // Manager feedback — truthful summary
+      const totalSent = emailsSentLinked + emailsSentSetup;
+      if (totalSent > 0) {
+        toast.success(`Rota email sent to ${totalSent} staff member${totalSent !== 1 ? "s" : ""}`);
       }
-      if (noEmail > 0) {
-        toast.warning(`${noEmail} employee${noEmail !== 1 ? "s have" : " has"} no email on file — not notified`);
+      if (needsSetupCount > 0) {
+        toast.info(`${needsSetupCount} employee${needsSetupCount !== 1 ? "s need" : " needs"} account setup — sent access link instead of rota`);
+      }
+      if (noEmailCount > 0) {
+        toast.warning(`${noEmailCount} employee${noEmailCount !== 1 ? "s have" : " has"} no email on file — not notified`);
       }
       if (emailsFailed > 0) {
         toast.error(`Failed to email ${emailsFailed} employee${emailsFailed !== 1 ? "s" : ""}`);
@@ -357,7 +390,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
           subject: `Schedule Published: ${selectedBranch} – ${format(weekStart, "d MMM")} to ${format(weekEnd, "d MMM")}`,
           type: "shift_update",
           data: {
-            message: `The ${selectedBranch} rota for ${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")} has been published.`,
+            message: `The ${selectedBranch} rota for ${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")} has been published. ${totalSent} staff emailed, ${noEmailCount} without email, ${needsSetupCount} need account setup.`,
             shift_date: weekStartStr,
             start_time: format(weekStart, "d MMM"),
             end_time: format(weekEnd, "d MMM"),
