@@ -107,7 +107,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
       // Fetch the current shift before updating to detect published-shift changes
       const { data: oldShift } = await supabase
         .from("shifts")
-        .select("*, employees(user_id, forename, surname)")
+        .select("*, employees(user_id, forename, surname, email)")
         .eq("id", id)
         .single();
 
