@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useDepartments } from "@/hooks/useDepartments";
 
 type DepartmentType = string;
