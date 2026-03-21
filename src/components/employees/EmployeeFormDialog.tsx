@@ -244,27 +244,45 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       } else {
         const newEmployee = await createEmployee.mutateAsync(employeeData);
         employeeId = newEmployee.id;
-        
-        // Truthful message: Add Employee does NOT send any email
-        if (formData.email.trim()) {
-          toast.success(`Employee added as "${formData.status}". No email has been sent yet.`, {
-            description: "The view has been switched to show new starters. Use 'Invite Employee' to send a welcome email.",
-            duration: 6000,
-          });
-        } else {
-          toast.success(`Employee added as "${formData.status}". No email address was provided.`, {
-            description: "The view has been switched to show new starters.",
-            duration: 5000,
-          });
+
+        // Create onboarding record for starter
+        try {
+          await supabase
+            .from("employee_onboarding_data" as any)
+            .insert({
+              employee_id: employeeId,
+              tenant_id: tenantId,
+            } as any);
+        } catch (onbErr) {
+          console.warn("[ADD_EMPLOYEE] Onboarding record creation failed (non-blocking):", onbErr);
         }
+
+        // Build a summary of what's still pending
+        const pendingItems: string[] = [];
+        if (!formData.hourly_rate || parsedRate === 0) pendingItems.push("hourly rate");
+        if (!formData.bank_account_no.trim()) pendingItems.push("bank details");
+        if (!formData.ni_number.trim()) pendingItems.push("NI number");
+        if (!formData.settlement_status) pendingItems.push("right to work");
+        if (selectedBranches.length === 0) pendingItems.push("branch assignment");
+
+        const pendingNote = pendingItems.length > 0
+          ? `Still needed: ${pendingItems.join(", ")}.`
+          : "All basic details provided.";
+
+        toast.success(`Employee "${formData.forename.trim()} ${formData.surname.trim()}" created as starter.`, {
+          description: `No email sent. ${pendingNote} Use the employee profile to complete setup.`,
+          duration: 7000,
+        });
       }
 
-      // Update branches
-      await setEmployeeBranches.mutateAsync({
-        employeeId,
-        branches: selectedBranches,
-        primaryBranch: primaryBranch || selectedBranches[0],
-      });
+      // Update branches (only if any selected)
+      if (selectedBranches.length > 0) {
+        await setEmployeeBranches.mutateAsync({
+          employeeId,
+          branches: selectedBranches,
+          primaryBranch: primaryBranch || selectedBranches[0],
+        });
+      }
 
       setOpen(false);
       onSuccess?.();
