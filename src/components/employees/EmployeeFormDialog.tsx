@@ -868,7 +868,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
               <TabsContent value="banking" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    🔒 Banking details are stored securely. {isNewEmployee && <span className="text-destructive font-medium">Required for new employees.</span>}
+                    🔒 Banking details are stored securely. Can be added later — payroll readiness will flag if missing.
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Bank details will only be included in the first payroll export of each month.
