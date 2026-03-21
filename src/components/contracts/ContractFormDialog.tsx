@@ -273,6 +273,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       setSavedDocumentId(null);
       setEmployeeSignLink(null);
       setEmployerSignLink(null);
+      setContractEmailSent(false);
+      setEmployeeSignTokenId(null);
       setSelectedEmployeeId("");
       setVariables({
         employeeName: "",
