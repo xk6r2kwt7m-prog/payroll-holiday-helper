@@ -1,8 +1,9 @@
-import { CheckCircle2, Clock, AlertTriangle, XCircle, Shield } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, XCircle, Shield, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useEmployeeReadiness, type ReadinessStatus } from "@/hooks/useOnboardingReadiness";
+import { useNavigate } from "react-router-dom";
 
 const statusConfig: Record<ReadinessStatus, { label: string; shortLabel: string; description: string; icon: any; color: string; bg: string }> = {
   ready: { label: "Ready to Work", shortLabel: "Ready", description: "All requirements met — this employee can be scheduled.", icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
@@ -17,17 +18,54 @@ const checkStatusIcon: Record<string, { icon: any; color: string }> = {
   missing: { icon: XCircle, color: "text-muted-foreground" },
 };
 
+/**
+ * Maps readiness check keys to actionable navigation targets.
+ * Returns { path, tab? } so the manager can jump directly to the fix.
+ */
+function getCheckAction(key: string, employeeId: string): { path: string; label: string } | null {
+  switch (key) {
+    case "personal_information":
+      return { path: `/employees?edit=${employeeId}&tab=personal`, label: "Edit personal details" };
+    case "bank_details":
+      return { path: `/employees?edit=${employeeId}&tab=banking`, label: "Add bank details" };
+    case "right_to_work":
+      return { path: `/employees?edit=${employeeId}&tab=rtw`, label: "Complete RTW check" };
+    case "contract_signed":
+      return { path: `/contracts`, label: "Create contract" };
+    case "emergency_contact":
+      return { path: `/onboarding`, label: "View onboarding" };
+    case "availability":
+      return { path: `/employees?edit=${employeeId}&tab=notes`, label: "Set availability" };
+    case "training_records":
+      return { path: `/training`, label: "Assign training" };
+    default:
+      // Training library items
+      if (key.startsWith("training_lib_")) {
+        return { path: `/training`, label: "Assign training" };
+      }
+      return null;
+  }
+}
+
 interface OnboardingChecklistProps {
   employeeId: string;
 }
 
 export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
   const { data: readiness, isLoading } = useEmployeeReadiness(employeeId);
+  const navigate = useNavigate();
 
   if (isLoading || !readiness) return null;
 
   const config = statusConfig[readiness.status];
   const StatusIcon = config.icon;
+
+  const handleCheckClick = (key: string) => {
+    const action = getCheckAction(key, employeeId);
+    if (action) {
+      navigate(action.path);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -58,13 +96,26 @@ export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
         </div>
       )}
 
-      {/* Checklist */}
+      {/* Checklist — each incomplete item is clickable */}
       <div className="space-y-1">
         {readiness.checks.map(check => {
           const checkConfig = checkStatusIcon[check.status];
           const Icon = checkConfig.icon;
+          const action = check.status !== "complete" ? getCheckAction(check.key, employeeId) : null;
+          const isClickable = !!action;
+
           return (
-            <div key={check.key} className="flex items-center gap-2.5 py-1.5">
+            <div
+              key={check.key}
+              className={cn(
+                "flex items-center gap-2.5 py-1.5 px-1.5 rounded-md transition-colors",
+                isClickable && "cursor-pointer hover:bg-muted/50"
+              )}
+              onClick={() => isClickable && handleCheckClick(check.key)}
+              role={isClickable ? "button" : undefined}
+              tabIndex={isClickable ? 0 : undefined}
+              onKeyDown={(e) => { if (isClickable && e.key === "Enter") handleCheckClick(check.key); }}
+            >
               <Icon className={cn("h-4 w-4 shrink-0", checkConfig.color)} />
               <span className={cn(
                 "text-sm flex-1",
@@ -81,6 +132,9 @@ export function OnboardingChecklist({ employeeId }: OnboardingChecklistProps) {
                 <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-accent border-accent/20">
                   Verifying
                 </Badge>
+              )}
+              {isClickable && (
+                <ExternalLink className="h-3 w-3 text-muted-foreground/50 shrink-0" />
               )}
             </div>
           );

@@ -538,8 +538,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="hourly_rate" className="flex items-center gap-1">
-                      Hourly Rate (£) <span className="text-destructive">*</span>
+                    <Label htmlFor="hourly_rate">
+                      Hourly Rate (£)
                     </Label>
                     <Input
                       id="hourly_rate"
