@@ -187,7 +187,7 @@ function matchEmployee(
     if (emailMatch) return { emp: emailMatch, matchMethod: "email" };
   }
 
-  // 5. NAME_MAP fallback (last resort)
+  // 4. NAME_MAP fallback (last resort)
   const mapped = NAME_MAP[nameLower];
   if (mapped) {
     const mapMatch = sorted.find(
