@@ -1,4 +1,4 @@
-import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck } from "lucide-react";
+import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocume
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
+import { checkPayRisk, type PayRiskResult } from "@/lib/age-band";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 
 const statusStyles: Record<string, string> = {
@@ -118,6 +119,9 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
     ? Math.floor((Date.now() - new Date(employee.start_date).getTime()) / (1000 * 60 * 60 * 24 * 30))
     : null;
 
+  const dob = (employee as any).date_of_birth;
+  const payRisk: PayRiskResult | null = dob ? checkPayRisk(dob, employee.hourly_rate) : null;
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto" data-testid="employee-detail-sheet">
@@ -184,6 +188,18 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
               </div>
             </div>
           )}
+
+          {/* Pay risk warning */}
+          {canViewSensitive && payRisk?.hasRisk && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-destructive/5 text-destructive border border-destructive/15">
+              <span className="font-medium">⚠️ Pay risk:</span>
+              <span>
+                Rate £{payRisk.currentRate.toFixed(2)}/hr is below the {payRisk.ageBand?.label} NMW band (£{payRisk.minimumRate?.toFixed(2)}/hr).
+                Shortfall: £{payRisk.shortfall?.toFixed(2)}/hr.
+              </span>
+              <span className="text-[10px] text-muted-foreground ml-auto shrink-0">Warning only</span>
+            </div>
+          )}
         </SheetHeader>
 
         <div className="space-y-6 pb-6">
@@ -191,6 +207,23 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
           <Section title="Personal Information" icon={User}>
             <div className="space-y-1">
               <InfoRow label="Full Name" value={`${employee.forename} ${employee.surname}`} />
+              <InfoRow label="Email" value={employee.email} icon={Mail} />
+              {!employee.email && (
+                <div className="flex items-center gap-2 py-1.5 px-2 rounded-md bg-warning/10 border border-warning/20 text-xs text-warning">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  No email — cannot receive notifications
+                </div>
+              )}
+              {canViewSensitive && (employee as any).date_of_birth && (
+                <SensitiveInfoRow
+                  label="Date of Birth"
+                  value={formatDate((employee as any).date_of_birth)}
+                  fieldKey={`detail-${employee.id}-dob`}
+                  category="personal_id"
+                  employeeId={employee.id}
+                  icon={Cake}
+                />
+              )}
               <InfoRow label="Nationality" value={employee.nationality} icon={Globe} />
               {canViewSensitive && (
                 <SensitiveInfoRow

@@ -107,7 +107,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
       // Fetch the current shift before updating to detect published-shift changes
       const { data: oldShift } = await supabase
         .from("shifts")
-        .select("*, employees(user_id, forename, surname)")
+        .select("*, employees(user_id, forename, surname, email)")
         .eq("id", id)
         .single();
 
@@ -132,6 +132,22 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             `Your ${shiftDate} shift changed from ${oldTimes} to ${newTimes}.`,
             { shift_id: id, old_times: oldTimes, new_times: newTimes }
           );
+          // Email notification for time change
+          if (emp.email) {
+            sendNotification({
+              to: emp.email,
+              subject: `Shift time changed – ${shiftDate}`,
+              type: "shift_update",
+              data: {
+                employee_name: `${emp.forename} ${emp.surname}`,
+                message: `Your ${shiftDate} shift has been changed from ${oldTimes} to ${newTimes}.`,
+                shift_date: oldShift.shift_date,
+                start_time: newStart,
+                end_time: newEnd,
+              },
+              tenant_id: tenantId,
+            });
+          }
         }
       }
 
@@ -147,12 +163,27 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             `Your ${shiftDate} shift (${times}) has been reassigned.`,
             { shift_id: id }
           );
+          if (oldEmp.email) {
+            sendNotification({
+              to: oldEmp.email,
+              subject: `Shift removed – ${shiftDate}`,
+              type: "shift_update",
+              data: {
+                employee_name: `${oldEmp.forename} ${oldEmp.surname}`,
+                message: `Your ${shiftDate} shift (${times}) has been reassigned to someone else.`,
+                shift_date: oldShift.shift_date,
+                start_time: oldShift.start_time,
+                end_time: oldShift.end_time,
+              },
+              tenant_id: tenantId,
+            });
+          }
         }
         // Notify new employee (shift assigned)
         if (updates.employee_id) {
           const { data: newEmp } = await supabase
             .from("employees")
-            .select("user_id")
+            .select("user_id, email, forename, surname")
             .eq("id", updates.employee_id)
             .maybeSingle();
           if (newEmp?.user_id) {
@@ -162,6 +193,21 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               `You've been assigned a shift on ${shiftDate} (${times}).`,
               { shift_id: id }
             );
+          }
+          if (newEmp?.email) {
+            sendNotification({
+              to: newEmp.email,
+              subject: `New shift assigned – ${shiftDate}`,
+              type: "shift_update",
+              data: {
+                employee_name: `${newEmp.forename} ${newEmp.surname}`,
+                message: `You've been assigned a shift on ${shiftDate} (${times}).`,
+                shift_date: oldShift.shift_date,
+                start_time: oldShift.start_time,
+                end_time: oldShift.end_time,
+              },
+              tenant_id: tenantId,
+            });
           }
         }
       }
@@ -177,7 +223,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
       // Fetch shift before deleting to notify if published
       const { data: shift } = await supabase
         .from("shifts")
-        .select("*, employees(user_id, forename, surname)")
+        .select("*, employees(user_id, forename, surname, email)")
         .eq("id", id)
         .single();
 
@@ -186,15 +232,30 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
           toast.success("Shift deleted");
           if (shift?.is_published) {
             const emp = shift.employees as any;
+            const shiftDate = format(new Date(shift.shift_date + "T00:00:00"), "EEE d MMM");
+            const times = `${shift.start_time?.slice(0, 5)}–${shift.end_time?.slice(0, 5)}`;
             if (emp?.user_id) {
-              const shiftDate = format(new Date(shift.shift_date + "T00:00:00"), "EEE d MMM");
-              const times = `${shift.start_time?.slice(0, 5)}–${shift.end_time?.slice(0, 5)}`;
               await notifyShiftChange(
                 emp.user_id,
                 "Shift cancelled",
                 `Your ${shiftDate} shift (${times}) has been removed from the rota.`,
                 { shift_id: id }
               );
+            }
+            if (emp?.email) {
+              sendNotification({
+                to: emp.email,
+                subject: `Shift cancelled – ${shiftDate}`,
+                type: "shift_update",
+                data: {
+                  employee_name: `${emp.forename} ${emp.surname}`,
+                  message: `Your ${shiftDate} shift (${times}) has been removed from the rota.`,
+                  shift_date: shift.shift_date,
+                  start_time: shift.start_time,
+                  end_time: shift.end_time,
+                },
+                tenant_id: tenantId,
+              });
             }
           }
         },
@@ -219,25 +280,69 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
       // In-app notifications: notify all assigned staff for this week
       const weekShifts = branchShifts.filter((s: any) => s.employee_id);
-      const uniqueUserIds = new Map<string, string>();
+      const uniqueEmployees = new Map<string, { userId: string | null; email: string | null; name: string }>();
       for (const s of weekShifts) {
         const emp = (s as any).employees;
-        if (emp?.user_id && !uniqueUserIds.has(emp.user_id)) {
-          uniqueUserIds.set(emp.user_id, `${emp.forename} ${emp.surname}`);
+        if (emp && !uniqueEmployees.has(s.employee_id)) {
+          uniqueEmployees.set(s.employee_id, {
+            userId: emp.user_id,
+            email: emp.email,
+            name: `${emp.forename} ${emp.surname}`,
+          });
         }
       }
-      if (uniqueUserIds.size > 0 && tenantId) {
-        const dateLabel = `${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")}`;
-        const rows = Array.from(uniqueUserIds.keys()).map((uid) => ({
+
+      const dateLabel = `${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")}`;
+
+      // In-app notifications
+      if (uniqueEmployees.size > 0 && tenantId) {
+        const rows = Array.from(uniqueEmployees.values())
+          .filter((e) => e.userId)
+          .map((e) => ({
+            tenant_id: tenantId,
+            user_id: e.userId!,
+            event_type: "shift_published",
+            title: "New rota published",
+            body: `Your ${selectedBranch} schedule for ${dateLabel} is ready. Check your shifts.`,
+            link: "/schedule",
+            metadata: { branch: selectedBranch, week_start: weekStartStr },
+          }));
+        if (rows.length > 0) {
+          await supabase.from("notifications" as any).insert(rows as any);
+        }
+      }
+
+      // Email notifications to each employee with an email address
+      let emailsSent = 0;
+      let emailsFailed = 0;
+      for (const [, emp] of uniqueEmployees) {
+        if (!emp.email) continue;
+        const sent = await sendNotification({
+          to: emp.email,
+          subject: `Your rota is ready: ${selectedBranch} – ${dateLabel}`,
+          type: "schedule_published",
+          data: {
+            employee_name: emp.name,
+            branch: selectedBranch,
+            week: dateLabel,
+            message: `Your ${selectedBranch} schedule for ${dateLabel} has been published. Log in to view your shifts.`,
+            login_url: `${window.location.origin}/schedule`,
+          },
           tenant_id: tenantId,
-          user_id: uid,
-          event_type: "shift_published",
-          title: "New rota published",
-          body: `Your ${selectedBranch} schedule for ${dateLabel} is ready. Check your shifts.`,
-          link: "/schedule",
-          metadata: { branch: selectedBranch, week_start: weekStartStr },
-        }));
-        await supabase.from("notifications" as any).insert(rows as any);
+        });
+        if (sent) emailsSent++;
+        else emailsFailed++;
+      }
+
+      const noEmail = Array.from(uniqueEmployees.values()).filter((e) => !e.email).length;
+      if (emailsSent > 0) {
+        toast.success(`Rota email sent to ${emailsSent} staff member${emailsSent !== 1 ? "s" : ""}`);
+      }
+      if (noEmail > 0) {
+        toast.warning(`${noEmail} employee${noEmail !== 1 ? "s have" : " has"} no email on file — not notified`);
+      }
+      if (emailsFailed > 0) {
+        toast.error(`Failed to email ${emailsFailed} employee${emailsFailed !== 1 ? "s" : ""}`);
       }
 
       // Email notification to admin

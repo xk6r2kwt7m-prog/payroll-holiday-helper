@@ -36,6 +36,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const [formData, setFormData] = useState({
     forename: "",
     surname: "",
+    email: "",
+    date_of_birth: "",
     department: "FOH" as DepartmentType,
     status: "starter" as EmployeeStatus,
     hourly_rate: "",
@@ -77,6 +79,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       setFormData({
         forename: employee.forename || "",
         surname: employee.surname || "",
+        email: employee.email || "",
+        date_of_birth: (employee as any).date_of_birth || "",
         department: (employee.department || "FOH") as DepartmentType,
         status: (employee.status || "starter") as EmployeeStatus,
         hourly_rate: employee.hourly_rate?.toString() || "",
@@ -107,6 +111,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       setFormData({
         forename: "",
         surname: "",
+        email: "",
+        date_of_birth: "",
         department: "FOH" as DepartmentType,
         status: "starter" as EmployeeStatus,
         hourly_rate: "",
@@ -201,6 +207,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       const employeeData: any = {
         forename: formData.forename.trim(),
         surname: formData.surname.trim(),
+        email: formData.email.trim().toLowerCase() || null,
+        date_of_birth: formData.date_of_birth || null,
         department: formData.department,
         status: formData.status,
         hourly_rate: parseFloat(formData.hourly_rate),
@@ -358,6 +366,31 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                       className="transition-all focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="john.smith@example.com"
+                    className="transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p className="text-xs text-muted-foreground">Used for rota notifications and invitations</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="date_of_birth">Date of Birth</Label>
+                  <Input
+                    id="date_of_birth"
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                    className="transition-all focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p className="text-xs text-muted-foreground">Required for age-based pay compliance</p>
                 </div>
 
                 <div className="space-y-2">

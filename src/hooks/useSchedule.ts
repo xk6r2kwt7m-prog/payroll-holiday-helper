@@ -37,7 +37,7 @@ export function useShifts(startDate?: string, endDate?: string, branch?: string)
         .from("shifts")
         .select(`
           *,
-          employees (id, forename, surname, department, status)
+          employees (id, forename, surname, department, status, user_id, email)
         `)
         .eq("tenant_id", tenantId)
         .order("start_time");

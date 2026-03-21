@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown } from "lucide-react";
+import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown, MailWarning } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
@@ -90,6 +90,7 @@ const Employees = () => {
     onboarding: employees.filter(e => (e.status as string) === "onboarding" && !e.archived_at).length,
     leaver: employees.filter(e => e.status === "leaver" && !e.archived_at).length,
     archived: employees.filter(e => !!e.archived_at).length,
+    missingEmail: employees.filter(e => !e.email && !e.archived_at && e.status !== "leaver").length,
   }), [employees]);
 
   const filteredEmployees = useMemo(() => {
@@ -299,6 +300,14 @@ const Employees = () => {
             <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs px-2" onClick={() => setStatusFilter("active")}>
               {t("common.back_to_active")}
             </Button>
+          </div>
+        )}
+
+        {/* Missing email alert */}
+        {canEdit && counts.missingEmail > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-warning/5 text-warning border border-warning/15">
+            <MailWarning className="h-3.5 w-3.5 shrink-0" />
+            <span>{counts.missingEmail} active employee{counts.missingEmail !== 1 ? 's' : ''} missing email — they won't receive rota or invite notifications</span>
           </div>
         )}
 

@@ -1,4 +1,4 @@
-import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus } from "lucide-react";
+import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus, MailWarning } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,6 +166,12 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
 
       {/* Row 3: Contract / compliance flags */}
       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+        {!employee.email && (
+          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-warning/40 text-warning bg-warning/5 gap-0.5">
+            <MailWarning className="h-3 w-3" />
+            No email
+          </Badge>
+        )}
         {employee.contract_country && (
           <Badge variant="outline" className="text-[10px] h-4.5 px-1.5">
             {employee.contract_country}
