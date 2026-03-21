@@ -29,6 +29,9 @@ interface ContractSigningActionsProps {
   employeeId: string;
   employeeName: string;
   employeeEmail?: string | null;
+  contractSendStatus?: string | null;
+  contractSentAt?: string | null;
+  contractSentTo?: string | null;
 }
 
 export function ContractSigningActions({
