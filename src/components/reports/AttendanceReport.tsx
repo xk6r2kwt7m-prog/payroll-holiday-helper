@@ -123,6 +123,7 @@ export function AttendanceReport() {
                   <TableHead>In</TableHead>
                   <TableHead>Out</TableHead>
                   <TableHead>Hours</TableHead>
+                  <TableHead className="hidden md:table-cell">Location</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
