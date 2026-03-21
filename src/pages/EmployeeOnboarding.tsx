@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   User, CreditCard, FileText, Clock, CheckCircle2, Upload,
-  ChevronRight, ChevronLeft, Shield, AlertCircle, Loader2,
+  ChevronRight, ChevronLeft, Shield, AlertCircle, Loader2, Eye,
 } from "lucide-react";
-import { useMyOnboardingData, useUpdateOnboardingData, useSubmitOnboarding, useInitOnboardingData } from "@/hooks/useEmployeeOnboarding";
+import { useMyOnboardingData, useUpdateOnboardingData, useSubmitOnboarding, useInitOnboardingData, type RtwStatus } from "@/hooks/useEmployeeOnboarding";
 import { useUploadDocument, DOCUMENT_TYPES, type DocumentType } from "@/hooks/useEmployeeDocuments";
 import { useUpsertAvailability, DAY_NAMES } from "@/hooks/useAvailability";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,14 @@ const STEPS = [
   { id: "confirm", label: "Confirm", icon: CheckCircle2 },
 ];
 
+const RTW_STATUS_LABELS: Record<RtwStatus, { label: string; color: string }> = {
+  not_submitted: { label: "Not Submitted", color: "bg-muted text-muted-foreground" },
+  submitted: { label: "Uploaded", color: "bg-primary/10 text-primary" },
+  pending_review: { label: "Pending Manager Review", color: "bg-warning/10 text-warning" },
+  approved: { label: "Approved ✓", color: "bg-success/10 text-success" },
+  rejected: { label: "Resubmission Needed", color: "bg-destructive/10 text-destructive" },
+};
+
 export default function EmployeeOnboarding() {
   const { user } = useAuth();
   const [employeeId, setEmployeeId] = useState<string | null>(null);
@@ -38,28 +47,17 @@ export default function EmployeeOnboarding() {
   const [loading, setLoading] = useState(true);
   const [confirmed, setConfirmed] = useState(false);
 
-  // Form state
   const [personal, setPersonal] = useState({
-    nationality: "",
-    ni_number: "",
-    passport_no: "",
-    settlement_status: "",
-    sharing_code: "",
-    residence_permit: "",
-    phone: "",
-    address: "",
+    nationality: "", ni_number: "", passport_no: "", settlement_status: "",
+    sharing_code: "", residence_permit: "", phone: "", address: "", date_of_birth: "",
   });
 
   const [bank, setBank] = useState({
-    account_name: "",
-    sort_code: "",
-    account_number: "",
+    account_name: "", sort_code: "", account_number: "",
   });
 
   const [emergency, setEmergency] = useState({
-    name: "",
-    relationship: "",
-    phone: "",
+    name: "", relationship: "", phone: "",
   });
 
   const [availability, setAvailability] = useState(
@@ -71,7 +69,6 @@ export default function EmployeeOnboarding() {
     }))
   );
 
-  // Uploaded doc tracking
   const [uploadedDocs, setUploadedDocs] = useState<string[]>([]);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
@@ -82,7 +79,6 @@ export default function EmployeeOnboarding() {
   const uploadDocument = useUploadDocument();
   const upsertAvailability = useUpsertAvailability();
 
-  // Load employee data
   useEffect(() => {
     if (!user) return;
     supabase
@@ -95,14 +91,12 @@ export default function EmployeeOnboarding() {
           setEmployeeId(data.id);
           setTenantId(data.tenant_id);
           setEmployeeName(`${data.forename} ${data.surname}`);
-          // Init onboarding data if needed
           initOnboarding.mutate({ employeeId: data.id, tenantId: data.tenant_id });
         }
         setLoading(false);
       });
   }, [user]);
 
-  // Restore saved step
   useEffect(() => {
     if (onboardingData) {
       if (onboardingData.step_completed > 0) {
@@ -134,7 +128,6 @@ export default function EmployeeOnboarding() {
   };
 
   const handleNext = async () => {
-    // Validate current step
     if (currentStep === 0 && !personal.nationality) {
       toast.error("Please enter your nationality");
       return;
@@ -143,25 +136,19 @@ export default function EmployeeOnboarding() {
       toast.error("Please fill in all bank details");
       return;
     }
-
     const nextStep = currentStep + 1;
     await saveProgress(nextStep);
     setCurrentStep(nextStep);
   };
 
-  const handleBack = () => {
-    setCurrentStep(prev => Math.max(0, prev - 1));
-  };
+  const handleBack = () => setCurrentStep(prev => Math.max(0, prev - 1));
 
   const handleFileUpload = async (file: File, docType: DocumentType, docName: string) => {
     if (!employeeId) return;
     setUploadingDoc(true);
     try {
       await uploadDocument.mutateAsync({
-        employeeId,
-        file,
-        documentType: docType,
-        documentName: docName,
+        employeeId, file, documentType: docType, documentName: docName,
       });
       setUploadedDocs(prev => [...prev, docType]);
       toast.success(`${docName} uploaded successfully`);
@@ -172,26 +159,21 @@ export default function EmployeeOnboarding() {
     }
   };
 
+  const hasRtwDocs = uploadedDocs.includes("passport") || uploadedDocs.includes("right_to_work");
+
   const handleSubmit = async () => {
     if (!employeeId || !confirmed) return;
     try {
-      // Save availability
       await upsertAvailability.mutateAsync({
         employeeId,
         slots: availability.map(a => ({
-          day_of_week: a.day_of_week,
-          is_available: a.is_available,
-          available_from: a.available_from,
-          available_to: a.available_to,
+          day_of_week: a.day_of_week, is_available: a.is_available,
+          available_from: a.available_from, available_to: a.available_to,
         })),
       });
-
-      // Submit onboarding
       await submitOnboarding.mutateAsync({
-        employeeId,
-        personalInfo: personal,
-        bankDetails: bank,
-        emergencyContact: emergency,
+        employeeId, personalInfo: personal, bankDetails: bank,
+        emergencyContact: emergency, hasRtwDocs,
       });
     } catch {
       // Error handled by mutation
@@ -212,32 +194,55 @@ export default function EmployeeOnboarding() {
         <div className="text-center max-w-sm">
           <AlertCircle className="h-12 w-12 text-warning mx-auto mb-3" />
           <h2 className="text-lg font-semibold mb-2">No Employee Record Found</h2>
-          <p className="text-sm text-muted-foreground">
-            Your account hasn't been linked to an employee record yet. Please contact your manager.
-          </p>
+          <p className="text-sm text-muted-foreground">Your account hasn't been linked to an employee record yet. Please contact your manager.</p>
         </div>
       </div>
     );
   }
 
-  if (onboardingData?.onboarding_completed_at) {
+  // Already submitted — show status
+  if (onboardingData?.submitted_at) {
+    const rtwStatus = (onboardingData.rtw_status || "not_submitted") as RtwStatus;
+    const isApproved = !!onboardingData.onboarding_approved_at;
+    const rtwInfo = RTW_STATUS_LABELS[rtwStatus];
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center max-w-sm space-y-5">
-          <CheckCircle2 className="h-16 w-16 text-success mx-auto" />
-          <div>
-            <h2 className="text-xl font-bold mb-1">Onboarding Complete!</h2>
-            <p className="text-sm text-muted-foreground">
-              Your information has been submitted. Your manager will review your documents — you'll see the status update on your home screen.
-            </p>
-          </div>
+          {isApproved ? (
+            <>
+              <CheckCircle2 className="h-16 w-16 text-success mx-auto" />
+              <div>
+                <h2 className="text-xl font-bold mb-1">Onboarding Complete</h2>
+                <p className="text-sm text-muted-foreground">Your onboarding has been reviewed and approved. Welcome to the team!</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <Eye className="h-16 w-16 text-primary mx-auto" />
+              <div>
+                <h2 className="text-xl font-bold mb-1">Onboarding Submitted</h2>
+                <p className="text-sm text-muted-foreground">Your information has been submitted and is now being reviewed by your manager.</p>
+              </div>
+              {/* RTW Status */}
+              <div className="rounded-xl bg-card border border-border p-4 text-left space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Right to Work</h3>
+                <Badge className={cn("text-xs", rtwInfo.color)}>{rtwInfo.label}</Badge>
+                {rtwStatus === "rejected" && onboardingData.rtw_review_notes && (
+                  <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3">
+                    <p className="text-xs text-destructive font-medium">Manager notes:</p>
+                    <p className="text-xs text-foreground mt-1">{onboardingData.rtw_review_notes}</p>
+                  </div>
+                )}
+                {rtwStatus === "rejected" && (
+                  <p className="text-xs text-muted-foreground">Please re-upload your right to work documents and contact your manager.</p>
+                )}
+              </div>
+            </>
+          )}
           <div className="space-y-2">
-            <Button className="w-full" onClick={() => window.location.href = "/"}>
-              Go to Home
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => window.location.href = "/staff"}>
-              View My Records
-            </Button>
+            <Button className="w-full" onClick={() => window.location.href = "/"}>Go to Home</Button>
+            <Button variant="outline" className="w-full" onClick={() => window.location.href = "/staff"}>View My Records</Button>
           </div>
         </motion.div>
       </div>
@@ -256,9 +261,7 @@ export default function EmployeeOnboarding() {
             <h1 className="text-sm font-bold text-foreground truncate">Welcome, {employeeName}</h1>
             <p className="text-xs text-muted-foreground">Complete your onboarding</p>
           </div>
-          <span className="text-xs font-medium text-muted-foreground">
-            {currentStep + 1}/{STEPS.length}
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">{currentStep + 1}/{STEPS.length}</span>
         </div>
         <div className="max-w-lg mx-auto mt-2">
           <Progress value={progressPercent} className="h-1.5" />
@@ -269,15 +272,12 @@ export default function EmployeeOnboarding() {
       <div className="max-w-lg mx-auto px-4 pt-4">
         <div className="flex gap-1 overflow-x-auto pb-2">
           {STEPS.map((step, i) => (
-            <div
-              key={step.id}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
-                i < currentStep ? "bg-success/10 text-success" :
-                i === currentStep ? "bg-primary/10 text-primary" :
-                "bg-muted text-muted-foreground"
-              )}
-            >
+            <div key={step.id} className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
+              i < currentStep ? "bg-success/10 text-success" :
+              i === currentStep ? "bg-primary/10 text-primary" :
+              "bg-muted text-muted-foreground"
+            )}>
               <step.icon className="h-3.5 w-3.5" />
               {step.label}
             </div>
@@ -288,46 +288,13 @@ export default function EmployeeOnboarding() {
       {/* Step content */}
       <div className="max-w-lg mx-auto px-4 py-6">
         <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {currentStep === 0 && (
-              <PersonalInfoStep personal={personal} setPersonal={setPersonal} emergency={emergency} setEmergency={setEmergency} />
-            )}
-            {currentStep === 1 && (
-              <BankDetailsStep bank={bank} setBank={setBank} />
-            )}
-            {currentStep === 2 && (
-              <RightToWorkStep
-                onUpload={handleFileUpload}
-                uploadedDocs={uploadedDocs}
-                uploading={uploadingDoc}
-              />
-            )}
-            {currentStep === 3 && (
-              <AdditionalDocsStep
-                onUpload={handleFileUpload}
-                uploadedDocs={uploadedDocs}
-                uploading={uploadingDoc}
-              />
-            )}
-            {currentStep === 4 && (
-              <AvailabilityStep availability={availability} setAvailability={setAvailability} />
-            )}
-            {currentStep === 5 && (
-              <ConfirmationStep
-                personal={personal}
-                bank={bank}
-                emergency={emergency}
-                uploadedDocs={uploadedDocs}
-                confirmed={confirmed}
-                setConfirmed={setConfirmed}
-              />
-            )}
+          <motion.div key={currentStep} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
+            {currentStep === 0 && <PersonalInfoStep personal={personal} setPersonal={setPersonal} emergency={emergency} setEmergency={setEmergency} />}
+            {currentStep === 1 && <BankDetailsStep bank={bank} setBank={setBank} />}
+            {currentStep === 2 && <RightToWorkStep onUpload={handleFileUpload} uploadedDocs={uploadedDocs} uploading={uploadingDoc} />}
+            {currentStep === 3 && <AdditionalDocsStep onUpload={handleFileUpload} uploadedDocs={uploadedDocs} uploading={uploadingDoc} />}
+            {currentStep === 4 && <AvailabilityStep availability={availability} setAvailability={setAvailability} />}
+            {currentStep === 5 && <ConfirmationStep personal={personal} bank={bank} emergency={emergency} uploadedDocs={uploadedDocs} confirmed={confirmed} setConfirmed={setConfirmed} hasRtwDocs={hasRtwDocs} />}
           </motion.div>
         </AnimatePresence>
 
@@ -343,15 +310,11 @@ export default function EmployeeOnboarding() {
               Next <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button
-              onClick={handleSubmit}
-              className="flex-1 gap-2"
-              disabled={!confirmed || submitOnboarding.isPending}
-            >
+            <Button onClick={handleSubmit} className="flex-1 gap-2" disabled={!confirmed || submitOnboarding.isPending}>
               {submitOnboarding.isPending ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</>
               ) : (
-                <><CheckCircle2 className="h-4 w-4" /> Submit</>
+                <><CheckCircle2 className="h-4 w-4" /> Submit for Review</>
               )}
             </Button>
           )}
@@ -380,6 +343,10 @@ function PersonalInfoStep({ personal, setPersonal, emergency, setEmergency }: {
       </div>
 
       <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Date of Birth</Label>
+          <Input type="date" value={personal.date_of_birth} onChange={e => update("date_of_birth", e.target.value)} />
+        </div>
         <div className="space-y-2">
           <Label>Nationality <span className="text-destructive">*</span></Label>
           <Input value={personal.nationality} onChange={e => update("nationality", e.target.value)} placeholder="e.g., British" />
@@ -445,17 +412,13 @@ function PersonalInfoStep({ personal, setPersonal, emergency, setEmergency }: {
   );
 }
 
-function BankDetailsStep({ bank, setBank }: {
-  bank: Record<string, string>;
-  setBank: (fn: any) => void;
-}) {
+function BankDetailsStep({ bank, setBank }: { bank: Record<string, string>; setBank: (fn: any) => void }) {
   const update = (field: string, value: string) => setBank((p: any) => ({ ...p, [field]: value }));
-
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-bold text-foreground mb-1">Bank Details</h2>
-        <p className="text-sm text-muted-foreground">Your bank details are required for salary payments. This information is stored securely and encrypted.</p>
+        <p className="text-sm text-muted-foreground">Your bank details are required for salary payments.</p>
       </div>
       <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
         <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -496,16 +459,17 @@ function RightToWorkStep({ onUpload, uploadedDocs, uploading }: {
         <h2 className="text-lg font-bold text-foreground mb-1">Right to Work Documents</h2>
         <p className="text-sm text-muted-foreground">UK employers are required to verify your right to work. Please upload clear copies of your documents.</p>
       </div>
+      <div className="rounded-xl bg-warning/5 border border-warning/20 p-4 flex gap-3">
+        <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+        <p className="text-xs text-muted-foreground">
+          Uploading these documents does not automatically confirm your right to work. Your manager will review and verify your documents separately.
+        </p>
+      </div>
       <div className="space-y-3">
         {rtwDocs.map(doc => (
           <DocumentUploadCard
-            key={doc.type}
-            docType={doc.type}
-            label={doc.label}
-            required={doc.required}
-            uploaded={uploadedDocs.includes(doc.type)}
-            uploading={uploading}
-            onUpload={onUpload}
+            key={doc.type} docType={doc.type} label={doc.label} required={doc.required}
+            uploaded={uploadedDocs.includes(doc.type)} uploading={uploading} onUpload={onUpload}
           />
         ))}
       </div>
@@ -534,13 +498,8 @@ function AdditionalDocsStep({ onUpload, uploadedDocs, uploading }: {
       <div className="space-y-3">
         {additionalDocs.map(doc => (
           <DocumentUploadCard
-            key={doc.type}
-            docType={doc.type}
-            label={doc.label}
-            required={false}
-            uploaded={uploadedDocs.includes(doc.type)}
-            uploading={uploading}
-            onUpload={onUpload}
+            key={doc.type} docType={doc.type} label={doc.label} required={false}
+            uploaded={uploadedDocs.includes(doc.type)} uploading={uploading} onUpload={onUpload}
           />
         ))}
       </div>
@@ -549,12 +508,8 @@ function AdditionalDocsStep({ onUpload, uploadedDocs, uploading }: {
 }
 
 function DocumentUploadCard({ docType, label, required, uploaded, uploading, onUpload }: {
-  docType: DocumentType;
-  label: string;
-  required: boolean;
-  uploaded: boolean;
-  uploading: boolean;
-  onUpload: (file: File, docType: DocumentType, docName: string) => void;
+  docType: DocumentType; label: string; required: boolean; uploaded: boolean;
+  uploading: boolean; onUpload: (file: File, docType: DocumentType, docName: string) => void;
 }) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -568,17 +523,11 @@ function DocumentUploadCard({ docType, label, required, uploaded, uploading, onU
     )}>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          {uploaded ? (
-            <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
-          ) : (
-            <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-          )}
+          {uploaded ? <CheckCircle2 className="h-5 w-5 text-success shrink-0" /> : <FileText className="h-5 w-5 text-muted-foreground shrink-0" />}
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{label}</p>
-            {required && !uploaded && (
-              <p className="text-xs text-destructive">Required</p>
-            )}
-            {uploaded && <p className="text-xs text-success">Uploaded</p>}
+            {required && !uploaded && <p className="text-xs text-destructive">Required</p>}
+            {uploaded && <p className="text-xs text-success">Uploaded — pending manager review</p>}
           </div>
         </div>
         {!uploaded && (
@@ -589,8 +538,7 @@ function DocumentUploadCard({ docType, label, required, uploaded, uploading, onU
               "bg-primary text-primary-foreground hover:bg-primary/90",
               uploading && "opacity-50 cursor-not-allowed"
             )}>
-              <Upload className="h-3.5 w-3.5" />
-              Upload
+              <Upload className="h-3.5 w-3.5" /> Upload
             </div>
           </label>
         )}
@@ -608,7 +556,6 @@ function AvailabilityStep({ availability, setAvailability }: {
       a.day_of_week === dayIndex ? { ...a, is_available: !a.is_available } : a
     ));
   };
-
   const updateTime = (dayIndex: number, field: string, value: string) => {
     setAvailability((prev: any[]) => prev.map((a: any) =>
       a.day_of_week === dayIndex ? { ...a, [field]: value } : a
@@ -628,10 +575,7 @@ function AvailabilityStep({ availability, setAvailability }: {
             day.is_available ? "border-primary/20 bg-primary/5" : "border-border bg-card opacity-60"
           )}>
             <div className="flex items-center justify-between">
-              <button
-                onClick={() => toggle(day.day_of_week)}
-                className="flex items-center gap-2"
-              >
+              <button onClick={() => toggle(day.day_of_week)} className="flex items-center gap-2">
                 <div className={cn(
                   "h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors",
                   day.is_available ? "bg-primary border-primary" : "border-border"
@@ -642,19 +586,9 @@ function AvailabilityStep({ availability, setAvailability }: {
               </button>
               {day.is_available && (
                 <div className="flex items-center gap-1.5">
-                  <Input
-                    type="time"
-                    value={day.available_from}
-                    onChange={e => updateTime(day.day_of_week, "available_from", e.target.value)}
-                    className="h-8 w-24 text-xs"
-                  />
+                  <Input type="time" value={day.available_from} onChange={e => updateTime(day.day_of_week, "available_from", e.target.value)} className="h-8 w-24 text-xs" />
                   <span className="text-xs text-muted-foreground">–</span>
-                  <Input
-                    type="time"
-                    value={day.available_to}
-                    onChange={e => updateTime(day.day_of_week, "available_to", e.target.value)}
-                    className="h-8 w-24 text-xs"
-                  />
+                  <Input type="time" value={day.available_to} onChange={e => updateTime(day.day_of_week, "available_to", e.target.value)} className="h-8 w-24 text-xs" />
                 </div>
               )}
             </div>
@@ -665,25 +599,27 @@ function AvailabilityStep({ availability, setAvailability }: {
   );
 }
 
-function ConfirmationStep({ personal, bank, emergency, uploadedDocs, confirmed, setConfirmed }: {
+function ConfirmationStep({ personal, bank, emergency, uploadedDocs, confirmed, setConfirmed, hasRtwDocs }: {
   personal: Record<string, string>;
   bank: Record<string, string>;
   emergency: Record<string, string>;
   uploadedDocs: string[];
   confirmed: boolean;
   setConfirmed: (v: boolean) => void;
+  hasRtwDocs: boolean;
 }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-foreground mb-1">Review & Confirm</h2>
-        <p className="text-sm text-muted-foreground">Please review your information before submitting.</p>
+        <h2 className="text-lg font-bold text-foreground mb-1">Review & Submit</h2>
+        <p className="text-sm text-muted-foreground">Please review your information before submitting for manager review.</p>
       </div>
 
       <SummaryCard title="Personal Info" items={[
         { label: "Nationality", value: personal.nationality },
         { label: "NI Number", value: personal.ni_number || "—" },
         { label: "Phone", value: personal.phone || "—" },
+        { label: "Date of Birth", value: personal.date_of_birth || "—" },
         { label: "Settlement Status", value: personal.settlement_status || "—" },
       ]} />
 
@@ -702,24 +638,25 @@ function ConfirmationStep({ personal, bank, emergency, uploadedDocs, confirmed, 
       <div className="rounded-xl bg-card border border-border p-4">
         <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Documents Uploaded</h3>
         <p className="text-sm text-foreground">{uploadedDocs.length} document(s) uploaded</p>
+        {hasRtwDocs && (
+          <p className="text-xs text-warning mt-1">Right to work documents will be reviewed by your manager before approval.</p>
+        )}
       </div>
 
-      <div className="rounded-xl bg-warning/5 border border-warning/20 p-4 flex gap-3">
-        <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+      <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 flex gap-3">
+        <AlertCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-foreground">Declaration</p>
+          <p className="text-sm font-medium text-foreground">What happens next?</p>
           <p className="text-xs text-muted-foreground mt-1">
-            By submitting, I confirm that all information provided is accurate and complete. I understand that providing false information may result in disciplinary action.
+            After you submit, your manager will review your information and documents. 
+            Right to work documents require separate manager verification before you can be marked as work-ready. 
+            You will see the status of your onboarding on your home screen.
           </p>
         </div>
       </div>
 
       <div className="flex items-start gap-3 p-4 rounded-xl border border-border bg-card">
-        <Checkbox
-          id="confirm"
-          checked={confirmed}
-          onCheckedChange={(v) => setConfirmed(v === true)}
-        />
+        <Checkbox id="confirm" checked={confirmed} onCheckedChange={(v) => setConfirmed(v === true)} />
         <label htmlFor="confirm" className="text-sm text-foreground cursor-pointer leading-tight">
           I confirm that all information is accurate and I authorise my employer to use this data for payroll and employment purposes.
         </label>
