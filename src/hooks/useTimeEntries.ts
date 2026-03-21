@@ -130,6 +130,145 @@ export function useUpdateBreakMinutes() {
   });
 }
 
+export function useManagerAddTimeEntry() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+  return useMutation({
+    mutationFn: async ({
+      employeeId,
+      branch,
+      clockInTime,
+      clockOutTime,
+      breakMinutes,
+      reason,
+    }: {
+      employeeId: string;
+      branch: string;
+      clockInTime: string;
+      clockOutTime?: string;
+      breakMinutes: number;
+      reason: string;
+    }) => {
+      await assertPermission("approve_timesheets", tenantId!);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("department")
+        .eq("id", employeeId)
+        .single();
+
+      if (clockOutTime && new Date(clockOutTime) <= new Date(clockInTime)) {
+        throw new Error("Clock-out time must be after clock-in time");
+      }
+
+      const insertData: Record<string, any> = {
+        employee_id: employeeId,
+        tenant_id: tenantId!,
+        branch,
+        department: employee?.department || "unknown",
+        clock_in_time: clockInTime,
+        clock_in_within_geofence: false,
+        status: clockOutTime ? "pending" : "clocked_in",
+        manager_adjusted: true,
+        adjustment_reason: reason,
+        adjusted_by: user.id,
+        manager_override: true,
+        override_reason: reason,
+        break_minutes: breakMinutes,
+      };
+      if (clockOutTime) {
+        insertData.clock_out_time = clockOutTime;
+        insertData.clock_out_within_geofence = false;
+      }
+
+      const { data, error } = await supabase
+        .from("time_entries")
+        .insert(insertData as any)
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === "23505") throw new Error("Employee already has an active clock-in.");
+        throw error;
+      }
+
+      await supabase.from("audit_log").insert({
+        action: "approve" as const,
+        table_name: "time_entries" as const,
+        record_id: data.id,
+        tenant_id: tenantId!,
+        user_id: user.id,
+        new_data: { event: "manager_add", reason, ...insertData },
+      });
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["time_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["active_clock_in"] });
+    },
+  });
+}
+
+export function useManagerEditTimeEntry() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+  return useMutation({
+    mutationFn: async ({
+      entryId,
+      updates,
+      reason,
+      oldValues,
+    }: {
+      entryId: string;
+      updates: Record<string, any>;
+      reason: string;
+      oldValues: Record<string, any>;
+    }) => {
+      await assertPermission("approve_timesheets", tenantId!);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      if (updates.clock_out_time && updates.clock_in_time && new Date(updates.clock_out_time) <= new Date(updates.clock_in_time)) {
+        throw new Error("Clock-out time must be after clock-in time");
+      }
+
+      const { data, error } = await supabase
+        .from("time_entries")
+        .update({
+          ...updates,
+          manager_adjusted: true,
+          adjustment_reason: reason,
+          adjusted_by: user.id,
+        } as any)
+        .eq("id", entryId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await supabase.from("audit_log").insert({
+        action: "approve" as const,
+        table_name: "time_entries" as const,
+        record_id: entryId,
+        tenant_id: tenantId!,
+        user_id: user.id,
+        old_data: oldValues,
+        new_data: { event: "manager_edit", reason, ...updates },
+      });
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["time_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["active_clock_in"] });
+      queryClient.invalidateQueries({ queryKey: ["my_time_entries"] });
+    },
+  });
+}
+
 async function writeTimeEntryAudit(
   tenantId: string,
   auditAction: "approve" | "reject",
