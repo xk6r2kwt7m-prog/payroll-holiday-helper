@@ -79,11 +79,12 @@ const CRITICALITY_MAP: Record<string, CriticalityTier> = {
 
 function getCriticality(key: string, category?: string): CriticalityTier {
   if (CRITICALITY_MAP[key]) return CRITICALITY_MAP[key];
-  // Training library items
+  // Training library items — only compliance/induction are gating
   if (key.startsWith("training_lib_")) {
     if (category === "compliance") return "start_critical";
     if (category === "induction") return "start_critical";
-    return "rota_critical";
+    // All other training (e.g. upselling, guest comfort, general) is informational only
+    return "profile_only";
   }
   return "profile_only";
 }
