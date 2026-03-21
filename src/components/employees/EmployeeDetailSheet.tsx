@@ -372,6 +372,8 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             />
             <EmployeeFormDialog
               employee={employee}
+              defaultTab={deepLinkTab}
+              autoOpen={!!deepLinkTab}
               trigger={
                 <Button className="w-full gradient-primary">
                   <Edit2 className="h-4 w-4 mr-2" />
