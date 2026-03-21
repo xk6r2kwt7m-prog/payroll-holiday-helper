@@ -252,7 +252,16 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       } else {
         const newEmployee = await createEmployee.mutateAsync(employeeData);
         employeeId = newEmployee.id;
-        toast.success("Employee created successfully");
+        
+        // Truthful message: Add Employee does NOT send any email
+        if (formData.email.trim()) {
+          toast.success("Employee added successfully. No email has been sent yet.", {
+            description: "Use 'Invite Employee' or the resend action to send a welcome email.",
+            duration: 6000,
+          });
+        } else {
+          toast.success("Employee added successfully. No email address was provided.");
+        }
       }
 
       // Update branches

@@ -203,9 +203,19 @@ function buildHtml(type: string, data: Record<string, string>): string {
     case "document_expiry":
       body = `<h2>Document Expiry Warning ⚠️</h2><p>A document for <strong>${data.employee_name}</strong> is expiring soon.</p><p><strong>Document:</strong> ${data.document_name}</p><p><strong>Expires:</strong> ${data.expiry_date}</p>`;
       break;
-    case "employee_invitation":
-      body = `<h2>Welcome to UglyOps HR 🎉</h2><p>You have been invited to join <strong>${data.company_name || "the team"}</strong>.</p><p>Log in to complete your onboarding.</p>${data.login_url ? `<p><a href="${data.login_url}" style="display:inline-block;padding:10px 24px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Get Started</a></p>` : ""}`;
+    case "employee_invitation": {
+      const firstName = (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Welcome to Ugly Dumpling</h2>
+        <p>Hello ${firstName},</p>
+        <p>You have been added to the <strong>Ugly Dumpling</strong> team.</p>
+        <p>Please use the link below to access your account and complete your setup.</p>
+        ${data.login_url ? `<p style="text-align:center;margin:24px 0;"><a href="${data.login_url}" style="display:inline-block;padding:12px 28px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Join / Sign In</a></p>` : ""}
+        <p>Once inside, you may be asked to complete your details, upload documents, and review your schedule information.</p>
+        <p style="color:#666;">If you do not receive further updates, or if you have any difficulty accessing your account, please contact your manager.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling</strong></p>`;
       break;
+    }
     case "test":
       body = `<h2>UglyOps HR Platform</h2><p>This confirms that the email notification system is working.</p><p><strong>Sent at:</strong> ${new Date().toISOString()}</p>`;
       break;
