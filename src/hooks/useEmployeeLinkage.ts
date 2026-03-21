@@ -44,6 +44,15 @@ export function useEmployeeLinkage() {
 
         if (result?.linked) {
           console.log("[EMPLOYEE_LINKAGE] Linked user to employee:", result.employee_name);
+
+          // Mark invitation as accepted so the lifecycle badge is truthful
+          if (user.email) {
+            await supabase
+              .from("tenant_invitations")
+              .update({ accepted_at: new Date().toISOString(), status: "accepted" } as any)
+              .ilike("email", user.email)
+              .is("accepted_at", null);
+          }
         } else if (result?.reason === "ambiguous_multiple_matches") {
           console.warn(
             `[EMPLOYEE_LINKAGE] Auto-link refused: ${result.match_count} unlinked employees share email ${user.email}. Manager must link manually via Admin Centre > People > Employee-User Linking.`

@@ -76,7 +76,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
       tenantId: employee.tenant_id,
     });
     if (result.success) {
-      toast.success(`Invite email sent to ${employee.email}`);
+      toast.success(`Invite email submitted to ${employee.email}`);
     } else {
       toast.error(`Invite email failed: ${result.error || "Unknown error"}`);
     }

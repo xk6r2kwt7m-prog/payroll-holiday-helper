@@ -59,7 +59,7 @@ export function useSendInvitation() {
     onSuccess: (_data) => {
       queryClient.invalidateQueries({ queryKey: ["tenant-invitations", tenantId] });
       if (_data.emailResult.success) {
-        toast.success("Invitation sent");
+        toast.success("Invite email submitted successfully");
       } else {
         toast.warning("Invitation created but email delivery failed", {
           description: _data.emailResult.error || "You can resend the email.",
