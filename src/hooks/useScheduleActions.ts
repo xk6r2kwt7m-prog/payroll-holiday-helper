@@ -134,7 +134,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
           );
           // Email notification for time change
           if (emp.email) {
-            sendNotification({
+            const sent = await sendNotification({
               to: emp.email,
               subject: `Shift time changed – ${shiftDate}`,
               type: "shift_update",
@@ -147,6 +147,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               },
               tenant_id: tenantId,
             });
+            if (!sent) toast.warning(`Shift updated but email to ${emp.forename} ${emp.surname} failed`);
           }
         }
       }
