@@ -1,47 +1,61 @@
-import { CheckCircle2, Clock, AlertTriangle, XCircle, Shield } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, Shield, ArrowRight, User, Calendar, UserCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useEmployeeReadiness, type ReadinessStatus } from "@/hooks/useOnboardingReadiness";
 
 const statusConfig: Record<ReadinessStatus, {
-  label: string;
-  description: string;
   icon: any;
   color: string;
   bg: string;
   border: string;
 }> = {
-  ready: {
-    label: "You're all set",
-    description: "All onboarding requirements are complete.",
-    icon: CheckCircle2,
-    color: "text-success",
-    bg: "bg-success/5",
-    border: "border-success/15",
+  record_created: {
+    icon: User,
+    color: "text-muted-foreground",
+    bg: "bg-muted/50",
+    border: "border-muted-foreground/15",
   },
-  pending: {
-    label: "Setup incomplete",
-    description: "Some required items are still missing — check the list below.",
+  onboarding_in_progress: {
     icon: Clock,
+    color: "text-primary",
+    bg: "bg-primary/5",
+    border: "border-primary/15",
+  },
+  awaiting_employee_action: {
+    icon: UserCheck,
     color: "text-warning",
     bg: "bg-warning/5",
     border: "border-warning/15",
   },
-  pending_verification: {
-    label: "Awaiting review",
-    description: "Your documents have been submitted and are being reviewed by your manager.",
+  awaiting_manager_review: {
     icon: Shield,
     color: "text-accent",
     bg: "bg-accent/5",
     border: "border-accent/15",
   },
-  blocked: {
-    label: "Action required",
-    description: "Critical compliance items are missing — you may not be able to start work until these are resolved.",
-    icon: XCircle,
+  not_cleared_to_work: {
+    icon: AlertTriangle,
     color: "text-destructive",
     bg: "bg-destructive/5",
     border: "border-destructive/15",
+  },
+  not_ready_for_rota: {
+    icon: Calendar,
+    color: "text-warning",
+    bg: "bg-warning/5",
+    border: "border-warning/15",
+  },
+  ready_to_schedule: {
+    icon: CheckCircle2,
+    color: "text-success",
+    bg: "bg-success/5",
+    border: "border-success/15",
+  },
+  fully_onboarded: {
+    icon: CheckCircle2,
+    color: "text-success",
+    bg: "bg-success/5",
+    border: "border-success/15",
   },
 };
 
@@ -52,9 +66,8 @@ interface ReadinessBannerProps {
 export function ReadinessBanner({ employeeId }: ReadinessBannerProps) {
   const { data: readiness, isLoading } = useEmployeeReadiness(employeeId);
 
-  // Don't show anything while loading or if fully ready
   if (isLoading || !readiness) return null;
-  if (readiness.status === "ready" && readiness.score === 100) return null;
+  if (readiness.status === "fully_onboarded" && readiness.score === 100) return null;
 
   const config = statusConfig[readiness.status];
   const StatusIcon = config.icon;
@@ -64,8 +77,8 @@ export function ReadinessBanner({ employeeId }: ReadinessBannerProps) {
       <div className="flex items-start gap-3">
         <StatusIcon className={cn("h-5 w-5 mt-0.5 shrink-0", config.color)} />
         <div className="flex-1 min-w-0">
-          <p className={cn("text-sm font-semibold", config.color)}>{config.label}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{config.description}</p>
+          <p className={cn("text-sm font-semibold", config.color)}>{readiness.statusLabel}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{readiness.statusDescription}</p>
         </div>
       </div>
 
@@ -79,33 +92,36 @@ export function ReadinessBanner({ employeeId }: ReadinessBannerProps) {
         </div>
       )}
 
-      {/* Missing items summary */}
-      {(readiness.missingCritical.length > 0 || readiness.missingRequired.length > 0) && (
-        <div className="space-y-1">
-          {readiness.missingCritical.map(item => (
-            <div key={item} className="flex items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
-              <span className="text-xs text-destructive">{item}</span>
-            </div>
-          ))}
-          {readiness.missingRequired.map(item => (
-            <div key={item} className="flex items-center gap-2">
-              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-xs text-muted-foreground">{item}</span>
-            </div>
-          ))}
+      {/* Next action prompt */}
+      {readiness.nextAction && (
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-background/60">
+          <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="text-xs text-foreground">{readiness.nextAction}</span>
         </div>
       )}
 
-      {/* Pending verification */}
-      {readiness.pendingVerification.length > 0 && (
+      {/* Missing items by action owner */}
+      {readiness.checks.filter(c => c.status !== "complete").length > 0 && (
         <div className="space-y-1">
-          {readiness.pendingVerification.map(item => (
-            <div key={item} className="flex items-center gap-2">
-              <Shield className="h-3.5 w-3.5 text-accent shrink-0" />
-              <span className="text-xs text-muted-foreground">{item} — under review</span>
-            </div>
-          ))}
+          {readiness.checks
+            .filter(c => c.status !== "complete")
+            .slice(0, 5) // Show top 5 only in banner
+            .map(check => (
+              <div key={check.key} className="flex items-center gap-2">
+                {check.status === "pending_verification" ? (
+                  <Shield className="h-3.5 w-3.5 text-accent shrink-0" />
+                ) : check.action_owner === "employee" ? (
+                  <UserCheck className="h-3.5 w-3.5 text-warning shrink-0" />
+                ) : (
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {check.label}
+                  {check.status === "pending_verification" && " — under review"}
+                  {check.action_owner === "employee" && check.status === "missing" && " — needs your input"}
+                </span>
+              </div>
+            ))}
         </div>
       )}
     </div>
