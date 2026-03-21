@@ -782,7 +782,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
               <TabsContent value="rtw" className="space-y-4 mt-0">
                 <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 mb-4">
                   <p className="text-sm text-muted-foreground">
-                    🛂 Confirm the employee's right to work in the UK. Use the{" "}
+                    🛂 Right to work verification is required before the employee starts work, but it does not block record creation. Complete the check when ready.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Use the{" "}
                     <a 
                       href="https://www.gov.uk/view-right-to-work" 
                       target="_blank" 
@@ -791,7 +794,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                     >
                       GOV.UK Right to Work checker
                     </a>{" "}
-                    to verify their share code online.
+                    for share code verification, or record passport details for British/Irish citizens.
                   </p>
                 </div>
 
