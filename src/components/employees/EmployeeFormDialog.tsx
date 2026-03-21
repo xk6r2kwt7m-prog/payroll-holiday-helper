@@ -166,6 +166,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const createEmployee = useCreateEmployee();
   const updateEmployee = useUpdateEmployee();
   const setEmployeeBranches = useSetEmployeeBranches();
+  const { sendInviteEmail: sendInviteEmailFn } = useInviteEmail();
   const { tenantId } = useTenant();
   const { data: allEmployees = [] } = useEmployees();
   const planLimits = usePlanLimits();
