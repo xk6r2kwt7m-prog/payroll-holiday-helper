@@ -71,6 +71,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <EmployeeLinkageProvider>
           <TenantProvider>
           <I18nProvider>
           <ImpersonationProvider>
