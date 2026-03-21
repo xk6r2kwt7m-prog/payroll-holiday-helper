@@ -584,6 +584,25 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
         {step === "preview" && (
           <div className="flex-1 overflow-hidden flex flex-col gap-3 py-2">
+            {/* Source label */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Upload className="h-3 w-3" />
+              <span>Payroll source: <strong>Manual timesheet upload</strong> · {file?.name}</span>
+            </div>
+
+            {/* Validation errors */}
+            {validationErrors.length > 0 && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm">
+                <p className="font-medium text-destructive flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  {validationErrors.length} validation error(s) — fix before importing
+                </p>
+                <ul className="mt-1 space-y-0.5 text-xs text-destructive">
+                  {validationErrors.map((e, i) => <li key={i}>• {e}</li>)}
+                </ul>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 <strong>{matchedEntries.length}</strong> matched · <strong>{aggregated.reduce((s, e) => s + e.totalHours, 0).toFixed(1)}</strong> total hours
