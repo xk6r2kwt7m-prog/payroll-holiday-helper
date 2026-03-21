@@ -237,10 +237,12 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const [existingPeriodId, setExistingPeriodId] = useState<string | null>(null);
   const [useExistingPeriod, setUseExistingPeriod] = useState(false);
   const [manualMatches, setManualMatches] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
+  const { tenantId } = useTenant();
 
   // Detect existing draft period matching dates
   useEffect(() => {
