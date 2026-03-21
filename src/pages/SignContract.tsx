@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FileText, CheckCircle2, AlertTriangle, Loader2, Download, ShieldCheck } from "lucide-react";
+import { SignaturePad } from "@/components/letters/SignaturePad";
+import { FileText, CheckCircle2, AlertTriangle, Loader2, Download, ShieldCheck, Clock, XCircle } from "lucide-react";
 
 interface ContractInfo {
   signer_type: string;
@@ -14,13 +14,16 @@ interface ContractInfo {
   expires_at: string;
 }
 
+type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "internal_error" | "missing_token" | string;
+
 export default function SignContract() {
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
   const [contractInfo, setContractInfo] = useState<ContractInfo | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [alreadySigned, setAlreadySigned] = useState(false);
+  const [errorCode, setErrorCode] = useState<ErrorCode | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [signerName, setSignerName] = useState("");
+  const [signatureData, setSignatureData] = useState<string | null>(null);
   const [consentAgreed, setConsentAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
@@ -32,14 +35,6 @@ export default function SignContract() {
 
   const fetchContractInfo = async () => {
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("sign-contract", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        body: undefined,
-      });
-
-      // The edge function uses query params, but supabase.functions.invoke doesn't support that easily
-      // So we'll call it directly
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`,
         { method: "GET" }
@@ -48,25 +43,31 @@ export default function SignContract() {
       const result = await response.json();
 
       if (!response.ok) {
-        if (result.already_signed) {
-          setAlreadySigned(true);
-        }
-        setError(result.error || "Invalid link");
+        setErrorCode(result.error_code || "invalid_token");
+        setErrorMessage(result.error || "Invalid link");
         return;
       }
 
       setContractInfo(result);
     } catch {
-      setError("Unable to load contract. Please check the link and try again.");
+      setErrorCode("internal_error");
+      setErrorMessage("Unable to load contract. Please check the link and try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSignatureChange = useCallback((dataUrl: string | null) => {
+    setSignatureData(dataUrl);
+  }, []);
+
   const handleSign = async () => {
-    if (!signerName.trim() || !consentAgreed) return;
+    if (!signerName.trim() || !consentAgreed || !signatureData) return;
 
     setSubmitting(true);
+    setErrorCode(null);
+    setErrorMessage(null);
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`,
@@ -76,6 +77,7 @@ export default function SignContract() {
           body: JSON.stringify({
             signer_name: signerName.trim(),
             consent_agreed: consentAgreed,
+            signature_data: signatureData,
           }),
         }
       );
@@ -83,13 +85,15 @@ export default function SignContract() {
       const result = await response.json();
 
       if (!response.ok) {
-        setError(result.error || "Failed to sign");
+        setErrorCode(result.error_code || "save_failed");
+        setErrorMessage(result.error || "Failed to record signature");
         return;
       }
 
       setSigned(true);
     } catch {
-      setError("Something went wrong. Please try again.");
+      setErrorCode("internal_error");
+      setErrorMessage("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -105,7 +109,9 @@ export default function SignContract() {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Contract Signed</h1>
           <p className="text-muted-foreground">
-            Your signature has been securely recorded with a timestamp and IP address.
+            Thank you. Your signature has been recorded successfully.
+          </p>
+          <p className="text-sm text-muted-foreground">
             You may now close this page.
           </p>
           <div className="rounded-lg bg-muted/50 border border-border p-3 text-xs text-muted-foreground">
@@ -121,27 +127,25 @@ export default function SignContract() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading your contract…</p>
+        </div>
       </div>
     );
   }
 
-  // Error or already signed
-  if (error) {
+  // Error states (before contract loads)
+  if (!contractInfo && errorCode) {
+    const errorConfig = getErrorDisplay(errorCode, errorMessage);
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center space-y-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10 mx-auto">
-            {alreadySigned ? (
-              <CheckCircle2 className="h-8 w-8 text-primary" />
-            ) : (
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-            )}
+          <div className={`flex h-16 w-16 items-center justify-center rounded-full mx-auto ${errorConfig.bgClass}`}>
+            {errorConfig.icon}
           </div>
-          <h1 className="text-2xl font-bold text-foreground">
-            {alreadySigned ? "Already Signed" : "Invalid Link"}
-          </h1>
-          <p className="text-muted-foreground">{error}</p>
+          <h1 className="text-2xl font-bold text-foreground">{errorConfig.title}</h1>
+          <p className="text-muted-foreground">{errorConfig.message}</p>
         </div>
       </div>
     );
@@ -149,7 +153,9 @@ export default function SignContract() {
 
   if (!contractInfo) return null;
 
-  const consentText = `I, ${signerName.trim() || "[your name]"}, confirm that I have read and agree to the terms of this employment contract. By typing my name and submitting this form, I understand this constitutes a legally binding electronic signature under the Electronic Communications Act 2000.`;
+  const canSubmit = signerName.trim().length > 0 && consentAgreed && !!signatureData && !submitting;
+
+  const consentText = `I, ${signerName.trim() || "[your name]"}, confirm that I have read and agree to the terms of this employment contract. By signing and submitting this form, I understand this constitutes a legally binding electronic signature under the Electronic Communications Act 2000.`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -160,8 +166,8 @@ export default function SignContract() {
             <FileText className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">Employment Contract</h1>
-            <p className="text-xs text-muted-foreground">Employment Contract Signing</p>
+            <h1 className="text-lg font-bold text-foreground">Sign Your Contract</h1>
+            <p className="text-xs text-muted-foreground">Please review and sign below</p>
           </div>
         </div>
       </div>
@@ -198,10 +204,19 @@ export default function SignContract() {
           )}
         </div>
 
+        {/* Inline error after failed submit */}
+        {errorCode && errorMessage && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <p className="text-sm text-destructive">{errorMessage}</p>
+          </div>
+        )}
+
         {/* Signing Form */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground">Sign Contract</h2>
+          <h2 className="text-sm font-semibold text-foreground">Your Signature</h2>
 
+          {/* Typed name */}
           <div>
             <label className="text-xs text-muted-foreground mb-1.5 block">
               Type your full legal name *
@@ -213,6 +228,14 @@ export default function SignContract() {
               className="text-base"
               autoComplete="name"
             />
+          </div>
+
+          {/* Signature pad */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1.5 block">
+              Draw your signature *
+            </label>
+            <SignaturePad onSignatureChange={handleSignatureChange} />
           </div>
 
           {/* Consent Statement */}
@@ -228,13 +251,13 @@ export default function SignContract() {
               className="mt-0.5"
             />
             <label htmlFor="consent" className="text-sm text-foreground cursor-pointer">
-              I have read the contract and agree to the above statement
+              I confirm this is my signature and I agree to sign this contract electronically
             </label>
           </div>
 
           <Button
             onClick={handleSign}
-            disabled={!signerName.trim() || !consentAgreed || submitting}
+            disabled={!canSubmit}
             className="w-full gradient-primary h-12 text-base"
           >
             {submitting ? (
@@ -242,7 +265,7 @@ export default function SignContract() {
             ) : (
               <ShieldCheck className="h-4 w-4" />
             )}
-            {submitting ? "Signing..." : "Sign Contract"}
+            {submitting ? "Signing…" : "Sign Contract"}
           </Button>
         </div>
 
@@ -254,4 +277,44 @@ export default function SignContract() {
       </div>
     </div>
   );
+}
+
+function getErrorDisplay(errorCode: ErrorCode, errorMessage: string | null) {
+  switch (errorCode) {
+    case "already_signed":
+      return {
+        icon: <CheckCircle2 className="h-8 w-8 text-primary" />,
+        bgClass: "bg-primary/10",
+        title: "Already Signed",
+        message: errorMessage || "This contract has already been signed.",
+      };
+    case "expired":
+      return {
+        icon: <Clock className="h-8 w-8 text-warning" />,
+        bgClass: "bg-warning/10",
+        title: "Link Expired",
+        message: errorMessage || "This signing link has expired. Please ask your employer to send a new one.",
+      };
+    case "missing_document":
+      return {
+        icon: <XCircle className="h-8 w-8 text-destructive" />,
+        bgClass: "bg-destructive/10",
+        title: "Contract Not Found",
+        message: errorMessage || "The contract document could not be found. Please contact your employer.",
+      };
+    case "save_failed":
+      return {
+        icon: <AlertTriangle className="h-8 w-8 text-destructive" />,
+        bgClass: "bg-destructive/10",
+        title: "Signature Failed",
+        message: errorMessage || "Failed to record your signature. Please try again.",
+      };
+    default:
+      return {
+        icon: <AlertTriangle className="h-8 w-8 text-destructive" />,
+        bgClass: "bg-destructive/10",
+        title: "Invalid Link",
+        message: errorMessage || "This signing link is not valid. Please request a new one from your employer.",
+      };
+  }
 }

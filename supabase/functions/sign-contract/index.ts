@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const token = url.searchParams.get("token");
 
     if (!token) {
-      return new Response(JSON.stringify({ error: "Missing token" }), {
+      return new Response(JSON.stringify({ error: "Missing token", error_code: "missing_token" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -46,10 +46,10 @@ Deno.serve(async (req) => {
           )
         `)
         .eq("token", token)
-        .single();
+        .maybeSingle();
 
       if (error || !signingToken) {
-        return new Response(JSON.stringify({ error: "Invalid or expired link" }), {
+        return new Response(JSON.stringify({ error: "This signing link is not valid. Please request a new one from your employer.", error_code: "invalid_token" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
       // Check expiry
       if (new Date(signingToken.expires_at) < new Date()) {
-        return new Response(JSON.stringify({ error: "This signing link has expired" }), {
+        return new Response(JSON.stringify({ error: "This signing link has expired. Please ask your employer to send a new one.", error_code: "expired" }), {
           status: 410,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -65,8 +65,16 @@ Deno.serve(async (req) => {
 
       // Check if already used
       if (signingToken.used_at) {
-        return new Response(JSON.stringify({ error: "This contract has already been signed", already_signed: true }), {
+        return new Response(JSON.stringify({ error: "This contract has already been signed.", error_code: "already_signed", already_signed: true }), {
           status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check document exists
+      if (!signingToken.employee_documents) {
+        return new Response(JSON.stringify({ error: "The contract document could not be found. Please contact your employer.", error_code: "missing_document" }), {
+          status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -90,17 +98,17 @@ Deno.serve(async (req) => {
     // POST: Submit signature
     if (req.method === "POST") {
       const body = await req.json();
-      const { signer_name, consent_agreed } = body;
+      const { signer_name, consent_agreed, signature_data } = body;
 
       if (!signer_name?.trim()) {
-        return new Response(JSON.stringify({ error: "Please type your full name" }), {
+        return new Response(JSON.stringify({ error: "Please type your full name", error_code: "missing_name" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       if (!consent_agreed) {
-        return new Response(JSON.stringify({ error: "You must agree to the consent statement" }), {
+        return new Response(JSON.stringify({ error: "You must agree to the consent statement", error_code: "missing_consent" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -111,24 +119,24 @@ Deno.serve(async (req) => {
         .from("signing_tokens")
         .select("*")
         .eq("token", token)
-        .single();
+        .maybeSingle();
 
       if (error || !signingToken) {
-        return new Response(JSON.stringify({ error: "Invalid signing link" }), {
+        return new Response(JSON.stringify({ error: "This signing link is not valid.", error_code: "invalid_token" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       if (new Date(signingToken.expires_at) < new Date()) {
-        return new Response(JSON.stringify({ error: "This signing link has expired" }), {
+        return new Response(JSON.stringify({ error: "This signing link has expired. Please ask your employer to send a new one.", error_code: "expired" }), {
           status: 410,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       if (signingToken.used_at) {
-        return new Response(JSON.stringify({ error: "This contract has already been signed" }), {
+        return new Response(JSON.stringify({ error: "This contract has already been signed.", error_code: "already_signed" }), {
           status: 409,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -137,30 +145,36 @@ Deno.serve(async (req) => {
       const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
       const userAgent = req.headers.get("user-agent") || "unknown";
 
-      const consentText = `I, ${signer_name.trim()}, confirm that I have read and agree to the terms of this employment contract. By typing my name and submitting this form, I understand this constitutes a legally binding electronic signature under the Electronic Communications Act 2000.`;
+      const consentText = `I, ${signer_name.trim()}, confirm that I have read and agree to the terms of this employment contract. By signing and submitting this form, I understand this constitutes a legally binding electronic signature under the Electronic Communications Act 2000.`;
 
-      // Record signature
+      // Record signature — include tenant_id from the signing token
       const { error: sigError } = await supabase
         .from("contract_signatures")
         .insert({
           employee_document_id: signingToken.employee_document_id,
           employee_id: signingToken.employee_id,
+          tenant_id: signingToken.tenant_id,
           signer_type: signingToken.signer_type,
           signer_name: signer_name.trim(),
           consent_text: consentText,
           ip_address: ip,
           user_agent: userAgent,
+          signature_data: signature_data || null,
         });
 
       if (sigError) {
         console.error("Signature insert error:", sigError);
-        return new Response(JSON.stringify({ error: "Failed to record signature" }), {
+        return new Response(JSON.stringify({ 
+          error: "Failed to record your signature. Please try again.", 
+          error_code: "save_failed",
+          detail: sigError.message,
+        }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Mark token as used
+      // Mark token as used only AFTER successful signature save
       await supabase
         .from("signing_tokens")
         .update({ used_at: new Date().toISOString() })
@@ -177,7 +191,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("Error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
+    return new Response(JSON.stringify({ error: "Something went wrong. Please try again.", error_code: "internal_error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -423,6 +423,7 @@ export type Database = {
           employee_id: string
           id: string
           ip_address: string | null
+          signature_data: string | null
           signed_at: string
           signer_name: string
           signer_type: string
@@ -436,6 +437,7 @@ export type Database = {
           employee_id: string
           id?: string
           ip_address?: string | null
+          signature_data?: string | null
           signed_at?: string
           signer_name: string
           signer_type: string
@@ -449,6 +451,7 @@ export type Database = {
           employee_id?: string
           id?: string
           ip_address?: string | null
+          signature_data?: string | null
           signed_at?: string
           signer_name?: string
           signer_type?: string
