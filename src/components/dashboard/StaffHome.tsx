@@ -261,6 +261,7 @@ export function StaffHome() {
 
   const { data: activeEntry } = useActiveClockIn();
   const clockInOut = useClockInOut();
+  const updateBreak = useUpdateBreakMinutes();
   const { data: branches } = useBranchLocations();
 
   const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
