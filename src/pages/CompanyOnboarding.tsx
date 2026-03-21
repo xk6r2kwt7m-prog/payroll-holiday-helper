@@ -188,8 +188,9 @@ const CompanyOnboarding = () => {
           } as any);
         }
 
-        // Send invitations
+        // Send invitations with actual emails
         const validMembers = data.members.filter((m) => m.contact.includes("@"));
+        let emailFailures = 0;
         for (const member of validMembers) {
           await supabase.from("tenant_invitations").insert({
             tenant_id: tenantIdResult,
@@ -197,6 +198,21 @@ const CompanyOnboarding = () => {
             role: "employee" as any,
             invited_by: user.id,
           } as any);
+
+          // Send invite email
+          const result = await sendInviteEmail({
+            recipientEmail: member.contact,
+            employeeName: member.name || member.contact,
+            tenantId: tenantIdResult,
+          });
+          if (!result.success) emailFailures++;
+        }
+
+        if (emailFailures > 0 && validMembers.length > 0) {
+          toast.warning(`${emailFailures} of ${validMembers.length} invite emails failed to send`, {
+            description: "You can resend them from the People section.",
+            duration: 8000,
+          });
         }
       }
 
