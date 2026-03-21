@@ -146,6 +146,8 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
     setSurname("");
     setEmail("");
     setDepartment("FOH");
+    setDuplicateWarning(null);
+    setDuplicateOverridden(false);
   };
 
   return (
