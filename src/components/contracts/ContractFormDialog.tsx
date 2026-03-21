@@ -60,7 +60,7 @@ interface ContractFormDialogProps {
 
 type Step = "fill" | "confirm" | "sign";
 
-export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogProps) {
+export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }: ContractFormDialogProps) {
   const { toast } = useToast();
   const { data: employees } = useEmployees();
   const { data: companySettings } = useCompanySettings();
