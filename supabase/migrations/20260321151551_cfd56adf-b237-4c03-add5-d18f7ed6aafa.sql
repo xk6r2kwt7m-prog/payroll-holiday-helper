@@ -1,0 +1,1 @@
+ALTER TABLE public.contract_signatures ADD COLUMN IF NOT EXISTS signature_data text;
