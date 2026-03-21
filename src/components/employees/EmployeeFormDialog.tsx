@@ -298,10 +298,49 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
           ? `Still needed: ${pendingItems.join(", ")}.`
           : "All basic details provided.";
 
-        toast.success(`Employee "${formData.forename.trim()} ${formData.surname.trim()}" created as starter.`, {
-          description: `No email sent. ${pendingNote} Use the employee profile to complete setup.`,
-          duration: 7000,
-        });
+        const hasEmail = !!formData.email.trim();
+
+        if (hasEmail) {
+          // Employee has email but no linked account yet — prompt manager to invite
+          toast.success(`Employee "${formData.forename.trim()} ${formData.surname.trim()}" created.`, {
+            description: `${pendingNote} Would you like to send an invite now?`,
+            duration: 15000,
+            action: {
+              label: "Send invite now",
+              onClick: async () => {
+                try {
+                  const result = await sendInviteEmailFn({
+                    recipientEmail: formData.email.trim().toLowerCase(),
+                    employeeName: `${formData.forename.trim()} ${formData.surname.trim()}`,
+                    tenantId: tenantId!,
+                  });
+
+                  // Also create invitation DB record
+                  const currentUser = (await supabase.auth.getUser()).data.user;
+                  await supabase.from("tenant_invitations").insert({
+                    tenant_id: tenantId!,
+                    email: formData.email.trim().toLowerCase(),
+                    role: "staff" as any,
+                    invited_by: currentUser?.id,
+                  });
+
+                  if (result.success) {
+                    toast.success(`Invite sent to ${formData.email.trim().toLowerCase()}`);
+                  } else {
+                    toast.warning("Invitation created, but the email failed to send. You can resend from the employee profile.");
+                  }
+                } catch {
+                  toast.error("Failed to send invite. You can try again from the employee profile.");
+                }
+              },
+            },
+          });
+        } else {
+          toast.success(`Employee "${formData.forename.trim()} ${formData.surname.trim()}" created as starter.`, {
+            description: `No email on file. ${pendingNote}`,
+            duration: 7000,
+          });
+        }
       }
 
       // Update branches (only if any selected)
