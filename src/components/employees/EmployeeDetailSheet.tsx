@@ -109,6 +109,7 @@ function Section({ title, icon: Icon, children }: {
 export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, canViewSensitive = false }: EmployeeDetailSheetProps) {
   const [searchParams] = useSearchParams();
   const deepLinkTab = searchParams.get("tab") || undefined;
+  const [editOpen, setEditOpen] = useState(false);
 
   if (!employee) return null;
 
