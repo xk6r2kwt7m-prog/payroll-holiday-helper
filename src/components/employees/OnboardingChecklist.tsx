@@ -299,16 +299,11 @@ export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklis
           </Badge>
         </div>
 
-        {/* Account linkage status */}
+        {/* Account lifecycle status */}
         {employee && (
           <div className="flex items-center gap-2 text-[11px]">
-            {isLinked ? (
-              <span className="flex items-center gap-1 text-success"><Link2 className="h-3 w-3" /> Account linked</span>
-            ) : hasEmail ? (
-              <span className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> Not linked yet</span>
-            ) : (
-              <span className="flex items-center gap-1 text-warning"><Mail className="h-3 w-3" /> No email on file</span>
-            )}
+            <acctCfg.icon className={cn("h-3 w-3", acctCfg.color)} />
+            <span className={acctCfg.color}>{acctCfg.label}</span>
           </div>
         )}
 
