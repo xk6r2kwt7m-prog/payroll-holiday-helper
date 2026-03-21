@@ -272,7 +272,47 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
         const { tenant_id: _omit, ...updateData } = employeeData;
         await updateEmployee.mutateAsync({ id: employee.id, updates: updateData });
         employeeId = employee.id;
-        toast.success("Employee updated successfully");
+
+        // If email was added/changed and no linked account yet → prompt invite
+        const emailAdded = !!formData.email.trim() && !employee.user_id;
+        const emailIsNew = emailAdded && (formData.email.trim().toLowerCase() !== (employee.email || "").toLowerCase() || !employee.email);
+
+        if (emailIsNew) {
+          toast.success("Employee updated successfully. Send invite now?", {
+            description: "This employee has an email but no linked account yet.",
+            duration: 15000,
+            action: {
+              label: "Send invite now",
+              onClick: async () => {
+                try {
+                  const result = await sendInviteEmailFn({
+                    recipientEmail: formData.email.trim().toLowerCase(),
+                    employeeName: `${formData.forename.trim()} ${formData.surname.trim()}`,
+                    tenantId: tenantId!,
+                  });
+                  const currentUser = (await supabase.auth.getUser()).data.user;
+                  await supabase.from("tenant_invitations").upsert({
+                    tenant_id: tenantId!,
+                    email: formData.email.trim().toLowerCase(),
+                    role: "staff" as any,
+                    invited_by: currentUser?.id,
+                  }, { onConflict: "tenant_id,email" });
+                  queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
+                  queryClient.invalidateQueries({ queryKey: ["tenant-invitations"] });
+                  if (result.success) {
+                    toast.success(`Invite sent to ${formData.email.trim().toLowerCase()}`);
+                  } else {
+                    toast.warning("Invitation created, but the email failed to send. You can resend from the employee profile.");
+                  }
+                } catch {
+                  toast.error("Failed to send invite. You can try again from the employee profile.");
+                }
+              },
+            },
+          });
+        } else {
+          toast.success("Employee updated successfully");
+        }
       } else {
         const newEmployee = await createEmployee.mutateAsync(employeeData);
         employeeId = newEmployee.id;
