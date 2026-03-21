@@ -149,6 +149,9 @@ export function ShiftCellDialog({
                 {employees.map((e) => (
                   <SelectItem key={e.id} value={e.id}>
                     {e.forename} {e.surname}
+                    {e.status === "starter" && (
+                      <span className="ml-1.5 text-[10px] font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full">Starter</span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
