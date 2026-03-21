@@ -160,7 +160,7 @@ export function ContractSigningActions({
             <Badge className="bg-primary/10 text-primary border-0 text-[10px] gap-1">
               <CheckCircle2 className="h-3 w-3" /> Fully Signed
             </Badge>
-            {(finalSignedPdfUrl || filePath) && (
+            {(finalSignedFilePath || filePath) && (
               <Button
                 variant="ghost"
                 size="icon"
