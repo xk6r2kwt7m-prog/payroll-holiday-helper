@@ -87,7 +87,12 @@ export function AttendanceReport() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Attendance & Timesheet Export</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Attendance & Timesheet Export</CardTitle>
+          <Button size="sm" onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add timesheet
+          </Button>
+        </div>
         <ReportFilters
           branches={branches}
           selectedBranch={branch}
@@ -141,7 +146,14 @@ export function AttendanceReport() {
               <TableBody>
                 {filtered.slice(0, 200).map((e: any) => (
                   <TableRow key={e.id}>
-                    <TableCell className="font-medium text-xs">{e.employees?.forename} {e.employees?.surname}</TableCell>
+                    <TableCell className="font-medium text-xs">
+                      <span>{e.employees?.forename} {e.employees?.surname}</span>
+                      {e.manager_adjusted && (
+                        <Badge variant="outline" className="ml-1.5 text-[9px] text-warning border-warning/30">
+                          <Pencil className="h-2.5 w-2.5 mr-0.5" />Adjusted
+                        </Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="hidden sm:table-cell text-xs">{e.employees?.department}</TableCell>
                     <TableCell className="text-xs">{e.clock_in_time ? format(new Date(e.clock_in_time), "d MMM") : "–"}</TableCell>
                     <TableCell className="text-xs">{e.clock_in_time ? format(new Date(e.clock_in_time), "HH:mm") : "–"}</TableCell>
@@ -177,6 +189,8 @@ export function AttendanceReport() {
           </div>
         )}
       </CardContent>
+
+      <ManagerTimesheetDialog open={showAddDialog} onClose={() => setShowAddDialog(false)} />
     </Card>
   );
 }
