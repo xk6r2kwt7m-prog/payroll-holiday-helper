@@ -357,9 +357,17 @@ export function StaffHome() {
   };
 
   const handleBreak = () => {
-    if (isOnBreak) {
+    if (isOnBreak && breakStartTime) {
+      // End break: accumulate elapsed break time and persist
+      const breakMs = Date.now() - breakStartTime.getTime();
+      const newTotal = accumulatedBreakMs + breakMs;
+      setAccumulatedBreakMs(newTotal);
       setIsOnBreak(false);
       setBreakStartTime(null);
+      const totalMinutes = Math.round(newTotal / 60000);
+      if (activeEntry?.id) {
+        updateBreak.mutate({ entryId: activeEntry.id, breakMinutes: totalMinutes });
+      }
       toast.success("Break ended");
     } else {
       setIsOnBreak(true);
