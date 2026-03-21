@@ -77,12 +77,30 @@ const Employees = () => {
   const canViewSensitive = usePermission("reveal_sensitive");
   const [pendingDeleteEmployee, setPendingDeleteEmployee] = useState<Employee | null>(null);
 
+  // Handle deep-link query params: ?dept=, ?edit=, ?tab=
   useEffect(() => {
     const dept = searchParams.get("dept") as Department;
     if (dept && ["FOH", "BOH", "CPU"].includes(dept)) {
       setDepartmentFilter(dept);
     }
   }, [searchParams]);
+
+  // Deep-link: ?edit=<employeeId>&tab=<tabName> opens the employee form dialog
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (editId && employees.length > 0) {
+      const emp = employees.find(e => e.id === editId);
+      if (emp) {
+        setSelectedEmployee(emp);
+        setDetailSheetOpen(true);
+        // Clean up the URL so it doesn't re-trigger
+        const next = new URLSearchParams(searchParams);
+        next.delete("edit");
+        next.delete("tab");
+        setSearchParams(next, { replace: true });
+      }
+    }
+  }, [searchParams, employees]);
 
   const counts = useMemo(() => ({
     active: employees.filter(e => e.status === "active" && !e.archived_at).length,

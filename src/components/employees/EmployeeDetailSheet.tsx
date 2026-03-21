@@ -1,4 +1,5 @@
 import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake, UserPlus } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +106,9 @@ function Section({ title, icon: Icon, children }: {
 }
 
 export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, canViewSensitive = false }: EmployeeDetailSheetProps) {
+  const [searchParams] = useSearchParams();
+  const deepLinkTab = searchParams.get("tab") || undefined;
+
   if (!employee) return null;
 
   const formatDate = (date: string | null) => {
@@ -368,6 +372,8 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             />
             <EmployeeFormDialog
               employee={employee}
+              defaultTab={deepLinkTab}
+              autoOpen={!!deepLinkTab}
               trigger={
                 <Button className="w-full gradient-primary">
                   <Edit2 className="h-4 w-4 mr-2" />

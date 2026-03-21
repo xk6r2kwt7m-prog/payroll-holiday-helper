@@ -26,11 +26,15 @@ interface EmployeeFormDialogProps {
   employee?: Employee;
   trigger?: React.ReactNode;
   onSuccess?: () => void;
+  /** Pre-select a tab when opening (e.g. "personal", "banking", "rtw") */
+  defaultTab?: string;
+  /** Open immediately without waiting for trigger click */
+  autoOpen?: boolean;
 }
 
-export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFormDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("personal");
+export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, autoOpen }: EmployeeFormDialogProps) {
+  const [open, setOpen] = useState(!!autoOpen);
+  const [activeTab, setActiveTab] = useState(defaultTab || "personal");
   const [selectedBranches, setSelectedBranches] = useState<BranchType[]>([]);
   const [primaryBranch, setPrimaryBranch] = useState<BranchType | undefined>();
   
