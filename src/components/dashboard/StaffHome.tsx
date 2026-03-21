@@ -347,10 +347,23 @@ export function StaffHome() {
 
   const handleClockOut = async () => {
     try {
-      await clockInOut.mutateAsync({ action: "clock_out", latitude: coords?.lat, longitude: coords?.lng });
+      // If still on break, end it first and calculate final break total
+      let totalBreakMs = accumulatedBreakMs;
+      if (isOnBreak && breakStartTime) {
+        totalBreakMs += Date.now() - breakStartTime.getTime();
+      }
+      const breakMins = Math.round(totalBreakMs / 60000);
+
+      await clockInOut.mutateAsync({
+        action: "clock_out",
+        latitude: coords?.lat,
+        longitude: coords?.lng,
+        break_minutes: breakMins > 0 ? breakMins : undefined,
+      });
       toast.success("Clocked out!");
       setIsOnBreak(false);
       setBreakStartTime(null);
+      setAccumulatedBreakMs(0);
     } catch (err: any) {
       toast.error(err.requires_override ? "Outside allowed area to clock out." : err.message);
     }
