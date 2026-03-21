@@ -33,7 +33,7 @@ export function useSendInvitation() {
   const { sendInviteEmail } = useInviteEmail();
 
   return useMutation({
-    mutationFn: async ({ email, role }: { email: string; role: string }) => {
+    mutationFn: async ({ email, role, name }: { email: string; role: string; name?: string }) => {
       await assertPermission("edit_employees", tenantId);
       const { data, error } = await supabase
         .from("tenant_invitations")
@@ -50,7 +50,7 @@ export function useSendInvitation() {
       // Send the actual email
       const result = await sendInviteEmail({
         recipientEmail: email,
-        employeeName: email,
+        employeeName: name || email,
         tenantId,
       });
 

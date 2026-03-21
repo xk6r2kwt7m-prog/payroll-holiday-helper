@@ -19,6 +19,7 @@ import { EmployeeCard } from "@/components/employees/EmployeeCard";
 import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet";
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { EmployeeDeleteDialog } from "@/components/employees/EmployeeDeleteDialog";
+import { PendingInvitations } from "@/components/employees/PendingInvitations";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { usePermission } from "@/hooks/useRolePermissions";
@@ -300,6 +301,9 @@ const Employees = () => {
             </Button>
           </div>
         )}
+
+        {/* Pending invitations */}
+        {canEdit && <PendingInvitations />}
 
         {/* Search + Dept + Sort row */}
         <div className="flex flex-col gap-2">
