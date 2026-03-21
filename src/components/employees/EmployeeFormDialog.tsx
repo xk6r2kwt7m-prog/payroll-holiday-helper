@@ -79,6 +79,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
       setFormData({
         forename: employee.forename || "",
         surname: employee.surname || "",
+        email: employee.email || "",
+        date_of_birth: (employee as any).date_of_birth || "",
         department: (employee.department || "FOH") as DepartmentType,
         status: (employee.status || "starter") as EmployeeStatus,
         hourly_rate: employee.hourly_rate?.toString() || "",
