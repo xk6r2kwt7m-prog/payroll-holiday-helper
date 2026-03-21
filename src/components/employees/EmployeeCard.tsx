@@ -145,6 +145,11 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
                 <Eye className="h-4 w-4 mr-2" /> View Details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {hasEmail && hasNoUserLink && !isAlreadyArchived && (
+                <DropdownMenuItem onClick={handleSendInvite}>
+                  <Send className="h-4 w-4 mr-2" /> Send Invite
+                </DropdownMenuItem>
+              )}
               {!isLeaver && !isAlreadyArchived && (
                 <DropdownMenuItem
                   onClick={(e) => { e.stopPropagation(); onMarkLeaver(employee); }}
