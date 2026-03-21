@@ -219,25 +219,69 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
 
       // In-app notifications: notify all assigned staff for this week
       const weekShifts = branchShifts.filter((s: any) => s.employee_id);
-      const uniqueUserIds = new Map<string, string>();
+      const uniqueEmployees = new Map<string, { userId: string | null; email: string | null; name: string }>();
       for (const s of weekShifts) {
         const emp = (s as any).employees;
-        if (emp?.user_id && !uniqueUserIds.has(emp.user_id)) {
-          uniqueUserIds.set(emp.user_id, `${emp.forename} ${emp.surname}`);
+        if (emp && !uniqueEmployees.has(s.employee_id)) {
+          uniqueEmployees.set(s.employee_id, {
+            userId: emp.user_id,
+            email: emp.email,
+            name: `${emp.forename} ${emp.surname}`,
+          });
         }
       }
-      if (uniqueUserIds.size > 0 && tenantId) {
-        const dateLabel = `${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")}`;
-        const rows = Array.from(uniqueUserIds.keys()).map((uid) => ({
+
+      const dateLabel = `${format(weekStart, "d MMM")} – ${format(weekEnd, "d MMM")}`;
+
+      // In-app notifications
+      if (uniqueEmployees.size > 0 && tenantId) {
+        const rows = Array.from(uniqueEmployees.values())
+          .filter((e) => e.userId)
+          .map((e) => ({
+            tenant_id: tenantId,
+            user_id: e.userId!,
+            event_type: "shift_published",
+            title: "New rota published",
+            body: `Your ${selectedBranch} schedule for ${dateLabel} is ready. Check your shifts.`,
+            link: "/schedule",
+            metadata: { branch: selectedBranch, week_start: weekStartStr },
+          }));
+        if (rows.length > 0) {
+          await supabase.from("notifications" as any).insert(rows as any);
+        }
+      }
+
+      // Email notifications to each employee with an email address
+      let emailsSent = 0;
+      let emailsFailed = 0;
+      for (const [, emp] of uniqueEmployees) {
+        if (!emp.email) continue;
+        const sent = await sendNotification({
+          to: emp.email,
+          subject: `Your rota is ready: ${selectedBranch} – ${dateLabel}`,
+          type: "schedule_published",
+          data: {
+            employee_name: emp.name,
+            branch: selectedBranch,
+            week: dateLabel,
+            message: `Your ${selectedBranch} schedule for ${dateLabel} has been published. Log in to view your shifts.`,
+            login_url: `${window.location.origin}/schedule`,
+          },
           tenant_id: tenantId,
-          user_id: uid,
-          event_type: "shift_published",
-          title: "New rota published",
-          body: `Your ${selectedBranch} schedule for ${dateLabel} is ready. Check your shifts.`,
-          link: "/schedule",
-          metadata: { branch: selectedBranch, week_start: weekStartStr },
-        }));
-        await supabase.from("notifications" as any).insert(rows as any);
+        });
+        if (sent) emailsSent++;
+        else emailsFailed++;
+      }
+
+      const noEmail = Array.from(uniqueEmployees.values()).filter((e) => !e.email).length;
+      if (emailsSent > 0) {
+        toast.success(`Rota email sent to ${emailsSent} staff member${emailsSent !== 1 ? "s" : ""}`);
+      }
+      if (noEmail > 0) {
+        toast.warning(`${noEmail} employee${noEmail !== 1 ? "s have" : " has"} no email on file — not notified`);
+      }
+      if (emailsFailed > 0) {
+        toast.error(`Failed to email ${emailsFailed} employee${emailsFailed !== 1 ? "s" : ""}`);
       }
 
       // Email notification to admin
