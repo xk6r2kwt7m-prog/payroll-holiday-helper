@@ -211,8 +211,9 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p>You have been added to the <strong>Ugly Dumpling</strong> team.</p>
         <p>Please use the link below to access your account and complete your setup.</p>
         ${data.login_url ? `<p style="text-align:center;margin:24px 0;"><a href="${data.login_url}" style="display:inline-block;padding:12px 28px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;">Join / Sign In</a></p>` : ""}
-        <p>Once inside, you may be asked to complete your details, upload documents, and review your schedule information.</p>
-        <p style="color:#666;">If you do not receive further updates, or if you have any difficulty accessing your account, please contact your manager.</p>
+        <p>Once inside, you may be asked to complete your personal details, upload documents, and review your onboarding information.</p>
+        <p>Your right to work documents, if submitted, will be reviewed by management before final approval.</p>
+        <p style="color:#666;">If you have any difficulty accessing your account, or if you do not receive further updates, please contact your manager.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling</strong></p>`;
       break;
     }

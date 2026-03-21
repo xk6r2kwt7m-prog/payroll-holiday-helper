@@ -8,6 +8,7 @@ import { PrivacyShieldProvider } from "@/hooks/usePrivacyShield";
 import { TenantProvider } from "@/hooks/useTenant";
 import { I18nProvider } from "@/hooks/useI18n";
 import { ImpersonationProvider } from "@/hooks/useImpersonation";
+import { EmployeeLinkageProvider } from "@/components/EmployeeLinkageProvider";
 import { ImpersonationBanner } from "@/components/platform/ImpersonationBanner";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -70,6 +71,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <EmployeeLinkageProvider>
           <TenantProvider>
           <I18nProvider>
           <ImpersonationProvider>
@@ -166,6 +168,7 @@ const App = () => (
           </ImpersonationProvider>
           </I18nProvider>
         </TenantProvider>
+          </EmployeeLinkageProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

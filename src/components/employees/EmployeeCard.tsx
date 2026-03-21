@@ -1,4 +1,4 @@
-import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus, MailWarning } from "lucide-react";
+import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus, MailWarning, Send } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import {
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { ReadinessStatusBadge } from "./OnboardingChecklist";
 import { useEmployeeReadiness } from "@/hooks/useOnboardingReadiness";
+import { useInviteEmail } from "@/hooks/useInviteEmail";
+import { toast } from "sonner";
 import { formatCurrency } from "@/hooks/useHolidays";
 import { useEmployeeBranches, type BranchType } from "@/hooks/useBranches";
 import type { Employee } from "@/hooks/useEmployees";
@@ -55,9 +57,30 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
+  const { sendInviteEmail } = useInviteEmail();
 
   const isAlreadyArchived = !!employee.archived_at;
   const isLeaver = employee.status === "leaver";
+  const hasEmail = !!employee.email;
+  const hasNoUserLink = !employee.user_id;
+
+  const handleSendInvite = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!employee.email) {
+      toast.error("No email address on file. Add an email first.");
+      return;
+    }
+    const result = await sendInviteEmail({
+      recipientEmail: employee.email,
+      employeeName: `${employee.forename} ${employee.surname}`,
+      tenantId: employee.tenant_id,
+    });
+    if (result.success) {
+      toast.success(`Invite email sent to ${employee.email}`);
+    } else {
+      toast.error(`Invite email failed: ${result.error || "Unknown error"}`);
+    }
+  };
 
   return (
     <div
@@ -122,6 +145,11 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
                 <Eye className="h-4 w-4 mr-2" /> View Details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              {hasEmail && hasNoUserLink && !isAlreadyArchived && (
+                <DropdownMenuItem onClick={handleSendInvite}>
+                  <Send className="h-4 w-4 mr-2" /> Send Invite
+                </DropdownMenuItem>
+              )}
               {!isLeaver && !isAlreadyArchived && (
                 <DropdownMenuItem
                   onClick={(e) => { e.stopPropagation(); onMarkLeaver(employee); }}
