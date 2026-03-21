@@ -69,6 +69,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const { tenantName } = useTenant();
   const uploadDocument = useUploadDocument();
   const generateSigningLink = useGenerateSigningLink();
+  const { sendContractEmail } = useSendContractEmail();
   const companyLegalName = companySettings?.company_name || tenantName || "Your Company";
   const companyAddress = companySettings?.address || "";
   const { data: locationSettings = [] } = useLocationSettings();
@@ -96,6 +97,9 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const [employerSignLink, setEmployerSignLink] = useState<string | null>(null);
   const [generatingEmployeeLink, setGeneratingEmployeeLink] = useState(false);
   const [generatingEmployerLink, setGeneratingEmployerLink] = useState(false);
+  const [sendingContractEmail, setSendingContractEmail] = useState(false);
+  const [contractEmailSent, setContractEmailSent] = useState(false);
+  const [employeeSignTokenId, setEmployeeSignTokenId] = useState<string | null>(null);
 
   const contractEligibleEmployees = useMemo(
     () => employees?.filter((e) => ["active", "starter", "onboarding"].includes(e.status)) || [],
