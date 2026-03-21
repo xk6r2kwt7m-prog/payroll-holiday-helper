@@ -1,4 +1,5 @@
-import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake, UserPlus } from "lucide-react";
+import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake, UserPlus, Shield } from "lucide-react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -8,6 +9,7 @@ import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { EmployeeNotesSection } from "./EmployeeNotesSection";
 import { OnboardingChecklist } from "./OnboardingChecklist";
+import { AccountLinkagePanel } from "./AccountLinkagePanel";
 import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateReferenceLetterDialog";
 import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocumentRequestDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
@@ -107,6 +109,7 @@ function Section({ title, icon: Icon, children }: {
 export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, canViewSensitive = false }: EmployeeDetailSheetProps) {
   const [searchParams] = useSearchParams();
   const deepLinkTab = searchParams.get("tab") || undefined;
+  const [editOpen, setEditOpen] = useState(false);
 
   if (!employee) return null;
 
@@ -250,6 +253,15 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
                 />
               )}
             </div>
+          </Section>
+
+          {/* Account Access & Linkage */}
+          <Section title="Account Access" icon={Shield}>
+            <AccountLinkagePanel
+              employee={employee}
+              isAdmin={isAdmin}
+              onEditEmployee={() => setEditOpen(true)}
+            />
           </Section>
 
           {/* Employment Details */}

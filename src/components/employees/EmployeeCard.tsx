@@ -1,4 +1,4 @@
-import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus, MailWarning, Send, Link2, Unlink } from "lucide-react";
+import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus, MailWarning, Send } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { ReadinessStatusBadge } from "./OnboardingChecklist";
+import { AccountAccessBadge } from "./AccountAccessBadge";
 import { useEmployeeReadiness } from "@/hooks/useOnboardingReadiness";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
+import { useAccountLinkage } from "@/hooks/useAccountLinkage";
 import { toast } from "sonner";
 import { formatCurrency } from "@/hooks/useHolidays";
 import { useEmployeeBranches, type BranchType } from "@/hooks/useBranches";
@@ -58,6 +60,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
   const { sendInviteEmail } = useInviteEmail();
+  const { data: linkage } = useAccountLinkage(employee);
 
   const isAlreadyArchived = !!employee.archived_at;
   const isLeaver = employee.status === "leaver";
@@ -192,25 +195,14 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
         </div>
       )}
 
-      {/* Row 3: Contract / compliance / linkage flags */}
+      {/* Row 3: Account access + compliance flags */}
       <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-        {!employee.email && (
-          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-warning/40 text-warning bg-warning/5 gap-0.5">
-            <MailWarning className="h-3 w-3" />
-            No email
-          </Badge>
+        {linkage && (
+          <AccountAccessBadge
+            state={linkage.state}
+            description={linkage.description}
+          />
         )}
-        {employee.user_id ? (
-          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-success/40 text-success bg-success/5 gap-0.5">
-            <Link2 className="h-3 w-3" />
-            Linked
-          </Badge>
-        ) : employee.email ? (
-          <Badge variant="outline" className="text-[10px] h-4.5 px-1.5 border-muted-foreground/40 text-muted-foreground bg-muted/30 gap-0.5">
-            <Unlink className="h-3 w-3" />
-            Not linked
-          </Badge>
-        ) : null}
         {employee.contract_country && (
           <Badge variant="outline" className="text-[10px] h-4.5 px-1.5">
             {employee.contract_country}
