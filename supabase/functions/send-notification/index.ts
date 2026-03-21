@@ -264,6 +264,29 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
+    case "contract_signature_received": {
+      const rcvFirstName = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your signature has been received</h2>
+        <p>Hi ${rcvFirstName},</p>
+        <p>We have received your signature.</p>
+        <p>Your contract is not yet finalised. It will be completed once the employer also signs it.</p>
+        <p>You will receive a final copy once the contract has been fully completed.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
+    case "contract_fully_signed": {
+      const fsFirstName = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your contract is now complete</h2>
+        <p>Hi ${fsFirstName},</p>
+        <p>Your contract has now been fully signed by both you and the employer.</p>
+        <p>A final signed copy has been stored in the system.</p>
+        <p><strong>Completed on:</strong> ${data.signed_at || new Date().toISOString()}</p>
+        <p>If you have any questions, please contact your manager.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
     case "test":
       body = `<h2>UglyOps HR Platform</h2><p>This confirms that the email notification system is working.</p><p><strong>Sent at:</strong> ${new Date().toISOString()}</p>`;
       break;
