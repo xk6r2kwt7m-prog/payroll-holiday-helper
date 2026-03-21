@@ -332,11 +332,15 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
                         <SelectValue placeholder="Choose employee..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {activeEmployees.map((emp) => (
+                        {contractEligibleEmployees.map((emp) => (
                           <SelectItem key={emp.id} value={emp.id}>
                             {emp.forename} {emp.surname} — {emp.department}
+                            {emp.status !== "active" && ` (${emp.status})`}
                           </SelectItem>
                         ))}
+                        {contractEligibleEmployees.length === 0 && (
+                          <div className="px-3 py-2 text-xs text-muted-foreground">No employees found</div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
