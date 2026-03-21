@@ -217,7 +217,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
               {canViewSensitive && employee.date_of_birth && (
                 <SensitiveInfoRow
                   label="Date of Birth"
-                  value={formatDate((employee as any).date_of_birth)}
+                  value={formatDate(employee.date_of_birth)}
                   fieldKey={`detail-${employee.id}-dob`}
                   category="personal_id"
                   employeeId={employee.id}
