@@ -246,31 +246,24 @@ Deno.serve(async (req) => {
 
       // Update employee_documents contract_send_status based on signing stage
       if (fullySignedNow) {
-        // Fetch the original document to get file_path for the final signed reference
+        // Fetch the original document to get file_path as the durable reference
         const { data: docRecord } = await supabase
           .from("employee_documents")
           .select("file_path")
           .eq("id", signingToken.employee_document_id)
           .maybeSingle();
 
-        // Generate a long-lived signed URL (30 days) for the final contract
-        let finalSignedUrl: string | null = null;
-        if (docRecord?.file_path) {
-          const { data: signedUrlData } = await supabase.storage
-            .from("employee-documents")
-            .createSignedUrl(docRecord.file_path, 60 * 60 * 24 * 30); // 30 days
-          finalSignedUrl = signedUrlData?.signedUrl || null;
-        }
-
         // Compute final document hash for integrity
         const finalContent = `${signingToken.employee_document_id}:${docRecord?.file_path || ""}:fully_signed:${signedAt}`;
         const finalHash = await sha256(finalContent);
 
+        // Store durable file path reference — NOT a temporary signed URL
+        // Signed access URLs are generated on-demand when viewing/downloading
         await supabase
           .from("employee_documents")
           .update({
             contract_send_status: "fully_signed",
-            final_signed_pdf_url: finalSignedUrl,
+            final_signed_pdf_url: docRecord?.file_path || null,
             final_document_hash: finalHash,
           } as any)
           .eq("id", signingToken.employee_document_id);
