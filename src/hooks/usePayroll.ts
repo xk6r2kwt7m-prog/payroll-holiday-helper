@@ -437,6 +437,18 @@ export function useDeletePayrollPeriod() {
   return useMutation({
     mutationFn: async (id: string) => {
       await assertPermission("view_pay_data", tenantId!);
+      
+      // Check period status before attempting delete
+      const { data: period } = await supabase
+        .from("payroll_periods")
+        .select("status")
+        .eq("id", id)
+        .maybeSingle();
+      
+      if (period?.status === "approved") {
+        throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
 
       // Delete entries first (foreign key constraint)
@@ -444,21 +456,30 @@ export function useDeletePayrollPeriod() {
         .from("payroll_entries")
         .delete()
         .eq("payroll_period_id", id);
-      if (entriesError) throw entriesError;
+      if (entriesError) {
+        if (entriesError.message?.includes("locked")) throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
+        throw entriesError;
+      }
 
       // Delete holiday payments linked to this period
       const { error: holError } = await supabase
         .from("holiday_payments")
         .delete()
         .eq("payroll_period_id", id);
-      if (holError) throw holError;
+      if (holError) {
+        if (holError.message?.includes("locked")) throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
+        throw holError;
+      }
 
       // Delete the period itself
       const { error } = await supabase
         .from("payroll_periods")
         .delete()
         .eq("id", id);
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes("locked")) throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
+        throw error;
+      }
 
       // Audit log
       await supabase.from("audit_log").insert({
