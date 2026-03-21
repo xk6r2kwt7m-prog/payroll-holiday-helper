@@ -31,6 +31,7 @@ import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
+import { PayrollSourceInfo } from "@/components/payroll/PayrollSourceInfo";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
@@ -357,6 +358,9 @@ const Payroll = () => {
                 {selectedPeriod.period_name} • {new Date(selectedPeriod.start_date).toLocaleDateString()} – {new Date(selectedPeriod.end_date).toLocaleDateString()}
               </p>
             )}
+
+            {/* Source / original timesheet download */}
+            {selectedPeriod && <PayrollSourceInfo periodId={selectedPeriod.id} />}
 
         {/* Period Selector */}
         {periods.length > 0 && (

@@ -153,9 +153,63 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
   return rows;
 }
 
+function matchEmployee(
+  csvName: string,
+  employees: { id: string; forename: string; surname: string; department: DepartmentType; hourly_rate: number; service_charge: number | null; status: string; email: string | null }[]
+): { emp: typeof employees[0] | undefined; matchMethod: string } {
+  const nameLower = csvName.toLowerCase().trim();
+  const activeFirst = (list: typeof employees[]) =>
+    list.flat().sort((a, b) => {
+      const aActive = a.status === "active" || a.status === "starter" ? 0 : 1;
+      const bActive = b.status === "active" || b.status === "starter" ? 0 : 1;
+      return aActive - bActive;
+    });
+
+  const sorted = activeFirst([employees]);
+
+  // 1. Exact full-name match (case-sensitive)
+  const exact = sorted.find(
+    (e) => `${e.forename} ${e.surname}` === csvName.trim()
+  );
+  if (exact) return { emp: exact, matchMethod: "exact" };
+
+  // 2. Case-insensitive full-name match
+  const ciFullName = sorted.find(
+    (e) => `${e.forename} ${e.surname}`.toLowerCase() === nameLower
+  );
+  if (ciFullName) return { emp: ciFullName, matchMethod: "case_insensitive" };
+
+  // 3. Case-insensitive forename-only match (only if exactly one match)
+  const forenameMatches = sorted.filter(
+    (e) => e.forename.toLowerCase() === nameLower
+  );
+  if (forenameMatches.length === 1) return { emp: forenameMatches[0], matchMethod: "forename_only" };
+
+  // 4. Email match — if csvName looks like an email
+  if (nameLower.includes("@")) {
+    const emailMatch = sorted.find(
+      (e) => e.email && e.email.toLowerCase() === nameLower
+    );
+    if (emailMatch) return { emp: emailMatch, matchMethod: "email" };
+  }
+
+  // 5. NAME_MAP fallback (last resort)
+  const mapped = NAME_MAP[nameLower];
+  if (mapped) {
+    const mapMatch = sorted.find(
+      (e) =>
+        e.forename.toLowerCase() === mapped.forename.toLowerCase() &&
+        e.surname.toLowerCase() === mapped.surname.toLowerCase()
+    );
+    if (mapMatch) return { emp: mapMatch, matchMethod: "name_map" };
+  }
+
+  return { emp: undefined, matchMethod: "none" };
+}
+
 function aggregateByEmployee(
   rows: ParsedRow[],
-  employees: { id: string; forename: string; surname: string; department: DepartmentType; hourly_rate: number; service_charge: number | null; status: string }[]
+  employees: { id: string; forename: string; surname: string; department: DepartmentType; hourly_rate: number; service_charge: number | null; status: string; email: string | null }[]
 ): AggregatedEmployee[] {
   const empMap = new Map<string, AggregatedEmployee>();
 
@@ -163,35 +217,11 @@ function aggregateByEmployee(
     const nameLower = row.csvName.toLowerCase().trim();
     if (SKIP_NAMES.has(nameLower)) continue;
 
-    // Resolve via name map first
-    const mapped = NAME_MAP[nameLower];
-    let matchKey: string;
-    let matched = false;
-    let matchedEmp: typeof employees[0] | undefined;
-
-    if (mapped) {
-      // Prefer active/starter employees when matching
-      matchedEmp = employees
-        .filter((e) => e.status === "active" || e.status === "starter")
-        .find(
-          (e) => e.forename.toLowerCase() === mapped.forename.toLowerCase() && e.surname.toLowerCase() === mapped.surname.toLowerCase()
-        ) || employees.find(
-          (e) => e.forename.toLowerCase() === mapped.forename.toLowerCase() && e.surname.toLowerCase() === mapped.surname.toLowerCase()
-        );
-      matchKey = mapped ? `${mapped.forename} ${mapped.surname}`.toLowerCase() : nameLower;
-    } else {
-      // Try direct forename match — prefer active/starter
-      matchedEmp = employees
-        .filter((e) => e.status === "active" || e.status === "starter")
-        .find(
-          (e) => e.forename.toLowerCase() === nameLower || `${e.forename} ${e.surname}`.toLowerCase() === nameLower
-        ) || employees.find(
-          (e) => e.forename.toLowerCase() === nameLower || `${e.forename} ${e.surname}`.toLowerCase() === nameLower
-        );
-      matchKey = matchedEmp ? `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase() : nameLower;
-    }
-
-    matched = !!matchedEmp;
+    const { emp: matchedEmp } = matchEmployee(row.csvName, employees);
+    const matched = !!matchedEmp;
+    const matchKey = matchedEmp
+      ? `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase()
+      : nameLower;
 
     const existing = empMap.get(matchKey);
     if (existing) {
@@ -202,8 +232,8 @@ function aggregateByEmployee(
         csvName: row.csvName,
         totalHours: row.hours,
         locations: [{ name: row.location, hours: row.hours }],
-        matchedForename: matchedEmp?.forename || mapped?.forename,
-        matchedSurname: matchedEmp?.surname || mapped?.surname,
+        matchedForename: matchedEmp?.forename,
+        matchedSurname: matchedEmp?.surname,
         matchedId: matchedEmp?.id,
         department: matchedEmp?.department,
         hourlyRate: matchedEmp?.hourly_rate,
