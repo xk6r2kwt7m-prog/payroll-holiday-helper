@@ -136,6 +136,18 @@ export function AttendanceReport() {
                     <TableCell className="text-xs">{e.clock_in_time ? format(new Date(e.clock_in_time), "HH:mm") : "–"}</TableCell>
                     <TableCell className="text-xs">{e.clock_out_time ? format(new Date(e.clock_out_time), "HH:mm") : "–"}</TableCell>
                     <TableCell className="text-xs font-medium">{e.total_hours ?? "–"}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {e.clock_in_latitude ? (
+                        <div className="flex items-center gap-1">
+                          <MapPin className={cn("h-3 w-3", e.clock_in_within_geofence === false ? "text-destructive" : "text-success")} />
+                          <span className="text-[10px] text-muted-foreground">
+                            {e.clock_in_within_geofence === false ? "Outside" : "OK"}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">No GPS</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn("text-[10px]", {
                         "text-warning border-warning/30": e.status === "pending",
