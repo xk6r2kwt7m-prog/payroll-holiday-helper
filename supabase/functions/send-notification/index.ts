@@ -253,14 +253,15 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
-    case "contract_signed_confirmation": {
-      const confFirstName = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
+    case "contract_employer_action_required": {
+      const adminName = data.admin_name || "Manager";
       body = `
-        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your contract has been signed</h2>
-        <p>Hi ${confFirstName},</p>
-        <p>Your contract has been successfully signed.</p>
-        <p><strong>Signed on:</strong> ${data.signed_at || new Date().toISOString()}</p>
-        <p>If you have any questions, please contact your manager.</p>
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Employer signature required</h2>
+        <p>Hi ${adminName},</p>
+        <p><strong>${data.employee_name || "An employee"}</strong> has signed their contract.</p>
+        <p>Your countersignature is now required to finalise this contract.</p>
+        <p><strong>Employee signed on:</strong> ${data.signed_at || "recently"}</p>
+        <p>Please log in to the UglyOps HR platform to review and sign.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
