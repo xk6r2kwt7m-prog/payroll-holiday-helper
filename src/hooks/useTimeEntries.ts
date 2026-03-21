@@ -145,7 +145,7 @@ async function writeTimeEntryAudit(
       record_id: id,
       tenant_id: tenantId,
       user_id: userId,
-      new_data: { status: action === "approve" ? "approved" : "rejected", ...(notes ? { notes } : {}) },
+      new_data: { status: auditAction === "approve" ? "approved" : "rejected", ...(notes ? { notes } : {}) },
     }))
   );
 }
