@@ -85,22 +85,32 @@ const Employees = () => {
     }
   }, [searchParams]);
 
-  // Deep-link: ?edit=<employeeId>&tab=<tabName> opens the employee form dialog
+  // Deep-link: ?edit=<employeeId>&tab=<tabName> opens the employee detail sheet
+  // We keep tab in the URL until the DetailSheet reads it, then clean up on close
   useEffect(() => {
     const editId = searchParams.get("edit");
     if (editId && employees.length > 0) {
       const emp = employees.find(e => e.id === editId);
       if (emp) {
+        // Match the status filter so the employee is visible
+        if (emp.status === "starter") setStatusFilter("starter");
+        else if ((emp.status as string) === "onboarding") setStatusFilter("onboarding");
         setSelectedEmployee(emp);
         setDetailSheetOpen(true);
-        // Clean up the URL so it doesn't re-trigger
-        const next = new URLSearchParams(searchParams);
-        next.delete("edit");
-        next.delete("tab");
-        setSearchParams(next, { replace: true });
       }
     }
   }, [searchParams, employees]);
+
+  // Clean URL params when detail sheet closes
+  const handleDetailSheetClose = (open: boolean) => {
+    setDetailSheetOpen(open);
+    if (!open && searchParams.has("edit")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("edit");
+      next.delete("tab");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const counts = useMemo(() => ({
     active: employees.filter(e => e.status === "active" && !e.archived_at).length,
