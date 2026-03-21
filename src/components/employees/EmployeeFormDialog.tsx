@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck, Globe, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
