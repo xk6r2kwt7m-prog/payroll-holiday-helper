@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { MapPin } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
