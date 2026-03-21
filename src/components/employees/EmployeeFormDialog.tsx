@@ -963,6 +963,18 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                 </div>
               </TabsContent>
 
+              {/* Availability Tab */}
+              <TabsContent value="availability" className="space-y-4 mt-0">
+                {employee ? (
+                  <AvailabilityEditorLazy employeeId={employee.id} />
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>Save the employee first, then set their availability.</p>
+                  </div>
+                )}
+              </TabsContent>
+
               {/* Notes Tab */}
               <TabsContent value="notes" className="space-y-4 mt-0">
                 <div className="space-y-2">
