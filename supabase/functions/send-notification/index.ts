@@ -25,7 +25,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "payroll_approved" | "contract_signing" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
