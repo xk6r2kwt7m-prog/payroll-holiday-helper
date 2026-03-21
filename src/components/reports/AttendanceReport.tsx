@@ -79,6 +79,8 @@ export function AttendanceReport() {
       { header: "Clock-out Lng", accessor: (r: any) => r.clock_out_longitude },
       { header: "Clock-out Geofence", accessor: (r: any) => r.clock_out_within_geofence == null ? "" : r.clock_out_within_geofence ? "Yes" : "No" },
       { header: "Override", accessor: (r: any) => r.manager_override ? "Yes" : "No" },
+      { header: "Manager Adjusted", accessor: (r: any) => r.manager_adjusted ? "Yes" : "No" },
+      { header: "Adjustment Reason", accessor: (r: any) => r.adjustment_reason || "" },
     ], filtered);
   };
 
