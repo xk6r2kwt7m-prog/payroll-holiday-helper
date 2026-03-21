@@ -139,7 +139,7 @@ async function writeTimeEntryAudit(
 ) {
   await supabase.from("audit_log").insert(
     entryIds.map((id) => ({
-      action: "UPDATE" as const,
+      action: (action === "approve" ? "approve" : "reject") as const,
       table_name: "time_entries",
       record_id: id,
       tenant_id: tenantId,
