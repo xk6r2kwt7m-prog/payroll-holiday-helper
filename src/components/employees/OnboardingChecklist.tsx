@@ -276,24 +276,55 @@ export function OnboardingChecklist({ employeeId, employee }: OnboardingChecklis
           </Badge>
         </div>
 
-        {/* Next action prompt */}
-        {readiness.nextAction && (
-          <div
-            className={cn(
-              "flex items-center gap-2 p-2 rounded-md bg-background/60 border border-primary/10",
-              nextStepAction && "cursor-pointer hover:bg-background/80 transition-colors"
+        {/* Account linkage status */}
+        {employee && (
+          <div className="flex items-center gap-2 text-[11px]">
+            {isLinked ? (
+              <span className="flex items-center gap-1 text-success"><Link2 className="h-3 w-3" /> Account linked</span>
+            ) : hasEmail ? (
+              <span className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> Not linked yet</span>
+            ) : (
+              <span className="flex items-center gap-1 text-warning"><Mail className="h-3 w-3" /> No email on file</span>
             )}
-            onClick={() => nextStepAction && navigate(nextStepAction.path)}
-            role={nextStepAction ? "button" : undefined}
-          >
-            <ArrowRight className="h-3.5 w-3.5 text-primary shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs font-medium text-primary">Next step</p>
-              <p className="text-[11px] text-muted-foreground">{readiness.nextAction}</p>
-            </div>
-            {nextStepAction && <ExternalLink className="h-3 w-3 text-primary/50 shrink-0" />}
           </div>
         )}
+
+        {/* Primary + Secondary action buttons */}
+        <div className="flex gap-2">
+          {nextStepAction && (
+            <Button
+              size="sm"
+              variant="default"
+              className="flex-1 h-8 text-xs gap-1.5"
+              onClick={() => navigate(nextStepAction.path)}
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+              {nextStepAction.label}
+            </Button>
+          )}
+          {employee && !isLinked && hasEmail && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={handleSendInvite}
+            >
+              <Send className="h-3.5 w-3.5" />
+              Send invite
+            </Button>
+          )}
+          {employee && !hasEmail && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => navigate(`/employees?edit=${employeeId}&tab=personal`)}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Add email
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Manager reassurance */}
