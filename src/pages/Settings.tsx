@@ -24,6 +24,7 @@ import { EmployeeStatusConfig } from "@/components/settings/EmployeeStatusConfig
 import { ProtectedSystemInfo } from "@/components/settings/ProtectedSystemInfo";
 import { ProtectedBadge } from "@/components/settings/ProtectedBadge";
 import { AdminAuditLog } from "@/components/settings/AdminAuditLog";
+import { EmployeeUserLinking } from "@/components/settings/EmployeeUserLinking";
 import { LocationManagement } from "@/components/settings/LocationManagement";
 import {
   SchedulingSettings,
@@ -79,6 +80,7 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
       { id: "departments", label: "Departments", description: "Team groupings and labels" },
       { id: "statuses", label: "Employee Lifecycle", description: "Status types and onboarding steps" },
       { id: "onboarding", label: "Onboarding Requirements", description: "What new starters must complete" },
+      { id: "user-linking", label: "Employee–User Linking", description: "Manually link auth accounts to employee records" },
     ],
   },
   {
@@ -418,6 +420,11 @@ const Settings = () => {
         {activeSection === "onboarding" && (
           <ConfigCard title="Onboarding Requirements" description="Choose which steps new starters must complete before they're work-ready.">
             <OnboardingRequirementsConfig />
+          </ConfigCard>
+        )}
+        {activeSection === "user-linking" && (
+          <ConfigCard title="Employee–User Linking" description="Manually link or unlink auth user accounts to employee records. Use this when auto-linking fails due to email mismatches or duplicates.">
+            <EmployeeUserLinking />
           </ConfigCard>
         )}
 

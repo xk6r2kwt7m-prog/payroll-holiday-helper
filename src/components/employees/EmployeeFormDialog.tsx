@@ -165,6 +165,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const planLimits = usePlanLimits();
 
   const activeEmployeeCount = allEmployees.filter(e => e.status === "active").length;
+  const [duplicateEmailWarning, setDuplicateEmailWarning] = useState<string | null>(null);
+  const [duplicateEmailOverridden, setDuplicateEmailOverridden] = useState(false);
 
   const isNewEmployee = !employee;
 
@@ -199,6 +201,26 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
     if (!tenantId) {
       toast.error("Session error: no organisation context. Please refresh and try again.");
       return;
+    }
+
+    // Duplicate email check for new employees
+    if (isNewEmployee && formData.email.trim() && !duplicateEmailOverridden) {
+      const normalised = formData.email.trim().toLowerCase();
+      const { data: existing } = await supabase
+        .from("employees")
+        .select("id, forename, surname, user_id, status")
+        .eq("tenant_id", tenantId)
+        .ilike("email", normalised);
+
+      if (existing && existing.length > 0) {
+        const linked = existing.filter(e => e.user_id);
+        if (linked.length > 0) {
+          setDuplicateEmailWarning(`⚠️ This email is already linked to an auth account (${linked[0].forename} ${linked[0].surname}). Creating another record will cause linkage conflicts.`);
+          return;
+        }
+        setDuplicateEmailWarning(`An employee record already exists for this email (${existing[0].forename} ${existing[0].surname}, ${existing[0].status}). Continue anyway?`);
+        return;
+      }
     }
 
     try {
@@ -936,6 +958,20 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
               </TabsContent>
             </div>
           </Tabs>
+
+          {duplicateEmailWarning && (
+            <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+              <p className="text-xs text-warning font-medium">{duplicateEmailWarning}</p>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => { setDuplicateEmailWarning(null); setDuplicateEmailOverridden(true); }}>
+                  Continue Anyway
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="text-xs" onClick={() => setDuplicateEmailWarning(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between items-center gap-3 pt-4 mt-4 border-t border-border">
             <div className="text-xs text-muted-foreground">

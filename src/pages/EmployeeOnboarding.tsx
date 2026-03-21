@@ -79,6 +79,9 @@ export default function EmployeeOnboarding() {
   const uploadDocument = useUploadDocument();
   const upsertAvailability = useUpsertAvailability();
 
+  const [linkageReason, setLinkageReason] = useState<string | null>(null);
+  const [emailMatchExists, setEmailMatchExists] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -86,12 +89,30 @@ export default function EmployeeOnboarding() {
       .select("id, forename, surname, tenant_id, status")
       .eq("user_id", user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (data) {
           setEmployeeId(data.id);
           setTenantId(data.tenant_id);
           setEmployeeName(`${data.forename} ${data.surname}`);
           initOnboarding.mutate({ employeeId: data.id, tenantId: data.tenant_id });
+        } else if (user.email) {
+          // Check if there are employee records with matching email but not linked
+          const { data: matches } = await supabase
+            .from("employees")
+            .select("id")
+            .ilike("email", user.email)
+            .is("user_id", null);
+
+          if (matches && matches.length > 1) {
+            setLinkageReason("multiple_matches");
+            setEmailMatchExists(true);
+          } else if (matches && matches.length === 1) {
+            setLinkageReason("linkage_pending");
+            setEmailMatchExists(true);
+          } else {
+            setLinkageReason("no_match");
+          }
+          console.warn("[ONBOARDING] No linked employee for user", user.id, "email:", user.email, "matches:", matches?.length || 0);
         }
         setLoading(false);
       });
@@ -191,10 +212,36 @@ export default function EmployeeOnboarding() {
   if (!employeeId) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center max-w-sm">
-          <AlertCircle className="h-12 w-12 text-warning mx-auto mb-3" />
-          <h2 className="text-lg font-semibold mb-2">No Employee Record Found</h2>
-          <p className="text-sm text-muted-foreground">Your account hasn't been linked to an employee record yet. Please contact your manager.</p>
+        <div className="text-center max-w-sm space-y-4">
+          <AlertCircle className="h-12 w-12 text-warning mx-auto" />
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Account Not Linked</h2>
+            <p className="text-sm text-muted-foreground">
+              We found your account, but it is not yet linked to an employee profile. Please contact your manager.
+            </p>
+          </div>
+          {emailMatchExists && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-left">
+              <p className="text-xs font-medium text-foreground mb-1">
+                {linkageReason === "multiple_matches"
+                  ? "Multiple employee records match your email"
+                  : "A matching employee record was found"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {linkageReason === "multiple_matches"
+                  ? "Your manager needs to manually link your account to the correct employee record using the Admin Centre."
+                  : "Your account is being linked. Try refreshing this page, or ask your manager to complete the link manually."}
+              </p>
+            </div>
+          )}
+          <div className="space-y-2 pt-2">
+            <Button variant="outline" className="w-full" onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => window.location.href = "/"}>
+              Go to Home
+            </Button>
+          </div>
         </div>
       </div>
     );

@@ -31,6 +31,33 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
   const { data: departments = [] } = useDepartments();
   const { sendInviteEmail } = useInviteEmail();
 
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [duplicateOverridden, setDuplicateOverridden] = useState(false);
+
+  const checkDuplicateEmail = async (emailToCheck: string): Promise<string | null> => {
+    if (!emailToCheck.trim() || !tenantId) return null;
+    const normalised = emailToCheck.trim().toLowerCase();
+
+    const { data: existing } = await supabase
+      .from("employees")
+      .select("id, forename, surname, user_id, status")
+      .eq("tenant_id", tenantId)
+      .ilike("email", normalised);
+
+    if (!existing || existing.length === 0) return null;
+
+    const linked = existing.filter(e => e.user_id);
+    const active = existing.filter(e => ["active", "starter", "onboarding"].includes(e.status));
+
+    if (linked.length > 0) {
+      return `⚠️ This email is already linked to an auth account (${linked[0].forename} ${linked[0].surname}). Creating another record with the same email will cause linkage conflicts.`;
+    }
+    if (active.length > 0) {
+      return `An active employee record already exists for this email (${active[0].forename} ${active[0].surname}, ${active[0].status}). Are you sure you want to create another?`;
+    }
+    return `An employee record already exists for this email (${existing[0].forename} ${existing[0].surname}, ${existing[0].status}).`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forename.trim() || !surname.trim() || !email.trim()) {
@@ -38,6 +65,15 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
       return;
     }
     if (!tenantId) return;
+
+    // Check for duplicate email before proceeding
+    if (!duplicateOverridden) {
+      const warning = await checkDuplicateEmail(email);
+      if (warning) {
+        setDuplicateWarning(warning);
+        return;
+      }
+    }
 
     setLoading(true);
     try {
@@ -110,6 +146,8 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
     setSurname("");
     setEmail("");
     setDepartment("FOH");
+    setDuplicateWarning(null);
+    setDuplicateOverridden(false);
   };
 
   return (
@@ -177,6 +215,20 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
               </SelectContent>
             </Select>
           </div>
+
+          {duplicateWarning && (
+            <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+              <p className="text-xs text-warning font-medium">{duplicateWarning}</p>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => { setDuplicateWarning(null); setDuplicateOverridden(true); }}>
+                  Continue Anyway
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="text-xs" onClick={() => { setDuplicateWarning(null); setOpen(false); }}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>

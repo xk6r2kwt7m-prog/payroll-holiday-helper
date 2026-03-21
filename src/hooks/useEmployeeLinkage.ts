@@ -6,8 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
  * Automatically links the current authenticated user to their employee record
  * by matching email address. Runs once per session on sign-in.
  *
- * This is the core mechanism that connects an invited employee's auth account
- * to their pre-created employee record, enabling onboarding access.
+ * Safety: refuses to auto-link when multiple unlinked employees share the same
+ * email (ambiguous case). Requires manual admin linking in that scenario.
  */
 export function useEmployeeLinkage() {
   const { user } = useAuth();
@@ -15,7 +15,6 @@ export function useEmployeeLinkage() {
 
   useEffect(() => {
     if (!user?.id || !user.email) return;
-    // Only attempt once per user session
     if (attemptedRef.current === user.id) return;
     attemptedRef.current = user.id;
 
@@ -41,9 +40,16 @@ export function useEmployeeLinkage() {
           return;
         }
 
-        const result = data as { linked: boolean; employee_id?: string; employee_name?: string };
+        const result = data as { linked: boolean; reason?: string; employee_id?: string; employee_name?: string; match_count?: number };
+
         if (result?.linked) {
           console.log("[EMPLOYEE_LINKAGE] Linked user to employee:", result.employee_name);
+        } else if (result?.reason === "ambiguous_multiple_matches") {
+          console.warn(
+            `[EMPLOYEE_LINKAGE] Auto-link refused: ${result.match_count} unlinked employees share email ${user.email}. Manager must link manually via Admin Centre > People > Employee-User Linking.`
+          );
+        } else if (result?.reason === "no_matching_employee") {
+          console.info("[EMPLOYEE_LINKAGE] No unlinked employee record matches this email.");
         }
       } catch (err) {
         console.warn("[EMPLOYEE_LINKAGE] Exception:", err);
