@@ -233,8 +233,15 @@ export function ContractSigningActions({
                   <p className="text-xs font-medium text-foreground mb-2">
                     {emailSent ? "✓ Contract sent" : "Signing Link Ready"}
                   </p>
-                  {emailSent && employeeEmail && (
-                    <p className="text-xs text-primary mb-2">Sent to {employeeEmail}</p>
+                  {emailSent && (contractSentTo || employeeEmail) && (
+                    <p className="text-xs text-primary mb-2">
+                      Sent to {contractSentTo || employeeEmail}
+                      {contractSentAt && (
+                        <span className="text-muted-foreground ml-1">
+                          · {new Date(contractSentAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        </span>
+                      )}
+                    </p>
                   )}
                 </div>
 
