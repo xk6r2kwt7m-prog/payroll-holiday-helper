@@ -188,6 +188,18 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
               </div>
             </div>
           )}
+
+          {/* Pay risk warning */}
+          {canViewSensitive && payRisk?.hasRisk && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-destructive/5 text-destructive border border-destructive/15">
+              <span className="font-medium">⚠️ Pay risk:</span>
+              <span>
+                Rate £{payRisk.currentRate.toFixed(2)}/hr is below the {payRisk.ageBand?.label} NMW band (£{payRisk.minimumRate?.toFixed(2)}/hr).
+                Shortfall: £{payRisk.shortfall?.toFixed(2)}/hr.
+              </span>
+              <span className="text-[10px] text-muted-foreground ml-auto shrink-0">Warning only</span>
+            </div>
+          )}
         </SheetHeader>
 
         <div className="space-y-6 pb-6">
