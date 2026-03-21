@@ -545,9 +545,13 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     <p className="text-sm font-semibold text-foreground">👤 Employee Signature</p>
                     <p className="text-xs text-muted-foreground">Send to {variables.employeeName}</p>
                   </div>
-                  {employeeSignLink ? (
+                  {contractEmailSent ? (
                     <Badge className="bg-primary/10 text-primary border-0 text-xs gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Ready
+                      <CheckCircle2 className="h-3 w-3" /> Sent
+                    </Badge>
+                  ) : employeeSignLink ? (
+                    <Badge className="bg-primary/10 text-primary border-0 text-xs gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> Ready to send
                     </Badge>
                   ) : (
                     <Badge variant="outline" className="text-xs gap-1">
@@ -568,11 +572,40 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   </Button>
                 ) : (
                   <div className="space-y-2">
-                    <div className="bg-muted/50 rounded-lg border border-border p-2 text-xs text-muted-foreground break-all select-all">
-                      {employeeSignLink}
-                    </div>
+                    {/* Primary action: Send contract by email */}
+                    {employeeEmail && !contractEmailSent ? (
+                      <Button
+                        onClick={handleSendContractEmail}
+                        disabled={sendingContractEmail}
+                        className="w-full gradient-primary"
+                      >
+                        {sendingContractEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                        {sendingContractEmail ? "Sending..." : "Send contract"}
+                      </Button>
+                    ) : contractEmailSent ? (
+                      <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
+                        <p className="text-xs font-medium text-primary">✓ Contract submitted to {employeeEmail}</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                        <p className="text-xs text-muted-foreground">
+                          No email on file.{" "}
+                          <button
+                            onClick={() => {
+                              onOpenChange(false);
+                              window.location.href = `/employees?edit=${selectedEmployeeId}&tab=personal`;
+                            }}
+                            className="text-primary hover:underline font-medium"
+                          >
+                            Add email to send contract
+                          </button>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Fallback: Copy link */}
                     <Button onClick={() => copyToClipboard(employeeSignLink)} variant="outline" size="sm" className="w-full">
-                      <Copy className="h-3 w-3" /> Copy Link
+                      <Copy className="h-3 w-3" /> Copy link
                     </Button>
                   </div>
                 )}
