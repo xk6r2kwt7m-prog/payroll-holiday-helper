@@ -260,12 +260,33 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
   const handleFileChange = useCallback(async (f: File | null) => {
     setFile(f);
+    setValidationErrors([]);
     if (!f) return;
 
     try {
       const text = await f.text();
       const rows = parseTimesheetCSV(text);
       const agg = aggregateByEmployee(rows, employees);
+      
+      // Validation checks
+      const errors: string[] = [];
+      for (const emp of agg) {
+        if (emp.totalHours < 0) {
+          errors.push(`${emp.csvName}: negative hours (${emp.totalHours})`);
+        }
+        if (isNaN(emp.totalHours)) {
+          errors.push(`${emp.csvName}: hours is not a valid number`);
+        }
+      }
+      // Check for duplicate employee matches
+      const matchedIds = agg.filter(e => e.matchedId).map(e => e.matchedId);
+      const duplicateIds = matchedIds.filter((id, i) => matchedIds.indexOf(id) !== i);
+      if (duplicateIds.length > 0) {
+        const dupNames = agg.filter(e => duplicateIds.includes(e.matchedId)).map(e => `${e.matchedForename} ${e.matchedSurname}`);
+        errors.push(`Duplicate employee match detected: ${[...new Set(dupNames)].join(", ")}`);
+      }
+      
+      setValidationErrors(errors);
       setAggregated(agg);
       setStep("preview");
     } catch (err) {
