@@ -36,6 +36,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const [formData, setFormData] = useState({
     forename: "",
     surname: "",
+    email: "",
+    date_of_birth: "",
     department: "FOH" as DepartmentType,
     status: "starter" as EmployeeStatus,
     hourly_rate: "",
