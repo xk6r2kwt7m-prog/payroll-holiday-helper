@@ -67,34 +67,7 @@ function computeFlags(entry: any): { type: "time" | "location" | "approval"; lab
   return flags;
 }
 
-function LocationMapPreview({ lat, lng, label, withinGeofence }: { lat?: number; lng?: number; label: string; withinGeofence?: boolean | null }) {
-  if (!lat || !lng) return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 bg-muted/50 rounded">
-      <MapPin className="h-3 w-3" /> No location data for {label}
-    </div>
-  );
-
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium">{label}</span>
-        <Badge variant="outline" className={cn("text-[10px]", withinGeofence ? "text-success border-success/30" : "text-destructive border-destructive/30")}>
-          {withinGeofence ? "In geofence" : "Outside geofence"}
-        </Badge>
-      </div>
-      <a
-        href={`https://www.google.com/maps?q=${lat},${lng}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 p-2 bg-muted/50 rounded text-xs text-primary hover:bg-muted transition-colors"
-      >
-        <Navigation className="h-3 w-3" />
-        {lat.toFixed(5)}, {lng.toFixed(5)}
-        <span className="text-muted-foreground ml-auto">View on map →</span>
-      </a>
-    </div>
-  );
-}
+// LocationMapPreview is now imported from @/components/attendance/LocationMapPreview
 
 export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: TimesheetReviewPanelProps) {
   const [rejectNotes, setRejectNotes] = useState("");
