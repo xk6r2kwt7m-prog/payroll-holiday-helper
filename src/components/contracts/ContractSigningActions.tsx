@@ -135,28 +135,25 @@ export function ContractSigningActions({
     <>
       {/* Inline status badges */}
       <div className="flex items-center gap-1">
-        {bothSigned ? (
+        {signingStage === "fully_signed" && (
           <Badge className="bg-primary/10 text-primary border-0 text-[10px] gap-1">
             <CheckCircle2 className="h-3 w-3" /> Fully Signed
           </Badge>
-        ) : (
-          <>
-            {employeeSigned && (
-              <Badge variant="outline" className="text-[10px] gap-1 text-primary border-primary/20">
-                <CheckCircle2 className="h-3 w-3" /> Staff
-              </Badge>
-            )}
-            {employerSigned && (
-              <Badge variant="outline" className="text-[10px] gap-1 text-primary border-primary/20">
-                <CheckCircle2 className="h-3 w-3" /> Employer
-              </Badge>
-            )}
-            {!employeeSigned && !employerSigned && (contractSendStatus === "sent" || emailSent) && (
-              <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
-                <Mail className="h-3 w-3" /> Sent
-              </Badge>
-            )}
-          </>
+        )}
+        {signingStage === "employee_signed" && (
+          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
+            <Clock className="h-3 w-3" /> Employee signed — awaiting employer
+          </Badge>
+        )}
+        {signingStage === "employer_signed" && (
+          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
+            <Clock className="h-3 w-3" /> Employer signed — awaiting employee
+          </Badge>
+        )}
+        {signingStage === "sent" && (
+          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
+            <Mail className="h-3 w-3" /> Sent
+          </Badge>
         )}
         <Button
           variant="ghost"
