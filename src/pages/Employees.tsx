@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown } from "lucide-react";
+import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown, MailWarning } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
