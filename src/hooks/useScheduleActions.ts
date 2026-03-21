@@ -163,12 +163,27 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             `Your ${shiftDate} shift (${times}) has been reassigned.`,
             { shift_id: id }
           );
+          if (oldEmp.email) {
+            sendNotification({
+              to: oldEmp.email,
+              subject: `Shift removed – ${shiftDate}`,
+              type: "shift_update",
+              data: {
+                employee_name: `${oldEmp.forename} ${oldEmp.surname}`,
+                message: `Your ${shiftDate} shift (${times}) has been reassigned to someone else.`,
+                shift_date: oldShift.shift_date,
+                start_time: oldShift.start_time,
+                end_time: oldShift.end_time,
+              },
+              tenant_id: tenantId,
+            });
+          }
         }
         // Notify new employee (shift assigned)
         if (updates.employee_id) {
           const { data: newEmp } = await supabase
             .from("employees")
-            .select("user_id")
+            .select("user_id, email, forename, surname")
             .eq("id", updates.employee_id)
             .maybeSingle();
           if (newEmp?.user_id) {
@@ -178,6 +193,21 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               `You've been assigned a shift on ${shiftDate} (${times}).`,
               { shift_id: id }
             );
+          }
+          if (newEmp?.email) {
+            sendNotification({
+              to: newEmp.email,
+              subject: `New shift assigned – ${shiftDate}`,
+              type: "shift_update",
+              data: {
+                employee_name: `${newEmp.forename} ${newEmp.surname}`,
+                message: `You've been assigned a shift on ${shiftDate} (${times}).`,
+                shift_date: oldShift.shift_date,
+                start_time: oldShift.start_time,
+                end_time: oldShift.end_time,
+              },
+              tenant_id: tenantId,
+            });
           }
         }
       }
