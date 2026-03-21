@@ -959,6 +959,20 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
             </div>
           </Tabs>
 
+          {duplicateEmailWarning && (
+            <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+              <p className="text-xs text-warning font-medium">{duplicateEmailWarning}</p>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => { setDuplicateEmailWarning(null); setDuplicateEmailOverridden(true); }}>
+                  Continue Anyway
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="text-xs" onClick={() => setDuplicateEmailWarning(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-between items-center gap-3 pt-4 mt-4 border-t border-border">
             <div className="text-xs text-muted-foreground">
               <span className="text-destructive">*</span> Required fields
