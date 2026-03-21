@@ -327,10 +327,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                     invited_by: currentUser?.id,
                   });
 
-                  // Refresh account linkage state so badges update
-                  const { queryClient: qc } = await import("@tanstack/react-query").then(() => ({ queryClient: createEmployee }));
-                  // Use window-level invalidation since we're in a toast callback
-                  window.dispatchEvent(new CustomEvent("invalidate-account-linkage"));
+                  // Refresh account linkage and invitation badges
+                  queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
+                  queryClient.invalidateQueries({ queryKey: ["tenant-invitations"] });
 
                   if (result.success) {
                     toast.success(`Invite sent to ${formData.email.trim().toLowerCase()}`);
