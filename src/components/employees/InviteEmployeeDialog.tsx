@@ -29,6 +29,7 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
   const { tenantId } = useTenant();
   const qc = useQueryClient();
   const { data: departments = [] } = useDepartments();
+  const { sendNotification } = useNotifications();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
