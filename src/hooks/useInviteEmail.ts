@@ -38,10 +38,10 @@ export function useInviteEmail() {
         const { data, error } = await supabase.functions.invoke("send-notification", {
           body: {
             to: payload.recipientEmail,
-            subject: "You've been invited to join UglyOps HR",
+            subject: "Welcome to Ugly Dumpling — complete your setup",
             type: "employee_invitation",
             data: {
-              company_name: payload.companyName || "UglyOps",
+              company_name: payload.companyName || "Ugly Dumpling",
               employee_name: payload.employeeName,
               login_url: loginUrl,
             },

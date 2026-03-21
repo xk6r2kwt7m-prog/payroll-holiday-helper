@@ -87,10 +87,10 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
       qc.invalidateQueries({ queryKey: ["tenant-invitations"] });
 
       if (result.success) {
-        toast.success(`Invite email sent to ${forename} ${surname}`);
+        toast.success(`Invitation sent successfully to ${email.trim().toLowerCase()}`);
       } else {
-        toast.warning(`Employee added but invite email failed`, {
-          description: result.error || "The invitation record was created. You can resend the email later.",
+        toast.warning(`Invitation created, but the invite email failed to send.`, {
+          description: result.error || "The employee record was created. You can resend the invite later.",
           duration: 8000,
         });
       }
