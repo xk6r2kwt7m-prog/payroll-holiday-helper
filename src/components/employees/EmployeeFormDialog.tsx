@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck, Globe, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -170,6 +171,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const { tenantId } = useTenant();
   const { data: allEmployees = [] } = useEmployees();
   const planLimits = usePlanLimits();
+  const queryClient = useQueryClient();
 
   const activeEmployeeCount = allEmployees.filter(e => e.status === "active").length;
   const [duplicateEmailWarning, setDuplicateEmailWarning] = useState<string | null>(null);
@@ -324,6 +326,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                     role: "staff" as any,
                     invited_by: currentUser?.id,
                   });
+
+                  // Refresh account linkage and invitation badges
+                  queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
+                  queryClient.invalidateQueries({ queryKey: ["tenant-invitations"] });
 
                   if (result.success) {
                     toast.success(`Invite sent to ${formData.email.trim().toLowerCase()}`);

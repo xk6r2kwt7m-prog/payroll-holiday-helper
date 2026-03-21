@@ -85,6 +85,7 @@ export function useCreateEmployee() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
     },
   });
 }
@@ -108,6 +109,7 @@ export function useUpdateEmployee() {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
       queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
     },
   });
 }
