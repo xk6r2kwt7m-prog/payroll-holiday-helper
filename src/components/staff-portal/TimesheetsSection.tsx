@@ -65,6 +65,11 @@ export function TimesheetsSection() {
                 })}>
                   {entry.status === "clocked_in" ? "Active" : entry.status}
                 </Badge>
+                {(entry as any).manager_adjusted && (
+                  <Badge variant="outline" className="text-[9px] text-warning border-warning/30">
+                    <Pencil className="h-2.5 w-2.5 mr-0.5" />Adjusted
+                  </Badge>
+                )}
                 {isExpanded
                   ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   : <ChevronDown className="h-4 w-4 text-muted-foreground" />
