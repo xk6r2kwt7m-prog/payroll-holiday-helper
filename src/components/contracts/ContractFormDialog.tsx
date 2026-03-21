@@ -210,10 +210,54 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
       const link = `${window.location.origin}/sign/${result.token}`;
       setLink(link);
+      if (signerType === "employee") {
+        setEmployeeSignTokenId(result.id);
+      }
     } catch {
       toast({ title: "Error", description: "Failed to generate link", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const selectedEmployee = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
+  const employeeEmail = selectedEmployee?.email;
+
+  const handleSendContractEmail = async () => {
+    if (!employeeSignLink || !employeeEmail || !savedDocumentId || !employeeSignTokenId) return;
+
+    setSendingContractEmail(true);
+    try {
+      const result = await sendContractEmail({
+        recipientEmail: employeeEmail,
+        employeeName: variables.employeeName,
+        signingUrl: employeeSignLink,
+        signingTokenId: employeeSignTokenId,
+        employeeId: selectedEmployeeId,
+        employeeDocumentId: savedDocumentId,
+      });
+
+      if (result.success) {
+        setContractEmailSent(true);
+        toast({
+          title: "Contract sent",
+          description: `Contract submitted to ${employeeEmail}`,
+        });
+      } else {
+        toast({
+          title: "Email failed",
+          description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Email failed",
+        description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingContractEmail(false);
     }
   };
 
