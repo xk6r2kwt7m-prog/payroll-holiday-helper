@@ -417,45 +417,63 @@ export type Database = {
       }
       contract_signatures: {
         Row: {
+          consent_given: boolean | null
           consent_text: string
           created_at: string
+          document_hash: string | null
           employee_document_id: string
           employee_id: string
           id: string
           ip_address: string | null
           signature_data: string | null
+          signature_type: string | null
           signed_at: string
+          signed_by_email: string | null
           signer_name: string
           signer_type: string
+          signing_token_id: string | null
           tenant_id: string
+          typed_name: string | null
           user_agent: string | null
         }
         Insert: {
+          consent_given?: boolean | null
           consent_text: string
           created_at?: string
+          document_hash?: string | null
           employee_document_id: string
           employee_id: string
           id?: string
           ip_address?: string | null
           signature_data?: string | null
+          signature_type?: string | null
           signed_at?: string
+          signed_by_email?: string | null
           signer_name: string
           signer_type: string
+          signing_token_id?: string | null
           tenant_id: string
+          typed_name?: string | null
           user_agent?: string | null
         }
         Update: {
+          consent_given?: boolean | null
           consent_text?: string
           created_at?: string
+          document_hash?: string | null
           employee_document_id?: string
           employee_id?: string
           id?: string
           ip_address?: string | null
           signature_data?: string | null
+          signature_type?: string | null
           signed_at?: string
+          signed_by_email?: string | null
           signer_name?: string
           signer_type?: string
+          signing_token_id?: string | null
           tenant_id?: string
+          typed_name?: string | null
           user_agent?: string | null
         }
         Relationships: [
@@ -478,6 +496,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_signatures_signing_token_id_fkey"
+            columns: ["signing_token_id"]
+            isOneToOne: false
+            referencedRelation: "signing_tokens"
             referencedColumns: ["id"]
           },
           {
@@ -1199,6 +1224,8 @@ export type Database = {
           extraction_warnings: Json | null
           file_path: string
           file_size: number | null
+          final_document_hash: string | null
+          final_signed_pdf_url: string | null
           id: string
           mime_type: string | null
           notes: string | null
@@ -1229,6 +1256,8 @@ export type Database = {
           extraction_warnings?: Json | null
           file_path: string
           file_size?: number | null
+          final_document_hash?: string | null
+          final_signed_pdf_url?: string | null
           id?: string
           mime_type?: string | null
           notes?: string | null
@@ -1259,6 +1288,8 @@ export type Database = {
           extraction_warnings?: Json | null
           file_path?: string
           file_size?: number | null
+          final_document_hash?: string | null
+          final_signed_pdf_url?: string | null
           id?: string
           mime_type?: string | null
           notes?: string | null
@@ -3838,6 +3869,8 @@ export type Database = {
           tenant_id: string
           token: string
           used_at: string | null
+          used_by_ip: string | null
+          used_by_user_agent: string | null
         }
         Insert: {
           created_at?: string
@@ -3849,6 +3882,8 @@ export type Database = {
           tenant_id: string
           token?: string
           used_at?: string | null
+          used_by_ip?: string | null
+          used_by_user_agent?: string | null
         }
         Update: {
           created_at?: string
@@ -3860,6 +3895,8 @@ export type Database = {
           tenant_id?: string
           token?: string
           used_at?: string | null
+          used_by_ip?: string | null
+          used_by_user_agent?: string | null
         }
         Relationships: [
           {

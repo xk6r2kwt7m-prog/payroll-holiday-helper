@@ -25,7 +25,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signed_confirmation" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -250,6 +250,17 @@ function buildHtml(type: string, data: Record<string, string>): string {
         </p>
         <p>It only takes a couple of minutes and can be completed on your phone.</p>
         <p>If you have any questions, just reply to this email.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
+    case "contract_signed_confirmation": {
+      const confFirstName = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your contract has been signed</h2>
+        <p>Hi ${confFirstName},</p>
+        <p>Your contract has been successfully signed.</p>
+        <p><strong>Signed on:</strong> ${data.signed_at || new Date().toISOString()}</p>
+        <p>If you have any questions, please contact your manager.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }

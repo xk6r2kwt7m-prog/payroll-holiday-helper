@@ -6,6 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
+// Simple SHA-256 hash using Web Crypto API
+async function sha256(content: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(content);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -42,6 +51,7 @@ Deno.serve(async (req) => {
             id,
             forename,
             surname,
+            email,
             department
           )
         `)
@@ -55,7 +65,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Check expiry
       if (new Date(signingToken.expires_at) < new Date()) {
         return new Response(JSON.stringify({ error: "This signing link has expired. Please ask your employer to send a new one.", error_code: "expired" }), {
           status: 410,
@@ -63,7 +72,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Check if already used
       if (signingToken.used_at) {
         return new Response(JSON.stringify({ error: "This contract has already been signed.", error_code: "already_signed", already_signed: true }), {
           status: 409,
@@ -71,7 +79,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Check document exists
       if (!signingToken.employee_documents) {
         return new Response(JSON.stringify({ error: "The contract document could not be found. Please contact your employer.", error_code: "missing_document" }), {
           status: 404,
@@ -84,11 +91,17 @@ Deno.serve(async (req) => {
         .from("employee-documents")
         .createSignedUrl(signingToken.employee_documents.file_path, 3600);
 
+      // Generate document hash for integrity verification
+      const documentContent = `${signingToken.employee_documents.id}:${signingToken.employee_documents.file_path}:${signingToken.employee_documents.document_name}`;
+      const docHash = await sha256(documentContent);
+
       return new Response(JSON.stringify({
         signer_type: signingToken.signer_type,
         employee_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
+        employee_email: signingToken.employees.email || null,
         document_name: signingToken.employee_documents.document_name,
         document_url: signedUrl?.signedUrl || null,
+        document_hash: docHash,
         expires_at: signingToken.expires_at,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -98,26 +111,41 @@ Deno.serve(async (req) => {
     // POST: Submit signature
     if (req.method === "POST") {
       const body = await req.json();
-      const { signer_name, consent_agreed, signature_data } = body;
+      const { typed_name, consent_given, signature_data, signature_type, consent_text, document_hash } = body;
 
-      if (!signer_name?.trim()) {
-        return new Response(JSON.stringify({ error: "Please type your full name", error_code: "missing_name" }), {
+      if (!typed_name?.trim()) {
+        return new Response(JSON.stringify({ error: "Please type your full legal name", error_code: "missing_name" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      if (!consent_agreed) {
+      if (!consent_given) {
         return new Response(JSON.stringify({ error: "You must agree to the consent statement", error_code: "missing_consent" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Fetch and validate token
+      if (!signature_data) {
+        return new Response(JSON.stringify({ error: "Please draw your signature", error_code: "missing_signature" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch and validate token with relations
       const { data: signingToken, error } = await supabase
         .from("signing_tokens")
-        .select("*")
+        .select(`
+          *,
+          employees (
+            id,
+            forename,
+            surname,
+            email
+          )
+        `)
         .eq("token", token)
         .maybeSingle();
 
@@ -144,28 +172,35 @@ Deno.serve(async (req) => {
 
       const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
       const userAgent = req.headers.get("user-agent") || "unknown";
+      const signedByEmail = signingToken.employees?.email || null;
+      const signedAt = new Date().toISOString();
 
-      const consentText = `I, ${signer_name.trim()}, confirm that I have read and agree to the terms of this employment contract. By signing and submitting this form, I understand this constitutes a legally binding electronic signature under the Electronic Communications Act 2000.`;
-
-      // Record signature — include tenant_id from the signing token
+      // Record signature with full audit trail
       const { error: sigError } = await supabase
         .from("contract_signatures")
         .insert({
           employee_document_id: signingToken.employee_document_id,
           employee_id: signingToken.employee_id,
           tenant_id: signingToken.tenant_id,
+          signing_token_id: signingToken.id,
           signer_type: signingToken.signer_type,
-          signer_name: signer_name.trim(),
-          consent_text: consentText,
+          signer_name: typed_name.trim(),
+          typed_name: typed_name.trim(),
+          signed_by_email: signedByEmail,
+          signature_type: signature_type || "drawn",
+          signature_data: signature_data,
+          consent_given: true,
+          consent_text: consent_text || `I confirm that I have read and understood this contract, I agree to sign this document electronically, and this electronic signature represents my legal signature.`,
+          document_hash: document_hash || null,
           ip_address: ip,
           user_agent: userAgent,
-          signature_data: signature_data || null,
+          signed_at: signedAt,
         });
 
       if (sigError) {
         console.error("Signature insert error:", sigError);
-        return new Response(JSON.stringify({ 
-          error: "Failed to record your signature. Please try again.", 
+        return new Response(JSON.stringify({
+          error: "Your signature could not be recorded. Please try again.",
           error_code: "save_failed",
           detail: sigError.message,
         }), {
@@ -174,13 +209,80 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Mark token as used only AFTER successful signature save
+      // Mark token as used ONLY after successful signature save
       await supabase
         .from("signing_tokens")
-        .update({ used_at: new Date().toISOString() })
+        .update({
+          used_at: signedAt,
+          used_by_ip: ip,
+          used_by_user_agent: userAgent,
+        })
         .eq("id", signingToken.id);
 
-      return new Response(JSON.stringify({ success: true, message: "Contract signed successfully" }), {
+      // Store document hash on the employee_documents record
+      if (document_hash) {
+        await supabase
+          .from("employee_documents")
+          .update({ final_document_hash: document_hash })
+          .eq("id", signingToken.employee_document_id);
+      }
+
+      // Insert audit log entry
+      await supabase.from("audit_log").insert({
+        action: "create",
+        table_name: "contract_signatures",
+        record_id: signingToken.employee_document_id,
+        tenant_id: signingToken.tenant_id,
+        ip_address: ip,
+        user_agent: userAgent,
+        new_data: {
+          event: "contract_signed",
+          employee_id: signingToken.employee_id,
+          employee_document_id: signingToken.employee_document_id,
+          signing_token_id: signingToken.id,
+          signer_type: signingToken.signer_type,
+          signed_by_email: signedByEmail,
+          signed_at: signedAt,
+          document_hash: document_hash || null,
+          signature_type: signature_type || "drawn",
+        },
+      });
+
+      // Send confirmation email to employee if email available
+      if (signedByEmail && signingToken.signer_type === "employee") {
+        try {
+          const firstName = signingToken.employees?.forename || "there";
+          await supabase.functions.invoke("send-notification", {
+            body: {
+              to: signedByEmail,
+              subject: "Your contract has been signed",
+              type: "contract_signed_confirmation",
+              data: {
+                employee_name: `${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim(),
+                first_name: firstName,
+                signed_at: new Date(signedAt).toLocaleDateString("en-GB", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              },
+              tenant_id: signingToken.tenant_id,
+            },
+          });
+        } catch (emailErr) {
+          // Email failure should not block signing success
+          console.error("Contract confirmation email failed:", emailErr);
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: "Contract signed successfully",
+        signed_at: signedAt,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
