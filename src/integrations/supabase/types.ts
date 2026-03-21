@@ -1284,8 +1284,14 @@ export type Database = {
           emergency_contact: Json | null
           employee_id: string
           id: string
+          onboarding_approved_at: string | null
+          onboarding_approved_by: string | null
           onboarding_completed_at: string | null
           personal_info: Json | null
+          rtw_review_notes: string | null
+          rtw_reviewed_at: string | null
+          rtw_reviewed_by: string | null
+          rtw_status: string
           step_completed: number
           submitted_at: string | null
           tenant_id: string
@@ -1297,8 +1303,14 @@ export type Database = {
           emergency_contact?: Json | null
           employee_id: string
           id?: string
+          onboarding_approved_at?: string | null
+          onboarding_approved_by?: string | null
           onboarding_completed_at?: string | null
           personal_info?: Json | null
+          rtw_review_notes?: string | null
+          rtw_reviewed_at?: string | null
+          rtw_reviewed_by?: string | null
+          rtw_status?: string
           step_completed?: number
           submitted_at?: string | null
           tenant_id: string
@@ -1310,8 +1322,14 @@ export type Database = {
           emergency_contact?: Json | null
           employee_id?: string
           id?: string
+          onboarding_approved_at?: string | null
+          onboarding_approved_by?: string | null
           onboarding_completed_at?: string | null
           personal_info?: Json | null
+          rtw_review_notes?: string | null
+          rtw_reviewed_at?: string | null
+          rtw_reviewed_by?: string | null
+          rtw_status?: string
           step_completed?: number
           submitted_at?: string | null
           tenant_id?: string
