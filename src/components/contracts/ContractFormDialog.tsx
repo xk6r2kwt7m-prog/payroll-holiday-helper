@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useUploadDocument } from "@/hooks/useEmployeeDocuments";
 import { useGenerateSigningLink } from "@/hooks/useContractSigning";
+import { useSendContractEmail } from "@/hooks/useSendContractEmail";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,6 +38,7 @@ import {
   FileText,
   Link2,
   Loader2,
+  Mail,
   MapPin,
   ShieldCheck,
   User,
