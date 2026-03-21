@@ -522,6 +522,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setAggregated([]);
     setImportMessage("");
     setManualMatches({});
+    setValidationErrors([]);
   };
 
   return (
