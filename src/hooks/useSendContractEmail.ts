@@ -115,6 +115,8 @@ export function useSendContractEmail() {
 
         // Invalidate queries so UI reflects new status
         queryClient.invalidateQueries({ queryKey: ["all_contracts"] });
+        queryClient.invalidateQueries({ queryKey: ["employee_documents"] });
+        queryClient.invalidateQueries({ queryKey: ["signing_tokens"] });
         queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
         queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
 
