@@ -132,6 +132,22 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             `Your ${shiftDate} shift changed from ${oldTimes} to ${newTimes}.`,
             { shift_id: id, old_times: oldTimes, new_times: newTimes }
           );
+          // Email notification for time change
+          if (emp.email) {
+            sendNotification({
+              to: emp.email,
+              subject: `Shift time changed – ${shiftDate}`,
+              type: "shift_update",
+              data: {
+                employee_name: `${emp.forename} ${emp.surname}`,
+                message: `Your ${shiftDate} shift has been changed from ${oldTimes} to ${newTimes}.`,
+                shift_date: oldShift.shift_date,
+                start_time: newStart,
+                end_time: newEnd,
+              },
+              tenant_id: tenantId,
+            });
+          }
         }
       }
 
