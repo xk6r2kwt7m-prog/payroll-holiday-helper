@@ -101,7 +101,7 @@ export function ContractFormDialog({ open, onOpenChange }: ContractFormDialogPro
 
   const handleEmployeeSelect = (employeeId: string) => {
     setSelectedEmployeeId(employeeId);
-    const emp = activeEmployees.find((e) => e.id === employeeId);
+    const emp = contractEligibleEmployees.find((e) => e.id === employeeId);
     if (emp) {
       const deptMap: Record<string, ContractType> = { FOH: "foh", BOH: "kitchen", CPU: "kitchen" };
       const autoType: ContractType = deptMap[emp.department] || "foh";
