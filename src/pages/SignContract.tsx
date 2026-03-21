@@ -37,6 +37,7 @@ export default function SignContract() {
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signedAt, setSignedAt] = useState<string | null>(null);
+  const [fullySigned, setFullySigned] = useState(false);
 
   useEffect(() => {
     if (!token) return;
