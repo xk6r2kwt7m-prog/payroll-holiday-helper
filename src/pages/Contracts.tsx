@@ -64,7 +64,7 @@ export default function Contracts() {
         </Tabs>
       </div>
 
-      <ContractFormDialog open={generateOpen} onOpenChange={setGenerateOpen} />
+      <ContractFormDialog open={generateOpen} onOpenChange={setGenerateOpen} preselectedEmployeeId={preselectedEmployeeId} />
     </AppLayout>
   );
 }

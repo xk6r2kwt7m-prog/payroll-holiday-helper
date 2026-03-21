@@ -100,6 +100,14 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     [employees]
   );
 
+  useEffect(() => {
+    if (!open || !preselectedEmployeeId || !contractEligibleEmployees.length) return;
+    const match = contractEligibleEmployees.find((e) => e.id === preselectedEmployeeId);
+    if (match) {
+      handleEmployeeSelect(match.id);
+    }
+  }, [open, preselectedEmployeeId, contractEligibleEmployees]);
+
   const handleEmployeeSelect = (employeeId: string) => {
     setSelectedEmployeeId(employeeId);
     const emp = contractEligibleEmployees.find((e) => e.id === employeeId);

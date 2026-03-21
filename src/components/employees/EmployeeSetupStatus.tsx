@@ -70,14 +70,14 @@ export function EmployeeSetupStatus({ employee, compact = false }: EmployeeSetup
       label: "Contract",
       status: "pending",
       icon: FileText,
-      action: { label: "Create contract", path: "/contracts" },
+      action: { label: "Create contract", path: `/contracts?employee=${employee.id}` },
     },
     {
       key: "rtw",
-      label: employee.settlement_status ? `RTW: ${employee.settlement_status.replace(/_/g, " ")}` : "Right to work pending",
-      status: employee.settlement_status ? "done" : "warning",
+      label: employee.settlement_status ? `RTW: ${employee.settlement_status.replace(/_/g, " ")}` : "Right to work pending review",
+      status: employee.settlement_status ? "pending" : "warning",
       icon: Shield,
-      action: !employee.settlement_status ? { label: "Complete RTW", path: `/employees?edit=${employee.id}&tab=rtw` } : undefined,
+      action: { label: "Review RTW", path: `/employees?edit=${employee.id}&tab=rtw` },
     },
     {
       key: "banking",
@@ -91,7 +91,7 @@ export function EmployeeSetupStatus({ employee, compact = false }: EmployeeSetup
       label: "Training",
       status: "pending",
       icon: BookOpen,
-      action: { label: "Assign training", path: "/training" },
+      action: { label: "Assign training", path: `/training?tab=tracking&employee=${employee.id}` },
     },
   ];
 
