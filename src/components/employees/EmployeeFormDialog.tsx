@@ -165,6 +165,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
   const planLimits = usePlanLimits();
 
   const activeEmployeeCount = allEmployees.filter(e => e.status === "active").length;
+  const [duplicateEmailWarning, setDuplicateEmailWarning] = useState<string | null>(null);
+  const [duplicateEmailOverridden, setDuplicateEmailOverridden] = useState(false);
 
   const isNewEmployee = !employee;
 
