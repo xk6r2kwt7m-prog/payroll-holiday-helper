@@ -9,6 +9,7 @@ type EmailEventType =
   | "payroll_approved"
   | "shift_update"
   | "schedule_published"
+  | "schedule_published_setup_required"
   | "document_expiry"
   | "employee_invitation"
   | "test";
