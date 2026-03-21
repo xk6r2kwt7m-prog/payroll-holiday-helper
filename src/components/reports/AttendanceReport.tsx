@@ -23,6 +23,7 @@ export function AttendanceReport() {
   const [empId, setEmpId] = useState("all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(startOfMonth(new Date()));
   const [dateTo, setDateTo] = useState<Date | undefined>(endOfMonth(new Date()));
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const startStr = dateFrom ? format(dateFrom, "yyyy-MM-dd") : undefined;
   const endStr = dateTo ? format(dateTo, "yyyy-MM-dd") : undefined;
