@@ -255,12 +255,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
         
         // Truthful message: Add Employee does NOT send any email
         if (formData.email.trim()) {
-          toast.success("Employee added successfully. No email has been sent yet.", {
-            description: "Use 'Invite Employee' or the resend action to send a welcome email.",
+          toast.success(`Employee added as "${formData.status}". No email has been sent yet.`, {
+            description: "The view has been switched to show new starters. Use 'Invite Employee' to send a welcome email.",
             duration: 6000,
           });
         } else {
-          toast.success("Employee added successfully. No email address was provided.");
+          toast.success(`Employee added as "${formData.status}". No email address was provided.`, {
+            description: "The view has been switched to show new starters.",
+            duration: 5000,
+          });
         }
       }
 
