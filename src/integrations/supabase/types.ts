@@ -1179,6 +1179,11 @@ export type Database = {
       }
       employee_documents: {
         Row: {
+          contract_last_token_id: string | null
+          contract_send_error: string | null
+          contract_send_status: string | null
+          contract_sent_at: string | null
+          contract_sent_to: string | null
           created_at: string
           document_name: string
           document_status: string
@@ -1204,6 +1209,11 @@ export type Database = {
           verified_by: string | null
         }
         Insert: {
+          contract_last_token_id?: string | null
+          contract_send_error?: string | null
+          contract_send_status?: string | null
+          contract_sent_at?: string | null
+          contract_sent_to?: string | null
           created_at?: string
           document_name: string
           document_status?: string
@@ -1229,6 +1239,11 @@ export type Database = {
           verified_by?: string | null
         }
         Update: {
+          contract_last_token_id?: string | null
+          contract_send_error?: string | null
+          contract_send_status?: string | null
+          contract_sent_at?: string | null
+          contract_sent_to?: string | null
           created_at?: string
           document_name?: string
           document_status?: string
