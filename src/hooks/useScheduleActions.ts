@@ -165,7 +165,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             { shift_id: id }
           );
           if (oldEmp.email) {
-            sendNotification({
+            const sent = await sendNotification({
               to: oldEmp.email,
               subject: `Shift removed – ${shiftDate}`,
               type: "shift_update",
@@ -178,6 +178,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               },
               tenant_id: tenantId,
             });
+            if (!sent) toast.warning(`Shift reassigned but email to ${oldEmp.forename} ${oldEmp.surname} failed`);
           }
         }
         // Notify new employee (shift assigned)
