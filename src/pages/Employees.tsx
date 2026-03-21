@@ -90,6 +90,7 @@ const Employees = () => {
     onboarding: employees.filter(e => (e.status as string) === "onboarding" && !e.archived_at).length,
     leaver: employees.filter(e => e.status === "leaver" && !e.archived_at).length,
     archived: employees.filter(e => !!e.archived_at).length,
+    missingEmail: employees.filter(e => !e.email && !e.archived_at && e.status !== "leaver").length,
   }), [employees]);
 
   const filteredEmployees = useMemo(() => {
