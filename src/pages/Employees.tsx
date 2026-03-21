@@ -302,6 +302,9 @@ const Employees = () => {
           </div>
         )}
 
+        {/* Pending invitations */}
+        {canEdit && <PendingInvitations />}
+
         {/* Search + Dept + Sort row */}
         <div className="flex flex-col gap-2">
           <div className="relative">
