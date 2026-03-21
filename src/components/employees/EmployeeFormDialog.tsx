@@ -876,8 +876,8 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sort_code" className="flex items-center gap-1">
-                    Sort Code {isNewEmployee && <span className="text-destructive">*</span>}
+                  <Label htmlFor="sort_code">
+                    Sort Code
                   </Label>
                   <Input
                     id="sort_code"
