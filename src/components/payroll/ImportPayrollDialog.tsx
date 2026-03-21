@@ -341,6 +341,14 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       toast.error("Please fill in all required fields");
       return;
     }
+    if (!tenantId) {
+      toast.error("No workspace selected");
+      return;
+    }
+    if (validationErrors.length > 0) {
+      toast.error("Please fix validation errors before importing");
+      return;
+    }
 
     setImporting(true);
     try {
@@ -375,10 +383,6 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           .delete()
           .eq("payroll_period_id", periodId);
       } else {
-        // Calculate period weeks
-        const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
-        const periodWeeks = Math.round((days / 7) * 10) / 10;
-
         const { data: period, error: periodError } = await supabase
           .from("payroll_periods")
           .insert({
@@ -390,6 +394,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             status: "draft" as const,
             imported_by: user?.id,
             notes: periodNotes,
+            tenant_id: tenantId,
           } as any)
           .select()
           .single();
@@ -430,27 +435,31 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             holiday_accrued_hours: holidayAccrued,
             total_pay: totalPay,
             notes: locNotes,
+            tenant_id: tenantId,
           } as any);
 
         if (entryError) throw entryError;
         entriesCreated++;
       }
 
-      // Update period totals
-      const totalPay = matchedEntries.reduce((s, e) => {
-        const h = e.totalHours;
-        const r = e.hourlyRate || 0;
-        const sc = e.serviceCharge || 0;
-        return s + h * r + h * sc;
-      }, 0);
+      // Period totals now auto-calculated by DB trigger (sync_payroll_period_totals)
+      // No manual total update needed
 
-      await supabase
-        .from("payroll_periods")
-        .update({
-          timesheet_total: totalPay,
-          grand_total: totalPay,
-        })
-        .eq("id", periodId);
+      // Store original CSV file in Supabase Storage
+      let storedFilePath: string | null = null;
+      if (file) {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filePath = `${tenantId}/${periodId}/${timestamp}_${safeName}`;
+        const { error: uploadError } = await supabase.storage
+          .from("payroll-files")
+          .upload(filePath, file, { contentType: "text/csv", upsert: false });
+        if (uploadError) {
+          console.error("CSV storage failed (non-blocking):", uploadError);
+        } else {
+          storedFilePath = filePath;
+        }
+      }
 
       // Audit log
       await supabase.from("audit_log").insert({
@@ -458,22 +467,29 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         action: "import" as const,
         table_name: "payroll_periods",
         record_id: periodId,
+        tenant_id: tenantId,
         new_data: {
           operation: "csv_timesheet_import",
           period_name: periodName,
           entries_created: entriesCreated,
           unmatched_employees: unmatchedNames,
           source_file: file?.name || "unknown",
+          source_type: "manual_upload",
+          stored_file_path: storedFilePath,
         },
       });
 
-      // Create import record
+      // Create import record with file_path and tenant_id
       await supabase.from("payroll_imports").insert({
         payroll_period_id: periodId,
         file_name: file?.name || "CSV Import",
+        file_path: storedFilePath,
         imported_by: user?.id,
         import_status: "completed",
         records_imported: entriesCreated,
+        tenant_id: tenantId,
+        errors: unmatchedNames.length > 0 ? { unmatched: unmatchedNames } : null,
+      } as any);
         errors: unmatchedNames.length > 0 ? { unmatched: unmatchedNames } : null,
       } as any);
 
