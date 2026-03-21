@@ -168,6 +168,7 @@ const App = () => (
           </ImpersonationProvider>
           </I18nProvider>
         </TenantProvider>
+          </EmployeeLinkageProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
