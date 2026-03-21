@@ -69,6 +69,12 @@ export function AttendanceReport() {
       { header: "Status", accessor: (r: any) => r.status },
       { header: "Scheduled Start", accessor: (r: any) => r.scheduled_start },
       { header: "Scheduled End", accessor: (r: any) => r.scheduled_end },
+      { header: "Clock-in Lat", accessor: (r: any) => r.clock_in_latitude },
+      { header: "Clock-in Lng", accessor: (r: any) => r.clock_in_longitude },
+      { header: "Clock-in Geofence", accessor: (r: any) => r.clock_in_within_geofence == null ? "" : r.clock_in_within_geofence ? "Yes" : "No" },
+      { header: "Clock-out Lat", accessor: (r: any) => r.clock_out_latitude },
+      { header: "Clock-out Lng", accessor: (r: any) => r.clock_out_longitude },
+      { header: "Clock-out Geofence", accessor: (r: any) => r.clock_out_within_geofence == null ? "" : r.clock_out_within_geofence ? "Yes" : "No" },
       { header: "Override", accessor: (r: any) => r.manager_override ? "Yes" : "No" },
     ], filtered);
   };
