@@ -136,6 +136,8 @@ export function useRejectDocument() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["employee_documents"] });
+      qc.invalidateQueries({ queryKey: ["employee_readiness"] });
+      qc.invalidateQueries({ queryKey: ["team_readiness"] });
       toast.success("Document rejected");
     },
     onError: (e: any) => toast.error(e.message),
