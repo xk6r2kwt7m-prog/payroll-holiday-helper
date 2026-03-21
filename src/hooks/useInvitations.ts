@@ -47,10 +47,10 @@ export function useSendInvitation() {
         .single();
       if (error) throw error;
 
-      // Send the actual email — use email as fallback name only
+      // Send the actual email
       const result = await sendInviteEmail({
         recipientEmail: email,
-        employeeName: email, // useSendInvitation doesn't have a name; callers should prefer InviteEmployeeDialog
+        employeeName: name || email,
         tenantId,
       });
 
