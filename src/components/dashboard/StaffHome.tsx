@@ -257,6 +257,7 @@ export function StaffHome() {
   const [elapsedTime, setElapsedTime] = useState("");
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [breakStartTime, setBreakStartTime] = useState<Date | null>(null);
+  const [accumulatedBreakMs, setAccumulatedBreakMs] = useState(0);
 
   const { data: activeEntry } = useActiveClockIn();
   const clockInOut = useClockInOut();
