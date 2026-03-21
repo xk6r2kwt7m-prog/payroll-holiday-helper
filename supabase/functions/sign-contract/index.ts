@@ -341,24 +341,69 @@ Deno.serve(async (req) => {
             signed_at: signedAt,
           },
         });
-      } else if (currentSignerType === "employee" && signedByEmail) {
-        // EMPLOYEE SIGNED ONLY — send acknowledgment (not completion)
-        try {
-          await supabase.functions.invoke("send-notification", {
-            body: {
-              to: signedByEmail,
-              subject: "Your signature has been received",
-              type: "contract_signature_received",
-              data: {
-                employee_name: employeeName,
-                first_name: firstName,
-                signed_at: formattedDate,
+      } else if (currentSignerType === "employee") {
+        // EMPLOYEE SIGNED ONLY — send acknowledgment to employee (not completion)
+        if (signedByEmail) {
+          try {
+            await supabase.functions.invoke("send-notification", {
+              body: {
+                to: signedByEmail,
+                subject: "Your signature has been received",
+                type: "contract_signature_received",
+                data: {
+                  employee_name: employeeName,
+                  first_name: firstName,
+                  signed_at: formattedDate,
+                },
+                tenant_id: signingToken.tenant_id,
               },
-              tenant_id: signingToken.tenant_id,
-            },
-          });
-        } catch (emailErr) {
-          console.error("Signature received email failed:", emailErr);
+            });
+          } catch (emailErr) {
+            console.error("Signature received email failed:", emailErr);
+          }
+        }
+
+        // Notify manager/admin that employer countersignature is now required
+        try {
+          const { data: admins } = await supabase
+            .from("tenant_members")
+            .select("user_id")
+            .eq("tenant_id", signingToken.tenant_id)
+            .in("role", ["company_admin", "manager"])
+            .eq("is_active", true);
+
+          if (admins && admins.length > 0) {
+            // Get admin emails from profiles
+            for (const admin of admins) {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("user_id", admin.user_id)
+                .maybeSingle();
+
+              // Get email from auth user via admin API
+              const { data: { user: adminUser } } = await supabase.auth.admin.getUserById(admin.user_id);
+              const adminEmail = adminUser?.email;
+
+              if (adminEmail) {
+                await supabase.functions.invoke("send-notification", {
+                  body: {
+                    to: adminEmail,
+                    subject: `Employee signature received — your countersignature is required`,
+                    type: "contract_employer_action_required",
+                    data: {
+                      employee_name: employeeName,
+                      admin_name: profile?.full_name || "Manager",
+                      signed_at: formattedDate,
+                    },
+                    tenant_id: signingToken.tenant_id,
+                  },
+                });
+              }
+            }
+          }
+        } catch (notifyErr) {
+          console.error("Manager notification failed (non-critical):", notifyErr);
         }
       }
 
