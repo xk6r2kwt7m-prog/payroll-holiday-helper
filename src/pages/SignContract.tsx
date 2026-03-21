@@ -290,8 +290,8 @@ function getErrorDisplay(errorCode: ErrorCode, errorMessage: string | null) {
       };
     case "expired":
       return {
-        icon: <Clock className="h-8 w-8 text-amber-500" />,
-        bgClass: "bg-amber-500/10",
+        icon: <Clock className="h-8 w-8 text-warning" />,
+        bgClass: "bg-warning/10",
         title: "Link Expired",
         message: errorMessage || "This signing link has expired. Please ask your employer to send a new one.",
       };
