@@ -24,6 +24,7 @@ import { EmployeeStatusConfig } from "@/components/settings/EmployeeStatusConfig
 import { ProtectedSystemInfo } from "@/components/settings/ProtectedSystemInfo";
 import { ProtectedBadge } from "@/components/settings/ProtectedBadge";
 import { AdminAuditLog } from "@/components/settings/AdminAuditLog";
+import { EmployeeUserLinking } from "@/components/settings/EmployeeUserLinking";
 import { LocationManagement } from "@/components/settings/LocationManagement";
 import {
   SchedulingSettings,
