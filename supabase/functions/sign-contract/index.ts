@@ -319,15 +319,17 @@ Deno.serve(async (req) => {
       });
 
       if (fullySignedNow) {
-        // FULLY SIGNED — send final completion email to employee with secure link
+        // FULLY SIGNED — send final completion email to employee
+        // Generate a fresh short-lived signed URL for the email download link
         const recipientEmail = signingToken.employees?.email;
         if (recipientEmail) {
-          // Fetch the final signed URL we just stored
-          const { data: finalDoc } = await supabase
-            .from("employee_documents")
-            .select("final_signed_pdf_url")
-            .eq("id", signingToken.employee_document_id)
-            .maybeSingle();
+          let emailDownloadUrl = "";
+          if (docRecord?.file_path) {
+            const { data: freshSignedUrl } = await supabase.storage
+              .from("employee-documents")
+              .createSignedUrl(docRecord.file_path, 60 * 60 * 24 * 7); // 7-day link for email
+            emailDownloadUrl = freshSignedUrl?.signedUrl || "";
+          }
 
           try {
             await supabase.functions.invoke("send-notification", {
@@ -339,7 +341,7 @@ Deno.serve(async (req) => {
                   employee_name: employeeName,
                   first_name: firstName,
                   signed_at: formattedDate,
-                  final_contract_url: (finalDoc as any)?.final_signed_pdf_url || "",
+                  final_contract_url: emailDownloadUrl,
                 },
                 tenant_id: signingToken.tenant_id,
               },
