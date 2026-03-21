@@ -108,6 +108,17 @@ export function TimesheetsSection() {
                   )}
                 </div>
 
+                {/* Manager adjustment note (read-only for staff) */}
+                {(entry as any).manager_adjusted && (entry as any).adjustment_reason && (
+                  <div className="flex items-start gap-2 p-2 rounded bg-warning/10 border border-warning/20">
+                    <Pencil className="h-3 w-3 text-warning mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] font-medium text-warning">Manager adjustment</p>
+                      <p className="text-[10px] text-muted-foreground">{(entry as any).adjustment_reason}</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Location section */}
                 <div className="space-y-1">
                   <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
