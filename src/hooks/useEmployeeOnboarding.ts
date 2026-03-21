@@ -214,6 +214,8 @@ export function useReviewRtw() {
     onSuccess: (_, { employeeId, status }) => {
       qc.invalidateQueries({ queryKey: ["employee_onboarding_data"] });
       qc.invalidateQueries({ queryKey: ["onboarding-review-queue"] });
+      qc.invalidateQueries({ queryKey: ["employee_readiness"] });
+      qc.invalidateQueries({ queryKey: ["team_readiness"] });
       toast.success(status === "approved" ? "Right to work approved" : "Right to work rejected — employee will be notified");
     },
     onError: (e: any) => toast.error(e.message),
