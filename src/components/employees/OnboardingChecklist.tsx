@@ -12,7 +12,7 @@ import { useEmployeeReadiness, type ReadinessStatus, type CriticalityTier } from
 import { useNavigate } from "react-router-dom";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
 import { useMyOnboardingData } from "@/hooks/useEmployeeOnboarding";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Employee } from "@/hooks/useEmployees";
