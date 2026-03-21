@@ -798,18 +798,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess }: EmployeeFor
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="sharing_code">Share Code</Label>
-                  <Input
-                    id="sharing_code"
-                    value={formData.sharing_code}
-                    onChange={(e) => setFormData({ ...formData, sharing_code: e.target.value.toUpperCase() })}
-                    placeholder="e.g. W46 3FG 27R"
-                    maxLength={11}
-                    className="transition-all focus:ring-2 focus:ring-primary/20 uppercase font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground">9-character code from the employee's share code letter or email</p>
-                </div>
+
 
                 <div className="space-y-2">
                   <Label htmlFor="settlement_status">Settlement Status</Label>
