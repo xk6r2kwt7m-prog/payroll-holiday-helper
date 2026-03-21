@@ -734,6 +734,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
               {importing ? "Importing..." : useExistingPeriod ? `Update ${matchedEntries.length} Entries` : `Import ${matchedEntries.length} Employees`}
             </Button>
           )}
+        </div>
       </DialogContent>
     </Dialog>
   );
