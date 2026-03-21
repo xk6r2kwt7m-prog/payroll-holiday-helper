@@ -197,7 +197,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
             );
           }
           if (newEmp?.email) {
-            sendNotification({
+            const sent = await sendNotification({
               to: newEmp.email,
               subject: `New shift assigned – ${shiftDate}`,
               type: "shift_update",
@@ -210,6 +210,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               },
               tenant_id: tenantId,
             });
+            if (!sent) toast.warning(`Shift assigned but email to ${newEmp.forename} ${newEmp.surname} failed`);
           }
         }
       }
