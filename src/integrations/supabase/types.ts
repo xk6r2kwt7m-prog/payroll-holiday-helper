@@ -6689,6 +6689,10 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: boolean
       }
+      link_user_to_employee: {
+        Args: { _email: string; _user_id: string }
+        Returns: Json
+      }
       mark_talent_messages_read: {
         Args: { _conversation_id: string; _reader_sender_type: string }
         Returns: undefined
