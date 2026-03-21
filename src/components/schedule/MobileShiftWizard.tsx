@@ -93,7 +93,7 @@ export function MobileShiftWizard({
   }, [open, initialDay, initialDepartment, department]);
 
   const deptEmployees = useMemo(
-    () => employees.filter((e) => e.department === selectedDept && e.status === "active"),
+    () => employees.filter((e) => e.department === selectedDept && (e.status === "active" || e.status === "starter")),
     [employees, selectedDept]
   );
 
