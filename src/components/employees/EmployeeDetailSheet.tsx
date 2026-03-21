@@ -191,6 +191,23 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
           <Section title="Personal Information" icon={User}>
             <div className="space-y-1">
               <InfoRow label="Full Name" value={`${employee.forename} ${employee.surname}`} />
+              <InfoRow label="Email" value={employee.email} icon={Mail} />
+              {!employee.email && (
+                <div className="flex items-center gap-2 py-1.5 px-2 rounded-md bg-warning/10 border border-warning/20 text-xs text-warning">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  No email — cannot receive notifications
+                </div>
+              )}
+              {canViewSensitive && (employee as any).date_of_birth && (
+                <SensitiveInfoRow
+                  label="Date of Birth"
+                  value={formatDate((employee as any).date_of_birth)}
+                  fieldKey={`detail-${employee.id}-dob`}
+                  category="personal_id"
+                  employeeId={employee.id}
+                  icon={Cake}
+                />
+              )}
               <InfoRow label="Nationality" value={employee.nationality} icon={Globe} />
               {canViewSensitive && (
                 <SensitiveInfoRow
