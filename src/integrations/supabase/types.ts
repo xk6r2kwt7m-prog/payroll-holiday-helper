@@ -1462,6 +1462,7 @@ export type Database = {
           bank_account_no: string | null
           contract_country: string | null
           created_at: string
+          date_of_birth: string | null
           department: string
           email: string | null
           employee_ref: string | null
@@ -1501,6 +1502,7 @@ export type Database = {
           bank_account_no?: string | null
           contract_country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           department: string
           email?: string | null
           employee_ref?: string | null
@@ -1540,6 +1542,7 @@ export type Database = {
           bank_account_no?: string | null
           contract_country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           department?: string
           email?: string | null
           employee_ref?: string | null
