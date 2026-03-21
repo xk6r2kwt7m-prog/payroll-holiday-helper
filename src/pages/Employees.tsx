@@ -303,6 +303,14 @@ const Employees = () => {
           </div>
         )}
 
+        {/* Missing email alert */}
+        {canEdit && counts.missingEmail > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-warning/5 text-warning border border-warning/15">
+            <MailWarning className="h-3.5 w-3.5 shrink-0" />
+            <span>{counts.missingEmail} active employee{counts.missingEmail !== 1 ? 's' : ''} missing email — they won't receive rota or invite notifications</span>
+          </div>
+        )}
+
         {/* Pending invitations */}
         {canEdit && <PendingInvitations />}
 
