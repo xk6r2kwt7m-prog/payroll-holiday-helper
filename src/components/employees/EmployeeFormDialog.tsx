@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, useEmployees, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
+import { useInviteEmail } from "@/hooks/useInviteEmail";
 import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
 import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRules } from "@/hooks/useCountryRules";
 import { useDepartments } from "@/hooks/useDepartments";
