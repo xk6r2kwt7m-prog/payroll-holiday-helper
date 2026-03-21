@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
 
       // Insert audit log entry
       await supabase.from("audit_log").insert({
-        action: "INSERT",
+        action: "create",
         table_name: "contract_signatures",
         record_id: signingToken.employee_document_id,
         tenant_id: signingToken.tenant_id,
