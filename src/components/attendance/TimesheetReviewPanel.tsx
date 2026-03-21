@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Check, X, MapPin, Clock, AlertTriangle, FileText } from "lucide-react";
+import { Check, X, MapPin, Clock, AlertTriangle, FileText, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ClockEventLocations } from "@/components/attendance/LocationMapPreview";
 import { useApproveTimeEntries, useRejectTimeEntry } from "@/hooks/useTimeEntries";
 import { useEvidenceFiles } from "@/hooks/useEvidence";
 import { toast } from "sonner";
+import { ManagerTimesheetDialog } from "./ManagerTimesheetDialog";
 
 interface TimesheetReviewPanelProps {
   entry: any;
@@ -72,6 +73,7 @@ function computeFlags(entry: any): { type: "time" | "location" | "approval"; lab
 export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: TimesheetReviewPanelProps) {
   const [rejectNotes, setRejectNotes] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const approveEntries = useApproveTimeEntries();
   const rejectEntry = useRejectTimeEntry();
   const { data: evidenceFiles = [] } = useEvidenceFiles({ employeeId: entry?.employee_id });
@@ -228,6 +230,33 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
             </>
           )}
 
+          {/* Manager-adjusted indicator */}
+          {entry.manager_adjusted && (
+            <>
+              <Separator />
+              <div className="flex items-center gap-2 p-2 rounded bg-warning/10 border border-warning/20">
+                <Pencil className="h-3.5 w-3.5 text-warning" />
+                <div>
+                  <p className="text-xs font-medium text-warning">Manager-adjusted</p>
+                  {entry.adjustment_reason && (
+                    <p className="text-xs text-muted-foreground">{entry.adjustment_reason}</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Edit button for managers */}
+          <Separator />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowEditDialog(true)}
+            className="w-full"
+          >
+            <Pencil className="h-3.5 w-3.5 mr-2" /> Edit entry
+          </Button>
+
           {/* Actions */}
           {isPending && (
             <>
@@ -276,6 +305,13 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
             </div>
           )}
         </div>
+
+        {/* Manager edit dialog */}
+        <ManagerTimesheetDialog
+          open={showEditDialog}
+          onClose={() => setShowEditDialog(false)}
+          entry={entry}
+        />
       </SheetContent>
     </Sheet>
   );

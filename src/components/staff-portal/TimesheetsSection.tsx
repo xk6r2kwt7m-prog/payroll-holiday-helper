@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { Clock, ChevronDown, ChevronUp, MapPin } from "lucide-react";
+import { Clock, ChevronDown, ChevronUp, MapPin, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
@@ -65,6 +65,11 @@ export function TimesheetsSection() {
                 })}>
                   {entry.status === "clocked_in" ? "Active" : entry.status}
                 </Badge>
+                {(entry as any).manager_adjusted && (
+                  <Badge variant="outline" className="text-[9px] text-warning border-warning/30">
+                    <Pencil className="h-2.5 w-2.5 mr-0.5" />Adjusted
+                  </Badge>
+                )}
                 {isExpanded
                   ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
                   : <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -102,6 +107,17 @@ export function TimesheetsSection() {
                     </div>
                   )}
                 </div>
+
+                {/* Manager adjustment note (read-only for staff) */}
+                {(entry as any).manager_adjusted && (entry as any).adjustment_reason && (
+                  <div className="flex items-start gap-2 p-2 rounded bg-warning/10 border border-warning/20">
+                    <Pencil className="h-3 w-3 text-warning mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] font-medium text-warning">Manager adjustment</p>
+                      <p className="text-[10px] text-muted-foreground">{(entry as any).adjustment_reason}</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Location section */}
                 <div className="space-y-1">
