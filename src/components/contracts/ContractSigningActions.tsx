@@ -95,7 +95,7 @@ export function ContractSigningActions({
         setEmailSent(true);
         toast({
           title: "Contract sent",
-          description: `Contract submitted to ${employeeEmail}`,
+          description: `Contract sent to ${employeeEmail}`,
         });
       } else {
         toast({
@@ -223,7 +223,7 @@ export function ContractSigningActions({
                     {emailSent ? "✓ Contract sent" : "Signing Link Ready"}
                   </p>
                   {emailSent && employeeEmail && (
-                    <p className="text-xs text-primary mb-2">Submitted to {employeeEmail}</p>
+                    <p className="text-xs text-primary mb-2">Sent to {employeeEmail}</p>
                   )}
                 </div>
 
