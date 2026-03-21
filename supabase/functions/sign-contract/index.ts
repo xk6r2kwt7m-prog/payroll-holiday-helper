@@ -6,7 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-// Simple SHA-256 hash using Web Crypto API
 async function sha256(content: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(content);
@@ -86,12 +85,18 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Generate a signed URL for the document
+      // Check existing signatures
+      const { data: existingSigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_type")
+        .eq("employee_document_id", signingToken.employee_document_id);
+
+      const existingSignerTypes = (existingSigs || []).map((s: any) => s.signer_type);
+
       const { data: signedUrl } = await supabase.storage
         .from("employee-documents")
         .createSignedUrl(signingToken.employee_documents.file_path, 3600);
 
-      // Generate document hash for integrity verification
       const documentContent = `${signingToken.employee_documents.id}:${signingToken.employee_documents.file_path}:${signingToken.employee_documents.document_name}`;
       const docHash = await sha256(documentContent);
 
@@ -103,6 +108,7 @@ Deno.serve(async (req) => {
         document_url: signedUrl?.signedUrl || null,
         document_hash: docHash,
         expires_at: signingToken.expires_at,
+        existing_signatures: existingSignerTypes,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -174,8 +180,9 @@ Deno.serve(async (req) => {
       const userAgent = req.headers.get("user-agent") || "unknown";
       const signedByEmail = signingToken.employees?.email || null;
       const signedAt = new Date().toISOString();
+      const currentSignerType = signingToken.signer_type;
 
-      // Record signature with full audit trail
+      // Record signature
       const { error: sigError } = await supabase
         .from("contract_signatures")
         .insert({
@@ -183,7 +190,7 @@ Deno.serve(async (req) => {
           employee_id: signingToken.employee_id,
           tenant_id: signingToken.tenant_id,
           signing_token_id: signingToken.id,
-          signer_type: signingToken.signer_type,
+          signer_type: currentSignerType,
           signer_name: typed_name.trim(),
           typed_name: typed_name.trim(),
           signed_by_email: signedByEmail,
@@ -219,11 +226,46 @@ Deno.serve(async (req) => {
         })
         .eq("id", signingToken.id);
 
-      // Store document hash on the employee_documents record
       if (document_hash) {
         await supabase
           .from("employee_documents")
           .update({ final_document_hash: document_hash })
+          .eq("id", signingToken.employee_document_id);
+      }
+
+      // Check if BOTH signatures now exist
+      const { data: allSigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_type, signed_at")
+        .eq("employee_document_id", signingToken.employee_document_id);
+
+      const signerTypes = (allSigs || []).map((s: any) => s.signer_type);
+      const hasEmployee = signerTypes.includes("employee");
+      const hasEmployer = signerTypes.includes("employer");
+      const fullySignedNow = hasEmployee && hasEmployer;
+
+      // Update employee_documents contract_send_status based on signing stage
+      if (fullySignedNow) {
+        await supabase
+          .from("employee_documents")
+          .update({
+            contract_send_status: "fully_signed",
+          } as any)
+          .eq("id", signingToken.employee_document_id);
+      } else if (currentSignerType === "employee") {
+        await supabase
+          .from("employee_documents")
+          .update({
+            contract_send_status: "employee_signed",
+          } as any)
+          .eq("id", signingToken.employee_document_id);
+      } else if (currentSignerType === "employer") {
+        // Employer signed but employee hasn't yet — unusual but handle it
+        await supabase
+          .from("employee_documents")
+          .update({
+            contract_send_status: "employer_signed",
+          } as any)
           .eq("id", signingToken.employee_document_id);
       }
 
@@ -240,48 +282,94 @@ Deno.serve(async (req) => {
           employee_id: signingToken.employee_id,
           employee_document_id: signingToken.employee_document_id,
           signing_token_id: signingToken.id,
-          signer_type: signingToken.signer_type,
+          signer_type: currentSignerType,
           signed_by_email: signedByEmail,
           signed_at: signedAt,
           document_hash: document_hash || null,
           signature_type: signature_type || "drawn",
+          fully_signed: fullySignedNow,
         },
       });
 
-      // Send confirmation email to employee if email available
-      if (signedByEmail && signingToken.signer_type === "employee") {
+      // Send stage-appropriate email
+      const firstName = signingToken.employees?.forename || "there";
+      const employeeName = `${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim();
+      const formattedDate = new Date(signedAt).toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      if (fullySignedNow) {
+        // FULLY SIGNED — send final completion email to employee
+        if (signedByEmail || (currentSignerType === "employer" && signingToken.employees?.email)) {
+          const recipientEmail = signingToken.employees?.email;
+          if (recipientEmail) {
+            try {
+              await supabase.functions.invoke("send-notification", {
+                body: {
+                  to: recipientEmail,
+                  subject: "Your contract is now complete",
+                  type: "contract_fully_signed",
+                  data: {
+                    employee_name: employeeName,
+                    first_name: firstName,
+                    signed_at: formattedDate,
+                  },
+                  tenant_id: signingToken.tenant_id,
+                },
+              });
+            } catch (emailErr) {
+              console.error("Contract fully-signed email failed:", emailErr);
+            }
+          }
+        }
+
+        // Log fully signed event
+        await supabase.from("audit_log").insert({
+          action: "create",
+          table_name: "contract_signatures",
+          record_id: signingToken.employee_document_id,
+          tenant_id: signingToken.tenant_id,
+          new_data: {
+            event: "contract_fully_signed",
+            employee_id: signingToken.employee_id,
+            employee_document_id: signingToken.employee_document_id,
+            signed_at: signedAt,
+          },
+        });
+      } else if (currentSignerType === "employee" && signedByEmail) {
+        // EMPLOYEE SIGNED ONLY — send acknowledgment (not completion)
         try {
-          const firstName = signingToken.employees?.forename || "there";
           await supabase.functions.invoke("send-notification", {
             body: {
               to: signedByEmail,
-              subject: "Your contract has been signed",
-              type: "contract_signed_confirmation",
+              subject: "Your signature has been received",
+              type: "contract_signature_received",
               data: {
-                employee_name: `${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim(),
+                employee_name: employeeName,
                 first_name: firstName,
-                signed_at: new Date(signedAt).toLocaleDateString("en-GB", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
+                signed_at: formattedDate,
               },
               tenant_id: signingToken.tenant_id,
             },
           });
         } catch (emailErr) {
-          // Email failure should not block signing success
-          console.error("Contract confirmation email failed:", emailErr);
+          console.error("Signature received email failed:", emailErr);
         }
       }
 
       return new Response(JSON.stringify({
         success: true,
-        message: "Contract signed successfully",
+        message: fullySignedNow
+          ? "Contract fully signed"
+          : "Signature recorded successfully",
         signed_at: signedAt,
+        signer_type: currentSignerType,
+        fully_signed: fullySignedNow,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

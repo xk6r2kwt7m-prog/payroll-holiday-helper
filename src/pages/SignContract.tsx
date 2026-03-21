@@ -14,6 +14,7 @@ interface ContractInfo {
   document_url: string | null;
   document_hash: string | null;
   expires_at: string;
+  existing_signatures: string[];
 }
 
 type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "missing_signature" | "internal_error" | "missing_token" | string;
@@ -36,6 +37,7 @@ export default function SignContract() {
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signedAt, setSignedAt] = useState<string | null>(null);
+  const [fullySigned, setFullySigned] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -103,6 +105,7 @@ export default function SignContract() {
 
       setSigned(true);
       setSignedAt(result.signed_at || new Date().toISOString());
+      setFullySigned(result.fully_signed === true);
     } catch {
       setErrorCode("internal_error");
       setErrorMessage("Something went wrong. Please try again.");
@@ -119,10 +122,19 @@ export default function SignContract() {
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mx-auto">
             <CheckCircle2 className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Contract Signed</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {fullySigned ? "Contract Complete" : "Signature Recorded"}
+          </h1>
           <p className="text-muted-foreground">
-            Thank you. Your signature has been recorded successfully.
+            {fullySigned
+              ? "Your contract has been fully signed by both you and the employer."
+              : "Thank you. Your signature has been recorded successfully."}
           </p>
+          {!fullySigned && (
+            <p className="text-sm text-muted-foreground">
+              Your contract is not yet finalised. It will be completed once the employer also signs it. You will receive a final copy once done.
+            </p>
+          )}
           {signedAt && (
             <p className="text-sm text-muted-foreground">
               Signed on {new Date(signedAt).toLocaleDateString("en-GB", {
@@ -135,9 +147,6 @@ export default function SignContract() {
               })}
             </p>
           )}
-          <p className="text-sm text-muted-foreground">
-            A confirmation email has been sent to you. You may now close this page.
-          </p>
           <div className="rounded-lg bg-muted/50 border border-border p-3 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 inline mr-1" />
             This electronic signature is legally binding under the UK Electronic Communications Act 2000.
