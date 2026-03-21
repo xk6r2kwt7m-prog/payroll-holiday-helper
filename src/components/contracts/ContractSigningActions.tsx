@@ -98,6 +98,25 @@ export function ContractSigningActions({
     toast({ title: "Copied!", description: "Signing link copied to clipboard" });
   };
 
+  const handleViewFinalContract = async () => {
+    // If we have a stored URL, use it directly
+    if (finalSignedPdfUrl) {
+      window.open(finalSignedPdfUrl, "_blank");
+      return;
+    }
+    // Otherwise generate a fresh signed URL from the original file
+    if (filePath) {
+      const { data } = await supabase.storage
+        .from("employee-documents")
+        .createSignedUrl(filePath, 3600);
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, "_blank");
+      } else {
+        toast({ title: "Error", description: "Could not generate download link", variant: "destructive" });
+      }
+    }
+  };
+
   const handleSendEmail = async () => {
     if (!generatedLink || !employeeEmail || !generatedTokenId) return;
 
