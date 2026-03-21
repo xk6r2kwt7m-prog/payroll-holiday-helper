@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
-import { useActiveClockIn, useClockInOut, useMyTimeEntries } from "@/hooks/useTimeEntries";
+import { useActiveClockIn, useClockInOut, useMyTimeEntries, useUpdateBreakMinutes } from "@/hooks/useTimeEntries";
 import { useShifts, useBranchLocations } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, isTomorrow, differenceInMinutes } from "date-fns";
