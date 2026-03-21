@@ -47,7 +47,8 @@ export function SignedContractsList() {
             id,
             forename,
             surname,
-            department
+            department,
+            email
           )
         `)
         .eq("tenant_id", tenantId)
