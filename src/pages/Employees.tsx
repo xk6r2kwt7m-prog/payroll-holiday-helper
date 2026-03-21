@@ -256,7 +256,7 @@ const Employees = () => {
               />
             )}
             {canEdit && <span className="hidden sm:inline-flex"><InviteEmployeeDialog /></span>}
-            {canEdit && <EmployeeFormDialog />}
+            {canEdit && <EmployeeFormDialog onSuccess={() => setStatusFilter("starter")} />}
           </div>
         </div>
 
