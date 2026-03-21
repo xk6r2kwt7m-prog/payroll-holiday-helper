@@ -1,20 +1,39 @@
 /**
- * UK National Minimum Wage age bands (April 2024 rates).
- * These are WARNING thresholds only — not legal advice.
- * Rates should be reviewed annually against HMRC guidance.
+ * UK National Minimum Wage age bands.
+ *
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │  ANNUAL REVIEW REQUIRED                                           │
+ * │                                                                   │
+ * │  These rates must be updated every April when HMRC publishes new  │
+ * │  National Minimum Wage / National Living Wage rates.              │
+ * │                                                                   │
+ * │  Source: https://www.gov.uk/national-minimum-wage-rates            │
+ * │                                                                   │
+ * │  Last updated: April 2024                                         │
+ * │  Next review due: April 2025                                      │
+ * │                                                                   │
+ * │  To update: change ONLY the `minWage` values in UK_AGE_BANDS      │
+ * │  below and update the "Last updated" / "Next review" dates above. │
+ * │  No other files need changing — all pay-risk checks derive from   │
+ * │  this single array.                                               │
+ * └─────────────────────────────────────────────────────────────────────┘
+ *
+ * ⚠️ These are WARNING thresholds only — not legal advice and not a
+ *    compliance guarantee. Always verify against official HMRC guidance.
  */
 
 export interface AgeBand {
   label: string;
   minAge: number;
   maxAge: number | null; // null = no upper bound
-  minWage: number; // £/hour — UK NMW/NLW as of April 2024
+  minWage: number; // £ per hour
 }
 
+// ── UPDATE THESE RATES ANNUALLY (April each year) ──────────────────────
 export const UK_AGE_BANDS: AgeBand[] = [
-  { label: "Under 18", minAge: 0, maxAge: 17, minWage: 6.40 },
-  { label: "18–20", minAge: 18, maxAge: 20, minWage: 8.60 },
-  { label: "21+", minAge: 21, maxAge: null, minWage: 11.44 },
+  { label: "Under 18", minAge: 0, maxAge: 17, minWage: 6.40 },   // Apr 2024
+  { label: "18–20",    minAge: 18, maxAge: 20, minWage: 8.60 },   // Apr 2024
+  { label: "21+",      minAge: 21, maxAge: null, minWage: 11.44 }, // Apr 2024 (NLW)
 ];
 
 /**

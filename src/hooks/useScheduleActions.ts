@@ -246,7 +246,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               );
             }
             if (emp?.email) {
-              sendNotification({
+              const sent = await sendNotification({
                 to: emp.email,
                 subject: `Shift cancelled – ${shiftDate}`,
                 type: "shift_update",
@@ -259,6 +259,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
                 },
                 tenant_id: tenantId,
               });
+              if (!sent) toast.warning(`Shift cancelled but email to ${emp.forename} ${emp.surname} failed`);
             }
           }
         },

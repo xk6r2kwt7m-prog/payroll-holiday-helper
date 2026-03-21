@@ -4,7 +4,12 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase
 import { useTenant } from "@/hooks/useTenant";
 import { assertPermission } from "@/lib/permission-guard";
 
-export type Employee = Tables<"employees">;
+/**
+ * Employee type extended with date_of_birth.
+ * The column exists in the DB (migration applied) but the auto-generated
+ * types file may lag behind. This intersection ensures type safety now.
+ */
+export type Employee = Tables<"employees"> & { date_of_birth?: string | null };
 export type EmployeeInsert = TablesInsert<"employees">;
 export type EmployeeUpdate = TablesUpdate<"employees">;
 
