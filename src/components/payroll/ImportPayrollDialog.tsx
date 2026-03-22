@@ -411,10 +411,15 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
       const unmatchedNames = aggregated.filter(e => e.unmatched && e.resolution !== "excluded").map(e => e.csvName);
       const excludedNames = aggregated.filter(e => e.resolution === "excluded").map(e => e.csvName);
+      const leaverNames = aggregated.filter(e => e.isLeaver && e.resolution !== "excluded").map(e => `${e.matchedForename} ${e.matchedSurname}`);
 
       let periodNotes: string | null = null;
       if (unmatchedNames.length > 0) {
         periodNotes = `⚠ PENDING: ${unmatchedNames.length} unmatched employee(s): ${unmatchedNames.join(", ")}. Resolve before approval.`;
+      }
+      if (leaverNames.length > 0) {
+        const lNote = `⚠ ${leaverNames.length} leaver(s) in imported timesheet: ${leaverNames.join(", ")}. Review before approval.`;
+        periodNotes = periodNotes ? `${periodNotes}\n${lNote}` : lNote;
       }
       if (excludedNames.length > 0) {
         const exNote = `ℹ ${excludedNames.length} excluded from this run: ${excludedNames.join(", ")}.`;
