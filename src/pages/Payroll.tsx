@@ -37,6 +37,7 @@ import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePayrollImportStatus } from "@/hooks/usePayrollImportStatus";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
@@ -63,6 +64,8 @@ const Payroll = () => {
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
   const { data: holidayPayments = [] } = useHolidayPayments(selectedPeriod?.id);
   const { data: allEmployees = [] } = useEmployees();
+  const currentEmployeeIds = entries.map((entry: any) => entry.employee_id);
+  const { unresolvedIssues, excludedNames } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
   const approvePeriod = useApprovePayrollPeriod();
   const submitForReview = useSubmitPayrollForReview();
   const reopenPeriod = useReopenPayrollPeriod();
@@ -109,7 +112,7 @@ const Payroll = () => {
 
   const handleSubmitForReview = async () => {
     if (!selectedPeriod) return;
-    if (selectedPeriod.notes?.includes("⚠ PENDING:")) {
+    if (unresolvedIssues.length > 0) {
       toast.error("Cannot submit: unmatched employees must be resolved first");
       return;
     }
@@ -136,7 +139,7 @@ const Payroll = () => {
 
   const handleApprove = async () => {
     if (!selectedPeriod) return;
-    if (selectedPeriod.notes?.includes("⚠ PENDING:")) {
+    if (unresolvedIssues.length > 0) {
       toast.error("Cannot approve: unmatched employees must be resolved first");
       return;
     }
@@ -217,7 +220,7 @@ const Payroll = () => {
       });
 
       const headers = [
-        "Employee", "Department", "NI Number",
+        "Employee", "Department", "Employee Status", "Payroll Marker", "NI Number",
         ...(includeBankDetails ? ["Sort Code", "Account Number"] : []),
         "Hourly Rate", "Service Charge", "Hours", "Performance Bonus",
         "Special Bonus", "Holiday Accrued", "Total Pay",
@@ -226,7 +229,8 @@ const Payroll = () => {
       const rows = entries.map((entry: any) => {
         const emp = entry.employees;
         return [
-          `${emp?.forename} ${emp?.surname}`, emp?.department, emp?.ni_number || "",
+          `${emp?.forename} ${emp?.surname}`, emp?.department, emp?.status || "", emp?.status === "starter" ? "Starter / First payroll" : "",
+          emp?.ni_number || "",
           ...(includeBankDetails ? [emp?.sort_code || "", emp?.bank_account_no || ""] : []),
           entry.hourly_rate, entry.service_charge || 0, entry.timesheet_hours,
           entry.performance_bonus || 0, entry.special_bonus || 0,
@@ -460,6 +464,8 @@ const Payroll = () => {
             isDeleting={deletePeriod.isPending}
             entryCount={entries.length}
             zeroHoursCount={zeroHoursCount}
+            unresolvedImportIssues={unresolvedIssues}
+            excludedNames={excludedNames}
           />
         )}
 

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePeriodAudit, type AuditFinding } from "@/hooks/usePayrollAudit";
 import { useTenant } from "@/hooks/useTenant";
+import type { PayrollImportIssue } from "@/hooks/usePayrollImportStatus";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,8 @@ interface PayrollApprovalWorkflowProps {
   isDeleting?: boolean;
   entryCount: number;
   zeroHoursCount: number;
+  unresolvedImportIssues?: PayrollImportIssue[];
+  excludedNames?: string[];
 }
 
 const workflowSteps = [
@@ -56,10 +59,12 @@ export function PayrollApprovalWorkflow({
   isDeleting = false,
   entryCount,
   zeroHoursCount,
+  unresolvedImportIssues = [],
+  excludedNames = [],
 }: PayrollApprovalWorkflowProps) {
   const currentStepIndex = workflowSteps.findIndex(s => s.status === period.status);
-  const hasUnmatchedEmployees = period.notes?.includes("⚠ PENDING:");
-  const hasExcludedEmployees = period.notes?.includes("excluded from this run");
+  const hasUnmatchedEmployees = unresolvedImportIssues.length > 0;
+  const hasExcludedEmployees = excludedNames.length > 0;
   const { tenantId } = useTenant();
   
   // Audit gate: run period-level audit for pending/draft periods
@@ -111,11 +116,17 @@ export function PayrollApprovalWorkflow({
             <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
             <div>
               <p className="font-medium text-destructive">Unmatched Employees — Action Required</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {period.notes?.replace("⚠ PENDING: ", "")}
-              </p>
+                <div className="text-sm text-muted-foreground mt-1 space-y-1">
+                  {unresolvedImportIssues.map((issue) => (
+                    <p key={issue.csvName}>
+                      {issue.issue === "exists_not_added"
+                        ? `${issue.csvName}: employee exists as ${issue.employeeName}${issue.employeeStatus ? ` (${issue.employeeStatus})` : ""} but is not yet linked to this payroll period.`
+                        : `${issue.csvName}: employee not in database.`}
+                    </p>
+                  ))}
+                </div>
               <p className="text-sm font-medium text-destructive mt-1">
-                You cannot submit or approve this payroll until all employees are in the database and added to this period.
+                  You cannot submit or approve this payroll until each imported person is matched and added, created, or excluded.
               </p>
             </div>
           </div>
@@ -129,9 +140,9 @@ export function PayrollApprovalWorkflow({
             <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0" />
             <div>
               <p className="font-medium text-foreground text-sm">Excluded Employees</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {period.notes?.split("\n").filter(l => l.includes("excluded from this run")).join(" ")}
-              </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {excludedNames.join(", ")}
+                </p>
               <p className="text-xs text-muted-foreground mt-1">
                 These staff were deliberately excluded during import. This is recorded in the audit log.
               </p>
