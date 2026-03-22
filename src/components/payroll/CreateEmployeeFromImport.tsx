@@ -69,7 +69,7 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
 
       // Audit log
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from("audit_log").insert({
+      await supabase.from("audit_log").insert([{
         user_id: user?.id || null,
         action: "insert" as const,
         table_name: "employees",
@@ -81,7 +81,7 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
           forename: data.forename,
           surname: data.surname,
         },
-      });
+      }]);
 
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       toast.success(`${data.forename} ${data.surname} created and linked`);
