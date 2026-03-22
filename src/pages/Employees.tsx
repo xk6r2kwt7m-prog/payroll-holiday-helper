@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown, MailWarning } from "lucide-react";
+import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown, MailWarning, ArrowLeft } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet"
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { EmployeeDeleteDialog } from "@/components/employees/EmployeeDeleteDialog";
 import { PendingInvitations } from "@/components/employees/PendingInvitations";
+import { PeopleDashboard } from "@/components/people/PeopleDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { usePermission } from "@/hooks/useRolePermissions";
@@ -29,6 +30,7 @@ import { cn } from "@/lib/utils";
 type Department = "FOH" | "BOH" | "CPU";
 type StatusFilter = "active" | "starter" | "leaver" | "onboarding" | "archived";
 type SortOption = "alpha" | "newest" | "recent-leavers" | "department";
+type ViewMode = "dashboard" | "directory";
 
 const Employees = () => {
   const { t } = useI18n();
@@ -38,6 +40,10 @@ const Employees = () => {
     (searchParams.get("dept") as Department) || "all"
   );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
+
+  // Default to dashboard unless deep-linked to edit/directory
+  const hasDeepLink = searchParams.has("edit") || searchParams.get("view") === "directory";
+  const [viewMode, setViewMode] = useState<ViewMode>(hasDeepLink ? "directory" : "dashboard");
   const [sortBy, setSortBy] = useState<SortOption>("alpha");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
@@ -250,9 +256,22 @@ const Employees = () => {
     );
   }
 
+  if (viewMode === "dashboard") {
+    return (
+      <AppLayout>
+        <PeopleDashboard onViewDirectory={() => setViewMode("directory")} />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-4 max-w-7xl mx-auto min-w-0 w-full overflow-x-hidden">
+        {/* Back to dashboard */}
+        <Button variant="ghost" size="sm" className="gap-1.5 -ml-2 text-muted-foreground" onClick={() => setViewMode("dashboard")}>
+          <ArrowLeft className="h-4 w-4" />
+          People
+        </Button>
         {/* Header */}
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="min-w-0">
