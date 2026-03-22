@@ -70,7 +70,11 @@ export function usePayrollEntries(periodId?: string) {
             bank_account_no,
             sort_code,
             ni_number,
-            date_of_birth
+            date_of_birth,
+            passport_no,
+            sharing_code,
+            settlement_status,
+            residence_permit
           )
         `)
         .eq("tenant_id", tenantId)
@@ -386,14 +390,9 @@ export function useCopyPayrollPeriod() {
 
       if (entriesError) throw entriesError;
 
-      // Copy entries - exclude leavers (UK best practice: leavers should not carry into subsequent periods)
+      // Copy all source entries to preserve payroll continuity; managers can remove rows explicitly if needed.
       if (sourceEntries && sourceEntries.length > 0) {
-        const activeEntries = sourceEntries.filter((entry: any) => {
-          const empStatus = entry.employees?.status;
-          return empStatus === "active" || empStatus === "starter";
-        });
-
-        const newEntries = activeEntries.map((entry: any) => {
+        const newEntries = sourceEntries.map((entry: any) => {
           const perfBonus = entry.performance_bonus || 0;
           const specBonus = entry.special_bonus || 0;
           return {

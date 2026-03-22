@@ -59,25 +59,30 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
       import_aliases: employee.import_aliases ?? [],
     }));
 
-    return unmatchedNames.flatMap((csvName) => {
+    const issues: PayrollImportIssue[] = [];
+
+    for (const csvName of unmatchedNames) {
       const { employee } = matchEmployee(csvName, matchableEmployees);
 
       if (!employee) {
-        return [{ csvName, issue: "not_in_database" as const }];
+        issues.push({ csvName, issue: "not_in_database" });
+        continue;
       }
 
       if (employeeIdSet.has(employee.id)) {
-        return [];
+        continue;
       }
 
-      return [{
+      issues.push({
         csvName,
-        issue: "exists_not_added" as const,
+        issue: "exists_not_added",
         employeeId: employee.id,
         employeeName: `${employee.forename} ${employee.surname}`,
         employeeStatus: employee.status,
-      }];
-    });
+      });
+    }
+
+    return issues;
   }, [currentEmployeeIds, employees, importRecord]);
 
   const excludedNames = useMemo(

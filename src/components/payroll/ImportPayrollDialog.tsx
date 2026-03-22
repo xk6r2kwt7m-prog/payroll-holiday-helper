@@ -185,7 +185,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const [bonusOverrideConfirmed, setBonusOverrideConfirmed] = useState(false);
 
   const queryClient = useQueryClient();
-  const { data: employees = [] } = useEmployees();
+  const { data: employees = [] } = useEmployees(true);
   const { data: periods = [] } = usePayrollPeriods();
   const { tenantId } = useTenant();
 
@@ -856,11 +856,10 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                                 <SelectContent>
                                   <SelectItem value="__none__">— Select employee —</SelectItem>
                                   {employees
-                                    .filter(e => e.status === "active" || e.status === "starter")
                                     .sort((a, b) => a.forename.localeCompare(b.forename))
                                     .map(e => (
                                       <SelectItem key={e.id} value={e.id}>
-                                        {e.forename} {e.surname} ({e.department})
+                                        {e.forename} {e.surname} ({e.department}){e.status === "starter" ? " • Starter" : e.status === "leaver" ? " • Leaver" : ""}
                                       </SelectItem>
                                     ))}
                                 </SelectContent>

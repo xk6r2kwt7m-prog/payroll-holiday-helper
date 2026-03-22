@@ -581,7 +581,7 @@ export function PayrollPDF({
                         </Text>
                         {isStarter && (
                           <View style={{ backgroundColor: "#c6f6d5", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
-                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: GREEN }}>STARTER</Text>
+                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: GREEN }}>STARTER / NEW</Text>
                           </View>
                         )}
                         {isLeaver && (

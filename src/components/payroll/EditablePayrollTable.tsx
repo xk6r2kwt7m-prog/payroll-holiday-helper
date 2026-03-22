@@ -513,6 +513,11 @@ export function EditablePayrollTable({
                         <span className="font-medium text-card-foreground">
                           {emp?.forename} {emp?.surname}
                         </span>
+                        {emp?.status === "starter" && (
+                          <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
+                            Starter
+                          </Badge>
+                        )}
                         {!entry.bank_details_exported && emp?.bank_account_no && (
                           <Badge variant="outline" className="ml-2 text-xs bg-warning/10 text-warning border-warning/20">
                             New

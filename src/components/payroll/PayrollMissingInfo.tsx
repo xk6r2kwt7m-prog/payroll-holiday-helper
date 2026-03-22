@@ -37,6 +37,16 @@ export function PayrollMissingInfo({ entries, periodName }: PayrollMissingInfoPr
     // Date of birth needed for age-based pay compliance
     if (!(emp as any).date_of_birth) missing.push({ label: "Date of birth", tab: "personal" });
 
+    if (
+      emp.status === "starter" &&
+      !(emp as any).passport_no &&
+      !(emp as any).sharing_code &&
+      !(emp as any).settlement_status &&
+      !(emp as any).residence_permit
+    ) {
+      missing.push({ label: "Right to work details", tab: "rtw" });
+    }
+
     if (missing.length > 0) {
       employeesWithMissing.push({
         id: emp.id,
@@ -76,6 +86,9 @@ export function PayrollMissingInfo({ entries, periodName }: PayrollMissingInfoPr
           >
             <div className="min-w-0">
               <p className="text-sm font-medium text-card-foreground">{emp.name}</p>
+              {entryHasStarter(emp.id, entries) && (
+                <Badge variant="outline" className="mt-1 text-[10px] h-5">Starter · First payroll</Badge>
+              )}
               <div className="flex flex-wrap gap-1 mt-1">
                 {emp.missing.map((m) => (
                   <button
@@ -102,4 +115,8 @@ export function PayrollMissingInfo({ entries, periodName }: PayrollMissingInfoPr
       </div>
     </div>
   );
+}
+
+function entryHasStarter(employeeId: string, entries: any[]) {
+  return entries.some((entry) => entry.employees?.id === employeeId && entry.employees?.status === "starter");
 }
