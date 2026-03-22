@@ -255,7 +255,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   }, [matchableEmployees]);
 
   // Manual match handler
-  const handleManualMatch = (csvName: string, employeeId: string) => {
+  const handleManualMatch = async (csvName: string, employeeId: string) => {
     if (employeeId === "__none__") {
       setAggregated(prev => prev.map(emp =>
         emp.csvName === csvName
@@ -267,6 +267,26 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
     const matchedEmp = employees.find(e => e.id === employeeId);
     if (!matchedEmp) return;
+
+    // Persist alias for future imports if the CSV name differs from the employee's full name
+    const fullName = `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase();
+    const csvNameLower = csvName.trim().toLowerCase();
+    if (csvNameLower !== fullName) {
+      try {
+        const existingAliases: string[] = (matchedEmp as any).import_aliases || [];
+        if (!existingAliases.some(a => a.toLowerCase() === csvNameLower)) {
+          const updatedAliases = [...existingAliases, csvName.trim()];
+          await supabase
+            .from("employees")
+            .update({ import_aliases: updatedAliases } as any)
+            .eq("id", matchedEmp.id);
+          queryClient.invalidateQueries({ queryKey: ["employees"] });
+        }
+      } catch (err) {
+        console.error("Failed to persist import alias:", err);
+        // Non-blocking: match still proceeds even if alias save fails
+      }
+    }
 
     setAggregated(prev => prev.map(emp =>
       emp.csvName === csvName
