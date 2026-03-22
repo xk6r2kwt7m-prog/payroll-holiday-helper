@@ -708,7 +708,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                 <div>
                   <p className="font-medium text-primary">Existing draft "{periodName}" found</p>
                   <p className="text-muted-foreground mt-0.5">
-                    Import will <strong>replace all entries</strong> in this draft with fresh data.
+                    Import will <strong>update timesheet hours only</strong>. Rates, bonuses, and service charge from the copied period will be preserved.
                   </p>
                 </div>
               </div>
