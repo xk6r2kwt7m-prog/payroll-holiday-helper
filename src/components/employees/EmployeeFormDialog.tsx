@@ -158,6 +158,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
     setNiConfirm("");
     setNiMismatchError(false);
     setNiMasked(false);
+    setOriginalNi(employee?.ni_number || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
