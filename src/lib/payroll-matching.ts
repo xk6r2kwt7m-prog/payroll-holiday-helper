@@ -144,17 +144,31 @@ export function matchEmployee(
   const nameLower = trimmed.toLowerCase();
   const sorted = sortActiveFirst(employees);
 
-  // 1. Exact full-name match
+  // 1. Exact full-name match (prefer active/starter over leaver)
   const exact = sorted.find(
     (e) => `${e.forename} ${e.surname}` === trimmed
   );
-  if (exact) return { employee: exact, method: "exact" };
+  if (exact) {
+    // If matched a leaver, check if a non-leaver exists via alias/preferred/legacy
+    if (exact.status === "leaver") {
+      const fallback = findNonLeaverFallback(nameLower, sorted);
+      if (fallback) return fallback;
+    }
+    return { employee: exact, method: "exact" };
+  }
 
   // 2. Case-insensitive full-name match
   const ci = sorted.find(
     (e) => `${e.forename} ${e.surname}`.toLowerCase() === nameLower
   );
-  if (ci) return { employee: ci, method: "case_insensitive" };
+  if (ci) {
+    // If matched a leaver, check if a non-leaver exists via alias/preferred/legacy
+    if (ci.status === "leaver") {
+      const fallback = findNonLeaverFallback(nameLower, sorted);
+      if (fallback) return fallback;
+    }
+    return { employee: ci, method: "case_insensitive" };
+  }
 
   // 3. Email match
   if (nameLower.includes("@")) {
