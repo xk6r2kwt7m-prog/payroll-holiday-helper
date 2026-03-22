@@ -207,6 +207,17 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       validationErrors.push("A valid hourly rate is required");
     }
 
+    // NI double-entry validation: if NI is provided, confirm must match
+    if (formData.ni_number.trim()) {
+      if (niConfirm.trim().toUpperCase() !== formData.ni_number.trim().toUpperCase()) {
+        setNiMismatchError(true);
+        setActiveTab("personal");
+        toast.error("National Insurance numbers do not match. Please re-enter to confirm.");
+        return;
+      }
+    }
+    setNiMismatchError(false);
+
     if (validationErrors.length > 0) {
       toast.error(validationErrors.join(". "));
       setActiveTab("personal");
