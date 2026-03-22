@@ -94,7 +94,7 @@ export default function Timesheets() {
 
   const handleBulkApprove = async () => {
     try {
-      await approveEntries.mutateAsync(selectedIds);
+      await approveEntries.mutateAsync({ entryIds: selectedIds, mode: "approve_batch_selected" });
       toast.success(`Approved ${selectedIds.length} timesheet(s)`);
       setSelectedIds([]);
     } catch (err: any) {
