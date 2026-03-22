@@ -256,9 +256,22 @@ const Employees = () => {
     );
   }
 
+  if (viewMode === "dashboard") {
+    return (
+      <AppLayout>
+        <PeopleDashboard onViewDirectory={() => setViewMode("directory")} />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-4 max-w-7xl mx-auto min-w-0 w-full overflow-x-hidden">
+        {/* Back to dashboard */}
+        <Button variant="ghost" size="sm" className="gap-1.5 -ml-2 text-muted-foreground" onClick={() => setViewMode("dashboard")}>
+          <ArrowLeft className="h-4 w-4" />
+          People
+        </Button>
         {/* Header */}
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="min-w-0">
