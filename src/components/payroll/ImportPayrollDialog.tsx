@@ -172,6 +172,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const [useExistingPeriod, setUseExistingPeriod] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
+  const [existingBonusWarning, setExistingBonusWarning] = useState<string | null>(null);
+  const [bonusOverrideConfirmed, setBonusOverrideConfirmed] = useState(false);
 
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
@@ -192,7 +194,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setPayDate(suggested.payDate);
   }, [open, periods]);
 
-  // Detect existing draft period
+  // Detect existing draft period and check for bonuses
   useEffect(() => {
     if (!periodName) return;
     const match = periods.find(
@@ -201,9 +203,33 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     if (match) {
       setExistingPeriodId(match.id);
       setUseExistingPeriod(true);
+      // Check for existing bonuses that would be overwritten
+      (async () => {
+        const { data: existingEntries } = await supabase
+          .from("payroll_entries")
+          .select("employee_id, performance_bonus, special_bonus, notes")
+          .eq("payroll_period_id", match.id);
+        if (existingEntries) {
+          const withBonuses = existingEntries.filter(
+            (e: any) => (Number(e.performance_bonus) > 0 || Number(e.special_bonus) > 0)
+          );
+          const withNotes = existingEntries.filter((e: any) => e.notes && e.notes.includes("manager_adjusted"));
+          if (withBonuses.length > 0 || withNotes.length > 0) {
+            const parts: string[] = [];
+            if (withBonuses.length > 0) parts.push(`${withBonuses.length} employee(s) with bonuses`);
+            if (withNotes.length > 0) parts.push(`${withNotes.length} manually adjusted entries`);
+            setExistingBonusWarning(`This draft has ${parts.join(" and ")} that will be overwritten.`);
+          } else {
+            setExistingBonusWarning(null);
+          }
+        }
+        setBonusOverrideConfirmed(false);
+      })();
     } else {
       setExistingPeriodId(null);
       setUseExistingPeriod(false);
+      setExistingBonusWarning(null);
+      setBonusOverrideConfirmed(false);
     }
   }, [periods, periodName]);
 
@@ -255,7 +281,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   }, [matchableEmployees]);
 
   // Manual match handler
-  const handleManualMatch = (csvName: string, employeeId: string) => {
+  const handleManualMatch = async (csvName: string, employeeId: string) => {
     if (employeeId === "__none__") {
       setAggregated(prev => prev.map(emp =>
         emp.csvName === csvName
@@ -267,6 +293,26 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
     const matchedEmp = employees.find(e => e.id === employeeId);
     if (!matchedEmp) return;
+
+    // Persist alias for future imports if the CSV name differs from the employee's full name
+    const fullName = `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase();
+    const csvNameLower = csvName.trim().toLowerCase();
+    if (csvNameLower !== fullName) {
+      try {
+        const existingAliases: string[] = (matchedEmp as any).import_aliases || [];
+        if (!existingAliases.some(a => a.toLowerCase() === csvNameLower)) {
+          const updatedAliases = [...existingAliases, csvName.trim()];
+          await supabase
+            .from("employees")
+            .update({ import_aliases: updatedAliases } as any)
+            .eq("id", matchedEmp.id);
+          queryClient.invalidateQueries({ queryKey: ["employees"] });
+        }
+      } catch (err) {
+        console.error("Failed to persist import alias:", err);
+        // Non-blocking: match still proceeds even if alias save fails
+      }
+    }
 
     setAggregated(prev => prev.map(emp =>
       emp.csvName === csvName
@@ -516,6 +562,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setImportMessage("");
     setValidationErrors([]);
     setCreatingFor(null);
+    setExistingBonusWarning(null);
+    setBonusOverrideConfirmed(false);
   };
 
   const matchMethodLabel = (m: MatchMethod) => {
@@ -588,6 +636,27 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                   <p className="text-muted-foreground mt-0.5">
                     Import will <strong>replace all entries</strong> in this draft with fresh data.
                   </p>
+                </div>
+              </div>
+            )}
+
+            {existingBonusWarning && existingPeriodId && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-medium text-destructive">Manual edits will be overwritten</p>
+                    <p className="text-muted-foreground mt-0.5">{existingBonusWarning}</p>
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={bonusOverrideConfirmed}
+                        onChange={(e) => setBonusOverrideConfirmed(e.target.checked)}
+                        className="rounded border-destructive/50"
+                      />
+                      <span className="text-xs font-medium text-destructive">I understand — overwrite existing data</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             )}
@@ -833,7 +902,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
               <Button
                 size="sm"
                 onClick={() => setStep("upload")}
-                disabled={!periodName || !startDate || !endDate}
+                disabled={!periodName || !startDate || !endDate || (!!existingBonusWarning && !bonusOverrideConfirmed)}
                 className="gap-1"
               >
                 Continue <ChevronRight className="h-3.5 w-3.5" />

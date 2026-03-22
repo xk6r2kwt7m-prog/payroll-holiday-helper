@@ -59,6 +59,7 @@ export function PayrollApprovalWorkflow({
 }: PayrollApprovalWorkflowProps) {
   const currentStepIndex = workflowSteps.findIndex(s => s.status === period.status);
   const hasUnmatchedEmployees = period.notes?.includes("⚠ PENDING:");
+  const hasExcludedEmployees = period.notes?.includes("excluded from this run");
   const { tenantId } = useTenant();
   
   // Audit gate: run period-level audit for pending/draft periods
@@ -115,6 +116,24 @@ export function PayrollApprovalWorkflow({
               </p>
               <p className="text-sm font-medium text-destructive mt-1">
                 You cannot submit or approve this payroll until all employees are in the database and added to this period.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Excluded employees info - visible during review */}
+      {hasExcludedEmployees && !hasUnmatchedEmployees && (
+        <div className="rounded-lg bg-muted/50 border border-border p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div>
+              <p className="font-medium text-foreground text-sm">Excluded Employees</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {period.notes?.split("\n").filter(l => l.includes("excluded from this run")).join(" ")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                These staff were deliberately excluded during import. This is recorded in the audit log.
               </p>
             </div>
           </div>
@@ -273,7 +292,7 @@ export function PayrollApprovalWorkflow({
             </AlertDialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" disabled={isApproving} className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto min-h-[44px]">
+                <Button size="sm" disabled={isApproving || !canSubmitOrApprove} className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto min-h-[44px]">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   {isApproving ? "Approving..." : "Approve & Lock"}
                 </Button>

@@ -108,6 +108,10 @@ const Payroll = () => {
 
   const handleSubmitForReview = async () => {
     if (!selectedPeriod) return;
+    if (selectedPeriod.notes?.includes("⚠ PENDING:")) {
+      toast.error("Cannot submit: unmatched employees must be resolved first");
+      return;
+    }
     try {
       await submitForReview.mutateAsync(selectedPeriod.id);
       toast.success(t("payroll.submitted_review"));
@@ -131,6 +135,10 @@ const Payroll = () => {
 
   const handleApprove = async () => {
     if (!selectedPeriod) return;
+    if (selectedPeriod.notes?.includes("⚠ PENDING:")) {
+      toast.error("Cannot approve: unmatched employees must be resolved first");
+      return;
+    }
     try {
       await approvePeriod.mutateAsync(selectedPeriod.id);
       toast.success(t("payroll.approved_locked"));
