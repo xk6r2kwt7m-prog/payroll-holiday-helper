@@ -1539,6 +1539,7 @@ export type Database = {
           holiday_entitlement_method: string | null
           hourly_rate: number
           id: string
+          import_aliases: string[] | null
           nationality: string | null
           ni_number: string | null
           notes: string | null
@@ -1548,6 +1549,7 @@ export type Database = {
           passport_no: string | null
           pay_amount: number | null
           pay_type: string | null
+          preferred_name: string | null
           public_holiday_calendar: string | null
           residence_permit: string | null
           service_charge: number | null
@@ -1579,6 +1581,7 @@ export type Database = {
           holiday_entitlement_method?: string | null
           hourly_rate: number
           id?: string
+          import_aliases?: string[] | null
           nationality?: string | null
           ni_number?: string | null
           notes?: string | null
@@ -1588,6 +1591,7 @@ export type Database = {
           passport_no?: string | null
           pay_amount?: number | null
           pay_type?: string | null
+          preferred_name?: string | null
           public_holiday_calendar?: string | null
           residence_permit?: string | null
           service_charge?: number | null
@@ -1619,6 +1623,7 @@ export type Database = {
           holiday_entitlement_method?: string | null
           hourly_rate?: number
           id?: string
+          import_aliases?: string[] | null
           nationality?: string | null
           ni_number?: string | null
           notes?: string | null
@@ -1628,6 +1633,7 @@ export type Database = {
           passport_no?: string | null
           pay_amount?: number | null
           pay_type?: string | null
+          preferred_name?: string | null
           public_holiday_calendar?: string | null
           residence_permit?: string | null
           service_charge?: number | null
