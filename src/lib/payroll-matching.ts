@@ -86,10 +86,54 @@ const LEGACY_NAME_MAP: Record<string, { forename: string; surname: string }> = {
 
 function sortActiveFirst(employees: MatchableEmployee[]): MatchableEmployee[] {
   return [...employees].sort((a, b) => {
-    const aRank = a.status === "active" || a.status === "starter" ? 0 : 1;
-    const bRank = b.status === "active" || b.status === "starter" ? 0 : 1;
-    return aRank - bRank;
+    const rankOf = (e: MatchableEmployee) => {
+      if (e.status === "active" || e.status === "starter") return 0;
+      if (e.status === "leaver") return 1;
+      return 2; // archived or other
+    };
+    return rankOf(a) - rankOf(b);
   });
+}
+
+/**
+ * Check if a non-leaver match exists at any tier below the current one.
+ * Used to avoid returning a leaver match when an active/starter match
+ * is available via alias, preferred name, or legacy map.
+ */
+function findNonLeaverFallback(
+  nameLower: string,
+  sorted: MatchableEmployee[]
+): MatchResult | null {
+  const active = sorted.filter(e => e.status !== "leaver");
+
+  // alias match
+  for (const emp of active) {
+    const aliases = emp.import_aliases || [];
+    if (aliases.some((a) => a.toLowerCase() === nameLower)) {
+      return { employee: emp, method: "import_alias" };
+    }
+  }
+
+  // preferred name
+  const prefMatches = active.filter(
+    (e) => e.preferred_name && e.preferred_name.toLowerCase() === nameLower
+  );
+  if (prefMatches.length === 1) {
+    return { employee: prefMatches[0], method: "preferred_name" };
+  }
+
+  // legacy map
+  const mapped = LEGACY_NAME_MAP[nameLower];
+  if (mapped) {
+    const mapMatch = active.find(
+      (e) =>
+        e.forename.toLowerCase() === mapped.forename.toLowerCase() &&
+        e.surname.toLowerCase() === mapped.surname.toLowerCase()
+    );
+    if (mapMatch) return { employee: mapMatch, method: "legacy_name_map" };
+  }
+
+  return null;
 }
 
 export function matchEmployee(
@@ -100,17 +144,31 @@ export function matchEmployee(
   const nameLower = trimmed.toLowerCase();
   const sorted = sortActiveFirst(employees);
 
-  // 1. Exact full-name match
+  // 1. Exact full-name match (prefer active/starter over leaver)
   const exact = sorted.find(
     (e) => `${e.forename} ${e.surname}` === trimmed
   );
-  if (exact) return { employee: exact, method: "exact" };
+  if (exact) {
+    // If matched a leaver, check if a non-leaver exists via alias/preferred/legacy
+    if (exact.status === "leaver") {
+      const fallback = findNonLeaverFallback(nameLower, sorted);
+      if (fallback) return fallback;
+    }
+    return { employee: exact, method: "exact" };
+  }
 
   // 2. Case-insensitive full-name match
   const ci = sorted.find(
     (e) => `${e.forename} ${e.surname}`.toLowerCase() === nameLower
   );
-  if (ci) return { employee: ci, method: "case_insensitive" };
+  if (ci) {
+    // If matched a leaver, check if a non-leaver exists via alias/preferred/legacy
+    if (ci.status === "leaver") {
+      const fallback = findNonLeaverFallback(nameLower, sorted);
+      if (fallback) return fallback;
+    }
+    return { employee: ci, method: "case_insensitive" };
+  }
 
   // 3. Email match
   if (nameLower.includes("@")) {

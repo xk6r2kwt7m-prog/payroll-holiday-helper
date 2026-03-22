@@ -43,7 +43,9 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
 
   const unresolvedIssues = useMemo<PayrollImportIssue[]>(() => {
     const unmatchedNames = toStringArray((importRecord as any)?.errors?.unmatched);
-    if (unmatchedNames.length === 0) return [];
+    const leaverNames = toStringArray((importRecord as any)?.errors?.leavers);
+    const allFlaggedNames = [...unmatchedNames, ...leaverNames];
+    if (allFlaggedNames.length === 0) return [];
 
     const employeeIdSet = new Set(currentEmployeeIds);
     const matchableEmployees: MatchableEmployee[] = employees.map((employee: any) => ({
@@ -61,7 +63,7 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
 
     const issues: PayrollImportIssue[] = [];
 
-    for (const csvName of unmatchedNames) {
+    for (const csvName of allFlaggedNames) {
       const { employee } = matchEmployee(csvName, matchableEmployees);
 
       if (!employee) {
@@ -80,7 +82,9 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
         continue;
       }
 
+      // Employee exists and is active/starter — check if already in this payroll period
       if (employeeIdSet.has(employee.id)) {
+        // Already linked to payroll period — fully resolved, skip
         continue;
       }
 
