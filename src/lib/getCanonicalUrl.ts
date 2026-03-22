@@ -15,7 +15,7 @@ export function getCanonicalOrigin(): string {
 
   // Lovable preview URLs look like:
   //   https://id-preview--<uuid>.lovable.app
-  if (/^https:\\/\\/id-preview--[^.]+\\.lovable\\.app$/i.test(origin)) {
+  if (/^https:\/\/id-preview--[^.]+\.lovable\.app$/i.test(origin)) {
     // Derive published subdomain from VITE env if available,
     // otherwise fall back to the known published domain.
     return "https://udp.lovable.app";
