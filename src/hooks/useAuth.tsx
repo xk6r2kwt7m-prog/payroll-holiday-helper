@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { getCanonicalOrigin } from '@/lib/getCanonicalUrl';
 
 import { AppRole, ROLE_LEVEL as ROLE_HIERARCHY } from '@/lib/roles';
 export type { AppRole } from '@/lib/roles';
@@ -80,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSupervisorOrAbove = role !== null && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.supervisor;
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${getCanonicalOrigin()}/`;
     
     const { error } = await supabase.auth.signUp({
       email,
