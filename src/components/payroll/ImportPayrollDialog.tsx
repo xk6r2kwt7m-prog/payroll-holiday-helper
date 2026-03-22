@@ -1,5 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
-import { Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle, UserPlus, Eye, RefreshCw, Link2, Download } from "lucide-react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import {
+  Upload, FileSpreadsheet, CheckCircle, XCircle, AlertCircle,
+  UserPlus, RefreshCw, Link2, Ban, ChevronRight, ArrowLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -14,58 +17,11 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateAccrual } from "@/hooks/useLeaveRules";
 import { useTenant } from "@/hooks/useTenant";
-import type { Database } from "@/integrations/supabase/types";
+import { matchEmployee, type MatchableEmployee, type MatchMethod } from "@/lib/payroll-matching";
+import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
+import { CreateEmployeeFromImport } from "./CreateEmployeeFromImport";
 
-type DepartmentType = string;
-
-// ─── Name mapping: CSV first name → DB employee match ───
-// This resolves informal names, nicknames, and abbreviations
-const NAME_MAP: Record<string, { forename: string; surname: string }> = {
-  "sai": { forename: "Saicharan", surname: "Manepalli" },
-  "maria": { forename: "Iara Maria", surname: "Moniz Ferreira" },
-  "ruben": { forename: "Rubem", surname: "Pereira" },
-  "vicky": { forename: "Viktoriia", surname: "Bastrakova" },
-  "aris feliz": { forename: "Arisnorky", surname: "Feliz" },
-  "joselin chala": { forename: "Jocelyne", surname: "Chala" },
-  "jie-en": { forename: "Jie En", surname: "Loh" },
-  "kitty": { forename: "Kitty", surname: "Oil Lan" },
-  "ling chak": { forename: "Ling", surname: "Chak" },
-  "nairobis de los sant…": { forename: "Nairobys", surname: "De los Santos" },
-  "nairobis de los sant": { forename: "Nairobys", surname: "De los Santos" },
-  "rehana": { forename: "Rheana", surname: "Rahim" },
-  "sam": { forename: "Samnath", surname: "Thembareni" },
-  "sreeja": { forename: "Sreeja", surname: "Vadlapudi" },
-  "wing lee": { forename: "Wing", surname: "Lee" },
-  "hafiz abdur rahim": { forename: "Hafiz", surname: "Rahim" },
-  "luisa valenzuela": { forename: "Luisa", surname: "Valenzuela" },
-  "nishanth thota": { forename: "Nishanth", surname: "Thota" },
-  "arun kumar": { forename: "Arun", surname: "Thota" },
-  "rithwik godishala": { forename: "Rithwik", surname: "Godishala" },
-  "adriana baca": { forename: "Adriana", surname: "Baca" },
-  "karl": { forename: "Karl Ted", surname: "Ledesma" },
-  "daniela": { forename: "Daniela Patricia", surname: "Da Costa Almeida" },
-  "sultan": { forename: "Sultan", surname: "Al Mabrur" },
-  "ada": { forename: "Ada", surname: "Feliz" },
-  "heidy": { forename: "Heidy", surname: "Ramos" },
-  "marco": { forename: "Marco", surname: "Ribeiro" },
-  "steven": { forename: "Steven", surname: "Cumba" },
-  "afonso": { forename: "Afonso", surname: "Gomes" },
-  "lissette": { forename: "Lissette", surname: "Paredes" },
-  "wakako": { forename: "Wakako", surname: "Ashida" },
-  "kazumi": { forename: "Kazumi", surname: "Ortega" },
-  "fatima": { forename: "Fatima", surname: "Ashraf" },
-  "varsha": { forename: "Varsha", surname: "Kumari" },
-  "angel": { forename: "Yat Chun", surname: "Wong" },
-  "antonela": { forename: "Tiffany Antonela", surname: "Bucheli Rubio" },
-  "salma laroussi": { forename: "Salma", surname: "Laroussi Beniiche" },
-  "kiara": { forename: "Kiara", surname: "Plaku" },
-  "benjamin": { forename: "Benjamin", surname: "Gray" },
-};
-
-// LEGACY: Section → location mapping for CSV import parsing.
-// These map timesheet CSV section codes to human-readable location names.
-// Only activated when a CSV with matching section headers is uploaded.
-// New tenants with different CSV formats will not match these mappings.
+// ─── CSV section → location/department mappings ───
 const SECTION_LOCATION_MAP: Record<string, string> = {
   "[BOH]BOH - Brixton": "Brixton (BOH)",
   "[FOH]FOH - Brixton": "Brixton (FOH)",
@@ -76,8 +32,7 @@ const SECTION_LOCATION_MAP: Record<string, string> = {
   "[UGL]FOH": "Carnaby (FOH)",
 };
 
-// Section → department mapping
-const SECTION_DEPT_MAP: Record<string, DepartmentType> = {
+const SECTION_DEPT_MAP: Record<string, string> = {
   "[BOH]BOH - Brixton": "BOH",
   "[FOH]FOH - Brixton": "FOH",
   "[RTD]KITCHEN": "BOH",
@@ -87,6 +42,8 @@ const SECTION_DEPT_MAP: Record<string, DepartmentType> = {
   "[UGL]FOH": "FOH",
 };
 
+const SKIP_NAMES = new Set(["zak cope"]);
+
 interface ParsedRow {
   csvName: string;
   hours: number;
@@ -94,21 +51,25 @@ interface ParsedRow {
   location: string;
 }
 
-interface AggregatedEmployee {
+export interface AggregatedEmployee {
   csvName: string;
   totalHours: number;
   locations: { name: string; hours: number }[];
+  matchedId?: string;
   matchedForename?: string;
   matchedSurname?: string;
-  matchedId?: string;
-  department?: DepartmentType;
+  matchMethod: MatchMethod;
+  department?: string;
   hourlyRate?: number;
   serviceCharge?: number;
   unmatched: boolean;
+  resolution?: "matched" | "created" | "excluded";
+  excludeReason?: string;
 }
 
-const SKIP_NAMES = new Set(["zak cope"]);
+type Step = "period" | "upload" | "preview" | "done";
 
+// ─── CSV Parser ───
 function parseTimesheetCSV(csvText: string): ParsedRow[] {
   const lines = csvText.split("\n");
   const rows: ParsedRow[] = [];
@@ -118,17 +79,14 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
     const line = lines[i].trim();
     if (!line) continue;
 
-    // Detect section headers (lines that start with a quote and contain a bracket code)
     const sectionMatch = line.match(/^\s*"?\s*(\[.+?\].+?)"?\s*$/);
     if (sectionMatch) {
       currentSection = sectionMatch[1].trim();
       continue;
     }
 
-    // Skip total rows and unpaid leave
     if (line.toLowerCase().includes("total for") || line.toLowerCase().includes("grand total") || line.toLowerCase().includes("unpaid leave")) continue;
 
-    // Parse data row
     const cols = line.match(/("(?:[^"]|"")*"|[^,]*)/g);
     if (!cols || cols.length < 3) continue;
 
@@ -141,69 +99,19 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
     const hours = parseFloat(timesheetHoursStr) || 0;
     if (hours === 0 && timesheetHoursStr === "-") continue;
 
-    const locationName = SECTION_LOCATION_MAP[currentSection] || currentSection;
-
     rows.push({
       csvName: name,
       hours,
       section: currentSection,
-      location: locationName,
+      location: SECTION_LOCATION_MAP[currentSection] || currentSection,
     });
   }
   return rows;
 }
 
-function matchEmployee(
-  csvName: string,
-  employees: { id: string; forename: string; surname: string; department: DepartmentType; hourly_rate: number; service_charge: number | null; status: string; email: string | null }[]
-): { emp: typeof employees[0] | undefined; matchMethod: string } {
-  const nameLower = csvName.toLowerCase().trim();
-  const activeFirst = (list: typeof employees[]) =>
-    list.flat().sort((a, b) => {
-      const aActive = a.status === "active" || a.status === "starter" ? 0 : 1;
-      const bActive = b.status === "active" || b.status === "starter" ? 0 : 1;
-      return aActive - bActive;
-    });
-
-  const sorted = activeFirst([employees]);
-
-  // 1. Exact full-name match (case-sensitive)
-  const exact = sorted.find(
-    (e) => `${e.forename} ${e.surname}` === csvName.trim()
-  );
-  if (exact) return { emp: exact, matchMethod: "exact" };
-
-  // 2. Case-insensitive full-name match
-  const ciFullName = sorted.find(
-    (e) => `${e.forename} ${e.surname}`.toLowerCase() === nameLower
-  );
-  if (ciFullName) return { emp: ciFullName, matchMethod: "case_insensitive" };
-
-  // 3. Email match
-  if (nameLower.includes("@")) {
-    const emailMatch = sorted.find(
-      (e) => e.email && e.email.toLowerCase() === nameLower
-    );
-    if (emailMatch) return { emp: emailMatch, matchMethod: "email" };
-  }
-
-  // 4. NAME_MAP fallback (last resort)
-  const mapped = NAME_MAP[nameLower];
-  if (mapped) {
-    const mapMatch = sorted.find(
-      (e) =>
-        e.forename.toLowerCase() === mapped.forename.toLowerCase() &&
-        e.surname.toLowerCase() === mapped.surname.toLowerCase()
-    );
-    if (mapMatch) return { emp: mapMatch, matchMethod: "name_map" };
-  }
-
-  return { emp: undefined, matchMethod: "none" };
-}
-
 function aggregateByEmployee(
   rows: ParsedRow[],
-  employees: { id: string; forename: string; surname: string; department: DepartmentType; hourly_rate: number; service_charge: number | null; status: string; email: string | null }[]
+  employees: MatchableEmployee[]
 ): AggregatedEmployee[] {
   const empMap = new Map<string, AggregatedEmployee>();
 
@@ -211,8 +119,7 @@ function aggregateByEmployee(
     const nameLower = row.csvName.toLowerCase().trim();
     if (SKIP_NAMES.has(nameLower)) continue;
 
-    const { emp: matchedEmp } = matchEmployee(row.csvName, employees);
-    const matched = !!matchedEmp;
+    const { employee: matchedEmp, method } = matchEmployee(row.csvName, employees);
     const matchKey = matchedEmp
       ? `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase()
       : nameLower;
@@ -229,10 +136,12 @@ function aggregateByEmployee(
         matchedForename: matchedEmp?.forename,
         matchedSurname: matchedEmp?.surname,
         matchedId: matchedEmp?.id,
+        matchMethod: method,
         department: matchedEmp?.department,
         hourlyRate: matchedEmp?.hourly_rate,
         serviceCharge: matchedEmp?.service_charge ?? 0,
-        unmatched: !matched,
+        unmatched: !matchedEmp,
+        resolution: matchedEmp ? "matched" : undefined,
       });
     }
   }
@@ -243,6 +152,7 @@ function aggregateByEmployee(
   });
 }
 
+// ─── Main Component ───
 interface ImportDialogProps {
   onImportComplete?: () => void;
 }
@@ -250,26 +160,41 @@ interface ImportDialogProps {
 export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [periodName, setPeriodName] = useState("February 2026");
-  const [startDate, setStartDate] = useState("2026-01-19");
-  const [endDate, setEndDate] = useState("2026-02-22");
+  const [periodName, setPeriodName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [payDate, setPayDate] = useState("");
   const [importing, setImporting] = useState(false);
-  const [step, setStep] = useState<"upload" | "preview" | "done">("upload");
+  const [step, setStep] = useState<Step>("period");
   const [aggregated, setAggregated] = useState<AggregatedEmployee[]>([]);
   const [importMessage, setImportMessage] = useState("");
   const [existingPeriodId, setExistingPeriodId] = useState<string | null>(null);
   const [useExistingPeriod, setUseExistingPeriod] = useState(false);
-  const [manualMatches, setManualMatches] = useState<Record<string, string>>({});
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [creatingFor, setCreatingFor] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
   const { tenantId } = useTenant();
 
-  // Detect existing draft period matching dates
+  // Auto-suggest period dates on open
   useEffect(() => {
+    if (!open) return;
+    const latestEnd = periods.length > 0
+      ? periods.reduce((latest, p) =>
+          p.end_date > latest ? p.end_date : latest, periods[0].end_date)
+      : null;
+    const suggested = suggestNextPeriod(latestEnd);
+    setPeriodName(suggested.periodName);
+    setStartDate(suggested.startDate);
+    setEndDate(suggested.endDate);
+    setPayDate(suggested.payDate);
+  }, [open, periods]);
+
+  // Detect existing draft period
+  useEffect(() => {
+    if (!periodName) return;
     const match = periods.find(
       (p) => p.status === "draft" && p.period_name === periodName
     );
@@ -282,6 +207,21 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     }
   }, [periods, periodName]);
 
+  const matchableEmployees: MatchableEmployee[] = useMemo(() =>
+    employees.map(e => ({
+      id: e.id,
+      forename: e.forename,
+      surname: e.surname,
+      department: e.department,
+      hourly_rate: e.hourly_rate,
+      service_charge: e.service_charge,
+      status: e.status,
+      email: e.email,
+      preferred_name: (e as any).preferred_name ?? null,
+      import_aliases: (e as any).import_aliases ?? [],
+    })),
+  [employees]);
+
   const handleFileChange = useCallback(async (f: File | null) => {
     setFile(f);
     setValidationErrors([]);
@@ -290,26 +230,21 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     try {
       const text = await f.text();
       const rows = parseTimesheetCSV(text);
-      const agg = aggregateByEmployee(rows, employees);
-      
-      // Validation checks
+      const agg = aggregateByEmployee(rows, matchableEmployees);
+
       const errors: string[] = [];
       for (const emp of agg) {
-        if (emp.totalHours < 0) {
-          errors.push(`${emp.csvName}: negative hours (${emp.totalHours})`);
-        }
-        if (isNaN(emp.totalHours)) {
-          errors.push(`${emp.csvName}: hours is not a valid number`);
-        }
+        if (emp.totalHours < 0) errors.push(`${emp.csvName}: negative hours (${emp.totalHours})`);
+        if (isNaN(emp.totalHours)) errors.push(`${emp.csvName}: hours is not a valid number`);
       }
-      // Check for duplicate employee matches
       const matchedIds = agg.filter(e => e.matchedId).map(e => e.matchedId);
       const duplicateIds = matchedIds.filter((id, i) => matchedIds.indexOf(id) !== i);
       if (duplicateIds.length > 0) {
-        const dupNames = agg.filter(e => duplicateIds.includes(e.matchedId)).map(e => `${e.matchedForename} ${e.matchedSurname}`);
-        errors.push(`Duplicate employee match detected: ${[...new Set(dupNames)].join(", ")}`);
+        const dupNames = agg.filter(e => duplicateIds.includes(e.matchedId))
+          .map(e => `${e.matchedForename} ${e.matchedSurname}`);
+        errors.push(`Duplicate employee match: ${[...new Set(dupNames)].join(", ")}`);
       }
-      
+
       setValidationErrors(errors);
       setAggregated(agg);
       setStep("preview");
@@ -317,48 +252,84 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       toast.error("Failed to parse CSV file");
       console.error(err);
     }
-  }, [employees]);
+  }, [matchableEmployees]);
 
+  // Manual match handler
   const handleManualMatch = (csvName: string, employeeId: string) => {
     if (employeeId === "__none__") {
-      setManualMatches(prev => {
-        const next = { ...prev };
-        delete next[csvName];
-        return next;
-      });
-      // Revert to unmatched
-      setAggregated(prev => prev.map(emp => {
-        if (emp.csvName === csvName) {
-          return { ...emp, matchedId: undefined, matchedForename: undefined, matchedSurname: undefined, hourlyRate: undefined, serviceCharge: undefined, department: undefined, unmatched: true };
-        }
-        return emp;
-      }));
+      setAggregated(prev => prev.map(emp =>
+        emp.csvName === csvName
+          ? { ...emp, matchedId: undefined, matchedForename: undefined, matchedSurname: undefined, hourlyRate: undefined, serviceCharge: undefined, department: undefined, unmatched: true, resolution: undefined, matchMethod: "none" as const }
+          : emp
+      ));
       return;
     }
 
     const matchedEmp = employees.find(e => e.id === employeeId);
     if (!matchedEmp) return;
 
-    setManualMatches(prev => ({ ...prev, [csvName]: employeeId }));
-    setAggregated(prev => prev.map(emp => {
-      if (emp.csvName === csvName) {
-        return {
-          ...emp,
-          matchedId: matchedEmp.id,
-          matchedForename: matchedEmp.forename,
-          matchedSurname: matchedEmp.surname,
-          department: matchedEmp.department,
-          hourlyRate: matchedEmp.hourly_rate,
-          serviceCharge: matchedEmp.service_charge ?? 0,
-          unmatched: false,
-        };
-      }
-      return emp;
-    }));
+    setAggregated(prev => prev.map(emp =>
+      emp.csvName === csvName
+        ? {
+            ...emp,
+            matchedId: matchedEmp.id,
+            matchedForename: matchedEmp.forename,
+            matchedSurname: matchedEmp.surname,
+            department: matchedEmp.department,
+            hourlyRate: matchedEmp.hourly_rate,
+            serviceCharge: matchedEmp.service_charge ?? 0,
+            unmatched: false,
+            resolution: "matched",
+            matchMethod: "none" as const,
+          }
+        : emp
+    ));
   };
 
-  const unmatchedCount = aggregated.filter((e) => e.unmatched).length;
-  const matchedEntries = aggregated.filter((e) => !e.unmatched);
+  // Exclude handler
+  const handleExclude = (csvName: string) => {
+    setAggregated(prev => prev.map(emp =>
+      emp.csvName === csvName
+        ? { ...emp, resolution: "excluded", excludeReason: "Manager excluded from this payroll run" }
+        : emp
+    ));
+  };
+
+  const handleUndoExclude = (csvName: string) => {
+    setAggregated(prev => prev.map(emp =>
+      emp.csvName === csvName
+        ? { ...emp, resolution: undefined, excludeReason: undefined }
+        : emp
+    ));
+  };
+
+  // Create employee callback
+  const handleEmployeeCreated = (csvName: string, newEmp: { id: string; forename: string; surname: string; department: string; hourly_rate: number; service_charge: number | null }) => {
+    setCreatingFor(null);
+    setAggregated(prev => prev.map(emp =>
+      emp.csvName === csvName
+        ? {
+            ...emp,
+            matchedId: newEmp.id,
+            matchedForename: newEmp.forename,
+            matchedSurname: newEmp.surname,
+            department: newEmp.department,
+            hourlyRate: newEmp.hourly_rate,
+            serviceCharge: newEmp.service_charge ?? 0,
+            unmatched: false,
+            resolution: "created",
+            matchMethod: "none" as const,
+          }
+        : emp
+    ));
+  };
+
+  const unresolvedCount = aggregated.filter(e => e.unmatched && e.resolution !== "excluded").length;
+  const excludedCount = aggregated.filter(e => e.resolution === "excluded").length;
+  const importableEntries = aggregated.filter(e => !e.unmatched || e.resolution === "excluded");
+  const matchedEntries = aggregated.filter(e => !e.unmatched);
+  const totalHours = aggregated.reduce((s, e) => s + e.totalHours, 0);
+  const canApproveAfterImport = unresolvedCount === 0;
 
   const handleImport = async () => {
     if (!periodName || !startDate || !endDate) {
@@ -370,38 +341,37 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       return;
     }
     if (validationErrors.length > 0) {
-      toast.error("Please fix validation errors before importing");
+      toast.error("Fix validation errors before importing");
       return;
     }
 
     setImporting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
-      // Calculate period weeks
       const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
       const periodWeeks = Math.round((days / 7) * 10) / 10;
 
-      // Create payroll period with unmatched employee note OR use existing
-      const unmatchedNames = aggregated.filter(e => e.unmatched).map(e => e.csvName);
-      const periodNotes = unmatchedNames.length > 0
-        ? `⚠ PENDING: ${unmatchedNames.length} unmatched employee(s) need adding: ${unmatchedNames.join(", ")}. Add them to the employee database and re-import or manually add to this period.`
-        : null;
+      const unmatchedNames = aggregated.filter(e => e.unmatched && e.resolution !== "excluded").map(e => e.csvName);
+      const excludedNames = aggregated.filter(e => e.resolution === "excluded").map(e => e.csvName);
+
+      let periodNotes: string | null = null;
+      if (unmatchedNames.length > 0) {
+        periodNotes = `⚠ PENDING: ${unmatchedNames.length} unmatched employee(s): ${unmatchedNames.join(", ")}. Resolve before approval.`;
+      }
+      if (excludedNames.length > 0) {
+        const exNote = `ℹ ${excludedNames.length} excluded from this run: ${excludedNames.join(", ")}.`;
+        periodNotes = periodNotes ? `${periodNotes}\n${exNote}` : exNote;
+      }
 
       let periodId: string;
 
       if (useExistingPeriod && existingPeriodId) {
-        // Update existing period
         periodId = existingPeriodId;
         await supabase
           .from("payroll_periods")
-          .update({
-            notes: periodNotes,
-            imported_by: user?.id,
-          })
+          .update({ notes: periodNotes, imported_by: user?.id })
           .eq("id", periodId);
 
-        // Delete existing entries to replace with fresh import
         await supabase
           .from("payroll_entries")
           .delete()
@@ -427,7 +397,6 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         periodId = period.id;
       }
 
-      // Insert matched entries
       let entriesCreated = 0;
       for (const emp of matchedEntries) {
         if (!emp.matchedId || !emp.hourlyRate) continue;
@@ -435,15 +404,17 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         const hours = emp.totalHours;
         const rate = emp.hourlyRate;
         const sc = emp.serviceCharge || 0;
-        const basePay = hours * rate;
-        const servicePay = hours * sc;
-        const totalPay = basePay + servicePay;
-        const holidayAccrued = calculateAccrual(hours, 0.1207); // DB trigger overrides; this is a preview value
+        const holidayAccrued = calculateAccrual(hours, 0.1207);
 
-        // Location breakdown notes
         const locNotes = emp.locations.length > 1
-          ? `Hours by location: ${emp.locations.map((l) => `${l.name}: ${l.hours.toFixed(2)}h`).join(" | ")}`
+          ? `Hours by location: ${emp.locations.map(l => `${l.name}: ${l.hours.toFixed(2)}h`).join(" | ")}`
           : `Location: ${emp.locations[0]?.name}`;
+
+        const matchNote = emp.resolution === "created"
+          ? " [Employee created during import]"
+          : emp.matchMethod !== "exact" && emp.matchMethod !== "none"
+          ? ` [Matched via ${emp.matchMethod.replace(/_/g, " ")}]`
+          : "";
 
         const { error: entryError } = await supabase
           .from("payroll_entries")
@@ -457,8 +428,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             performance_bonus: 0,
             special_bonus: 0,
             holiday_accrued_hours: holidayAccrued,
-            total_pay: totalPay,
-            notes: locNotes,
+            total_pay: hours * rate + hours * sc,
+            notes: `${locNotes}${matchNote}`,
             tenant_id: tenantId,
           } as any);
 
@@ -466,10 +437,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         entriesCreated++;
       }
 
-      // Period totals now auto-calculated by DB trigger (sync_payroll_period_totals)
-      // No manual total update needed
-
-      // Store original CSV file in Supabase Storage
+      // Store original CSV file
       let storedFilePath: string | null = null;
       if (file) {
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -478,15 +446,11 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         const { error: uploadError } = await supabase.storage
           .from("payroll-files")
           .upload(filePath, file, { contentType: "text/csv", upsert: false });
-        if (uploadError) {
-          console.error("CSV storage failed (non-blocking):", uploadError);
-        } else {
-          storedFilePath = filePath;
-        }
+        if (!uploadError) storedFilePath = filePath;
       }
 
       // Audit log
-      await supabase.from("audit_log").insert({
+      await supabase.from("audit_log").insert([{
         user_id: user?.id || null,
         action: "import" as const,
         table_name: "payroll_periods",
@@ -497,13 +461,17 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           period_name: periodName,
           entries_created: entriesCreated,
           unmatched_employees: unmatchedNames,
+          excluded_employees: excludedNames,
           source_file: file?.name || "unknown",
           source_type: "manual_upload",
           stored_file_path: storedFilePath,
+          match_methods: Object.fromEntries(
+            matchedEntries.map(e => [e.csvName, e.matchMethod])
+          ),
         },
-      });
+      }]);
 
-      // Create import record with file_path and tenant_id
+      // Import record
       await supabase.from("payroll_imports").insert({
         payroll_period_id: periodId,
         file_name: file?.name || "CSV Import",
@@ -512,22 +480,23 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         import_status: "completed",
         records_imported: entriesCreated,
         tenant_id: tenantId,
-        errors: unmatchedNames.length > 0 ? { unmatched: unmatchedNames } : null,
+        errors: unmatchedNames.length > 0 || excludedNames.length > 0
+          ? { unmatched: unmatchedNames, excluded: excludedNames }
+          : null,
       } as any);
 
       setStep("done");
       setImportMessage(
-        `Imported ${entriesCreated} employees.` +
-        (unmatchedNames.length > 0 ? ` ${unmatchedNames.length} employee(s) still need adding to the database.` : "")
+        `Imported ${entriesCreated} employee${entriesCreated !== 1 ? "s" : ""} into "${periodName}".` +
+        (excludedNames.length > 0 ? ` ${excludedNames.length} excluded.` : "") +
+        (unmatchedNames.length > 0 ? ` ${unmatchedNames.length} still unmatched — resolve before approval.` : "")
       );
 
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
-
       toast.success("Payroll imported!");
       onImportComplete?.();
-
     } catch (error) {
       console.error("Import error:", error);
       toast.error(error instanceof Error ? error.message : "Failed to import payroll");
@@ -538,15 +507,27 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
   const resetForm = () => {
     setFile(null);
-    setPeriodName("February 2026");
-    setStartDate("2026-01-19");
-    setEndDate("2026-02-22");
+    setPeriodName("");
+    setStartDate("");
+    setEndDate("");
     setPayDate("");
-    setStep("upload");
+    setStep("period");
     setAggregated([]);
     setImportMessage("");
-    setManualMatches({});
     setValidationErrors([]);
+    setCreatingFor(null);
+  };
+
+  const matchMethodLabel = (m: MatchMethod) => {
+    switch (m) {
+      case "exact": return null;
+      case "case_insensitive": return "name";
+      case "email": return "email";
+      case "import_alias": return "alias";
+      case "preferred_name": return "nickname";
+      case "legacy_name_map": return "mapped";
+      default: return null;
+    }
   };
 
   return (
@@ -554,51 +535,58 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       <DialogTrigger asChild>
         <Button size="sm" className="gradient-primary h-9 text-xs sm:text-sm">
           <Upload className="h-4 w-4 sm:mr-1.5 shrink-0" />
-          <span className="hidden xs:inline">Import</span>
+          <span className="hidden xs:inline">Import Timesheet</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
-            Import Timesheet CSV
+            {step === "period" && "Set Payroll Period"}
+            {step === "upload" && "Upload Timesheet"}
+            {step === "preview" && "Review & Resolve Matches"}
+            {step === "done" && "Import Complete"}
           </DialogTitle>
         </DialogHeader>
 
-        {step === "upload" && (
-          <div className="space-y-4 py-4">
+        {/* ── Step 1: Period Setup ── */}
+        {step === "period" && (
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg bg-muted/50 border border-border p-3">
+              <p className="text-sm text-muted-foreground">
+                Auto-suggested based on your latest payroll period. Cutoff = last Sunday, pay date = last Thursday.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label>Period Name *</Label>
-              <Input value={periodName} onChange={(e) => setPeriodName(e.target.value)} />
+              <Input value={periodName} onChange={(e) => setPeriodName(e.target.value)} placeholder="e.g. March 2026" />
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Start Date *</Label>
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>End Date *</Label>
+                <Label>End Date (Cutoff) *</Label>
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground">Edit if cutoff differs from last Sunday</p>
               </div>
             </div>
+
             <div className="space-y-2">
               <Label>Pay Date</Label>
               <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
             </div>
-            <div className="space-y-2">
-              <Label>Timesheet CSV File *</Label>
-              <Input type="file" accept=".csv" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} />
-              <p className="text-xs text-muted-foreground">
-                Upload the Schedule vs Timesheet report CSV. Hours will be aggregated per employee across all locations.
-              </p>
-            </div>
+
             {existingPeriodId && (
               <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-sm flex items-start gap-2">
                 <RefreshCw className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium text-primary">Existing "{periodName}" draft period found</p>
+                  <p className="font-medium text-primary">Existing draft "{periodName}" found</p>
                   <p className="text-muted-foreground mt-0.5">
-                    Import will <strong>replace all existing entries</strong> in this period with fresh data from the CSV.
+                    Import will <strong>replace all entries</strong> in this draft with fresh data.
                   </p>
                 </div>
               </div>
@@ -606,20 +594,39 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           </div>
         )}
 
-        {step === "preview" && (
-          <div className="flex-1 overflow-hidden flex flex-col gap-3 py-2">
-            {/* Source label */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Upload className="h-3 w-3" />
-              <span>Payroll source: <strong>Manual timesheet upload</strong> · {file?.name}</span>
+        {/* ── Step 2: File Upload ── */}
+        {step === "upload" && (
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg bg-muted/50 border border-border p-3">
+              <p className="text-sm text-muted-foreground">
+                Importing into <strong>{periodName}</strong> ({startDate} → {endDate})
+              </p>
             </div>
 
-            {/* Validation errors */}
+            <div className="space-y-2">
+              <Label>Timesheet CSV File *</Label>
+              <Input type="file" accept=".csv" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} />
+              <p className="text-xs text-muted-foreground">
+                Upload the Deputy Schedule vs Timesheet report CSV.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 3: Preview & Resolve ── */}
+        {step === "preview" && (
+          <div className="flex-1 overflow-hidden flex flex-col gap-3 py-2">
+            {/* Summary bar */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Upload className="h-3 w-3" />
+              <span>Source: <strong>Manual timesheet upload</strong> · {file?.name}</span>
+            </div>
+
             {validationErrors.length > 0 && (
               <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm">
                 <p className="font-medium text-destructive flex items-center gap-2">
                   <XCircle className="h-4 w-4" />
-                  {validationErrors.length} validation error(s) — fix before importing
+                  {validationErrors.length} validation error(s)
                 </p>
                 <ul className="mt-1 space-y-0.5 text-xs text-destructive">
                   {validationErrors.map((e, i) => <li key={i}>• {e}</li>)}
@@ -627,113 +634,173 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
               </div>
             )}
 
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                <strong>{matchedEntries.length}</strong> matched · <strong>{aggregated.reduce((s, e) => s + e.totalHours, 0).toFixed(1)}</strong> total hours
-              </p>
-              {unmatchedCount > 0 && (
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                  <UserPlus className="h-3 w-3 mr-1" />
-                  {unmatchedCount} unmatched
-                </Badge>
-              )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                <strong>{matchedEntries.length}</strong> matched · <strong>{totalHours.toFixed(1)}</strong> total hrs
+              </span>
+              <div className="flex gap-2">
+                {unresolvedCount > 0 && (
+                  <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {unresolvedCount} unresolved
+                  </Badge>
+                )}
+                {excludedCount > 0 && (
+                  <Badge variant="outline" className="text-muted-foreground">
+                    <Ban className="h-3 w-3 mr-1" />
+                    {excludedCount} excluded
+                  </Badge>
+                )}
+              </div>
             </div>
 
-            <ScrollArea className="flex-1 max-h-[400px] border rounded-lg">
+            <ScrollArea className="flex-1 max-h-[380px] border rounded-lg">
               <div className="divide-y divide-border">
                 {aggregated.map((emp, idx) => (
-                  <div key={idx} className={`px-4 py-2.5 flex items-center justify-between text-sm ${emp.unmatched ? "bg-warning/5" : ""}`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {emp.unmatched ? (
-                          <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20 shrink-0">
-                            Not in DB
+                  <div key={idx} className={`px-4 py-2.5 text-sm ${
+                    emp.resolution === "excluded" ? "bg-muted/30 opacity-60" :
+                    emp.unmatched ? "bg-warning/5" : ""
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {emp.resolution === "excluded" ? (
+                          <Badge variant="outline" className="text-[10px] shrink-0">Excluded</Badge>
+                        ) : emp.unmatched ? (
+                          <Badge variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/20 shrink-0">
+                            Unmatched
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-xs">{emp.department}</Badge>
+                          <Badge variant="secondary" className="text-[10px] shrink-0">{emp.department}</Badge>
                         )}
                         <span className="font-medium truncate">
-                          {emp.unmatched ? emp.csvName : `${emp.matchedForename} ${emp.matchedSurname}`}
+                          {emp.unmatched && emp.resolution !== "excluded"
+                            ? emp.csvName
+                            : `${emp.matchedForename} ${emp.matchedSurname}`}
                         </span>
                         {!emp.unmatched && emp.csvName.toLowerCase() !== `${emp.matchedForename} ${emp.matchedSurname}`.toLowerCase() && (
-                          <span className="text-xs text-muted-foreground">← "{emp.csvName}"</span>
+                          <span className="text-[11px] text-muted-foreground">← "{emp.csvName}"</span>
+                        )}
+                        {!emp.unmatched && matchMethodLabel(emp.matchMethod) && (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1">{matchMethodLabel(emp.matchMethod)}</Badge>
+                        )}
+                        {emp.resolution === "created" && (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 bg-green-50 text-green-700 border-green-200">new</Badge>
                         )}
                       </div>
-                      {emp.unmatched && (
-                        <div className="mt-1.5 flex items-center gap-2">
-                          <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <Select
-                            value={manualMatches[emp.csvName] || "__none__"}
-                            onValueChange={(val) => handleManualMatch(emp.csvName, val)}
-                          >
-                            <SelectTrigger className="h-7 text-xs w-[220px]">
-                              <SelectValue placeholder="Match to employee…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">— No match —</SelectItem>
-                              {employees
-                                .filter(e => e.status === "active" || e.status === "starter")
-                                .sort((a, b) => a.forename.localeCompare(b.forename))
-                                .map(e => (
-                                  <SelectItem key={e.id} value={e.id}>
-                                    {e.forename} {e.surname} ({e.department})
-                                  </SelectItem>
-                                ))
-                              }
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-                      {emp.locations.length > 1 && (
-                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                          {emp.locations.map((l) => `${l.name}: ${l.hours.toFixed(1)}h`).join(" · ")}
-                        </p>
-                      )}
+                      <span className="font-mono text-xs ml-3 shrink-0">{emp.totalHours.toFixed(2)}h</span>
                     </div>
-                    <div className="text-right shrink-0 ml-4">
-                      <span className="font-mono font-medium">{emp.totalHours.toFixed(2)} hrs</span>
-                    </div>
+
+                    {/* Unmatched resolution controls */}
+                    {emp.unmatched && emp.resolution !== "excluded" && (
+                      <div className="mt-2 space-y-2">
+                        {creatingFor === emp.csvName ? (
+                          <CreateEmployeeFromImport
+                            csvName={emp.csvName}
+                            onCreated={(newEmp) => handleEmployeeCreated(emp.csvName, newEmp)}
+                            onCancel={() => setCreatingFor(null)}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5">
+                              <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <Select
+                                value="__none__"
+                                onValueChange={(val) => handleManualMatch(emp.csvName, val)}
+                              >
+                                <SelectTrigger className="h-7 text-xs w-[200px]">
+                                  <SelectValue placeholder="Match to employee…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__none__">— Select employee —</SelectItem>
+                                  {employees
+                                    .filter(e => e.status === "active" || e.status === "starter")
+                                    .sort((a, b) => a.forename.localeCompare(b.forename))
+                                    .map(e => (
+                                      <SelectItem key={e.id} value={e.id}>
+                                        {e.forename} {e.surname} ({e.department})
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs gap-1"
+                              onClick={() => setCreatingFor(emp.csvName)}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                              Create
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs gap-1 text-muted-foreground"
+                              onClick={() => handleExclude(emp.csvName)}
+                            >
+                              <Ban className="h-3 w-3" />
+                              Exclude
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {emp.resolution === "excluded" && (
+                      <div className="mt-1">
+                        <Button variant="ghost" size="sm" className="h-6 text-[11px] text-muted-foreground" onClick={() => handleUndoExclude(emp.csvName)}>
+                          Undo exclude
+                        </Button>
+                      </div>
+                    )}
+
+                    {emp.locations.length > 1 && (
+                      <p className="text-[11px] text-muted-foreground mt-1 truncate">
+                        {emp.locations.map(l => `${l.name}: ${l.hours.toFixed(1)}h`).join(" · ")}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
             </ScrollArea>
 
-            {unmatchedCount > 0 && (
+            {/* Warnings */}
+            {unresolvedCount > 0 && (
               <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
                 <p className="font-medium text-warning flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
-                  {unmatchedCount} employee(s) not found in database
+                  {unresolvedCount} unresolved employee(s)
                 </p>
                 <p className="text-muted-foreground mt-1">
-                  They will be skipped during import. The payroll period will be flagged until you add them to the employee database and manually add them to this period. <strong>You cannot approve this payroll until all employees are accounted for.</strong>
+                  You can still import, but <strong>approval will be blocked</strong> until all are matched, created, or excluded.
                 </p>
               </div>
             )}
 
-            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-sm">
-              <p className="text-muted-foreground">
-                {useExistingPeriod
-                  ? <>Import will <strong>update the existing "{periodName}"</strong> draft period, replacing all entries with fresh CSV data.</>
-                  : <>Import will create a new <strong>Draft</strong> period.</>
-                }{" "}
-                Rates and service charges are pulled from each employee's master record. Bonuses default to £0 — edit them in the payroll table after import.
-              </p>
-            </div>
+            {unresolvedCount === 0 && aggregated.length > 0 && (
+              <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 text-sm">
+                <p className="font-medium text-green-700 dark:text-green-400 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  All employees resolved — ready to import
+                </p>
+              </div>
+            )}
           </div>
         )}
 
+        {/* ── Step 4: Done ── */}
         {step === "done" && (
-          <div className="py-8 text-center space-y-4">
-            <CheckCircle className="h-12 w-12 text-success mx-auto" />
-            <p className="text-lg font-medium">{importMessage}</p>
-            {unmatchedCount > 0 && (
+          <div className="py-6 text-center space-y-4">
+            <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
+            <p className="text-base font-medium">{importMessage}</p>
+            {unresolvedCount > 0 && (
               <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm text-left">
-                <p className="font-medium text-warning mb-1">Action Required</p>
+                <p className="font-medium text-warning mb-1">⚠ Action required before approval</p>
                 <p className="text-muted-foreground">
-                  Add the following employees to your database, then add them to this payroll period:
+                  Resolve unmatched employees in the payroll period before submitting for approval.
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {aggregated.filter(e => e.unmatched).map((e, i) => (
+                  {aggregated.filter(e => e.unmatched && e.resolution !== "excluded").map((e, i) => (
                     <Badge key={i} variant="outline" className="text-xs">
                       {e.csvName} ({e.totalHours.toFixed(1)}h)
                     </Badge>
@@ -744,20 +811,48 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2 border-t border-border">
-          {step === "preview" && (
-            <Button variant="ghost" size="sm" onClick={() => setStep("upload")}>
-              Back
+        {/* ── Footer ── */}
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div>
+            {step === "upload" && (
+              <Button variant="ghost" size="sm" onClick={() => setStep("period")} className="gap-1 text-xs">
+                <ArrowLeft className="h-3 w-3" /> Period
+              </Button>
+            )}
+            {step === "preview" && (
+              <Button variant="ghost" size="sm" onClick={() => setStep("upload")} className="gap-1 text-xs">
+                <ArrowLeft className="h-3 w-3" /> File
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setOpen(false); resetForm(); }}>
+              {step === "done" ? "Close" : "Cancel"}
             </Button>
-          )}
-          <Button variant="outline" onClick={() => { setOpen(false); resetForm(); }}>
-            {step === "done" ? "Close" : "Cancel"}
-          </Button>
-          {step === "preview" && (
-            <Button onClick={handleImport} disabled={importing || matchedEntries.length === 0 || validationErrors.length > 0}>
-              {importing ? "Importing..." : useExistingPeriod ? `Update ${matchedEntries.length} Entries` : `Import ${matchedEntries.length} Employees`}
-            </Button>
-          )}
+            {step === "period" && (
+              <Button
+                size="sm"
+                onClick={() => setStep("upload")}
+                disabled={!periodName || !startDate || !endDate}
+                className="gap-1"
+              >
+                Continue <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {step === "preview" && (
+              <Button
+                size="sm"
+                onClick={handleImport}
+                disabled={importing || matchedEntries.length === 0 || validationErrors.length > 0}
+              >
+                {importing
+                  ? "Importing…"
+                  : useExistingPeriod
+                  ? `Update ${matchedEntries.length} Entries`
+                  : `Import ${matchedEntries.length} Employee${matchedEntries.length !== 1 ? "s" : ""}`}
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
