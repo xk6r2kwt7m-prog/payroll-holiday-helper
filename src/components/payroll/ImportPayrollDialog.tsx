@@ -988,13 +988,16 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         {/* ── Step 4: Done ── */}
         {step === "done" && (
           <div className="py-6 text-center space-y-4">
-            <CheckCircle className="h-12 w-12 text-primary mx-auto" />
-            <p className="text-base font-medium">{importMessage}</p>
+            <CheckCircle className={`h-12 w-12 mx-auto ${unresolvedCount > 0 ? "text-warning" : "text-primary"}`} />
+            <p className="text-base font-medium">
+              Imported {matchedEntries.length} employee{matchedEntries.length !== 1 ? "s" : ""} into "{periodName}".
+              {excludedCount > 0 ? ` ${excludedCount} excluded.` : ""}
+            </p>
             {unresolvedCount > 0 && (
               <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm text-left">
                 <p className="font-medium text-warning mb-1">⚠ Action required before approval</p>
                 <p className="text-muted-foreground">
-                  Resolve unmatched employees in the payroll period before submitting for approval.
+                  {unresolvedCount} employee{unresolvedCount !== 1 ? "s" : ""} still unmatched. Resolve in the payroll period before submitting for approval.
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
                   {aggregated.filter(e => e.unmatched && e.resolution !== "excluded").map((e, i) => (
@@ -1004,6 +1007,9 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                   ))}
                 </div>
               </div>
+            )}
+            {unresolvedCount === 0 && (
+              <p className="text-sm text-muted-foreground">All employees matched. Ready for review.</p>
             )}
           </div>
         )}
