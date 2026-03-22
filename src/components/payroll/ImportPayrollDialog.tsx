@@ -152,6 +152,7 @@ function aggregateByEmployee(
         serviceCharge: matchedEmp?.service_charge ?? 0,
         unmatched: !matchedEmp,
         resolution: matchedEmp ? "matched" : undefined,
+        isLeaver: matchedEmp?.status === "leaver",
       });
     }
   }
