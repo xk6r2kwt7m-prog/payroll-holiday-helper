@@ -71,7 +71,7 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
       const { data: { user } } = await supabase.auth.getUser();
       await supabase.from("audit_log").insert([{
         user_id: user?.id || null,
-        action: "insert" as const,
+        action: "create" as const,
         table_name: "employees",
         record_id: data.id,
         tenant_id: tenantId,
