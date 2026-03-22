@@ -684,7 +684,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                           <Badge variant="outline" className="text-[9px] h-4 px-1">{matchMethodLabel(emp.matchMethod)}</Badge>
                         )}
                         {emp.resolution === "created" && (
-                          <Badge variant="outline" className="text-[9px] h-4 px-1 bg-green-50 text-green-700 border-green-200">new</Badge>
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 bg-accent/10 text-accent-foreground border-accent/30">new</Badge>
                         )}
                       </div>
                       <span className="font-mono text-xs ml-3 shrink-0">{emp.totalHours.toFixed(2)}h</span>
