@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSupervisorOrAbove = role !== null && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.supervisor;
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${getCanonicalOrigin()}/`;
     
     const { error } = await supabase.auth.signUp({
       email,
