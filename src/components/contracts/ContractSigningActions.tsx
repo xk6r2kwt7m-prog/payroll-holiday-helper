@@ -84,7 +84,7 @@ export function ContractSigningActions({
         signerType,
       });
 
-      const link = `${window.location.origin}/sign/${result.token}`;
+      const link = `${getCanonicalOrigin()}/sign/${result.token}`;
       setGeneratedLink(link);
       setGeneratedTokenId(result.id);
       setEmailSent(false);

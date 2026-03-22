@@ -209,7 +209,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         signerType,
       });
 
-      const link = `${window.location.origin}/sign/${result.token}`;
+      const link = `${getCanonicalOrigin()}/sign/${result.token}`;
       setLink(link);
       if (signerType === "employee") {
         setEmployeeSignTokenId(result.id);
