@@ -7,40 +7,28 @@ import {
 
 const FAQ_DATA = [
   {
-    q: "What does UGLŌ do?",
-    a: "It connects scheduling, payroll, training, compliance and operational follow-through in one platform built for restaurants, kitchens and multi-site hospitality teams.",
+    q: "Can I still use Deputy while using UglyOps?",
+    a: "Yes. Many teams start by running UglyOps alongside existing tools like Deputy. You can transition scheduling at your own pace while using UglyOps for employee records, compliance, holidays and payroll.",
   },
   {
-    q: "Who is it for?",
-    a: "Restaurant operators, multi-site hospitality businesses, GMs, ops managers and directors who need stronger control over staffing, training, compliance and follow-through.",
+    q: "How does payroll work with timesheets?",
+    a: "You upload timesheets as CSV files. UglyOps lets you review hours, apply corrections, approve the pay run and export for processing. Payroll is currently timesheet-based — it does not pull from rota or clock-in data automatically.",
   },
   {
-    q: "How is this different from HR software?",
-    a: "Generic HR tools manage employee records. UGLŌ connects workforce management with training, compliance and operational execution — so managers can see who is ready, what is overdue and what needs action.",
+    q: "How do staff get access?",
+    a: "Staff access is invitation-based. A manager adds the employee record, then sends an invitation email. The staff member clicks the link to set up their access. There is no open public signup.",
   },
   {
-    q: "Does it replace our rota and payroll tools?",
-    a: "It can. UGLŌ includes rota planning and UK payroll workflow support, plus training tracking, compliance governance and operational intelligence that standalone tools do not cover.",
+    q: "Can I manage multiple locations?",
+    a: "Yes. You can set up multiple sites, assign employees to branches, and manage rotas, compliance and leave per location — all from one account.",
   },
   {
-    q: "Does it work for small teams?",
-    a: "Yes. Single-site teams use it just as well as multi-site operators. Activate the modules you need.",
-  },
-  {
-    q: "Can staff use it on mobile?",
-    a: "Yes. Staff view schedules, clock in, manage training, request holidays and access their profile from any phone browser.",
-  },
-  {
-    q: "How does training tracking work?",
-    a: "Assign training, track completion, manage sign-off. Training status links to scheduling and readiness so you always know who is prepared and who is not.",
+    q: "How does onboarding work?",
+    a: "After adding a new employee, you send them an invitation. They complete their personal details, emergency contact, bank information and document uploads through a guided setup flow. You review and approve before they go live.",
   },
   {
     q: "Is company data kept separate?",
-    a: "Yes. Each company operates in its own tenant-isolated workspace. Your data is never visible to other organisations.",
-  },
-  {
-    q: "How is it secured?",
-    a: "Role-based access controls, tenant-separated storage, audit logging for sensitive actions and data masking for payroll and personal records.",
+    a: "Yes. Each company operates in its own isolated workspace. Your data is never visible to other organisations.",
   },
   {
     q: "How long does setup take?",
