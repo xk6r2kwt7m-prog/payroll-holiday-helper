@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useTenant } from "@/hooks/useTenant";
 import { ContractPreview } from "./ContractPreview";
@@ -208,7 +209,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         signerType,
       });
 
-      const link = `${window.location.origin}/sign/${result.token}`;
+      const link = `${getCanonicalOrigin()}/sign/${result.token}`;
       setLink(link);
       if (signerType === "employee") {
         setEmployeeSignTokenId(result.id);

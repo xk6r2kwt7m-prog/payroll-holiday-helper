@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -83,7 +84,7 @@ export function ContractSigningActions({
         signerType,
       });
 
-      const link = `${window.location.origin}/sign/${result.token}`;
+      const link = `${getCanonicalOrigin()}/sign/${result.token}`;
       setGeneratedLink(link);
       setGeneratedTokenId(result.id);
       setEmailSent(false);

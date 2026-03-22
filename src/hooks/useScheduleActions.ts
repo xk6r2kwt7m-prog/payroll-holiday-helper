@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { type DayOfWeek, DAY_ABBR, getMinimumStaff } from "@/components/schedule/shiftDefaults";
 import { assertPermission } from "@/lib/permission-guard";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 
 interface UseScheduleActionsParams {
   currentDate: Date;
@@ -341,7 +342,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               employee_name: emp.name,
               branch: selectedBranch,
               week: dateLabel,
-              login_url: `${window.location.origin}/schedule`,
+              login_url: `${getCanonicalOrigin()}/schedule`,
             },
             tenant_id: tenantId,
           });
@@ -358,7 +359,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               employee_name: emp.name,
               branch: selectedBranch,
               week: dateLabel,
-              access_url: `${window.location.origin}/auth`,
+              access_url: `${getCanonicalOrigin()}/auth`,
             },
             tenant_id: tenantId,
           });
