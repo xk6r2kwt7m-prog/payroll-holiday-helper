@@ -154,6 +154,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       setPrimaryBranch(undefined);
     }
     setActiveTab(defaultTab || "personal");
+    setNiConfirm("");
+    setNiMismatchError(false);
+    setNiMasked(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
