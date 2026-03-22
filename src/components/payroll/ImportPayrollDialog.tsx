@@ -778,9 +778,9 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             )}
 
             {unresolvedCount === 0 && aggregated.length > 0 && (
-              <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 text-sm">
-                <p className="font-medium text-green-700 dark:text-green-400 flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
+              <div className="rounded-lg bg-accent/10 border border-accent/30 p-3 text-sm">
+                <p className="font-medium text-accent-foreground flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-primary" />
                   All employees resolved — ready to import
                 </p>
               </div>
