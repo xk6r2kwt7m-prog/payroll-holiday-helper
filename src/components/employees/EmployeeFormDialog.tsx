@@ -209,8 +209,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       validationErrors.push("A valid hourly rate is required");
     }
 
-    // NI double-entry validation: if NI is provided, confirm must match
-    if (formData.ni_number.trim()) {
+    // NI double-entry validation: only require confirmation if NI was changed or is new
+    const niChanged = formData.ni_number.trim().toUpperCase() !== originalNi.trim().toUpperCase();
+    if (formData.ni_number.trim() && niChanged) {
       if (niConfirm.trim().toUpperCase() !== formData.ni_number.trim().toUpperCase()) {
         setNiMismatchError(true);
         setActiveTab("personal");
