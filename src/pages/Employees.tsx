@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown, MailWarning } from "lucide-react";
+import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown, MailWarning, ArrowLeft } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet"
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { EmployeeDeleteDialog } from "@/components/employees/EmployeeDeleteDialog";
 import { PendingInvitations } from "@/components/employees/PendingInvitations";
+import { PeopleDashboard } from "@/components/people/PeopleDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { usePermission } from "@/hooks/useRolePermissions";
@@ -29,6 +30,7 @@ import { cn } from "@/lib/utils";
 type Department = "FOH" | "BOH" | "CPU";
 type StatusFilter = "active" | "starter" | "leaver" | "onboarding" | "archived";
 type SortOption = "alpha" | "newest" | "recent-leavers" | "department";
+type ViewMode = "dashboard" | "directory";
 
 const Employees = () => {
   const { t } = useI18n();
