@@ -277,7 +277,7 @@ async function writeTimeEntryAudit(
   extra?: Record<string, any>
 ) {
   const actionValue: "approve" | "reject" = auditAction;
-  await supabase.from("audit_log").insert(
+  const { error } = await supabase.from("audit_log").insert(
     entryIds.map((id) => ({
       action: actionValue,
       table_name: "time_entries" as const,
@@ -290,6 +290,7 @@ async function writeTimeEntryAudit(
       },
     }))
   );
+  if (error) throw new Error(`Audit log failed: ${error.message}`);
 }
 
 export function useApproveTimeEntries() {
