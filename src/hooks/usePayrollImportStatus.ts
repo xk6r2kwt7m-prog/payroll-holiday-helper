@@ -7,7 +7,7 @@ import { matchEmployee, type MatchableEmployee } from "@/lib/payroll-matching";
 
 export interface PayrollImportIssue {
   csvName: string;
-  issue: "not_in_database" | "exists_not_added";
+  issue: "not_in_database" | "exists_not_added" | "leaver_in_csv";
   employeeId?: string;
   employeeName?: string;
   employeeStatus?: string;
