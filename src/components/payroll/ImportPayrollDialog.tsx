@@ -383,6 +383,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
   const unresolvedCount = aggregated.filter(e => e.unmatched && e.resolution !== "excluded").length;
   const excludedCount = aggregated.filter(e => e.resolution === "excluded").length;
+  const leaverCount = aggregated.filter(e => e.isLeaver && e.resolution !== "excluded").length;
   const importableEntries = aggregated.filter(e => !e.unmatched || e.resolution === "excluded");
   const matchedEntries = aggregated.filter(e => !e.unmatched);
   const totalHours = aggregated.reduce((s, e) => s + e.totalHours, 0);
