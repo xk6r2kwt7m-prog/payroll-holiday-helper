@@ -75,6 +75,15 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
   const rows: ParsedRow[] = [];
   let currentSection = "";
 
+  // Detect Timesheet Hour column from header row
+  const headerLine = lines[0]?.toLowerCase() || "";
+  const headerCols = headerLine.match(/("(?:[^"]|"")*"|[^,]*)/g) || [];
+  let timesheetColIndex = headerCols.findIndex(
+    (c) => c.replace(/"/g, "").trim() === "timesheet hour"
+  );
+  // Fallback to index 2 if header not found (backward compat)
+  if (timesheetColIndex < 0) timesheetColIndex = 2;
+
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
@@ -91,7 +100,7 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
     if (!cols || cols.length < 3) continue;
 
     const name = cols[0]?.replace(/"/g, "").trim();
-    const timesheetHoursStr = cols[2]?.replace(/"/g, "").replace(/,/g, "").trim();
+    const timesheetHoursStr = cols[timesheetColIndex]?.replace(/"/g, "").replace(/,/g, "").trim();
 
     if (!name || !currentSection) continue;
     if (name.toLowerCase().startsWith("total for")) continue;
