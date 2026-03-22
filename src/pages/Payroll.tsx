@@ -437,6 +437,14 @@ const Payroll = () => {
         {/* Payroll Reminders */}
         {selectedPeriod && <PayrollReminders periodId={selectedPeriod.id} />}
 
+        {/* Missing Employee Info for Payroll */}
+        {selectedPeriod && entries.length > 0 && (
+          <PayrollMissingInfo
+            entries={entries}
+            periodName={selectedPeriod.period_name}
+          />
+        )}
+
         {/* Approval Workflow */}
         {selectedPeriod && (
           <PayrollApprovalWorkflow
