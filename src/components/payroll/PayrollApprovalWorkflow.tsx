@@ -122,6 +122,24 @@ export function PayrollApprovalWorkflow({
         </div>
       )}
 
+      {/* Excluded employees info - visible during review */}
+      {hasExcludedEmployees && !hasUnmatchedEmployees && (
+        <div className="rounded-lg bg-muted/50 border border-border p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div>
+              <p className="font-medium text-foreground text-sm">Excluded Employees</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {period.notes?.split("\n").filter(l => l.includes("excluded from this run")).join(" ")}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                These staff were deliberately excluded during import. This is recorded in the audit log.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Audit gate - blocks approval */}
       {shouldAudit && !auditLoading && auditFindings.length > 0 && (
         <div className={`rounded-lg ${hasAuditErrors ? "bg-destructive/10 border-destructive/20" : "bg-warning/10 border-warning/20"} border p-4 mb-4`}>
