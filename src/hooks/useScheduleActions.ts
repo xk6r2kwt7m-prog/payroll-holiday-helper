@@ -359,7 +359,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               employee_name: emp.name,
               branch: selectedBranch,
               week: dateLabel,
-              access_url: `${window.location.origin}/auth`,
+              access_url: `${getCanonicalOrigin()}/auth`,
             },
             tenant_id: tenantId,
           });
