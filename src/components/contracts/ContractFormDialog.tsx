@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useTenant } from "@/hooks/useTenant";
 import { ContractPreview } from "./ContractPreview";
