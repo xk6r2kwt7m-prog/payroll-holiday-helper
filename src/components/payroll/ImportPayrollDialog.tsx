@@ -172,6 +172,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const [useExistingPeriod, setUseExistingPeriod] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
+  const [existingBonusWarning, setExistingBonusWarning] = useState<string | null>(null);
+  const [bonusOverrideConfirmed, setBonusOverrideConfirmed] = useState(false);
 
   const queryClient = useQueryClient();
   const { data: employees = [] } = useEmployees();

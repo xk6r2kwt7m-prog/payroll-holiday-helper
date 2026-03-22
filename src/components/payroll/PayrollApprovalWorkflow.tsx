@@ -292,7 +292,7 @@ export function PayrollApprovalWorkflow({
             </AlertDialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" disabled={isApproving} className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto min-h-[44px]">
+                <Button size="sm" disabled={isApproving || !canSubmitOrApprove} className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto min-h-[44px]">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   {isApproving ? "Approving..." : "Approve & Lock"}
                 </Button>
