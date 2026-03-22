@@ -121,6 +121,8 @@ export function PayrollApprovalWorkflow({
                     <p key={issue.csvName}>
                       {issue.issue === "exists_not_added"
                         ? `${issue.csvName}: employee exists as ${issue.employeeName}${issue.employeeStatus ? ` (${issue.employeeStatus})` : ""} but is not yet linked to this payroll period.`
+                        : issue.issue === "leaver_in_csv"
+                        ? `${issue.csvName}: leaver appears in imported timesheet — review required.`
                         : `${issue.csvName}: employee not in database.`}
                     </p>
                   ))}

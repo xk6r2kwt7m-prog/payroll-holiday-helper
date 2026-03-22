@@ -7,7 +7,7 @@ import { matchEmployee, type MatchableEmployee } from "@/lib/payroll-matching";
 
 export interface PayrollImportIssue {
   csvName: string;
-  issue: "not_in_database" | "exists_not_added";
+  issue: "not_in_database" | "exists_not_added" | "leaver_in_csv";
   employeeId?: string;
   employeeName?: string;
   employeeStatus?: string;
@@ -66,6 +66,17 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
 
       if (!employee) {
         issues.push({ csvName, issue: "not_in_database" });
+        continue;
+      }
+
+      if (employee.status === "leaver") {
+        issues.push({
+          csvName,
+          issue: "leaver_in_csv",
+          employeeId: employee.id,
+          employeeName: `${employee.forename} ${employee.surname}`,
+          employeeStatus: employee.status,
+        });
         continue;
       }
 

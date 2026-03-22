@@ -65,6 +65,7 @@ export interface AggregatedEmployee {
   unmatched: boolean;
   resolution?: "matched" | "created" | "excluded";
   excludeReason?: string;
+  isLeaver?: boolean;
 }
 
 type Step = "period" | "upload" | "preview" | "done";
@@ -151,6 +152,7 @@ function aggregateByEmployee(
         serviceCharge: matchedEmp?.service_charge ?? 0,
         unmatched: !matchedEmp,
         resolution: matchedEmp ? "matched" : undefined,
+        isLeaver: matchedEmp?.status === "leaver",
       });
     }
   }
@@ -381,6 +383,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
   const unresolvedCount = aggregated.filter(e => e.unmatched && e.resolution !== "excluded").length;
   const excludedCount = aggregated.filter(e => e.resolution === "excluded").length;
+  const leaverCount = aggregated.filter(e => e.isLeaver && e.resolution !== "excluded").length;
   const importableEntries = aggregated.filter(e => !e.unmatched || e.resolution === "excluded");
   const matchedEntries = aggregated.filter(e => !e.unmatched);
   const totalHours = aggregated.reduce((s, e) => s + e.totalHours, 0);
@@ -408,10 +411,15 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
       const unmatchedNames = aggregated.filter(e => e.unmatched && e.resolution !== "excluded").map(e => e.csvName);
       const excludedNames = aggregated.filter(e => e.resolution === "excluded").map(e => e.csvName);
+      const leaverNames = aggregated.filter(e => e.isLeaver && e.resolution !== "excluded").map(e => `${e.matchedForename} ${e.matchedSurname}`);
 
       let periodNotes: string | null = null;
       if (unmatchedNames.length > 0) {
         periodNotes = `⚠ PENDING: ${unmatchedNames.length} unmatched employee(s): ${unmatchedNames.join(", ")}. Resolve before approval.`;
+      }
+      if (leaverNames.length > 0) {
+        const lNote = `⚠ ${leaverNames.length} leaver(s) in imported timesheet: ${leaverNames.join(", ")}. Review before approval.`;
+        periodNotes = periodNotes ? `${periodNotes}\n${lNote}` : lNote;
       }
       if (excludedNames.length > 0) {
         const exNote = `ℹ ${excludedNames.length} excluded from this run: ${excludedNames.join(", ")}.`;
@@ -609,8 +617,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         import_status: "completed",
         records_imported: entriesCreated,
         tenant_id: tenantId,
-        errors: unmatchedNames.length > 0 || excludedNames.length > 0
-          ? { unmatched: unmatchedNames, excluded: excludedNames }
+        errors: unmatchedNames.length > 0 || excludedNames.length > 0 || leaverNames.length > 0
+          ? { unmatched: unmatchedNames, excluded: excludedNames, leavers: leaverNames }
           : null,
       } as any);
 
@@ -794,8 +802,26 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                     {excludedCount} excluded
                   </Badge>
                 )}
+                {leaverCount > 0 && (
+                  <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {leaverCount} leaver{leaverCount !== 1 ? "s" : ""} in CSV
+                  </Badge>
+                )}
               </div>
             </div>
+
+            {leaverCount > 0 && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm">
+                <p className="font-medium text-destructive flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Leaver appears in imported timesheet — review required
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {aggregated.filter(e => e.isLeaver && e.resolution !== "excluded").map(e => `${e.matchedForename} ${e.matchedSurname}`).join(", ")} — these employees have leaver status. Review before approving payroll.
+                </p>
+              </div>
+            )}
 
             <ScrollArea className="flex-1 max-h-[380px] border rounded-lg">
               <div className="divide-y divide-border">
@@ -828,6 +854,9 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                         )}
                         {emp.resolution === "created" && (
                           <Badge variant="outline" className="text-[9px] h-4 px-1 bg-accent/10 text-accent-foreground border-accent/30">new</Badge>
+                        )}
+                        {emp.isLeaver && emp.resolution !== "excluded" && (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 bg-destructive/10 text-destructive border-destructive/20">leaver</Badge>
                         )}
                       </div>
                       <span className="font-mono text-xs ml-3 shrink-0">{emp.totalHours.toFixed(2)}h</span>
