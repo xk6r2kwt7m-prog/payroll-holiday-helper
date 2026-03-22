@@ -40,6 +40,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const [activeTab, setActiveTab] = useState(defaultTab || "personal");
   const [selectedBranches, setSelectedBranches] = useState<BranchType[]>([]);
   const [primaryBranch, setPrimaryBranch] = useState<BranchType | undefined>();
+  const [niConfirm, setNiConfirm] = useState("");
+  const [niMismatchError, setNiMismatchError] = useState(false);
+  const [niMasked, setNiMasked] = useState(false);
   
   const [formData, setFormData] = useState({
     forename: "",
