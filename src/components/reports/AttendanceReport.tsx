@@ -98,16 +98,21 @@ export function AttendanceReport() {
   }, [allPendingSelected, displayedIds]);
 
   const handleApproveSelected = async () => {
-    const ids = [...selectedIds].filter(id => {
+    const cleanIds: string[] = [];
+    let skippedCount = 0;
+    for (const id of selectedIds) {
       const entry = filtered.find((e: any) => e.id === id);
-      return entry && entry.status === "pending";
-    });
-    if (ids.length === 0) { toast.error("No pending entries selected"); return; }
+      if (entry && isCleanPending(entry)) {
+        cleanIds.push(id);
+      } else {
+        skippedCount++;
+      }
+    }
+    if (cleanIds.length === 0) { toast.error("No clean pending entries in selection"); return; }
 
     try {
-      const result = await approveEntries.mutateAsync({ entryIds: ids, mode: "approve_batch_selected" });
-      const skipped = selectedIds.size - ids.length;
-      toast.success(`${result.approved} approved${skipped > 0 ? `, ${skipped} skipped (not pending)` : ""}`);
+      const result = await approveEntries.mutateAsync({ entryIds: cleanIds, mode: "approve_batch_selected" });
+      toast.success(`${result.approved} approved${skippedCount > 0 ? `, ${skippedCount} skipped for review` : ""}`);
       setSelectedIds(new Set());
     } catch (err: any) {
       toast.error(err.message);
