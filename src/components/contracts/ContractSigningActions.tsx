@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
