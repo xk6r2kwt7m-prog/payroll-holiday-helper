@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
+import { PayrollMissingInfo } from "@/components/payroll/PayrollMissingInfo";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { PayrollSourceInfo } from "@/components/payroll/PayrollSourceInfo";
@@ -435,6 +436,14 @@ const Payroll = () => {
 
         {/* Payroll Reminders */}
         {selectedPeriod && <PayrollReminders periodId={selectedPeriod.id} />}
+
+        {/* Missing Employee Info for Payroll */}
+        {selectedPeriod && entries.length > 0 && (
+          <PayrollMissingInfo
+            entries={entries}
+            periodName={selectedPeriod.period_name}
+          />
+        )}
 
         {/* Approval Workflow */}
         {selectedPeriod && (

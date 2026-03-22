@@ -40,6 +40,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const [activeTab, setActiveTab] = useState(defaultTab || "personal");
   const [selectedBranches, setSelectedBranches] = useState<BranchType[]>([]);
   const [primaryBranch, setPrimaryBranch] = useState<BranchType | undefined>();
+  const [niConfirm, setNiConfirm] = useState("");
+  const [niMismatchError, setNiMismatchError] = useState(false);
+  const [niMasked, setNiMasked] = useState(false);
   
   const [formData, setFormData] = useState({
     forename: "",
@@ -151,6 +154,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       setPrimaryBranch(undefined);
     }
     setActiveTab(defaultTab || "personal");
+    setNiConfirm("");
+    setNiMismatchError(false);
+    setNiMasked(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -200,6 +206,17 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
     if (!isNewEmployee && (!formData.hourly_rate || isNaN(parseFloat(formData.hourly_rate)))) {
       validationErrors.push("A valid hourly rate is required");
     }
+
+    // NI double-entry validation: if NI is provided, confirm must match
+    if (formData.ni_number.trim()) {
+      if (niConfirm.trim().toUpperCase() !== formData.ni_number.trim().toUpperCase()) {
+        setNiMismatchError(true);
+        setActiveTab("personal");
+        toast.error("National Insurance numbers do not match. Please re-enter to confirm.");
+        return;
+      }
+    }
+    setNiMismatchError(false);
 
     if (validationErrors.length > 0) {
       toast.error(validationErrors.join(". "));
@@ -587,16 +604,71 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                   <Label htmlFor="ni_number">
                     National Insurance Number
                   </Label>
-                  <Input
-                    id="ni_number"
-                    value={formData.ni_number}
-                    onChange={(e) => setFormData({ ...formData, ni_number: e.target.value.toUpperCase() })}
-                    placeholder="AB123456C"
-                    maxLength={9}
-                    className="transition-all focus:ring-2 focus:ring-primary/20 uppercase"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="ni_number"
+                      type={niMasked ? "password" : "text"}
+                      value={formData.ni_number}
+                      onChange={(e) => {
+                        setFormData({ ...formData, ni_number: e.target.value.toUpperCase() });
+                        setNiMismatchError(false);
+                      }}
+                      onBlur={() => {
+                        if (formData.ni_number.trim()) setNiMasked(true);
+                      }}
+                      placeholder="AB123456C"
+                      maxLength={9}
+                      className={cn(
+                        "transition-all focus:ring-2 focus:ring-primary/20 uppercase pr-16",
+                        niMismatchError && "border-destructive ring-destructive/20"
+                      )}
+                    />
+                    {formData.ni_number.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setNiMasked(!niMasked)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {niMasked ? "Show" : "Hide"}
+                      </button>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">Format: 2 letters, 6 numbers, 1 letter. Can be added later.</p>
                 </div>
+
+                {formData.ni_number.trim() && (
+                  <div className="space-y-2">
+                    <Label htmlFor="ni_confirm" className="flex items-center gap-1">
+                      Confirm National Insurance Number
+                      <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="ni_confirm"
+                      type="password"
+                      value={niConfirm}
+                      onChange={(e) => {
+                        setNiConfirm(e.target.value.toUpperCase());
+                        setNiMismatchError(false);
+                      }}
+                      placeholder="Re-enter NI number"
+                      maxLength={9}
+                      className={cn(
+                        "transition-all focus:ring-2 focus:ring-primary/20 uppercase",
+                        niMismatchError && "border-destructive ring-destructive/20"
+                      )}
+                    />
+                    {niMismatchError && (
+                      <p className="text-xs text-destructive font-medium">
+                        National Insurance numbers do not match
+                      </p>
+                    )}
+                    {!niMismatchError && niConfirm.trim() && niConfirm.trim().toUpperCase() === formData.ni_number.trim().toUpperCase() && (
+                      <p className="text-xs text-success font-medium">
+                        ✓ NI numbers match
+                      </p>
+                    )}
+                  </div>
+                )}
               </TabsContent>
 
               {/* Employment Tab */}
