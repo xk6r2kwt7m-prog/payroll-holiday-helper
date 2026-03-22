@@ -791,7 +791,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         {/* ── Step 4: Done ── */}
         {step === "done" && (
           <div className="py-6 text-center space-y-4">
-            <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
+            <CheckCircle className="h-12 w-12 text-primary mx-auto" />
             <p className="text-base font-medium">{importMessage}</p>
             {unresolvedCount > 0 && (
               <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm text-left">
