@@ -26,7 +26,7 @@ export function useInviteEmail() {
   const sendInviteEmail = useCallback(
     async (payload: InviteEmailPayload): Promise<InviteEmailResult> => {
       const timestamp = new Date().toISOString();
-      const loginUrl = `${window.location.origin}/auth`;
+      const loginUrl = `${getCanonicalOrigin()}/auth`;
 
       console.log("[INVITE_EMAIL] Attempting send", {
         to: payload.recipientEmail,
