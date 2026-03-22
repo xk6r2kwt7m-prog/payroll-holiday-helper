@@ -36,6 +36,7 @@ import PayrollComparison from "./pages/PayrollComparison";
 import PayrollOverpayments from "./pages/PayrollOverpayments";
 import PayrollAudit from "./pages/PayrollAudit";
 import Auth from "./pages/Auth";
+import Landing from "./pages/Landing";
 import CompanyOnboarding from "./pages/CompanyOnboarding";
 import SignContract from "./pages/SignContract";
 import PlatformAdmin from "./pages/PlatformAdmin";
@@ -80,6 +81,7 @@ const App = () => (
           <CommandPalette />
           <Routes>
             {/* Public routes */}
+            <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
