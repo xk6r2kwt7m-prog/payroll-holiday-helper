@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
+import { PayrollMissingInfo } from "@/components/payroll/PayrollMissingInfo";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { PayrollSourceInfo } from "@/components/payroll/PayrollSourceInfo";
