@@ -81,6 +81,7 @@ const App = () => (
           <CommandPalette />
           <Routes>
             {/* Public routes */}
+            <Route path="/landing" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
