@@ -94,7 +94,7 @@ export default function Timesheets() {
 
   const handleBulkApprove = async () => {
     try {
-      await approveEntries.mutateAsync(selectedIds);
+      await approveEntries.mutateAsync({ entryIds: selectedIds, mode: "approve_batch_selected" });
       toast.success(`Approved ${selectedIds.length} timesheet(s)`);
       setSelectedIds([]);
     } catch (err: any) {
@@ -308,7 +308,7 @@ export default function Timesheets() {
                               className="h-7 w-7 text-success hover:text-success"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                approveEntries.mutateAsync([entry.id]).then(() => toast.success("Approved"));
+                                approveEntries.mutateAsync({ entryIds: [entry.id], mode: "approve_single" }).then(() => toast.success("Approved"));
                               }}
                             >
                               <Check className="h-4 w-4" />

@@ -86,7 +86,7 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
 
   const handleApprove = async () => {
     try {
-      await approveEntries.mutateAsync([entry.id]);
+      await approveEntries.mutateAsync({ entryIds: [entry.id], mode: "approve_single" });
       toast.success("Approved");
       onClose();
     } catch (err: any) { toast.error(err.message); }

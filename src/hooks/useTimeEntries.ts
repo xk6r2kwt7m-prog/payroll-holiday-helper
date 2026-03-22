@@ -274,7 +274,7 @@ async function writeTimeEntryAudit(
   auditAction: "approve" | "reject",
   entryIds: string[],
   userId: string,
-  notes?: string
+  extra?: Record<string, any>
 ) {
   const actionValue: "approve" | "reject" = auditAction;
   await supabase.from("audit_log").insert(
@@ -284,7 +284,10 @@ async function writeTimeEntryAudit(
       record_id: id,
       tenant_id: tenantId,
       user_id: userId,
-      new_data: { status: auditAction === "approve" ? "approved" : "rejected", ...(notes ? { notes } : {}) },
+      new_data: {
+        status: auditAction === "approve" ? "approved" : "rejected",
+        ...extra,
+      },
     }))
   );
 }
@@ -293,7 +296,13 @@ export function useApproveTimeEntries() {
   const queryClient = useQueryClient();
   const { tenantId } = useTenant();
   return useMutation({
-    mutationFn: async (entryIds: string[]) => {
+    mutationFn: async ({
+      entryIds,
+      mode = "approve_single",
+    }: {
+      entryIds: string[];
+      mode?: "approve_single" | "approve_batch_selected" | "approve_batch_daily";
+    }) => {
       await assertPermission("approve_timesheets", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -308,8 +317,12 @@ export function useApproveTimeEntries() {
         .in("id", entryIds);
       if (error) throw error;
 
-      // Audit log
-      await writeTimeEntryAudit(tenantId!, "approve", entryIds, user.id);
+      await writeTimeEntryAudit(tenantId!, "approve", entryIds, user.id, {
+        approval_mode: mode,
+        count: entryIds.length,
+      });
+
+      return { approved: entryIds.length };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time_entries"] });
@@ -333,7 +346,7 @@ export function useRejectTimeEntry() {
       if (error) throw error;
 
       // Audit log
-      await writeTimeEntryAudit(tenantId!, "reject", [id], user.id, notes);
+      await writeTimeEntryAudit(tenantId!, "reject", [id], user.id, { notes });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time_entries"] });
