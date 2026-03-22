@@ -43,6 +43,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const [niConfirm, setNiConfirm] = useState("");
   const [niMismatchError, setNiMismatchError] = useState(false);
   const [niMasked, setNiMasked] = useState(false);
+  const [originalNi, setOriginalNi] = useState("");
   
   const [formData, setFormData] = useState({
     forename: "",
