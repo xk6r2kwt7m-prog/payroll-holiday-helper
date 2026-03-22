@@ -65,6 +65,7 @@ export interface AggregatedEmployee {
   unmatched: boolean;
   resolution?: "matched" | "created" | "excluded";
   excludeReason?: string;
+  isLeaver?: boolean;
 }
 
 type Step = "period" | "upload" | "preview" | "done";

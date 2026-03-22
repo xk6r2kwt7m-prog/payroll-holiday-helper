@@ -390,9 +390,14 @@ export function useCopyPayrollPeriod() {
 
       if (entriesError) throw entriesError;
 
-      // Copy all source entries to preserve payroll continuity; managers can remove rows explicitly if needed.
+      // Copy only active/starter employees — leavers are excluded by default
       if (sourceEntries && sourceEntries.length > 0) {
-        const newEntries = sourceEntries.map((entry: any) => {
+        const eligibleEntries = sourceEntries.filter((entry: any) => {
+          const empStatus = entry.employees?.status;
+          return empStatus === "active" || empStatus === "starter";
+        });
+
+        const newEntries = eligibleEntries.map((entry: any) => {
           const perfBonus = entry.performance_bonus || 0;
           const specBonus = entry.special_bonus || 0;
           return {
