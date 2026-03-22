@@ -84,7 +84,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           imported_by: user?.id,
         });
 
-        // Add entries for all active + starter employees (UK best practice)
+        // Add entries for all active + starter employees (leavers excluded)
         const eligibleEmployees = employees.filter(e => e.status === "active" || e.status === "starter");
         if (eligibleEmployees.length > 0) {
           const entries = eligibleEmployees.map(emp => ({

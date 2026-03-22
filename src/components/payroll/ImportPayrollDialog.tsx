@@ -617,8 +617,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         import_status: "completed",
         records_imported: entriesCreated,
         tenant_id: tenantId,
-        errors: unmatchedNames.length > 0 || excludedNames.length > 0
-          ? { unmatched: unmatchedNames, excluded: excludedNames }
+        errors: unmatchedNames.length > 0 || excludedNames.length > 0 || leaverNames.length > 0
+          ? { unmatched: unmatchedNames, excluded: excludedNames, leavers: leaverNames }
           : null,
       } as any);
 
