@@ -715,21 +715,12 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             )}
 
             {existingBonusWarning && existingPeriodId && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm">
+              <div className="rounded-lg bg-muted/50 border border-border p-3 text-sm">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="font-medium text-destructive">Manual edits will be overwritten</p>
-                    <p className="text-muted-foreground mt-0.5">{existingBonusWarning}</p>
-                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={bonusOverrideConfirmed}
-                        onChange={(e) => setBonusOverrideConfirmed(e.target.checked)}
-                        className="rounded border-destructive/50"
-                      />
-                      <span className="text-xs font-medium text-destructive">I understand — overwrite existing data</span>
-                    </label>
+                    <p className="font-medium text-foreground">Existing data preserved</p>
+                    <p className="text-muted-foreground mt-0.5">{existingBonusWarning} These will be kept — only timesheet hours will be updated.</p>
                   </div>
                 </div>
               </div>
