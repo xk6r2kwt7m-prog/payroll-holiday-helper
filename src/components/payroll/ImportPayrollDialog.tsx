@@ -410,6 +410,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       }
 
       let periodId: string;
+      let entriesCreated = 0;
 
       if (useExistingPeriod && existingPeriodId) {
         periodId = existingPeriodId;
@@ -418,10 +419,83 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           .update({ notes: periodNotes, imported_by: user?.id })
           .eq("id", periodId);
 
-        await supabase
+        // Fetch existing entries to preserve bonuses/rates from copy
+        const { data: existingEntries } = await supabase
           .from("payroll_entries")
-          .delete()
+          .select("id, employee_id, hourly_rate, service_charge, performance_bonus, special_bonus")
           .eq("payroll_period_id", periodId);
+
+        const existingByEmployeeId = new Map(
+          (existingEntries || []).map((e: any) => [e.employee_id, e])
+        );
+
+        for (const emp of matchedEntries) {
+          if (!emp.matchedId) continue;
+
+          const hours = emp.totalHours;
+          const holidayAccrued = calculateAccrual(hours, 0.1207);
+
+          const locNotes = emp.locations.length > 1
+            ? `Hours by location: ${emp.locations.map(l => `${l.name}: ${l.hours.toFixed(2)}h`).join(" | ")}`
+            : `Location: ${emp.locations[0]?.name}`;
+
+          const matchNote = emp.resolution === "created"
+            ? " [Employee created during import]"
+            : emp.matchMethod !== "exact" && emp.matchMethod !== "none"
+            ? ` [Matched via ${emp.matchMethod.replace(/_/g, " ")}]`
+            : "";
+
+          const existing = existingByEmployeeId.get(emp.matchedId);
+
+          if (existing) {
+            // UPDATE hours only — preserve rate, service charge, bonuses from copy
+            const rate = existing.hourly_rate;
+            const sc = existing.service_charge || 0;
+            const perfBonus = existing.performance_bonus || 0;
+            const specBonus = existing.special_bonus || 0;
+            const totalPay = (hours * rate) + (hours * sc) + perfBonus + specBonus;
+
+            const { error: updateError } = await supabase
+              .from("payroll_entries")
+              .update({
+                timesheet_hours: hours,
+                imported_hours: hours,
+                holiday_accrued_hours: holidayAccrued,
+                total_pay: totalPay,
+                notes: `${locNotes}${matchNote}`,
+              } as any)
+              .eq("id", existing.id);
+
+            if (updateError) throw updateError;
+            entriesCreated++;
+            existingByEmployeeId.delete(emp.matchedId);
+          } else {
+            // Employee in CSV but not in copied period — create new entry
+            const rate = emp.hourlyRate || 0;
+            const sc = emp.serviceCharge || 0;
+
+            const { error: insertError } = await supabase
+              .from("payroll_entries")
+              .insert({
+                payroll_period_id: periodId,
+                employee_id: emp.matchedId,
+                hourly_rate: rate,
+                service_charge: sc,
+                timesheet_hours: hours,
+                imported_hours: hours,
+                performance_bonus: 0,
+                special_bonus: 0,
+                holiday_accrued_hours: holidayAccrued,
+                total_pay: (hours * rate) + (hours * sc),
+                notes: `${locNotes}${matchNote} [Added by import]`,
+                tenant_id: tenantId,
+              } as any);
+
+            if (insertError) throw insertError;
+            entriesCreated++;
+          }
+        }
+        // Entries from copy that had no CSV match remain untouched with 0 hours
       } else {
         const { data: period, error: periodError } = await supabase
           .from("payroll_periods")
@@ -441,46 +515,46 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
         if (periodError) throw periodError;
         periodId = period.id;
-      }
 
-      let entriesCreated = 0;
-      for (const emp of matchedEntries) {
-        if (!emp.matchedId || !emp.hourlyRate) continue;
+        // New period from CSV only — create all entries fresh
+        for (const emp of matchedEntries) {
+          if (!emp.matchedId || !emp.hourlyRate) continue;
 
-        const hours = emp.totalHours;
-        const rate = emp.hourlyRate;
-        const sc = emp.serviceCharge || 0;
-        const holidayAccrued = calculateAccrual(hours, 0.1207);
+          const hours = emp.totalHours;
+          const rate = emp.hourlyRate;
+          const sc = emp.serviceCharge || 0;
+          const holidayAccrued = calculateAccrual(hours, 0.1207);
 
-        const locNotes = emp.locations.length > 1
-          ? `Hours by location: ${emp.locations.map(l => `${l.name}: ${l.hours.toFixed(2)}h`).join(" | ")}`
-          : `Location: ${emp.locations[0]?.name}`;
+          const locNotes = emp.locations.length > 1
+            ? `Hours by location: ${emp.locations.map(l => `${l.name}: ${l.hours.toFixed(2)}h`).join(" | ")}`
+            : `Location: ${emp.locations[0]?.name}`;
 
-        const matchNote = emp.resolution === "created"
-          ? " [Employee created during import]"
-          : emp.matchMethod !== "exact" && emp.matchMethod !== "none"
-          ? ` [Matched via ${emp.matchMethod.replace(/_/g, " ")}]`
-          : "";
+          const matchNote = emp.resolution === "created"
+            ? " [Employee created during import]"
+            : emp.matchMethod !== "exact" && emp.matchMethod !== "none"
+            ? ` [Matched via ${emp.matchMethod.replace(/_/g, " ")}]`
+            : "";
 
-        const { error: entryError } = await supabase
-          .from("payroll_entries")
-          .insert({
-            payroll_period_id: periodId,
-            employee_id: emp.matchedId,
-            hourly_rate: rate,
-            service_charge: sc,
-            timesheet_hours: hours,
-            imported_hours: hours,
-            performance_bonus: 0,
-            special_bonus: 0,
-            holiday_accrued_hours: holidayAccrued,
-            total_pay: hours * rate + hours * sc,
-            notes: `${locNotes}${matchNote}`,
-            tenant_id: tenantId,
-          } as any);
+          const { error: entryError } = await supabase
+            .from("payroll_entries")
+            .insert({
+              payroll_period_id: periodId,
+              employee_id: emp.matchedId,
+              hourly_rate: rate,
+              service_charge: sc,
+              timesheet_hours: hours,
+              imported_hours: hours,
+              performance_bonus: 0,
+              special_bonus: 0,
+              holiday_accrued_hours: holidayAccrued,
+              total_pay: (hours * rate) + (hours * sc),
+              notes: `${locNotes}${matchNote}`,
+              tenant_id: tenantId,
+            } as any);
 
-        if (entryError) throw entryError;
-        entriesCreated++;
+          if (entryError) throw entryError;
+          entriesCreated++;
+        }
       }
 
       // Store original CSV file
@@ -634,28 +708,19 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                 <div>
                   <p className="font-medium text-primary">Existing draft "{periodName}" found</p>
                   <p className="text-muted-foreground mt-0.5">
-                    Import will <strong>replace all entries</strong> in this draft with fresh data.
+                    Import will <strong>update timesheet hours only</strong>. Rates, bonuses, and service charge from the copied period will be preserved.
                   </p>
                 </div>
               </div>
             )}
 
             {existingBonusWarning && existingPeriodId && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm">
+              <div className="rounded-lg bg-muted/50 border border-border p-3 text-sm">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                  <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <div>
-                    <p className="font-medium text-destructive">Manual edits will be overwritten</p>
-                    <p className="text-muted-foreground mt-0.5">{existingBonusWarning}</p>
-                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={bonusOverrideConfirmed}
-                        onChange={(e) => setBonusOverrideConfirmed(e.target.checked)}
-                        className="rounded border-destructive/50"
-                      />
-                      <span className="text-xs font-medium text-destructive">I understand — overwrite existing data</span>
-                    </label>
+                    <p className="font-medium text-foreground">Existing data preserved</p>
+                    <p className="text-muted-foreground mt-0.5">{existingBonusWarning} These will be kept — only timesheet hours will be updated.</p>
                   </div>
                 </div>
               </div>
@@ -902,7 +967,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
               <Button
                 size="sm"
                 onClick={() => setStep("upload")}
-                disabled={!periodName || !startDate || !endDate || (!!existingBonusWarning && !bonusOverrideConfirmed)}
+                disabled={!periodName || !startDate || !endDate}
                 className="gap-1"
               >
                 Continue <ChevronRight className="h-3.5 w-3.5" />
