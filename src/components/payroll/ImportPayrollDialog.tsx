@@ -850,6 +850,9 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                         {emp.resolution === "created" && (
                           <Badge variant="outline" className="text-[9px] h-4 px-1 bg-accent/10 text-accent-foreground border-accent/30">new</Badge>
                         )}
+                        {emp.isLeaver && emp.resolution !== "excluded" && (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1 bg-destructive/10 text-destructive border-destructive/20">leaver</Badge>
+                        )}
                       </div>
                       <span className="font-mono text-xs ml-3 shrink-0">{emp.totalHours.toFixed(2)}h</span>
                     </div>
