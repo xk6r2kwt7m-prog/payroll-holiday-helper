@@ -40,6 +40,10 @@ const Employees = () => {
     (searchParams.get("dept") as Department) || "all"
   );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
+
+  // Default to dashboard unless deep-linked to edit/directory
+  const hasDeepLink = searchParams.has("edit") || searchParams.get("view") === "directory";
+  const [viewMode, setViewMode] = useState<ViewMode>(hasDeepLink ? "directory" : "dashboard");
   const [sortBy, setSortBy] = useState<SortOption>("alpha");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
