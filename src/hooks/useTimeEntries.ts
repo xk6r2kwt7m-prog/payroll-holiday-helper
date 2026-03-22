@@ -346,7 +346,7 @@ export function useRejectTimeEntry() {
       if (error) throw error;
 
       // Audit log
-      await writeTimeEntryAudit(tenantId!, "reject", [id], user.id, notes);
+      await writeTimeEntryAudit(tenantId!, "reject", [id], user.id, { notes });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time_entries"] });
