@@ -639,7 +639,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                   <p className="text-xs text-muted-foreground">Format: 2 letters, 6 numbers, 1 letter. Can be added later.</p>
                 </div>
 
-                {formData.ni_number.trim() && (
+                {formData.ni_number.trim() && formData.ni_number.trim().toUpperCase() !== originalNi.trim().toUpperCase() && (
                   <div className="space-y-2">
                     <Label htmlFor="ni_confirm" className="flex items-center gap-1">
                       Confirm National Insurance Number
