@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { type DayOfWeek, DAY_ABBR, getMinimumStaff } from "@/components/schedule/shiftDefaults";
 import { assertPermission } from "@/lib/permission-guard";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 
 interface UseScheduleActionsParams {
   currentDate: Date;
