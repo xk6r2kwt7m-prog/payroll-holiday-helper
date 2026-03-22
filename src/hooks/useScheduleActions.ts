@@ -342,7 +342,7 @@ export function useScheduleActions({ currentDate, selectedBranch, selectedDept }
               employee_name: emp.name,
               branch: selectedBranch,
               week: dateLabel,
-              login_url: `${window.location.origin}/schedule`,
+              login_url: `${getCanonicalOrigin()}/schedule`,
             },
             tenant_id: tenantId,
           });
