@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { toast } from "sonner";
 import { z } from "zod";
 import { motion } from "framer-motion";
