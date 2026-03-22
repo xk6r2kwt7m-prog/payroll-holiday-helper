@@ -562,6 +562,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setImportMessage("");
     setValidationErrors([]);
     setCreatingFor(null);
+    setExistingBonusWarning(null);
+    setBonusOverrideConfirmed(false);
   };
 
   const matchMethodLabel = (m: MatchMethod) => {
