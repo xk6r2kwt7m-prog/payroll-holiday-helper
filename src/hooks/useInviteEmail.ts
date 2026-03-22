@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useCallback } from "react";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 
 interface InviteEmailPayload {
   recipientEmail: string;
