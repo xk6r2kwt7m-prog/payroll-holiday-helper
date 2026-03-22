@@ -194,7 +194,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setPayDate(suggested.payDate);
   }, [open, periods]);
 
-  // Detect existing draft period
+  // Detect existing draft period and check for bonuses
   useEffect(() => {
     if (!periodName) return;
     const match = periods.find(
@@ -203,9 +203,33 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     if (match) {
       setExistingPeriodId(match.id);
       setUseExistingPeriod(true);
+      // Check for existing bonuses that would be overwritten
+      (async () => {
+        const { data: existingEntries } = await supabase
+          .from("payroll_entries")
+          .select("employee_id, performance_bonus, special_bonus, notes")
+          .eq("payroll_period_id", match.id);
+        if (existingEntries) {
+          const withBonuses = existingEntries.filter(
+            (e: any) => (Number(e.performance_bonus) > 0 || Number(e.special_bonus) > 0)
+          );
+          const withNotes = existingEntries.filter((e: any) => e.notes && e.notes.includes("manager_adjusted"));
+          if (withBonuses.length > 0 || withNotes.length > 0) {
+            const parts: string[] = [];
+            if (withBonuses.length > 0) parts.push(`${withBonuses.length} employee(s) with bonuses`);
+            if (withNotes.length > 0) parts.push(`${withNotes.length} manually adjusted entries`);
+            setExistingBonusWarning(`This draft has ${parts.join(" and ")} that will be overwritten.`);
+          } else {
+            setExistingBonusWarning(null);
+          }
+        }
+        setBonusOverrideConfirmed(false);
+      })();
     } else {
       setExistingPeriodId(null);
       setUseExistingPeriod(false);
+      setExistingBonusWarning(null);
+      setBonusOverrideConfirmed(false);
     }
   }, [periods, periodName]);
 
