@@ -900,7 +900,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
               <Button
                 size="sm"
                 onClick={() => setStep("upload")}
-                disabled={!periodName || !startDate || !endDate}
+                disabled={!periodName || !startDate || !endDate || (!!existingBonusWarning && !bonusOverrideConfirmed)}
                 className="gap-1"
               >
                 Continue <ChevronRight className="h-3.5 w-3.5" />
