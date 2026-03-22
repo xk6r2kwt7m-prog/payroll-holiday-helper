@@ -43,6 +43,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const [niConfirm, setNiConfirm] = useState("");
   const [niMismatchError, setNiMismatchError] = useState(false);
   const [niMasked, setNiMasked] = useState(false);
+  const [originalNi, setOriginalNi] = useState("");
   
   const [formData, setFormData] = useState({
     forename: "",
@@ -157,6 +158,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
     setNiConfirm("");
     setNiMismatchError(false);
     setNiMasked(false);
+    setOriginalNi(employee?.ni_number || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -207,8 +209,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       validationErrors.push("A valid hourly rate is required");
     }
 
-    // NI double-entry validation: if NI is provided, confirm must match
-    if (formData.ni_number.trim()) {
+    // NI double-entry validation: only require confirmation if NI was changed or is new
+    const niChanged = formData.ni_number.trim().toUpperCase() !== originalNi.trim().toUpperCase();
+    if (formData.ni_number.trim() && niChanged) {
       if (niConfirm.trim().toUpperCase() !== formData.ni_number.trim().toUpperCase()) {
         setNiMismatchError(true);
         setActiveTab("personal");
@@ -636,7 +639,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                   <p className="text-xs text-muted-foreground">Format: 2 letters, 6 numbers, 1 letter. Can be added later.</p>
                 </div>
 
-                {formData.ni_number.trim() && (
+                {formData.ni_number.trim() && formData.ni_number.trim().toUpperCase() !== originalNi.trim().toUpperCase() && (
                   <div className="space-y-2">
                     <Label htmlFor="ni_confirm" className="flex items-center gap-1">
                       Confirm National Insurance Number
