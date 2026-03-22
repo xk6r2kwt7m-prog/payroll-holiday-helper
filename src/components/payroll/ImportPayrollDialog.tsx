@@ -259,6 +259,32 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     })),
   [employees]);
 
+  // Re-evaluate unmatched entries when employee list changes (e.g. starter created outside dialog)
+  useEffect(() => {
+    if (aggregated.length === 0) return;
+    const hasUnresolved = aggregated.some(e => e.unmatched && !e.resolution);
+    if (!hasUnresolved) return;
+
+    setAggregated(prev => prev.map(emp => {
+      if (!emp.unmatched || emp.resolution) return emp;
+      const { employee: matched, method } = matchEmployee(emp.csvName, matchableEmployees);
+      if (!matched) return emp;
+      return {
+        ...emp,
+        matchedId: matched.id,
+        matchedForename: matched.forename,
+        matchedSurname: matched.surname,
+        department: matched.department,
+        hourlyRate: matched.hourly_rate,
+        serviceCharge: matched.service_charge ?? 0,
+        unmatched: false,
+        resolution: "matched" as const,
+        matchMethod: method,
+        isLeaver: matched.status === "leaver",
+      };
+    }));
+  }, [matchableEmployees]);
+
   const handleFileChange = useCallback(async (f: File | null) => {
     setFile(f);
     setValidationErrors([]);
