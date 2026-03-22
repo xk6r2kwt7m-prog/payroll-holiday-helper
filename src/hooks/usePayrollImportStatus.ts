@@ -69,6 +69,17 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
         continue;
       }
 
+      if (employee.status === "leaver") {
+        issues.push({
+          csvName,
+          issue: "leaver_in_csv",
+          employeeId: employee.id,
+          employeeName: `${employee.forename} ${employee.surname}`,
+          employeeStatus: employee.status,
+        });
+        continue;
+      }
+
       if (employeeIdSet.has(employee.id)) {
         continue;
       }
