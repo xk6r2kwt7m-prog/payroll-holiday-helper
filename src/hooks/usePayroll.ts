@@ -69,7 +69,8 @@ export function usePayrollEntries(periodId?: string) {
             service_charge,
             bank_account_no,
             sort_code,
-            ni_number
+            ni_number,
+            date_of_birth
           )
         `)
         .eq("tenant_id", tenantId)
