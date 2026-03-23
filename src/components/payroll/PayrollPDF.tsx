@@ -336,6 +336,7 @@ interface PayrollPDFProps {
   correctionNote?: string;
   logoUrl?: string;
   reportConfig?: PayrollReportConfig;
+  locationData?: PayrollEntryLocation[];
 }
 
 function fmt(amount: number): string {
