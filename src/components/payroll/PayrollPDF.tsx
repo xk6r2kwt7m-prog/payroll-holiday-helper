@@ -355,6 +355,7 @@ export function PayrollPDF({
   holidayPayments = [],
   starters = [],
   priorPeriodEmployeeIds = new Set(),
+  priorEntryRates = new Map(),
   companyName = "Your Company",
   isCorrection = false,
   correctionNote,
