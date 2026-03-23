@@ -752,6 +752,8 @@ const Payroll = () => {
             entries={entries as any}
             holidayPayments={holidayPayments as any}
             allEmployees={allEmployees}
+            priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+            priorEntryRates={priorEntryRates}
             companyName={companySettings?.company_name}
           />
         )}
