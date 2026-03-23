@@ -55,6 +55,7 @@ const Payroll = () => {
   
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
+  const [reviewedIssueNames, setReviewedIssueNames] = useState<Set<string>>(new Set());
 
   // Reset page-local state on tenant switch
   const resetPageState = useCallback(() => {
