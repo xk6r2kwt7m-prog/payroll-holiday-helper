@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,9 @@ import { pdf } from "@react-pdf/renderer";
 import { SigningCertificatePDF } from "./SigningCertificatePDF";
 import type { SignatureRecord } from "./SigningCertificatePDF";
 import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award, RefreshCw, FileSignature } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useTenant } from "@/hooks/useTenant";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -57,6 +60,7 @@ export function ContractSigningActions({
   companyName = "Ugly Dumpling",
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
+  const { tenantId } = useTenant();
   const [open, setOpen] = useState(false);
   const [signerType, setSignerType] = useState<"employee" | "employer">("employee");
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -64,6 +68,36 @@ export function ContractSigningActions({
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(contractSendStatus === "sent");
   const [downloadingCert, setDownloadingCert] = useState(false);
+  const [overrideName, setOverrideName] = useState("");
+  const [overrideEmail, setOverrideEmail] = useState("");
+  const [defaultName, setDefaultName] = useState("");
+  const [defaultEmail, setDefaultEmail] = useState("");
+  const [signatoryLoaded, setSignatoryLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!tenantId) return;
+    (async () => {
+      const [{ data: settings }, { data: docRecord }] = await Promise.all([
+        supabase
+          .from("company_settings")
+          .select("default_signatory_name, default_signatory_email")
+          .eq("tenant_id", tenantId)
+          .maybeSingle(),
+        supabase
+          .from("employee_documents")
+          .select("employer_signatory_name, employer_signatory_email")
+          .eq("id", documentId)
+          .maybeSingle(),
+      ]);
+      const defName = (settings as any)?.default_signatory_name || "";
+      const defEmail = (settings as any)?.default_signatory_email || "";
+      setDefaultName(defName);
+      setDefaultEmail(defEmail);
+      setOverrideName((docRecord as any)?.employer_signatory_name || defName);
+      setOverrideEmail((docRecord as any)?.employer_signatory_email || defEmail);
+      setSignatoryLoaded(true);
+    })();
+  }, [tenantId, documentId]);
 
   const generateLink = useGenerateSigningLink();
   const { sendContractEmail } = useSendContractEmail();
@@ -93,6 +127,17 @@ export function ContractSigningActions({
 
   const handleGenerate = async () => {
     try {
+      // Persist per-contract signatory before generating link
+      const isOverride = overrideName.trim() !== defaultName || overrideEmail.trim() !== defaultEmail;
+      await supabase
+        .from("employee_documents")
+        .update({
+          employer_signatory_name: overrideName.trim() || null,
+          employer_signatory_email: overrideEmail.trim() || null,
+          employer_signatory_source: isOverride ? "override" : "default",
+        } as any)
+        .eq("id", documentId);
+
       const result = await generateLink.mutateAsync({
         employeeDocumentId: documentId,
         employeeId,
@@ -410,6 +455,45 @@ export function ContractSigningActions({
               <>
                 {!generatedLink ? (
                   <div className="space-y-3">
+                    {/* Per-contract signatory override */}
+                    {signatoryLoaded && (
+                      <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
+                        <p className="text-xs font-semibold text-foreground">Employer Signatory for this Contract</p>
+                        {!overrideName.trim() && !overrideEmail.trim() && (
+                          <p className="text-[10px] text-destructive font-medium">
+                            ⚠ Default employer signatory is not configured. Please add manager name and email in contract settings or enter them below.
+                          </p>
+                        )}
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <Label className="text-[10px]">Manager Name</Label>
+                            <Input
+                              value={overrideName}
+                              onChange={(e) => setOverrideName(e.target.value)}
+                              placeholder="Full name"
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px]">Manager Email</Label>
+                            <Input
+                              type="email"
+                              value={overrideEmail}
+                              onChange={(e) => setOverrideEmail(e.target.value)}
+                              placeholder="Email address"
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                        </div>
+                        {(overrideName.trim() !== defaultName || overrideEmail.trim() !== defaultEmail) &&
+                          defaultName && (
+                            <p className="text-[10px] text-amber-600">
+                              ⚡ Using a contract-specific override. Default: {defaultName} ({defaultEmail})
+                            </p>
+                          )}
+                      </div>
+                    )}
+
                     <div>
                       <label className="text-xs text-muted-foreground mb-1.5 block">
                         {employeeSigned && !employerSigned
@@ -433,7 +517,7 @@ export function ContractSigningActions({
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={handleGenerate} disabled={generateLink.isPending} className="w-full" variant={employerTokenAutoSent ? "outline" : "default"}>
+                    <Button onClick={handleGenerate} disabled={generateLink.isPending || !overrideName.trim() || !overrideEmail.trim()} className="w-full" variant={employerTokenAutoSent ? "outline" : "default"}>
                       {generateLink.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : employeeSigned && !employerSigned && employerTokenAutoSent ? (
