@@ -37,6 +37,7 @@ import {
 } from "@/components/settings/AdminConfigSections";
 import { OnboardingRequirementsConfig } from "@/components/settings/OnboardingRequirementsConfig";
 import { ServiceChargeSettings } from "@/components/settings/ServiceChargeSettings";
+import { SignatorySettings } from "@/components/settings/SignatorySettings";
 import { EmailTestButton } from "@/components/settings/EmailTestButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
@@ -122,6 +123,7 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
     description: "Training requirements and document templates",
     sections: [
       { id: "training", label: "Training Settings", description: "Required certifications and modules" },
+      { id: "contracts", label: "Contract Signing", description: "Default employer signatory for contracts" },
     ],
   },
   {
@@ -489,6 +491,11 @@ const Settings = () => {
         {activeSection === "training" && (
           <ConfigCard title="Training Settings" description="Configure required certifications, training modules, and compliance tracking.">
             <TrainingDocSettings />
+          </ConfigCard>
+        )}
+        {activeSection === "contracts" && (
+          <ConfigCard title="Contract Signing" description="Configure the default employer signatory for contract countersigning.">
+            <SignatorySettings />
           </ConfigCard>
         )}
 
