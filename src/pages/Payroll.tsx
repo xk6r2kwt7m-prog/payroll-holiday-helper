@@ -69,10 +69,57 @@ const Payroll = () => {
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
-  // Get prior period entries to determine first-time payroll employees
-  const priorPeriod = periods.find((_, i) => periods[i - 1]?.id === selectedPeriod?.id) || (periods.length > 1 && selectedPeriod?.id === periods[0]?.id ? periods[1] : undefined);
-  const { data: priorEntries = [] } = usePayrollEntries(priorPeriod?.id);
-  const priorPeriodEmployeeIds = new Set(priorEntries.map((e: any) => e.employee_id));
+  // Get ALL prior period entries to determine first-time payroll employees
+  const priorPeriodIds = useMemo(() => {
+    if (!selectedPeriod || !periods.length) return [];
+    const selectedDate = new Date(selectedPeriod.start_date);
+    return periods
+      .filter(p => p.id !== selectedPeriod.id && new Date(p.start_date) < selectedDate)
+      .map(p => p.id);
+  }, [periods, selectedPeriod]);
+
+  // Fetch entries from the immediate prior period for rate comparison
+  const immediatePriorPeriod = useMemo(() => {
+    if (!selectedPeriod || !periods.length) return undefined;
+    const selectedDate = new Date(selectedPeriod.start_date);
+    const prior = periods
+      .filter(p => p.id !== selectedPeriod.id && new Date(p.start_date) < selectedDate)
+      .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+    return prior[0];
+  }, [periods, selectedPeriod]);
+  const { data: priorEntries = [] } = usePayrollEntries(immediatePriorPeriod?.id);
+
+  // Build set of ALL employee IDs that appeared in ANY prior period
+  const { data: allPriorEntries = [] } = useQuery({
+    queryKey: ["all_prior_payroll_employee_ids", tenantId, priorPeriodIds],
+    queryFn: async () => {
+      if (!tenantId || priorPeriodIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("payroll_entries")
+        .select("employee_id")
+        .eq("tenant_id", tenantId)
+        .in("payroll_period_id", priorPeriodIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tenantId && priorPeriodIds.length > 0,
+  });
+  const priorPeriodEmployeeIds = useMemo(
+    () => new Set(allPriorEntries.map((e: any) => e.employee_id).filter(Boolean)),
+    [allPriorEntries]
+  );
+
+  // Build prior period rate map for change indicators
+  const priorEntryRates = useMemo(() => {
+    const map = new Map<string, { hourly_rate: number; service_charge: number }>();
+    for (const entry of priorEntries) {
+      map.set((entry as any).employee_id, {
+        hourly_rate: Number((entry as any).hourly_rate) || 0,
+        service_charge: Number((entry as any).service_charge || 0),
+      });
+    }
+    return map;
+  }, [priorEntries]);
   const { data: holidayPayments = [] } = useHolidayPayments(selectedPeriod?.id);
   const { data: allEmployees = [] } = useEmployees();
   const currentEmployeeIds = entries.map((entry: any) => entry.employee_id);
