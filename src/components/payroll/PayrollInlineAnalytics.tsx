@@ -4,6 +4,7 @@ import {
   ArrowUpRight, ArrowDownRight, ChevronDown, ChevronUp, Crown, AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { PayrollLocationAnalytics } from "./PayrollLocationAnalytics";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
