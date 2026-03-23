@@ -582,6 +582,20 @@ export function EditablePayrollTable({
               + Bank
             </Button>
           )}
+          <Select value={sortMode} onValueChange={(v) => setSortMode(v as any)}>
+            <SelectTrigger className="h-8 w-[140px] text-xs">
+              <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">Default</SelectItem>
+              <SelectItem value="alphabetical">A–Z (Surname)</SelectItem>
+              <SelectItem value="department">Department</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
+              <SelectItem value="hours_desc">Hours ↓</SelectItem>
+              <SelectItem value="hours_asc">Hours ↑</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       
