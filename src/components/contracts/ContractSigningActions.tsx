@@ -27,7 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { SigningCertificatePDF } from "./SigningCertificatePDF";
 import type { SignatureRecord } from "./SigningCertificatePDF";
-import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award, RefreshCw } from "lucide-react";
+import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award, RefreshCw, FileSignature } from "lucide-react";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -114,15 +114,10 @@ export function ContractSigningActions({
     toast({ title: "Copied!", description: "Signing link copied to clipboard" });
   };
 
-  /** For fully-signed contracts, download the signing certificate (with visible signatures).
+  /** For fully-signed contracts, download the authoritative completed contract package.
    *  For pending contracts, view the original PDF. */
   const handleViewFinalContract = async () => {
-    if (bothSigned) {
-      // Download signing certificate as the authoritative signed version
-      await handleDownloadSigningCertificate();
-      return;
-    }
-    const pathToUse = finalSignedFilePath || filePath;
+    const pathToUse = bothSigned ? finalSignedFilePath || filePath : filePath;
     if (pathToUse) {
       const { data } = await supabase.storage
         .from("employee-documents")
@@ -370,18 +365,29 @@ export function ContractSigningActions({
                   </p>
                 </div>
               )}
+
+              {bothSigned && (
+                <div className="pt-2 mt-1 border-t border-border space-y-1">
+                  <p className="text-[10px] text-primary">
+                    ✓ Final completed signed contract stored as the authoritative record.
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Original unsigned contract and signing certificate remain available separately.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Download signed contract (fully signed) */}
             {bothSigned && (
               <div className="space-y-2">
                 <Button
-                  onClick={handleDownloadSigningCertificate}
+                  onClick={handleViewFinalContract}
                   disabled={downloadingCert}
                   className="w-full gradient-primary"
                 >
                   {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                  Download Signed Contract
+                  Download Final Completed Contract
                 </Button>
                 {filePath && (
                   <Button
@@ -389,10 +395,19 @@ export function ContractSigningActions({
                     variant="outline"
                     className="w-full"
                   >
-                    <Award className="h-4 w-4" />
-                    View Original Document
+                    <FileSignature className="h-4 w-4" />
+                    View Original Unsigned Contract
                   </Button>
                 )}
+                <Button
+                  onClick={handleDownloadSigningCertificate}
+                  disabled={downloadingCert}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />}
+                  Download Separate Signing Certificate
+                </Button>
               </div>
             )}
 
