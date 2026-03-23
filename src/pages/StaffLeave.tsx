@@ -17,7 +17,9 @@ export default function StaffLeave() {
   const { t } = useI18n();
   const { employee, employeeId, employeeName, isLoading: empLoading } = useCurrentEmployee();
   const { data: myRequests = [] } = useMyHolidayRequests(employeeId);
-  const { data: balances = [] } = useHolidayBalances(employeeId || undefined);
+  const currentYear = new Date().getFullYear();
+  const leaveYearStart = `${currentYear}-01-01`;
+  const { entries: ledgerEntries, balance: ledgerBalance } = useHolidayLedgerBalance(employeeId || undefined, leaveYearStart);
   const [activeTab, setActiveTab] = useState<"request" | "history">("request");
 
   if (empLoading) {
@@ -46,14 +48,19 @@ export default function StaffLeave() {
     );
   }
 
-  const currentYear = new Date().getFullYear();
-  const currentBalance = balances.find(
-    (b: any) => b.leave_year_start === `${currentYear}-01-01`
+  // Derive accrued/taken/carried from ledger entries (single source of truth)
+  const accrued = (ledgerEntries || [])
+    .filter(e => e.entry_type === "accrual")
+    .reduce((sum, e) => sum + Number(e.hours), 0);
+  const carried = (ledgerEntries || [])
+    .filter(e => e.entry_type === "carry_over_in")
+    .reduce((sum, e) => sum + Number(e.hours), 0);
+  const taken = Math.abs(
+    (ledgerEntries || [])
+      .filter(e => e.entry_type === "holiday_taken")
+      .reduce((sum, e) => sum + Number(e.hours), 0)
   );
-  const accrued = Number(currentBalance?.hours_accrued) || 0;
-  const taken = Number(currentBalance?.hours_taken) || 0;
-  const carried = Number(currentBalance?.hours_carried_over) || 0;
-  const remaining = accrued + carried - taken;
+  const remaining = ledgerBalance;
 
   const pendingRequests = myRequests.filter(r => r.status === "pending");
   const approvedRequests = myRequests.filter(r => r.status === "approved");
