@@ -36,7 +36,9 @@ export function UnresolvedIssuesPanel({
   if (issues.length === 0 && excludedNames.length === 0) return null;
 
   const handleMarkReviewed = (csvName: string) => {
-    setReviewedIssues(prev => new Set([...prev, csvName]));
+    if (!externalReviewed) {
+      setLocalReviewed(prev => new Set([...prev, csvName]));
+    }
     onMarkReviewed?.(csvName);
   };
 
