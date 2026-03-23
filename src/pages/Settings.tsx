@@ -130,9 +130,11 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
     id: "system",
     icon: Shield,
     label: "System & Security",
-    description: "Notifications, security, modules, and audit trail",
+    description: "Notifications, email controls, security, modules, and audit trail",
     sections: [
       { id: "notifications", label: "Notifications", description: "Email alerts and reminders" },
+      { id: "email-automation", label: "Email Automation", description: "Control which emails the system can send to employees" },
+      { id: "email-audit", label: "Email Log", description: "View all sent, blocked, and failed emails" },
       { id: "security", label: "Security", description: "Authentication and session rules" },
       { id: "features", label: "Feature Access", description: "Enable or disable platform modules" },
       { id: "audit", label: "Audit Log", description: "View all admin actions and changes" },
