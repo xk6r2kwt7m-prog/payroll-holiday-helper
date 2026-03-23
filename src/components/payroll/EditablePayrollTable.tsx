@@ -624,7 +624,7 @@ export function EditablePayrollTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.map((entry) => {
+            {sortedEntries.map((entry) => {
               const isEditing = editingId === entry.id;
               const emp = entry.employees;
               const isSelected = selectedIds.has(entry.id);
