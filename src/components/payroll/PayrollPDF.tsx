@@ -607,7 +607,7 @@ export function PayrollPDF({
                     {section.entries.map((entry, idx) => {
                       const emp = entry.employees;
                       const empStatus = emp?.status;
-                      const isStarter = empStatus === "starter";
+                      const isStarter = empStatus === "starter" && !priorPeriodEmployeeIds.has(entry.employee_id);
                       const isLeaver = empStatus === "leaver";
                       const rateChanged = emp && Math.abs(Number(entry.hourly_rate) - Number(emp.hourly_rate)) > 0.001;
                       const serviceChanged = emp && Math.abs(Number(entry.service_charge || 0) - Number(emp.service_charge || 0)) > 0.001;
