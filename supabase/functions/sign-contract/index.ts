@@ -406,7 +406,32 @@ async function buildFinalSignedContractPdf(params: {
   return { finalBytes, finalHash };
 }
 
-async function resolveManagerRecipients(supabase: any, tenantId: string) {
+async function resolveManagerRecipients(supabase: any, tenantId: string, documentId?: string | null) {
+  // Priority 1: Per-contract override stored on employee_documents
+  if (documentId) {
+    const { data: docRecord } = await supabase
+      .from("employee_documents")
+      .select("employer_signatory_name, employer_signatory_email, employer_signatory_source")
+      .eq("id", documentId)
+      .maybeSingle();
+
+    const overrideName = docRecord?.employer_signatory_name;
+    const overrideEmail = docRecord?.employer_signatory_email;
+    if (overrideName && overrideEmail) {
+      return {
+        recipients: [{
+          user_id: null,
+          role: "contract_signatory",
+          email: overrideEmail,
+          full_name: overrideName,
+          title: null,
+        }],
+        source: docRecord?.employer_signatory_source === "override" ? "contract_override" : "contract_default",
+      };
+    }
+  }
+
+  // Priority 2: Default from company_settings
   const { data: settings } = await supabase
     .from("company_settings")
     .select("default_signatory_name, default_signatory_email, default_signatory_title")
@@ -1010,7 +1035,7 @@ Deno.serve(async (req) => {
 
         // Send completion email to MANAGER(S)
         try {
-          const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id);
+          const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id, signingToken.employee_document_id);
 
           if (managerRecipients.length > 0) {
             for (const admin of managerRecipients) {
@@ -1096,7 +1121,7 @@ Deno.serve(async (req) => {
 
         // ── AUTO-GENERATE EMPLOYER SIGNING TOKEN & SEND TO MANAGER ──
         try {
-          const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id);
+          const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id, signingToken.employee_document_id);
 
           if (managerRecipients.length > 0) {
             const expiresAt = new Date();
