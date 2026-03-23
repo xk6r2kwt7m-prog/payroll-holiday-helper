@@ -492,6 +492,11 @@ const Settings = () => {
             <TrainingDocSettings />
           </ConfigCard>
         )}
+        {activeSection === "contracts" && (
+          <ConfigCard title="Contract Signing" description="Configure the default employer signatory for contract countersigning.">
+            <SignatorySettings />
+          </ConfigCard>
+        )}
 
         {/* ─── SYSTEM GROUP ─── */}
         {activeSection === "notifications" && (
