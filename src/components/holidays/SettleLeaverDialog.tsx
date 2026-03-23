@@ -39,7 +39,7 @@ export function SettleLeaverDialog() {
   const [notes, setNotes] = useState("");
   const [approved, setApproved] = useState(false);
 
-  const { data: employees = [] } = useEmployees();
+  const { data: employees = [] } = useEmployees(true); // include archived so settled/leaver candidates appear
   const { data: periods = [] } = usePayrollPeriods();
   const createPayment = useCreateHolidayPayment();
   const queryClient = useQueryClient();
