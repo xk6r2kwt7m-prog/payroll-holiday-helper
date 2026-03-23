@@ -524,8 +524,12 @@ export function EditablePayrollTable({
                             New
                           </Badge>
                         )}
+                        <LocationSplitPopover
+                          periodId={periodId}
+                          employeeId={entry.employee_id}
+                          employeeName={`${emp?.forename} ${emp?.surname}`}
+                        />
                       </div>
-                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="text-xs">
