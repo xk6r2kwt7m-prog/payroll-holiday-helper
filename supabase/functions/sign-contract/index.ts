@@ -1019,9 +1019,20 @@ Deno.serve(async (req) => {
         // Use token-based branded URL so employees can access without logging in
         const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?token=${downloadTokenRecord.token}&variant=final`;
 
-        // Send completion email to EMPLOYEE
+        // Check email automation policy for completion emails
+        const { data: completionPolicyRow } = await supabase
+          .from("tenant_preferences")
+          .select("preferences")
+          .eq("tenant_id", signingToken.tenant_id)
+          .eq("category", "email_automation")
+          .maybeSingle();
+
+        const completionPolicy = completionPolicyRow?.preferences as Record<string, string> | null;
+        const completionSigningMode = completionPolicy?.contract_signing || "manual";
+
+        // Send completion email to EMPLOYEE (only if not disabled)
         const recipientEmail = signingToken.employees?.email;
-        if (recipientEmail) {
+        if (recipientEmail && completionSigningMode !== "disabled") {
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
@@ -1037,12 +1048,44 @@ Deno.serve(async (req) => {
                 tenant_id: signingToken.tenant_id,
               },
             });
+
+            await supabase.from("audit_log").insert({
+              action: "create",
+              table_name: "email_sent",
+              record_id: signingToken.employee_document_id,
+              tenant_id: signingToken.tenant_id,
+              new_data: {
+                event: "contract_completion_email_sent_to_employee",
+                status: "sent",
+                email_type: "contract_fully_signed",
+                recipient_email: recipientEmail,
+                employee_name: employeeName,
+                trigger: completionSigningMode === "auto" ? "automatic" : "manual",
+                policy_mode: completionSigningMode,
+              },
+            });
           } catch (emailErr) {
             console.error("Contract fully-signed email to employee failed:", emailErr);
           }
+        } else if (recipientEmail && completionSigningMode === "disabled") {
+          await supabase.from("audit_log").insert({
+            action: "create",
+            table_name: "email_blocked",
+            record_id: signingToken.employee_document_id,
+            tenant_id: signingToken.tenant_id,
+            new_data: {
+              event: "contract_completion_email_blocked",
+              status: "blocked",
+              reason: "Email automation policy: contract_signing is disabled",
+              email_type: "contract_fully_signed",
+              recipient_email: recipientEmail,
+              employee_name: employeeName,
+              trigger: "automatic_blocked",
+            },
+          });
         }
 
-        // Send completion email to MANAGER(S)
+        // Send completion email to MANAGER(S) — managers always receive (not employee-facing)
         try {
           const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id, signingToken.employee_document_id);
 
@@ -1066,13 +1109,16 @@ Deno.serve(async (req) => {
 
             await supabase.from("audit_log").insert({
               action: "create",
-              table_name: "contract_signatures",
+              table_name: "email_sent",
               record_id: signingToken.employee_document_id,
               tenant_id: signingToken.tenant_id,
               new_data: {
                 event: "completed_contract_sent_to_managers",
+                status: "sent",
+                email_type: "contract_fully_signed_manager",
                 recipient_source: managerSource,
                 recipients: managerRecipients.map((recipient: any) => ({ email: recipient.email, role: recipient.role })),
+                trigger: "automatic",
               },
             });
           }
