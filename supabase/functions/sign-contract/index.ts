@@ -936,13 +936,8 @@ Deno.serve(async (req) => {
           .eq("id", signingToken.employee_document_id)
           .maybeSingle();
 
-        let emailDownloadUrl = "";
-        if (docRecord2?.final_signed_pdf_url) {
-          const { data: freshSignedUrl } = await supabase.storage
-            .from("employee-documents")
-            .createSignedUrl(docRecord2.final_signed_pdf_url, 60 * 60 * 24 * 7);
-          emailDownloadUrl = freshSignedUrl?.signedUrl || "";
-        }
+        // Use branded URL for the final contract download link
+        const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?id=${signingToken.employee_document_id}&variant=final`;
 
         // Send completion email to EMPLOYEE
         const recipientEmail = signingToken.employees?.email;
