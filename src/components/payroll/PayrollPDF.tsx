@@ -331,6 +331,7 @@ interface PayrollPDFProps {
   entries: PayrollEntry[];
   holidayPayments?: HolidayPayment[];
   starters?: StarterEmployee[];
+  priorPeriodEmployeeIds?: Set<string>;
   companyName?: string;
   isCorrection?: boolean;
   correctionNote?: string;
