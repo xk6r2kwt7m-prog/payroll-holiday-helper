@@ -357,6 +357,7 @@ const Payroll = () => {
           entries={entries as any}
           holidayPayments={holidayPayments as any}
           starters={starterEmployees as any}
+          priorPeriodEmployeeIds={priorPeriodEmployeeIds}
           isCorrection={!!selectedPeriod.notes?.includes("[CORRECTED]")}
           correctionNote={selectedPeriod.notes?.includes("[CORRECTED]") ? selectedPeriod.notes : undefined}
           logoUrl={logoUrl}
