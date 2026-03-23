@@ -307,8 +307,16 @@ export function SettleLeaverDialog() {
             </Select>
           </div>
 
+          {/* No period selected */}
+          {!periodId && (
+            <div className="rounded-lg border border-border bg-muted/30 p-4 text-center space-y-1">
+              <User className="h-8 w-8 text-muted-foreground mx-auto" />
+              <p className="text-sm text-muted-foreground">Select a payroll period above to see settleable employees.</p>
+            </div>
+          )}
+
           {/* No employee selected — placeholder */}
-          {!employeeId && (
+          {periodId && !employeeId && (
             <div className="rounded-lg border border-border bg-muted/30 p-4 text-center space-y-1">
               <User className="h-8 w-8 text-muted-foreground mx-auto" />
               <p className="text-sm text-muted-foreground">Select an employee above to see their holiday balance and settlement details.</p>
