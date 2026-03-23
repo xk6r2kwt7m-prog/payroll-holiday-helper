@@ -18,13 +18,16 @@ interface UnresolvedIssuesPanelProps {
 export function UnresolvedIssuesPanel({
   issues,
   excludedNames,
+  reviewedNames: externalReviewed,
   onAddToPeriod,
   onExclude,
   onMarkReviewed,
 }: UnresolvedIssuesPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [reviewedIssues, setReviewedIssues] = useState<Set<string>>(new Set());
+  const [localReviewed, setLocalReviewed] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+
+  const reviewedIssues = externalReviewed ?? localReviewed;
 
   const blockingIssues = issues.filter(i => !reviewedIssues.has(i.csvName));
   const reviewOnlyIssues = issues.filter(i => reviewedIssues.has(i.csvName));
