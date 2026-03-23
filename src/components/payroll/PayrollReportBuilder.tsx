@@ -359,7 +359,7 @@ export function PayrollReportBuilder({
               <div className="space-y-3">
                 <Select
                   value={config.employeeScope}
-                  onValueChange={(v) => setConfig((p) => ({ ...p, employeeScope: v as any, selectedDepartments: [], selectedEmployeeIds: [] }))}
+                  onValueChange={(v) => setConfig((p) => ({ ...p, employeeScope: v as any, selectedDepartments: [], selectedLocations: [], selectedEmployeeIds: [] }))}
                 >
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue />
@@ -367,6 +367,9 @@ export function PayrollReportBuilder({
                   <SelectContent>
                     <SelectItem value="all">All Employees</SelectItem>
                     <SelectItem value="department">Filter by Department</SelectItem>
+                    {availableLocations.length > 0 && (
+                      <SelectItem value="location">Filter by Location</SelectItem>
+                    )}
                     <SelectItem value="custom">Select Specific Employees</SelectItem>
                   </SelectContent>
                 </Select>
