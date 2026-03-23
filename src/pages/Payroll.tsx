@@ -42,6 +42,7 @@ import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePayrollImportStatus } from "@/hooks/usePayrollImportStatus";
+import { SendPayrollEmailDialog } from "@/components/payroll/SendPayrollEmailDialog";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
