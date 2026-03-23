@@ -68,6 +68,7 @@ const Payroll = () => {
   const { data: allEmployees = [] } = useEmployees();
   const currentEmployeeIds = entries.map((entry: any) => entry.employee_id);
   const { unresolvedIssues, excludedNames } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
+  const { data: periodLocationData = [] } = usePayrollEntryLocations(selectedPeriod?.id);
   const approvePeriod = useApprovePayrollPeriod();
   const submitForReview = useSubmitPayrollForReview();
   const reopenPeriod = useReopenPayrollPeriod();
