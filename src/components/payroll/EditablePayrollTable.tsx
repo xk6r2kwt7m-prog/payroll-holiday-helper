@@ -130,7 +130,7 @@ export function EditablePayrollTable({
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
   const [removeEmployeeName, setRemoveEmployeeName] = useState("");
-  const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "department" | "status" | "hours_desc" | "hours_asc">("default");
+  const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "alphabetical_surname" | "department" | "status" | "hours_desc" | "hours_asc">("default");
 
   // Adjustment note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
