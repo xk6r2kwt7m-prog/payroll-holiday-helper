@@ -349,6 +349,11 @@ export function PayrollInlineAnalytics({ currentPeriodId, entries, holidayPaymen
                 )}
               </TabsContent>
 
+              {/* Locations Tab */}
+              <TabsContent value="locations" className="mt-4">
+                <PayrollLocationAnalytics periodId={currentPeriodId} entries={entries} />
+              </TabsContent>
+
               {/* Employees Tab */}
               <TabsContent value="employees" className="mt-4">
                 <div className="rounded-lg border border-border overflow-x-auto">
