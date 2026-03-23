@@ -42,6 +42,7 @@ import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePayrollImportStatus } from "@/hooks/usePayrollImportStatus";
+import { SendPayrollEmailDialog } from "@/components/payroll/SendPayrollEmailDialog";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
@@ -422,10 +423,19 @@ const Payroll = () => {
           </div>
           <div className="flex gap-1.5 shrink-0">
             {selectedPeriod && entries.length > 0 && (
-              <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-8 px-2.5 sm:px-3 text-xs">
-                <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">PDF</span>
-              </Button>
+              <>
+                <SendPayrollEmailDialog
+                  period={selectedPeriod as any}
+                  entries={entries as any}
+                  holidayPayments={holidayPayments as any}
+                  allEmployees={allEmployees as any}
+                  disabled={!isAdmin}
+                />
+                <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-8 px-2.5 sm:px-3 text-xs">
+                  <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
+                  <span className="hidden sm:inline">PDF</span>
+                </Button>
+              </>
             )}
           </div>
         </div>
