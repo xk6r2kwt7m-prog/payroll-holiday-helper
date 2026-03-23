@@ -55,11 +55,13 @@ const Payroll = () => {
   
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
+  const [reviewedIssueNames, setReviewedIssueNames] = useState<Set<string>>(new Set());
 
   // Reset page-local state on tenant switch
   const resetPageState = useCallback(() => {
     setSelectedPeriodId(null);
     setReportBuilderOpen(false);
+    setReviewedIssueNames(new Set());
   }, []);
   const { tenantReady, assertTenantMatch } = useTenantGuard(resetPageState);
 
@@ -74,6 +76,11 @@ const Payroll = () => {
   const { data: allEmployees = [] } = useEmployees();
   const currentEmployeeIds = entries.map((entry: any) => entry.employee_id);
   const { unresolvedIssues, excludedNames } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
+  const blockingIssues = unresolvedIssues.filter(i => !reviewedIssueNames.has(i.csvName));
+
+  const handleMarkReviewed = (csvName: string) => {
+    setReviewedIssueNames(prev => new Set([...prev, csvName]));
+  };
   const { data: periodLocationData = [] } = usePayrollEntryLocations(selectedPeriod?.id);
   const approvePeriod = useApprovePayrollPeriod();
   const submitForReview = useSubmitPayrollForReview();
@@ -121,8 +128,8 @@ const Payroll = () => {
 
   const handleSubmitForReview = async () => {
     if (!selectedPeriod) return;
-    if (unresolvedIssues.length > 0) {
-      toast.error("Cannot submit: unmatched employees must be resolved first");
+    if (blockingIssues.length > 0) {
+      toast.error("Cannot submit: unresolved blocking issues must be resolved first");
       return;
     }
     try {
@@ -148,8 +155,8 @@ const Payroll = () => {
 
   const handleApprove = async () => {
     if (!selectedPeriod) return;
-    if (unresolvedIssues.length > 0) {
-      toast.error("Cannot approve: unmatched employees must be resolved first");
+    if (blockingIssues.length > 0) {
+      toast.error("Cannot approve: unresolved blocking issues must be resolved first");
       return;
     }
     try {
@@ -495,6 +502,8 @@ const Payroll = () => {
           <UnresolvedIssuesPanel
             issues={unresolvedIssues}
             excludedNames={excludedNames}
+            reviewedNames={reviewedIssueNames}
+            onMarkReviewed={handleMarkReviewed}
           />
         )}
 
@@ -526,7 +535,7 @@ const Payroll = () => {
             isDeleting={deletePeriod.isPending}
             entryCount={entries.length}
             zeroHoursCount={zeroHoursCount}
-            unresolvedImportIssues={unresolvedIssues}
+            unresolvedImportIssues={blockingIssues}
             excludedNames={excludedNames}
           />
         )}

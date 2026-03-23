@@ -9,6 +9,7 @@ import type { PayrollImportIssue } from "@/hooks/usePayrollImportStatus";
 interface UnresolvedIssuesPanelProps {
   issues: PayrollImportIssue[];
   excludedNames: string[];
+  reviewedNames?: Set<string>;
   onAddToPeriod?: (employeeId: string) => void;
   onExclude?: (csvName: string) => void;
   onMarkReviewed?: (csvName: string) => void;
@@ -17,13 +18,16 @@ interface UnresolvedIssuesPanelProps {
 export function UnresolvedIssuesPanel({
   issues,
   excludedNames,
+  reviewedNames: externalReviewed,
   onAddToPeriod,
   onExclude,
   onMarkReviewed,
 }: UnresolvedIssuesPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [reviewedIssues, setReviewedIssues] = useState<Set<string>>(new Set());
+  const [localReviewed, setLocalReviewed] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+
+  const reviewedIssues = externalReviewed ?? localReviewed;
 
   const blockingIssues = issues.filter(i => !reviewedIssues.has(i.csvName));
   const reviewOnlyIssues = issues.filter(i => reviewedIssues.has(i.csvName));
@@ -32,7 +36,9 @@ export function UnresolvedIssuesPanel({
   if (issues.length === 0 && excludedNames.length === 0) return null;
 
   const handleMarkReviewed = (csvName: string) => {
-    setReviewedIssues(prev => new Set([...prev, csvName]));
+    if (!externalReviewed) {
+      setLocalReviewed(prev => new Set([...prev, csvName]));
+    }
     onMarkReviewed?.(csvName);
   };
 
