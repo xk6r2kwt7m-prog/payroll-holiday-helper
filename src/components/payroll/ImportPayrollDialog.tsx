@@ -166,6 +166,8 @@ function aggregateByEmployee(
 // ─── Main Component ───
 interface ImportDialogProps {
   onImportComplete?: () => void;
+  /** When the manager already has a draft period selected, pass it so the import targets that period */
+  selectedPeriod?: { id: string; period_name: string; start_date: string; end_date: string; pay_date: string | null; status: string } | null;
 }
 
 export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
