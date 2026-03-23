@@ -26,7 +26,7 @@ import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 export function SettleLeaverDialog() {
@@ -39,18 +39,51 @@ export function SettleLeaverDialog() {
   const [notes, setNotes] = useState("");
   const [approved, setApproved] = useState(false);
 
-  const { data: employees = [] } = useEmployees(true); // include archived so settled/leaver candidates appear
+  const { data: employees = [] } = useEmployees(true);
   const { data: periods = [] } = usePayrollPeriods();
   const createPayment = useCreateHolidayPayment();
   const queryClient = useQueryClient();
 
-  // Show active, starter, AND leaver employees — sorted by name
-  const settleableEmployees = useMemo(() =>
-    employees
-      .filter(e => e.status === "active" || e.status === "starter" || e.status === "leaver")
-      .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`)),
-    [employees]
-  );
+  // Fetch employee IDs present in the selected payroll period
+  const { data: periodEmployeeIds = [] } = useQuery({
+    queryKey: ["payroll-period-employees", periodId],
+    queryFn: async () => {
+      if (!periodId) return [];
+      const { data } = await supabase
+        .from("payroll_entries")
+        .select("employee_id")
+        .eq("payroll_period_id", periodId);
+      return (data ?? []).map(r => r.employee_id);
+    },
+    enabled: !!periodId,
+  });
+
+  // Fetch already-settled employee IDs for this period (have holiday_payments)
+  const { data: settledEmployeeIds = [] } = useQuery({
+    queryKey: ["settled-employees", periodId],
+    queryFn: async () => {
+      if (!periodId) return [];
+      const { data } = await supabase
+        .from("holiday_payments")
+        .select("employee_id")
+        .eq("payroll_period_id", periodId)
+        .not("employee_id", "is", null);
+      return (data ?? []).map(r => r.employee_id).filter(Boolean) as string[];
+    },
+    enabled: !!periodId,
+  });
+
+  const settledSet = useMemo(() => new Set(settledEmployeeIds), [settledEmployeeIds]);
+  const periodEmpSet = useMemo(() => new Set(periodEmployeeIds), [periodEmployeeIds]);
+
+  // Only show employees in the current payroll period, sorted by name
+  const settleableEmployees = useMemo(() => {
+    if (!periodId || periodEmpSet.size === 0) return [];
+    return employees
+      .filter(e => periodEmpSet.has(e.id))
+      .filter(e => !settledSet.has(e.id))
+      .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`));
+  }, [employees, periodEmpSet, settledSet, periodId]);
 
   const selectedEmployee = employees.find(e => e.id === employeeId);
 
