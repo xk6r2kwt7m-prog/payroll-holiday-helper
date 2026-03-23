@@ -100,9 +100,12 @@ export function groupByLocation(
   return Array.from(locMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, data]) => {
-      const sectionEntries = Array.from(data.entries.values()).sort(
-        (a, b) => (a.employees?.surname || "").localeCompare(b.employees?.surname || "")
-      );
+      const sectionEntries = Array.from(data.entries.values()).sort((a, b) => {
+        const fA = (a.employees?.forename || "").toLowerCase();
+        const fB = (b.employees?.forename || "").toLowerCase();
+        if (fA !== fB) return fA.localeCompare(fB);
+        return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+      });
       const subtotalHours = Array.from(data.hours.values()).reduce((s, h) => s + h, 0);
       // Pro-rate pay by hours proportion
       const subtotalPay = sectionEntries.reduce((s, e) => {
