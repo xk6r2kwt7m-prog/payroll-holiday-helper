@@ -63,7 +63,12 @@ function FindingRow({ finding }: { finding: AuditFinding }) {
       <div className="flex items-center gap-3">
         <span className={config.color}>{config.icon}</span>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm text-card-foreground">{finding.title}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-sm text-card-foreground">{finding.title}</p>
+            {finding.blocking !== false && finding.severity === "error" && (
+              <Badge variant="destructive" className="text-[10px] h-4 shrink-0">Blocking</Badge>
+            )}
+          </div>
           {!expanded && (
             <p className="text-xs text-muted-foreground truncate">{finding.detail}</p>
           )}
@@ -74,13 +79,21 @@ function FindingRow({ finding }: { finding: AuditFinding }) {
         {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
       </div>
       {expanded && (
-        <div className="mt-3 pt-3 border-t border-border/50 space-y-1">
+        <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
           <p className="text-sm text-card-foreground">{finding.detail}</p>
-          <div className="flex gap-4 text-xs text-muted-foreground mt-2">
+          {finding.explanation && (
+            <p className="text-xs text-foreground/80 bg-muted/30 rounded px-2 py-1.5">
+              💡 {finding.explanation}
+            </p>
+          )}
+          <div className="flex gap-4 text-xs text-muted-foreground">
             {finding.expected !== undefined && <span>Expected: <strong>{finding.expected.toFixed(2)}</strong></span>}
             {finding.actual !== undefined && <span>Actual: <strong>{finding.actual.toFixed(2)}</strong></span>}
             {finding.difference !== undefined && <span>Diff: <strong className={config.color}>{finding.difference.toFixed(2)}</strong></span>}
           </div>
+          {finding.suggestedAction && (
+            <p className="text-xs text-primary font-medium">→ {finding.suggestedAction}</p>
+          )}
         </div>
       )}
     </div>
