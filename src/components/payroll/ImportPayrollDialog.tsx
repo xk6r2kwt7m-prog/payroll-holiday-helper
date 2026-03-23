@@ -513,6 +513,11 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
             if (updateError) throw updateError;
             entriesCreated++;
+            // Collect location splits for this entry
+            for (const loc of emp.locations) {
+              const locDept = SECTION_DEPT_MAP[Object.keys(SECTION_LOCATION_MAP).find(k => SECTION_LOCATION_MAP[k] === loc.name) || ""] || emp.department || null;
+              locationRows.push({ payroll_entry_id: existing.id, employee_id: emp.matchedId!, location_name: loc.name, department: locDept, hours: loc.hours });
+            }
             existingByEmployeeId.delete(emp.matchedId);
           } else {
             // Employee in CSV but not in copied period — create new entry
