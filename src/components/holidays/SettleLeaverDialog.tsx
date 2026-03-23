@@ -254,7 +254,7 @@ export function SettleLeaverDialog() {
             Settle Leaver
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Select an employee to settle. They will be marked as a leaver and their remaining holiday balance will be paid out.
+            Select the payroll period first, then choose an employee from that period to settle.
           </p>
         </DialogHeader>
 
