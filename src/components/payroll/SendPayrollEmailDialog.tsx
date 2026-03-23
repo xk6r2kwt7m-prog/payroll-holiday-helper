@@ -144,6 +144,8 @@ export function SendPayrollEmailDialog({
           entries={entries}
           holidayPayments={holidayPayments}
           starters={filteredStarters}
+          priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+          priorEntryRates={priorEntryRates}
           isCorrection={!!period.notes?.includes("[CORRECTED]")}
           correctionNote={
             period.notes?.includes("[CORRECTED]") ? period.notes : undefined

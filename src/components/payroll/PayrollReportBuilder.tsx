@@ -24,6 +24,8 @@ interface PayrollReportBuilderProps {
   entries: any[];
   holidayPayments: any[];
   allEmployees: any[];
+  priorPeriodEmployeeIds?: Set<string>;
+  priorEntryRates?: Map<string, { hourly_rate: number; service_charge: number }>;
   companyName?: string;
 }
 
