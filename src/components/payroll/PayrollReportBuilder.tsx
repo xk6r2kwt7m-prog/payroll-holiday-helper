@@ -15,6 +15,7 @@ import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "./PayrollPDF";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 
 interface PayrollReportBuilderProps {
   open: boolean;
