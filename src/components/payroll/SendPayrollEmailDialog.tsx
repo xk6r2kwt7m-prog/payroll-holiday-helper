@@ -112,23 +112,22 @@ export function SendPayrollEmailDialog({
           entries.some((e: any) => e.employee_id === emp.id)
       );
 
-      // Build report config — bank details controlled by toggle
+      // Build report config using defaults — bank details excluded from starters if toggle is off
       const reportConfig: PayrollReportConfig = {
-        sortBy: "alphabetical" as const,
+        ...defaultReportConfig,
+        sortBy: "alphabetical",
         showLogo: true,
-        financial: {
-          hideFinancialAmounts: false,
-          showBankDetails: includeBankDetails,
-          showNINumber: false,
-        },
-        sections: {
-          showHolidaySection: true,
-          showStartersSection: true,
-          showAuditFooter: true,
-          showDepartmentGroups: false,
-          showLocationSplit: false,
-        },
+        showNotes: false, // Never include internal notes
       };
+
+      // If bank details are excluded, filter them from starters
+      const filteredStarters = includeBankDetails
+        ? starterEmployees
+        : starterEmployees.map((s: any) => ({
+            ...s,
+            bank_account_no: null,
+            sort_code: null,
+          }));
 
       const logoUrl = `${window.location.origin}/logo.jpeg`;
       const blob = await pdf(
@@ -136,7 +135,7 @@ export function SendPayrollEmailDialog({
           period={period as any}
           entries={entries}
           holidayPayments={holidayPayments}
-          starters={starterEmployees}
+          starters={filteredStarters}
           isCorrection={!!period.notes?.includes("[CORRECTED]")}
           correctionNote={
             period.notes?.includes("[CORRECTED]") ? period.notes : undefined
