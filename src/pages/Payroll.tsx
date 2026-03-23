@@ -55,6 +55,7 @@ const PAYROLL_DISPLAY_DEFAULTS = {
 
 const Payroll = () => {
   const { t } = useI18n();
+  const { tenantId } = useTenant();
   
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
