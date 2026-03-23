@@ -55,7 +55,7 @@ export function useEmailPolicy() {
       if (error) throw error;
       if (!data) return EMAIL_AUTOMATION_DEFAULTS;
 
-      return { ...EMAIL_AUTOMATION_DEFAULTS, ...(data.preferences as EmailAutomationSettings) };
+      return { ...EMAIL_AUTOMATION_DEFAULTS, ...(data.preferences as unknown as EmailAutomationSettings) };
     },
     enabled: !!tenantId,
   });
