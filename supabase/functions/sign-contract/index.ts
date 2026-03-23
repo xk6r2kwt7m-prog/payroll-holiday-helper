@@ -361,8 +361,10 @@ async function buildFinalSignedContractPdf(params: {
   const margin = 48;
   const contentWidth = pageWidth - margin * 2;
 
-  // Cover the bottom ~280pt of the last page with white to hide empty signature blocks
-  const coverHeight = 280;
+  // Cover the bottom portion of the last page to fully mask original blank signature placeholders.
+  // Most employment contract templates place the signature block in the bottom 40-45% of the page.
+  // We use 42% of page height to ensure full coverage without touching contract body text above.
+  const coverHeight = Math.round(pageHeight * 0.42);
   lastPage.drawRectangle({
     x: 0,
     y: 0,
@@ -371,11 +373,13 @@ async function buildFinalSignedContractPdf(params: {
     color: rgb(1, 1, 1),
   });
 
-  // Draw completed signature blocks in-place
+  // Draw completed execution block starting near the top of the covered area,
+  // so it sits exactly where the original blank signature section was.
+  const sigBlockStartY = coverHeight - 24;
   await drawSignatureBlockOnPage(finalPdf, lastPage, {
     companyName: params.companyName,
     signatures: params.signatures,
-    startY: coverHeight - 20,
+    startY: sigBlockStartY,
     margin,
     contentWidth,
   });
