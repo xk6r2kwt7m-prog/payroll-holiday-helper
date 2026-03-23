@@ -942,22 +942,48 @@ Deno.serve(async (req) => {
 
         // Create a long-lived download token (90 days) so email recipients
         // can access the final signed contract without app login
-        const downloadTokenValue = crypto.randomUUID();
         const downloadExpiresAt = new Date();
         downloadExpiresAt.setDate(downloadExpiresAt.getDate() + 90);
 
-        await supabase.from("signing_tokens").insert({
-          token: downloadTokenValue,
-          employee_document_id: signingToken.employee_document_id,
-          employee_id: signingToken.employee_id,
-          signer_type: "download",
+        const { data: downloadTokenRecord, error: downloadTokenError } = await supabase
+          .from("signing_tokens")
+          .insert({
+            employee_document_id: signingToken.employee_document_id,
+            employee_id: signingToken.employee_id,
+            signer_type: "download",
+            tenant_id: signingToken.tenant_id,
+            expires_at: downloadExpiresAt.toISOString(),
+          })
+          .select("id, token, expires_at")
+          .single();
+
+        if (downloadTokenError || !downloadTokenRecord?.token) {
+          console.error("Failed to create final contract download token:", downloadTokenError);
+          return new Response(JSON.stringify({
+            error: "The contract was signed, but the final download link could not be created. Please contact support.",
+            error_code: "download_token_creation_failed",
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        await supabase.from("audit_log").insert({
+          action: "create",
+          table_name: "signing_tokens",
+          record_id: downloadTokenRecord.id,
           tenant_id: signingToken.tenant_id,
-          expires_at: downloadExpiresAt.toISOString(),
-          used_at: new Date().toISOString(), // Mark as used immediately — this is a download token, not a signing token
+          new_data: {
+            event: "final_contract_download_token_created",
+            employee_document_id: signingToken.employee_document_id,
+            employee_id: signingToken.employee_id,
+            signer_type: "download",
+            expires_at: downloadTokenRecord.expires_at,
+          },
         });
 
         // Use token-based branded URL so employees can access without logging in
-        const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?token=${downloadTokenValue}&variant=final`;
+        const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?token=${downloadTokenRecord.token}&variant=final`;
 
         // Send completion email to EMPLOYEE
         const recipientEmail = signingToken.employees?.email;
