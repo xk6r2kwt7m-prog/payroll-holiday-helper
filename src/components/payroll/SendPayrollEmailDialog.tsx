@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "./PayrollPDF";
 import { useTenant } from "@/hooks/useTenant";
-import type { PayrollReportConfig } from "./PayrollReportConfig";
+import { defaultReportConfig, type PayrollReportConfig } from "./PayrollReportConfig";
 
 interface SendPayrollEmailDialogProps {
   period: {
