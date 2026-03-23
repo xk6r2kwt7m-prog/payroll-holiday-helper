@@ -26,7 +26,7 @@ import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 export function SettleLeaverDialog() {
@@ -39,18 +39,51 @@ export function SettleLeaverDialog() {
   const [notes, setNotes] = useState("");
   const [approved, setApproved] = useState(false);
 
-  const { data: employees = [] } = useEmployees(true); // include archived so settled/leaver candidates appear
+  const { data: employees = [] } = useEmployees(true);
   const { data: periods = [] } = usePayrollPeriods();
   const createPayment = useCreateHolidayPayment();
   const queryClient = useQueryClient();
 
-  // Show active, starter, AND leaver employees — sorted by name
-  const settleableEmployees = useMemo(() =>
-    employees
-      .filter(e => e.status === "active" || e.status === "starter" || e.status === "leaver")
-      .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`)),
-    [employees]
-  );
+  // Fetch employee IDs present in the selected payroll period
+  const { data: periodEmployeeIds = [] } = useQuery({
+    queryKey: ["payroll-period-employees", periodId],
+    queryFn: async () => {
+      if (!periodId) return [];
+      const { data } = await supabase
+        .from("payroll_entries")
+        .select("employee_id")
+        .eq("payroll_period_id", periodId);
+      return (data ?? []).map(r => r.employee_id);
+    },
+    enabled: !!periodId,
+  });
+
+  // Fetch already-settled employee IDs for this period (have holiday_payments)
+  const { data: settledEmployeeIds = [] } = useQuery({
+    queryKey: ["settled-employees", periodId],
+    queryFn: async () => {
+      if (!periodId) return [];
+      const { data } = await supabase
+        .from("holiday_payments")
+        .select("employee_id")
+        .eq("payroll_period_id", periodId)
+        .not("employee_id", "is", null);
+      return (data ?? []).map(r => r.employee_id).filter(Boolean) as string[];
+    },
+    enabled: !!periodId,
+  });
+
+  const settledSet = useMemo(() => new Set(settledEmployeeIds), [settledEmployeeIds]);
+  const periodEmpSet = useMemo(() => new Set(periodEmployeeIds), [periodEmployeeIds]);
+
+  // Only show employees in the current payroll period, sorted by name
+  const settleableEmployees = useMemo(() => {
+    if (!periodId || periodEmpSet.size === 0) return [];
+    return employees
+      .filter(e => periodEmpSet.has(e.id))
+      .filter(e => !settledSet.has(e.id))
+      .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`));
+  }, [employees, periodEmpSet, settledSet, periodId]);
 
   const selectedEmployee = employees.find(e => e.id === employeeId);
 
@@ -221,12 +254,32 @@ export function SettleLeaverDialog() {
             Settle Leaver
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-1">
-            Select an employee to settle. They will be marked as a leaver and their remaining holiday balance will be paid out.
+            Select the payroll period first, then choose an employee from that period to settle.
           </p>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
-          {/* Employee selection — shows all settleable employees */}
+          {/* Payroll period — must be selected first to scope employee list */}
+          <div className="space-y-2">
+            <Label>Payroll Period *</Label>
+            <Select value={periodId} onValueChange={(v) => { setPeriodId(v); setEmployeeId(""); setApproved(false); }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select payroll period" />
+              </SelectTrigger>
+              <SelectContent>
+                {periods.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.period_name}
+                    {(p.status === "draft" || p.status === "pending") && (
+                      <span className="text-muted-foreground ml-1">({p.status})</span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Employee selection — scoped to selected period */}
           <div className="space-y-2">
             <Label>Employee *</Label>
             <Select value={employeeId} onValueChange={handleEmployeeChange}>
@@ -234,8 +287,11 @@ export function SettleLeaverDialog() {
                 <SelectValue placeholder="Select employee to settle" />
               </SelectTrigger>
               <SelectContent>
-                {settleableEmployees.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">No employees available</div>
+                {periodId && settleableEmployees.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">No unsettled employees in this period</div>
+                )}
+                {!periodId && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">Select a payroll period first</div>
                 )}
                 {settleableEmployees.map(emp => (
                   <SelectItem key={emp.id} value={emp.id}>
@@ -254,8 +310,16 @@ export function SettleLeaverDialog() {
             </Select>
           </div>
 
+          {/* No period selected */}
+          {!periodId && (
+            <div className="rounded-lg border border-border bg-muted/30 p-4 text-center space-y-1">
+              <User className="h-8 w-8 text-muted-foreground mx-auto" />
+              <p className="text-sm text-muted-foreground">Select a payroll period above to see settleable employees.</p>
+            </div>
+          )}
+
           {/* No employee selected — placeholder */}
-          {!employeeId && (
+          {periodId && !employeeId && (
             <div className="rounded-lg border border-border bg-muted/30 p-4 text-center space-y-1">
               <User className="h-8 w-8 text-muted-foreground mx-auto" />
               <p className="text-sm text-muted-foreground">Select an employee above to see their holiday balance and settlement details.</p>
@@ -365,24 +429,6 @@ export function SettleLeaverDialog() {
                 <Input type="date" value={holidayDate} onChange={e => setHolidayDate(e.target.value)} required />
               </div>
 
-              <div className="space-y-2">
-                <Label>Payroll Period *</Label>
-                <Select value={periodId} onValueChange={setPeriodId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periods.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.period_name}
-                        {(p.status === "draft" || p.status === "pending") && (
-                          <span className="text-muted-foreground ml-1">({p.status})</span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
