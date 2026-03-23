@@ -269,11 +269,41 @@ export function useCreateHolidayPayment() {
       // Recalculate and update the payroll period's holidays_total and grand_total
       await recalcPayrollPeriodTotals(payment.payroll_period_id);
 
+      // Write matching holiday_ledger entry (negative hours = debit)
+      // The unique index uq_holiday_ledger_source(source_table, source_id, entry_type)
+      // prevents duplicates if this is somehow called twice for the same payment.
+      if (data && payment.employee_id) {
+        const hoursValue = -Math.abs(Number(payment.hours));
+        const entryDate = payment.holiday_taken_date || new Date().toISOString().slice(0, 10);
+        const leaveYearStart = payment.leave_year_start || `${new Date(entryDate).getFullYear()}-01-01`;
+
+        const { data: { user } } = await supabase.auth.getUser();
+
+        await supabase
+          .from("holiday_ledger")
+          .insert({
+            employee_id: payment.employee_id,
+            tenant_id: tenantId!,
+            leave_year_start: leaveYearStart,
+            entry_date: entryDate,
+            entry_type: "holiday_taken" as const,
+            hours: hoursValue,
+            amount: payment.total ? -Math.abs(Number(payment.total)) : null,
+            source_table: "holiday_payments",
+            source_id: data.id,
+            notes: payment.notes || `Holiday taken: ${Math.abs(Number(payment.hours))}h`,
+            created_by: user?.id || null,
+          })
+          .single();
+        // Silently catch duplicate insert errors (unique constraint) — the ledger entry already exists
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_ledger"] });
     },
   });
 }
