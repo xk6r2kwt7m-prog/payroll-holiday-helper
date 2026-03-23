@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { buildLocationSplitRows } from "@/lib/payroll-report-transform";
 
