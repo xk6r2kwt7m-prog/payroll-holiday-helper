@@ -338,9 +338,17 @@ const Payroll = () => {
     if (!selectedPeriod || entries.length === 0) return;
     try {
       toast.info(t("payroll.generating_pdf"));
-      const starterEmployees = allEmployees.filter(emp => 
-        (emp.status === 'starter' || emp.status === 'leaver') && entries.some((e: any) => e.employee_id === emp.id)
-      );
+      const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+      const starterEmployees = allEmployees.filter(emp => {
+        const inEntries = entries.some((e: any) => e.employee_id === emp.id);
+        const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
+        if (!inEntries && !hasHolidayPayment) return false;
+        // Genuine starter: status is starter AND not in a prior payroll period
+        const isGenuineStarter = emp.status === 'starter' && !priorPeriodEmployeeIds.has(emp.id);
+        // Leaver: status is leaver OR has holiday settlement payment in this period
+        const isLeaver = emp.status === 'leaver' || hasHolidayPayment;
+        return isGenuineStarter || isLeaver;
+      });
 
       const logoUrl = `${window.location.origin}/logo.jpeg`;
       const blob = await pdf(
