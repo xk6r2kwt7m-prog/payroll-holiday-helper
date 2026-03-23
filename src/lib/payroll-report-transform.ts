@@ -127,9 +127,12 @@ export function groupByLocation(
  * Single flat group — no grouping.
  */
 export function groupByEmployee(entries: PayrollEntryForReport[]): GroupSection[] {
-  const sorted = [...entries].sort(
-    (a, b) => (a.employees?.surname || "").localeCompare(b.employees?.surname || "")
-  );
+  const sorted = [...entries].sort((a, b) => {
+    const fA = (a.employees?.forename || "").toLowerCase();
+    const fB = (b.employees?.forename || "").toLowerCase();
+    if (fA !== fB) return fA.localeCompare(fB);
+    return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+  });
   return [
     {
       groupLabel: "All Employees",
