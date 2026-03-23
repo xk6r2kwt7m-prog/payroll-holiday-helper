@@ -665,7 +665,7 @@ export function EditablePayrollTable({
                       </Avatar>
                       <div>
                         <span className="font-medium text-card-foreground">
-                          {sortMode === "alphabetical"
+                          {sortMode === "alphabetical_surname"
                             ? `${emp?.surname}, ${emp?.forename}`
                             : `${emp?.forename} ${emp?.surname}`}
                         </span>
