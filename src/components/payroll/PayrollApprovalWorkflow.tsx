@@ -1,8 +1,11 @@
-import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2, Trash2, ShieldAlert, ShieldCheck, ShieldX } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle, AlertCircle, Lock, Send, Undo2, Loader2, Trash2, ShieldAlert, ShieldCheck, ShieldX, RefreshCw, Eye, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { usePeriodAudit, type AuditFinding } from "@/hooks/usePayrollAudit";
+import { usePeriodAudit, useRecalculatePeriodTotals, type AuditFinding } from "@/hooks/usePayrollAudit";
 import { useTenant } from "@/hooks/useTenant";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { PayrollImportIssue } from "@/hooks/usePayrollImportStatus";
 import {
   AlertDialog,
@@ -15,6 +18,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface PayrollApprovalWorkflowProps {
   period: {
@@ -66,18 +76,39 @@ export function PayrollApprovalWorkflow({
   const hasUnmatchedEmployees = unresolvedImportIssues.length > 0;
   const hasExcludedEmployees = excludedNames.length > 0;
   const { tenantId } = useTenant();
-  
-  // Audit gate: run period-level audit for pending/draft periods
+  const queryClient = useQueryClient();
+
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+
+  // Audit gate
   const shouldAudit = period.status === "draft" || period.status === "pending";
-  const { data: auditFindings = [], isLoading: auditLoading } = usePeriodAudit(
+  const { data: auditFindings = [], isLoading: auditLoading, refetch: rerunAudit, isFetching: auditRefetching } = usePeriodAudit(
     shouldAudit ? period.id : undefined,
     shouldAudit,
     tenantId
   );
+  const blockingErrors = auditFindings.filter(f => f.severity === "error" && f.blocking !== false);
   const auditErrors = auditFindings.filter(f => f.severity === "error");
   const auditWarnings = auditFindings.filter(f => f.severity === "warning");
-  const hasAuditErrors = auditErrors.length > 0;
-  const canSubmitOrApprove = !hasUnmatchedEmployees && !hasAuditErrors;
+  const hasBlockingErrors = blockingErrors.length > 0;
+  const canSubmitOrApprove = !hasUnmatchedEmployees && !hasBlockingErrors;
+
+  const recalculateTotals = useRecalculatePeriodTotals();
+
+  const handleRecalculate = async () => {
+    setRecalculating(true);
+    try {
+      await recalculateTotals(period.id);
+      toast.success("Totals recalculated successfully");
+      rerunAudit();
+    } catch {
+      toast.error("Failed to recalculate totals");
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   return (
     <div className="rounded-xl bg-card shadow-card p-4 sm:p-5 animate-fade-in overflow-hidden">
       {/* Workflow Steps */}
@@ -109,7 +140,7 @@ export function PayrollApprovalWorkflow({
         })}
       </div>
 
-      {/* Unmatched employees are now handled by UnresolvedIssuesPanel outside this component */}
+      {/* Unmatched employees */}
       {hasUnmatchedEmployees && !hasExcludedEmployees && (
         <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 mb-4">
           <div className="flex items-center gap-2">
@@ -121,32 +152,64 @@ export function PayrollApprovalWorkflow({
         </div>
       )}
 
-      {/* Audit gate - blocks approval */}
+      {/* Audit gate */}
       {shouldAudit && !auditLoading && auditFindings.length > 0 && (
-        <div className={`rounded-lg ${hasAuditErrors ? "bg-destructive/10 border-destructive/20" : "bg-warning/10 border-warning/20"} border p-4 mb-4`}>
-          <div className="flex items-center gap-3">
-            {hasAuditErrors ? (
-              <ShieldX className="h-5 w-5 text-destructive shrink-0" />
+        <div className={`rounded-lg ${hasBlockingErrors ? "bg-destructive/10 border-destructive/20" : "bg-warning/10 border-warning/20"} border p-4 mb-4`}>
+          <div className="flex items-start gap-3">
+            {hasBlockingErrors ? (
+              <ShieldX className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             ) : (
-              <ShieldAlert className="h-5 w-5 text-warning shrink-0" />
+              <ShieldAlert className="h-5 w-5 text-warning shrink-0 mt-0.5" />
             )}
             <div className="flex-1">
-              <p className={`font-medium ${hasAuditErrors ? "text-destructive" : "text-warning"}`}>
-                Audit {hasAuditErrors ? "Failed" : "Warnings"} — {auditErrors.length} error{auditErrors.length !== 1 ? "s" : ""}, {auditWarnings.length} warning{auditWarnings.length !== 1 ? "s" : ""}
+              <p className={`font-medium ${hasBlockingErrors ? "text-destructive" : "text-warning"}`}>
+                {hasBlockingErrors
+                  ? `Audit failed — ${blockingErrors.length} blocking issue${blockingErrors.length !== 1 ? "s" : ""} found`
+                  : `Audit warnings — ${auditWarnings.length} non-blocking issue${auditWarnings.length !== 1 ? "s" : ""}`}
               </p>
-              {hasAuditErrors && (
-                <p className="text-sm font-medium text-destructive mt-1">
-                  You cannot approve this period until all audit errors are resolved.
+              {hasBlockingErrors && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Resolve all blocking issues before approval. Use the buttons below to review or fix.
                 </p>
               )}
-              <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                {auditFindings.slice(0, 5).map((f) => (
-                  <p key={f.id} className={`text-xs flex items-center gap-1.5 ${f.severity === "error" ? "text-destructive" : "text-warning"}`}>
-                    {f.severity === "error" ? "✗" : "⚠"} {f.title}: {f.detail}
-                  </p>
-                ))}
-                {auditFindings.length > 5 && (
-                  <p className="text-xs text-muted-foreground">...and {auditFindings.length - 5} more issues</p>
+              {!hasBlockingErrors && auditErrors.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {auditErrors.length} non-blocking error{auditErrors.length !== 1 ? "s" : ""} detected. Review recommended.
+                </p>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={() => setReviewOpen(true)}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Review audit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5"
+                  onClick={() => rerunAudit()}
+                  disabled={auditRefetching}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${auditRefetching ? "animate-spin" : ""}`} />
+                  Run audit again
+                </Button>
+                {auditFindings.some(f => f.actionType === "recalculate_totals") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs gap-1.5"
+                    onClick={handleRecalculate}
+                    disabled={recalculating}
+                  >
+                    <Calculator className={`h-3.5 w-3.5 ${recalculating ? "animate-spin" : ""}`} />
+                    {recalculating ? "Recalculating..." : "Recalculate totals"}
+                  </Button>
                 )}
               </div>
             </div>
@@ -164,12 +227,115 @@ export function PayrollApprovalWorkflow({
       {shouldAudit && !auditLoading && auditFindings.length === 0 && (
         <div className="rounded-lg bg-success/10 border border-success/20 p-4 mb-4 flex items-center gap-3">
           <ShieldCheck className="h-5 w-5 text-success" />
-          <div>
+          <div className="flex-1">
             <p className="font-medium text-success text-sm">All Audit Checks Passed</p>
             <p className="text-xs text-muted-foreground">Calculations, holiday accruals, totals, and duplicate checks verified.</p>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs gap-1.5 text-muted-foreground"
+            onClick={() => rerunAudit()}
+            disabled={auditRefetching}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${auditRefetching ? "animate-spin" : ""}`} />
+            Rerun
+          </Button>
         </div>
       )}
+
+      {/* Audit Review Dialog */}
+      <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5" />
+              Audit Review — {period.period_name}
+            </DialogTitle>
+            <DialogDescription>
+              {blockingErrors.length} blocking issue{blockingErrors.length !== 1 ? "s" : ""}, {auditWarnings.length} warning{auditWarnings.length !== 1 ? "s" : ""}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {auditFindings.map((f) => (
+              <div
+                key={f.id}
+                className={`rounded-lg border p-4 space-y-2 ${
+                  f.severity === "error" && f.blocking !== false
+                    ? "bg-destructive/5 border-destructive/20"
+                    : f.severity === "error"
+                    ? "bg-warning/5 border-warning/20"
+                    : "bg-warning/5 border-warning/20"
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <span className={f.severity === "error" ? "text-destructive" : "text-warning"}>
+                    {f.severity === "error" ? "✗" : "⚠"}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-sm text-card-foreground">{f.title}</p>
+                      {f.blocking !== false && f.severity === "error" && (
+                        <Badge variant="destructive" className="text-[10px] h-4">Blocking</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{f.detail}</p>
+                    {f.explanation && (
+                      <p className="text-xs text-foreground/80 mt-2 bg-muted/30 rounded px-2 py-1.5">
+                        💡 {f.explanation}
+                      </p>
+                    )}
+                    {(f.expected !== undefined || f.actual !== undefined) && (
+                      <div className="flex gap-4 text-xs text-muted-foreground mt-2">
+                        {f.expected !== undefined && <span>Expected: <strong>{f.expected.toFixed(2)}</strong></span>}
+                        {f.actual !== undefined && <span>Actual: <strong>{f.actual.toFixed(2)}</strong></span>}
+                        {f.difference !== undefined && (
+                          <span>Diff: <strong className={f.severity === "error" ? "text-destructive" : "text-warning"}>
+                            {f.difference.toFixed(2)}
+                          </strong></span>
+                        )}
+                      </div>
+                    )}
+                    {f.suggestedAction && (
+                      <p className="text-xs text-primary mt-2 font-medium">
+                        → {f.suggestedAction}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => { rerunAudit(); }}
+              disabled={auditRefetching}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${auditRefetching ? "animate-spin" : ""}`} />
+              Run audit again
+            </Button>
+            {auditFindings.some(f => f.actionType === "recalculate_totals") && (
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={handleRecalculate}
+                disabled={recalculating}
+              >
+                <Calculator className={`h-3.5 w-3.5 ${recalculating ? "animate-spin" : ""}`} />
+                {recalculating ? "Recalculating..." : "Recalculate totals"}
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => setReviewOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Status-specific content */}
       {period.status === "draft" && isAdmin && (
@@ -224,8 +390,7 @@ export function PayrollApprovalWorkflow({
                         ⚠️ {zeroHoursCount} employee{zeroHoursCount > 1 ? "s have" : " has"} 0 hours. Continue anyway?
                       </span>
                     )}
-                    Once submitted, entries cannot be edited until the period is reopened. 
-                    This will move the payroll to "Pending Review" status.
+                    Once submitted, entries cannot be edited until the period is reopened.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -261,8 +426,7 @@ export function PayrollApprovalWorkflow({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Reopen this payroll period?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will move the period back to "Draft" status, allowing edits. 
-                    This action will be recorded in the audit log.
+                    This will move the period back to "Draft" status, allowing edits.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -282,10 +446,10 @@ export function PayrollApprovalWorkflow({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Approve and lock {period.period_name}?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Once approved, this payroll period will be <strong>permanently locked</strong>. 
-                    No further edits can be made. This complies with UK payroll record-keeping requirements.
+                    Once approved, this payroll period will be <strong>permanently locked</strong>.
+                    No further edits can be made.
                     <br /><br />
-                    To make changes after approval, you will need to reopen the period, which is recorded in the audit trail.
+                    To make changes after approval, you will need to reopen the period.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -307,8 +471,8 @@ export function PayrollApprovalWorkflow({
             <div className="flex-1 min-w-0">
               <p className="font-medium text-success text-sm">Approved & Locked</p>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                {period.approved_at 
-                  ? `Approved ${new Date(period.approved_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` 
+                {period.approved_at
+                  ? `Approved ${new Date(period.approved_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
                   : "This period is locked and read-only"}
               </p>
             </div>
@@ -326,9 +490,8 @@ export function PayrollApprovalWorkflow({
                   <AlertDialogHeader>
                     <AlertDialogTitle>⚠️ Reopen approved period?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      <strong className="text-destructive">This is a controlled action.</strong> Reopening an approved 
-                      period will move it back to draft status, allowing edits. This is recorded in the audit log 
-                      for compliance purposes (UK payroll record-keeping).
+                      <strong className="text-destructive">This is a controlled action.</strong> Reopening an approved
+                      period will move it back to draft status, allowing edits. This is recorded in the audit log.
                       <br /><br />
                       Only proceed if corrections are genuinely required.
                     </AlertDialogDescription>
