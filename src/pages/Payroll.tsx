@@ -529,12 +529,14 @@ const Payroll = () => {
         )}
 
         {/* Unresolved Import Issues Panel */}
-        {selectedPeriod && (unresolvedIssues.length > 0 || excludedNames.length > 0) && (
+        {selectedPeriod && (unresolvedIssues.length > 0 || allExcludedNames.length > 0) && (
           <UnresolvedIssuesPanel
             issues={unresolvedIssues}
-            excludedNames={excludedNames}
+            excludedNames={allExcludedNames}
             reviewedNames={reviewedIssueNames}
             onMarkReviewed={handleMarkReviewed}
+            onAddToPeriod={handleAddToPeriod}
+            onExclude={handleExcludeFromPeriod}
           />
         )}
 
