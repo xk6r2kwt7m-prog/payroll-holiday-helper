@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useCreatePayrollEntry } from "@/hooks/usePayroll";
+import { useTenant } from "@/hooks/useTenant";
 
 interface AddEmployeeToPeriodDialogProps {
   periodId: string;
@@ -31,6 +32,7 @@ export function AddEmployeeToPeriodDialog({ periodId, existingEmployeeIds }: Add
   
   const { data: employees = [] } = useEmployees();
   const createEntry = useCreatePayrollEntry();
+  const { tenantId } = useTenant();
 
   // Show active + starter employees not already in this period
   const availableEmployees = employees.filter(
@@ -43,13 +45,30 @@ export function AddEmployeeToPeriodDialog({ periodId, existingEmployeeIds }: Add
       return;
     }
 
+    if (!tenantId) {
+      toast.error("No tenant context available");
+      return;
+    }
+
     const emp = employees.find((e) => e.id === selectedEmployeeId);
     if (!emp) return;
+
+    // Check duplicate (defensive — UI already filters, but handles race conditions)
+    if (existingEmployeeIds.includes(emp.id)) {
+      toast.error("This employee is already in this payroll period.");
+      return;
+    }
+
+    if (!emp.hourly_rate && emp.hourly_rate !== 0) {
+      toast.error(`${emp.forename} ${emp.surname} has no hourly rate set. Update their record first.`);
+      return;
+    }
 
     try {
       await createEntry.mutateAsync({
         payroll_period_id: periodId,
         employee_id: emp.id,
+        tenant_id: tenantId,
         hourly_rate: emp.hourly_rate,
         service_charge: emp.service_charge || 0,
         timesheet_hours: 0,
@@ -61,8 +80,17 @@ export function AddEmployeeToPeriodDialog({ periodId, existingEmployeeIds }: Add
       toast.success(`${emp.forename} ${emp.surname} added to this payroll period`);
       setSelectedEmployeeId("");
       setOpen(false);
-    } catch {
-      toast.error("Failed to add employee");
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("duplicate") || msg.includes("unique") || msg.includes("already exists")) {
+        toast.error("This employee is already in this payroll period.");
+      } else if (msg.includes("row-level security")) {
+        toast.error("Permission denied. You may not have access to add employees to this period.");
+      } else if (msg.includes("locked")) {
+        toast.error("This payroll period is locked. Reopen it first.");
+      } else {
+        toast.error(`Failed to add employee: ${msg || "Unknown error"}`);
+      }
     }
   };
 
