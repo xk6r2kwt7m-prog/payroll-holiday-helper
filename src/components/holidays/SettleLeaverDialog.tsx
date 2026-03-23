@@ -418,24 +418,6 @@ export function SettleLeaverDialog() {
                 <Input type="date" value={holidayDate} onChange={e => setHolidayDate(e.target.value)} required />
               </div>
 
-              <div className="space-y-2">
-                <Label>Payroll Period *</Label>
-                <Select value={periodId} onValueChange={setPeriodId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periods.map(p => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.period_name}
-                        {(p.status === "draft" || p.status === "pending") && (
-                          <span className="text-muted-foreground ml-1">({p.status})</span>
-                        )}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
