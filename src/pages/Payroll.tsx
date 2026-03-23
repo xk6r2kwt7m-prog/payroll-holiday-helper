@@ -361,7 +361,7 @@ const Payroll = () => {
                 <SettleLeaverDialog />
                 <AddHolidayPaymentDialog />
                 <CreatePayrollDialog />
-                <ImportPayrollDialog />
+                <ImportPayrollDialog selectedPeriod={selectedPeriod} />
               </div>
             )}
 

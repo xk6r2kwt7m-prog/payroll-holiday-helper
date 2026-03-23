@@ -780,11 +780,22 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
         {/* ── Step 1: Period Setup ── */}
         {step === "period" && (
           <div className="space-y-4 py-2">
-            <div className="rounded-lg bg-muted/50 border border-border p-3">
-              <p className="text-sm text-muted-foreground">
-                Auto-suggested based on your latest payroll period. Cutoff = last Sunday on or before pay date. Pay date = last Thursday.
-              </p>
-            </div>
+            {incomingPeriod && incomingPeriod.status === "draft" ? (
+              <div className="rounded-lg bg-primary/10 border border-primary/30 p-3">
+                <p className="text-sm font-medium text-primary">
+                  Importing into existing draft: {periodName}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This import will update timesheet hours for the selected payroll period. Rates, bonuses, and service charge will be preserved.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-muted/50 border border-border p-3">
+                <p className="text-sm text-muted-foreground">
+                  Auto-suggested based on your latest payroll period. Cutoff = last Sunday on or before pay date. Pay date = last Thursday.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Period Name *</Label>
