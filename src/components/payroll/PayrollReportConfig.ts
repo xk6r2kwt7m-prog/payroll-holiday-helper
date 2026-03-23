@@ -70,6 +70,7 @@ export const defaultReportConfig: PayrollReportConfig = {
   },
   employeeScope: "all",
   selectedDepartments: [],
+  selectedLocations: [],
   selectedEmployeeIds: [],
   layoutStyle: "full",
   orientation: "landscape",
