@@ -736,7 +736,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
               <div className="space-y-2">
                 <Label>End Date (Cutoff) *</Label>
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                <p className="text-[11px] text-muted-foreground">Edit if cutoff differs from last Sunday</p>
+                <p className="text-[11px] text-muted-foreground">Last Sunday on or before pay date</p>
               </div>
             </div>
 
