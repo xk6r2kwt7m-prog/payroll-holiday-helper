@@ -116,8 +116,8 @@ export function SendPayrollEmailDialog({
         const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
         if (!inEntries && !hasHolidayPayment) return false;
         const isLeaver = emp.status === "leaver" || hasHolidayPayment;
-        // Note: no priorPeriodEmployeeIds available here, so include all starters
-        return emp.status === "starter" || isLeaver;
+        const isGenuineStarter = emp.status === "starter" && !priorPeriodEmployeeIds.has(emp.id);
+        return isGenuineStarter || isLeaver;
       });
 
       // Build report config using defaults — bank details excluded from starters if toggle is off
