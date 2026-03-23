@@ -32,6 +32,7 @@ export interface PayrollReportConfig {
   // Scope
   employeeScope: "all" | "department" | "location" | "custom";
   selectedDepartments: string[];
+  selectedLocations: string[];
   selectedEmployeeIds: string[];
 
   // Layout
