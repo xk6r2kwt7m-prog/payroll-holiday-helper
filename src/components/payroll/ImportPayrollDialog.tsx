@@ -166,9 +166,11 @@ function aggregateByEmployee(
 // ─── Main Component ───
 interface ImportDialogProps {
   onImportComplete?: () => void;
+  /** When the manager already has a draft period selected, pass it so the import targets that period */
+  selectedPeriod?: { id: string; period_name: string; start_date: string; end_date: string; pay_date: string | null; status: string } | null;
 }
 
-export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
+export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incomingPeriod }: ImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [periodName, setPeriodName] = useState("");
@@ -191,9 +193,20 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
   const { data: periods = [] } = usePayrollPeriods();
   const { tenantId } = useTenant();
 
-  // Auto-suggest period dates on open
+  // Default to selected draft period if available; otherwise auto-suggest next
   useEffect(() => {
     if (!open) return;
+
+    // If a draft period is currently selected on the payroll page, use it
+    if (incomingPeriod && incomingPeriod.status === "draft") {
+      setPeriodName(incomingPeriod.period_name);
+      setStartDate(incomingPeriod.start_date);
+      setEndDate(incomingPeriod.end_date);
+      setPayDate(incomingPeriod.pay_date || "");
+      return;
+    }
+
+    // Fallback: auto-suggest the next period
     const latestEnd = periods.length > 0
       ? periods.reduce((latest, p) =>
           p.end_date > latest ? p.end_date : latest, periods[0].end_date)
@@ -203,7 +216,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setStartDate(suggested.startDate);
     setEndDate(suggested.endDate);
     setPayDate(suggested.payDate);
-  }, [open, periods]);
+  }, [open, periods, incomingPeriod]);
 
   // Detect existing draft period and check for bonuses
   useEffect(() => {
@@ -767,11 +780,22 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         {/* ── Step 1: Period Setup ── */}
         {step === "period" && (
           <div className="space-y-4 py-2">
-            <div className="rounded-lg bg-muted/50 border border-border p-3">
-              <p className="text-sm text-muted-foreground">
-                Auto-suggested based on your latest payroll period. Cutoff = last Sunday on or before pay date. Pay date = last Thursday.
-              </p>
-            </div>
+            {incomingPeriod && incomingPeriod.status === "draft" ? (
+              <div className="rounded-lg bg-primary/10 border border-primary/30 p-3">
+                <p className="text-sm font-medium text-primary">
+                  Importing into existing draft: {periodName}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This import will update timesheet hours for the selected payroll period. Rates, bonuses, and service charge will be preserved.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-muted/50 border border-border p-3">
+                <p className="text-sm text-muted-foreground">
+                  Auto-suggested based on your latest payroll period. Cutoff = last Sunday on or before pay date. Pay date = last Thursday.
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Period Name *</Label>
