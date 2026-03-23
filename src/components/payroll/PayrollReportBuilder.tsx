@@ -60,6 +60,8 @@ export function PayrollReportBuilder({
   entries,
   holidayPayments,
   allEmployees,
+  priorPeriodEmployeeIds = new Set(),
+  priorEntryRates = new Map(),
   companyName = "Your Company",
 }: PayrollReportBuilderProps) {
   const [config, setConfig] = useState<PayrollReportConfig>({ ...defaultReportConfig });
