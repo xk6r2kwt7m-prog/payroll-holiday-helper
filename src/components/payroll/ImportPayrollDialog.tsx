@@ -193,9 +193,20 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   const { data: periods = [] } = usePayrollPeriods();
   const { tenantId } = useTenant();
 
-  // Auto-suggest period dates on open
+  // Default to selected draft period if available; otherwise auto-suggest next
   useEffect(() => {
     if (!open) return;
+
+    // If a draft period is currently selected on the payroll page, use it
+    if (incomingPeriod && incomingPeriod.status === "draft") {
+      setPeriodName(incomingPeriod.period_name);
+      setStartDate(incomingPeriod.start_date);
+      setEndDate(incomingPeriod.end_date);
+      setPayDate(incomingPeriod.pay_date || "");
+      return;
+    }
+
+    // Fallback: auto-suggest the next period
     const latestEnd = periods.length > 0
       ? periods.reduce((latest, p) =>
           p.end_date > latest ? p.end_date : latest, periods[0].end_date)
@@ -205,7 +216,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
     setStartDate(suggested.startDate);
     setEndDate(suggested.endDate);
     setPayDate(suggested.payDate);
-  }, [open, periods]);
+  }, [open, periods, incomingPeriod]);
 
   // Detect existing draft period and check for bonuses
   useEffect(() => {
