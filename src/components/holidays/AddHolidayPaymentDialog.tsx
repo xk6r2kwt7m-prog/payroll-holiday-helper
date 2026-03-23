@@ -292,17 +292,23 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                   <span className="text-muted-foreground">Accrued:</span>
                   <span className="font-medium text-success">{formatHours(employeeSummary.totalAccrued)} hrs</span>
                 </div>
+                {employeeSummary.carryOver > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Carry over:</span>
+                    <span className="font-medium text-accent">{formatHours(employeeSummary.carryOver)} hrs</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taken:</span>
                   <span className="font-medium text-primary">{formatHours(employeeSummary.totalTaken)} hrs</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Balance:</span>
+                  <span className="text-muted-foreground">Available:</span>
                   <span className={cn(
                     "font-bold",
                     employeeSummary.balance >= 0 ? "text-accent" : "text-destructive"
                   )}>
-                    {employeeSummary.balance >= 0 ? "+" : ""}{formatHours(employeeSummary.balance)} hrs
+                    {formatHours(employeeSummary.balance)} hrs
                   </span>
                 </div>
                 <div className="flex justify-between">
