@@ -27,7 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { SigningCertificatePDF } from "./SigningCertificatePDF";
 import type { SignatureRecord } from "./SigningCertificatePDF";
-import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award } from "lucide-react";
+import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award, RefreshCw } from "lucide-react";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -74,6 +74,14 @@ export function ContractSigningActions({
   const employerSigned = signatures?.some((s) => s.signer_type === "employer");
   const bothSigned = employeeSigned && employerSigned;
 
+  // Check if an employer token was auto-generated (exists but not yet used)
+  const employerTokenAutoSent = tokens?.some(
+    (t) => t.signer_type === "employer" && !t.used_at && new Date(t.expires_at) > new Date()
+  );
+  const employerTokenUsed = tokens?.some(
+    (t) => t.signer_type === "employer" && t.used_at
+  );
+
   const getSigningStage = () => {
     if (bothSigned) return "fully_signed";
     if (employeeSigned && !employerSigned) return "employee_signed";
@@ -106,8 +114,29 @@ export function ContractSigningActions({
     toast({ title: "Copied!", description: "Signing link copied to clipboard" });
   };
 
+  /** For fully-signed contracts, download the signing certificate (with visible signatures).
+   *  For pending contracts, view the original PDF. */
   const handleViewFinalContract = async () => {
+    if (bothSigned) {
+      // Download signing certificate as the authoritative signed version
+      await handleDownloadSigningCertificate();
+      return;
+    }
     const pathToUse = finalSignedFilePath || filePath;
+    if (pathToUse) {
+      const { data } = await supabase.storage
+        .from("employee-documents")
+        .createSignedUrl(pathToUse, 3600);
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, "_blank");
+      } else {
+        toast({ title: "Error", description: "Could not generate download link", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleDownloadOriginalPdf = async () => {
+    const pathToUse = filePath;
     if (pathToUse) {
       const { data } = await supabase.storage
         .from("employee-documents")
@@ -124,7 +153,6 @@ export function ContractSigningActions({
     if (!signatures || signatures.length === 0) return;
     setDownloadingCert(true);
     try {
-      // Fetch full signature details including signature_data
       const { data: fullSigs, error } = await supabase
         .from("contract_signatures")
         .select("*")
@@ -133,7 +161,6 @@ export function ContractSigningActions({
 
       if (error || !fullSigs) throw error;
 
-      // Fetch document hash
       const { data: docRecord } = await supabase
         .from("employee_documents")
         .select("final_document_hash")
@@ -169,7 +196,7 @@ export function ContractSigningActions({
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Signing_Certificate_${employeeName.replace(/\s+/g, "_")}.pdf`;
+      link.download = `Signed_Contract_${employeeName.replace(/\s+/g, "_")}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -226,32 +253,24 @@ export function ContractSigningActions({
             <Badge className="bg-primary/10 text-primary border-0 text-[10px] gap-1">
               <CheckCircle2 className="h-3 w-3" /> Fully Signed
             </Badge>
-            {(finalSignedFilePath || filePath) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={handleViewFinalContract}
-                title="View contract"
-              >
-                <FileDown className="h-3.5 w-3.5" />
-              </Button>
-            )}
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              onClick={handleDownloadSigningCertificate}
+              onClick={handleViewFinalContract}
               disabled={downloadingCert}
-              title="Download signing certificate"
+              title="Download signed contract"
             >
-              <Award className="h-3.5 w-3.5" />
+              {downloadingCert ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
             </Button>
           </>
         )}
         {signingStage === "employee_signed" && (
           <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
-            <Clock className="h-3 w-3" /> Employee signed — awaiting employer
+            <Clock className="h-3 w-3" />
+            {employerTokenAutoSent
+              ? "Employer link sent — awaiting signature"
+              : "Employee signed — awaiting employer"}
           </Badge>
         )}
         {signingStage === "employer_signed" && (
@@ -269,7 +288,7 @@ export function ContractSigningActions({
           size="icon"
           className="h-9 w-9"
           onClick={() => { setOpen(true); setGeneratedLink(null); setGeneratedTokenId(null); }}
-          title="Send for signing"
+          title="Contract signing options"
         >
           <Send className="h-4 w-4" />
         </Button>
@@ -281,10 +300,10 @@ export function ContractSigningActions({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Send for Signing
+              Contract Signing
             </DialogTitle>
             <DialogDescription>
-              Generate a secure link for {employeeName} or yourself to sign this contract.
+              Manage signing for {employeeName}'s contract.
             </DialogDescription>
           </DialogHeader>
 
@@ -310,6 +329,10 @@ export function ContractSigningActions({
                   <Badge className="bg-primary/10 text-primary border-0 text-xs gap-1">
                     <CheckCircle2 className="h-3 w-3" /> Signed
                   </Badge>
+                ) : employerTokenAutoSent ? (
+                  <Badge variant="outline" className="text-xs gap-1 text-amber-600 border-amber-200">
+                    <Mail className="h-3 w-3" /> Link sent
+                  </Badge>
                 ) : (
                   <Badge variant="outline" className="text-xs gap-1">
                     <Clock className="h-3 w-3" /> Pending
@@ -328,10 +351,43 @@ export function ContractSigningActions({
                   ))}
                 </div>
               )}
+
+              {/* Auto-send info */}
+              {employeeSigned && !employerSigned && employerTokenAutoSent && (
+                <div className="pt-2 mt-1 border-t border-border">
+                  <p className="text-[10px] text-primary">
+                    ✓ Employer signing link was automatically sent to your managers after the employee signed.
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Download signing certificate if any signatures exist */}
-            {signatures && signatures.length > 0 && (
+            {/* Download signed contract (fully signed) */}
+            {bothSigned && (
+              <div className="space-y-2">
+                <Button
+                  onClick={handleDownloadSigningCertificate}
+                  disabled={downloadingCert}
+                  className="w-full gradient-primary"
+                >
+                  {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                  Download Signed Contract
+                </Button>
+                {filePath && (
+                  <Button
+                    onClick={handleDownloadOriginalPdf}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Award className="h-4 w-4" />
+                    View Original Document
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Download signing certificate if partial signatures exist (not fully signed) */}
+            {!bothSigned && signatures && signatures.length > 0 && (
               <Button
                 onClick={handleDownloadSigningCertificate}
                 disabled={downloadingCert}
@@ -343,74 +399,93 @@ export function ContractSigningActions({
               </Button>
             )}
 
-            {/* Generate new link */}
-            {!generatedLink ? (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Generate link for</label>
-                  <Select value={signerType} onValueChange={(v) => setSignerType(v as "employee" | "employer")}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="employee">Employee ({employeeName})</SelectItem>
-                      <SelectItem value="employer">Employer (You)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleGenerate} disabled={generateLink.isPending} className="w-full gradient-primary">
-                  {generateLink.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Link2 className="h-4 w-4" />
-                  )}
-                  Generate Signing Link
-                </Button>
-                <p className="text-[10px] text-muted-foreground text-center">Link expires in 7 days</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-                  <p className="text-xs font-medium text-foreground mb-2">
-                    {emailSent ? "✓ Contract sent" : "Signing Link Ready"}
-                  </p>
-                  {emailSent && (contractSentTo || employeeEmail) && (
-                    <p className="text-xs text-primary mb-2">
-                      Sent to {contractSentTo || employeeEmail}
-                      {contractSentAt && (
-                        <span className="text-muted-foreground ml-1">
-                          · {new Date(contractSentAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                        </span>
+            {/* Generate new link - only show when not fully signed */}
+            {!bothSigned && (
+              <>
+                {!generatedLink ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1.5 block">
+                        {employeeSigned && !employerSigned
+                          ? "Resend employer signing link"
+                          : "Generate signing link for"}
+                      </label>
+                      <Select
+                        value={signerType}
+                        onValueChange={(v) => setSignerType(v as "employee" | "employer")}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="employee" disabled={!!employeeSigned}>
+                            Employee ({employeeName}) {employeeSigned ? "— already signed" : ""}
+                          </SelectItem>
+                          <SelectItem value="employer">
+                            Employer (You) {employerSigned ? "— already signed" : ""}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={handleGenerate} disabled={generateLink.isPending} className="w-full" variant={employerTokenAutoSent ? "outline" : "default"}>
+                      {generateLink.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : employeeSigned && !employerSigned && employerTokenAutoSent ? (
+                        <RefreshCw className="h-4 w-4" />
+                      ) : (
+                        <Link2 className="h-4 w-4" />
                       )}
-                    </p>
-                  )}
-                </div>
+                      {employeeSigned && !employerSigned && employerTokenAutoSent
+                        ? "Generate New Employer Link"
+                        : "Generate Signing Link"}
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground text-center">Link expires in 7 days</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                      <p className="text-xs font-medium text-foreground mb-2">
+                        {emailSent ? "✓ Contract sent" : "Signing Link Ready"}
+                      </p>
+                      {emailSent && (contractSentTo || employeeEmail) && (
+                        <p className="text-xs text-primary mb-2">
+                          Sent to {contractSentTo || employeeEmail}
+                          {contractSentAt && (
+                            <span className="text-muted-foreground ml-1">
+                              · {new Date(contractSentAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
 
-                {/* Primary: Send by email (employee only) */}
-                {signerType === "employee" && employeeEmail && !emailSent && (
-                  <Button onClick={handleSendEmail} disabled={sendingEmail} className="w-full gradient-primary">
-                    {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                    {sendingEmail ? "Sending..." : "Send contract"}
-                  </Button>
-                )}
+                    {/* Primary: Send by email (employee only) */}
+                    {signerType === "employee" && employeeEmail && !emailSent && (
+                      <Button onClick={handleSendEmail} disabled={sendingEmail} className="w-full gradient-primary">
+                        {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                        {sendingEmail ? "Sending..." : "Send contract"}
+                      </Button>
+                    )}
 
-                {signerType === "employee" && !employeeEmail && (
-                  <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center">
-                    <p className="text-xs text-muted-foreground">
-                      No email on file — copy the link to send manually
+                    {signerType === "employee" && !employeeEmail && (
+                      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center">
+                        <p className="text-xs text-muted-foreground">
+                          No email on file — copy the link to send manually
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Fallback: Copy link */}
+                    <Button onClick={copyLink} className="w-full" variant="outline">
+                      <Copy className="h-4 w-4" />
+                      Copy link
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      Share this link via WhatsApp, email, or any messenger. The signer does not need an account.
                     </p>
                   </div>
                 )}
-
-                {/* Fallback: Copy link */}
-                <Button onClick={copyLink} className="w-full" variant="outline">
-                  <Copy className="h-4 w-4" />
-                  Copy link
-                </Button>
-                <p className="text-[10px] text-muted-foreground text-center">
-                  Share this link via WhatsApp, email, or any messenger. The signer does not need an account.
-                </p>
-              </div>
+              </>
             )}
           </div>
         </DialogContent>
