@@ -287,8 +287,11 @@ export function SettleLeaverDialog() {
                 <SelectValue placeholder="Select employee to settle" />
               </SelectTrigger>
               <SelectContent>
-                {settleableEmployees.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">No employees available</div>
+                {periodId && settleableEmployees.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">No unsettled employees in this period</div>
+                )}
+                {!periodId && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">Select a payroll period first</div>
                 )}
                 {settleableEmployees.map(emp => (
                   <SelectItem key={emp.id} value={emp.id}>
