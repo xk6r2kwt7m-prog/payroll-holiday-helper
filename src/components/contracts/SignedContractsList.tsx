@@ -200,7 +200,7 @@ export function SignedContractsList() {
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9"
-                  onClick={() => handleDownload((contract as any).final_signed_pdf_url || contract.file_path, contract.document_name)}
+                  onClick={() => handleDownload(contract.id, contract.document_name, (contract as any).final_signed_pdf_url ? "final" : "original")}
                 >
                   <Download className="h-4 w-4" />
                 </Button>
