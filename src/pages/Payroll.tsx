@@ -569,7 +569,7 @@ const Payroll = () => {
             entryCount={entries.length}
             zeroHoursCount={zeroHoursCount}
             unresolvedImportIssues={blockingIssues}
-            excludedNames={excludedNames}
+            excludedNames={allExcludedNames}
           />
         )}
 
