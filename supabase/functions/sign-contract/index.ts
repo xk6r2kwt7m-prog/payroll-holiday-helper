@@ -1169,7 +1169,7 @@ Deno.serve(async (req) => {
         const contractSigningMode = emailPolicy?.contract_signing || "manual";
 
         // Send acknowledgment to employee (only if contract_signing is not disabled)
-        if (signedByEmail && contractSigningMode !== "disabled") {
+        if (signedByEmail && contractSigningMode === "auto") {
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
