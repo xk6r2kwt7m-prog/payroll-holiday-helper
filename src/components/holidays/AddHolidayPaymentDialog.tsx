@@ -88,26 +88,19 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     const emp = employees.find(e => e.id === id);
     if (emp) {
       setRate(emp.hourly_rate.toString());
-      // For leavers, auto-fill the remaining balance
+      // For leavers, balance will be auto-filled via useEffect below
       if (emp.status === "leaver") {
-        const accrued = allEntriesWithPeriod
-          .filter(e => e.employee_id === id)
-          .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
-        const accrualAdj = adjustments
-          .filter((a: any) => a.employee_id === id && a.adjustment_type === "accrued")
-          .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-        const taken = allPayments
-          .filter((p: any) => p.employee_id === id)
-          .reduce((sum: number, p: any) => sum + (p.hours || 0), 0);
-        const takenAdj = adjustments
-          .filter((a: any) => a.employee_id === id && a.adjustment_type === "taken")
-          .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-        const balance = (accrued + accrualAdj) - (taken + takenAdj);
-        setHours(Math.max(0, balance).toFixed(2));
         setNotes("Leaver settlement — full holiday balance payout");
       }
     }
   };
+
+  // Auto-fill leaver hours from the shared summary once it loads
+  useMemo(() => {
+    if (isLeaver && employeeSummary && employeeSummary.balance > 0) {
+      setHours(Math.max(0, employeeSummary.balance).toFixed(2));
+    }
+  }, [isLeaver, employeeSummary]);
 
   const total = (parseFloat(hours) || 0) * (parseFloat(rate) || 0);
 
