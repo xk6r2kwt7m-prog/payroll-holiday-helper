@@ -1,7 +1,9 @@
 /**
  * Auto-suggest next payroll period dates based on hospitality cutoff rules:
- * - cutoff = last Sunday of the payroll month
- * - pay date = last Thursday of the payroll month
+ * - pay date  = last Thursday of the payroll month
+ * - cutoff    = last Sunday ON OR BEFORE that pay date
+ * - start     = previous cutoff + 1 day
+ * - weeks     = inclusive day count / 7
  */
 
 function getLastDayOfWeek(year: number, month: number, dayOfWeek: number): Date {
@@ -11,12 +13,27 @@ function getLastDayOfWeek(year: number, month: number, dayOfWeek: number): Date 
   return new Date(year, month + 1, -diff);
 }
 
-export function getLastSunday(year: number, month: number): Date {
-  return getLastDayOfWeek(year, month, 0);
-}
-
 export function getLastThursday(year: number, month: number): Date {
   return getLastDayOfWeek(year, month, 4);
+}
+
+/**
+ * Returns the last Sunday on or before the given date.
+ */
+function getLastSundayOnOrBefore(date: Date): Date {
+  const d = new Date(date);
+  const dayOfWeek = d.getDay(); // 0=Sun … 6=Sat
+  d.setDate(d.getDate() - dayOfWeek);
+  return d;
+}
+
+/**
+ * Cutoff = last Sunday on or before last Thursday of the month.
+ * This guarantees the cutoff never falls after the pay date.
+ */
+export function getCutoffSunday(year: number, month: number): Date {
+  const payDate = getLastThursday(year, month);
+  return getLastSundayOnOrBefore(payDate);
 }
 
 function toDateStr(d: Date): string {
@@ -51,24 +68,24 @@ export function suggestNextPeriod(
     startDate = new Date(now.getFullYear(), now.getMonth(), 1);
   }
 
-  // Target month is the month the period falls into
-  // Move forward to find the target month (the month where the end cutoff lands)
-  const targetMonth = startDate.getMonth();
-  const targetYear = startDate.getFullYear();
+  // Target month is the month the start date falls into
+  let targetMonth = startDate.getMonth();
+  let targetYear = startDate.getFullYear();
 
-  // End date = last Sunday of the target month
-  let endDate = getLastSunday(targetYear, targetMonth);
+  // End date = cutoff Sunday (last Sunday on or before last Thursday)
+  let endDate = getCutoffSunday(targetYear, targetMonth);
 
-  // If last Sunday is before startDate, move to next month
+  // If cutoff is before startDate, move to next month
   if (endDate <= startDate) {
     const nextMonth = targetMonth + 1;
-    const nextYear = nextMonth > 11 ? targetYear + 1 : targetYear;
-    const adjMonth = nextMonth % 12;
-    endDate = getLastSunday(nextYear, adjMonth);
+    targetYear = nextMonth > 11 ? targetYear + 1 : targetYear;
+    targetMonth = nextMonth % 12;
+    endDate = getCutoffSunday(targetYear, targetMonth);
   }
 
   const payDate = getLastThursday(endDate.getFullYear(), endDate.getMonth());
 
+  // Inclusive day count
   const days =
     (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
   const periodWeeks = Math.round((days / 7) * 10) / 10;
