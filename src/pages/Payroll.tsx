@@ -66,6 +66,10 @@ const Payroll = () => {
   const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
   const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
+  // Get prior period entries to determine first-time payroll employees
+  const priorPeriod = periods.find((_, i) => periods[i - 1]?.id === selectedPeriod?.id) || (periods.length > 1 && selectedPeriod?.id === periods[0]?.id ? periods[1] : undefined);
+  const { data: priorEntries = [] } = usePayrollEntries(priorPeriod?.id);
+  const priorPeriodEmployeeIds = new Set(priorEntries.map((e: any) => e.employee_id));
   const { data: holidayPayments = [] } = useHolidayPayments(selectedPeriod?.id);
   const { data: allEmployees = [] } = useEmployees();
   const currentEmployeeIds = entries.map((entry: any) => entry.employee_id);
