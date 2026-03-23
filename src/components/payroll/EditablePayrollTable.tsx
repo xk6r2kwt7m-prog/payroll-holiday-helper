@@ -621,6 +621,7 @@ export function EditablePayrollTable({
                           employeeName={`${emp?.forename} ${emp?.surname}`}
                           hasAdjustments={adjustedEmployeeIds.has(entry.employee_id) || (entry.imported_hours !== null && Math.abs(entry.timesheet_hours - entry.imported_hours) > 0.001)}
                         />
+                        <PriorAdjustmentReminder periodId={periodId} employeeId={entry.employee_id} />
                         <LocationSplitPopover
                           periodId={periodId}
                           employeeId={entry.employee_id}
