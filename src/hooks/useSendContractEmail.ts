@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEmailPolicy } from "@/hooks/useEmailPolicy";
 
 interface SendContractEmailParams {
   recipientEmail: string;
@@ -21,9 +22,39 @@ interface SendContractEmailResult {
 export function useSendContractEmail() {
   const { tenantId } = useTenant();
   const queryClient = useQueryClient();
+  const { isSendAllowed } = useEmailPolicy();
 
   const sendContractEmail = useCallback(
     async (params: SendContractEmailParams): Promise<SendContractEmailResult> => {
+      // Check email policy before sending
+      if (!isSendAllowed("contracts")) {
+        console.warn("[CONTRACT_EMAIL] Blocked by email policy: contracts category is disabled");
+
+        // Log blocked attempt to audit
+        try {
+          await supabase.from("audit_log").insert({
+            action: "create" as const,
+            table_name: "contract_email_blocked",
+            record_id: params.employeeDocumentId,
+            tenant_id: tenantId,
+            new_data: {
+              event: "contract_email_blocked",
+              status: "blocked",
+              reason: "Email automation policy: contracts category is disabled",
+              recipient_email: params.recipientEmail,
+              employee_name: params.employeeName,
+              employee_document_id: params.employeeDocumentId,
+              trigger: "manual_send",
+              blocked_at: new Date().toISOString(),
+            },
+          });
+        } catch { /* non-critical */ }
+
+        return {
+          success: false,
+          error: "Contract emails are currently disabled. Enable them in Settings → Email Automation.",
+        };
+      }
       const {
         recipientEmail,
         employeeName,
@@ -145,7 +176,7 @@ export function useSendContractEmail() {
         return { success: false, error: msg };
       }
     },
-    [tenantId, queryClient]
+    [tenantId, queryClient, isSendAllowed]
   );
 
   return { sendContractEmail };

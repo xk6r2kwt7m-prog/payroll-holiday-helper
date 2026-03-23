@@ -9,7 +9,8 @@ export type PreferenceCategory =
   | "holiday_display"
   | "training_docs"
   | "people_lifecycle"
-  | "branding";
+  | "branding"
+  | "email_automation";
 
 /** Load preferences for a category */
 export function useTenantPreferences<T extends Record<string, any>>(

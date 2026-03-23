@@ -1019,9 +1019,20 @@ Deno.serve(async (req) => {
         // Use token-based branded URL so employees can access without logging in
         const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?token=${downloadTokenRecord.token}&variant=final`;
 
-        // Send completion email to EMPLOYEE
+        // Check email automation policy for completion emails
+        const { data: completionPolicyRow } = await supabase
+          .from("tenant_preferences")
+          .select("preferences")
+          .eq("tenant_id", signingToken.tenant_id)
+          .eq("category", "email_automation")
+          .maybeSingle();
+
+        const completionPolicy = completionPolicyRow?.preferences as Record<string, string> | null;
+        const completionSigningMode = completionPolicy?.contract_signing || "manual";
+
+        // Send completion email to EMPLOYEE (only if not disabled)
         const recipientEmail = signingToken.employees?.email;
-        if (recipientEmail) {
+        if (recipientEmail && completionSigningMode !== "disabled") {
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
@@ -1037,12 +1048,44 @@ Deno.serve(async (req) => {
                 tenant_id: signingToken.tenant_id,
               },
             });
+
+            await supabase.from("audit_log").insert({
+              action: "create",
+              table_name: "email_sent",
+              record_id: signingToken.employee_document_id,
+              tenant_id: signingToken.tenant_id,
+              new_data: {
+                event: "contract_completion_email_sent_to_employee",
+                status: "sent",
+                email_type: "contract_fully_signed",
+                recipient_email: recipientEmail,
+                employee_name: employeeName,
+                trigger: completionSigningMode === "auto" ? "automatic" : "manual",
+                policy_mode: completionSigningMode,
+              },
+            });
           } catch (emailErr) {
             console.error("Contract fully-signed email to employee failed:", emailErr);
           }
+        } else if (recipientEmail && completionSigningMode === "disabled") {
+          await supabase.from("audit_log").insert({
+            action: "create",
+            table_name: "email_blocked",
+            record_id: signingToken.employee_document_id,
+            tenant_id: signingToken.tenant_id,
+            new_data: {
+              event: "contract_completion_email_blocked",
+              status: "blocked",
+              reason: "Email automation policy: contract_signing is disabled",
+              email_type: "contract_fully_signed",
+              recipient_email: recipientEmail,
+              employee_name: employeeName,
+              trigger: "automatic_blocked",
+            },
+          });
         }
 
-        // Send completion email to MANAGER(S)
+        // Send completion email to MANAGER(S) — managers always receive (not employee-facing)
         try {
           const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id, signingToken.employee_document_id);
 
@@ -1066,13 +1109,16 @@ Deno.serve(async (req) => {
 
             await supabase.from("audit_log").insert({
               action: "create",
-              table_name: "contract_signatures",
+              table_name: "email_sent",
               record_id: signingToken.employee_document_id,
               tenant_id: signingToken.tenant_id,
               new_data: {
                 event: "completed_contract_sent_to_managers",
+                status: "sent",
+                email_type: "contract_fully_signed_manager",
                 recipient_source: managerSource,
                 recipients: managerRecipients.map((recipient: any) => ({ email: recipient.email, role: recipient.role })),
+                trigger: "automatic",
               },
             });
           }
@@ -1107,8 +1153,19 @@ Deno.serve(async (req) => {
           },
         });
       } else if (currentSignerType === "employee") {
-        // ── EMPLOYEE SIGNED ── Send acknowledgment to employee
-        if (signedByEmail) {
+        // ── EMPLOYEE SIGNED ── Check email automation policy before sending
+        const { data: emailPolicyRow } = await supabase
+          .from("tenant_preferences")
+          .select("preferences")
+          .eq("tenant_id", signingToken.tenant_id)
+          .eq("category", "email_automation")
+          .maybeSingle();
+
+        const emailPolicy = emailPolicyRow?.preferences as Record<string, string> | null;
+        const contractSigningMode = emailPolicy?.contract_signing || "manual";
+
+        // Send acknowledgment to employee (only if contract_signing is not disabled)
+        if (signedByEmail && contractSigningMode !== "disabled") {
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
@@ -1123,71 +1180,131 @@ Deno.serve(async (req) => {
                 tenant_id: signingToken.tenant_id,
               },
             });
+
+            await supabase.from("audit_log").insert({
+              action: "create",
+              table_name: "email_sent",
+              record_id: signingToken.employee_document_id,
+              tenant_id: signingToken.tenant_id,
+              new_data: {
+                event: "employee_signature_receipt_email_sent",
+                status: "sent",
+                email_type: "contract_signature_received",
+                recipient_email: signedByEmail,
+                employee_name: employeeName,
+                trigger: "automatic",
+                policy_mode: contractSigningMode,
+              },
+            });
           } catch (emailErr) {
             console.error("Signature received email failed:", emailErr);
           }
+        } else if (signedByEmail && contractSigningMode === "disabled") {
+          await supabase.from("audit_log").insert({
+            action: "create",
+            table_name: "email_blocked",
+            record_id: signingToken.employee_document_id,
+            tenant_id: signingToken.tenant_id,
+            new_data: {
+              event: "employee_signature_receipt_email_blocked",
+              status: "blocked",
+              reason: "Email automation policy: contract_signing is disabled",
+              email_type: "contract_signature_received",
+              recipient_email: signedByEmail,
+              employee_name: employeeName,
+              trigger: "automatic",
+            },
+          });
         }
 
         // ── AUTO-GENERATE EMPLOYER SIGNING TOKEN & SEND TO MANAGER ──
-        try {
-          const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id, signingToken.employee_document_id);
+        // Only auto-send if contract_signing is set to "auto"
+        if (contractSigningMode === "auto") {
+          try {
+            const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id, signingToken.employee_document_id);
 
-          if (managerRecipients.length > 0) {
-            const expiresAt = new Date();
-            expiresAt.setDate(expiresAt.getDate() + 7);
+            if (managerRecipients.length > 0) {
+              const expiresAt = new Date();
+              expiresAt.setDate(expiresAt.getDate() + 7);
 
-            const { data: employerToken, error: tokenErr } = await supabase
-              .from("signing_tokens")
-              .insert({
-                employee_document_id: signingToken.employee_document_id,
-                employee_id: signingToken.employee_id,
-                signer_type: "employer",
-                expires_at: expiresAt.toISOString(),
-                tenant_id: signingToken.tenant_id,
-              })
-              .select()
-              .single();
+              const { data: employerToken, error: tokenErr } = await supabase
+                .from("signing_tokens")
+                .insert({
+                  employee_document_id: signingToken.employee_document_id,
+                  employee_id: signingToken.employee_id,
+                  signer_type: "employer",
+                  expires_at: expiresAt.toISOString(),
+                  tenant_id: signingToken.tenant_id,
+                })
+                .select()
+                .single();
 
-            if (tokenErr) {
-              console.error("Failed to auto-generate employer token:", tokenErr);
-            } else {
-              const employerSigningUrl = `${CANONICAL_APP_URL}/sign/${employerToken.token}`;
+              if (tokenErr) {
+                console.error("Failed to auto-generate employer token:", tokenErr);
+              } else {
+                const employerSigningUrl = `${CANONICAL_APP_URL}/sign/${employerToken.token}`;
 
-              for (const admin of managerRecipients) {
-                await supabase.functions.invoke("send-notification", {
-                  body: {
-                    to: admin.email,
-                    subject: `Countersignature required — ${employeeName}'s contract`,
-                    type: "contract_employer_sign_now",
-                    data: {
-                      employee_name: employeeName,
-                      admin_name: admin.full_name,
-                      signed_at: formattedDate,
-                      signing_url: employerSigningUrl,
+                for (const admin of managerRecipients) {
+                  await supabase.functions.invoke("send-notification", {
+                    body: {
+                      to: admin.email,
+                      subject: `Countersignature required — ${employeeName}'s contract`,
+                      type: "contract_employer_sign_now",
+                      data: {
+                        employee_name: employeeName,
+                        admin_name: admin.full_name,
+                        signed_at: formattedDate,
+                        signing_url: employerSigningUrl,
+                      },
+                      tenant_id: signingToken.tenant_id,
                     },
-                    tenant_id: signingToken.tenant_id,
+                  });
+                }
+
+                await supabase.from("audit_log").insert({
+                  action: "create",
+                  table_name: "employer_signing_email_sent",
+                  record_id: employerToken.id,
+                  tenant_id: signingToken.tenant_id,
+                  new_data: {
+                    event: "employer_signing_email_auto_sent",
+                    status: "sent",
+                    email_type: "contract_employer_sign_now",
+                    employee_document_id: signingToken.employee_document_id,
+                    employee_id: signingToken.employee_id,
+                    triggered_by: "employee_signature",
+                    trigger: "automatic",
+                    policy_mode: contractSigningMode,
+                    recipient_source: managerSource,
+                    recipients: managerRecipients.map((recipient: any) => ({ email: recipient.email, role: recipient.role })),
                   },
                 });
               }
-
-              await supabase.from("audit_log").insert({
-                action: "create",
-                table_name: "signing_tokens",
-                record_id: employerToken.id,
-                tenant_id: signingToken.tenant_id,
-                new_data: {
-                  event: "employer_signing_token_auto_generated",
-                  employee_document_id: signingToken.employee_document_id,
-                  employee_id: signingToken.employee_id,
-                  triggered_by: "employee_signature",
-                  recipient_source: managerSource,
-                  recipients: managerRecipients.map((recipient: any) => ({ email: recipient.email, role: recipient.role })),
-                },
-              });
             }
+          } catch (notifyErr) {
+            console.error("Manager auto-signing notification failed (non-critical):", notifyErr);
           }
-        } catch (notifyErr) {
-          console.error("Manager auto-signing notification failed (non-critical):", notifyErr);
+        } else {
+          // Log that the employer signing email was NOT auto-sent
+          await supabase.from("audit_log").insert({
+            action: "create",
+            table_name: "employer_signing_email_blocked",
+            record_id: signingToken.employee_document_id,
+            tenant_id: signingToken.tenant_id,
+            new_data: {
+              event: "employer_signing_email_not_auto_sent",
+              status: contractSigningMode === "disabled" ? "blocked" : "pending_manual",
+              reason: contractSigningMode === "disabled"
+                ? "Email automation policy: contract_signing is disabled"
+                : "Email automation policy: contract_signing is set to manual — admin must send manually",
+              email_type: "contract_employer_sign_now",
+              employee_document_id: signingToken.employee_document_id,
+              employee_name: employeeName,
+              trigger: "automatic_blocked",
+              policy_mode: contractSigningMode,
+            },
+          });
+          console.log(`[SIGN-CONTRACT] Employer signing email NOT auto-sent (policy: ${contractSigningMode})`);
         }
       }
 

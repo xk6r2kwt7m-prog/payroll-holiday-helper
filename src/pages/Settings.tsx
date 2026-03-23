@@ -39,6 +39,8 @@ import { OnboardingRequirementsConfig } from "@/components/settings/OnboardingRe
 import { ServiceChargeSettings } from "@/components/settings/ServiceChargeSettings";
 import { SignatorySettings } from "@/components/settings/SignatorySettings";
 import { EmailTestButton } from "@/components/settings/EmailTestButton";
+import { EmailAutomationSettings } from "@/components/settings/EmailAutomationSettings";
+import { EmailAuditLog } from "@/components/settings/EmailAuditLog";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { cn } from "@/lib/utils";
@@ -130,9 +132,11 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
     id: "system",
     icon: Shield,
     label: "System & Security",
-    description: "Notifications, security, modules, and audit trail",
+    description: "Notifications, email controls, security, modules, and audit trail",
     sections: [
       { id: "notifications", label: "Notifications", description: "Email alerts and reminders" },
+      { id: "email-automation", label: "Email Automation", description: "Control which emails the system can send to employees" },
+      { id: "email-audit", label: "Email Log", description: "View all sent, blocked, and failed emails" },
       { id: "security", label: "Security", description: "Authentication and session rules" },
       { id: "features", label: "Feature Access", description: "Enable or disable platform modules" },
       { id: "audit", label: "Audit Log", description: "View all admin actions and changes" },
@@ -514,6 +518,16 @@ const Settings = () => {
               <EmailTestButton />
             </ConfigCard>
           </>
+        )}
+        {activeSection === "email-automation" && (
+          <ConfigCard title="Email Automation Controls" description="Control which emails the system can send to employees. Sensitive categories default to disabled or manual-only.">
+            <EmailAutomationSettings />
+          </ConfigCard>
+        )}
+        {activeSection === "email-audit" && (
+          <ConfigCard title="Email Audit Log" description="View all outbound email attempts — sent, blocked, and failed. Every email event is recorded.">
+            <EmailAuditLog />
+          </ConfigCard>
         )}
         {activeSection === "security" && (
           <>
