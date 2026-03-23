@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ReportSummaryBar } from "./ReportSummaryBar";
 import { usePayrollPeriods, usePayrollEntries } from "@/hooks/usePayroll";
+import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useManagerScope } from "@/hooks/useManagerScope";
 import { exportToCsv } from "@/lib/csv-export";
