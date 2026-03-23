@@ -625,6 +625,7 @@ const Payroll = () => {
             onExport={handleExport}
             showBonusColumn={payrollPrefs?.showBonusColumn !== false}
             showServiceCharge={payrollPrefs?.showServiceCharge !== false}
+            priorPeriodEmployeeIds={priorPeriodEmployeeIds}
           />
         )}
 
