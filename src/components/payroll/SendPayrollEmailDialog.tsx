@@ -36,6 +36,8 @@ interface SendPayrollEmailDialogProps {
   entries: any[];
   holidayPayments: any[];
   allEmployees: any[];
+  priorPeriodEmployeeIds?: Set<string>;
+  priorEntryRates?: Map<string, { hourly_rate: number; service_charge: number }>;
   disabled?: boolean;
 }
 
@@ -44,6 +46,8 @@ export function SendPayrollEmailDialog({
   entries,
   holidayPayments,
   allEmployees,
+  priorPeriodEmployeeIds = new Set(),
+  priorEntryRates = new Map(),
   disabled,
 }: SendPayrollEmailDialogProps) {
   const { tenantId } = useTenant();
@@ -112,8 +116,8 @@ export function SendPayrollEmailDialog({
         const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
         if (!inEntries && !hasHolidayPayment) return false;
         const isLeaver = emp.status === "leaver" || hasHolidayPayment;
-        // Note: no priorPeriodEmployeeIds available here, so include all starters
-        return emp.status === "starter" || isLeaver;
+        const isGenuineStarter = emp.status === "starter" && !priorPeriodEmployeeIds.has(emp.id);
+        return isGenuineStarter || isLeaver;
       });
 
       // Build report config using defaults — bank details excluded from starters if toggle is off
@@ -140,6 +144,8 @@ export function SendPayrollEmailDialog({
           entries={entries}
           holidayPayments={holidayPayments}
           starters={filteredStarters}
+          priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+          priorEntryRates={priorEntryRates}
           isCorrection={!!period.notes?.includes("[CORRECTED]")}
           correctionNote={
             period.notes?.includes("[CORRECTED]") ? period.notes : undefined
