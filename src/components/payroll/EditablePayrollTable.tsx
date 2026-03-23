@@ -155,6 +155,13 @@ export function EditablePayrollTable({
     switch (sortMode) {
       case "alphabetical":
         return sorted.sort((a, b) => {
+          const fA = a.employees?.forename?.toLowerCase() ?? "";
+          const fB = b.employees?.forename?.toLowerCase() ?? "";
+          if (fA !== fB) return fA.localeCompare(fB);
+          return (a.employees?.surname?.toLowerCase() ?? "").localeCompare(b.employees?.surname?.toLowerCase() ?? "");
+        });
+      case "alphabetical_surname":
+        return sorted.sort((a, b) => {
           const sA = a.employees?.surname?.toLowerCase() ?? "";
           const sB = b.employees?.surname?.toLowerCase() ?? "";
           if (sA !== sB) return sA.localeCompare(sB);
