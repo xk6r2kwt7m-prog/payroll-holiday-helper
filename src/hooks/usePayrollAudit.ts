@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AuditSeverity = "pass" | "warning" | "error";
@@ -9,8 +9,13 @@ export interface AuditFinding {
   severity: AuditSeverity;
   title: string;
   detail: string;
+  explanation?: string;
+  suggestedAction?: string;
+  actionType?: "recalculate_totals" | "go_to_holiday" | "go_to_details" | "manual_review";
+  blocking?: boolean; // defaults to true for errors
   employeeName?: string;
   periodName?: string;
+  periodId?: string;
   expected?: number;
   actual?: number;
   difference?: number;
@@ -23,7 +28,8 @@ export interface AuditResult {
     passed: number;
     warnings: number;
     errors: number;
-    healthScore: number; // 0-100
+    blockingErrors: number;
+    healthScore: number;
   };
   categories: {
     calculation: { passed: number; warnings: number; errors: number };
@@ -35,20 +41,15 @@ export interface AuditResult {
   timestamp: string;
 }
 
-// Legacy UK accrual rate — used for auditing ALL periods.
-// Historical records were computed with this rate; changing it would create false audit mismatches.
-// The DB trigger (calculate_holiday_accrual) also hardcodes 0.1207, so stored values match this.
 const ACCRUAL_RATE = 0.1207;
-const TOLERANCE = 0.02; // £0.02 tolerance for rounding
-const HOURS_TOLERANCE = 0.05; // 0.05 hours tolerance
+const TOLERANCE = 0.02;
+const HOURS_TOLERANCE = 0.05;
 
 async function runFullAudit(): Promise<AuditResult> {
   const findings: AuditFinding[] = [];
   let totalChecks = 0;
 
-  // ============================================
   // 1. PAYROLL CALCULATION VERIFICATION
-  // ============================================
   const { data: entries, error: entriesErr } = await supabase
     .from("payroll_entries")
     .select(`
@@ -67,16 +68,7 @@ async function runFullAudit(): Promise<AuditResult> {
     const empName = emp ? `${emp.forename} ${emp.surname}` : "Unknown";
     const periodName = period?.period_name || "Unknown Period";
 
-    // Check: total_pay = (hours × rate) + (hours × service_charge) + perf_bonus + special_bonus
-    const expectedTotal = Math.round(
-      (Number(entry.timesheet_hours) * Number(entry.hourly_rate))
-      + (Number(entry.timesheet_hours) * Number(entry.service_charge || 0))
-      + Number(entry.performance_bonus || 0)
-      + Number(entry.special_bonus || 0)
-    * 100) / 100;
-
-    // Fix: recalculate properly
-    const calcTotal = 
+    const calcTotal =
       (Number(entry.timesheet_hours) * Number(entry.hourly_rate))
       + (Number(entry.timesheet_hours) * Number(entry.service_charge || 0))
       + Number(entry.performance_bonus || 0)
@@ -92,15 +84,20 @@ async function runFullAudit(): Promise<AuditResult> {
         severity: diff > 1 ? "error" : "warning",
         title: `Total pay mismatch`,
         detail: `${empName} in "${periodName}": expected £${expectedRounded.toFixed(2)} but stored £${actualTotal.toFixed(2)} (diff: £${diff.toFixed(2)})`,
+        explanation: "The stored total pay does not match the recalculated value from hours × rate + service charge + bonuses.",
+        suggestedAction: "Recalculate this entry's total pay or review the hours/rate manually.",
+        actionType: "go_to_details",
+        blocking: diff > 1,
         employeeName: empName,
         periodName,
+        periodId: period?.id,
         expected: expectedRounded,
         actual: actualTotal,
         difference: diff,
       });
     }
 
-    // Check: holiday accrual = 12.07% of COALESCE(imported_hours, timesheet_hours)
+    // Holiday accrual check
     totalChecks++;
     const accrualBase = entry.imported_hours != null ? Number(entry.imported_hours) : Number(entry.timesheet_hours);
     const expectedAccrual = Math.round(accrualBase * ACCRUAL_RATE * 100) / 100;
@@ -114,8 +111,13 @@ async function runFullAudit(): Promise<AuditResult> {
         severity: accrualDiff > 0.5 ? "error" : "warning",
         title: `Holiday accrual mismatch`,
         detail: `${empName} in "${periodName}": expected ${expectedAccrual.toFixed(2)}h (${accrualBase} × 12.07%) but stored ${actualAccrual.toFixed(2)}h`,
+        explanation: "The holiday accrual hours do not match the expected 12.07% of worked hours.",
+        suggestedAction: "Review the employee's accrual calculation or check if a custom rate applies.",
+        actionType: "go_to_holiday",
+        blocking: false,
         employeeName: empName,
         periodName,
+        periodId: (entry as any).payroll_periods?.id,
         expected: expectedAccrual,
         actual: actualAccrual,
         difference: accrualDiff,
@@ -123,9 +125,7 @@ async function runFullAudit(): Promise<AuditResult> {
     }
   }
 
-  // ============================================
   // 2. PERIOD-LEVEL TOTALS AUDIT
-  // ============================================
   const { data: periods, error: periodsErr } = await supabase
     .from("payroll_periods")
     .select("*")
@@ -134,14 +134,12 @@ async function runFullAudit(): Promise<AuditResult> {
   if (periodsErr) throw periodsErr;
 
   for (const period of periods || []) {
-    totalChecks++;
-
-    // Sum payroll entries for this period
+    // Sum payroll entries (worked payroll)
     const periodEntries = (entries || []).filter((e: any) => e.payroll_period_id === period.id);
     const entriesTotal = periodEntries.reduce((s: number, e: any) => s + Number(e.total_pay), 0);
     const entriesRounded = Math.round(entriesTotal * 100) / 100;
 
-    // Sum holiday payments for this period
+    // Sum holiday payments
     const { data: holPayments } = await supabase
       .from("holiday_payments")
       .select("total")
@@ -159,46 +157,50 @@ async function runFullAudit(): Promise<AuditResult> {
         id: `hol-total-${period.id}`,
         category: "totals",
         severity: holDiff > 5 ? "error" : "warning",
-        title: `Holiday total mismatch on period`,
+        title: `Holiday total mismatch`,
         detail: `"${period.period_name}": sum of holiday payments = £${holidaysRounded.toFixed(2)} but stored holidays_total = £${storedHolidays.toFixed(2)}`,
+        explanation: "The stored holiday total on this period does not match the sum of individual holiday payment records.",
+        suggestedAction: "Use 'Recalculate Totals' to sync the stored value with the actual holiday payments.",
+        actionType: "recalculate_totals",
+        blocking: true,
         periodName: period.period_name,
+        periodId: period.id,
         expected: holidaysRounded,
         actual: storedHolidays,
         difference: holDiff,
       });
     }
 
-    // Check grand_total = entries + holidays
-    const expectedGrand = Math.round((entriesRounded + holidaysRounded) * 100) / 100;
+    // Check worked payroll total (grand_total stores entries-only via DB trigger)
+    totalChecks++;
     const storedGrand = Number(period.grand_total || 0);
-    const grandDiff = Math.abs(expectedGrand - storedGrand);
+    const grandDiff = Math.abs(entriesRounded - storedGrand);
     if (grandDiff > TOLERANCE) {
       findings.push({
-        id: `grand-total-${period.id}`,
+        id: `worked-total-${period.id}`,
         category: "totals",
         severity: grandDiff > 10 ? "error" : "warning",
-        title: `Grand total mismatch on period`,
-        detail: `"${period.period_name}": entries (£${entriesRounded.toFixed(2)}) + holidays (£${holidaysRounded.toFixed(2)}) = £${expectedGrand.toFixed(2)} but stored grand_total = £${storedGrand.toFixed(2)}`,
+        title: `Worked payroll total mismatch`,
+        detail: `"${period.period_name}": sum of payroll entries = £${entriesRounded.toFixed(2)} but stored total = £${storedGrand.toFixed(2)}`,
+        explanation: "The stored worked payroll total does not match the sum of individual payroll entries. This can happen if entries were modified outside the normal flow.",
+        suggestedAction: "Use 'Recalculate Totals' to resync the period totals from the underlying entries.",
+        actionType: "recalculate_totals",
+        blocking: true,
         periodName: period.period_name,
-        expected: expectedGrand,
+        periodId: period.id,
+        expected: entriesRounded,
         actual: storedGrand,
         difference: grandDiff,
       });
     }
   }
 
-  // ============================================
   // 3. HOLIDAY BALANCE RECONCILIATION
-  // ============================================
   const { data: balances } = await supabase
     .from("holiday_balances")
-    .select(`
-      *,
-      employees (id, forename, surname, department, status)
-    `)
+    .select(`*, employees (id, forename, surname, department, status)`)
     .order("leave_year_start", { ascending: false });
 
-  // For each balance, verify accrued = sum of accruals from payroll entries in that year
   for (const bal of balances || []) {
     totalChecks++;
     const emp = (bal as any).employees;
@@ -207,7 +209,6 @@ async function runFullAudit(): Promise<AuditResult> {
     const yearStart = bal.leave_year_start;
     const yearEnd = bal.leave_year_end;
 
-    // Sum accruals from payroll entries whose period falls within this leave year
     const yearEntries = (entries || []).filter((e: any) => {
       const period = e.payroll_periods;
       if (!period || e.employee_id !== bal.employee_id) return false;
@@ -226,6 +227,10 @@ async function runFullAudit(): Promise<AuditResult> {
         severity: accruedDiff > 2 ? "error" : "warning",
         title: `Balance accrued mismatch`,
         detail: `${empName} (${yearStart} to ${yearEnd}): sum of payroll accruals = ${sumAccruedRounded.toFixed(2)}h but balance shows ${storedAccrued.toFixed(2)}h`,
+        explanation: "The holiday balance snapshot does not match the sum of accruals from payroll entries for this leave year.",
+        suggestedAction: "Review the employee's holiday balance and accrual entries.",
+        actionType: "go_to_holiday",
+        blocking: false,
         employeeName: empName,
         expected: sumAccruedRounded,
         actual: storedAccrued,
@@ -233,7 +238,6 @@ async function runFullAudit(): Promise<AuditResult> {
       });
     }
 
-    // Check hours_taken matches sum of holiday_payments for this employee in this leave year
     totalChecks++;
     const { data: empHolPayments } = await supabase
       .from("holiday_payments")
@@ -254,6 +258,10 @@ async function runFullAudit(): Promise<AuditResult> {
         severity: takenDiff > 2 ? "error" : "warning",
         title: `Balance taken mismatch`,
         detail: `${empName} (${yearStart} to ${yearEnd}): sum of holiday payments = ${sumTakenRounded.toFixed(2)}h but balance shows ${storedTaken.toFixed(2)}h`,
+        explanation: "The 'hours taken' in the holiday balance does not match the sum of holiday payment records.",
+        suggestedAction: "Review the employee's holiday payments and balance record.",
+        actionType: "go_to_holiday",
+        blocking: false,
         employeeName: empName,
         expected: sumTakenRounded,
         actual: storedTaken,
@@ -262,24 +270,19 @@ async function runFullAudit(): Promise<AuditResult> {
     }
   }
 
-  // ============================================
   // 4. CROSS-PERIOD DUPLICATE DETECTION
-  // ============================================
-  // Check for employees appearing in periods with overlapping dates
   const sortedPeriods = [...(periods || [])].sort((a, b) => a.start_date.localeCompare(b.start_date));
-  
+
   for (let i = 0; i < sortedPeriods.length; i++) {
     for (let j = i + 1; j < sortedPeriods.length; j++) {
       const p1 = sortedPeriods[i];
       const p2 = sortedPeriods[j];
 
-      // Check date overlap
       if (p1.end_date >= p2.start_date && p1.start_date <= p2.end_date) {
         totalChecks++;
-        // Find employees in both periods
         const p1Entries = (entries || []).filter((e: any) => e.payroll_period_id === p1.id);
         const p2Entries = (entries || []).filter((e: any) => e.payroll_period_id === p2.id);
-        
+
         const p1Employees = new Set(p1Entries.map((e: any) => e.employee_id));
         const dupes = p2Entries.filter((e: any) => p1Employees.has(e.employee_id));
 
@@ -294,7 +297,11 @@ async function runFullAudit(): Promise<AuditResult> {
             category: "duplicates",
             severity: "error",
             title: `Overlapping periods with shared employees`,
-            detail: `"${p1.period_name}" (${p1.start_date} to ${p1.end_date}) overlaps with "${p2.period_name}" (${p2.start_date} to ${p2.end_date}). ${dupes.length} employee(s) in both: ${dupeNames}`,
+            detail: `"${p1.period_name}" overlaps with "${p2.period_name}". ${dupes.length} employee(s) in both: ${dupeNames}`,
+            explanation: "These two payroll periods have overlapping date ranges and share employees, which could cause double-payment.",
+            suggestedAction: "Review the period date ranges and remove duplicate entries.",
+            actionType: "go_to_details",
+            blocking: true,
             periodName: `${p1.period_name} / ${p2.period_name}`,
           });
         }
@@ -302,14 +309,14 @@ async function runFullAudit(): Promise<AuditResult> {
     }
   }
 
-  // Check for same employee appearing twice in a single period
+  // Same-period duplicates
   for (const period of periods || []) {
     totalChecks++;
     const periodEntries = (entries || []).filter((e: any) => e.payroll_period_id === period.id);
     const empIds = periodEntries.map((e: any) => e.employee_id);
     const seen = new Set<string>();
     const duplicateIds = new Set<string>();
-    
+
     for (const id of empIds) {
       if (seen.has(id)) duplicateIds.add(id);
       seen.add(id);
@@ -328,45 +335,39 @@ async function runFullAudit(): Promise<AuditResult> {
         severity: "error",
         title: `Duplicate employee entries in period`,
         detail: `"${period.period_name}": ${duplicateIds.size} employee(s) appear more than once: ${dupeNames}`,
+        explanation: "An employee has been added to this payroll period more than once, which will cause incorrect totals.",
+        suggestedAction: "Remove the duplicate entry from Payroll Details.",
+        actionType: "go_to_details",
+        blocking: true,
         periodName: period.period_name,
+        periodId: period.id,
       });
     }
   }
 
-  // ============================================
-  // 5. HOURS CONSISTENCY CHECK (vs historical average)
-  // ============================================
-  // For each employee in each period, compare their weekly hours to their
-  // historical average weekly hours across all OTHER periods.
-  const WEEKLY_HOURS_WARN_THRESHOLD = 0.40; // 40% deviation = warning
-  const WEEKLY_HOURS_ERROR_THRESHOLD = 0.80; // 80% deviation = error
-  const MIN_HISTORY_PERIODS = 1; // need at least 1 other period to compare
+  // 5. HOURS CONSISTENCY CHECK
+  const WEEKLY_HOURS_WARN_THRESHOLD = 0.40;
+  const WEEKLY_HOURS_ERROR_THRESHOLD = 0.80;
+  const MIN_HISTORY_PERIODS = 1;
 
-  // Build a map: employeeId -> array of { periodId, weeklyHours, periodName }
   const employeeHistory: Record<string, { periodId: string; weeklyHours: number; periodName: string; totalHours: number }[]> = {};
-  
+
   for (const period of periods || []) {
     const periodEntries = (entries || []).filter((e: any) => e.payroll_period_id === period.id);
     const periodWeeks = Number(period.period_weeks) || 4;
-    
+
     for (const entry of periodEntries) {
       const empId = entry.employee_id;
       const totalHours = Number(entry.timesheet_hours);
       const weeklyHours = totalHours / periodWeeks;
-      
+
       if (!employeeHistory[empId]) employeeHistory[empId] = [];
-      employeeHistory[empId].push({
-        periodId: period.id,
-        weeklyHours,
-        periodName: period.period_name,
-        totalHours,
-      });
+      employeeHistory[empId].push({ periodId: period.id, weeklyHours, periodName: period.period_name, totalHours });
     }
   }
 
-  // Now compare each entry against the historical average (excluding itself)
   for (const [empId, history] of Object.entries(employeeHistory)) {
-    if (history.length <= MIN_HISTORY_PERIODS) continue; // not enough data
+    if (history.length <= MIN_HISTORY_PERIODS) continue;
 
     for (const current of history) {
       totalChecks++;
@@ -374,12 +375,9 @@ async function runFullAudit(): Promise<AuditResult> {
       if (others.length === 0) continue;
 
       const avgWeekly = others.reduce((s, h) => s + h.weeklyHours, 0) / others.length;
-      
-      if (avgWeekly < 1) continue; // skip if historical average is negligible
+      if (avgWeekly < 1) continue;
 
       const deviation = Math.abs(current.weeklyHours - avgWeekly) / avgWeekly;
-
-      // Find employee name
       const empEntry = (entries || []).find((e: any) => e.employee_id === empId);
       const emp = (empEntry as any)?.employees;
       const empName = emp ? `${emp.forename} ${emp.surname}` : "Unknown";
@@ -391,6 +389,10 @@ async function runFullAudit(): Promise<AuditResult> {
           severity: "error",
           title: `Major hours deviation`,
           detail: `${empName} in "${current.periodName}": ${current.weeklyHours.toFixed(1)} hrs/wk vs historical avg ${avgWeekly.toFixed(1)} hrs/wk (${(deviation * 100).toFixed(0)}% change)`,
+          explanation: "This employee's hours are significantly different from their historical average. This could indicate a data entry error or a genuine change in working pattern.",
+          suggestedAction: "Verify the timesheet hours are correct for this period.",
+          actionType: "go_to_details",
+          blocking: false,
           employeeName: empName,
           periodName: current.periodName,
           expected: avgWeekly,
@@ -403,7 +405,11 @@ async function runFullAudit(): Promise<AuditResult> {
           category: "consistency",
           severity: "warning",
           title: `Unusual hours change`,
-          detail: `${empName} in "${current.periodName}": ${current.weeklyHours.toFixed(1)} hrs/wk vs historical avg ${avgWeekly.toFixed(1)} hrs/wk (${(deviation * 100).toFixed(0)}% change). Could be extra shifts or reduced hours.`,
+          detail: `${empName} in "${current.periodName}": ${current.weeklyHours.toFixed(1)} hrs/wk vs historical avg ${avgWeekly.toFixed(1)} hrs/wk (${(deviation * 100).toFixed(0)}% change)`,
+          explanation: "This employee's hours deviate from their average. Could be extra shifts or reduced hours.",
+          suggestedAction: "Review if this is expected — no action needed if the hours are correct.",
+          actionType: "manual_review",
+          blocking: false,
           employeeName: empName,
           periodName: current.periodName,
           expected: avgWeekly,
@@ -414,10 +420,9 @@ async function runFullAudit(): Promise<AuditResult> {
     }
   }
 
-  // ============================================
   // COMPILE RESULTS
-  // ============================================
   const errors = findings.filter(f => f.severity === "error").length;
+  const blockingErrors = findings.filter(f => f.severity === "error" && f.blocking !== false).length;
   const warnings = findings.filter(f => f.severity === "warning").length;
   const passed = totalChecks - errors - warnings;
 
@@ -429,10 +434,10 @@ async function runFullAudit(): Promise<AuditResult> {
     const catFindings = findings.filter(f => f.category === cat);
     const catErrors = catFindings.filter(f => f.severity === "error").length;
     const catWarnings = catFindings.filter(f => f.severity === "warning").length;
-    const catTotal = cat === "calculation" 
-      ? (entries || []).length 
-      : cat === "totals" 
-      ? (periods || []).length * 2 
+    const catTotal = cat === "calculation"
+      ? (entries || []).length
+      : cat === "totals"
+      ? (periods || []).length * 2
       : cat === "duplicates"
       ? (periods || []).length + (periods || []).length * ((periods || []).length - 1) / 2
       : cat === "consistency"
@@ -452,6 +457,7 @@ async function runFullAudit(): Promise<AuditResult> {
       passed,
       warnings,
       errors,
+      blockingErrors,
       healthScore,
     },
     categories: {
@@ -487,7 +493,7 @@ export async function runPeriodAudit(periodId: string): Promise<AuditFinding[]> 
     const emp = (entry as any).employees;
     const empName = emp ? `${emp.forename} ${emp.surname}` : "Unknown";
 
-    const calcTotal = 
+    const calcTotal =
       (Number(entry.timesheet_hours) * Number(entry.hourly_rate))
       + (Number(entry.timesheet_hours) * Number(entry.service_charge || 0))
       + Number(entry.performance_bonus || 0)
@@ -503,8 +509,13 @@ export async function runPeriodAudit(periodId: string): Promise<AuditFinding[]> 
         severity: diff > 1 ? "error" : "warning",
         title: `Total pay mismatch: ${empName}`,
         detail: `Expected £${expected.toFixed(2)}, stored £${actual.toFixed(2)} (diff: £${diff.toFixed(2)})`,
+        explanation: "Stored total does not match recalculated value.",
+        suggestedAction: "Recalculate totals or review this entry.",
+        actionType: "recalculate_totals",
+        blocking: diff > 1,
         employeeName: empName,
         periodName: period.period_name,
+        periodId: period.id,
         expected,
         actual,
         difference: diff,
@@ -524,8 +535,13 @@ export async function runPeriodAudit(periodId: string): Promise<AuditFinding[]> 
         severity: accrualDiff > 0.5 ? "error" : "warning",
         title: `Holiday accrual mismatch: ${empName}`,
         detail: `Expected ${expectedAccrual.toFixed(2)}h, stored ${actualAccrual.toFixed(2)}h`,
+        explanation: "Holiday accrual does not match 12.07% of worked hours.",
+        suggestedAction: "Review accrual calculation.",
+        actionType: "go_to_holiday",
+        blocking: false,
         employeeName: empName,
         periodName: period.period_name,
+        periodId: period.id,
         expected: expectedAccrual,
         actual: actualAccrual,
         difference: accrualDiff,
@@ -533,39 +549,52 @@ export async function runPeriodAudit(periodId: string): Promise<AuditFinding[]> 
     }
   }
 
-  // 2. Period totals
+  // 2. Period totals — check worked payroll and holiday separately
   const entriesTotal = (entries || []).reduce((s: number, e: any) => s + Number(e.total_pay), 0);
+  const entriesRounded = Math.round(entriesTotal * 100) / 100;
+
   const { data: holPayments } = await supabase
     .from("holiday_payments")
     .select("total")
     .eq("payroll_period_id", periodId);
   const holidaysSum = (holPayments || []).reduce((s, p) => s + Number(p.total), 0);
+  const holidaysRounded = Math.round(holidaysSum * 100) / 100;
 
   const storedHolidays = Number(period.holidays_total || 0);
-  if (Math.abs(holidaysSum - storedHolidays) > TOLERANCE) {
+  if (Math.abs(holidaysRounded - storedHolidays) > TOLERANCE) {
     findings.push({
       id: `hol-total-${periodId}`,
       category: "totals",
       severity: "error",
       title: `Holiday total mismatch`,
-      detail: `Sum of payments: £${holidaysSum.toFixed(2)}, stored: £${storedHolidays.toFixed(2)}`,
+      detail: `Sum of holiday payments: £${holidaysRounded.toFixed(2)}, stored: £${storedHolidays.toFixed(2)}`,
+      explanation: "The stored holiday total does not match the sum of holiday payment records for this period.",
+      suggestedAction: "Use 'Recalculate Totals' to resync.",
+      actionType: "recalculate_totals",
+      blocking: true,
       periodName: period.period_name,
-      expected: holidaysSum,
+      periodId: period.id,
+      expected: holidaysRounded,
       actual: storedHolidays,
     });
   }
 
-  const expectedGrand = Math.round((entriesTotal + holidaysSum) * 100) / 100;
+  // Worked payroll total (grand_total = entries only, per DB trigger)
   const storedGrand = Number(period.grand_total || 0);
-  if (Math.abs(expectedGrand - storedGrand) > TOLERANCE) {
+  if (Math.abs(entriesRounded - storedGrand) > TOLERANCE) {
     findings.push({
-      id: `grand-total-${periodId}`,
+      id: `worked-total-${periodId}`,
       category: "totals",
       severity: "error",
-      title: `Grand total mismatch`,
-      detail: `Entries (£${entriesTotal.toFixed(2)}) + Holidays (£${holidaysSum.toFixed(2)}) = £${expectedGrand.toFixed(2)}, stored: £${storedGrand.toFixed(2)}`,
+      title: `Worked payroll total mismatch`,
+      detail: `Sum of entries: £${entriesRounded.toFixed(2)}, stored: £${storedGrand.toFixed(2)}`,
+      explanation: "The stored worked payroll total does not match the sum of payroll entries.",
+      suggestedAction: "Use 'Recalculate Totals' to resync.",
+      actionType: "recalculate_totals",
+      blocking: true,
       periodName: period.period_name,
-      expected: expectedGrand,
+      periodId: period.id,
+      expected: entriesRounded,
       actual: storedGrand,
     });
   }
@@ -583,8 +612,13 @@ export async function runPeriodAudit(periodId: string): Promise<AuditFinding[]> 
         severity: "error",
         title: `Duplicate employee entry`,
         detail: `${emp ? `${emp.forename} ${emp.surname}` : id} appears more than once`,
+        explanation: "This employee has multiple entries in the same payroll period.",
+        suggestedAction: "Remove the duplicate entry.",
+        actionType: "go_to_details",
+        blocking: true,
         employeeName: emp ? `${emp.forename} ${emp.surname}` : undefined,
         periodName: period.period_name,
+        periodId: period.id,
       });
     }
     seen.add(id);
@@ -610,4 +644,44 @@ export function usePeriodAudit(periodId: string | undefined, enabled = true, ten
     enabled: enabled && !!periodId && !!tenantId,
     staleTime: 1000 * 60 * 2,
   });
+}
+
+// Hook to recalculate period totals
+export function useRecalculatePeriodTotals() {
+  const queryClient = useQueryClient();
+
+  return async (periodId: string) => {
+    // Sum entries
+    const { data: entries } = await supabase
+      .from("payroll_entries")
+      .select("total_pay")
+      .eq("payroll_period_id", periodId);
+
+    const entriesTotal = (entries || []).reduce((s, e) => s + Number(e.total_pay), 0);
+    const entriesRounded = Math.round(entriesTotal * 100) / 100;
+
+    // Sum holiday payments
+    const { data: holPayments } = await supabase
+      .from("holiday_payments")
+      .select("total")
+      .eq("payroll_period_id", periodId);
+
+    const holidaysTotal = (holPayments || []).reduce((s, p) => s + Number(p.total), 0);
+    const holidaysRounded = Math.round(holidaysTotal * 100) / 100;
+
+    // Update period
+    const { error } = await supabase
+      .from("payroll_periods")
+      .update({
+        grand_total: entriesRounded,
+        holidays_total: holidaysRounded,
+      } as any)
+      .eq("id", periodId);
+
+    if (error) throw error;
+
+    // Invalidate audit queries
+    queryClient.invalidateQueries({ queryKey: ["payroll_audit"] });
+    queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+  };
 }
