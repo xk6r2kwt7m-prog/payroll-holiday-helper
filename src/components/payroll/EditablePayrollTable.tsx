@@ -113,6 +113,7 @@ export function EditablePayrollTable({
   showServiceCharge = true,
   priorPeriodEmployeeIds = new Set(),
 }: EditablePayrollTableProps) {
+  const { tenantId } = useTenant();
   const { data: leaveRules } = useLeaveRules();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<EditingEntry>({
@@ -133,6 +134,10 @@ export function EditablePayrollTable({
   const [adjustmentNote, setAdjustmentNote] = useState("");
 
   const queryClient = useQueryClient();
+  const createAdjustment = useCreatePayrollAdjustment();
+  const { data: periodAdjustments = [] } = usePayrollAdjustments(periodId);
+  // Set of employee IDs that have adjustments in this period
+  const adjustedEmployeeIds = new Set(periodAdjustments.map(a => a.employee_id));
   const bulkUpdate = useBulkUpdatePayrollEntries();
   const markExported = useMarkBankDetailsExported();
   
