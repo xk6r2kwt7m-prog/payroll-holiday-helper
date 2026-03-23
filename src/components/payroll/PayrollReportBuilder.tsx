@@ -133,9 +133,14 @@ export function PayrollReportBuilder({
     setGenerating(true);
     try {
       toast.info("Generating PDF...");
-      const starterEmployees = allEmployees.filter(
-        (emp: any) => (emp.status === "starter" || emp.status === "leaver") && filteredEntries.some((e: any) => e.employee_id === emp.id)
-      );
+      const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+      const starterEmployees = allEmployees.filter((emp: any) => {
+        const inEntries = filteredEntries.some((e: any) => e.employee_id === emp.id);
+        const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
+        if (!inEntries && !hasHolidayPayment) return false;
+        const isLeaver = emp.status === "leaver" || hasHolidayPayment;
+        return emp.status === "starter" || isLeaver;
+      });
       const logoUrl = config.showLogo ? `${window.location.origin}/logo.jpeg` : undefined;
       const blob = await pdf(
         <PayrollPDF
