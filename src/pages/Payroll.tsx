@@ -155,8 +155,8 @@ const Payroll = () => {
 
   const handleApprove = async () => {
     if (!selectedPeriod) return;
-    if (unresolvedIssues.length > 0) {
-      toast.error("Cannot approve: unmatched employees must be resolved first");
+    if (blockingIssues.length > 0) {
+      toast.error("Cannot approve: unresolved blocking issues must be resolved first");
       return;
     }
     try {
