@@ -91,6 +91,7 @@ const App = () => (
             <Route path="/onboard" element={<CompanyOnboarding />} />
             <Route path="/select-workspace" element={<SelectWorkspace />} />
             <Route path="/sign/:token" element={<SignContract />} />
+            <Route path="/document/view" element={<DocumentView />} />
 
             {/* Dashboard — all authenticated users */}
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
