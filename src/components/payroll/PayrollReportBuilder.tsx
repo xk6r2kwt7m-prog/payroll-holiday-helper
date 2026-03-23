@@ -398,6 +398,30 @@ export function PayrollReportBuilder({
                   </div>
                 )}
 
+                {config.employeeScope === "location" && availableLocations.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Locations</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableLocations.map((loc) => (
+                        <label key={loc} className="flex items-center gap-1.5 cursor-pointer">
+                          <Checkbox
+                            checked={config.selectedLocations.includes(loc)}
+                            onCheckedChange={(checked) => {
+                              setConfig((p) => ({
+                                ...p,
+                                selectedLocations: checked
+                                  ? [...p.selectedLocations, loc]
+                                  : p.selectedLocations.filter((l) => l !== loc),
+                              }));
+                            }}
+                          />
+                          <span className="text-xs">{loc}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {config.employeeScope === "custom" && (
                   <div className="space-y-2">
                     <Label className="text-xs">
