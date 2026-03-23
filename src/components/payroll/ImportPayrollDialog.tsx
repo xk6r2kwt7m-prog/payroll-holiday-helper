@@ -524,7 +524,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             const rate = emp.hourlyRate || 0;
             const sc = emp.serviceCharge || 0;
 
-            const { error: insertError } = await supabase
+            const { data: newEntry, error: insertError } = await supabase
               .from("payroll_entries")
               .insert({
                 payroll_period_id: periodId,
@@ -539,10 +539,19 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                 total_pay: (hours * rate) + (hours * sc),
                 notes: `${locNotes}${matchNote} [Added by import]`,
                 tenant_id: tenantId,
-              } as any);
+              } as any)
+              .select("id")
+              .single();
 
             if (insertError) throw insertError;
             entriesCreated++;
+            // Collect location splits for new entry
+            if (newEntry) {
+              for (const loc of emp.locations) {
+                const locDept = SECTION_DEPT_MAP[Object.keys(SECTION_LOCATION_MAP).find(k => SECTION_LOCATION_MAP[k] === loc.name) || ""] || emp.department || null;
+                locationRows.push({ payroll_entry_id: newEntry.id, employee_id: emp.matchedId!, location_name: loc.name, department: locDept, hours: loc.hours });
+              }
+            }
           }
         }
         // Entries from copy that had no CSV match remain untouched with 0 hours
