@@ -618,7 +618,7 @@ export function PayrollPDF({
                           isStarter && { backgroundColor: GREEN_BG, borderLeftWidth: 2, borderLeftColor: GREEN_BORDER },
                         ]} wrap={false}>
                           <View style={{ width: COL.name, flexDirection: "row", alignItems: "center", gap: 4 }}>
-                            <Text style={styles.tdBold}>{emp?.surname}, {emp?.forename}</Text>
+                            <Text style={styles.tdBold}>{emp?.forename} {emp?.surname}</Text>
                             {isStarter && (
                               <View style={{ backgroundColor: "#c6f6d5", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
                                 <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: GREEN }}>STARTER / NEW</Text>
