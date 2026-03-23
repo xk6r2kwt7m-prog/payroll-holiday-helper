@@ -13,18 +13,20 @@ export function SignatorySettings() {
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [title, setTitle] = useState("");
 
   useEffect(() => {
     if (!tenantId) return;
     (async () => {
       const { data } = await supabase
         .from("company_settings")
-        .select("default_signatory_name, default_signatory_email")
+        .select("default_signatory_name, default_signatory_email, default_signatory_title")
         .eq("tenant_id", tenantId)
         .maybeSingle();
       if (data) {
         setName((data as any).default_signatory_name || "");
         setEmail((data as any).default_signatory_email || "");
+        setTitle((data as any).default_signatory_title || "");
       }
       setLoading(false);
     })();
@@ -41,7 +43,6 @@ export function SignatorySettings() {
 
     setSaving(true);
 
-    // Check if settings exist
     const { data: existing } = await supabase
       .from("company_settings")
       .select("id")
@@ -51,6 +52,7 @@ export function SignatorySettings() {
     const updates = {
       default_signatory_name: name.trim() || null,
       default_signatory_email: email.trim() || null,
+      default_signatory_title: title.trim() || null,
     } as any;
 
     let error;
@@ -89,7 +91,7 @@ export function SignatorySettings() {
       </div>
       <p className="text-xs text-muted-foreground -mt-2">
         This person will automatically receive employer signing links when employees sign their contracts.
-        You can override this per contract if needed.
+        Their name and title will appear in the Employer signature block of the final signed contract.
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -112,6 +114,19 @@ export function SignatorySettings() {
             className="h-9"
           />
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs">Job Title / Position</Label>
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g. Director, General Manager"
+          className="h-9"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          This title appears on the final signed contract: "Signed for and on behalf of [Company] by [Name], [Title]"
+        </p>
       </div>
 
       {(!name.trim() || !email.trim()) && (

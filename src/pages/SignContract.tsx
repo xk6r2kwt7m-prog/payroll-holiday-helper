@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SignaturePad } from "@/components/letters/SignaturePad";
-import { FileText, CheckCircle2, AlertTriangle, Loader2, Download, ShieldCheck, Clock, XCircle } from "lucide-react";
+import { FileText, CheckCircle2, AlertTriangle, Loader2, Download, ShieldCheck, Clock, XCircle, Building2, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ContractInfo {
   signer_type: string;
@@ -15,15 +16,17 @@ interface ContractInfo {
   document_hash: string | null;
   expires_at: string;
   existing_signatures: string[];
+  company_name: string | null;
+  employer_signatory_name: string | null;
+  employer_signatory_title: string | null;
+  signature_details?: Array<{
+    signer_type: string;
+    signer_name: string;
+    signed_at: string;
+  }>;
 }
 
 type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "missing_signature" | "internal_error" | "missing_token" | string;
-
-const CONSENT_ITEMS = [
-  "I have read and understood this contract",
-  "I agree to sign this document electronically",
-  "This electronic signature represents my legal signature",
-];
 
 export default function SignContract() {
   const { token } = useParams<{ token: string }>();
@@ -32,17 +35,34 @@ export default function SignContract() {
   const [errorCode, setErrorCode] = useState<ErrorCode | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [typedName, setTypedName] = useState("");
+  const [signatoryTitle, setSignatoryTitle] = useState("");
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [consentGiven, setConsentGiven] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signedAt, setSignedAt] = useState<string | null>(null);
   const [fullySigned, setFullySigned] = useState(false);
+  const [signingField, setSigningField] = useState<string | null>(null);
+
+  const isEmployer = contractInfo?.signer_type === "employer";
+  const isEmployee = contractInfo?.signer_type === "employee";
 
   useEffect(() => {
     if (!token) return;
     fetchContractInfo();
   }, [token]);
+
+  // Prefill employer details when contract info loads
+  useEffect(() => {
+    if (contractInfo && isEmployer) {
+      if (contractInfo.employer_signatory_name) {
+        setTypedName(contractInfo.employer_signatory_name);
+      }
+      if (contractInfo.employer_signatory_title) {
+        setSignatoryTitle(contractInfo.employer_signatory_title);
+      }
+    }
+  }, [contractInfo, isEmployer]);
 
   const fetchContractInfo = async () => {
     try {
@@ -69,6 +89,21 @@ export default function SignContract() {
     setSignatureData(dataUrl);
   }, []);
 
+  const CONSENT_ITEMS_EMPLOYEE = [
+    "I have read and understood this contract",
+    "I agree to sign this document electronically",
+    "This electronic signature represents my legal signature",
+  ];
+
+  const CONSENT_ITEMS_EMPLOYER = [
+    "I have reviewed this contract and confirm it is ready for execution",
+    "I am authorised to sign this document on behalf of the employer",
+    "I agree to sign this document electronically",
+    "This electronic signature represents my legal signature",
+  ];
+
+  const consentItems = isEmployer ? CONSENT_ITEMS_EMPLOYER : CONSENT_ITEMS_EMPLOYEE;
+
   const handleSign = async () => {
     if (!typedName.trim() || !consentGiven || !signatureData) return;
 
@@ -76,7 +111,7 @@ export default function SignContract() {
     setErrorCode(null);
     setErrorMessage(null);
 
-    const consentText = `I confirm that: ${CONSENT_ITEMS.join("; ")}.`;
+    const consentText = `I confirm that: ${consentItems.join("; ")}.`;
 
     try {
       const response = await fetch(
@@ -91,6 +126,7 @@ export default function SignContract() {
             signature_data: signatureData,
             signature_type: "drawn",
             document_hash: contractInfo?.document_hash || null,
+            signatory_title: isEmployer ? signatoryTitle.trim() || null : null,
           }),
         }
       );
@@ -106,6 +142,7 @@ export default function SignContract() {
       setSigned(true);
       setSignedAt(result.signed_at || new Date().toISOString());
       setFullySigned(result.fully_signed === true);
+      setSigningField(result.signing_field || null);
     } catch {
       setErrorCode("internal_error");
       setErrorMessage("Something went wrong. Please try again.");
@@ -114,8 +151,9 @@ export default function SignContract() {
     }
   };
 
-  // Success state
+  // ══════════ Success state ══════════
   if (signed) {
+    const fieldLabel = signingField === "employer_block" ? "Employer" : "Team Member";
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center space-y-4 animate-fade-in">
@@ -127,12 +165,12 @@ export default function SignContract() {
           </h1>
           <p className="text-muted-foreground">
             {fullySigned
-              ? "Your contract has been fully signed by both you and the employer."
-              : "Thank you. Your signature has been recorded successfully."}
+              ? "Your contract has been fully signed by both you and the employer. A completed copy will be sent to you."
+              : `Your signature has been applied to the ${fieldLabel} section of the contract.`}
           </p>
           {!fullySigned && (
             <p className="text-sm text-muted-foreground">
-              Your contract is not yet finalised. It will be completed once the employer also signs it. You will receive a final copy once done.
+              Your contract is not yet finalised. It will be completed once the {isEmployer ? "team member" : "employer"} also signs it. You will receive a final copy once done.
             </p>
           )}
           {signedAt && (
@@ -156,7 +194,7 @@ export default function SignContract() {
     );
   }
 
-  // Loading
+  // ══════════ Loading ══════════
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -168,7 +206,7 @@ export default function SignContract() {
     );
   }
 
-  // Error states (before contract loads)
+  // ══════════ Error states ══════════
   if (!contractInfo && errorCode) {
     const errorConfig = getErrorDisplay(errorCode, errorMessage);
     return (
@@ -187,6 +225,7 @@ export default function SignContract() {
   if (!contractInfo) return null;
 
   const canSubmit = typedName.trim().length > 0 && consentGiven && !!signatureData && !submitting;
+  const companyName = contractInfo.company_name || "the employer";
 
   return (
     <div className="min-h-screen bg-background">
@@ -197,13 +236,34 @@ export default function SignContract() {
             <FileText className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">Sign Your Contract</h1>
-            <p className="text-xs text-muted-foreground">Please review and sign below</p>
+            <h1 className="text-lg font-bold text-foreground">
+              {isEmployer ? "Countersign Contract" : "Sign Your Contract"}
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              {isEmployer
+                ? "Please review and sign the Employer section below"
+                : "Please review and sign the Team Member section below"}
+            </p>
           </div>
         </div>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+        {/* Role indicator badge */}
+        <div className="flex items-center justify-center">
+          <Badge
+            variant="outline"
+            className={`gap-1.5 text-xs px-3 py-1.5 ${
+              isEmployer
+                ? "border-primary/30 bg-primary/5 text-primary"
+                : "border-blue-300 bg-blue-50 text-blue-700"
+            }`}
+          >
+            {isEmployer ? <Building2 className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+            You are signing as: {isEmployer ? "Employer" : "Team Member"}
+          </Badge>
+        </div>
+
         {/* Contract Info */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <h2 className="text-sm font-semibold text-foreground">Contract Details</h2>
@@ -216,11 +276,30 @@ export default function SignContract() {
               <span className="text-muted-foreground">Document</span>
               <span className="font-medium text-foreground truncate max-w-[200px]">{contractInfo.document_name}</span>
             </div>
+            {companyName && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Employer</span>
+                <span className="font-medium text-foreground">{companyName}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Signing as</span>
-              <span className="font-medium text-foreground capitalize">{contractInfo.signer_type}</span>
+              <span className="font-medium text-foreground">{isEmployer ? "Employer" : "Team Member"}</span>
             </div>
           </div>
+
+          {/* Show existing signatures if the other party signed */}
+          {contractInfo.signature_details && contractInfo.signature_details.length > 0 && (
+            <div className="pt-2 mt-2 border-t border-border space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Already signed:</p>
+              {contractInfo.signature_details.map((sig, i) => (
+                <div key={i} className="text-xs text-muted-foreground">
+                  <span className="font-medium">{sig.signer_type === "employee" ? "Team Member" : "Employer"}</span>: {sig.signer_name} —{" "}
+                  {new Date(sig.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                </div>
+              ))}
+            </div>
+          )}
 
           {contractInfo.document_url && (
             <a
@@ -243,28 +322,54 @@ export default function SignContract() {
           </div>
         )}
 
-        {/* Signing Form */}
+        {/* ══════════ SIGNING FORM ══════════ */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground">Your Signature</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            {isEmployer ? "Employer Signature" : "Team Member Signature"}
+          </h2>
+
+          {/* Employer: "Signed for and on behalf of" indicator */}
+          {isEmployer && (
+            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs text-primary font-medium">
+                Signed for and on behalf of {companyName}
+              </p>
+            </div>
+          )}
 
           {/* Typed name */}
           <div>
             <label className="text-xs text-muted-foreground mb-1.5 block">
-              Type your full legal name *
+              {isEmployer ? "Your full legal name (employer signatory) *" : "Your full legal name *"}
             </label>
             <Input
               value={typedName}
               onChange={(e) => setTypedName(e.target.value)}
-              placeholder="e.g. John Smith"
+              placeholder={isEmployer ? "e.g. Aderito Barros" : "e.g. John Smith"}
               className="text-base"
               autoComplete="name"
             />
           </div>
 
+          {/* Employer: Job title */}
+          {isEmployer && (
+            <div>
+              <label className="text-xs text-muted-foreground mb-1.5 block">
+                Job title / position *
+              </label>
+              <Input
+                value={signatoryTitle}
+                onChange={(e) => setSignatoryTitle(e.target.value)}
+                placeholder="e.g. Director, General Manager"
+                className="text-base"
+              />
+            </div>
+          )}
+
           {/* Signature pad */}
           <div>
             <label className="text-xs text-muted-foreground mb-1.5 block">
-              Draw your signature *
+              {isEmployer ? "Draw your signature (Employer section) *" : "Draw your signature (Team Member section) *"}
             </label>
             <SignaturePad onSignatureChange={handleSignatureChange} />
           </div>
@@ -273,7 +378,7 @@ export default function SignContract() {
           <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
             <p className="text-xs font-medium text-foreground">I confirm that:</p>
             <ul className="space-y-1">
-              {CONSENT_ITEMS.map((item, i) => (
+              {consentItems.map((item, i) => (
                 <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
                   <span className="text-primary mt-0.5">•</span>
                   {item}
@@ -290,7 +395,9 @@ export default function SignContract() {
               className="mt-0.5"
             />
             <label htmlFor="consent" className="text-sm text-foreground cursor-pointer leading-snug">
-              I confirm this is my signature and I agree to sign this contract electronically under the UK Electronic Communications Act 2000
+              {isEmployer
+                ? `I confirm this is my signature and I am signing this contract on behalf of ${companyName} under the UK Electronic Communications Act 2000`
+                : "I confirm this is my signature and I agree to sign this contract electronically under the UK Electronic Communications Act 2000"}
             </label>
           </div>
 
@@ -304,14 +411,20 @@ export default function SignContract() {
             ) : (
               <ShieldCheck className="h-4 w-4" />
             )}
-            {submitting ? "Signing…" : "Sign Contract"}
+            {submitting
+              ? "Signing…"
+              : isEmployer
+                ? "Sign as Employer"
+                : "Sign as Team Member"}
           </Button>
         </div>
 
         {/* Legal footer */}
         <p className="text-[10px] text-muted-foreground text-center px-4">
-          Your signature, typed name, timestamp, IP address, and device information will be recorded as proof of signing.
+          Your signature, typed name, {isEmployer ? "job title, " : ""}timestamp, IP address, and device information will be recorded as proof of signing.
           This constitutes a legally binding electronic signature under the UK Electronic Communications Act 2000.
+          {isEmployer && ` You are signing the Employer section of this contract on behalf of ${companyName}.`}
+          {isEmployee && " You are signing the Team Member section of this contract."}
         </p>
       </div>
     </div>
