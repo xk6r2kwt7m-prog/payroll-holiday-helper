@@ -28,6 +28,8 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useI18n } from "@/hooks/useI18n";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenant } from "@/hooks/useTenant";
+import { useQuery } from "@tanstack/react-query";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
