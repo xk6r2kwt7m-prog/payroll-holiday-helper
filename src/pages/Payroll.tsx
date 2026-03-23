@@ -489,6 +489,8 @@ const Payroll = () => {
                   entries={entries as any}
                   holidayPayments={holidayPayments as any}
                   allEmployees={allEmployees as any}
+                  priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+                  priorEntryRates={priorEntryRates}
                   disabled={!isAdmin}
                 />
                 <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-8 px-2.5 sm:px-3 text-xs">
