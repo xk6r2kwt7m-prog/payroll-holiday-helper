@@ -353,6 +353,7 @@ export function PayrollPDF({
   entries,
   holidayPayments = [],
   starters = [],
+  priorPeriodEmployeeIds = new Set(),
   companyName = "Your Company",
   isCorrection = false,
   correctionNote,
