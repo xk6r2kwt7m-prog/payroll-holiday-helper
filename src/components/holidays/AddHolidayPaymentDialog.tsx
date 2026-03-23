@@ -96,7 +96,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   };
 
   // Auto-fill leaver hours from the shared summary once it loads
-  useMemo(() => {
+  useEffect(() => {
     if (isLeaver && employeeSummary && employeeSummary.balance > 0) {
       setHours(Math.max(0, employeeSummary.balance).toFixed(2));
     }
