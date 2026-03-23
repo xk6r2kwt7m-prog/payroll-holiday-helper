@@ -9,6 +9,7 @@ import type { PayrollImportIssue } from "@/hooks/usePayrollImportStatus";
 interface UnresolvedIssuesPanelProps {
   issues: PayrollImportIssue[];
   excludedNames: string[];
+  reviewedNames?: Set<string>;
   onAddToPeriod?: (employeeId: string) => void;
   onExclude?: (csvName: string) => void;
   onMarkReviewed?: (csvName: string) => void;
