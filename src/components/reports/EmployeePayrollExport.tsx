@@ -32,6 +32,7 @@ export function EmployeePayrollExport() {
   const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
 
   const { data: entries = [], isLoading } = usePayrollEntries(selectedPeriodId);
+  const { data: locationData = [] } = usePayrollEntryLocations(selectedPeriodId);
 
   const departments = useMemo(() => {
     return [...new Set(scopedEmployees.map((e) => e.department))].sort();
