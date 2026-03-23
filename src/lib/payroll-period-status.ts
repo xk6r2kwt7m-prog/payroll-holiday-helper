@@ -17,10 +17,8 @@ export interface PayrollStatusHolidayPayment {
   employee_id?: string | null;
 }
 
-export interface PayrollMarkerEmployee<TEmployee extends PayrollStatusEmployee = PayrollStatusEmployee>
-  extends TEmployee {
-  payroll_marker: Exclude<PayrollMarker, "active">;
-}
+export type PayrollMarkerEmployee<TEmployee extends PayrollStatusEmployee = PayrollStatusEmployee> =
+  TEmployee & { payroll_marker: Exclude<PayrollMarker, "active"> };
 
 function normalizeDate(value?: string | null) {
   if (!value) return null;
