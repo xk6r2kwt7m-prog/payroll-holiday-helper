@@ -309,6 +309,11 @@ export function PayrollReportBuilder({
                         <SelectItem value="role">Role</SelectItem>
                       </SelectContent>
                     </Select>
+                    {config.groupBy === "location" && !hasLocationData && (
+                      <p className="text-[10px] text-warning font-medium mt-1">
+                        ⚠ No location data for this period — will fall back to employee view
+                      </p>
+                    )}
                   </div>
                 </div>
 
