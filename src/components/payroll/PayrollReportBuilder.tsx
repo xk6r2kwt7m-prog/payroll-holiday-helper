@@ -153,6 +153,8 @@ export function PayrollReportBuilder({
           entries={filteredEntries}
           holidayPayments={holidayPayments}
           starters={starterEmployees}
+          priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+          priorEntryRates={priorEntryRates}
           isCorrection={!!period.notes?.includes("[CORRECTED]")}
           correctionNote={period.notes?.includes("[CORRECTED]") ? period.notes : undefined}
           logoUrl={logoUrl}
