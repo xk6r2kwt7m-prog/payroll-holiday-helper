@@ -147,6 +147,42 @@ export function EditablePayrollTable({
   
   const existingEmployeeIds = entries.map(e => e.employee_id);
 
+  const DEPT_ORDER: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
+  const STATUS_ORDER: Record<string, number> = { active: 0, starter: 1, leaver: 2 };
+
+  const sortedEntries = useMemo(() => {
+    const sorted = [...entries];
+    switch (sortMode) {
+      case "alphabetical":
+        return sorted.sort((a, b) => {
+          const sA = a.employees?.surname?.toLowerCase() ?? "";
+          const sB = b.employees?.surname?.toLowerCase() ?? "";
+          if (sA !== sB) return sA.localeCompare(sB);
+          return (a.employees?.forename?.toLowerCase() ?? "").localeCompare(b.employees?.forename?.toLowerCase() ?? "");
+        });
+      case "department":
+        return sorted.sort((a, b) => {
+          const dA = a.employees?.department ?? "";
+          const dB = b.employees?.department ?? "";
+          const oA = DEPT_ORDER[dA] ?? 99;
+          const oB = DEPT_ORDER[dB] ?? 99;
+          if (oA !== oB) return oA - oB;
+          return dA.localeCompare(dB);
+        });
+      case "status":
+        return sorted.sort((a, b) => {
+          const sA = STATUS_ORDER[a.employees?.status ?? "active"] ?? 99;
+          const sB = STATUS_ORDER[b.employees?.status ?? "active"] ?? 99;
+          return sA - sB;
+        });
+      case "hours_desc":
+        return sorted.sort((a, b) => b.timesheet_hours - a.timesheet_hours);
+      case "hours_asc":
+        return sorted.sort((a, b) => a.timesheet_hours - b.timesheet_hours);
+      default:
+        return sorted;
+    }
+  }, [entries, sortMode]);
   const handleRemoveFromPeriod = async () => {
     if (!removeEntryId) return;
     try {
