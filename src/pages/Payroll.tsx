@@ -208,6 +208,8 @@ const Payroll = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
+      const hasLocations = periodLocationData.length > 0;
+
       await supabase.from("audit_log").insert({
         user_id: user?.id || null,
         action: "import" as const,
@@ -218,35 +220,65 @@ const Payroll = () => {
           period_name: selectedPeriod.period_name,
           included_bank_details: includeBankDetails,
           entry_count: entries.length,
-          export_type: "csv"
+          export_type: hasLocations ? "csv_location" : "csv",
         }
       });
 
-      const headers = [
-        "Employee", "Department", "Employee Status", "Payroll Marker", "NI Number",
-        ...(includeBankDetails ? ["Sort Code", "Account Number"] : []),
-        "Hourly Rate", "Service Charge", "Hours", "Performance Bonus",
-        "Special Bonus", "Holiday Accrued", "Total Pay",
-      ];
+      let csv: string;
 
-      const rows = entries.map((entry: any) => {
-        const emp = entry.employees;
-        return [
-          `${emp?.forename} ${emp?.surname}`, emp?.department, emp?.status || "", emp?.status === "starter" ? "Starter / First payroll" : "",
-          emp?.ni_number || "",
-          ...(includeBankDetails ? [emp?.sort_code || "", emp?.bank_account_no || ""] : []),
-          entry.hourly_rate, entry.service_charge || 0, entry.timesheet_hours,
-          entry.performance_bonus || 0, entry.special_bonus || 0,
-          entry.holiday_accrued_hours || 0, entry.total_pay,
-        ].join(",");
-      });
+      if (hasLocations) {
+        // Location-split export: one row per employee-location combination
+        const splitRows = buildLocationSplitRows(entries as any, periodLocationData);
+        const headers = [
+          "Employee", "Department", "Employee Status", "Payroll Marker",
+          "Location", "Location Hours", "Location Department", "Employee Total Hours",
+          "NI Number",
+          ...(includeBankDetails ? ["Sort Code", "Account Number"] : []),
+          "Hourly Rate", "Service Charge", "Performance Bonus",
+          "Special Bonus", "Holiday Accrued", "Total Pay",
+        ];
+        const rows = splitRows.map((sr) => {
+          const emp = sr.entry.employees;
+          return [
+            `"${emp?.forename} ${emp?.surname}"`, `"${emp?.department || ""}"`,
+            `"${emp?.status || ""}"`, emp?.status === "starter" ? '"Starter / First payroll"' : '""',
+            `"${sr.locationName}"`, sr.locationHours, `"${sr.locationDepartment || ""}"`, sr.employeeTotalHours,
+            `"${emp?.ni_number || ""}"`,
+            ...(includeBankDetails ? [`"${(emp as any)?.sort_code || ""}"`, `"${(emp as any)?.bank_account_no || ""}"`] : []),
+            sr.entry.hourly_rate, sr.entry.service_charge || 0,
+            sr.entry.performance_bonus || 0, sr.entry.special_bonus || 0,
+            sr.entry.holiday_accrued_hours || 0, sr.entry.total_pay,
+          ].join(",");
+        });
+        csv = [headers.join(","), ...rows].join("\n");
+      } else {
+        // Flat employee-level export (existing behaviour)
+        const headers = [
+          "Employee", "Department", "Employee Status", "Payroll Marker", "NI Number",
+          ...(includeBankDetails ? ["Sort Code", "Account Number"] : []),
+          "Hourly Rate", "Service Charge", "Hours", "Performance Bonus",
+          "Special Bonus", "Holiday Accrued", "Total Pay",
+        ];
+        const rows = entries.map((entry: any) => {
+          const emp = entry.employees;
+          return [
+            `"${emp?.forename} ${emp?.surname}"`, `"${emp?.department}"`, `"${emp?.status || ""}"`,
+            emp?.status === "starter" ? '"Starter / First payroll"' : '""',
+            `"${emp?.ni_number || ""}"`,
+            ...(includeBankDetails ? [`"${emp?.sort_code || ""}"`, `"${emp?.bank_account_no || ""}"`] : []),
+            entry.hourly_rate, entry.service_charge || 0, entry.timesheet_hours,
+            entry.performance_bonus || 0, entry.special_bonus || 0,
+            entry.holiday_accrued_hours || 0, entry.total_pay,
+          ].join(",");
+        });
+        csv = [headers.join(","), ...rows].join("\n");
+      }
 
-      const csv = [headers.join(","), ...rows].join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `payroll-${selectedPeriod.period_name.replace(/\s+/g, "-")}${includeBankDetails ? "-with-bank" : ""}.csv`;
+      a.download = `payroll-${selectedPeriod.period_name.replace(/\s+/g, "-")}${hasLocations ? "-by-location" : ""}${includeBankDetails ? "-with-bank" : ""}.csv`;
       a.click();
       URL.revokeObjectURL(url);
 
