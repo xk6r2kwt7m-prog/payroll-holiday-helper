@@ -432,6 +432,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setImporting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      // Collect location split rows to bulk-insert after entries
+      const locationRows: { payroll_entry_id: string; employee_id: string; location_name: string; department: string | null; hours: number }[] = [];
       const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
       const periodWeeks = Math.round((days / 7) * 10) / 10;
 
