@@ -60,7 +60,12 @@ export function groupByDepartment(entries: PayrollEntryForReport[]): GroupSectio
     .sort(([a], [b]) => (deptOrder[a] ?? 99) - (deptOrder[b] ?? 99))
     .map(([dept, de]) => ({
       groupLabel: dept,
-      entries: de.sort((a, b) => (a.employees?.surname || "").localeCompare(b.employees?.surname || "")),
+      entries: de.sort((a, b) => {
+        const fA = (a.employees?.forename || "").toLowerCase();
+        const fB = (b.employees?.forename || "").toLowerCase();
+        if (fA !== fB) return fA.localeCompare(fB);
+        return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+      }),
       subtotalHours: de.reduce((s, e) => s + Number(e.timesheet_hours), 0),
       subtotalPay: de.reduce((s, e) => s + Number(e.total_pay), 0),
     }));
@@ -95,9 +100,12 @@ export function groupByLocation(
   return Array.from(locMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, data]) => {
-      const sectionEntries = Array.from(data.entries.values()).sort(
-        (a, b) => (a.employees?.surname || "").localeCompare(b.employees?.surname || "")
-      );
+      const sectionEntries = Array.from(data.entries.values()).sort((a, b) => {
+        const fA = (a.employees?.forename || "").toLowerCase();
+        const fB = (b.employees?.forename || "").toLowerCase();
+        if (fA !== fB) return fA.localeCompare(fB);
+        return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+      });
       const subtotalHours = Array.from(data.hours.values()).reduce((s, h) => s + h, 0);
       // Pro-rate pay by hours proportion
       const subtotalPay = sectionEntries.reduce((s, e) => {
@@ -119,9 +127,12 @@ export function groupByLocation(
  * Single flat group — no grouping.
  */
 export function groupByEmployee(entries: PayrollEntryForReport[]): GroupSection[] {
-  const sorted = [...entries].sort(
-    (a, b) => (a.employees?.surname || "").localeCompare(b.employees?.surname || "")
-  );
+  const sorted = [...entries].sort((a, b) => {
+    const fA = (a.employees?.forename || "").toLowerCase();
+    const fB = (b.employees?.forename || "").toLowerCase();
+    if (fA !== fB) return fA.localeCompare(fB);
+    return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+  });
   return [
     {
       groupLabel: "All Employees",
@@ -158,6 +169,9 @@ export function buildLocationSplitRows(
   return rows.sort((a, b) => {
     const locCmp = a.locationName.localeCompare(b.locationName);
     if (locCmp !== 0) return locCmp;
+    const fA = (a.entry.employees?.forename || "").toLowerCase();
+    const fB = (b.entry.employees?.forename || "").toLowerCase();
+    if (fA !== fB) return fA.localeCompare(fB);
     return (a.entry.employees?.surname || "").localeCompare(b.entry.employees?.surname || "");
   });
 }
