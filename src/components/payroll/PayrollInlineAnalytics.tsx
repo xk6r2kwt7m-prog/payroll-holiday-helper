@@ -268,8 +268,9 @@ export function PayrollInlineAnalytics({ currentPeriodId, entries, holidayPaymen
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+                <TabsTrigger value="locations" className="text-xs">Locations</TabsTrigger>
                 <TabsTrigger value="employees" className="text-xs">Employees</TabsTrigger>
                 <TabsTrigger value="departments" className="text-xs">Departments</TabsTrigger>
                 <TabsTrigger value="trends" className="text-xs">Trends</TabsTrigger>
