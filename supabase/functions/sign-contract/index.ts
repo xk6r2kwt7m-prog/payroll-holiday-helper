@@ -1203,7 +1203,8 @@ Deno.serve(async (req) => {
           } catch (emailErr) {
             console.error("Signature received email failed:", emailErr);
           }
-        } else if (signedByEmail && contractSigningMode === "disabled") {
+        } else if (signedByEmail) {
+          // Policy is "manual" or "disabled" — do NOT auto-send, log blocked/pending
           await supabase.from("audit_log").insert({
             action: "create",
             table_name: "email_blocked",
@@ -1211,12 +1212,15 @@ Deno.serve(async (req) => {
             tenant_id: signingToken.tenant_id,
             new_data: {
               event: "employee_signature_receipt_email_blocked",
-              status: "blocked",
-              reason: "Email automation policy: contract_signing is disabled",
+              status: contractSigningMode === "disabled" ? "blocked" : "pending_manual",
+              reason: contractSigningMode === "disabled"
+                ? "Email automation policy: contract_signing is disabled"
+                : "Email automation policy: contract_signing is set to manual — admin must send manually",
               email_type: "contract_signature_received",
               recipient_email: signedByEmail,
               employee_name: employeeName,
-              trigger: "automatic",
+              trigger: "automatic_blocked",
+              policy_mode: contractSigningMode,
             },
           });
         }
