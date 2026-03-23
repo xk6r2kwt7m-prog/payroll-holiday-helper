@@ -37,6 +37,7 @@ import {
 } from "@/components/settings/AdminConfigSections";
 import { OnboardingRequirementsConfig } from "@/components/settings/OnboardingRequirementsConfig";
 import { ServiceChargeSettings } from "@/components/settings/ServiceChargeSettings";
+import { SignatorySettings } from "@/components/settings/SignatorySettings";
 import { EmailTestButton } from "@/components/settings/EmailTestButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
