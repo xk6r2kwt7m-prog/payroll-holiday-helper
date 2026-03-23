@@ -27,7 +27,8 @@ export function LabourCostReport() {
       // Timesheet cost = stored grand total minus stored bonuses (all from DB, no rate multiplication)
       const timesheetTotal = grandTotal - totalBonuses;
       const salesTotal = period.sales_total || 0;
-      const labourPct = salesTotal > 0 ? (grandTotal / salesTotal) * 100 : null;
+      // Labour % uses worked payroll only (excluding holiday pay)
+      const labourPct = salesTotal > 0 ? (timesheetTotal / salesTotal) * 100 : null;
 
       return {
         id: period.id,
