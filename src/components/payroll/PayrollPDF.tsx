@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
+import type { PayrollEntryLocation } from "@/hooks/usePayrollLocations";
+import { groupByDepartment, groupByLocation, groupByEmployee, type GroupSection } from "@/lib/payroll-report-transform";
 
 const TEAL = "#5a9e91";
 const DARK = "#1e2a2f";
