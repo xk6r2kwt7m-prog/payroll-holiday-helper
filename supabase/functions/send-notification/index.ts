@@ -292,6 +292,36 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
+    case "contract_employer_sign_now": {
+      const mgrName = data.admin_name || "Manager";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your countersignature is required</h2>
+        <p>Hi ${mgrName},</p>
+        <p><strong>${data.employee_name || "An employee"}</strong> has signed their contract.</p>
+        <p>Your employer signature is now required to complete this contract.</p>
+        <p><strong>Employee signed on:</strong> ${data.signed_at || "recently"}</p>
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.signing_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Sign as employer</a>
+        </p>
+        <p>This signing link expires in 7 days. You can sign from any device — no login required.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
+    case "contract_fully_signed_manager": {
+      const mgr2Name = data.admin_name || "Manager";
+      const mgrContractLink = data.final_contract_url
+        ? `<p style="margin:20px 0;"><a href="${data.final_contract_url}" style="display:inline-block;padding:12px 24px;background-color:#1a1a2e;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Download signed contract</a></p>`
+        : `<p>The signed contract is available in the Contracts section of UglyOps HR.</p>`;
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Contract complete — ${data.employee_name}</h2>
+        <p>Hi ${mgr2Name},</p>
+        <p>The employment contract for <strong>${data.employee_name}</strong> has been fully signed by both parties.</p>
+        ${mgrContractLink}
+        <p><strong>Completed on:</strong> ${data.signed_at || new Date().toISOString()}</p>
+        <p>The signed contract has been stored securely in the system.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
     case "test":
       body = `<h2>UglyOps HR Platform</h2><p>This confirms that the email notification system is working.</p><p><strong>Sent at:</strong> ${new Date().toISOString()}</p>`;
       break;
