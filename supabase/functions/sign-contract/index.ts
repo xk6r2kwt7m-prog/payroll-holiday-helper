@@ -751,13 +751,22 @@ Deno.serve(async (req) => {
       // Employer → the employer's email (from company settings or the person who is actually signing)
       let signedByEmail: string | null;
       if (currentSignerType === "employer") {
-        // For employer, use the email from the signing token context or company settings
-        const { data: settings } = await supabase
+        // Priority: per-contract override → company_settings default
+        const { data: docOverride } = await supabase
+          .from("employee_documents")
+          .select("employer_signatory_email")
+          .eq("id", signingToken.employee_document_id)
+          .maybeSingle();
+        if (docOverride?.employer_signatory_email) {
+          signedByEmail = docOverride.employer_signatory_email;
+        } else {
+          const { data: settings } = await supabase
           .from("company_settings")
           .select("default_signatory_email")
           .eq("tenant_id", signingToken.tenant_id)
           .maybeSingle();
-        signedByEmail = settings?.default_signatory_email || null;
+          signedByEmail = settings?.default_signatory_email || null;
+        }
       } else {
         signedByEmail = signingToken.employees?.email || null;
       }
