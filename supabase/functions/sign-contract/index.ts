@@ -1032,7 +1032,7 @@ Deno.serve(async (req) => {
 
         // Send completion email to EMPLOYEE (only if not disabled)
         const recipientEmail = signingToken.employees?.email;
-        if (recipientEmail && completionSigningMode !== "disabled") {
+        if (recipientEmail && completionSigningMode === "auto") {
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
