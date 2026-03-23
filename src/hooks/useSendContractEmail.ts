@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEmailPolicy } from "@/hooks/useEmailPolicy";
 
 interface SendContractEmailParams {
   recipientEmail: string;
