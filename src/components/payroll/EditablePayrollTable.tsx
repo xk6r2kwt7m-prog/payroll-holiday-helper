@@ -657,7 +657,9 @@ export function EditablePayrollTable({
                       </Avatar>
                       <div>
                         <span className="font-medium text-card-foreground">
-                          {emp?.forename} {emp?.surname}
+                          {sortMode === "alphabetical"
+                            ? `${emp?.surname}, ${emp?.forename}`
+                            : `${emp?.forename} ${emp?.surname}`}
                         </span>
                         {emp?.status === "starter" && !priorPeriodEmployeeIds?.has(entry.employee_id) && (
                           <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
