@@ -502,6 +502,8 @@ const Payroll = () => {
           <UnresolvedIssuesPanel
             issues={unresolvedIssues}
             excludedNames={excludedNames}
+            reviewedNames={reviewedIssueNames}
+            onMarkReviewed={handleMarkReviewed}
           />
         )}
 
