@@ -323,6 +323,29 @@ async function buildFinalSignedContractPdf(params: {
 }
 
 async function resolveManagerRecipients(supabase: any, tenantId: string) {
+  // First check for configured default signatory in company_settings
+  const { data: settings } = await supabase
+    .from("company_settings")
+    .select("default_signatory_name, default_signatory_email")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+
+  const signatoryName = settings?.default_signatory_name;
+  const signatoryEmail = settings?.default_signatory_email;
+
+  if (signatoryName && signatoryEmail) {
+    return {
+      recipients: [{
+        user_id: null,
+        role: "configured_signatory",
+        email: signatoryEmail,
+        full_name: signatoryName,
+      }],
+      source: "company_settings",
+    };
+  }
+
+  // Fallback: resolve from tenant_members
   const loadRecipients = async (roles: string[]) => {
     const { data: members } = await supabase
       .from("tenant_members")
