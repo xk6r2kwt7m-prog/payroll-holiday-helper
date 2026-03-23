@@ -61,6 +61,7 @@ const Payroll = () => {
   const resetPageState = useCallback(() => {
     setSelectedPeriodId(null);
     setReportBuilderOpen(false);
+    setReviewedIssueNames(new Set());
   }, []);
   const { tenantReady, assertTenantMatch } = useTenantGuard(resetPageState);
 
