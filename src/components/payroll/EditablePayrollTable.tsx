@@ -664,6 +664,11 @@ export function EditablePayrollTable({
                             Starter
                           </Badge>
                         )}
+                        {emp?.status === "leaver" && (
+                          <Badge variant="outline" className="ml-2 text-xs bg-destructive/10 text-destructive border-destructive/20">
+                            Leaver
+                          </Badge>
+                        )}
                         <AdjustmentHistoryDrawer
                           periodId={periodId}
                           employeeId={entry.employee_id}
