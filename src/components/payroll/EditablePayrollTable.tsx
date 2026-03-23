@@ -530,6 +530,7 @@ export function EditablePayrollTable({
                           employeeName={`${emp?.forename} ${emp?.surname}`}
                         />
                       </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="text-xs">
