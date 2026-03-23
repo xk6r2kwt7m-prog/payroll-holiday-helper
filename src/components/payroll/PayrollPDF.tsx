@@ -537,93 +537,126 @@ export function PayrollPDF({
           ))}
         </View>
 
-        {/* ─── Employee Detail Table (no holiday pay column) ─── */}
-        <Text style={styles.sectionTitle}>Employee Detail</Text>
-        <View style={styles.table}>
-          <View style={styles.thRow}>
-            <Text style={[styles.th, { width: COL.name }]}>Employee</Text>
-            <Text style={[styles.th, { width: COL.dept, textAlign: "center" }]}>Dept</Text>
-            <Text style={[styles.th, { width: COL.rate, textAlign: "right" }]}>Rate</Text>
-            <Text style={[styles.th, { width: COL.service, textAlign: "right" }]}>Service</Text>
-            <Text style={[styles.th, { width: COL.hours, textAlign: "right" }]}>Hours</Text>
-            <Text style={[styles.th, { width: COL.perfBonus, textAlign: "right" }]}>Perf</Text>
-            <Text style={[styles.th, { width: COL.specBonus, textAlign: "right" }]}>Special</Text>
-            <Text style={[styles.th, { width: COL.total, textAlign: "right" }]}>Total</Text>
-          </View>
+        {/* ─── Employee Detail Table ─── */}
+        {(() => {
+          const groupMode = rc?.groupBy || "department";
+          let sections: GroupSection[];
+          let isLocationGrouped = false;
+          if (groupMode === "location" && locationData.length > 0) {
+            sections = groupByLocation(sortedEntries as any, locationData);
+            isLocationGrouped = true;
+          } else if (groupMode === "none") {
+            sections = groupByEmployee(sortedEntries as any);
+          } else {
+            sections = groupByDepartment(sortedEntries as any);
+          }
 
-          {departments.map((dept) => {
-            const de = sortedEntries.filter((e) => e.employees?.department === dept);
-            if (de.length === 0) return null;
-            const deptTotal = de.reduce((s, e) => s + Number(e.total_pay), 0);
-            const deptHours = de.reduce((s, e) => s + Number(e.timesheet_hours), 0);
-
+          if (groupMode === "location" && locationData.length === 0) {
             return (
-              <View key={dept}>
-                <View style={styles.deptSubHeader}>
-                  <Text style={styles.deptSubText}>
-                    {dept} — {de.length} staff • {deptHours.toFixed(1)} hrs • {fmt(deptTotal)}
+              <View>
+                <Text style={styles.sectionTitle}>Employee Detail</Text>
+                <View style={{ backgroundColor: AMBER_BG, borderWidth: 0.5, borderColor: AMBER_BORDER, borderRadius: 3, padding: 6, marginBottom: 6 }}>
+                  <Text style={{ fontSize: 7, color: AMBER, fontFamily: "Helvetica-Bold" }}>
+                    No location data available for this period. Showing employee-level view instead.
                   </Text>
                 </View>
-                {de.map((entry, idx) => {
-                  const emp = entry.employees;
-                  const empStatus = emp?.status;
-                  const isStarter = empStatus === "starter";
-                  const isLeaver = empStatus === "leaver";
-                  // Compare payroll entry rates vs employee master rates
-                  const rateChanged = emp && Math.abs(Number(entry.hourly_rate) - Number(emp.hourly_rate)) > 0.001;
-                  const serviceChanged = emp && Math.abs(Number(entry.service_charge || 0) - Number(emp.service_charge || 0)) > 0.001;
-                  return (
-                    <View key={entry.id} style={[
-                      styles.tr,
-                      idx % 2 === 1 && styles.trAlt,
-                      isLeaver && { backgroundColor: RED_BG, borderLeftWidth: 2, borderLeftColor: RED_BORDER },
-                      isStarter && { backgroundColor: GREEN_BG, borderLeftWidth: 2, borderLeftColor: GREEN_BORDER },
-                    ]} wrap={false}>
-                      <View style={{ width: COL.name, flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Text style={styles.tdBold}>
-                          {emp?.surname}, {emp?.forename}
-                        </Text>
-                        {isStarter && (
-                          <View style={{ backgroundColor: "#c6f6d5", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
-                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: GREEN }}>STARTER / NEW</Text>
-                          </View>
-                        )}
-                        {isLeaver && (
-                          <View style={{ backgroundColor: "#fed7d7", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
-                            <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: RED }}>LEAVER</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={[styles.td, { width: COL.dept, textAlign: "center" }]}>{emp?.department}</Text>
-                      <Text style={[styles.td, { width: COL.rate, textAlign: "right" }, rateChanged && { color: AMBER, fontFamily: "Helvetica-Bold" }]}>
-                        {fmt(entry.hourly_rate)}{rateChanged ? " ▲" : ""}
-                      </Text>
-                      <Text style={[styles.td, { width: COL.service, textAlign: "right" }, serviceChanged && { color: AMBER, fontFamily: "Helvetica-Bold" }]}>
-                        {fmt(Number(entry.service_charge || 0))}{serviceChanged ? " ▲" : ""}
-                      </Text>
-                      <Text style={[styles.td, { width: COL.hours, textAlign: "right" }]}>{Number(entry.timesheet_hours).toFixed(2)}</Text>
-                      <Text style={[styles.td, { width: COL.perfBonus, textAlign: "right" }]}>{Number(entry.performance_bonus || 0) > 0 ? fmt(Number(entry.performance_bonus)) : ""}</Text>
-                      <Text style={[styles.td, { width: COL.specBonus, textAlign: "right" }]}>{Number(entry.special_bonus || 0) > 0 ? fmt(Number(entry.special_bonus)) : ""}</Text>
-                      <Text style={[styles.tdBold, { width: COL.total, textAlign: "right" }]}>{fmt(Number(entry.total_pay))}</Text>
-                    </View>
-                  );
-                })}
+                {renderSections(groupByEmployee(sortedEntries as any), false)}
               </View>
             );
-          })}
+          }
 
-          {/* Totals */}
-          <View style={styles.totalRow}>
-            <Text style={[styles.totalCell, { width: COL.name }]}>TOTALS</Text>
-            <Text style={[styles.totalCell, { width: COL.dept }]} />
-            <Text style={[styles.totalCell, { width: COL.rate }]} />
-            <Text style={[styles.totalCell, { width: COL.service }]} />
-            <Text style={[styles.totalCell, { width: COL.hours, textAlign: "right" }]}>{totals.hours.toFixed(2)}</Text>
-            <Text style={[styles.totalCell, { width: COL.perfBonus, textAlign: "right" }]}>{totals.perfBonus > 0 ? fmt(totals.perfBonus) : ""}</Text>
-            <Text style={[styles.totalCell, { width: COL.specBonus, textAlign: "right" }]}>{totals.specBonus > 0 ? fmt(totals.specBonus) : ""}</Text>
-            <Text style={[styles.totalCell, { width: COL.total, textAlign: "right" }]}>{fmt(totals.total)}</Text>
-          </View>
-        </View>
+          return (
+            <View>
+              <Text style={styles.sectionTitle}>
+                Employee Detail{isLocationGrouped ? " — By Location" : ""}
+              </Text>
+              {renderSections(sections, isLocationGrouped)}
+            </View>
+          );
+
+          function renderSections(secs: GroupSection[], showLocationHours: boolean) {
+            return (
+              <View style={styles.table}>
+                <View style={styles.thRow}>
+                  <Text style={[styles.th, { width: COL.name }]}>Employee</Text>
+                  <Text style={[styles.th, { width: COL.dept, textAlign: "center" }]}>{showLocationHours ? "Loc Hrs" : "Dept"}</Text>
+                  <Text style={[styles.th, { width: COL.rate, textAlign: "right" }]}>Rate</Text>
+                  <Text style={[styles.th, { width: COL.service, textAlign: "right" }]}>Service</Text>
+                  <Text style={[styles.th, { width: COL.hours, textAlign: "right" }]}>Hours</Text>
+                  <Text style={[styles.th, { width: COL.perfBonus, textAlign: "right" }]}>Perf</Text>
+                  <Text style={[styles.th, { width: COL.specBonus, textAlign: "right" }]}>Special</Text>
+                  <Text style={[styles.th, { width: COL.total, textAlign: "right" }]}>Total</Text>
+                </View>
+
+                {secs.map((section) => (
+                  <View key={section.groupLabel}>
+                    <View style={styles.deptSubHeader}>
+                      <Text style={styles.deptSubText}>
+                        {section.groupLabel} — {section.entries.length} staff • {section.subtotalHours.toFixed(1)} hrs • {fmt(section.subtotalPay)}
+                      </Text>
+                    </View>
+                    {section.entries.map((entry, idx) => {
+                      const emp = entry.employees;
+                      const empStatus = emp?.status;
+                      const isStarter = empStatus === "starter";
+                      const isLeaver = empStatus === "leaver";
+                      const rateChanged = emp && Math.abs(Number(entry.hourly_rate) - Number(emp.hourly_rate)) > 0.001;
+                      const serviceChanged = emp && Math.abs(Number(entry.service_charge || 0) - Number(emp.service_charge || 0)) > 0.001;
+                      const locHrs = showLocationHours && section.locationHours ? section.locationHours.get(entry.employee_id) : null;
+                      return (
+                        <View key={`${section.groupLabel}-${entry.id}`} style={[
+                          styles.tr,
+                          idx % 2 === 1 && styles.trAlt,
+                          isLeaver && { backgroundColor: RED_BG, borderLeftWidth: 2, borderLeftColor: RED_BORDER },
+                          isStarter && { backgroundColor: GREEN_BG, borderLeftWidth: 2, borderLeftColor: GREEN_BORDER },
+                        ]} wrap={false}>
+                          <View style={{ width: COL.name, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                            <Text style={styles.tdBold}>{emp?.surname}, {emp?.forename}</Text>
+                            {isStarter && (
+                              <View style={{ backgroundColor: "#c6f6d5", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
+                                <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: GREEN }}>STARTER / NEW</Text>
+                              </View>
+                            )}
+                            {isLeaver && (
+                              <View style={{ backgroundColor: "#fed7d7", borderRadius: 3, paddingHorizontal: 3, paddingVertical: 1 }}>
+                                <Text style={{ fontSize: 5, fontFamily: "Helvetica-Bold", color: RED }}>LEAVER</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={[styles.td, { width: COL.dept, textAlign: "center" }]}>
+                            {showLocationHours && locHrs != null ? locHrs.toFixed(1) : emp?.department}
+                          </Text>
+                          <Text style={[styles.td, { width: COL.rate, textAlign: "right" }, rateChanged && { color: AMBER, fontFamily: "Helvetica-Bold" }]}>
+                            {fmt(entry.hourly_rate)}{rateChanged ? " ▲" : ""}
+                          </Text>
+                          <Text style={[styles.td, { width: COL.service, textAlign: "right" }, serviceChanged && { color: AMBER, fontFamily: "Helvetica-Bold" }]}>
+                            {fmt(Number(entry.service_charge || 0))}{serviceChanged ? " ▲" : ""}
+                          </Text>
+                          <Text style={[styles.td, { width: COL.hours, textAlign: "right" }]}>{Number(entry.timesheet_hours).toFixed(2)}</Text>
+                          <Text style={[styles.td, { width: COL.perfBonus, textAlign: "right" }]}>{Number(entry.performance_bonus || 0) > 0 ? fmt(Number(entry.performance_bonus)) : ""}</Text>
+                          <Text style={[styles.td, { width: COL.specBonus, textAlign: "right" }]}>{Number(entry.special_bonus || 0) > 0 ? fmt(Number(entry.special_bonus)) : ""}</Text>
+                          <Text style={[styles.tdBold, { width: COL.total, textAlign: "right" }]}>{fmt(Number(entry.total_pay))}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))}
+
+                {/* Grand Totals */}
+                <View style={styles.totalRow}>
+                  <Text style={[styles.totalCell, { width: COL.name }]}>TOTALS</Text>
+                  <Text style={[styles.totalCell, { width: COL.dept }]} />
+                  <Text style={[styles.totalCell, { width: COL.rate }]} />
+                  <Text style={[styles.totalCell, { width: COL.service }]} />
+                  <Text style={[styles.totalCell, { width: COL.hours, textAlign: "right" }]}>{totals.hours.toFixed(2)}</Text>
+                  <Text style={[styles.totalCell, { width: COL.perfBonus, textAlign: "right" }]}>{totals.perfBonus > 0 ? fmt(totals.perfBonus) : ""}</Text>
+                  <Text style={[styles.totalCell, { width: COL.specBonus, textAlign: "right" }]}>{totals.specBonus > 0 ? fmt(totals.specBonus) : ""}</Text>
+                  <Text style={[styles.totalCell, { width: COL.total, textAlign: "right" }]}>{fmt(totals.total)}</Text>
+                </View>
+              </View>
+            );
+          }
+        })()}
 
         <Footer />
       </Page>
