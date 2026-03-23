@@ -361,6 +361,7 @@ export type Database = {
           default_pay_day: string | null
           default_signatory_email: string | null
           default_signatory_name: string | null
+          default_signatory_title: string | null
           email_notifications: boolean | null
           holiday_request_alerts: boolean | null
           id: string
@@ -381,6 +382,7 @@ export type Database = {
           default_pay_day?: string | null
           default_signatory_email?: string | null
           default_signatory_name?: string | null
+          default_signatory_title?: string | null
           email_notifications?: boolean | null
           holiday_request_alerts?: boolean | null
           id?: string
@@ -401,6 +403,7 @@ export type Database = {
           default_pay_day?: string | null
           default_signatory_email?: string | null
           default_signatory_name?: string | null
+          default_signatory_title?: string | null
           email_notifications?: boolean | null
           holiday_request_alerts?: boolean | null
           id?: string
@@ -431,6 +434,7 @@ export type Database = {
           employee_id: string
           id: string
           ip_address: string | null
+          signatory_title: string | null
           signature_data: string | null
           signature_type: string | null
           signed_at: string
@@ -451,6 +455,7 @@ export type Database = {
           employee_id: string
           id?: string
           ip_address?: string | null
+          signatory_title?: string | null
           signature_data?: string | null
           signature_type?: string | null
           signed_at?: string
@@ -471,6 +476,7 @@ export type Database = {
           employee_id?: string
           id?: string
           ip_address?: string | null
+          signatory_title?: string | null
           signature_data?: string | null
           signature_type?: string | null
           signed_at?: string
