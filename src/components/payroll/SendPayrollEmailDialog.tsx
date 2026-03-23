@@ -46,6 +46,8 @@ export function SendPayrollEmailDialog({
   entries,
   holidayPayments,
   allEmployees,
+  priorPeriodEmployeeIds = new Set(),
+  priorEntryRates = new Map(),
   disabled,
 }: SendPayrollEmailDialogProps) {
   const { tenantId } = useTenant();
