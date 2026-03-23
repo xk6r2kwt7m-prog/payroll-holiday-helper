@@ -60,7 +60,12 @@ export function groupByDepartment(entries: PayrollEntryForReport[]): GroupSectio
     .sort(([a], [b]) => (deptOrder[a] ?? 99) - (deptOrder[b] ?? 99))
     .map(([dept, de]) => ({
       groupLabel: dept,
-      entries: de.sort((a, b) => (a.employees?.surname || "").localeCompare(b.employees?.surname || "")),
+      entries: de.sort((a, b) => {
+        const fA = (a.employees?.forename || "").toLowerCase();
+        const fB = (b.employees?.forename || "").toLowerCase();
+        if (fA !== fB) return fA.localeCompare(fB);
+        return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+      }),
       subtotalHours: de.reduce((s, e) => s + Number(e.timesheet_hours), 0),
       subtotalPay: de.reduce((s, e) => s + Number(e.total_pay), 0),
     }));
