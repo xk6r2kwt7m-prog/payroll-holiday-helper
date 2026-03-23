@@ -1060,7 +1060,7 @@ Deno.serve(async (req) => {
                 email_type: "contract_fully_signed",
                 recipient_email: recipientEmail,
                 employee_name: employeeName,
-                trigger: completionSigningMode === "auto" ? "automatic" : "manual",
+                trigger: "automatic",
                 policy_mode: completionSigningMode,
               },
             });
