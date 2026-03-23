@@ -594,7 +594,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             ? ` [Matched via ${emp.matchMethod.replace(/_/g, " ")}]`
             : "";
 
-          const { error: entryError } = await supabase
+          const { data: newEntry, error: entryError } = await supabase
             .from("payroll_entries")
             .insert({
               payroll_period_id: periodId,
@@ -609,10 +609,19 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
               total_pay: (hours * rate) + (hours * sc),
               notes: `${locNotes}${matchNote}`,
               tenant_id: tenantId,
-            } as any);
+            } as any)
+            .select("id")
+            .single();
 
           if (entryError) throw entryError;
           entriesCreated++;
+          // Collect location splits for new entry
+          if (newEntry) {
+            for (const loc of emp.locations) {
+              const locDept = SECTION_DEPT_MAP[Object.keys(SECTION_LOCATION_MAP).find(k => SECTION_LOCATION_MAP[k] === loc.name) || ""] || emp.department || null;
+              locationRows.push({ payroll_entry_id: newEntry.id, employee_id: emp.matchedId!, location_name: loc.name, department: locDept, hours: loc.hours });
+            }
+          }
         }
       }
 
