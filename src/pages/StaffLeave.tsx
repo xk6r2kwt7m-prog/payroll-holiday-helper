@@ -18,8 +18,7 @@ export default function StaffLeave() {
   const { employee, employeeId, employeeName, isLoading: empLoading } = useCurrentEmployee();
   const { data: myRequests = [] } = useMyHolidayRequests(employeeId);
   const currentYear = new Date().getFullYear();
-  const leaveYearStart = `${currentYear}-01-01`;
-  const { entries: ledgerEntries, balance: ledgerBalance } = useHolidayLedgerBalance(employeeId || undefined, leaveYearStart);
+  const { summary: yearSummary } = useHolidayYearSummary(employeeId || undefined, currentYear);
   const [activeTab, setActiveTab] = useState<"request" | "history">("request");
 
   if (empLoading) {
@@ -48,19 +47,11 @@ export default function StaffLeave() {
     );
   }
 
-  // Derive accrued/taken/carried from ledger entries (single source of truth)
-  const accrued = (ledgerEntries || [])
-    .filter(e => e.entry_type === "accrual")
-    .reduce((sum, e) => sum + Number(e.hours), 0);
-  const carried = (ledgerEntries || [])
-    .filter(e => e.entry_type === "carry_over_in")
-    .reduce((sum, e) => sum + Number(e.hours), 0);
-  const taken = Math.abs(
-    (ledgerEntries || [])
-      .filter(e => e.entry_type === "holiday_taken")
-      .reduce((sum, e) => sum + Number(e.hours), 0)
-  );
-  const remaining = ledgerBalance;
+  // Use shared single-source-of-truth hook
+  const accrued = yearSummary?.accruedHours ?? 0;
+  const carried = yearSummary?.carryOverHours ?? 0;
+  const taken = yearSummary?.takenHours ?? 0;
+  const remaining = yearSummary?.availableHours ?? 0;
 
   const pendingRequests = myRequests.filter(r => r.status === "pending");
   const approvedRequests = myRequests.filter(r => r.status === "approved");
