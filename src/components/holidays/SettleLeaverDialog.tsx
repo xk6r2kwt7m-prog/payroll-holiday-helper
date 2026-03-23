@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { UserMinus, AlertTriangle, Calculator, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,13 +20,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { useCreateHolidayPayment, useAllHolidayPayments, formatCurrency, formatHours } from "@/hooks/useHolidays";
+import { useCreateHolidayPayment, formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { cn } from "@/lib/utils";
-import { useTenant } from "@/hooks/useTenant";
 
 export function SettleLeaverDialog() {
   const [open, setOpen] = useState(false);
@@ -37,41 +35,27 @@ export function SettleLeaverDialog() {
   const [holidayDate, setHolidayDate] = useState("");
   const [notes, setNotes] = useState("");
   const [approved, setApproved] = useState(false);
-  const { tenantId } = useTenant();
 
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
-  const { data: allPayments = [] } = useAllHolidayPayments();
   const createPayment = useCreateHolidayPayment();
 
-  const { data: allEntries = [] } = useQuery({
-    queryKey: ["payroll_entries", "all_accrual", tenantId],
-    queryFn: async () => {
-      if (!tenantId) return [];
-      const { data, error } = await supabase
-        .from("payroll_entries")
-        .select("employee_id, holiday_accrued_hours")
-        .eq("tenant_id", tenantId);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!tenantId,
-  });
+  // Shared single-source-of-truth balance from the holiday ledger
+  const { summary: employeeSummaryRaw } = useHolidayYearSummary(
+    employeeId || undefined,
+    new Date().getFullYear()
+  );
 
-  // Fetch adjustments
-  const { data: adjustments = [] } = useQuery({
-    queryKey: ["holiday_adjustments", tenantId],
-    queryFn: async () => {
-      if (!tenantId) return [];
-      const { data, error } = await supabase
-        .from("holiday_adjustments")
-        .select("*")
-        .eq("tenant_id", tenantId);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!tenantId,
-  });
+  const summary = useMemo(() => {
+    if (!employeeSummaryRaw) return null;
+    return {
+      totalAccrued: employeeSummaryRaw.accruedHours,
+      totalTaken: employeeSummaryRaw.takenHours,
+      totalPaid: employeeSummaryRaw.paidAmount,
+      carryOver: employeeSummaryRaw.carryOverHours,
+      balance: employeeSummaryRaw.availableHours,
+    };
+  }, [employeeSummaryRaw]);
 
   const leavers = useMemo(() =>
     employees.filter(e => e.status === "leaver").sort((a, b) =>
@@ -80,63 +64,24 @@ export function SettleLeaverDialog() {
 
   const selectedEmployee = employees.find(e => e.id === employeeId);
 
-  const summary = useMemo(() => {
-    if (!employeeId) return null;
-
-    const totalAccrued = allEntries
-      .filter(e => e.employee_id === employeeId)
-      .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
-
-    const accrualAdj = adjustments
-      .filter((a: any) => a.employee_id === employeeId && a.adjustment_type === "accrued")
-      .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-
-    const totalTaken = allPayments
-      .filter((p: any) => p.employee_id === employeeId)
-      .reduce((sum: number, p: any) => sum + (p.hours || 0), 0);
-
-    const takenAdj = adjustments
-      .filter((a: any) => a.employee_id === employeeId && a.adjustment_type === "taken")
-      .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-
-    const totalPaid = allPayments
-      .filter((p: any) => p.employee_id === employeeId)
-      .reduce((sum: number, p: any) => sum + (p.total || 0), 0);
-
-    const adjustedAccrued = totalAccrued + accrualAdj;
-    const adjustedTaken = totalTaken + takenAdj;
-    const balance = adjustedAccrued - adjustedTaken;
-
-    return { totalAccrued: adjustedAccrued, totalTaken: adjustedTaken, totalPaid, balance };
-  }, [employeeId, allEntries, allPayments, adjustments]);
-
   const handleEmployeeChange = (id: string) => {
     setEmployeeId(id);
     setApproved(false);
     const emp = employees.find(e => e.id === id);
     if (emp) {
       setRate(emp.hourly_rate.toString());
-      const accrued = allEntries
-        .filter(e => e.employee_id === id)
-        .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
-      const accrualAdj = adjustments
-        .filter((a: any) => a.employee_id === id && a.adjustment_type === "accrued")
-        .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-      const taken = allPayments
-        .filter((p: any) => p.employee_id === id)
-        .reduce((sum: number, p: any) => sum + (p.hours || 0), 0);
-      const takenAdj = adjustments
-        .filter((a: any) => a.employee_id === id && a.adjustment_type === "taken")
-        .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-      const balance = (accrued + accrualAdj) - (taken + takenAdj);
-      if (balance > 0) {
-        setHours(balance.toFixed(2));
-      } else {
-        setHours("0");
-      }
       setNotes("Leaver settlement — full holiday balance payout");
     }
   };
+
+  // Auto-fill hours from shared summary when it loads (useEffect, not useMemo)
+  useEffect(() => {
+    if (employeeId && summary && summary.balance > 0) {
+      setHours(Math.max(0, summary.balance).toFixed(2));
+    } else if (employeeId && summary && summary.balance <= 0) {
+      setHours("0");
+    }
+  }, [employeeId, summary]);
 
   const total = (parseFloat(hours) || 0) * (parseFloat(rate) || 0);
 
@@ -232,6 +177,12 @@ export function SettleLeaverDialog() {
                   <span className="text-muted-foreground">Accrued:</span>
                   <span className="font-medium text-success">{formatHours(summary.totalAccrued)} hrs</span>
                 </div>
+                {summary.carryOver > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Carry over:</span>
+                    <span className="font-medium text-accent">{formatHours(summary.carryOver)} hrs</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taken:</span>
                   <span className="font-medium text-primary">{formatHours(summary.totalTaken)} hrs</span>
