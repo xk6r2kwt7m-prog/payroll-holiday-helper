@@ -67,23 +67,8 @@ export function SignedContractsList() {
     return empName.includes(search.toLowerCase()) || docName.includes(search.toLowerCase());
   });
 
-  const handleDownload = async (filePath: string, fileName: string) => {
-    const { data, error } = await supabase.storage
-      .from("employee-documents")
-      .createSignedUrl(filePath, 3600);
-
-    if (error) {
-      toast({ title: "Error", description: "Could not generate download link.", variant: "destructive" });
-      return;
-    }
-
-    const link = document.createElement("a");
-    link.href = data.signedUrl;
-    link.download = fileName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (documentId: string, _fileName: string, variant: string = "original") => {
+    window.open(`/document/view?id=${documentId}&variant=${variant}`, "_blank");
   };
 
   const handleDelete = async (id: string, filePath: string) => {
@@ -215,7 +200,7 @@ export function SignedContractsList() {
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9"
-                  onClick={() => handleDownload((contract as any).final_signed_pdf_url || contract.file_path, contract.document_name)}
+                  onClick={() => handleDownload(contract.id, contract.document_name, (contract as any).final_signed_pdf_url ? "final" : "original")}
                 >
                   <Download className="h-4 w-4" />
                 </Button>

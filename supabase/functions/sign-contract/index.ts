@@ -569,9 +569,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { data: signedUrl } = await supabase.storage
-        .from("employee-documents")
-        .createSignedUrl(signingToken.employee_documents.file_path, 3600);
+      const brandedDocumentUrl = `${CANONICAL_APP_URL}/document/view?token=${token}`;
 
       const docHash = await sha256Bytes(await originalDocumentFile.arrayBuffer());
 
@@ -600,7 +598,7 @@ Deno.serve(async (req) => {
         employee_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
         employee_email: signingToken.employees.email || null,
         document_name: signingToken.employee_documents.document_name,
-        document_url: signedUrl?.signedUrl || null,
+        document_url: brandedDocumentUrl,
         document_hash: docHash,
         expires_at: signingToken.expires_at,
         existing_signatures: existingSignerTypes,
@@ -938,13 +936,8 @@ Deno.serve(async (req) => {
           .eq("id", signingToken.employee_document_id)
           .maybeSingle();
 
-        let emailDownloadUrl = "";
-        if (docRecord2?.final_signed_pdf_url) {
-          const { data: freshSignedUrl } = await supabase.storage
-            .from("employee-documents")
-            .createSignedUrl(docRecord2.final_signed_pdf_url, 60 * 60 * 24 * 7);
-          emailDownloadUrl = freshSignedUrl?.signedUrl || "";
-        }
+        // Use branded URL for the final contract download link
+        const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?id=${signingToken.employee_document_id}&variant=final`;
 
         // Send completion email to EMPLOYEE
         const recipientEmail = signingToken.employees?.email;

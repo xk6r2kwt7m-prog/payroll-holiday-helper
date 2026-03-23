@@ -117,31 +117,12 @@ export function ContractSigningActions({
   /** For fully-signed contracts, download the authoritative completed contract package.
    *  For pending contracts, view the original PDF. */
   const handleViewFinalContract = async () => {
-    const pathToUse = bothSigned ? finalSignedFilePath || filePath : filePath;
-    if (pathToUse) {
-      const { data } = await supabase.storage
-        .from("employee-documents")
-        .createSignedUrl(pathToUse, 3600);
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, "_blank");
-      } else {
-        toast({ title: "Error", description: "Could not generate download link", variant: "destructive" });
-      }
-    }
+    const variant = bothSigned ? "final" : "original";
+    window.open(`/document/view?id=${documentId}&variant=${variant}`, "_blank");
   };
 
   const handleDownloadOriginalPdf = async () => {
-    const pathToUse = filePath;
-    if (pathToUse) {
-      const { data } = await supabase.storage
-        .from("employee-documents")
-        .createSignedUrl(pathToUse, 3600);
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, "_blank");
-      } else {
-        toast({ title: "Error", description: "Could not generate download link", variant: "destructive" });
-      }
-    }
+    window.open(`/document/view?id=${documentId}&variant=original`, "_blank");
   };
 
   const handleDownloadSigningCertificate = async () => {

@@ -39,6 +39,7 @@ import Auth from "./pages/Auth";
 import Landing from "./pages/Landing";
 import CompanyOnboarding from "./pages/CompanyOnboarding";
 import SignContract from "./pages/SignContract";
+import DocumentView from "./pages/DocumentView";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
@@ -91,6 +92,7 @@ const App = () => (
             <Route path="/onboard" element={<CompanyOnboarding />} />
             <Route path="/select-workspace" element={<SelectWorkspace />} />
             <Route path="/sign/:token" element={<SignContract />} />
+            <Route path="/document/view" element={<DocumentView />} />
 
             {/* Dashboard — all authenticated users */}
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
