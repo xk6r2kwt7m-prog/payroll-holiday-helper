@@ -128,8 +128,8 @@ const Payroll = () => {
 
   const handleSubmitForReview = async () => {
     if (!selectedPeriod) return;
-    if (unresolvedIssues.length > 0) {
-      toast.error("Cannot submit: unmatched employees must be resolved first");
+    if (blockingIssues.length > 0) {
+      toast.error("Cannot submit: unresolved blocking issues must be resolved first");
       return;
     }
     try {
