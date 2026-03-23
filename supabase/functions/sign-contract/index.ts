@@ -96,10 +96,10 @@ interface SignatureForPdf {
   document_hash: string | null;
 }
 
-async function buildSigningAppendixPdf(params: {
+async function buildAuditTrailPdf(params: {
+  companyName: string;
   documentName: string;
   employeeName: string;
-  companyName: string;
   documentId: string;
   originalDocumentHash: string;
   finalDocumentHash: string;
@@ -114,289 +114,42 @@ async function buildSigningAppendixPdf(params: {
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
-  const addPage = () => pdfDoc.addPage([pageWidth, pageHeight]);
-  let page = addPage();
+  let page = pdfDoc.addPage([pageWidth, pageHeight]);
   let y = pageHeight - margin;
 
   const ensureSpace = (minY: number) => {
     if (y < minY) {
-      page = addPage();
+      page = pdfDoc.addPage([pageWidth, pageHeight]);
       y = pageHeight - margin;
     }
   };
 
-  // ── TITLE ──
   page.drawText(params.companyName, {
-    x: margin,
-    y,
-    size: 11,
-    font: fontBold,
-    color: rgb(0.16, 0.47, 0.43),
+    x: margin, y, size: 11, font: fontBold, color: rgb(0.16, 0.47, 0.43),
   });
-  page.drawText("Signing Page — Final Executed Contract", {
-    x: margin,
-    y: y - 28,
-    size: 18,
-    font: fontBold,
-    color: rgb(0.11, 0.16, 0.18),
+  page.drawText("Signing Evidence & Audit Trail", {
+    x: margin, y: y - 28, size: 16, font: fontBold, color: rgb(0.11, 0.16, 0.18),
   });
-  y -= 58;
+  y -= 52;
 
-  y = drawWrappedText(page, "This page records the execution of the contract. Both parties have reviewed the preceding pages and applied their signatures below, confirming their agreement to the terms set out in this contract.", {
-    font: fontRegular,
-    size: 10,
-    x: margin,
-    y,
-    maxWidth: contentWidth,
-    lineHeight: 14,
+  y = drawWrappedText(page, "The following evidence has been recorded as part of the electronic signing process for the contract above. This data forms the audit trail and should be retained for legal and compliance purposes.", {
+    font: fontRegular, size: 9, x: margin, y, maxWidth: contentWidth, lineHeight: 13,
   });
   y -= 16;
 
-  // ── DOCUMENT SUMMARY ──
   const summaryRows = [
     ["Document", params.documentName],
     ["Employee", params.employeeName],
     ["Contract reference", params.documentId.substring(0, 8).toUpperCase()],
   ];
-
   for (const [label, value] of summaryRows) {
-    ensureSpace(120);
-    page.drawText(`${label}:`, {
-      x: margin,
-      y,
-      size: 9,
-      font: fontBold,
-      color: rgb(0.35, 0.35, 0.35),
-    });
-    y = drawWrappedText(page, value, {
-      font: fontRegular,
-      size: 9,
-      x: margin + 120,
-      y,
-      maxWidth: contentWidth - 120,
-      lineHeight: 13,
-      color: rgb(0.12, 0.16, 0.18),
-    });
+    ensureSpace(60);
+    page.drawText(`${label}:`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.35, 0.35, 0.35) });
+    y = drawWrappedText(page, value, { font: fontRegular, size: 9, x: margin + 120, y, maxWidth: contentWidth - 120, lineHeight: 13, color: rgb(0.12, 0.16, 0.18) });
     y -= 6;
   }
-
   y -= 10;
 
-  // ── Separate the two signature blocks ──
-  const employeeSig = params.signatures.find(s => s.signer_type === "employee");
-  const employerSig = params.signatures.find(s => s.signer_type === "employer");
-
-  // ══════════════════════════════════════
-  // EMPLOYER SIGNATURE BLOCK
-  // ══════════════════════════════════════
-  ensureSpace(260);
-  page.drawLine({
-    start: { x: margin, y },
-    end: { x: margin + contentWidth, y },
-    thickness: 0.5,
-    color: rgb(0.8, 0.8, 0.8),
-  });
-  y -= 20;
-
-  page.drawText("EMPLOYER SIGNATURE", {
-    x: margin,
-    y,
-    size: 11,
-    font: fontBold,
-    color: rgb(0.16, 0.47, 0.43),
-  });
-  y -= 18;
-
-  if (employerSig) {
-    // "Signed for and on behalf of" line
-    const signatoryTitle = employerSig.signatory_title || "";
-    const onBehalfText = `Signed for and on behalf of ${params.companyName} by ${employerSig.signer_name}${signatoryTitle ? `, ${signatoryTitle}` : ""}`;
-    y = drawWrappedText(page, onBehalfText, {
-      font: fontItalic,
-      size: 9.5,
-      x: margin,
-      y,
-      maxWidth: contentWidth,
-      lineHeight: 13,
-      color: rgb(0.15, 0.15, 0.15),
-    });
-    y -= 10;
-
-    // Employer signature image
-    const employerSigImage = decodeDataUrl(employerSig.signature_data);
-    if (employerSigImage) {
-      try {
-        const embedded = employerSigImage.mime.includes("png")
-          ? await pdfDoc.embedPng(employerSigImage.bytes)
-          : await pdfDoc.embedJpg(employerSigImage.bytes);
-        const maxSigW = 200;
-        const maxSigH = 60;
-        const scale = Math.min(maxSigW / embedded.width, maxSigH / embedded.height, 1);
-        page.drawImage(embedded, {
-          x: margin,
-          y: y - (embedded.height * scale),
-          width: embedded.width * scale,
-          height: embedded.height * scale,
-        });
-        y -= (embedded.height * scale) + 6;
-      } catch (error) {
-        console.error("Could not embed employer signature image", error);
-      }
-    }
-
-    // Signature line
-    page.drawLine({
-      start: { x: margin, y },
-      end: { x: margin + 220, y },
-      thickness: 0.5,
-      color: rgb(0.3, 0.3, 0.3),
-    });
-    y -= 12;
-    page.drawText("Signature", { x: margin, y, size: 8, font: fontRegular, color: rgb(0.45, 0.45, 0.45) });
-    y -= 18;
-
-    // Name and Title
-    page.drawText(`Name: ${employerSig.signer_name}`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.18) });
-    y -= 14;
-    if (signatoryTitle) {
-      page.drawText(`Title: ${signatoryTitle}`, { x: margin, y, size: 9, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
-      y -= 14;
-    }
-
-    // Date
-    const employerDate = new Date(employerSig.signed_at).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    const employerTime = new Date(employerSig.signed_at).toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    page.drawText(`Date: ${employerDate} at ${employerTime}`, { x: margin, y, size: 9, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
-    y -= 14;
-    page.drawText(`Email: ${employerSig.signed_by_email || "Not recorded"}`, { x: margin, y, size: 8, font: fontRegular, color: rgb(0.4, 0.4, 0.4) });
-    y -= 14;
-  } else {
-    page.drawText("[Employer signature pending]", { x: margin, y, size: 9, font: fontItalic, color: rgb(0.6, 0.4, 0.1) });
-    y -= 14;
-  }
-
-  y -= 20;
-
-  // ══════════════════════════════════════
-  // TEAM MEMBER SIGNATURE BLOCK
-  // ══════════════════════════════════════
-  ensureSpace(220);
-  page.drawLine({
-    start: { x: margin, y },
-    end: { x: margin + contentWidth, y },
-    thickness: 0.5,
-    color: rgb(0.8, 0.8, 0.8),
-  });
-  y -= 20;
-
-  page.drawText("TEAM MEMBER SIGNATURE", {
-    x: margin,
-    y,
-    size: 11,
-    font: fontBold,
-    color: rgb(0.16, 0.47, 0.43),
-  });
-  y -= 18;
-
-  if (employeeSig) {
-    // Employee signature image
-    const employeeSigImage = decodeDataUrl(employeeSig.signature_data);
-    if (employeeSigImage) {
-      try {
-        const embedded = employeeSigImage.mime.includes("png")
-          ? await pdfDoc.embedPng(employeeSigImage.bytes)
-          : await pdfDoc.embedJpg(employeeSigImage.bytes);
-        const maxSigW = 200;
-        const maxSigH = 60;
-        const scale = Math.min(maxSigW / embedded.width, maxSigH / embedded.height, 1);
-        page.drawImage(embedded, {
-          x: margin,
-          y: y - (embedded.height * scale),
-          width: embedded.width * scale,
-          height: embedded.height * scale,
-        });
-        y -= (embedded.height * scale) + 6;
-      } catch (error) {
-        console.error("Could not embed employee signature image", error);
-      }
-    }
-
-    // Signature line
-    page.drawLine({
-      start: { x: margin, y },
-      end: { x: margin + 220, y },
-      thickness: 0.5,
-      color: rgb(0.3, 0.3, 0.3),
-    });
-    y -= 12;
-    page.drawText("Signature", { x: margin, y, size: 8, font: fontRegular, color: rgb(0.45, 0.45, 0.45) });
-    y -= 18;
-
-    // Name
-    page.drawText(`Name: ${employeeSig.signer_name}`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.18) });
-    y -= 14;
-
-    // Date
-    const employeeDate = new Date(employeeSig.signed_at).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    const employeeTime = new Date(employeeSig.signed_at).toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    page.drawText(`Date: ${employeeDate} at ${employeeTime}`, { x: margin, y, size: 9, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
-    y -= 14;
-    page.drawText(`Email: ${employeeSig.signed_by_email || "Not recorded"}`, { x: margin, y, size: 8, font: fontRegular, color: rgb(0.4, 0.4, 0.4) });
-    y -= 14;
-  } else {
-    page.drawText("[Team member signature pending]", { x: margin, y, size: 9, font: fontItalic, color: rgb(0.6, 0.4, 0.1) });
-    y -= 14;
-  }
-
-  y -= 24;
-
-  // ══════════════════════════════════════
-  // PAGE 2: AUDIT TRAIL / EVIDENCE
-  // ══════════════════════════════════════
-  page = addPage();
-  y = pageHeight - margin;
-
-  page.drawText(params.companyName, {
-    x: margin,
-    y,
-    size: 11,
-    font: fontBold,
-    color: rgb(0.16, 0.47, 0.43),
-  });
-  page.drawText("Signing Evidence & Audit Trail", {
-    x: margin,
-    y: y - 28,
-    size: 16,
-    font: fontBold,
-    color: rgb(0.11, 0.16, 0.18),
-  });
-  y -= 52;
-
-  y = drawWrappedText(page, "The following evidence has been recorded as part of the electronic signing process for the contract above. This data forms the audit trail and should be retained for legal and compliance purposes.", {
-    font: fontRegular,
-    size: 9,
-    x: margin,
-    y,
-    maxWidth: contentWidth,
-    lineHeight: 13,
-  });
-  y -= 16;
-
-  // Hash summary
   const hashRows = [
     ["Original document hash (SHA-256)", params.originalDocumentHash],
     ["Final package hash (SHA-256)", params.finalDocumentHash],
@@ -408,34 +161,20 @@ async function buildSigningAppendixPdf(params: {
     page.drawText(value, { x: margin + 8, y, size: 7.5, font: fontRegular, color: rgb(0.25, 0.25, 0.25) });
     y -= 14;
   }
-
   y -= 8;
 
-  // Detailed audit per signer
   for (const signature of params.signatures) {
     ensureSpace(200);
-
     const isEmployee = signature.signer_type === "employee";
     const blockTitle = isEmployee ? "Team Member Signing Evidence" : "Employer Signing Evidence";
 
     page.drawRectangle({
-      x: margin,
-      y: y - 150,
-      width: contentWidth,
-      height: 145,
-      borderWidth: 1,
-      borderColor: rgb(0.85, 0.88, 0.9),
-      color: rgb(0.98, 0.99, 0.99),
+      x: margin, y: y - 150, width: contentWidth, height: 145,
+      borderWidth: 1, borderColor: rgb(0.85, 0.88, 0.9), color: rgb(0.98, 0.99, 0.99),
     });
 
     let blockY = y - 16;
-    page.drawText(blockTitle, {
-      x: margin + 12,
-      y: blockY,
-      size: 10,
-      font: fontBold,
-      color: rgb(0.11, 0.16, 0.18),
-    });
+    page.drawText(blockTitle, { x: margin + 12, y: blockY, size: 10, font: fontBold, color: rgb(0.11, 0.16, 0.18) });
 
     const details = [
       ["Signer name", signature.signer_name],
@@ -453,26 +192,12 @@ async function buildSigningAppendixPdf(params: {
     for (const [label, value] of details) {
       blockY -= 12;
       if (blockY < margin + 20) break;
-      page.drawText(`${label}:`, {
-        x: margin + 12,
-        y: blockY,
-        size: 7.5,
-        font: fontBold,
-        color: rgb(0.35, 0.35, 0.35),
-      });
-      page.drawText(String(value).substring(0, 70), {
-        x: margin + 130,
-        y: blockY,
-        size: 7.5,
-        font: fontRegular,
-        color: rgb(0.12, 0.16, 0.18),
-      });
+      page.drawText(`${label}:`, { x: margin + 12, y: blockY, size: 7.5, font: fontBold, color: rgb(0.35, 0.35, 0.35) });
+      page.drawText(String(value).substring(0, 70), { x: margin + 130, y: blockY, size: 7.5, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
     }
-
     y -= 162;
   }
 
-  // Consent records
   ensureSpace(100);
   y -= 10;
   page.drawText("CONSENT RECORDS", { x: margin, y, size: 9, font: fontBold, color: rgb(0.16, 0.47, 0.43) });
@@ -484,31 +209,127 @@ async function buildSigningAppendixPdf(params: {
     page.drawText(`${roleLabel} — ${signature.signer_name}`, { x: margin, y, size: 8.5, font: fontBold, color: rgb(0.2, 0.2, 0.2) });
     y -= 12;
     y = drawWrappedText(page, signature.consent_text, {
-      font: fontRegular,
-      size: 7.5,
-      x: margin + 8,
-      y,
-      maxWidth: contentWidth - 16,
-      lineHeight: 10,
-      color: rgb(0.35, 0.35, 0.35),
+      font: fontRegular, size: 7.5, x: margin + 8, y, maxWidth: contentWidth - 16, lineHeight: 10, color: rgb(0.35, 0.35, 0.35),
     });
     y -= 14;
   }
 
-  // Legal notice
   ensureSpace(60);
   y -= 10;
   drawWrappedText(page, "This document forms part of the authoritative completed contract file. All signature data, timestamps, IP addresses, device information, and consent records have been stored securely. This constitutes a legally binding electronic signature record under the UK Electronic Communications Act 2000.", {
-    font: fontRegular,
-    size: 7.5,
-    x: margin,
-    y,
-    maxWidth: contentWidth,
-    lineHeight: 10,
-    color: rgb(0.4, 0.4, 0.4),
+    font: fontRegular, size: 7.5, x: margin, y, maxWidth: contentWidth, lineHeight: 10, color: rgb(0.4, 0.4, 0.4),
   });
 
   return await pdfDoc.save();
+}
+
+async function drawSignatureBlockOnPage(
+  pdfDoc: any,
+  page: any,
+  params: {
+    companyName: string;
+    signatures: SignatureForPdf[];
+    startY: number;
+    margin: number;
+    contentWidth: number;
+  },
+) {
+  const { companyName, signatures, margin, contentWidth } = params;
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+  let y = params.startY;
+
+  const employerSig = signatures.find(s => s.signer_type === "employer");
+  const employeeSig = signatures.find(s => s.signer_type === "employee");
+
+  // ── EMPLOYER BLOCK ──
+  page.drawText("EMPLOYER", { x: margin, y, size: 10, font: fontBold, color: rgb(0.16, 0.47, 0.43) });
+  y -= 16;
+
+  if (employerSig) {
+    const signatoryTitle = employerSig.signatory_title || "";
+    const onBehalfText = `Signed for and on behalf of ${companyName} by ${employerSig.signer_name}${signatoryTitle ? `, ${signatoryTitle}` : ""}`;
+    y = drawWrappedText(page, onBehalfText, {
+      font: fontItalic, size: 9, x: margin, y, maxWidth: contentWidth / 2 - 20, lineHeight: 12, color: rgb(0.15, 0.15, 0.15),
+    });
+    y -= 6;
+
+    const employerSigImage = decodeDataUrl(employerSig.signature_data);
+    if (employerSigImage) {
+      try {
+        const embedded = employerSigImage.mime.includes("png")
+          ? await pdfDoc.embedPng(employerSigImage.bytes)
+          : await pdfDoc.embedJpg(employerSigImage.bytes);
+        const maxSigW = 160;
+        const maxSigH = 50;
+        const scale = Math.min(maxSigW / embedded.width, maxSigH / embedded.height, 1);
+        page.drawImage(embedded, {
+          x: margin, y: y - (embedded.height * scale),
+          width: embedded.width * scale, height: embedded.height * scale,
+        });
+        y -= (embedded.height * scale) + 4;
+      } catch (e) {
+        console.error("Could not embed employer sig image", e);
+      }
+    }
+
+    page.drawLine({ start: { x: margin, y }, end: { x: margin + 180, y }, thickness: 0.5, color: rgb(0.3, 0.3, 0.3) });
+    y -= 11;
+    page.drawText("Signature", { x: margin, y, size: 7.5, font: fontRegular, color: rgb(0.45, 0.45, 0.45) });
+    y -= 14;
+    page.drawText(`Name: ${employerSig.signer_name}`, { x: margin, y, size: 8.5, font: fontBold, color: rgb(0.12, 0.16, 0.18) });
+    y -= 12;
+    if (signatoryTitle) {
+      page.drawText(`Title: ${signatoryTitle}`, { x: margin, y, size: 8.5, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
+      y -= 12;
+    }
+    const employerDate = new Date(employerSig.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    page.drawText(`Date: ${employerDate}`, { x: margin, y, size: 8.5, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
+    y -= 12;
+  }
+
+  // ── TEAM MEMBER BLOCK — draw on the right side ──
+  const rightX = margin + contentWidth / 2 + 10;
+  let ey = params.startY;
+
+  page.drawText("TEAM MEMBER", { x: rightX, y: ey, size: 10, font: fontBold, color: rgb(0.16, 0.47, 0.43) });
+  ey -= 16;
+
+  if (employeeSig) {
+    page.drawText(employeeSig.signer_name, { x: rightX, y: ey, size: 9, font: fontRegular, color: rgb(0.15, 0.15, 0.15) });
+    ey -= 14;
+
+    const employeeSigImage = decodeDataUrl(employeeSig.signature_data);
+    if (employeeSigImage) {
+      try {
+        const embedded = employeeSigImage.mime.includes("png")
+          ? await pdfDoc.embedPng(employeeSigImage.bytes)
+          : await pdfDoc.embedJpg(employeeSigImage.bytes);
+        const maxSigW = 160;
+        const maxSigH = 50;
+        const scale = Math.min(maxSigW / embedded.width, maxSigH / embedded.height, 1);
+        page.drawImage(embedded, {
+          x: rightX, y: ey - (embedded.height * scale),
+          width: embedded.width * scale, height: embedded.height * scale,
+        });
+        ey -= (embedded.height * scale) + 4;
+      } catch (e) {
+        console.error("Could not embed employee sig image", e);
+      }
+    }
+
+    page.drawLine({ start: { x: rightX, y: ey }, end: { x: rightX + 180, y: ey }, thickness: 0.5, color: rgb(0.3, 0.3, 0.3) });
+    ey -= 11;
+    page.drawText("Signature", { x: rightX, y: ey, size: 7.5, font: fontRegular, color: rgb(0.45, 0.45, 0.45) });
+    ey -= 14;
+    page.drawText(`Name: ${employeeSig.signer_name}`, { x: rightX, y: ey, size: 8.5, font: fontBold, color: rgb(0.12, 0.16, 0.18) });
+    ey -= 12;
+    const employeeDate = new Date(employeeSig.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    page.drawText(`Date: ${employeeDate}`, { x: rightX, y: ey, size: 8.5, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
+    ey -= 12;
+  }
 }
 
 async function buildFinalSignedContractPdf(params: {
@@ -523,29 +344,58 @@ async function buildFinalSignedContractPdf(params: {
   const appendixHashSource = await sha256(JSON.stringify({
     documentId: params.documentId,
     originalDocumentHash: params.originalDocumentHash,
-    signatures: params.signatures.map((signature) => ({
-      signer_type: signature.signer_type,
-      signer_name: signature.signer_name,
-      signed_at: signature.signed_at,
-      signed_by_email: signature.signed_by_email,
-      document_hash: signature.document_hash,
+    signatures: params.signatures.map((sig) => ({
+      signer_type: sig.signer_type,
+      signer_name: sig.signer_name,
+      signed_at: sig.signed_at,
+      signed_by_email: sig.signed_by_email,
+      document_hash: sig.document_hash,
     })),
   }));
 
-  const appendixBytes = await buildSigningAppendixPdf({
+  // Step 1: Load original PDF and overlay signatures on last page
+  const finalPdf = await PDFDocument.load(params.originalPdfBytes);
+  const pages = finalPdf.getPages();
+  const lastPage = pages[pages.length - 1];
+  const { width: pageWidth, height: pageHeight } = lastPage.getSize();
+  const margin = 48;
+  const contentWidth = pageWidth - margin * 2;
+
+  // Cover the bottom ~280pt of the last page with white to hide empty signature blocks
+  const coverHeight = 280;
+  lastPage.drawRectangle({
+    x: 0,
+    y: 0,
+    width: pageWidth,
+    height: coverHeight,
+    color: rgb(1, 1, 1),
+  });
+
+  // Draw completed signature blocks in-place
+  await drawSignatureBlockOnPage(finalPdf, lastPage, {
+    companyName: params.companyName,
+    signatures: params.signatures,
+    startY: coverHeight - 20,
+    margin,
+    contentWidth,
+  });
+
+  // Step 2: Build audit trail as a separate appendix
+  const auditBytes = await buildAuditTrailPdf({
+    companyName: params.companyName,
     documentName: params.documentName,
     employeeName: params.employeeName,
-    companyName: params.companyName,
     documentId: params.documentId,
     originalDocumentHash: params.originalDocumentHash,
     finalDocumentHash: appendixHashSource,
     signatures: params.signatures,
   });
 
-  const finalPdf = await PDFDocument.load(params.originalPdfBytes);
-  const appendixPdf = await PDFDocument.load(appendixBytes);
-  const appendixPages = await finalPdf.copyPages(appendixPdf, appendixPdf.getPageIndices());
-  appendixPages.forEach((page) => finalPdf.addPage(page));
+  // Step 3: Append audit trail pages
+  const auditPdf = await PDFDocument.load(auditBytes);
+  const auditPages = await finalPdf.copyPages(auditPdf, auditPdf.getPageIndices());
+  auditPages.forEach((p) => finalPdf.addPage(p));
+
   const finalBytes = await finalPdf.save();
   const finalHash = await sha256Bytes(finalBytes);
 
