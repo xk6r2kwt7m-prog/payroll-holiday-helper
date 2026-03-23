@@ -359,6 +359,8 @@ export type Database = {
           company_name: string
           created_at: string
           default_pay_day: string | null
+          default_signatory_email: string | null
+          default_signatory_name: string | null
           email_notifications: boolean | null
           holiday_request_alerts: boolean | null
           id: string
@@ -377,6 +379,8 @@ export type Database = {
           company_name?: string
           created_at?: string
           default_pay_day?: string | null
+          default_signatory_email?: string | null
+          default_signatory_name?: string | null
           email_notifications?: boolean | null
           holiday_request_alerts?: boolean | null
           id?: string
@@ -395,6 +399,8 @@ export type Database = {
           company_name?: string
           created_at?: string
           default_pay_day?: string | null
+          default_signatory_email?: string | null
+          default_signatory_name?: string | null
           email_notifications?: boolean | null
           holiday_request_alerts?: boolean | null
           id?: string
