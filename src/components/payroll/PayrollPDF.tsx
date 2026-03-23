@@ -435,8 +435,12 @@ export function PayrollPDF({
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  // Show all starters that appear in this period's entries
-  const eligibleStarters = starters;
+  // Filter: only genuine starters (not in prior period) and leavers
+  const eligibleStarters = starters.filter(s => {
+    if (s.status === 'leaver') return true;
+    if (s.status === 'starter' && !priorPeriodEmployeeIds.has(s.id)) return true;
+    return false;
+  });
 
   const getRTWStatus = (starter: StarterEmployee) => {
     const hasNI = !!starter.ni_number;
