@@ -535,7 +535,7 @@ const Payroll = () => {
             isDeleting={deletePeriod.isPending}
             entryCount={entries.length}
             zeroHoursCount={zeroHoursCount}
-            unresolvedImportIssues={unresolvedIssues}
+            unresolvedImportIssues={blockingIssues}
             excludedNames={excludedNames}
           />
         )}
