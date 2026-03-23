@@ -596,7 +596,8 @@ export function EditablePayrollTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="default">Default</SelectItem>
-              <SelectItem value="alphabetical">A–Z (Surname)</SelectItem>
+              <SelectItem value="alphabetical">A–Z (First name)</SelectItem>
+              <SelectItem value="alphabetical_surname">A–Z (Surname)</SelectItem>
               <SelectItem value="department">Department</SelectItem>
               <SelectItem value="status">Status</SelectItem>
               <SelectItem value="hours_desc">Hours ↓</SelectItem>
