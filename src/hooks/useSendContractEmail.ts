@@ -176,7 +176,7 @@ export function useSendContractEmail() {
         return { success: false, error: msg };
       }
     },
-    [tenantId, queryClient]
+    [tenantId, queryClient, isSendAllowed]
   );
 
   return { sendContractEmail };
