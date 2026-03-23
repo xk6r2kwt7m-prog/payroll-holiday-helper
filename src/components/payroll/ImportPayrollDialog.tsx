@@ -719,7 +719,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
           <div className="space-y-4 py-2">
             <div className="rounded-lg bg-muted/50 border border-border p-3">
               <p className="text-sm text-muted-foreground">
-                Auto-suggested based on your latest payroll period. Cutoff = last Sunday, pay date = last Thursday.
+                Auto-suggested based on your latest payroll period. Cutoff = last Sunday on or before pay date. Pay date = last Thursday.
               </p>
             </div>
 
