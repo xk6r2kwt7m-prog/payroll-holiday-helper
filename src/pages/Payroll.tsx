@@ -9,7 +9,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
-import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod, useDeletePayrollPeriod } from "@/hooks/usePayroll";
+import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod, useDeletePayrollPeriod, useCreatePayrollEntry } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, useHolidayPayments } from "@/hooks/useHolidays";
 import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPaymentDialog";
 import { SettleLeaverDialog } from "@/components/holidays/SettleLeaverDialog";
@@ -81,6 +81,37 @@ const Payroll = () => {
   const handleMarkReviewed = (csvName: string) => {
     setReviewedIssueNames(prev => new Set([...prev, csvName]));
   };
+
+  const createEntry = useCreatePayrollEntry();
+  const handleAddToPeriod = async (employeeId: string) => {
+    if (!selectedPeriod) return;
+    const emp = allEmployees.find((e: any) => e.id === employeeId);
+    if (!emp) { toast.error("Employee not found"); return; }
+    try {
+      await createEntry.mutateAsync({
+        payroll_period_id: selectedPeriod.id,
+        employee_id: emp.id,
+        hourly_rate: emp.hourly_rate,
+        service_charge: (emp as any).service_charge || 0,
+        timesheet_hours: 0,
+        performance_bonus: 0,
+        special_bonus: 0,
+        total_pay: 0,
+      } as any);
+      toast.success(`${emp.forename} ${emp.surname} added to this payroll period`);
+    } catch {
+      toast.error("Failed to add employee to period");
+    }
+  };
+
+  const [localExcludedNames, setLocalExcludedNames] = useState<string[]>([]);
+  const handleExcludeFromPeriod = (csvName: string) => {
+    setLocalExcludedNames(prev => [...prev, csvName]);
+    setReviewedIssueNames(prev => new Set([...prev, csvName]));
+    toast.success(`${csvName} excluded from this payroll`);
+  };
+
+  const allExcludedNames = [...excludedNames, ...localExcludedNames];
   const { data: periodLocationData = [] } = usePayrollEntryLocations(selectedPeriod?.id);
   const approvePeriod = useApprovePayrollPeriod();
   const submitForReview = useSubmitPayrollForReview();
@@ -498,12 +529,14 @@ const Payroll = () => {
         )}
 
         {/* Unresolved Import Issues Panel */}
-        {selectedPeriod && (unresolvedIssues.length > 0 || excludedNames.length > 0) && (
+        {selectedPeriod && (unresolvedIssues.length > 0 || allExcludedNames.length > 0) && (
           <UnresolvedIssuesPanel
             issues={unresolvedIssues}
-            excludedNames={excludedNames}
+            excludedNames={allExcludedNames}
             reviewedNames={reviewedIssueNames}
             onMarkReviewed={handleMarkReviewed}
+            onAddToPeriod={handleAddToPeriod}
+            onExclude={handleExcludeFromPeriod}
           />
         )}
 
@@ -536,7 +569,7 @@ const Payroll = () => {
             entryCount={entries.length}
             zeroHoursCount={zeroHoursCount}
             unresolvedImportIssues={blockingIssues}
-            excludedNames={excludedNames}
+            excludedNames={allExcludedNames}
           />
         )}
 
