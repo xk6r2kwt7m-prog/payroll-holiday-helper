@@ -259,7 +259,27 @@ export function SettleLeaverDialog() {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
-          {/* Employee selection — shows all settleable employees */}
+          {/* Payroll period — must be selected first to scope employee list */}
+          <div className="space-y-2">
+            <Label>Payroll Period *</Label>
+            <Select value={periodId} onValueChange={(v) => { setPeriodId(v); setEmployeeId(""); setApproved(false); }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select payroll period" />
+              </SelectTrigger>
+              <SelectContent>
+                {periods.map(p => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.period_name}
+                    {(p.status === "draft" || p.status === "pending") && (
+                      <span className="text-muted-foreground ml-1">({p.status})</span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Employee selection — scoped to selected period */}
           <div className="space-y-2">
             <Label>Employee *</Label>
             <Select value={employeeId} onValueChange={handleEmployeeChange}>
