@@ -357,6 +357,7 @@ export function PayrollPDF({
   correctionNote,
   logoUrl,
   reportConfig,
+  locationData = [],
 }: PayrollPDFProps) {
   const rc = reportConfig;
   const hideAmounts = rc?.financial?.hideFinancialAmounts ?? false;
