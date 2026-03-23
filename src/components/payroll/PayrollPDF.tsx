@@ -693,7 +693,7 @@ export function PayrollPDF({
               return (
                 <View key={hp.id} style={[styles.tr, idx % 2 === 1 && styles.trAlt]} wrap={false}>
                   <Text style={[styles.tdBold, { width: HCOL.name }]}>
-                    {emp ? `${emp.surname}, ${emp.forename}` : hp.employee_name}
+                    {emp ? `${emp.forename} ${emp.surname}` : hp.employee_name}
                   </Text>
                   <Text style={[styles.td, { width: HCOL.dept, textAlign: "center" }]}>{emp?.department || "—"}</Text>
                   <Text style={[styles.td, { width: HCOL.date, textAlign: "center" }]}>
