@@ -142,8 +142,9 @@ export function PayrollReportBuilder({
         const inEntries = filteredEntries.some((e: any) => e.employee_id === emp.id);
         const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
         if (!inEntries && !hasHolidayPayment) return false;
+        const isGenuineStarter = emp.status === "starter" && !priorPeriodEmployeeIds.has(emp.id);
         const isLeaver = emp.status === "leaver" || hasHolidayPayment;
-        return emp.status === "starter" || isLeaver;
+        return isGenuineStarter || isLeaver;
       });
       const logoUrl = config.showLogo ? `${window.location.origin}/logo.jpeg` : undefined;
       const blob = await pdf(
