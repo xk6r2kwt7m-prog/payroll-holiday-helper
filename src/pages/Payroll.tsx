@@ -112,6 +112,7 @@ const Payroll = () => {
   };
 
   const allExcludedNames = [...excludedNames, ...localExcludedNames];
+  const { data: periodLocationData = [] } = usePayrollEntryLocations(selectedPeriod?.id);
   const approvePeriod = useApprovePayrollPeriod();
   const submitForReview = useSubmitPayrollForReview();
   const reopenPeriod = useReopenPayrollPeriod();
