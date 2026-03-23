@@ -81,6 +81,21 @@ function drawWrappedText(
   return cursorY;
 }
 
+interface SignatureForPdf {
+  signer_type: string;
+  signer_name: string;
+  typed_name: string | null;
+  signatory_title: string | null;
+  signed_at: string;
+  signed_by_email: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  signature_data: string | null;
+  signature_type: string | null;
+  consent_text: string;
+  document_hash: string | null;
+}
+
 async function buildSigningAppendixPdf(params: {
   documentName: string;
   employeeName: string;
@@ -88,19 +103,7 @@ async function buildSigningAppendixPdf(params: {
   documentId: string;
   originalDocumentHash: string;
   finalDocumentHash: string;
-  signatures: Array<{
-    signer_type: string;
-    signer_name: string;
-    typed_name: string | null;
-    signed_at: string;
-    signed_by_email: string | null;
-    ip_address: string | null;
-    user_agent: string | null;
-    signature_data: string | null;
-    signature_type: string | null;
-    consent_text: string;
-    document_hash: string | null;
-  }>;
+  signatures: SignatureForPdf[];
 }) {
   const pdfDoc = await PDFDocument.create();
   const pageWidth = 595.28;
@@ -109,6 +112,7 @@ async function buildSigningAppendixPdf(params: {
   const contentWidth = pageWidth - margin * 2;
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
 
   const addPage = () => pdfDoc.addPage([pageWidth, pageHeight]);
   let page = addPage();
@@ -121,6 +125,7 @@ async function buildSigningAppendixPdf(params: {
     }
   };
 
+  // ── TITLE ──
   page.drawText(params.companyName, {
     x: margin,
     y,
@@ -128,16 +133,16 @@ async function buildSigningAppendixPdf(params: {
     font: fontBold,
     color: rgb(0.16, 0.47, 0.43),
   });
-  page.drawText("Final Signed Contract Appendix", {
+  page.drawText("Signing Page — Final Executed Contract", {
     x: margin,
     y: y - 28,
-    size: 20,
+    size: 18,
     font: fontBold,
     color: rgb(0.11, 0.16, 0.18),
   });
   y -= 58;
 
-  y = drawWrappedText(page, "This appendix forms part of the authoritative completed contract file. It records the final execution evidence for the original contract pages attached immediately before this section.", {
+  y = drawWrappedText(page, "This page records the execution of the contract. Both parties have reviewed the preceding pages and applied their signatures below, confirming their agreement to the terms set out in this contract.", {
     font: fontRegular,
     size: 10,
     x: margin,
@@ -145,15 +150,13 @@ async function buildSigningAppendixPdf(params: {
     maxWidth: contentWidth,
     lineHeight: 14,
   });
-  y -= 12;
+  y -= 16;
 
+  // ── DOCUMENT SUMMARY ──
   const summaryRows = [
     ["Document", params.documentName],
     ["Employee", params.employeeName],
-    ["Contract reference", params.documentId],
-    ["Signing order", "Employee signature followed by Employer signature"],
-    ["Original document hash", params.originalDocumentHash],
-    ["Completed package hash", params.finalDocumentHash],
+    ["Contract reference", params.documentId.substring(0, 8).toUpperCase()],
   ];
 
   for (const [label, value] of summaryRows) {
@@ -177,22 +180,259 @@ async function buildSigningAppendixPdf(params: {
     y -= 6;
   }
 
+  y -= 10;
+
+  // ── Separate the two signature blocks ──
+  const employeeSig = params.signatures.find(s => s.signer_type === "employee");
+  const employerSig = params.signatures.find(s => s.signer_type === "employer");
+
+  // ══════════════════════════════════════
+  // EMPLOYER SIGNATURE BLOCK
+  // ══════════════════════════════════════
+  ensureSpace(260);
+  page.drawLine({
+    start: { x: margin, y },
+    end: { x: margin + contentWidth, y },
+    thickness: 0.5,
+    color: rgb(0.8, 0.8, 0.8),
+  });
+  y -= 20;
+
+  page.drawText("EMPLOYER SIGNATURE", {
+    x: margin,
+    y,
+    size: 11,
+    font: fontBold,
+    color: rgb(0.16, 0.47, 0.43),
+  });
+  y -= 18;
+
+  if (employerSig) {
+    // "Signed for and on behalf of" line
+    const signatoryTitle = employerSig.signatory_title || "";
+    const onBehalfText = `Signed for and on behalf of ${params.companyName} by ${employerSig.signer_name}${signatoryTitle ? `, ${signatoryTitle}` : ""}`;
+    y = drawWrappedText(page, onBehalfText, {
+      font: fontItalic,
+      size: 9.5,
+      x: margin,
+      y,
+      maxWidth: contentWidth,
+      lineHeight: 13,
+      color: rgb(0.15, 0.15, 0.15),
+    });
+    y -= 10;
+
+    // Employer signature image
+    const employerSigImage = decodeDataUrl(employerSig.signature_data);
+    if (employerSigImage) {
+      try {
+        const embedded = employerSigImage.mime.includes("png")
+          ? await pdfDoc.embedPng(employerSigImage.bytes)
+          : await pdfDoc.embedJpg(employerSigImage.bytes);
+        const maxSigW = 200;
+        const maxSigH = 60;
+        const scale = Math.min(maxSigW / embedded.width, maxSigH / embedded.height, 1);
+        page.drawImage(embedded, {
+          x: margin,
+          y: y - (embedded.height * scale),
+          width: embedded.width * scale,
+          height: embedded.height * scale,
+        });
+        y -= (embedded.height * scale) + 6;
+      } catch (error) {
+        console.error("Could not embed employer signature image", error);
+      }
+    }
+
+    // Signature line
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: margin + 220, y },
+      thickness: 0.5,
+      color: rgb(0.3, 0.3, 0.3),
+    });
+    y -= 12;
+    page.drawText("Signature", { x: margin, y, size: 8, font: fontRegular, color: rgb(0.45, 0.45, 0.45) });
+    y -= 18;
+
+    // Name and Title
+    page.drawText(`Name: ${employerSig.signer_name}`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.18) });
+    y -= 14;
+    if (signatoryTitle) {
+      page.drawText(`Title: ${signatoryTitle}`, { x: margin, y, size: 9, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
+      y -= 14;
+    }
+
+    // Date
+    const employerDate = new Date(employerSig.signed_at).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    const employerTime = new Date(employerSig.signed_at).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    page.drawText(`Date: ${employerDate} at ${employerTime}`, { x: margin, y, size: 9, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
+    y -= 14;
+    page.drawText(`Email: ${employerSig.signed_by_email || "Not recorded"}`, { x: margin, y, size: 8, font: fontRegular, color: rgb(0.4, 0.4, 0.4) });
+    y -= 14;
+  } else {
+    page.drawText("[Employer signature pending]", { x: margin, y, size: 9, font: fontItalic, color: rgb(0.6, 0.4, 0.1) });
+    y -= 14;
+  }
+
+  y -= 20;
+
+  // ══════════════════════════════════════
+  // TEAM MEMBER SIGNATURE BLOCK
+  // ══════════════════════════════════════
+  ensureSpace(220);
+  page.drawLine({
+    start: { x: margin, y },
+    end: { x: margin + contentWidth, y },
+    thickness: 0.5,
+    color: rgb(0.8, 0.8, 0.8),
+  });
+  y -= 20;
+
+  page.drawText("TEAM MEMBER SIGNATURE", {
+    x: margin,
+    y,
+    size: 11,
+    font: fontBold,
+    color: rgb(0.16, 0.47, 0.43),
+  });
+  y -= 18;
+
+  if (employeeSig) {
+    // Employee signature image
+    const employeeSigImage = decodeDataUrl(employeeSig.signature_data);
+    if (employeeSigImage) {
+      try {
+        const embedded = employeeSigImage.mime.includes("png")
+          ? await pdfDoc.embedPng(employeeSigImage.bytes)
+          : await pdfDoc.embedJpg(employeeSigImage.bytes);
+        const maxSigW = 200;
+        const maxSigH = 60;
+        const scale = Math.min(maxSigW / embedded.width, maxSigH / embedded.height, 1);
+        page.drawImage(embedded, {
+          x: margin,
+          y: y - (embedded.height * scale),
+          width: embedded.width * scale,
+          height: embedded.height * scale,
+        });
+        y -= (embedded.height * scale) + 6;
+      } catch (error) {
+        console.error("Could not embed employee signature image", error);
+      }
+    }
+
+    // Signature line
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: margin + 220, y },
+      thickness: 0.5,
+      color: rgb(0.3, 0.3, 0.3),
+    });
+    y -= 12;
+    page.drawText("Signature", { x: margin, y, size: 8, font: fontRegular, color: rgb(0.45, 0.45, 0.45) });
+    y -= 18;
+
+    // Name
+    page.drawText(`Name: ${employeeSig.signer_name}`, { x: margin, y, size: 9, font: fontBold, color: rgb(0.12, 0.16, 0.18) });
+    y -= 14;
+
+    // Date
+    const employeeDate = new Date(employeeSig.signed_at).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    const employeeTime = new Date(employeeSig.signed_at).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    page.drawText(`Date: ${employeeDate} at ${employeeTime}`, { x: margin, y, size: 9, font: fontRegular, color: rgb(0.12, 0.16, 0.18) });
+    y -= 14;
+    page.drawText(`Email: ${employeeSig.signed_by_email || "Not recorded"}`, { x: margin, y, size: 8, font: fontRegular, color: rgb(0.4, 0.4, 0.4) });
+    y -= 14;
+  } else {
+    page.drawText("[Team member signature pending]", { x: margin, y, size: 9, font: fontItalic, color: rgb(0.6, 0.4, 0.1) });
+    y -= 14;
+  }
+
+  y -= 24;
+
+  // ══════════════════════════════════════
+  // PAGE 2: AUDIT TRAIL / EVIDENCE
+  // ══════════════════════════════════════
+  page = addPage();
+  y = pageHeight - margin;
+
+  page.drawText(params.companyName, {
+    x: margin,
+    y,
+    size: 11,
+    font: fontBold,
+    color: rgb(0.16, 0.47, 0.43),
+  });
+  page.drawText("Signing Evidence & Audit Trail", {
+    x: margin,
+    y: y - 28,
+    size: 16,
+    font: fontBold,
+    color: rgb(0.11, 0.16, 0.18),
+  });
+  y -= 52;
+
+  y = drawWrappedText(page, "The following evidence has been recorded as part of the electronic signing process for the contract above. This data forms the audit trail and should be retained for legal and compliance purposes.", {
+    font: fontRegular,
+    size: 9,
+    x: margin,
+    y,
+    maxWidth: contentWidth,
+    lineHeight: 13,
+  });
+  y -= 16;
+
+  // Hash summary
+  const hashRows = [
+    ["Original document hash (SHA-256)", params.originalDocumentHash],
+    ["Final package hash (SHA-256)", params.finalDocumentHash],
+  ];
+  for (const [label, value] of hashRows) {
+    ensureSpace(60);
+    page.drawText(`${label}:`, { x: margin, y, size: 8, font: fontBold, color: rgb(0.35, 0.35, 0.35) });
+    y -= 12;
+    page.drawText(value, { x: margin + 8, y, size: 7.5, font: fontRegular, color: rgb(0.25, 0.25, 0.25) });
+    y -= 14;
+  }
+
+  y -= 8;
+
+  // Detailed audit per signer
   for (const signature of params.signatures) {
-    ensureSpace(220);
+    ensureSpace(200);
+
+    const isEmployee = signature.signer_type === "employee";
+    const blockTitle = isEmployee ? "Team Member Signing Evidence" : "Employer Signing Evidence";
+
     page.drawRectangle({
       x: margin,
-      y: y - 160,
+      y: y - 150,
       width: contentWidth,
-      height: 150,
+      height: 145,
       borderWidth: 1,
       borderColor: rgb(0.85, 0.88, 0.9),
+      color: rgb(0.98, 0.99, 0.99),
     });
 
-    let blockY = y - 24;
-    page.drawText(`${signature.signer_type === "employee" ? "Employee" : "Employer"} Signature`, {
-      x: margin + 16,
+    let blockY = y - 16;
+    page.drawText(blockTitle, {
+      x: margin + 12,
       y: blockY,
-      size: 12,
+      size: 10,
       font: fontBold,
       color: rgb(0.11, 0.16, 0.18),
     });
@@ -200,69 +440,71 @@ async function buildSigningAppendixPdf(params: {
     const details = [
       ["Signer name", signature.signer_name],
       ["Typed name", signature.typed_name || signature.signer_name],
+      ...(signature.signatory_title ? [["Job title", signature.signatory_title]] : []),
       ["Email", signature.signed_by_email || "Not recorded"],
-      ["Signed at", new Date(signature.signed_at).toLocaleString("en-GB", { dateStyle: "full", timeStyle: "short" })],
+      ["Signed at (UTC)", new Date(signature.signed_at).toISOString()],
+      ["Signed at (Local)", new Date(signature.signed_at).toLocaleString("en-GB", { dateStyle: "full", timeStyle: "short" })],
       ["IP address", signature.ip_address || "Not recorded"],
-      ["Browser / device", signature.user_agent || "Not recorded"],
-      ["Signature type", signature.signature_type || "drawn"],
+      ["Browser / device", (signature.user_agent || "Not recorded").substring(0, 80)],
+      ["Signature method", signature.signature_type || "drawn"],
       ["Document hash at signing", signature.document_hash || params.originalDocumentHash],
     ];
 
     for (const [label, value] of details) {
+      blockY -= 12;
+      if (blockY < margin + 20) break;
       page.drawText(`${label}:`, {
-        x: margin + 16,
-        y: blockY - 22,
-        size: 8.5,
+        x: margin + 12,
+        y: blockY,
+        size: 7.5,
         font: fontBold,
         color: rgb(0.35, 0.35, 0.35),
       });
-      blockY = drawWrappedText(page, value, {
+      page.drawText(String(value).substring(0, 70), {
+        x: margin + 130,
+        y: blockY,
+        size: 7.5,
         font: fontRegular,
-        size: 8.5,
-        x: margin + 140,
-        y: blockY - 22,
-        maxWidth: contentWidth - 156,
-        lineHeight: 11,
         color: rgb(0.12, 0.16, 0.18),
       });
     }
 
-    const signatureImage = decodeDataUrl(signature.signature_data);
-    if (signatureImage) {
-      try {
-        const embedded = signatureImage.mime.includes("png")
-          ? await pdfDoc.embedPng(signatureImage.bytes)
-          : await pdfDoc.embedJpg(signatureImage.bytes);
-        const scaled = embedded.scale(0.35);
-        page.drawText("Visible signature:", {
-          x: margin + 16,
-          y: y - 128,
-          size: 8.5,
-          font: fontBold,
-          color: rgb(0.35, 0.35, 0.35),
-        });
-        page.drawImage(embedded, {
-          x: margin + 140,
-          y: y - 148,
-          width: Math.min(scaled.width, 180),
-          height: Math.min(scaled.height, 52),
-        });
-      } catch (error) {
-        console.error("Could not embed signature image", error);
-      }
-    }
-
-    y -= 172;
+    y -= 162;
   }
 
-  ensureSpace(90);
-  drawWrappedText(page, "This completed PDF package should be retained as the authoritative contract record together with the underlying audit trail stored in the system.", {
+  // Consent records
+  ensureSpace(100);
+  y -= 10;
+  page.drawText("CONSENT RECORDS", { x: margin, y, size: 9, font: fontBold, color: rgb(0.16, 0.47, 0.43) });
+  y -= 16;
+
+  for (const signature of params.signatures) {
+    ensureSpace(60);
+    const roleLabel = signature.signer_type === "employee" ? "Team Member" : "Employer";
+    page.drawText(`${roleLabel} — ${signature.signer_name}`, { x: margin, y, size: 8.5, font: fontBold, color: rgb(0.2, 0.2, 0.2) });
+    y -= 12;
+    y = drawWrappedText(page, signature.consent_text, {
+      font: fontRegular,
+      size: 7.5,
+      x: margin + 8,
+      y,
+      maxWidth: contentWidth - 16,
+      lineHeight: 10,
+      color: rgb(0.35, 0.35, 0.35),
+    });
+    y -= 14;
+  }
+
+  // Legal notice
+  ensureSpace(60);
+  y -= 10;
+  drawWrappedText(page, "This document forms part of the authoritative completed contract file. All signature data, timestamps, IP addresses, device information, and consent records have been stored securely. This constitutes a legally binding electronic signature record under the UK Electronic Communications Act 2000.", {
     font: fontRegular,
-    size: 8,
+    size: 7.5,
     x: margin,
     y,
     maxWidth: contentWidth,
-    lineHeight: 11,
+    lineHeight: 10,
     color: rgb(0.4, 0.4, 0.4),
   });
 
@@ -276,19 +518,7 @@ async function buildFinalSignedContractPdf(params: {
   companyName: string;
   documentId: string;
   originalDocumentHash: string;
-  signatures: Array<{
-    signer_type: string;
-    signer_name: string;
-    typed_name: string | null;
-    signed_at: string;
-    signed_by_email: string | null;
-    ip_address: string | null;
-    user_agent: string | null;
-    signature_data: string | null;
-    signature_type: string | null;
-    consent_text: string;
-    document_hash: string | null;
-  }>;
+  signatures: SignatureForPdf[];
 }) {
   const appendixHashSource = await sha256(JSON.stringify({
     documentId: params.documentId,
@@ -323,15 +553,15 @@ async function buildFinalSignedContractPdf(params: {
 }
 
 async function resolveManagerRecipients(supabase: any, tenantId: string) {
-  // First check for configured default signatory in company_settings
   const { data: settings } = await supabase
     .from("company_settings")
-    .select("default_signatory_name, default_signatory_email")
+    .select("default_signatory_name, default_signatory_email, default_signatory_title")
     .eq("tenant_id", tenantId)
     .maybeSingle();
 
   const signatoryName = settings?.default_signatory_name;
   const signatoryEmail = settings?.default_signatory_email;
+  const signatoryTitle = settings?.default_signatory_title;
 
   if (signatoryName && signatoryEmail) {
     return {
@@ -340,12 +570,12 @@ async function resolveManagerRecipients(supabase: any, tenantId: string) {
         role: "configured_signatory",
         email: signatoryEmail,
         full_name: signatoryName,
+        title: signatoryTitle || null,
       }],
       source: "company_settings",
     };
   }
 
-  // Fallback: resolve from tenant_members
   const loadRecipients = async (roles: string[]) => {
     const { data: members } = await supabase
       .from("tenant_members")
@@ -370,6 +600,7 @@ async function resolveManagerRecipients(supabase: any, tenantId: string) {
         role: member.role,
         email,
         full_name: profile?.full_name || (member.role === "company_admin" ? "Administrator" : "Manager"),
+        title: null,
       };
     }));
 
@@ -403,7 +634,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ════════════════════════════════════════════
     // GET: Fetch contract info for signing page
+    // ════════════════════════════════════════════
     if (req.method === "GET") {
       const { data: signingToken, error } = await supabase
         .from("signing_tokens")
@@ -462,6 +695,19 @@ Deno.serve(async (req) => {
 
       const existingSignerTypes = (existingSigs || []).map((s: any) => s.signer_type);
 
+      // ROLE LOCKING: If this signer_type already has a signature, block
+      if (existingSignerTypes.includes(signingToken.signer_type)) {
+        const roleLabel = signingToken.signer_type === "employee" ? "Team Member" : "Employer";
+        return new Response(JSON.stringify({
+          error: `The ${roleLabel} section has already been signed. This signing link can no longer be used.`,
+          error_code: "already_signed",
+          already_signed: true,
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: originalDocumentFile, error: originalDocumentError } = await supabase.storage
         .from("employee-documents")
         .download(signingToken.employee_documents.file_path);
@@ -479,6 +725,26 @@ Deno.serve(async (req) => {
 
       const docHash = await sha256Bytes(await originalDocumentFile.arrayBuffer());
 
+      // Resolve employer details for context on the signing page
+      let employer_signatory_name: string | null = null;
+      let employer_signatory_title: string | null = null;
+      if (signingToken.signer_type === "employer") {
+        const { data: settings } = await supabase
+          .from("company_settings")
+          .select("default_signatory_name, default_signatory_title, company_name")
+          .eq("tenant_id", signingToken.tenant_id)
+          .maybeSingle();
+        employer_signatory_name = settings?.default_signatory_name || null;
+        employer_signatory_title = settings?.default_signatory_title || null;
+      }
+
+      // Get company name for context
+      const { data: compSettings } = await supabase
+        .from("company_settings")
+        .select("company_name")
+        .eq("tenant_id", signingToken.tenant_id)
+        .maybeSingle();
+
       return new Response(JSON.stringify({
         signer_type: signingToken.signer_type,
         employee_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
@@ -488,7 +754,10 @@ Deno.serve(async (req) => {
         document_hash: docHash,
         expires_at: signingToken.expires_at,
         existing_signatures: existingSignerTypes,
-        // Include signature details for display on signing page
+        company_name: compSettings?.company_name || null,
+        // For employer signing: prefill signatory details
+        employer_signatory_name,
+        employer_signatory_title,
         signature_details: (existingSigs || []).map((s: any) => ({
           signer_type: s.signer_type,
           signer_name: s.signer_name,
@@ -499,10 +768,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ════════════════════════════════════════════
     // POST: Submit signature
+    // ════════════════════════════════════════════
     if (req.method === "POST") {
       const body = await req.json();
-      const { typed_name, consent_given, signature_data, signature_type, consent_text, document_hash } = body;
+      const {
+        typed_name,
+        consent_given,
+        signature_data,
+        signature_type,
+        consent_text,
+        document_hash,
+        signatory_title,
+      } = body;
 
       if (!typed_name?.trim()) {
         return new Response(JSON.stringify({ error: "Please type your full legal name", error_code: "missing_name" }), {
@@ -566,12 +845,45 @@ Deno.serve(async (req) => {
         });
       }
 
+      // ROLE LOCKING: Prevent duplicate role signatures
+      const { data: existingRoleSigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_type")
+        .eq("employee_document_id", signingToken.employee_document_id)
+        .eq("signer_type", signingToken.signer_type);
+
+      if (existingRoleSigs && existingRoleSigs.length > 0) {
+        const roleLabel = signingToken.signer_type === "employee" ? "Team Member" : "Employer";
+        return new Response(JSON.stringify({
+          error: `The ${roleLabel} section has already been signed. This signing link can no longer be used.`,
+          error_code: "already_signed",
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
       const userAgent = req.headers.get("user-agent") || "unknown";
-      const signedByEmail = signingToken.employees?.email || null;
       const signedAt = new Date().toISOString();
       const currentSignerType = signingToken.signer_type;
       const originalFilePath = signingToken.employee_documents?.file_path;
+
+      // CRITICAL: Use the correct email per role
+      // Employee → employee's email from the employee record
+      // Employer → the employer's email (from company settings or the person who is actually signing)
+      let signedByEmail: string | null;
+      if (currentSignerType === "employer") {
+        // For employer, use the email from the signing token context or company settings
+        const { data: settings } = await supabase
+          .from("company_settings")
+          .select("default_signatory_email")
+          .eq("tenant_id", signingToken.tenant_id)
+          .maybeSingle();
+        signedByEmail = settings?.default_signatory_email || null;
+      } else {
+        signedByEmail = signingToken.employees?.email || null;
+      }
 
       if (!originalFilePath || !signingToken.employee_documents) {
         return new Response(JSON.stringify({ error: "The contract document could not be found.", error_code: "missing_document" }), {
@@ -594,7 +906,7 @@ Deno.serve(async (req) => {
       const originalPdfBytes = new Uint8Array(await originalPdfBlob.arrayBuffer());
       const serverDocumentHash = await sha256Bytes(originalPdfBytes);
 
-      // Record signature
+      // Record signature with role-specific fields
       const { error: sigError } = await supabase
         .from("contract_signatures")
         .insert({
@@ -614,6 +926,7 @@ Deno.serve(async (req) => {
           ip_address: ip,
           user_agent: userAgent,
           signed_at: signedAt,
+          signatory_title: currentSignerType === "employer" ? (signatory_title || null) : null,
         });
 
       if (sigError) {
@@ -641,7 +954,7 @@ Deno.serve(async (req) => {
       // Check if BOTH signatures now exist
       const { data: allSigs } = await supabase
         .from("contract_signatures")
-        .select("signer_type, signed_at, signer_name, signature_data, ip_address, user_agent, signed_by_email")
+        .select("signer_type, signed_at, signer_name, signature_data, ip_address, user_agent, signed_by_email, typed_name, signatory_title, signature_type, consent_text, document_hash")
         .eq("employee_document_id", signingToken.employee_document_id);
 
       const signerTypes = (allSigs || []).map((s: any) => s.signer_type);
@@ -658,6 +971,26 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         const companyName = companySettings?.company_name || "Ugly Dumpling";
+
+        // Build final PDF with proper signature blocks
+        const signaturesForPdf: SignatureForPdf[] = (allSigs || []).sort((a: any, b: any) => {
+          const order = { employee: 1, employer: 0 } as Record<string, number>;
+          return (order[a.signer_type] ?? 99) - (order[b.signer_type] ?? 99);
+        }).map((s: any) => ({
+          signer_type: s.signer_type,
+          signer_name: s.signer_name,
+          typed_name: s.typed_name,
+          signatory_title: s.signatory_title || null,
+          signed_at: s.signed_at,
+          signed_by_email: s.signed_by_email,
+          ip_address: s.ip_address,
+          user_agent: s.user_agent,
+          signature_data: s.signature_data,
+          signature_type: s.signature_type,
+          consent_text: s.consent_text,
+          document_hash: s.document_hash,
+        }));
+
         const finalPackage = await buildFinalSignedContractPdf({
           originalPdfBytes,
           documentName: signingToken.employee_documents.document_name,
@@ -665,10 +998,7 @@ Deno.serve(async (req) => {
           companyName,
           documentId: signingToken.employee_document_id,
           originalDocumentHash: serverDocumentHash,
-          signatures: (allSigs || []).sort((a: any, b: any) => {
-            const order = { employee: 0, employer: 1 } as Record<string, number>;
-            return (order[a.signer_type] ?? 99) - (order[b.signer_type] ?? 99);
-          }),
+          signatures: signaturesForPdf,
         });
 
         const finalPath = `contracts/final/${signingToken.tenant_id}/${signingToken.employee_document_id}/${sanitizeFileName(signingToken.employee_documents.document_name)}_completed_signed.pdf`;
@@ -712,6 +1042,7 @@ Deno.serve(async (req) => {
       }
 
       // Insert audit log entry
+      const roleLabel = currentSignerType === "employee" ? "team_member" : "employer";
       await supabase.from("audit_log").insert({
         action: "create",
         table_name: "contract_signatures",
@@ -721,15 +1052,19 @@ Deno.serve(async (req) => {
         user_agent: userAgent,
         new_data: {
           event: "contract_signed",
+          signer_role: roleLabel,
           employee_id: signingToken.employee_id,
           employee_document_id: signingToken.employee_document_id,
           signing_token_id: signingToken.id,
           signer_type: currentSignerType,
+          signer_name: typed_name.trim(),
+          signatory_title: currentSignerType === "employer" ? (signatory_title || null) : null,
           signed_by_email: signedByEmail,
           signed_at: signedAt,
           document_hash: serverDocumentHash,
           signature_type: signature_type || "drawn",
           fully_signed: fullySignedNow,
+          signing_field: currentSignerType === "employee" ? "team_member_block" : "employer_block",
         },
       });
 
@@ -747,7 +1082,6 @@ Deno.serve(async (req) => {
 
       if (fullySignedNow) {
         // ── FULLY SIGNED ──
-        // Generate a fresh download link for the email
         const { data: docRecord2 } = await supabase
           .from("employee_documents")
           .select("final_signed_pdf_url")
@@ -785,7 +1119,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Send completion email to MANAGER(S) too
+        // Send completion email to MANAGER(S)
         try {
           const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id);
 
@@ -830,21 +1164,22 @@ Deno.serve(async (req) => {
           record_id: signingToken.employee_document_id,
           tenant_id: signingToken.tenant_id,
           new_data: {
-              event: "contract_fully_signed",
+            event: "contract_fully_signed",
             employee_id: signingToken.employee_id,
             employee_document_id: signingToken.employee_document_id,
             signed_at: signedAt,
-              authoritative_file: (await supabase
-                .from("employee_documents")
-                .select("final_signed_pdf_url, final_document_hash")
-                .eq("id", signingToken.employee_document_id)
-                .maybeSingle()).data,
+            authoritative_file: (await supabase
+              .from("employee_documents")
+              .select("final_signed_pdf_url, final_document_hash")
+              .eq("id", signingToken.employee_document_id)
+              .maybeSingle()).data,
             all_signatures: (allSigs || []).map((s: any) => ({
               signer_type: s.signer_type,
               signer_name: s.signer_name,
               signed_at: s.signed_at,
               signed_by_email: s.signed_by_email,
               ip_address: s.ip_address,
+              signatory_title: s.signatory_title,
             })),
           },
         });
@@ -875,7 +1210,6 @@ Deno.serve(async (req) => {
           const { recipients: managerRecipients, source: managerSource } = await resolveManagerRecipients(supabase, signingToken.tenant_id);
 
           if (managerRecipients.length > 0) {
-            // Generate employer signing token
             const expiresAt = new Date();
             expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -896,7 +1230,6 @@ Deno.serve(async (req) => {
             } else {
               const employerSigningUrl = `${CANONICAL_APP_URL}/sign/${employerToken.token}`;
 
-              // Send signing link to the selected manager/admin recipients
               for (const admin of managerRecipients) {
                 await supabase.functions.invoke("send-notification", {
                   body: {
@@ -914,7 +1247,6 @@ Deno.serve(async (req) => {
                 });
               }
 
-              // Audit log for auto-generated employer token
               await supabase.from("audit_log").insert({
                 action: "create",
                 table_name: "signing_tokens",
@@ -936,13 +1268,16 @@ Deno.serve(async (req) => {
         }
       }
 
+      const roleConfirmLabel = currentSignerType === "employee" ? "Team Member" : "Employer";
+
       return new Response(JSON.stringify({
         success: true,
         message: fullySignedNow
           ? "Contract fully signed"
-          : "Signature recorded successfully",
+          : `Your signature has been applied to the ${roleConfirmLabel} section`,
         signed_at: signedAt,
         signer_type: currentSignerType,
+        signing_field: currentSignerType === "employee" ? "team_member_block" : "employer_block",
         fully_signed: fullySignedNow,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
