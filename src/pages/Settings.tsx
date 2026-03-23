@@ -122,6 +122,7 @@ const SETTINGS_GROUPS: SettingsGroup[] = [
     description: "Training requirements and document templates",
     sections: [
       { id: "training", label: "Training Settings", description: "Required certifications and modules" },
+      { id: "contracts", label: "Contract Signing", description: "Default employer signatory for contracts" },
     ],
   },
   {
