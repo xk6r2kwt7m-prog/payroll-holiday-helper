@@ -940,8 +940,24 @@ Deno.serve(async (req) => {
           .eq("id", signingToken.employee_document_id)
           .maybeSingle();
 
-        // Use branded URL for the final contract download link
-        const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?id=${signingToken.employee_document_id}&variant=final`;
+        // Create a long-lived download token (90 days) so email recipients
+        // can access the final signed contract without app login
+        const downloadTokenValue = crypto.randomUUID();
+        const downloadExpiresAt = new Date();
+        downloadExpiresAt.setDate(downloadExpiresAt.getDate() + 90);
+
+        await supabase.from("signing_tokens").insert({
+          token: downloadTokenValue,
+          employee_document_id: signingToken.employee_document_id,
+          employee_id: signingToken.employee_id,
+          signer_type: "download",
+          tenant_id: signingToken.tenant_id,
+          expires_at: downloadExpiresAt.toISOString(),
+          used_at: new Date().toISOString(), // Mark as used immediately — this is a download token, not a signing token
+        });
+
+        // Use token-based branded URL so employees can access without logging in
+        const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?token=${downloadTokenValue}&variant=final`;
 
         // Send completion email to EMPLOYEE
         const recipientEmail = signingToken.employees?.email;
