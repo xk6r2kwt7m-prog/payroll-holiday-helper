@@ -1032,7 +1032,7 @@ Deno.serve(async (req) => {
 
         // Send completion email to EMPLOYEE (only if not disabled)
         const recipientEmail = signingToken.employees?.email;
-        if (recipientEmail && completionSigningMode !== "disabled") {
+        if (recipientEmail && completionSigningMode === "auto") {
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
@@ -1060,14 +1060,15 @@ Deno.serve(async (req) => {
                 email_type: "contract_fully_signed",
                 recipient_email: recipientEmail,
                 employee_name: employeeName,
-                trigger: completionSigningMode === "auto" ? "automatic" : "manual",
+                trigger: "automatic",
                 policy_mode: completionSigningMode,
               },
             });
           } catch (emailErr) {
             console.error("Contract fully-signed email to employee failed:", emailErr);
           }
-        } else if (recipientEmail && completionSigningMode === "disabled") {
+        } else if (recipientEmail) {
+          // Policy is "manual" or "disabled" — do NOT auto-send, log blocked/pending
           await supabase.from("audit_log").insert({
             action: "create",
             table_name: "email_blocked",
@@ -1075,12 +1076,15 @@ Deno.serve(async (req) => {
             tenant_id: signingToken.tenant_id,
             new_data: {
               event: "contract_completion_email_blocked",
-              status: "blocked",
-              reason: "Email automation policy: contract_signing is disabled",
+              status: completionSigningMode === "disabled" ? "blocked" : "pending_manual",
+              reason: completionSigningMode === "disabled"
+                ? "Email automation policy: contract_signing is disabled"
+                : "Email automation policy: contract_signing is set to manual — admin must send manually",
               email_type: "contract_fully_signed",
               recipient_email: recipientEmail,
               employee_name: employeeName,
               trigger: "automatic_blocked",
+              policy_mode: completionSigningMode,
             },
           });
         }
@@ -1165,7 +1169,7 @@ Deno.serve(async (req) => {
         const contractSigningMode = emailPolicy?.contract_signing || "manual";
 
         // Send acknowledgment to employee (only if contract_signing is not disabled)
-        if (signedByEmail && contractSigningMode !== "disabled") {
+        if (signedByEmail && contractSigningMode === "auto") {
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
@@ -1199,7 +1203,8 @@ Deno.serve(async (req) => {
           } catch (emailErr) {
             console.error("Signature received email failed:", emailErr);
           }
-        } else if (signedByEmail && contractSigningMode === "disabled") {
+        } else if (signedByEmail) {
+          // Policy is "manual" or "disabled" — do NOT auto-send, log blocked/pending
           await supabase.from("audit_log").insert({
             action: "create",
             table_name: "email_blocked",
@@ -1207,12 +1212,15 @@ Deno.serve(async (req) => {
             tenant_id: signingToken.tenant_id,
             new_data: {
               event: "employee_signature_receipt_email_blocked",
-              status: "blocked",
-              reason: "Email automation policy: contract_signing is disabled",
+              status: contractSigningMode === "disabled" ? "blocked" : "pending_manual",
+              reason: contractSigningMode === "disabled"
+                ? "Email automation policy: contract_signing is disabled"
+                : "Email automation policy: contract_signing is set to manual — admin must send manually",
               email_type: "contract_signature_received",
               recipient_email: signedByEmail,
               employee_name: employeeName,
-              trigger: "automatic",
+              trigger: "automatic_blocked",
+              policy_mode: contractSigningMode,
             },
           });
         }
