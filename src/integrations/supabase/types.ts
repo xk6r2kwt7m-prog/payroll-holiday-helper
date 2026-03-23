@@ -1229,6 +1229,9 @@ export type Database = {
           document_status: string
           document_type: Database["public"]["Enums"]["document_type"]
           employee_id: string
+          employer_signatory_email: string | null
+          employer_signatory_name: string | null
+          employer_signatory_source: string | null
           expires_at: string | null
           extracted_data: Json | null
           extraction_confidence: number | null
@@ -1261,6 +1264,9 @@ export type Database = {
           document_status?: string
           document_type: Database["public"]["Enums"]["document_type"]
           employee_id: string
+          employer_signatory_email?: string | null
+          employer_signatory_name?: string | null
+          employer_signatory_source?: string | null
           expires_at?: string | null
           extracted_data?: Json | null
           extraction_confidence?: number | null
@@ -1293,6 +1299,9 @@ export type Database = {
           document_status?: string
           document_type?: Database["public"]["Enums"]["document_type"]
           employee_id?: string
+          employer_signatory_email?: string | null
+          employer_signatory_name?: string | null
+          employer_signatory_source?: string | null
           expires_at?: string | null
           extracted_data?: Json | null
           extraction_confidence?: number | null
