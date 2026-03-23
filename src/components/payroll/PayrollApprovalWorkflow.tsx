@@ -109,46 +109,14 @@ export function PayrollApprovalWorkflow({
         })}
       </div>
 
-      {/* Unmatched employees warning - blocks approval */}
-      {hasUnmatchedEmployees && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 mb-4">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
-            <div>
-              <p className="font-medium text-destructive">Unmatched Employees — Action Required</p>
-                <div className="text-sm text-muted-foreground mt-1 space-y-1">
-                  {unresolvedImportIssues.map((issue) => (
-                    <p key={issue.csvName}>
-                      {issue.issue === "exists_not_added"
-                        ? `${issue.csvName}: employee exists as ${issue.employeeName}${issue.employeeStatus ? ` (${issue.employeeStatus})` : ""} but is not yet linked to this payroll period.`
-                        : issue.issue === "leaver_in_csv"
-                        ? `${issue.csvName}: leaver appears in imported timesheet — review required.`
-                        : `${issue.csvName}: employee not in database.`}
-                    </p>
-                  ))}
-                </div>
-              <p className="text-sm font-medium text-destructive mt-1">
-                  You cannot submit or approve this payroll until each imported person is matched and added, created, or excluded.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Excluded employees info - visible during review */}
-      {hasExcludedEmployees && !hasUnmatchedEmployees && (
-        <div className="rounded-lg bg-muted/50 border border-border p-4 mb-4">
-          <div className="flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-muted-foreground shrink-0" />
-            <div>
-              <p className="font-medium text-foreground text-sm">Excluded Employees</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {excludedNames.join(", ")}
-                </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                These staff were deliberately excluded during import. This is recorded in the audit log.
-              </p>
-            </div>
+      {/* Unmatched employees are now handled by UnresolvedIssuesPanel outside this component */}
+      {hasUnmatchedEmployees && !hasExcludedEmployees && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 mb-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+            <p className="text-sm font-medium text-destructive">
+              {unresolvedImportIssues.length} unresolved {unresolvedImportIssues.length === 1 ? "issue" : "issues"} — review above before submission.
+            </p>
           </div>
         </div>
       )}

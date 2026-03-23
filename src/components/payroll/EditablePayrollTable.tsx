@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
+import { useCreatePayrollAdjustment, usePayrollAdjustments, usePriorPeriodAdjustments } from "@/hooks/usePayrollAdjustments";
+import { useTenant } from "@/hooks/useTenant";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +91,8 @@ interface EditablePayrollTableProps {
   onExport: (includeBank: boolean) => void;
   showBonusColumn?: boolean;
   showServiceCharge?: boolean;
+  /** Employee IDs that appeared in a prior payroll period (used to suppress "Starter" badge) */
+  priorPeriodEmployeeIds?: Set<string>;
 }
 
 interface EditingEntry {
@@ -106,7 +111,9 @@ export function EditablePayrollTable({
   onExport,
   showBonusColumn = true,
   showServiceCharge = true,
+  priorPeriodEmployeeIds = new Set(),
 }: EditablePayrollTableProps) {
+  const { tenantId } = useTenant();
   const { data: leaveRules } = useLeaveRules();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingData, setEditingData] = useState<EditingEntry>({
@@ -127,6 +134,10 @@ export function EditablePayrollTable({
   const [adjustmentNote, setAdjustmentNote] = useState("");
 
   const queryClient = useQueryClient();
+  const createAdjustment = useCreatePayrollAdjustment();
+  const { data: periodAdjustments = [] } = usePayrollAdjustments(periodId);
+  // Set of employee IDs that have adjustments in this period
+  const adjustedEmployeeIds = new Set(periodAdjustments.map(a => a.employee_id));
   const bulkUpdate = useBulkUpdatePayrollEntries();
   const markExported = useMarkBankDetailsExported();
   
@@ -305,6 +316,86 @@ export function EditablePayrollTable({
     if (!pendingSave) return;
     const { entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus } = pendingSave;
     setNoteDialogOpen(false);
+
+    // Record structured adjustment audit entries
+    const adjustmentRows: {
+      payroll_period_id: string;
+      payroll_entry_id: string;
+      employee_id: string;
+      field_name: string;
+      old_value: number | null;
+      new_value: number | null;
+      note?: string;
+    }[] = [];
+
+    const emp = entry.employees;
+    const importedHours = entry.imported_hours;
+
+    if (importedHours !== null && Math.abs(hours - importedHours) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "timesheet_hours",
+        old_value: importedHours,
+        new_value: hours,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+    if (emp && Math.abs(hourlyRate - Number(emp.hourly_rate)) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "hourly_rate",
+        old_value: Number(emp.hourly_rate),
+        new_value: hourlyRate,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+    if (emp && Math.abs(serviceCharge - Number(emp.service_charge || 0)) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "service_charge",
+        old_value: Number(emp.service_charge || 0),
+        new_value: serviceCharge,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+    if (Math.abs(perfBonus - Number(entry.performance_bonus || 0)) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "performance_bonus",
+        old_value: Number(entry.performance_bonus || 0),
+        new_value: perfBonus,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+    if (Math.abs(specBonus - Number(entry.special_bonus || 0)) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "special_bonus",
+        old_value: Number(entry.special_bonus || 0),
+        new_value: specBonus,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+
+    if (adjustmentRows.length > 0) {
+      try {
+        await createAdjustment.mutateAsync(adjustmentRows);
+      } catch {
+        // Non-fatal: adjustment audit is supplementary
+        console.error("Failed to record adjustment audit");
+      }
+    }
+
     await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, adjustmentNote || "Manual adjustment");
     setPendingSave(null);
     setAdjustmentNote("");
@@ -514,9 +605,9 @@ export function EditablePayrollTable({
                         <span className="font-medium text-card-foreground">
                           {emp?.forename} {emp?.surname}
                         </span>
-                        {emp?.status === "starter" && (
+                        {emp?.status === "starter" && !priorPeriodEmployeeIds.has(entry.employee_id) && (
                           <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
-                            Starter
+                            New starter
                           </Badge>
                         )}
                         {!entry.bank_details_exported && emp?.bank_account_no && (
@@ -524,6 +615,12 @@ export function EditablePayrollTable({
                             New
                           </Badge>
                         )}
+                        <AdjustmentHistoryDrawer
+                          periodId={periodId}
+                          employeeId={entry.employee_id}
+                          employeeName={`${emp?.forename} ${emp?.surname}`}
+                          hasAdjustments={adjustedEmployeeIds.has(entry.employee_id) || (entry.imported_hours !== null && Math.abs(entry.timesheet_hours - entry.imported_hours) > 0.001)}
+                        />
                         <LocationSplitPopover
                           periodId={periodId}
                           employeeId={entry.employee_id}
