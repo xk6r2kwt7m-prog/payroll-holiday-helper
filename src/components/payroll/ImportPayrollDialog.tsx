@@ -625,6 +625,30 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
         }
       }
 
+      // Bulk-insert structured location breakdown
+      if (locationRows.length > 0) {
+        // Delete existing location data for this period first (fresh import replaces)
+        await supabase
+          .from("payroll_entry_locations")
+          .delete()
+          .eq("payroll_period_id", periodId)
+          .eq("tenant_id", tenantId);
+
+        // Insert in batches of 100
+        for (let i = 0; i < locationRows.length; i += 100) {
+          const batch = locationRows.slice(i, i + 100).map(r => ({
+            ...r,
+            payroll_period_id: periodId,
+            imported_source: "csv_import",
+            tenant_id: tenantId,
+          }));
+          const { error: locError } = await supabase
+            .from("payroll_entry_locations")
+            .insert(batch);
+          if (locError) console.error("Location data insert error:", locError);
+        }
+      }
+
       // Store original CSV file
       let storedFilePath: string | null = null;
       if (file) {
