@@ -184,6 +184,11 @@ export function SignedContractsList() {
                   <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${deptStyles[contract.employees?.department || ""] || ""}`}>
                     {contract.employees?.department}
                   </Badge>
+                  {(contract as any).contract_send_status === "fully_signed" ? (
+                    <Badge className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-0">Final completed contract</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">Original unsigned contract</Badge>
+                  )}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   {new Date(contract.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
@@ -210,7 +215,7 @@ export function SignedContractsList() {
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9"
-                  onClick={() => handleDownload(contract.file_path, contract.document_name)}
+                  onClick={() => handleDownload((contract as any).final_signed_pdf_url || contract.file_path, contract.document_name)}
                 >
                   <Download className="h-4 w-4" />
                 </Button>
