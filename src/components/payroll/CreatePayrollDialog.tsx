@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useCreatePayrollPeriod, useCopyPayrollPeriod, usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
 import { supabase } from "@/integrations/supabase/client";
+import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 
 interface CreatePayrollDialogProps {
   onSuccess?: () => void;
