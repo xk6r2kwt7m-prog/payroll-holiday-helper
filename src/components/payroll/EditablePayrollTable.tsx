@@ -130,7 +130,7 @@ export function EditablePayrollTable({
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
   const [removeEmployeeName, setRemoveEmployeeName] = useState("");
-  const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "department" | "status" | "hours_desc" | "hours_asc">("default");
+  const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "alphabetical_surname" | "department" | "status" | "hours_desc" | "hours_asc">("default");
 
   // Adjustment note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
@@ -154,6 +154,13 @@ export function EditablePayrollTable({
     const sorted = [...entries];
     switch (sortMode) {
       case "alphabetical":
+        return sorted.sort((a, b) => {
+          const fA = a.employees?.forename?.toLowerCase() ?? "";
+          const fB = b.employees?.forename?.toLowerCase() ?? "";
+          if (fA !== fB) return fA.localeCompare(fB);
+          return (a.employees?.surname?.toLowerCase() ?? "").localeCompare(b.employees?.surname?.toLowerCase() ?? "");
+        });
+      case "alphabetical_surname":
         return sorted.sort((a, b) => {
           const sA = a.employees?.surname?.toLowerCase() ?? "";
           const sB = b.employees?.surname?.toLowerCase() ?? "";
@@ -589,7 +596,8 @@ export function EditablePayrollTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="default">Default</SelectItem>
-              <SelectItem value="alphabetical">A–Z (Surname)</SelectItem>
+              <SelectItem value="alphabetical">A–Z (First name)</SelectItem>
+              <SelectItem value="alphabetical_surname">A–Z (Surname)</SelectItem>
               <SelectItem value="department">Department</SelectItem>
               <SelectItem value="status">Status</SelectItem>
               <SelectItem value="hours_desc">Hours ↓</SelectItem>
@@ -657,7 +665,7 @@ export function EditablePayrollTable({
                       </Avatar>
                       <div>
                         <span className="font-medium text-card-foreground">
-                          {sortMode === "alphabetical"
+                          {sortMode === "alphabetical_surname"
                             ? `${emp?.surname}, ${emp?.forename}`
                             : `${emp?.forename} ${emp?.surname}`}
                         </span>
