@@ -899,3 +899,38 @@ export function EditablePayrollTable({
     </div>
   );
 }
+
+/** Inline prior-period adjustment reminder — manager-only, never exported */
+function PriorAdjustmentReminder({ periodId, employeeId }: { periodId: string; employeeId: string }) {
+  const { data: priorAdj = [] } = usePriorPeriodAdjustments(employeeId, periodId);
+  const [showPrior, setShowPrior] = useState(false);
+
+  if (priorAdj.length === 0) return null;
+
+  return (
+    <>
+      <button
+        onClick={(e) => { e.stopPropagation(); setShowPrior(!showPrior); }}
+        className="inline-flex items-center gap-1 ml-1"
+        title="Prior period had manual adjustments"
+      >
+        <Badge variant="outline" className="text-[10px] h-5 bg-muted text-muted-foreground border-border hover:bg-muted/80 cursor-pointer">
+          <AlertTriangle className="h-3 w-3 mr-0.5" />
+          Prior adj.
+        </Badge>
+      </button>
+      {showPrior && (
+        <div className="mt-1 ml-1 rounded border border-border bg-muted/30 p-2 text-[10px] space-y-0.5 max-w-[260px]">
+          <p className="font-medium text-muted-foreground">Last payroll included manual adjustments:</p>
+          {priorAdj.slice(0, 5).map(a => (
+            <p key={a.id} className="text-muted-foreground">
+              {a.field_name}: {a.old_value ?? "—"} → {a.new_value ?? "—"}
+              {a.note && <span className="italic ml-1">({a.note})</span>}
+            </p>
+          ))}
+          {priorAdj.length > 5 && <p className="text-muted-foreground">...and {priorAdj.length - 5} more</p>}
+        </div>
+      )}
+    </>
+  );
+}
