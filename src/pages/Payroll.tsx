@@ -35,6 +35,8 @@ import { PayrollMissingInfo } from "@/components/payroll/PayrollMissingInfo";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { PayrollSourceInfo } from "@/components/payroll/PayrollSourceInfo";
+import { UnresolvedIssuesPanel } from "@/components/payroll/UnresolvedIssuesPanel";
+import { PayrollPeriodNotesSection } from "@/components/payroll/PayrollPeriodNotes";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
