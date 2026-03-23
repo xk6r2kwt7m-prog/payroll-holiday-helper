@@ -9,7 +9,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Badge } from "@/components/ui/badge";
-import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod, useDeletePayrollPeriod } from "@/hooks/usePayroll";
+import { usePayrollPeriods, usePayrollEntries, useApprovePayrollPeriod, useSubmitPayrollForReview, useReopenPayrollPeriod, useDeletePayrollPeriod, useCreatePayrollEntry } from "@/hooks/usePayroll";
 import { formatCurrency, formatHours, useHolidayPayments } from "@/hooks/useHolidays";
 import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPaymentDialog";
 import { SettleLeaverDialog } from "@/components/holidays/SettleLeaverDialog";
