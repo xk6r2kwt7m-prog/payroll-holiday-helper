@@ -39,6 +39,8 @@ import { OnboardingRequirementsConfig } from "@/components/settings/OnboardingRe
 import { ServiceChargeSettings } from "@/components/settings/ServiceChargeSettings";
 import { SignatorySettings } from "@/components/settings/SignatorySettings";
 import { EmailTestButton } from "@/components/settings/EmailTestButton";
+import { EmailAutomationSettings } from "@/components/settings/EmailAutomationSettings";
+import { EmailAuditLog } from "@/components/settings/EmailAuditLog";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
 import { cn } from "@/lib/utils";
