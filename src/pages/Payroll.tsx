@@ -490,6 +490,27 @@ const Payroll = () => {
           />
         )}
 
+        {/* Unresolved Import Issues Panel */}
+        {selectedPeriod && (unresolvedIssues.length > 0 || excludedNames.length > 0) && (
+          <UnresolvedIssuesPanel
+            issues={unresolvedIssues}
+            excludedNames={excludedNames}
+          />
+        )}
+
+        {/* Period-Specific Internal Notes */}
+        {selectedPeriod && entries.length > 0 && (
+          <PayrollPeriodNotesSection
+            periodId={selectedPeriod.id}
+            periodName={selectedPeriod.period_name}
+            employees={entries.map((e: any) => ({
+              id: e.employee_id,
+              name: `${e.employees?.forename} ${e.employees?.surname}`,
+            }))}
+            isAdmin={isAdmin}
+          />
+        )}
+
         {/* Approval Workflow */}
         {selectedPeriod && (
           <PayrollApprovalWorkflow
