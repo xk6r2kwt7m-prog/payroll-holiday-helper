@@ -169,6 +169,9 @@ export function buildLocationSplitRows(
   return rows.sort((a, b) => {
     const locCmp = a.locationName.localeCompare(b.locationName);
     if (locCmp !== 0) return locCmp;
+    const fA = (a.entry.employees?.forename || "").toLowerCase();
+    const fB = (b.entry.employees?.forename || "").toLowerCase();
+    if (fA !== fB) return fA.localeCompare(fB);
     return (a.entry.employees?.surname || "").localeCompare(b.entry.employees?.surname || "");
   });
 }

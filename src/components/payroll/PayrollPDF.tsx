@@ -362,7 +362,7 @@ export function PayrollPDF({
   const rc = reportConfig;
   const hideAmounts = rc?.financial?.hideFinancialAmounts ?? false;
 
-  // Sorting based on config
+  // Sorting based on config — alphabetical uses forename-first to match on-screen table
   const sortedEntries = [...entries].sort((a, b) => {
     if (!rc || rc.sortBy === "department" || rc.sortBy === "alphabetical") {
       const deptOrder: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
@@ -372,9 +372,16 @@ export function PayrollPDF({
       if (!rc || rc.sortBy === "alphabetical") {
         if (deptA !== deptB) return deptA - deptB;
       }
+      // Sort by forename first, then surname — matches on-screen A–Z (First name)
+      const fA = (a.employees?.forename || "").toLowerCase();
+      const fB = (b.employees?.forename || "").toLowerCase();
+      if (fA !== fB) return fA.localeCompare(fB);
       return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
     }
     if (rc.sortBy === "hourly_rate") return Number(b.hourly_rate) - Number(a.hourly_rate);
+    const fA = (a.employees?.forename || "").toLowerCase();
+    const fB = (b.employees?.forename || "").toLowerCase();
+    if (fA !== fB) return fA.localeCompare(fB);
     return (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
   });
 
