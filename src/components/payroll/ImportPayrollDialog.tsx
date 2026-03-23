@@ -432,6 +432,8 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
     setImporting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      // Collect location split rows to bulk-insert after entries
+      const locationRows: { payroll_entry_id: string; employee_id: string; location_name: string; department: string | null; hours: number }[] = [];
       const days = (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) + 1;
       const periodWeeks = Math.round((days / 7) * 10) / 10;
 
@@ -511,13 +513,18 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
 
             if (updateError) throw updateError;
             entriesCreated++;
+            // Collect location splits for this entry
+            for (const loc of emp.locations) {
+              const locDept = SECTION_DEPT_MAP[Object.keys(SECTION_LOCATION_MAP).find(k => SECTION_LOCATION_MAP[k] === loc.name) || ""] || emp.department || null;
+              locationRows.push({ payroll_entry_id: existing.id, employee_id: emp.matchedId!, location_name: loc.name, department: locDept, hours: loc.hours });
+            }
             existingByEmployeeId.delete(emp.matchedId);
           } else {
             // Employee in CSV but not in copied period — create new entry
             const rate = emp.hourlyRate || 0;
             const sc = emp.serviceCharge || 0;
 
-            const { error: insertError } = await supabase
+            const { data: newEntry, error: insertError } = await supabase
               .from("payroll_entries")
               .insert({
                 payroll_period_id: periodId,
@@ -532,10 +539,19 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
                 total_pay: (hours * rate) + (hours * sc),
                 notes: `${locNotes}${matchNote} [Added by import]`,
                 tenant_id: tenantId,
-              } as any);
+              } as any)
+              .select("id")
+              .single();
 
             if (insertError) throw insertError;
             entriesCreated++;
+            // Collect location splits for new entry
+            if (newEntry) {
+              for (const loc of emp.locations) {
+                const locDept = SECTION_DEPT_MAP[Object.keys(SECTION_LOCATION_MAP).find(k => SECTION_LOCATION_MAP[k] === loc.name) || ""] || emp.department || null;
+                locationRows.push({ payroll_entry_id: newEntry.id, employee_id: emp.matchedId!, location_name: loc.name, department: locDept, hours: loc.hours });
+              }
+            }
           }
         }
         // Entries from copy that had no CSV match remain untouched with 0 hours
@@ -578,7 +594,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
             ? ` [Matched via ${emp.matchMethod.replace(/_/g, " ")}]`
             : "";
 
-          const { error: entryError } = await supabase
+          const { data: newEntry, error: entryError } = await supabase
             .from("payroll_entries")
             .insert({
               payroll_period_id: periodId,
@@ -593,10 +609,43 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
               total_pay: (hours * rate) + (hours * sc),
               notes: `${locNotes}${matchNote}`,
               tenant_id: tenantId,
-            } as any);
+            } as any)
+            .select("id")
+            .single();
 
           if (entryError) throw entryError;
           entriesCreated++;
+          // Collect location splits for new entry
+          if (newEntry) {
+            for (const loc of emp.locations) {
+              const locDept = SECTION_DEPT_MAP[Object.keys(SECTION_LOCATION_MAP).find(k => SECTION_LOCATION_MAP[k] === loc.name) || ""] || emp.department || null;
+              locationRows.push({ payroll_entry_id: newEntry.id, employee_id: emp.matchedId!, location_name: loc.name, department: locDept, hours: loc.hours });
+            }
+          }
+        }
+      }
+
+      // Bulk-insert structured location breakdown
+      if (locationRows.length > 0) {
+        // Delete existing location data for this period first (fresh import replaces)
+        await supabase
+          .from("payroll_entry_locations")
+          .delete()
+          .eq("payroll_period_id", periodId)
+          .eq("tenant_id", tenantId);
+
+        // Insert in batches of 100
+        for (let i = 0; i < locationRows.length; i += 100) {
+          const batch = locationRows.slice(i, i + 100).map(r => ({
+            ...r,
+            payroll_period_id: periodId,
+            imported_source: "csv_import",
+            tenant_id: tenantId,
+          }));
+          const { error: locError } = await supabase
+            .from("payroll_entry_locations")
+            .insert(batch);
+          if (locError) console.error("Location data insert error:", locError);
         }
       }
 
@@ -658,6 +707,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entry_locations"] });
       toast.success("Payroll imported!");
       onImportComplete?.();
     } catch (error) {

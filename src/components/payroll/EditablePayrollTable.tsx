@@ -40,6 +40,7 @@ import { useLeaveRules, calculateAccrual } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 import { AddEmployeeToPeriodDialog } from "./AddEmployeeToPeriodDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { LocationSplitPopover } from "./LocationSplitPopover";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -523,6 +524,11 @@ export function EditablePayrollTable({
                             New
                           </Badge>
                         )}
+                        <LocationSplitPopover
+                          periodId={periodId}
+                          employeeId={entry.employee_id}
+                          employeeName={`${emp?.forename} ${emp?.surname}`}
+                        />
                       </div>
                     </div>
                   </TableCell>

@@ -2830,6 +2830,81 @@ export type Database = {
           },
         ]
       }
+      payroll_entry_locations: {
+        Row: {
+          created_at: string
+          department: string | null
+          employee_id: string
+          hours: number
+          id: string
+          imported_source: string | null
+          location_name: string
+          payroll_entry_id: string
+          payroll_period_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          employee_id: string
+          hours?: number
+          id?: string
+          imported_source?: string | null
+          location_name: string
+          payroll_entry_id: string
+          payroll_period_id: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          employee_id?: string
+          hours?: number
+          id?: string
+          imported_source?: string | null
+          location_name?: string
+          payroll_entry_id?: string
+          payroll_period_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_entry_locations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_entry_locations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_entry_locations_payroll_entry_id_fkey"
+            columns: ["payroll_entry_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_entry_locations_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_entry_locations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_imports: {
         Row: {
           created_at: string

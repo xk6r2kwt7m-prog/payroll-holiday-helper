@@ -15,6 +15,7 @@ import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "./PayrollPDF";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 
 interface PayrollReportBuilderProps {
   open: boolean;
@@ -69,6 +70,9 @@ export function PayrollReportBuilder({
   });
   const [generating, setGenerating] = useState(false);
 
+  // Fetch location data for this period
+  const { data: locationData = [] } = usePayrollEntryLocations(period?.id);
+
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -94,11 +98,25 @@ export function PayrollReportBuilder({
     return Array.from(depts) as string[];
   }, [entries]);
 
+  // Get unique locations from location data
+  const availableLocations = useMemo(() => {
+    const locs = new Set(locationData.map(l => l.location_name));
+    return Array.from(locs).sort() as string[];
+  }, [locationData]);
+
   // Filter entries based on config
   const filteredEntries = useMemo(() => {
     let result = [...entries];
     if (config.employeeScope === "department" && config.selectedDepartments.length > 0) {
       result = result.filter((e: any) => config.selectedDepartments.includes(e.employees?.department));
+    }
+    if (config.employeeScope === "location" && config.selectedLocations.length > 0) {
+      const employeeIdsAtLocations = new Set(
+        locationData
+          .filter(l => config.selectedLocations.includes(l.location_name))
+          .map(l => l.employee_id)
+      );
+      result = result.filter((e: any) => employeeIdsAtLocations.has(e.employee_id));
     }
     if (config.employeeScope === "custom" && config.selectedEmployeeIds.length > 0) {
       result = result.filter((e: any) => config.selectedEmployeeIds.includes(e.employee_id));
@@ -341,7 +359,7 @@ export function PayrollReportBuilder({
               <div className="space-y-3">
                 <Select
                   value={config.employeeScope}
-                  onValueChange={(v) => setConfig((p) => ({ ...p, employeeScope: v as any, selectedDepartments: [], selectedEmployeeIds: [] }))}
+                  onValueChange={(v) => setConfig((p) => ({ ...p, employeeScope: v as any, selectedDepartments: [], selectedLocations: [], selectedEmployeeIds: [] }))}
                 >
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue />
@@ -349,6 +367,9 @@ export function PayrollReportBuilder({
                   <SelectContent>
                     <SelectItem value="all">All Employees</SelectItem>
                     <SelectItem value="department">Filter by Department</SelectItem>
+                    {availableLocations.length > 0 && (
+                      <SelectItem value="location">Filter by Location</SelectItem>
+                    )}
                     <SelectItem value="custom">Select Specific Employees</SelectItem>
                   </SelectContent>
                 </Select>
@@ -371,6 +392,30 @@ export function PayrollReportBuilder({
                             }}
                           />
                           <span className="text-xs">{dept}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {config.employeeScope === "location" && availableLocations.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Locations</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableLocations.map((loc) => (
+                        <label key={loc} className="flex items-center gap-1.5 cursor-pointer">
+                          <Checkbox
+                            checked={config.selectedLocations.includes(loc)}
+                            onCheckedChange={(checked) => {
+                              setConfig((p) => ({
+                                ...p,
+                                selectedLocations: checked
+                                  ? [...p.selectedLocations, loc]
+                                  : p.selectedLocations.filter((l) => l !== loc),
+                              }));
+                            }}
+                          />
+                          <span className="text-xs">{loc}</span>
                         </label>
                       ))}
                     </div>
