@@ -155,6 +155,12 @@ const styles = StyleSheet.create({
     marginTop: 24,
     lineHeight: 1.5,
   },
+  onBehalfText: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Oblique",
+    color: "#333",
+    marginBottom: 8,
+  },
 });
 
 export interface SignatureRecord {
@@ -170,6 +176,7 @@ export interface SignatureRecord {
   consent_text: string;
   consent_given: boolean | null;
   document_hash: string | null;
+  signatory_title?: string | null;
 }
 
 interface SigningCertificatePDFProps {
@@ -261,14 +268,53 @@ export function SigningCertificatePDF({
           <Text style={styles.value}>Employee first, then Employer</Text>
         </View>
 
-        {/* Signatures */}
-        <Text style={styles.sectionTitle}>Signatures</Text>
+        {/* ═══ EMPLOYER SIGNATURE ═══ */}
+        <Text style={styles.sectionTitle}>Employer Signature</Text>
 
-        {/* Employee Signature */}
-        {employeeSig && (
+        {employerSig ? (
           <View style={styles.sigBlock}>
             <View style={styles.sigHeader}>
-              <Text style={styles.sigRole}>Employee Signature</Text>
+              <Text style={styles.sigRole}>Employer Signature</Text>
+              <View style={styles.sigBadge}>
+                <Text style={styles.sigBadgeText}>✓ SIGNED</Text>
+              </View>
+            </View>
+
+            <Text style={styles.onBehalfText}>
+              Signed for and on behalf of {companyName} by {employerSig.signer_name}
+              {employerSig.signatory_title ? `, ${employerSig.signatory_title}` : ""}
+            </Text>
+
+            {employerSig.signature_data && (
+              <Image src={employerSig.signature_data} style={styles.sigImage} />
+            )}
+
+            <Text style={styles.sigMeta}>Name: {employerSig.signer_name}</Text>
+            {employerSig.signatory_title && (
+              <Text style={styles.sigMeta}>Title: {employerSig.signatory_title}</Text>
+            )}
+            <Text style={styles.sigMeta}>Email: {employerSig.signed_by_email || "Not provided"}</Text>
+            <Text style={styles.sigMeta}>Date & Time: {formatDateTime(employerSig.signed_at)}</Text>
+            <Text style={styles.sigMeta}>IP Address: {employerSig.ip_address || "Not recorded"}</Text>
+            <Text style={styles.sigMeta}>Device: {truncateUA(employerSig.user_agent)}</Text>
+            <Text style={styles.sigMeta}>Signature method: {employerSig.signature_type || "drawn"}</Text>
+            {employerSig.document_hash && (
+              <Text style={styles.sigMeta}>Document hash at signing: {employerSig.document_hash.substring(0, 16)}...</Text>
+            )}
+          </View>
+        ) : (
+          <View style={{ ...styles.sigBlock, backgroundColor: "#fff8e1" }}>
+            <Text style={{ ...styles.sigRole, color: "#f57c00" }}>Employer Signature — Pending</Text>
+          </View>
+        )}
+
+        {/* ═══ TEAM MEMBER SIGNATURE ═══ */}
+        <Text style={styles.sectionTitle}>Team Member Signature</Text>
+
+        {employeeSig ? (
+          <View style={styles.sigBlock}>
+            <View style={styles.sigHeader}>
+              <Text style={styles.sigRole}>Team Member Signature</Text>
               <View style={styles.sigBadge}>
                 <Text style={styles.sigBadgeText}>✓ SIGNED</Text>
               </View>
@@ -278,77 +324,41 @@ export function SigningCertificatePDF({
               <Image src={employeeSig.signature_data} style={styles.sigImage} />
             )}
 
-            <Text style={styles.sigMeta}>Signed by: {employeeSig.signer_name}</Text>
-            <Text style={styles.sigMeta}>Typed name: {employeeSig.typed_name || employeeSig.signer_name}</Text>
+            <Text style={styles.sigMeta}>Name: {employeeSig.signer_name}</Text>
             <Text style={styles.sigMeta}>Email: {employeeSig.signed_by_email || "Not provided"}</Text>
             <Text style={styles.sigMeta}>Date & Time: {formatDateTime(employeeSig.signed_at)}</Text>
             <Text style={styles.sigMeta}>IP Address: {employeeSig.ip_address || "Not recorded"}</Text>
             <Text style={styles.sigMeta}>Device: {truncateUA(employeeSig.user_agent)}</Text>
-            <Text style={styles.sigMeta}>Signature type: {employeeSig.signature_type || "drawn"}</Text>
+            <Text style={styles.sigMeta}>Signature method: {employeeSig.signature_type || "drawn"}</Text>
             {employeeSig.document_hash && (
               <Text style={styles.sigMeta}>Document hash at signing: {employeeSig.document_hash.substring(0, 16)}...</Text>
             )}
           </View>
-        )}
-
-        {/* Employer Signature */}
-        {employerSig && (
-          <View style={styles.sigBlock}>
-            <View style={styles.sigHeader}>
-              <Text style={styles.sigRole}>Employer Signature</Text>
-              <View style={styles.sigBadge}>
-                <Text style={styles.sigBadgeText}>✓ SIGNED</Text>
-              </View>
-            </View>
-
-            {employerSig.signature_data && (
-              <Image src={employerSig.signature_data} style={styles.sigImage} />
-            )}
-
-            <Text style={styles.sigMeta}>Signed by: {employerSig.signer_name}</Text>
-            <Text style={styles.sigMeta}>Typed name: {employerSig.typed_name || employerSig.signer_name}</Text>
-            <Text style={styles.sigMeta}>Email: {employerSig.signed_by_email || "Not provided"}</Text>
-            <Text style={styles.sigMeta}>Date & Time: {formatDateTime(employerSig.signed_at)}</Text>
-            <Text style={styles.sigMeta}>IP Address: {employerSig.ip_address || "Not recorded"}</Text>
-            <Text style={styles.sigMeta}>Device: {truncateUA(employerSig.user_agent)}</Text>
-            <Text style={styles.sigMeta}>Signature type: {employerSig.signature_type || "drawn"}</Text>
-            {employerSig.document_hash && (
-              <Text style={styles.sigMeta}>Document hash at signing: {employerSig.document_hash.substring(0, 16)}...</Text>
-            )}
-          </View>
-        )}
-
-        {!employeeSig && (
+        ) : (
           <View style={{ ...styles.sigBlock, backgroundColor: "#fff8e1" }}>
-            <Text style={{ ...styles.sigRole, color: "#f57c00" }}>Employee Signature — Pending</Text>
+            <Text style={{ ...styles.sigRole, color: "#f57c00" }}>Team Member Signature — Pending</Text>
           </View>
         )}
 
-        {!employerSig && (
-          <View style={{ ...styles.sigBlock, backgroundColor: "#fff8e1" }}>
-            <Text style={{ ...styles.sigRole, color: "#f57c00" }}>Employer Signature — Pending</Text>
-          </View>
-        )}
-
-        {/* Consent Record */}
+        {/* Consent Records */}
         {(employeeSig || employerSig) && (
           <>
             <Text style={styles.sectionTitle}>Consent Records</Text>
-            {employeeSig && (
-              <View style={styles.certBox}>
-                <Text style={styles.certTitle}>Employee Consent</Text>
-                <Text style={styles.certText}>{employeeSig.consent_text}</Text>
-                <Text style={{ ...styles.certText, marginTop: 2 }}>
-                  Consent given: {employeeSig.consent_given ? "Yes" : "No"}
-                </Text>
-              </View>
-            )}
             {employerSig && (
               <View style={styles.certBox}>
                 <Text style={styles.certTitle}>Employer Consent</Text>
                 <Text style={styles.certText}>{employerSig.consent_text}</Text>
                 <Text style={{ ...styles.certText, marginTop: 2 }}>
                   Consent given: {employerSig.consent_given ? "Yes" : "No"}
+                </Text>
+              </View>
+            )}
+            {employeeSig && (
+              <View style={styles.certBox}>
+                <Text style={styles.certTitle}>Team Member Consent</Text>
+                <Text style={styles.certText}>{employeeSig.consent_text}</Text>
+                <Text style={{ ...styles.certText, marginTop: 2 }}>
+                  Consent given: {employeeSig.consent_given ? "Yes" : "No"}
                 </Text>
               </View>
             )}
