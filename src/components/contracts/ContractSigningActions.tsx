@@ -24,7 +24,10 @@ import {
 } from "@/hooks/useContractSigning";
 import { useSendContractEmail } from "@/hooks/useSendContractEmail";
 import { supabase } from "@/integrations/supabase/client";
-import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown } from "lucide-react";
+import { pdf } from "@react-pdf/renderer";
+import { SigningCertificatePDF } from "./SigningCertificatePDF";
+import type { SignatureRecord } from "./SigningCertificatePDF";
+import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award } from "lucide-react";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -36,6 +39,8 @@ interface ContractSigningActionsProps {
   contractSentTo?: string | null;
   finalSignedFilePath?: string | null;
   filePath?: string | null;
+  documentName?: string;
+  companyName?: string;
 }
 
 export function ContractSigningActions({
@@ -48,6 +53,8 @@ export function ContractSigningActions({
   contractSentTo,
   finalSignedFilePath,
   filePath,
+  documentName = "Employment Contract",
+  companyName = "Ugly Dumpling",
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -56,6 +63,7 @@ export function ContractSigningActions({
   const [generatedTokenId, setGeneratedTokenId] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(contractSendStatus === "sent");
+  const [downloadingCert, setDownloadingCert] = useState(false);
 
   const generateLink = useGenerateSigningLink();
   const { sendContractEmail } = useSendContractEmail();
@@ -66,7 +74,6 @@ export function ContractSigningActions({
   const employerSigned = signatures?.some((s) => s.signer_type === "employer");
   const bothSigned = employeeSigned && employerSigned;
 
-  // Derive the contract signing stage for display
   const getSigningStage = () => {
     if (bothSigned) return "fully_signed";
     if (employeeSigned && !employerSigned) return "employee_signed";
@@ -100,7 +107,6 @@ export function ContractSigningActions({
   };
 
   const handleViewFinalContract = async () => {
-    // Always generate a fresh signed URL on-demand from the durable file path
     const pathToUse = finalSignedFilePath || filePath;
     if (pathToUse) {
       const { data } = await supabase.storage
@@ -111,6 +117,68 @@ export function ContractSigningActions({
       } else {
         toast({ title: "Error", description: "Could not generate download link", variant: "destructive" });
       }
+    }
+  };
+
+  const handleDownloadSigningCertificate = async () => {
+    if (!signatures || signatures.length === 0) return;
+    setDownloadingCert(true);
+    try {
+      // Fetch full signature details including signature_data
+      const { data: fullSigs, error } = await supabase
+        .from("contract_signatures")
+        .select("*")
+        .eq("employee_document_id", documentId)
+        .order("signed_at", { ascending: true });
+
+      if (error || !fullSigs) throw error;
+
+      // Fetch document hash
+      const { data: docRecord } = await supabase
+        .from("employee_documents")
+        .select("final_document_hash")
+        .eq("id", documentId)
+        .maybeSingle();
+
+      const sigRecords: SignatureRecord[] = fullSigs.map((s) => ({
+        signer_type: s.signer_type,
+        signer_name: s.signer_name,
+        typed_name: s.typed_name,
+        signed_at: s.signed_at,
+        signed_by_email: s.signed_by_email,
+        ip_address: s.ip_address,
+        user_agent: s.user_agent,
+        signature_data: s.signature_data,
+        signature_type: s.signature_type,
+        consent_text: s.consent_text,
+        consent_given: s.consent_given,
+        document_hash: s.document_hash,
+      }));
+
+      const blob = await pdf(
+        <SigningCertificatePDF
+          documentName={documentName}
+          employeeName={employeeName}
+          companyName={companyName}
+          signatures={sigRecords}
+          documentId={documentId}
+          finalDocumentHash={docRecord?.final_document_hash}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Signing_Certificate_${employeeName.replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Certificate download error:", err);
+      toast({ title: "Error", description: "Could not generate signing certificate", variant: "destructive" });
+    } finally {
+      setDownloadingCert(false);
     }
   };
 
@@ -130,10 +198,7 @@ export function ContractSigningActions({
 
       if (result.success) {
         setEmailSent(true);
-        toast({
-          title: "Contract sent",
-          description: `Contract sent to ${employeeEmail}`,
-        });
+        toast({ title: "Contract sent", description: `Contract sent to ${employeeEmail}` });
       } else {
         toast({
           title: "Email failed",
@@ -167,11 +232,21 @@ export function ContractSigningActions({
                 size="icon"
                 className="h-7 w-7"
                 onClick={handleViewFinalContract}
-                title="View final signed contract"
+                title="View contract"
               >
                 <FileDown className="h-3.5 w-3.5" />
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleDownloadSigningCertificate}
+              disabled={downloadingCert}
+              title="Download signing certificate"
+            >
+              <Award className="h-3.5 w-3.5" />
+            </Button>
           </>
         )}
         {signingStage === "employee_signed" && (
@@ -241,7 +316,32 @@ export function ContractSigningActions({
                   </Badge>
                 )}
               </div>
+
+              {/* Show signing details if signatures exist */}
+              {signatures && signatures.length > 0 && (
+                <div className="pt-2 mt-2 border-t border-border space-y-1">
+                  {signatures.map((sig, i) => (
+                    <div key={i} className="text-[10px] text-muted-foreground">
+                      <span className="capitalize font-medium">{sig.signer_type}</span>: {sig.signer_name} —{" "}
+                      {new Date(sig.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Download signing certificate if any signatures exist */}
+            {signatures && signatures.length > 0 && (
+              <Button
+                onClick={handleDownloadSigningCertificate}
+                disabled={downloadingCert}
+                variant="outline"
+                className="w-full"
+              >
+                {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <Award className="h-4 w-4" />}
+                Download Signing Certificate
+              </Button>
+            )}
 
             {/* Generate new link */}
             {!generatedLink ? (
