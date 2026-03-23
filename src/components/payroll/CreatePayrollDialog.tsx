@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useCreatePayrollPeriod, useCopyPayrollPeriod, usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
 import { supabase } from "@/integrations/supabase/client";
-import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
+import { suggestNextPeriod, getLastThursday } from "@/lib/payroll-period-suggestion";
 
 interface CreatePayrollDialogProps {
   onSuccess?: () => void;
@@ -113,15 +113,6 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     }
   };
 
-  const getLastThursday = (year: number, month: number): string => {
-    const lastDay = new Date(year, month + 1, 0);
-    const dayOfWeek = lastDay.getDay();
-    const diff = (dayOfWeek + 7 - 4) % 7;
-    const lastThursday = new Date(lastDay);
-    lastThursday.setDate(lastDay.getDate() - diff);
-    return lastThursday.toISOString().split('T')[0];
-  };
-
   const deriveFromDates = (start: string, end: string) => {
     if (!start || !end) return;
     const s = new Date(start);
@@ -131,7 +122,8 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     const monthNames = ["January", "February", "March", "April", "May", "June",
       "July", "August", "September", "October", "November", "December"];
     setPeriodName(`${monthNames[e.getMonth()]} ${e.getFullYear()}`);
-    setPayDate(getLastThursday(e.getFullYear(), e.getMonth()));
+    const payThu = getLastThursday(e.getFullYear(), e.getMonth());
+    setPayDate(payThu.toISOString().split('T')[0]);
   };
 
   const handleStartDateChange = (val: string) => {
