@@ -214,7 +214,8 @@ export function PayrollReportBuilder({
         const inEntries = filteredEntries.some((e: any) => e.employee_id === emp.id);
         const hasHP = hpEmpIds2.has(emp.id);
         if (!inEntries && !hasHP) return false;
-        return emp.status === "starter" || emp.status === "leaver" || hasHP;
+        const isGenuineStarter = emp.status === "starter" && !priorPeriodEmployeeIds.has(emp.id);
+        return isGenuineStarter || emp.status === "leaver" || hasHP;
       });
       const logoUrl = config.showLogo ? `${window.location.origin}/logo.jpeg` : undefined;
       const blob = await pdf(
@@ -223,6 +224,8 @@ export function PayrollReportBuilder({
           entries={filteredEntries}
           holidayPayments={holidayPayments}
           starters={starterEmployees}
+          priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+          priorEntryRates={priorEntryRates}
           isCorrection={!!period.notes?.includes("[CORRECTED]")}
           correctionNote={period.notes?.includes("[CORRECTED]") ? period.notes : undefined}
           logoUrl={logoUrl}
