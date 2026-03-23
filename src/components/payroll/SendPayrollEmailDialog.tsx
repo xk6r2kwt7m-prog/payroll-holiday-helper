@@ -106,11 +106,15 @@ export function SendPayrollEmailDialog({
     try {
       toast.info("Generating payroll PDF…");
 
-      const starterEmployees = allEmployees.filter(
-        (emp) =>
-          (emp.status === "starter" || emp.status === "leaver") &&
-          entries.some((e: any) => e.employee_id === emp.id)
-      );
+      const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+      const starterEmployees = allEmployees.filter((emp) => {
+        const inEntries = entries.some((e: any) => e.employee_id === emp.id);
+        const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
+        if (!inEntries && !hasHolidayPayment) return false;
+        const isLeaver = emp.status === "leaver" || hasHolidayPayment;
+        // Note: no priorPeriodEmployeeIds available here, so include all starters
+        return emp.status === "starter" || isLeaver;
+      });
 
       // Build report config using defaults — bank details excluded from starters if toggle is off
       const reportConfig: PayrollReportConfig = {

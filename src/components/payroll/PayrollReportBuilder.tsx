@@ -133,9 +133,14 @@ export function PayrollReportBuilder({
     setGenerating(true);
     try {
       toast.info("Generating PDF...");
-      const starterEmployees = allEmployees.filter(
-        (emp: any) => (emp.status === "starter" || emp.status === "leaver") && filteredEntries.some((e: any) => e.employee_id === emp.id)
-      );
+      const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+      const starterEmployees = allEmployees.filter((emp: any) => {
+        const inEntries = filteredEntries.some((e: any) => e.employee_id === emp.id);
+        const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
+        if (!inEntries && !hasHolidayPayment) return false;
+        const isLeaver = emp.status === "leaver" || hasHolidayPayment;
+        return emp.status === "starter" || isLeaver;
+      });
       const logoUrl = config.showLogo ? `${window.location.origin}/logo.jpeg` : undefined;
       const blob = await pdf(
         <PayrollPDF
@@ -197,9 +202,13 @@ export function PayrollReportBuilder({
     if (!period || filteredEntries.length === 0) return;
     setGenerating(true);
     try {
-      const starterEmployees = allEmployees.filter(
-        (emp: any) => (emp.status === "starter" || emp.status === "leaver") && filteredEntries.some((e: any) => e.employee_id === emp.id)
-      );
+      const hpEmpIds2 = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+      const starterEmployees = allEmployees.filter((emp: any) => {
+        const inEntries = filteredEntries.some((e: any) => e.employee_id === emp.id);
+        const hasHP = hpEmpIds2.has(emp.id);
+        if (!inEntries && !hasHP) return false;
+        return emp.status === "starter" || emp.status === "leaver" || hasHP;
+      });
       const logoUrl = config.showLogo ? `${window.location.origin}/logo.jpeg` : undefined;
       const blob = await pdf(
         <PayrollPDF

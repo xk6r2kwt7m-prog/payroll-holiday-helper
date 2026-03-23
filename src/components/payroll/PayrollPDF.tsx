@@ -331,6 +331,7 @@ interface PayrollPDFProps {
   entries: PayrollEntry[];
   holidayPayments?: HolidayPayment[];
   starters?: StarterEmployee[];
+  priorPeriodEmployeeIds?: Set<string>;
   companyName?: string;
   isCorrection?: boolean;
   correctionNote?: string;
@@ -352,6 +353,7 @@ export function PayrollPDF({
   entries,
   holidayPayments = [],
   starters = [],
+  priorPeriodEmployeeIds = new Set(),
   companyName = "Your Company",
   isCorrection = false,
   correctionNote,
@@ -433,8 +435,12 @@ export function PayrollPDF({
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  // Show all starters that appear in this period's entries
-  const eligibleStarters = starters;
+  // Filter: only genuine starters (not in prior period) and leavers
+  const eligibleStarters = starters.filter(s => {
+    if (s.status === 'leaver') return true;
+    if (s.status === 'starter' && !priorPeriodEmployeeIds.has(s.id)) return true;
+    return false;
+  });
 
   const getRTWStatus = (starter: StarterEmployee) => {
     const hasNI = !!starter.ni_number;
@@ -605,7 +611,7 @@ export function PayrollPDF({
                     {section.entries.map((entry, idx) => {
                       const emp = entry.employees;
                       const empStatus = emp?.status;
-                      const isStarter = empStatus === "starter";
+                      const isStarter = empStatus === "starter" && !priorPeriodEmployeeIds.has(entry.employee_id);
                       const isLeaver = empStatus === "leaver";
                       const rateChanged = emp && Math.abs(Number(entry.hourly_rate) - Number(emp.hourly_rate)) > 0.001;
                       const serviceChanged = emp && Math.abs(Number(entry.service_charge || 0) - Number(emp.service_charge || 0)) > 0.001;
