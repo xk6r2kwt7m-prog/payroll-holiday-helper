@@ -204,6 +204,7 @@ export function SignedContractsList() {
                   contractSentTo={(contract as any).contract_sent_to}
                   finalSignedFilePath={(contract as any).final_signed_pdf_url}
                   filePath={contract.file_path}
+                  documentName={contract.document_name}
                 />
                 <Button
                   variant="ghost"
