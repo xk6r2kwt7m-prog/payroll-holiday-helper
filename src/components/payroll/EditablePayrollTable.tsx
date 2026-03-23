@@ -316,6 +316,86 @@ export function EditablePayrollTable({
     if (!pendingSave) return;
     const { entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus } = pendingSave;
     setNoteDialogOpen(false);
+
+    // Record structured adjustment audit entries
+    const adjustmentRows: {
+      payroll_period_id: string;
+      payroll_entry_id: string;
+      employee_id: string;
+      field_name: string;
+      old_value: number | null;
+      new_value: number | null;
+      note?: string;
+    }[] = [];
+
+    const emp = entry.employees;
+    const importedHours = entry.imported_hours;
+
+    if (importedHours !== null && Math.abs(hours - importedHours) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "timesheet_hours",
+        old_value: importedHours,
+        new_value: hours,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+    if (emp && Math.abs(hourlyRate - Number(emp.hourly_rate)) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "hourly_rate",
+        old_value: Number(emp.hourly_rate),
+        new_value: hourlyRate,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+    if (emp && Math.abs(serviceCharge - Number(emp.service_charge || 0)) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "service_charge",
+        old_value: Number(emp.service_charge || 0),
+        new_value: serviceCharge,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+    if (Math.abs(perfBonus - Number(entry.performance_bonus || 0)) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "performance_bonus",
+        old_value: Number(entry.performance_bonus || 0),
+        new_value: perfBonus,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+    if (Math.abs(specBonus - Number(entry.special_bonus || 0)) > 0.001) {
+      adjustmentRows.push({
+        payroll_period_id: periodId,
+        payroll_entry_id: entry.id,
+        employee_id: entry.employee_id,
+        field_name: "special_bonus",
+        old_value: Number(entry.special_bonus || 0),
+        new_value: specBonus,
+        note: adjustmentNote || "Manual adjustment",
+      });
+    }
+
+    if (adjustmentRows.length > 0) {
+      try {
+        await createAdjustment.mutateAsync(adjustmentRows);
+      } catch {
+        // Non-fatal: adjustment audit is supplementary
+        console.error("Failed to record adjustment audit");
+      }
+    }
+
     await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, adjustmentNote || "Manual adjustment");
     setPendingSave(null);
     setAdjustmentNote("");
