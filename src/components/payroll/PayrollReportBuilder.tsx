@@ -70,6 +70,9 @@ export function PayrollReportBuilder({
   });
   const [generating, setGenerating] = useState(false);
 
+  // Fetch location data for this period
+  const { data: locationData = [] } = usePayrollEntryLocations(period?.id);
+
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -95,11 +98,25 @@ export function PayrollReportBuilder({
     return Array.from(depts) as string[];
   }, [entries]);
 
+  // Get unique locations from location data
+  const availableLocations = useMemo(() => {
+    const locs = new Set(locationData.map(l => l.location_name));
+    return Array.from(locs).sort() as string[];
+  }, [locationData]);
+
   // Filter entries based on config
   const filteredEntries = useMemo(() => {
     let result = [...entries];
     if (config.employeeScope === "department" && config.selectedDepartments.length > 0) {
       result = result.filter((e: any) => config.selectedDepartments.includes(e.employees?.department));
+    }
+    if (config.employeeScope === "location" && config.selectedLocations.length > 0) {
+      const employeeIdsAtLocations = new Set(
+        locationData
+          .filter(l => config.selectedLocations.includes(l.location_name))
+          .map(l => l.employee_id)
+      );
+      result = result.filter((e: any) => employeeIdsAtLocations.has(e.employee_id));
     }
     if (config.employeeScope === "custom" && config.selectedEmployeeIds.length > 0) {
       result = result.filter((e: any) => config.selectedEmployeeIds.includes(e.employee_id));
