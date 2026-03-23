@@ -287,7 +287,17 @@ export function ContractSigningActions({
           variant="ghost"
           size="icon"
           className="h-9 w-9"
-          onClick={() => { setOpen(true); setGeneratedLink(null); setGeneratedTokenId(null); }}
+          onClick={() => {
+            setOpen(true);
+            setGeneratedLink(null);
+            setGeneratedTokenId(null);
+            // Pre-select the correct signer type based on current state
+            if (employeeSigned && !employerSigned) {
+              setSignerType("employer");
+            } else {
+              setSignerType("employee");
+            }
+          }}
           title="Contract signing options"
         >
           <Send className="h-4 w-4" />
