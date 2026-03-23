@@ -25,10 +25,8 @@ import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { cn } from "@/lib/utils";
-
 interface AddHolidayPaymentDialogProps {
   defaultEmployeeId?: string;
   onSuccess?: () => void;
@@ -48,32 +46,28 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
 
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
-  const { data: allPayments = [] } = useAllHolidayPayments();
   const createPayment = useCreateHolidayPayment();
   const { sendNotification } = useNotifications();
   const { data: companySettings } = useCompanySettings();
-  const { data: allEntriesWithPeriod = [] } = useQuery({
-    queryKey: ["payroll_entries", "all_accrual_with_period"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payroll_entries")
-        .select("employee_id, payroll_period_id, holiday_accrued_hours")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
 
-  const { data: adjustments = [] } = useQuery({
-    queryKey: ["holiday_adjustments"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("holiday_adjustments")
-        .select("*");
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Shared single-source-of-truth balance from the holiday ledger
+  const { summary: employeeSummaryRaw } = useHolidayYearSummary(
+    employeeId || undefined,
+    parseInt(summaryYear)
+  );
+
+  // Map to the shape the rest of the component expects
+  const employeeSummary = useMemo(() => {
+    if (!employeeSummaryRaw) return null;
+    return {
+      totalAccrued: employeeSummaryRaw.accruedHours,
+      totalTaken: employeeSummaryRaw.takenHours,
+      totalPaid: employeeSummaryRaw.paidAmount,
+      carryOver: employeeSummaryRaw.carryOverHours,
+      balance: employeeSummaryRaw.availableHours,
+      leaveYear: employeeSummaryRaw.leaveYear,
+    };
+  }, [employeeSummaryRaw]);
 
   const allEmployeesSorted = useMemo(() => {
     return [...employees].sort((a, b) => {
@@ -88,89 +82,25 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const selectedEmployee = employees.find(e => e.id === employeeId);
   const isLeaver = selectedEmployee?.status === "leaver";
 
-  // Calculate holiday summary scoped to the selected summaryYear
-  const employeeSummary = useMemo(() => {
-    if (!employeeId) return null;
-
-    const leaveYear = parseInt(summaryYear);
-    const leaveYearStart = `${leaveYear}-01-01`;
-    const leaveYearEnd = `${leaveYear}-12-31`;
-
-    // Filter payroll entries by periods that fall within the leave year
-    // We need period info to scope accruals — but we only have employee_id + holiday_accrued_hours
-    // Since allEntries doesn't have period dates, we use a broader query approach:
-    // For now, sum accruals from payroll entries whose periods overlap with the leave year
-    const periodIdsInYear = periods
-      .filter(p => {
-        const pStart = p.start_date;
-        const pEnd = p.end_date;
-        return pEnd >= leaveYearStart && pStart <= leaveYearEnd;
-      })
-      .map(p => p.id);
-
-    // We need entries with period info — use allEntries which has employee_id
-    // But allEntries doesn't have payroll_period_id. Let's fetch it differently.
-    // Actually allEntries query only selects employee_id + holiday_accrued_hours.
-    // We need to also fetch payroll_period_id. Let's update the query.
-    // For now, use allEntriesWithPeriod instead.
-
-    const totalAccrued = allEntriesWithPeriod
-      .filter(e => e.employee_id === employeeId && periodIdsInYear.includes(e.payroll_period_id))
-      .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
-
-    const accrualAdj = adjustments
-      .filter((a: any) => a.employee_id === employeeId && a.adjustment_type === "accrued" &&
-        a.leave_year_start === leaveYearStart && a.leave_year_end === leaveYearEnd)
-      .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-
-    const totalTaken = allPayments
-      .filter((p: any) => p.employee_id === employeeId &&
-        p.leave_year_start === leaveYearStart && p.leave_year_end === leaveYearEnd)
-      .reduce((sum: number, p: any) => sum + (p.hours || 0), 0);
-
-    const takenAdj = adjustments
-      .filter((a: any) => a.employee_id === employeeId && a.adjustment_type === "taken" &&
-        a.leave_year_start === leaveYearStart && a.leave_year_end === leaveYearEnd)
-      .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-
-    const totalPaid = allPayments
-      .filter((p: any) => p.employee_id === employeeId &&
-        p.leave_year_start === leaveYearStart && p.leave_year_end === leaveYearEnd)
-      .reduce((sum: number, p: any) => sum + (p.total || 0), 0);
-
-    const adjustedAccrued = totalAccrued + accrualAdj;
-    const adjustedTaken = totalTaken + takenAdj;
-    const balance = adjustedAccrued - adjustedTaken;
-
-    return { totalAccrued: adjustedAccrued, totalTaken: adjustedTaken, totalPaid, balance, leaveYear };
-  }, [employeeId, allEntriesWithPeriod, allPayments, adjustments, summaryYear, periods]);
-
   const handleEmployeeChange = (id: string) => {
     setEmployeeId(id);
     setLeaverApproved(false);
     const emp = employees.find(e => e.id === id);
     if (emp) {
       setRate(emp.hourly_rate.toString());
-      // For leavers, auto-fill the remaining balance
+      // For leavers, balance will be auto-filled via useEffect below
       if (emp.status === "leaver") {
-        const accrued = allEntriesWithPeriod
-          .filter(e => e.employee_id === id)
-          .reduce((sum, e) => sum + (e.holiday_accrued_hours || 0), 0);
-        const accrualAdj = adjustments
-          .filter((a: any) => a.employee_id === id && a.adjustment_type === "accrued")
-          .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-        const taken = allPayments
-          .filter((p: any) => p.employee_id === id)
-          .reduce((sum: number, p: any) => sum + (p.hours || 0), 0);
-        const takenAdj = adjustments
-          .filter((a: any) => a.employee_id === id && a.adjustment_type === "taken")
-          .reduce((sum: number, a: any) => sum + Number(a.hours), 0);
-        const balance = (accrued + accrualAdj) - (taken + takenAdj);
-        setHours(Math.max(0, balance).toFixed(2));
         setNotes("Leaver settlement — full holiday balance payout");
       }
     }
   };
+
+  // Auto-fill leaver hours from the shared summary once it loads
+  useMemo(() => {
+    if (isLeaver && employeeSummary && employeeSummary.balance > 0) {
+      setHours(Math.max(0, employeeSummary.balance).toFixed(2));
+    }
+  }, [isLeaver, employeeSummary]);
 
   const total = (parseFloat(hours) || 0) * (parseFloat(rate) || 0);
 
@@ -362,17 +292,23 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                   <span className="text-muted-foreground">Accrued:</span>
                   <span className="font-medium text-success">{formatHours(employeeSummary.totalAccrued)} hrs</span>
                 </div>
+                {employeeSummary.carryOver > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Carry over:</span>
+                    <span className="font-medium text-accent">{formatHours(employeeSummary.carryOver)} hrs</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taken:</span>
                   <span className="font-medium text-primary">{formatHours(employeeSummary.totalTaken)} hrs</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Balance:</span>
+                  <span className="text-muted-foreground">Available:</span>
                   <span className={cn(
                     "font-bold",
                     employeeSummary.balance >= 0 ? "text-accent" : "text-destructive"
                   )}>
-                    {employeeSummary.balance >= 0 ? "+" : ""}{formatHours(employeeSummary.balance)} hrs
+                    {formatHours(employeeSummary.balance)} hrs
                   </span>
                 </div>
                 <div className="flex justify-between">
