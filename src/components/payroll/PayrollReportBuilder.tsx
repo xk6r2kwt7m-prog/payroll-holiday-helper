@@ -212,6 +212,7 @@ export function PayrollReportBuilder({
           logoUrl={logoUrl}
           reportConfig={config}
           companyName={companyName}
+          locationData={locationData}
         />
       ).toBlob();
 
