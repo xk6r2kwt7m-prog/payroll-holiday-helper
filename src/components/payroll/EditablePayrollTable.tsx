@@ -111,6 +111,7 @@ export function EditablePayrollTable({
   onExport,
   showBonusColumn = true,
   showServiceCharge = true,
+  priorPeriodEmployeeIds = new Set(),
 }: EditablePayrollTableProps) {
   const { data: leaveRules } = useLeaveRules();
   const [editingId, setEditingId] = useState<string | null>(null);
