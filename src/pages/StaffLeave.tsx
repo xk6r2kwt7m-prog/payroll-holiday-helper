@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { HolidayRequestForm } from "@/components/holidays/HolidayRequestForm";
 import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
 import { useMyHolidayRequests } from "@/hooks/useHolidayRequests";
-import { useHolidayBalances } from "@/hooks/useHolidays";
+import { useHolidayLedgerBalance } from "@/hooks/useHolidayLedger";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/hooks/useI18n";
