@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
 import { useCreatePayrollAdjustment, usePayrollAdjustments, usePriorPeriodAdjustments } from "@/hooks/usePayrollAdjustments";
@@ -22,7 +22,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -127,6 +130,7 @@ export function EditablePayrollTable({
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
   const [removeEmployeeName, setRemoveEmployeeName] = useState("");
+  const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "department" | "status" | "hours_desc" | "hours_asc">("default");
 
   // Adjustment note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
@@ -143,6 +147,42 @@ export function EditablePayrollTable({
   
   const existingEmployeeIds = entries.map(e => e.employee_id);
 
+  const DEPT_ORDER: Record<string, number> = { FOH: 0, BOH: 1, CPU: 2 };
+  const STATUS_ORDER: Record<string, number> = { active: 0, starter: 1, leaver: 2 };
+
+  const sortedEntries = useMemo(() => {
+    const sorted = [...entries];
+    switch (sortMode) {
+      case "alphabetical":
+        return sorted.sort((a, b) => {
+          const sA = a.employees?.surname?.toLowerCase() ?? "";
+          const sB = b.employees?.surname?.toLowerCase() ?? "";
+          if (sA !== sB) return sA.localeCompare(sB);
+          return (a.employees?.forename?.toLowerCase() ?? "").localeCompare(b.employees?.forename?.toLowerCase() ?? "");
+        });
+      case "department":
+        return sorted.sort((a, b) => {
+          const dA = a.employees?.department ?? "";
+          const dB = b.employees?.department ?? "";
+          const oA = DEPT_ORDER[dA] ?? 99;
+          const oB = DEPT_ORDER[dB] ?? 99;
+          if (oA !== oB) return oA - oB;
+          return dA.localeCompare(dB);
+        });
+      case "status":
+        return sorted.sort((a, b) => {
+          const sA = STATUS_ORDER[a.employees?.status ?? "active"] ?? 99;
+          const sB = STATUS_ORDER[b.employees?.status ?? "active"] ?? 99;
+          return sA - sB;
+        });
+      case "hours_desc":
+        return sorted.sort((a, b) => b.timesheet_hours - a.timesheet_hours);
+      case "hours_asc":
+        return sorted.sort((a, b) => a.timesheet_hours - b.timesheet_hours);
+      default:
+        return sorted;
+    }
+  }, [entries, sortMode]);
   const handleRemoveFromPeriod = async () => {
     if (!removeEntryId) return;
     try {
@@ -542,6 +582,20 @@ export function EditablePayrollTable({
               + Bank
             </Button>
           )}
+          <Select value={sortMode} onValueChange={(v) => setSortMode(v as any)}>
+            <SelectTrigger className="h-8 w-[140px] text-xs">
+              <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">Default</SelectItem>
+              <SelectItem value="alphabetical">A–Z (Surname)</SelectItem>
+              <SelectItem value="department">Department</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
+              <SelectItem value="hours_desc">Hours ↓</SelectItem>
+              <SelectItem value="hours_asc">Hours ↑</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       
@@ -570,7 +624,7 @@ export function EditablePayrollTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entries.map((entry) => {
+            {sortedEntries.map((entry) => {
               const isEditing = editingId === entry.id;
               const emp = entry.employees;
               const isSelected = selectedIds.has(entry.id);
@@ -608,6 +662,11 @@ export function EditablePayrollTable({
                         {emp?.status === "starter" && !priorPeriodEmployeeIds?.has(entry.employee_id) && (
                           <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
                             Starter
+                          </Badge>
+                        )}
+                        {emp?.status === "leaver" && (
+                          <Badge variant="outline" className="ml-2 text-xs bg-destructive/10 text-destructive border-destructive/20">
+                            Leaver
                           </Badge>
                         )}
                         <AdjustmentHistoryDrawer
