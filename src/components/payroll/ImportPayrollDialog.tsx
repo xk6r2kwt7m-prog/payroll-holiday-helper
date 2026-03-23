@@ -170,7 +170,7 @@ interface ImportDialogProps {
   selectedPeriod?: { id: string; period_name: string; start_date: string; end_date: string; pay_date: string | null; status: string } | null;
 }
 
-export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
+export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incomingPeriod }: ImportDialogProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [periodName, setPeriodName] = useState("");
