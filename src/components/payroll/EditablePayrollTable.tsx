@@ -91,6 +91,8 @@ interface EditablePayrollTableProps {
   onExport: (includeBank: boolean) => void;
   showBonusColumn?: boolean;
   showServiceCharge?: boolean;
+  /** Employee IDs that appeared in a prior payroll period (used to suppress "Starter" badge) */
+  priorPeriodEmployeeIds?: Set<string>;
 }
 
 interface EditingEntry {
