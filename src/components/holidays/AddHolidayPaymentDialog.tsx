@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Calendar, AlertTriangle, User, UserMinus, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -96,7 +96,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   };
 
   // Auto-fill leaver hours from the shared summary once it loads
-  useMemo(() => {
+  useEffect(() => {
     if (isLeaver && employeeSummary && employeeSummary.balance > 0) {
       setHours(Math.max(0, employeeSummary.balance).toFixed(2));
     }
