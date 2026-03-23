@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
+const CANONICAL_APP_URL = "https://udp.lovable.app";
+
 async function sha256(content: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(content);
@@ -88,7 +90,7 @@ Deno.serve(async (req) => {
       // Check existing signatures
       const { data: existingSigs } = await supabase
         .from("contract_signatures")
-        .select("signer_type")
+        .select("signer_type, signer_name, signed_at, signature_data")
         .eq("employee_document_id", signingToken.employee_document_id);
 
       const existingSignerTypes = (existingSigs || []).map((s: any) => s.signer_type);
@@ -109,6 +111,12 @@ Deno.serve(async (req) => {
         document_hash: docHash,
         expires_at: signingToken.expires_at,
         existing_signatures: existingSignerTypes,
+        // Include signature details for display on signing page
+        signature_details: (existingSigs || []).map((s: any) => ({
+          signer_type: s.signer_type,
+          signer_name: s.signer_name,
+          signed_at: s.signed_at,
+        })),
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -236,7 +244,7 @@ Deno.serve(async (req) => {
       // Check if BOTH signatures now exist
       const { data: allSigs } = await supabase
         .from("contract_signatures")
-        .select("signer_type, signed_at")
+        .select("signer_type, signed_at, signer_name, signature_data, ip_address, user_agent, signed_by_email")
         .eq("employee_document_id", signingToken.employee_document_id);
 
       const signerTypes = (allSigs || []).map((s: any) => s.signer_type);
@@ -257,8 +265,7 @@ Deno.serve(async (req) => {
         const finalContent = `${signingToken.employee_document_id}:${docRecord?.file_path || ""}:fully_signed:${signedAt}`;
         const finalHash = await sha256(finalContent);
 
-        // Store durable file path reference — NOT a temporary signed URL
-        // Signed access URLs are generated on-demand when viewing/downloading
+        // Store durable file path reference
         await supabase
           .from("employee_documents")
           .update({
@@ -275,7 +282,6 @@ Deno.serve(async (req) => {
           } as any)
           .eq("id", signingToken.employee_document_id);
       } else if (currentSignerType === "employer") {
-        // Employer signed but employee hasn't yet — unusual but handle it
         await supabase
           .from("employee_documents")
           .update({
@@ -319,18 +325,25 @@ Deno.serve(async (req) => {
       });
 
       if (fullySignedNow) {
-        // FULLY SIGNED — send final completion email to employee
-        // Generate a fresh short-lived signed URL for the email download link
+        // ── FULLY SIGNED ──
+        // Generate a fresh download link for the email
+        const { data: docRecord2 } = await supabase
+          .from("employee_documents")
+          .select("file_path")
+          .eq("id", signingToken.employee_document_id)
+          .maybeSingle();
+
+        let emailDownloadUrl = "";
+        if (docRecord2?.file_path) {
+          const { data: freshSignedUrl } = await supabase.storage
+            .from("employee-documents")
+            .createSignedUrl(docRecord2.file_path, 60 * 60 * 24 * 7); // 7-day link
+          emailDownloadUrl = freshSignedUrl?.signedUrl || "";
+        }
+
+        // Send completion email to EMPLOYEE
         const recipientEmail = signingToken.employees?.email;
         if (recipientEmail) {
-          let emailDownloadUrl = "";
-          if (docRecord?.file_path) {
-            const { data: freshSignedUrl } = await supabase.storage
-              .from("employee-documents")
-              .createSignedUrl(docRecord.file_path, 60 * 60 * 24 * 7); // 7-day link for email
-            emailDownloadUrl = freshSignedUrl?.signedUrl || "";
-          }
-
           try {
             await supabase.functions.invoke("send-notification", {
               body: {
@@ -347,8 +360,49 @@ Deno.serve(async (req) => {
               },
             });
           } catch (emailErr) {
-            console.error("Contract fully-signed email failed:", emailErr);
+            console.error("Contract fully-signed email to employee failed:", emailErr);
           }
+        }
+
+        // Send completion email to MANAGER(S) too
+        try {
+          const { data: admins } = await supabase
+            .from("tenant_members")
+            .select("user_id")
+            .eq("tenant_id", signingToken.tenant_id)
+            .in("role", ["company_admin", "manager"])
+            .eq("is_active", true);
+
+          if (admins && admins.length > 0) {
+            for (const admin of admins) {
+              const { data: { user: adminUser } } = await supabase.auth.admin.getUserById(admin.user_id);
+              const adminEmail = adminUser?.email;
+              if (adminEmail) {
+                const { data: profile } = await supabase
+                  .from("profiles")
+                  .select("full_name")
+                  .eq("user_id", admin.user_id)
+                  .maybeSingle();
+
+                await supabase.functions.invoke("send-notification", {
+                  body: {
+                    to: adminEmail,
+                    subject: `Contract complete — ${employeeName}`,
+                    type: "contract_fully_signed_manager",
+                    data: {
+                      employee_name: employeeName,
+                      admin_name: profile?.full_name || "Manager",
+                      signed_at: formattedDate,
+                      final_contract_url: emailDownloadUrl,
+                    },
+                    tenant_id: signingToken.tenant_id,
+                  },
+                });
+              }
+            }
+          }
+        } catch (notifyErr) {
+          console.error("Manager completion notification failed:", notifyErr);
         }
 
         // Log fully signed event
@@ -362,10 +416,17 @@ Deno.serve(async (req) => {
             employee_id: signingToken.employee_id,
             employee_document_id: signingToken.employee_document_id,
             signed_at: signedAt,
+            all_signatures: (allSigs || []).map((s: any) => ({
+              signer_type: s.signer_type,
+              signer_name: s.signer_name,
+              signed_at: s.signed_at,
+              signed_by_email: s.signed_by_email,
+              ip_address: s.ip_address,
+            })),
           },
         });
       } else if (currentSignerType === "employee") {
-        // EMPLOYEE SIGNED ONLY — send acknowledgment to employee (not completion)
+        // ── EMPLOYEE SIGNED ── Send acknowledgment to employee
         if (signedByEmail) {
           try {
             await supabase.functions.invoke("send-notification", {
@@ -386,7 +447,7 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Notify manager/admin that employer countersignature is now required
+        // ── AUTO-GENERATE EMPLOYER SIGNING TOKEN & SEND TO MANAGER ──
         try {
           const { data: admins } = await supabase
             .from("tenant_members")
@@ -396,37 +457,73 @@ Deno.serve(async (req) => {
             .eq("is_active", true);
 
           if (admins && admins.length > 0) {
-            // Get admin emails from profiles
-            for (const admin of admins) {
-              const { data: profile } = await supabase
-                .from("profiles")
-                .select("full_name")
-                .eq("user_id", admin.user_id)
-                .maybeSingle();
+            // Generate employer signing token
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7);
 
-              // Get email from auth user via admin API
-              const { data: { user: adminUser } } = await supabase.auth.admin.getUserById(admin.user_id);
-              const adminEmail = adminUser?.email;
+            const { data: employerToken, error: tokenErr } = await supabase
+              .from("signing_tokens")
+              .insert({
+                employee_document_id: signingToken.employee_document_id,
+                employee_id: signingToken.employee_id,
+                signer_type: "employer",
+                expires_at: expiresAt.toISOString(),
+                tenant_id: signingToken.tenant_id,
+              })
+              .select()
+              .single();
 
-              if (adminEmail) {
-                await supabase.functions.invoke("send-notification", {
-                  body: {
-                    to: adminEmail,
-                    subject: `Employee signature received — your countersignature is required`,
-                    type: "contract_employer_action_required",
-                    data: {
-                      employee_name: employeeName,
-                      admin_name: profile?.full_name || "Manager",
-                      signed_at: formattedDate,
+            if (tokenErr) {
+              console.error("Failed to auto-generate employer token:", tokenErr);
+            } else {
+              const employerSigningUrl = `${CANONICAL_APP_URL}/sign/${employerToken.token}`;
+
+              // Send signing link to each admin/manager
+              for (const admin of admins) {
+                const { data: { user: adminUser } } = await supabase.auth.admin.getUserById(admin.user_id);
+                const adminEmail = adminUser?.email;
+
+                if (adminEmail) {
+                  const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("full_name")
+                    .eq("user_id", admin.user_id)
+                    .maybeSingle();
+
+                  await supabase.functions.invoke("send-notification", {
+                    body: {
+                      to: adminEmail,
+                      subject: `Countersignature required — ${employeeName}'s contract`,
+                      type: "contract_employer_sign_now",
+                      data: {
+                        employee_name: employeeName,
+                        admin_name: profile?.full_name || "Manager",
+                        signed_at: formattedDate,
+                        signing_url: employerSigningUrl,
+                      },
+                      tenant_id: signingToken.tenant_id,
                     },
-                    tenant_id: signingToken.tenant_id,
-                  },
-                });
+                  });
+                }
               }
+
+              // Audit log for auto-generated employer token
+              await supabase.from("audit_log").insert({
+                action: "create",
+                table_name: "signing_tokens",
+                record_id: employerToken.id,
+                tenant_id: signingToken.tenant_id,
+                new_data: {
+                  event: "employer_signing_token_auto_generated",
+                  employee_document_id: signingToken.employee_document_id,
+                  employee_id: signingToken.employee_id,
+                  triggered_by: "employee_signature",
+                },
+              });
             }
           }
         } catch (notifyErr) {
-          console.error("Manager notification failed (non-critical):", notifyErr);
+          console.error("Manager auto-signing notification failed (non-critical):", notifyErr);
         }
       }
 
