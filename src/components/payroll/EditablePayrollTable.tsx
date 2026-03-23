@@ -605,9 +605,9 @@ export function EditablePayrollTable({
                         <span className="font-medium text-card-foreground">
                           {emp?.forename} {emp?.surname}
                         </span>
-                        {emp?.status === "starter" && (
+                        {emp?.status === "starter" && !priorPeriodEmployeeIds.has(entry.employee_id) && (
                           <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
-                            Starter
+                            New starter
                           </Badge>
                         )}
                         {!entry.bank_details_exported && emp?.bank_account_no && (
@@ -615,6 +615,12 @@ export function EditablePayrollTable({
                             New
                           </Badge>
                         )}
+                        <AdjustmentHistoryDrawer
+                          periodId={periodId}
+                          employeeId={entry.employee_id}
+                          employeeName={`${emp?.forename} ${emp?.surname}`}
+                          hasAdjustments={adjustedEmployeeIds.has(entry.employee_id) || (entry.imported_hours !== null && Math.abs(entry.timesheet_hours - entry.imported_hours) > 0.001)}
+                        />
                         <LocationSplitPopover
                           periodId={periodId}
                           employeeId={entry.employee_id}
