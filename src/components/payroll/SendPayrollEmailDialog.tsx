@@ -310,9 +310,9 @@ export function SendPayrollEmailDialog({
           </div>
 
           {includeBankDetails && (
-            <div className="flex items-start gap-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 p-2.5">
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-800 dark:text-amber-200">
+          <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/20 p-2.5">
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-xs text-destructive">
                 Bank details will be included in the PDF. Only enable this
                 if recipients are authorised to view sensitive financial
                 information.
