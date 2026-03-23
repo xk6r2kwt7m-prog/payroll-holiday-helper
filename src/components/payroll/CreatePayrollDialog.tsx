@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useCreatePayrollPeriod, useCopyPayrollPeriod, usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
 import { supabase } from "@/integrations/supabase/client";
+import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 
 interface CreatePayrollDialogProps {
   onSuccess?: () => void;
@@ -160,25 +161,12 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     setSelectedSourcePeriod(periodId);
     const source = periods.find(p => p.id === periodId);
     if (source) {
-      const sourceEnd = new Date(source.end_date);
-      const nextStart = new Date(sourceEnd);
-      nextStart.setDate(nextStart.getDate() + 1);
-      
-      // Find next cut-off Sunday (end of ~4 week period)
-      const nextEnd = new Date(nextStart);
-      nextEnd.setMonth(nextEnd.getMonth() + 1);
-      nextEnd.setDate(nextEnd.getDate() - 1);
-      // Adjust to nearest Sunday
-      const dow = nextEnd.getDay();
-      if (dow !== 0) {
-        nextEnd.setDate(nextEnd.getDate() - dow);
-      }
-
-      const sDate = nextStart.toISOString().split('T')[0];
-      const eDate = nextEnd.toISOString().split('T')[0];
-      setStartDate(sDate);
-      setEndDate(eDate);
-      deriveFromDates(sDate, eDate);
+      const suggestion = suggestNextPeriod(source.end_date);
+      setStartDate(suggestion.startDate);
+      setEndDate(suggestion.endDate);
+      setPeriodName(suggestion.periodName);
+      setPayDate(suggestion.payDate);
+      setPeriodWeeks(suggestion.periodWeeks.toString());
     }
   };
 
