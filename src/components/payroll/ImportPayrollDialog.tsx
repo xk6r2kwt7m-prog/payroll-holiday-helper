@@ -707,6 +707,7 @@ export function ImportPayrollDialog({ onImportComplete }: ImportDialogProps) {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entry_locations"] });
       toast.success("Payroll imported!");
       onImportComplete?.();
     } catch (error) {
