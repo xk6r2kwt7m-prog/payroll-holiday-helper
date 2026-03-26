@@ -52,6 +52,7 @@ import LabourCostPreview from "./pages/LabourCostPreview";
 import ShiftMarketplace from "./pages/ShiftMarketplace";
 import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 import Reports from "./pages/Reports";
+import Financial from "./pages/Financial";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
@@ -146,6 +147,7 @@ const App = () => (
 
             {/* Reports — manager+ */}
             <Route path="/reports" element={<ProtectedRoute requiredRole="manager"><Reports /></ProtectedRoute>} />
+            <Route path="/financial" element={<ProtectedRoute requiredRole="manager"><Financial /></ProtectedRoute>} />
 
             {/* Admin-only sections — permission-gated */}
             <Route path="/disciplinary" element={<ProtectedRoute requiredRole="admin" requiredPermission="manage_lifecycle"><Disciplinary /></ProtectedRoute>} />
