@@ -52,6 +52,7 @@ import LabourCostPreview from "./pages/LabourCostPreview";
 import ShiftMarketplace from "./pages/ShiftMarketplace";
 import EmployeeOnboarding from "./pages/EmployeeOnboarding";
 import Reports from "./pages/Reports";
+import Financial from "./pages/Financial";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
