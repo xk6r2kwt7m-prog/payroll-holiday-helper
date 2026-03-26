@@ -16,7 +16,6 @@ interface Signal {
   label: string;
   status: HealthStatus;
   detail: string;
-  isEstimated?: boolean;
 }
 
 const statusConfig = {
@@ -31,6 +30,20 @@ function getOverallStatus(signals: Signal[]): HealthStatus {
   return "on_track";
 }
 
+function SignalRow({ signal }: { signal: Signal }) {
+  const sCfg = statusConfig[signal.status];
+  const SIcon = sCfg.icon;
+  return (
+    <div className="flex items-start gap-1.5">
+      <SIcon className={cn("h-3 w-3 mt-0.5 shrink-0", sCfg.color)} />
+      <div>
+        <p className="text-[10px] font-medium text-foreground leading-tight">{signal.label}</p>
+        <p className="text-[9px] text-muted-foreground leading-tight">{signal.detail}</p>
+      </div>
+    </div>
+  );
+}
+
 export function PerformanceSummary(props: Props) {
   if (!props.hasRevenueData) {
     return (
@@ -40,75 +53,77 @@ export function PerformanceSummary(props: Props) {
     );
   }
 
-  const signals: Signal[] = [];
+  // ─── Real signals ───
+  const realSignals: Signal[] = [];
 
-  // Labour % signal (REAL)
   if (props.labourPct > 35) {
-    signals.push({ label: "Labour %", status: "critical", detail: `${props.labourPct.toFixed(1)}% — above 35% threshold` });
+    realSignals.push({ label: "Labour %", status: "critical", detail: `${props.labourPct.toFixed(1)}% — above 35% threshold` });
   } else if (props.labourPct > 30) {
-    signals.push({ label: "Labour %", status: "at_risk", detail: `${props.labourPct.toFixed(1)}% — approaching 30% target` });
+    realSignals.push({ label: "Labour %", status: "at_risk", detail: `${props.labourPct.toFixed(1)}% — approaching 30% target` });
   } else {
-    signals.push({ label: "Labour %", status: "on_track", detail: `${props.labourPct.toFixed(1)}% — within target` });
+    realSignals.push({ label: "Labour %", status: "on_track", detail: `${props.labourPct.toFixed(1)}% — within target` });
   }
 
-  // Revenue per labour hour (REAL)
   if (props.revenuePerLabourHour < 20) {
-    signals.push({ label: "Rev / hour", status: "critical", detail: `£${props.revenuePerLabourHour.toFixed(0)} — well below £30 target` });
+    realSignals.push({ label: "Rev / hour", status: "critical", detail: `£${props.revenuePerLabourHour.toFixed(0)} — well below £30 target` });
   } else if (props.revenuePerLabourHour < 30) {
-    signals.push({ label: "Rev / hour", status: "at_risk", detail: `£${props.revenuePerLabourHour.toFixed(0)} — below £30 target` });
+    realSignals.push({ label: "Rev / hour", status: "at_risk", detail: `£${props.revenuePerLabourHour.toFixed(0)} — below £30 target` });
   } else {
-    signals.push({ label: "Rev / hour", status: "on_track", detail: `£${props.revenuePerLabourHour.toFixed(0)} — meeting target` });
+    realSignals.push({ label: "Rev / hour", status: "on_track", detail: `£${props.revenuePerLabourHour.toFixed(0)} — meeting target` });
   }
 
-  // Revenue trend (REAL, if comparing)
   if (props.comparePrevious) {
     if (props.revenueTrend < -10) {
-      signals.push({ label: "Sales trend", status: "critical", detail: `${props.revenueTrend.toFixed(1)}% vs previous` });
+      realSignals.push({ label: "Sales trend", status: "critical", detail: `${props.revenueTrend.toFixed(1)}% vs previous` });
     } else if (props.revenueTrend < 0) {
-      signals.push({ label: "Sales trend", status: "at_risk", detail: `${props.revenueTrend.toFixed(1)}% vs previous` });
+      realSignals.push({ label: "Sales trend", status: "at_risk", detail: `${props.revenueTrend.toFixed(1)}% vs previous` });
     } else {
-      signals.push({ label: "Sales trend", status: "on_track", detail: `+${props.revenueTrend.toFixed(1)}% vs previous` });
+      realSignals.push({ label: "Sales trend", status: "on_track", detail: `+${props.revenueTrend.toFixed(1)}% vs previous` });
     }
   }
 
-  // Operating margin (ESTIMATED)
+  // ─── Estimated signals ───
+  const estimatedSignals: Signal[] = [];
   if (props.operatingMarginPct < 5) {
-    signals.push({ label: "Est. margin", status: "critical", detail: `${props.operatingMarginPct.toFixed(1)}% — below 10% target`, isEstimated: true });
+    estimatedSignals.push({ label: "Est. margin", status: "critical", detail: `${props.operatingMarginPct.toFixed(1)}% — below 10% target` });
   } else if (props.operatingMarginPct < 10) {
-    signals.push({ label: "Est. margin", status: "at_risk", detail: `${props.operatingMarginPct.toFixed(1)}% — below 10% target`, isEstimated: true });
+    estimatedSignals.push({ label: "Est. margin", status: "at_risk", detail: `${props.operatingMarginPct.toFixed(1)}% — below 10% target` });
   } else {
-    signals.push({ label: "Est. margin", status: "on_track", detail: `${props.operatingMarginPct.toFixed(1)}% — meeting target`, isEstimated: true });
+    estimatedSignals.push({ label: "Est. margin", status: "on_track", detail: `${props.operatingMarginPct.toFixed(1)}% — meeting target` });
   }
 
-  const overall = getOverallStatus(signals);
+  // Overall status from REAL signals only
+  const overall = getOverallStatus(realSignals);
   const cfg = statusConfig[overall];
   const OverallIcon = cfg.icon;
 
   return (
-    <div className={cn("rounded-lg border p-3", cfg.border, cfg.bg)}>
-      <div className="flex items-center gap-2 mb-2">
-        <OverallIcon className={cn("h-4 w-4", cfg.color)} />
-        <span className={cn("text-sm font-bold", cfg.color)}>{cfg.label}</span>
-        <span className="text-[10px] text-muted-foreground ml-auto">Based on live + estimated signals</span>
+    <div className="space-y-2">
+      {/* Real signals — drives overall status */}
+      <div className={cn("rounded-lg border p-3", cfg.border, cfg.bg)}>
+        <div className="flex items-center gap-2 mb-2">
+          <OverallIcon className={cn("h-4 w-4", cfg.color)} />
+          <span className={cn("text-sm font-bold", cfg.color)}>{cfg.label}</span>
+          <span className="text-[10px] text-muted-foreground ml-auto">Based on live data only</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {realSignals.map((s) => <SignalRow key={s.label} signal={s} />)}
+        </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {signals.map((s) => {
-          const sCfg = statusConfig[s.status];
-          const SIcon = sCfg.icon;
-          return (
-            <div key={s.label} className="flex items-start gap-1.5">
-              <SIcon className={cn("h-3 w-3 mt-0.5 shrink-0", sCfg.color)} />
-              <div>
-                <p className="text-[10px] font-medium text-foreground leading-tight">
-                  {s.label}
-                  {s.isEstimated && <span className="text-amber-600 ml-0.5">*</span>}
-                </p>
-                <p className="text-[9px] text-muted-foreground leading-tight">{s.detail}</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+
+      {/* Estimated signals — separate and clearly labelled */}
+      {estimatedSignals.length > 0 && (
+        <div className="rounded-lg border border-dashed border-amber-500/30 bg-amber-500/5 p-2.5">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <AlertTriangle className="h-3 w-3 text-amber-600" />
+            <span className="text-[10px] font-semibold text-amber-700">Estimated signals</span>
+            <span className="text-[9px] text-amber-600/70 ml-auto">Based on industry averages</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {estimatedSignals.map((s) => <SignalRow key={s.label} signal={s} />)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
