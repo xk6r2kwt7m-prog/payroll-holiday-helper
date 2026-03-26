@@ -9,7 +9,7 @@ export interface FinancialFilters {
   preset: DatePreset;
   dateFrom: string;
   dateTo: string;
-  site: string; // "all" or branch name
+  site: string;
   comparePrevious: boolean;
 }
 
@@ -50,7 +50,6 @@ export function getPreviousRange(from: string, to: string) {
   return { from: format(prevFrom, "yyyy-MM-dd"), to: format(prevTo, "yyyy-MM-dd") };
 }
 
-interface RevenueRow { date: string; revenue_amount: number; }
 interface LabourEntry {
   total_hours: number | null;
   clock_in_time: string;
@@ -67,17 +66,15 @@ export function useFinancialData(filters: FinancialFilters) {
     queryFn: async () => {
       if (!tenantId) return null;
 
-      // 1. Revenue data
-      let revQuery = supabase
+      // 1. Revenue
+      const { data: revenueRows } = await supabase
         .from("daily_revenue")
         .select("date, revenue_amount")
         .eq("tenant_id", tenantId)
         .gte("date", range.from)
         .lte("date", range.to);
 
-      const { data: revenueRows } = await revQuery;
-
-      // 2. Previous period revenue
+      // 2. Previous revenue
       let prevRevenue = 0;
       if (filters.comparePrevious) {
         const { data: prevRows } = await supabase
@@ -89,18 +86,15 @@ export function useFinancialData(filters: FinancialFilters) {
         prevRevenue = (prevRows || []).reduce((s, r) => s + (r.revenue_amount || 0), 0);
       }
 
-      // 3. Labour / time entries for period
+      // 3. Labour
       const { data: timeEntries } = await supabase
         .from("time_entries")
-        .select(`
-          total_hours, clock_in_time,
-          employees (hourly_rate, department, forename, surname)
-        `)
+        .select(`total_hours, clock_in_time, employees (hourly_rate, department, forename, surname)`)
         .eq("tenant_id", tenantId)
         .gte("clock_in_time", `${range.from}T00:00:00`)
         .lte("clock_in_time", `${range.to}T23:59:59`);
 
-      // 4. Previous period labour
+      // 4. Previous labour
       let prevLabourCost = 0;
       if (filters.comparePrevious) {
         const { data: prevTime } = await supabase
@@ -110,27 +104,18 @@ export function useFinancialData(filters: FinancialFilters) {
           .gte("clock_in_time", `${prevRange.from}T00:00:00`)
           .lte("clock_in_time", `${prevRange.to}T23:59:59`);
         prevLabourCost = (prevTime || []).reduce((s, e) => {
-          const h = e.total_hours || 0;
-          const r = (e.employees as any)?.hourly_rate || 0;
-          return s + h * r;
+          return s + ((e.total_hours || 0) * ((e.employees as any)?.hourly_rate || 0));
         }, 0);
       }
 
-      // 5. Branch locations for site breakdown
+      // 5. Branches
       const { data: branches } = await supabase
         .from("branch_locations")
         .select("branch, display_name")
         .eq("tenant_id", tenantId);
 
-      // 6. Employee branches for site mapping
-      const { data: empBranches } = await supabase
-        .from("employee_branches")
-        .select("employee_id, branch")
-        .eq("tenant_id", tenantId);
-
-      // Calculate totals
+      // Calculations — REAL
       const totalRevenue = (revenueRows || []).reduce((s, r) => s + (r.revenue_amount || 0), 0);
-
       let totalLabourHours = 0;
       let totalLabourCost = 0;
       const labourByDept: Record<string, number> = {};
@@ -139,23 +124,19 @@ export function useFinancialData(filters: FinancialFilters) {
       for (const e of (timeEntries || []) as unknown as LabourEntry[]) {
         const hours = e.total_hours || 0;
         const rate = e.employees?.hourly_rate || 0;
-        const dept = e.employees?.department || "Other";
         const cost = hours * rate;
         totalLabourHours += hours;
         totalLabourCost += cost;
-        labourByDept[dept] = (labourByDept[dept] || 0) + cost;
-
+        labourByDept[e.employees?.department || "Other"] = (labourByDept[e.employees?.department || "Other"] || 0) + cost;
         const day = e.clock_in_time?.substring(0, 10) || "";
         if (day) dailyLabour[day] = (dailyLabour[day] || 0) + cost;
       }
 
-      // Revenue by day
       const dailyRevenue: Record<string, number> = {};
-      for (const r of (revenueRows || []) as RevenueRow[]) {
+      for (const r of (revenueRows || [])) {
         dailyRevenue[r.date] = (dailyRevenue[r.date] || 0) + r.revenue_amount;
       }
 
-      // Build daily chart data
       const days = eachDayOfInterval({ start: parseISO(range.from), end: parseISO(range.to) });
       const dailyChart = days.map(d => {
         const key = format(d, "yyyy-MM-dd");
@@ -166,41 +147,46 @@ export function useFinancialData(filters: FinancialFilters) {
           dateKey: key,
           revenue: rev,
           labourCost: lab,
-          grossProfit: rev * 0.65, // placeholder — no COGS data yet
-          operatingProfit: rev - lab - (rev * 0.35), // placeholder
+          grossProfit: rev * 0.65, // ESTIMATED
+          operatingProfit: rev - lab - (rev * 0.35), // ESTIMATED
         };
       });
 
-      // KPI calculations
+      // REAL KPIs
       const labourPct = totalRevenue > 0 ? (totalLabourCost / totalRevenue) * 100 : 0;
       const prevLabourPct = prevRevenue > 0 ? (prevLabourCost / prevRevenue) * 100 : 0;
-      const foodCostPct = 32; // placeholder — no food cost data
-      const foodCostAmount = totalRevenue * 0.32; // placeholder
+      const revenuePerLabourHour = totalLabourHours > 0 ? totalRevenue / totalLabourHours : 0;
+      const revenueTrend = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+      const labourTrend = prevLabourPct > 0 ? labourPct - prevLabourPct : 0;
+
+      // ESTIMATED KPIs (clearly flagged)
+      const foodCostPct = 32;
+      const foodCostAmount = totalRevenue * 0.32;
       const grossProfit = totalRevenue - foodCostAmount;
       const grossMarginPct = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
       const operatingProfit = grossProfit - totalLabourCost;
       const operatingMarginPct = totalRevenue > 0 ? (operatingProfit / totalRevenue) * 100 : 0;
-      const wastePct = 2.5; // placeholder
-      const wasteAmount = totalRevenue * 0.025; // placeholder
-      const stockVariance = 0; // placeholder
-      const revenuePerLabourHour = totalLabourHours > 0 ? totalRevenue / totalLabourHours : 0;
+      const wastePct = 2.5;
+      const wasteAmount = totalRevenue * 0.025;
+      const stockVariance = 0;
 
-      // Trends
-      const revenueTrend = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
-      const labourTrend = prevLabourPct > 0 ? labourPct - prevLabourPct : 0;
+      // Insights — ONLY from real data, unless marked estimated
+      const insights: { type: "success" | "warning" | "danger" | "info"; text: string; estimated?: boolean }[] = [];
 
-      // Generate insights
-      const insights: { type: "success" | "warning" | "danger" | "info"; text: string }[] = [];
+      if (totalRevenue === 0) {
+        insights.push({ type: "info", text: "No revenue data recorded for this period. Add daily revenue to unlock financial insights." });
+      }
 
-      if (labourPct > 35) {
+      // Real insights (from live data)
+      if (labourPct > 35 && totalRevenue > 0) {
         insights.push({ type: "danger", text: `Labour cost is ${labourPct.toFixed(1)}% of sales — above the 35% threshold. Review staffing levels.` });
-      } else if (labourPct > 30) {
-        insights.push({ type: "warning", text: `Labour cost is ${labourPct.toFixed(1)}% — approaching the upper target. Monitor closely.` });
-      } else if (labourPct > 0) {
+      } else if (labourPct > 30 && totalRevenue > 0) {
+        insights.push({ type: "warning", text: `Labour cost is ${labourPct.toFixed(1)}% — approaching the upper target.` });
+      } else if (totalRevenue > 0 && totalLabourCost > 0) {
         insights.push({ type: "success", text: `Labour cost is well controlled at ${labourPct.toFixed(1)}% of sales.` });
       }
 
-      if (filters.comparePrevious && revenueTrend !== 0) {
+      if (filters.comparePrevious && totalRevenue > 0 && prevRevenue > 0) {
         if (revenueTrend > 0) {
           insights.push({ type: "success", text: `Sales are up ${revenueTrend.toFixed(1)}% vs previous period.` });
         } else {
@@ -208,7 +194,7 @@ export function useFinancialData(filters: FinancialFilters) {
         }
       }
 
-      if (filters.comparePrevious && labourTrend > 2) {
+      if (filters.comparePrevious && labourTrend > 2 && totalRevenue > 0) {
         insights.push({ type: "danger", text: `Labour cost is rising faster than sales — up ${labourTrend.toFixed(1)} percentage points.` });
       }
 
@@ -218,50 +204,24 @@ export function useFinancialData(filters: FinancialFilters) {
         insights.push({ type: "success", text: `Good productivity: £${revenuePerLabourHour.toFixed(0)} revenue per labour hour.` });
       }
 
+      // Estimated insight (clearly marked)
       if (operatingMarginPct < 10 && totalRevenue > 0) {
-        insights.push({ type: "danger", text: `Operating margin is only ${operatingMarginPct.toFixed(1)}% — below the 10% minimum target.` });
-      }
-
-      if (totalRevenue === 0) {
-        insights.push({ type: "info", text: "No revenue data recorded for this period. Add daily revenue to unlock financial insights." });
+        insights.push({ type: "danger", text: `Estimated operating margin is ${operatingMarginPct.toFixed(1)}% — below the 10% target. Food cost and waste are estimated.`, estimated: true });
       }
 
       return {
-        range,
-        prevRange,
-        // Totals
-        totalRevenue,
-        prevRevenue,
-        totalLabourCost,
-        prevLabourCost,
-        totalLabourHours,
-        // KPIs
-        labourPct,
-        foodCostPct,
-        foodCostAmount,
-        grossProfit,
-        grossMarginPct,
-        operatingProfit,
-        operatingMarginPct,
-        wastePct,
-        wasteAmount,
-        stockVariance,
-        revenuePerLabourHour,
-        // Trends
-        revenueTrend,
-        labourTrend,
-        // Charts
-        dailyChart,
-        labourByDept,
-        // Sites
+        range, prevRange,
+        totalRevenue, prevRevenue, totalLabourCost, prevLabourCost, totalLabourHours,
+        labourPct, foodCostPct, foodCostAmount, grossProfit, grossMarginPct,
+        operatingProfit, operatingMarginPct, wastePct, wasteAmount, stockVariance,
+        revenuePerLabourHour, revenueTrend, labourTrend,
+        dailyChart, labourByDept,
         branches: branches || [],
-        // Insights
         insights,
-        // Flags
         hasRevenueData: totalRevenue > 0,
-        hasFoodCostData: false, // placeholder
-        hasWasteData: false, // placeholder
-        hasForecastData: false, // placeholder
+        hasFoodCostData: false,
+        hasWasteData: false,
+        hasForecastData: false,
       };
     },
     enabled: !!tenantId,
