@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Package } from "lucide-react";
+import { EstimatedBadge } from "./DataQualityPanel";
 
 interface Props {
   foodCostPct: number;
@@ -46,6 +47,37 @@ export function FinancialCosts(props: Props) {
           </div>
         </div>
       </div>
+
+      {/* COGS Structure (ready for connection) */}
+      <Card className="border-dashed">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Package className="h-4 w-4 text-muted-foreground" />
+              Cost of Goods Sold (COGS)
+            </CardTitle>
+            <span className="text-[9px] text-muted-foreground font-medium border border-border rounded px-1.5 py-0.5">Ready to connect</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-[10px] text-muted-foreground mb-3">
+            COGS = Opening Stock + Purchases − Closing Stock. Connect stock data to replace the 32% food cost estimate.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              { label: "Opening Stock", field: "opening_stock" },
+              { label: "Purchases", field: "purchases" },
+              { label: "Closing Stock", field: "closing_stock" },
+              { label: "Usage (COGS)", field: "usage" },
+            ].map((item) => (
+              <div key={item.field} className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
+                <p className="text-base font-bold tabular-nums text-muted-foreground mt-0.5">—</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Labour */}
       <div className="space-y-3">
