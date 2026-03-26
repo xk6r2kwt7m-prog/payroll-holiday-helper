@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
+import { EstimatedBadge } from "./DataQualityPanel";
 
 interface Props {
   dailyChart: { date: string; revenue: number; labourCost: number; grossProfit: number }[];
@@ -20,17 +21,16 @@ function fmt(n: number) {
 const chartConfig = {
   revenue: { label: "Revenue", color: "hsl(var(--primary))" },
   labourCost: { label: "Labour", color: "hsl(var(--destructive))" },
-  grossProfit: { label: "Gross Profit", color: "hsl(142 71% 45%)" },
 };
 
 export function FinancialOverview(props: Props) {
   const breakdown = [
-    { label: "Revenue", value: props.totalRevenue, pct: 100 },
-    { label: "Food Cost (est.)", value: -props.foodCostAmount, pct: props.totalRevenue > 0 ? (props.foodCostAmount / props.totalRevenue) * 100 : 0 },
-    { label: "Gross Profit", value: props.grossProfit, pct: props.totalRevenue > 0 ? (props.grossProfit / props.totalRevenue) * 100 : 0 },
-    { label: "Labour", value: -props.totalLabourCost, pct: props.totalRevenue > 0 ? (props.totalLabourCost / props.totalRevenue) * 100 : 0 },
-    { label: "Waste (est.)", value: -props.wasteAmount, pct: props.totalRevenue > 0 ? (props.wasteAmount / props.totalRevenue) * 100 : 0 },
-    { label: "Operating Profit", value: props.operatingProfit, pct: props.totalRevenue > 0 ? (props.operatingProfit / props.totalRevenue) * 100 : 0 },
+    { label: "Revenue", value: props.totalRevenue, pct: 100, estimated: false },
+    { label: "Food Cost", value: -props.foodCostAmount, pct: props.totalRevenue > 0 ? (props.foodCostAmount / props.totalRevenue) * 100 : 0, estimated: true },
+    { label: "Gross Profit", value: props.grossProfit, pct: props.totalRevenue > 0 ? (props.grossProfit / props.totalRevenue) * 100 : 0, estimated: true },
+    { label: "Labour", value: -props.totalLabourCost, pct: props.totalRevenue > 0 ? (props.totalLabourCost / props.totalRevenue) * 100 : 0, estimated: false },
+    { label: "Waste", value: -props.wasteAmount, pct: props.totalRevenue > 0 ? (props.wasteAmount / props.totalRevenue) * 100 : 0, estimated: true },
+    { label: "Operating Profit", value: props.operatingProfit, pct: props.totalRevenue > 0 ? (props.operatingProfit / props.totalRevenue) * 100 : 0, estimated: true },
   ];
 
   return (
@@ -38,14 +38,21 @@ export function FinancialOverview(props: Props) {
       {/* P&L Breakdown */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">P&L Summary</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold">P&L Summary</CardTitle>
+            <EstimatedBadge />
+          </div>
+          <p className="text-[10px] text-muted-foreground">Food cost and waste are estimated until connected</p>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             {breakdown.map((row) => (
               <div key={row.label} className="flex items-center justify-between text-xs">
-                <span className={row.label === "Operating Profit" || row.label === "Gross Profit" ? "font-semibold text-foreground" : "text-muted-foreground"}>
-                  {row.label}
+                <span className="flex items-center gap-1.5">
+                  <span className={row.label === "Operating Profit" || row.label === "Gross Profit" ? "font-semibold text-foreground" : "text-muted-foreground"}>
+                    {row.estimated ? `${row.label} *` : row.label}
+                  </span>
+                  {row.estimated && <span className="text-[8px] text-amber-600">est.</span>}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] text-muted-foreground tabular-nums w-10 text-right">
@@ -58,13 +65,19 @@ export function FinancialOverview(props: Props) {
               </div>
             ))}
           </div>
+          <p className="text-[9px] text-muted-foreground mt-3 border-t border-border pt-2">
+            * Estimated values based on industry average (32% food cost, 2.5% waste). Connect real data for accuracy.
+          </p>
         </CardContent>
       </Card>
 
-      {/* Daily Revenue & Labour Chart */}
+      {/* Daily Revenue & Labour Chart — both are REAL data */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">Revenue vs Labour</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold">Revenue vs Labour</CardTitle>
+            <span className="text-[9px] text-emerald-600 font-medium">Live data</span>
+          </div>
         </CardHeader>
         <CardContent>
           {props.dailyChart.length > 0 ? (

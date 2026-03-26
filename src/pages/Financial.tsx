@@ -9,9 +9,9 @@ import { FinancialLabour } from "@/components/financial/FinancialLabour";
 import { FinancialProfitability } from "@/components/financial/FinancialProfitability";
 import { FinancialCosts } from "@/components/financial/FinancialCosts";
 import { FinancialForecast } from "@/components/financial/FinancialForecast";
+import { DataQualityPanel } from "@/components/financial/DataQualityPanel";
 import { useFinancialData, type FinancialFilters, type DatePreset } from "@/hooks/useFinancialData";
 import { Loader2, TrendingUp } from "lucide-react";
-import { format } from "date-fns";
 
 export default function Financial() {
   const [filters, setFilters] = useState<FinancialFilters>({
@@ -24,6 +24,21 @@ export default function Financial() {
 
   const { data, isLoading } = useFinancialData(filters);
 
+  const dataSources = [
+    { label: "Revenue", status: "live" as const },
+    { label: "Labour cost", status: "live" as const },
+    { label: "Labour hours", status: "live" as const },
+    { label: "Dept breakdown", status: "live" as const },
+    { label: "Food cost", status: "not_connected" as const },
+    { label: "Gross profit", status: "estimated" as const },
+    { label: "Operating profit", status: "estimated" as const },
+    { label: "Waste", status: "not_connected" as const },
+    { label: "Stock variance", status: "not_connected" as const },
+    { label: "Site revenue", status: "not_connected" as const },
+    { label: "Forecast", status: "not_connected" as const },
+    { label: "Menu / items", status: "not_connected" as const },
+  ];
+
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto px-4 py-4 space-y-4">
@@ -34,16 +49,15 @@ export default function Financial() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-foreground leading-tight">Financial</h1>
-            <p className="text-[11px] text-muted-foreground">Business performance at a glance</p>
+            <p className="text-[11px] text-muted-foreground">Business performance — real data highlighted, estimates clearly marked</p>
           </div>
         </div>
 
         {/* Filters */}
-        <FilterBar
-          filters={filters}
-          onChange={setFilters}
-          branches={data?.branches || []}
-        />
+        <FilterBar filters={filters} onChange={setFilters} branches={data?.branches || []} />
+
+        {/* Data Quality Panel */}
+        <DataQualityPanel sources={dataSources} />
 
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -51,7 +65,6 @@ export default function Financial() {
           </div>
         ) : data ? (
           <div className="space-y-4">
-            {/* KPI Cards */}
             <FinancialKPICards
               totalRevenue={data.totalRevenue}
               grossProfit={data.grossProfit}
@@ -66,10 +79,8 @@ export default function Financial() {
               hasRevenueData={data.hasRevenueData}
             />
 
-            {/* Insights */}
             <FinancialInsights insights={data.insights} />
 
-            {/* Tabs */}
             <Tabs defaultValue="overview">
               <TabsList className="bg-muted/40 border border-border/60 p-0.5 h-auto">
                 {["overview", "costs", "profitability", "labour", "forecast"].map((tab) => (
