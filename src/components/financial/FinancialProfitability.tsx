@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { EstimatedBadge } from "./DataQualityPanel";
 import { cn } from "@/lib/utils";
+import { AlertTriangle } from "lucide-react";
 
 interface Props {
   grossMarginPct: number;
@@ -21,27 +22,34 @@ function fmt(n: number) {
 }
 
 const chartConfig = {
-  grossProfit: { label: "Gross Profit", color: "hsl(142 71% 45%)" },
-  operatingProfit: { label: "Operating Profit", color: "hsl(var(--primary))" },
+  grossProfit: { label: "Est. Gross Profit", color: "hsl(142 71% 45%)" },
+  operatingProfit: { label: "Est. Operating Profit", color: "hsl(var(--primary))" },
 };
 
 export function FinancialProfitability(props: Props) {
-  // Simulated site ranking (will be real once site-level revenue is tracked)
-  const sites = [
-    { name: "All Sites (combined)", sales: props.totalRevenue, labourPct: props.labourPct, foodCostPct: props.foodCostPct, waste: props.wasteAmount, opProfit: props.operatingProfit },
-  ];
-
   return (
     <div className="space-y-4">
+      {/* Estimated notice */}
+      <div className="flex items-center gap-2 rounded-md border border-dashed border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700">
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        <span>Profitability metrics use estimated food cost (32%) and waste (2.5%). Connect real cost data for accurate margins.</span>
+      </div>
+
       {/* Margin cards */}
       <div className="grid grid-cols-2 gap-2">
         <div className="rounded-lg border border-border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Gross Margin</p>
-          <p className="text-xl font-bold tabular-nums text-foreground mt-0.5">{props.grossMarginPct.toFixed(1)}%</p>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Est. Gross Margin</p>
+            <EstimatedBadge />
+          </div>
+          <p className="text-xl font-bold tabular-nums text-muted-foreground mt-0.5">{props.grossMarginPct.toFixed(1)}%</p>
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Operating Margin</p>
-          <p className={cn("text-xl font-bold tabular-nums mt-0.5", props.operatingMarginPct < 10 ? "text-destructive" : "text-foreground")}>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Est. Operating Margin</p>
+            <EstimatedBadge />
+          </div>
+          <p className="text-xl font-bold tabular-nums text-muted-foreground mt-0.5">
             {props.operatingMarginPct.toFixed(1)}%
           </p>
         </div>
@@ -50,7 +58,10 @@ export function FinancialProfitability(props: Props) {
       {/* Profit trend */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">Profit Trend</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold">Estimated Profit Trend</CardTitle>
+            <EstimatedBadge />
+          </div>
         </CardHeader>
         <CardContent>
           {props.dailyChart.length > 1 ? (
@@ -72,45 +83,23 @@ export function FinancialProfitability(props: Props) {
         </CardContent>
       </Card>
 
-      {/* Site ranking */}
-      <Card>
+      {/* Site ranking — hidden until site revenue exists */}
+      <Card className="border-dashed opacity-60">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">Site Performance Ranking</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold text-muted-foreground">Site Performance Ranking</CardTitle>
+            <span className="text-[9px] text-muted-foreground font-medium border border-border rounded px-1.5 py-0.5">Not connected</span>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 font-medium text-muted-foreground">Site</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Sales</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Labour %</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Food %</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Waste</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Op. Profit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sites.map((s) => (
-                  <tr key={s.name} className="border-b border-border/50">
-                    <td className="py-2 font-medium">{s.name}</td>
-                    <td className="py-2 text-right tabular-nums">{fmt(s.sales)}</td>
-                    <td className={cn("py-2 text-right tabular-nums", s.labourPct > 35 ? "text-destructive" : "")}>
-                      {s.labourPct.toFixed(1)}%
-                    </td>
-                    <td className="py-2 text-right tabular-nums">{s.foodCostPct.toFixed(1)}%</td>
-                    <td className="py-2 text-right tabular-nums">{fmt(s.waste)}</td>
-                    <td className={cn("py-2 text-right tabular-nums font-medium", s.opProfit < 0 ? "text-destructive" : "")}>
-                      {fmt(s.opProfit)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="text-center py-6">
+            <p className="text-xs text-muted-foreground">
+              Site-level ranking requires per-site revenue data.
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Connect site revenue to see which locations are strongest and weakest.
+            </p>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2">
-            Site-level breakdown requires per-site revenue data. Currently showing combined totals.
-          </p>
         </CardContent>
       </Card>
     </div>

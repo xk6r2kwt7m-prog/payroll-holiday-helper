@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 interface Insight {
   type: "success" | "warning" | "danger" | "info";
   text: string;
+  estimated?: boolean;
 }
 
 const iconMap = {
@@ -30,6 +31,7 @@ export function FinancialInsights({ insights }: { insights: Insight[] }) {
           <Lightbulb className="h-4 w-4 text-primary" />
         </div>
         <h3 className="text-sm font-semibold text-foreground">Automated Insights</h3>
+        <span className="text-[9px] text-muted-foreground ml-auto">Based on connected data only</span>
       </div>
       <div className="space-y-2">
         {insights.map((insight, i) => {
@@ -40,7 +42,14 @@ export function FinancialInsights({ insights }: { insights: Insight[] }) {
               className={cn("flex items-start gap-2 rounded-md border px-3 py-2 text-xs", colorMap[insight.type])}
             >
               <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-              <span className="leading-relaxed">{insight.text}</span>
+              <span className="leading-relaxed">
+                {insight.estimated && (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded px-1 py-0.5 leading-none mr-1">
+                    Est.
+                  </span>
+                )}
+                {insight.text}
+              </span>
             </div>
           );
         })}
