@@ -147,6 +147,7 @@ const App = () => (
 
             {/* Reports — manager+ */}
             <Route path="/reports" element={<ProtectedRoute requiredRole="manager"><Reports /></ProtectedRoute>} />
+            <Route path="/financial" element={<ProtectedRoute requiredRole="manager"><Financial /></ProtectedRoute>} />
 
             {/* Admin-only sections — permission-gated */}
             <Route path="/disciplinary" element={<ProtectedRoute requiredRole="admin" requiredPermission="manage_lifecycle"><Disciplinary /></ProtectedRoute>} />

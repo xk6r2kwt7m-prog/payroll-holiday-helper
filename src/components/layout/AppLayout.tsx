@@ -107,6 +107,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   ], [t]);
 
   const moreNavItems: NavItem[] = useMemo(() => [
+    { label: "Financial", path: "/financial", minRole: "manager", icon: PieChart },
     { label: t("nav.absences"), path: "/absences", minRole: "manager", icon: UserX },
     { label: t("nav.onboarding"), path: "/onboarding", minRole: "manager", icon: UserPlus },
     { label: t("nav.training"), path: "/training", minRole: "manager", icon: GraduationCap },
