@@ -1,11 +1,14 @@
-import { Lightbulb, CheckCircle2, AlertTriangle, XCircle, Info, ArrowRight } from "lucide-react";
+import { Lightbulb, CheckCircle2, AlertTriangle, XCircle, Info, ArrowRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface Insight {
   type: "success" | "warning" | "danger" | "info";
   text: string;
   estimated?: boolean;
   action?: string;
+  site?: string;
+  link?: string;
 }
 
 const iconMap = {
@@ -23,6 +26,8 @@ const colorMap = {
 };
 
 export function FinancialInsights({ insights }: { insights: Insight[] }) {
+  const navigate = useNavigate();
+
   if (!insights.length) return null;
 
   return (
@@ -31,7 +36,7 @@ export function FinancialInsights({ insights }: { insights: Insight[] }) {
         <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
           <Lightbulb className="h-4 w-4 text-primary" />
         </div>
-        <h3 className="text-sm font-semibold text-foreground">Insights & Actions</h3>
+        <h3 className="text-sm font-semibold text-foreground">All Insights</h3>
         <span className="text-[9px] text-muted-foreground ml-auto">Based on connected data only</span>
       </div>
       <div className="space-y-2">
@@ -45,18 +50,34 @@ export function FinancialInsights({ insights }: { insights: Insight[] }) {
               <div className="flex items-start gap-2">
                 <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <span className="leading-relaxed">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {insight.estimated && (
-                      <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded px-1 py-0.5 leading-none mr-1">
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-amber-600 bg-amber-500/10 border border-amber-500/20 rounded px-1 py-0.5 leading-none">
                         Est.
                       </span>
                     )}
-                    {insight.text}
-                  </span>
+                    {insight.site && (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-medium text-foreground bg-muted border border-border rounded px-1 py-0.5 leading-none">
+                        {insight.site}
+                      </span>
+                    )}
+                  </div>
+                  <span className="leading-relaxed">{insight.text}</span>
                   {insight.action && (
-                    <div className="flex items-center gap-1 mt-1.5 text-[10px] font-medium opacity-80">
-                      <ArrowRight className="h-2.5 w-2.5" />
-                      <span>{insight.action}</span>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <div className="flex items-center gap-1 text-[10px] font-medium opacity-80">
+                        <ArrowRight className="h-2.5 w-2.5" />
+                        <span>{insight.action}</span>
+                      </div>
+                      {insight.link && (
+                        <button
+                          onClick={() => navigate(insight.link!)}
+                          className="flex items-center gap-0.5 text-[9px] font-medium opacity-70 hover:opacity-100 hover:underline"
+                        >
+                          <ExternalLink className="h-2.5 w-2.5" />
+                          View
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

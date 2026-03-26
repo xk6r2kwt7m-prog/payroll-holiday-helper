@@ -12,6 +12,8 @@ import { FinancialForecast } from "@/components/financial/FinancialForecast";
 import { DataQualityPanel } from "@/components/financial/DataQualityPanel";
 import { PerformanceSummary } from "@/components/financial/PerformanceSummary";
 import { TargetsPanel } from "@/components/financial/TargetsPanel";
+import { PriorityActions } from "@/components/financial/PriorityActions";
+import { SiteCards } from "@/components/financial/SiteCards";
 import { useFinancialData, type FinancialFilters, type DatePreset } from "@/hooks/useFinancialData";
 import { Loader2, TrendingUp } from "lucide-react";
 
@@ -31,6 +33,7 @@ export default function Financial() {
     { label: "Labour cost", status: "live" as const },
     { label: "Labour hours", status: "live" as const },
     { label: "Dept breakdown", status: "live" as const },
+    { label: "Site labour", status: "live" as const },
     { label: "Food cost", status: "not_connected" as const },
     { label: "Gross profit", status: "estimated" as const },
     { label: "Operating profit", status: "estimated" as const },
@@ -38,7 +41,6 @@ export default function Financial() {
     { label: "Stock variance", status: "not_connected" as const },
     { label: "Site revenue", status: "not_connected" as const },
     { label: "Forecast", status: "not_connected" as const },
-    { label: "Menu / items", status: "not_connected" as const },
   ];
 
   return (
@@ -64,7 +66,7 @@ export default function Financial() {
           </div>
         ) : data ? (
           <div className="space-y-4">
-            {/* Performance Summary — top-level health */}
+            {/* Performance Summary — real vs estimated split */}
             <PerformanceSummary
               labourPct={data.labourPct}
               revenueTrend={data.revenueTrend}
@@ -73,6 +75,9 @@ export default function Financial() {
               hasRevenueData={data.hasRevenueData}
               comparePrevious={filters.comparePrevious}
             />
+
+            {/* Priority Actions — top 3, sorted by urgency */}
+            <PriorityActions actions={data.priorityActions} />
 
             {/* KPI Cards */}
             <FinancialKPICards
@@ -97,7 +102,10 @@ export default function Financial() {
               hasRevenueData={data.hasRevenueData}
             />
 
-            {/* Insights with actions */}
+            {/* Site Cards */}
+            <SiteCards sites={data.siteMetrics} />
+
+            {/* All Insights */}
             <FinancialInsights insights={data.insights} />
 
             {/* Data Quality */}
