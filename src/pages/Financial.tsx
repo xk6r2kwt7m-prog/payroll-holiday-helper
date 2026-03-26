@@ -10,6 +10,8 @@ import { FinancialProfitability } from "@/components/financial/FinancialProfitab
 import { FinancialCosts } from "@/components/financial/FinancialCosts";
 import { FinancialForecast } from "@/components/financial/FinancialForecast";
 import { DataQualityPanel } from "@/components/financial/DataQualityPanel";
+import { PerformanceSummary } from "@/components/financial/PerformanceSummary";
+import { TargetsPanel } from "@/components/financial/TargetsPanel";
 import { useFinancialData, type FinancialFilters, type DatePreset } from "@/hooks/useFinancialData";
 import { Loader2, TrendingUp } from "lucide-react";
 
@@ -49,15 +51,12 @@ export default function Financial() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-foreground leading-tight">Financial</h1>
-            <p className="text-[11px] text-muted-foreground">Business performance — real data highlighted, estimates clearly marked</p>
+            <p className="text-[11px] text-muted-foreground">Decision dashboard — real data highlighted, estimates clearly marked</p>
           </div>
         </div>
 
         {/* Filters */}
         <FilterBar filters={filters} onChange={setFilters} branches={data?.branches || []} />
-
-        {/* Data Quality Panel */}
-        <DataQualityPanel sources={dataSources} />
 
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -65,6 +64,17 @@ export default function Financial() {
           </div>
         ) : data ? (
           <div className="space-y-4">
+            {/* Performance Summary — top-level health */}
+            <PerformanceSummary
+              labourPct={data.labourPct}
+              revenueTrend={data.revenueTrend}
+              operatingMarginPct={data.operatingMarginPct}
+              revenuePerLabourHour={data.revenuePerLabourHour}
+              hasRevenueData={data.hasRevenueData}
+              comparePrevious={filters.comparePrevious}
+            />
+
+            {/* KPI Cards */}
             <FinancialKPICards
               totalRevenue={data.totalRevenue}
               grossProfit={data.grossProfit}
@@ -79,8 +89,21 @@ export default function Financial() {
               hasRevenueData={data.hasRevenueData}
             />
 
+            {/* Targets vs Actual */}
+            <TargetsPanel
+              labourPct={data.labourPct}
+              revenuePerLabourHour={data.revenuePerLabourHour}
+              operatingMarginPct={data.operatingMarginPct}
+              hasRevenueData={data.hasRevenueData}
+            />
+
+            {/* Insights with actions */}
             <FinancialInsights insights={data.insights} />
 
+            {/* Data Quality */}
+            <DataQualityPanel sources={dataSources} />
+
+            {/* Tabs */}
             <Tabs defaultValue="overview">
               <TabsList className="bg-muted/40 border border-border/60 p-0.5 h-auto">
                 {["overview", "costs", "profitability", "labour", "forecast"].map((tab) => (

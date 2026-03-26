@@ -170,43 +170,52 @@ export function useFinancialData(filters: FinancialFilters) {
       const wasteAmount = totalRevenue * 0.025;
       const stockVariance = 0;
 
-      // Insights — ONLY from real data, unless marked estimated
-      const insights: { type: "success" | "warning" | "danger" | "info"; text: string; estimated?: boolean }[] = [];
+      // Insights with ACTIONS — only real data unless marked estimated
+      const insights: { type: "success" | "warning" | "danger" | "info"; text: string; estimated?: boolean; action?: string }[] = [];
 
       if (totalRevenue === 0) {
-        insights.push({ type: "info", text: "No revenue data recorded for this period. Add daily revenue to unlock financial insights." });
+        insights.push({ type: "info", text: "No revenue data recorded for this period.", action: "Add daily revenue figures to unlock financial insights." });
       }
 
-      // Real insights (from live data)
+      // Labour % (REAL)
       if (labourPct > 35 && totalRevenue > 0) {
-        insights.push({ type: "danger", text: `Labour cost is ${labourPct.toFixed(1)}% of sales — above the 35% threshold. Review staffing levels.` });
+        insights.push({ type: "danger", text: `Labour cost is ${labourPct.toFixed(1)}% of sales — above the 35% threshold.`, action: "Review the rota and reduce shifts or hours on slow days." });
       } else if (labourPct > 30 && totalRevenue > 0) {
-        insights.push({ type: "warning", text: `Labour cost is ${labourPct.toFixed(1)}% — approaching the upper target.` });
+        insights.push({ type: "warning", text: `Labour cost is ${labourPct.toFixed(1)}% — approaching the 30% target.`, action: "Check for overstaffing during off-peak hours." });
       } else if (totalRevenue > 0 && totalLabourCost > 0) {
         insights.push({ type: "success", text: `Labour cost is well controlled at ${labourPct.toFixed(1)}% of sales.` });
       }
 
-      if (filters.comparePrevious && totalRevenue > 0 && prevRevenue > 0) {
-        if (revenueTrend > 0) {
-          insights.push({ type: "success", text: `Sales are up ${revenueTrend.toFixed(1)}% vs previous period.` });
-        } else {
-          insights.push({ type: "warning", text: `Sales are down ${Math.abs(revenueTrend).toFixed(1)}% vs previous period.` });
-        }
-      }
-
-      if (filters.comparePrevious && labourTrend > 2 && totalRevenue > 0) {
-        insights.push({ type: "danger", text: `Labour cost is rising faster than sales — up ${labourTrend.toFixed(1)} percentage points.` });
-      }
-
-      if (revenuePerLabourHour > 0 && revenuePerLabourHour < 30) {
-        insights.push({ type: "warning", text: `Revenue per labour hour is £${revenuePerLabourHour.toFixed(0)} — below the £30 efficiency target.` });
+      // Revenue per labour hour (REAL)
+      if (revenuePerLabourHour > 0 && revenuePerLabourHour < 20) {
+        insights.push({ type: "danger", text: `Revenue per labour hour is only £${revenuePerLabourHour.toFixed(0)} — well below the £30 target.`, action: "Review peak coverage and cut hours on underperforming shifts." });
+      } else if (revenuePerLabourHour > 0 && revenuePerLabourHour < 30) {
+        insights.push({ type: "warning", text: `Revenue per labour hour is £${revenuePerLabourHour.toFixed(0)} — below the £30 target.`, action: "Optimise shift patterns to better match demand." });
       } else if (revenuePerLabourHour >= 30) {
         insights.push({ type: "success", text: `Good productivity: £${revenuePerLabourHour.toFixed(0)} revenue per labour hour.` });
       }
 
-      // Estimated insight (clearly marked)
-      if (operatingMarginPct < 10 && totalRevenue > 0) {
-        insights.push({ type: "danger", text: `Estimated operating margin is ${operatingMarginPct.toFixed(1)}% — below the 10% target. Food cost and waste are estimated.`, estimated: true });
+      // Sales trend (REAL)
+      if (filters.comparePrevious && totalRevenue > 0 && prevRevenue > 0) {
+        if (revenueTrend < -10) {
+          insights.push({ type: "danger", text: `Sales dropped ${Math.abs(revenueTrend).toFixed(1)}% vs previous period.`, action: "Check if a site is underperforming or if there was a known disruption." });
+        } else if (revenueTrend < 0) {
+          insights.push({ type: "warning", text: `Sales are down ${Math.abs(revenueTrend).toFixed(1)}% vs previous period.`, action: "Review marketing activity and site-level performance." });
+        } else {
+          insights.push({ type: "success", text: `Sales are up ${revenueTrend.toFixed(1)}% vs previous period.` });
+        }
+      }
+
+      // Labour trend (REAL)
+      if (filters.comparePrevious && labourTrend > 2 && totalRevenue > 0) {
+        insights.push({ type: "danger", text: `Labour cost is rising faster than sales — up ${labourTrend.toFixed(1)} percentage points.`, action: "Audit recent rota changes and new hires." });
+      }
+
+      // Operating margin (ESTIMATED — clearly marked)
+      if (operatingMarginPct < 5 && totalRevenue > 0) {
+        insights.push({ type: "danger", text: `Estimated operating margin is ${operatingMarginPct.toFixed(1)}% — below the 10% target.`, estimated: true, action: "Connect real food cost data to confirm. Review all cost lines." });
+      } else if (operatingMarginPct < 10 && totalRevenue > 0) {
+        insights.push({ type: "warning", text: `Estimated operating margin is ${operatingMarginPct.toFixed(1)}% — below the 10% target.`, estimated: true, action: "Connect COGS data and review cost control." });
       }
 
       return {
