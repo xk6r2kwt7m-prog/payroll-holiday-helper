@@ -68,6 +68,7 @@ import {
   CONTRACT_FIELD_LABELS,
   type ContractFieldSource,
 } from "@/lib/contract-form-review";
+import { deriveContractReadiness } from "@/lib/contract-readiness";
 
 interface ContractFormDialogProps {
   open: boolean;
@@ -248,6 +249,12 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const missingCriticalFields = useMemo(
     () => getMissingContractFields(variables),
     [variables],
+  );
+
+  // Phase 5J — derive a calm readiness status from existing review helpers.
+  const readiness = useMemo(
+    () => deriveContractReadiness({ missing: missingCriticalFields, sources: fieldSources }),
+    [missingCriticalFields, fieldSources],
   );
 
   const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
@@ -517,6 +524,22 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           {/* STEP 1: Fill Details */}
           {step === "fill" && (
             <>
+              {/* Phase 5J — Readiness banner */}
+              {selectedEmployeeId && (
+                <div
+                  data-testid="readiness-banner"
+                  data-readiness-status={readiness.status}
+                  className={`rounded-lg border p-3 text-xs ${
+                    readiness.bannerTone === "warning"
+                      ? "border-amber-500/30 bg-amber-500/5"
+                      : "border-primary/20 bg-primary/5"
+                  }`}
+                >
+                  <p className="font-medium text-foreground">{readiness.bannerTitle}</p>
+                  <p className="text-muted-foreground mt-0.5">{readiness.bannerDescription}</p>
+                </div>
+              )}
+
               {/* Phase 5F — Missing critical fields summary */}
               {selectedEmployeeId && missingCriticalFields.length > 0 && (
                 <div
@@ -803,6 +826,17 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   >
                     Missing: {missingCriticalFields.map((m) => m.label).join(", ")}. You can still continue, but
                     we recommend filling these in for a complete contract.
+                  </div>
+                )}
+                {readiness.manualCriticalFields.length > 0 && (
+                  <div
+                    data-testid="confirm-manual-warning"
+                    data-readiness-status={readiness.status}
+                    className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-amber-900 dark:text-amber-200"
+                  >
+                    Some important fields were entered manually
+                    {`: ${readiness.manualCriticalFields.map((m) => m.label).join(", ")}`}.
+                    Please confirm they are correct before generating.
                   </div>
                 )}
               </div>
