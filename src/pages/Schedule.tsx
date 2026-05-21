@@ -494,6 +494,7 @@ export default function Schedule() {
         onDeptChange={setSelectedDept}
         onCreateShifts={schedule.handleBulkCreateShifts}
         isPending={schedule.isBulkCreating}
+        rotaTerms={rotaTerms}
       />
     </AppLayout>
   );
