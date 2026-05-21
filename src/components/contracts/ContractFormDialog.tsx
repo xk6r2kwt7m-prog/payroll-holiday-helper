@@ -286,6 +286,21 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     ],
   );
 
+  // Phase 5L — pure generation gate (hard-required vs soft warnings).
+  const generationGate = useMemo(
+    () =>
+      getContractGenerationGate({
+        variables,
+        companyLegalName,
+        companyAddress,
+        fieldSources,
+        manualReviewFields: readiness.manualCriticalFields,
+      }),
+    [variables, companyLegalName, companyAddress, fieldSources, readiness.manualCriticalFields],
+  );
+
+
+
   const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
     const src = fieldSources[field];
     if (!src || src === "missing") return null;
