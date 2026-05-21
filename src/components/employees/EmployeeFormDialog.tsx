@@ -230,6 +230,19 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       return;
     }
 
+    // UK Minimum Wage early-warning gate (admin override required if below)
+    const wageCheck = evaluateWageCompliance({
+      dobIso: formData.date_of_birth,
+      hourlyRate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+    });
+    if (wageCheck.status === "below" && !wageOverrideReason.trim()) {
+      toast.error(
+        `Hourly rate £${wageCheck.currentRate?.toFixed(2)} is below the UK legal minimum £${wageCheck.requiredMinimum?.toFixed(2)} for age ${wageCheck.age}. Provide an override reason to continue.`,
+      );
+      setActiveTab("employment");
+      return;
+    }
+
     if (!tenantId) {
       toast.error("Session error: no organisation context. Please refresh and try again.");
       return;
