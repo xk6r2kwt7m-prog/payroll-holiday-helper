@@ -485,11 +485,9 @@ export function PayrollApprovalWorkflow({
               </AlertDialogContent>
             </AlertDialog>
           </div>
-          {externalApprovalBlock && (
-            <p className="mt-2 text-xs text-warning text-right">{externalApprovalBlock}</p>
-          )}
         </div>
       )}
+
 
       {period.status === "approved" && (
         <div className="rounded-lg bg-success/10 border border-success/20 p-3 sm:p-4">
