@@ -167,9 +167,11 @@ export function PayStructureFields({
               className="bg-card"
               inputMode="decimal"
             />
+            <PaySourceHint field="estimatedServiceChargeRate" />
             <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
               Indicative only — not guaranteed.
             </p>
+
           </div>
         </div>
 
