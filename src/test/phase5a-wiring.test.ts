@@ -70,8 +70,10 @@ describe("Phase 5A — workflow honours external approval gate", () => {
   });
 
   it("renders the external block reason when set", () => {
-    expect(workflow).toMatch(/externalApprovalBlock && \(/);
+    // Phase 5C: also guarded against approved status, kept in one consistent place.
+    expect(workflow).toMatch(/externalApprovalBlock && [^\n]*\(/);
   });
+
 });
 
 describe("Phase 5A — single approval pathway preserved", () => {

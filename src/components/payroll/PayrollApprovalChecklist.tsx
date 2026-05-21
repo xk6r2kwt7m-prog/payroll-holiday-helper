@@ -111,9 +111,10 @@ export function PayrollApprovalChecklist({
             data-testid="draft-readiness-note"
             className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
           >
-            Draft readiness check. Final approval controls appear when the period is moved to pending.
+            Draft readiness check — informational only. Final approval controls appear once the period is moved to pending review.
           </div>
         )}
+
         {result.period_already_approved && (
           <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
             <p className="font-medium">This payroll period is approved and locked.</p>

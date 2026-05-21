@@ -43,9 +43,12 @@ describe("Phase 5B — ack/confirm reset on period switch", () => {
 describe("Phase 5B — draft-period readiness note", () => {
   it("renders explanatory note for draft periods", () => {
     expect(checklist).toMatch(/data-testid="draft-readiness-note"/);
-    expect(checklist).toMatch(/Draft readiness check\./);
-    expect(checklist).toMatch(/Final approval controls appear when the period is moved to pending\./);
+    // Phase 5C polished the wording but preserved the meaning.
+    expect(checklist).toMatch(/Draft readiness check/);
+    expect(checklist).toMatch(/Final approval controls appear/);
+    expect(checklist).toMatch(/pending(?: review)?/);
   });
+
 
   it("only shows the draft note for draft (non-approved) periods", () => {
     expect(checklist).toMatch(

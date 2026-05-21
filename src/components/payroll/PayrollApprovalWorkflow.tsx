@@ -147,6 +147,23 @@ export function PayrollApprovalWorkflow({
         })}
       </div>
 
+      {/* Phase 5C — externally-derived approval block (e.g. checklist gate).
+          Rendered in a single, consistent place so managers always see why
+          approval cannot proceed, regardless of period status. */}
+      {externalApprovalBlock && period.status !== "approved" && (
+        <div
+          data-testid="external-approval-block"
+          className="rounded-lg bg-warning/10 border border-warning/20 p-3 mb-4 flex items-start gap-2"
+        >
+          <ShieldAlert className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+          <p className="text-xs text-foreground/90">
+            <span className="font-medium">Approval is currently blocked.</span>{" "}
+            <span className="text-muted-foreground">{externalApprovalBlock}</span>
+          </p>
+        </div>
+      )}
+
+
       {/* Unmatched employees */}
       {hasUnmatchedEmployees && !hasExcludedEmployees && (
         <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 mb-4">
@@ -468,11 +485,9 @@ export function PayrollApprovalWorkflow({
               </AlertDialogContent>
             </AlertDialog>
           </div>
-          {externalApprovalBlock && (
-            <p className="mt-2 text-xs text-warning text-right">{externalApprovalBlock}</p>
-          )}
         </div>
       )}
+
 
       {period.status === "approved" && (
         <div className="rounded-lg bg-success/10 border border-success/20 p-3 sm:p-4">
