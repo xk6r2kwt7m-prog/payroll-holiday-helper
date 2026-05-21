@@ -117,6 +117,26 @@ export function getOriginalFieldSources(
   if (terms?.work_location?.trim()) sources.workLocation = "active_terms";
   if (terms?.notice_period_weeks != null) sources.noticePeriod = "active_terms";
 
+  // Phase 5H — reporting manager source tracking (optional fields).
+  if (terms?.reporting_manager_name?.trim()) {
+    sources.reportingManagerName = "active_terms";
+  } else {
+    const p = (ob?.personal_info as Record<string, any> | null) || null;
+    const fromOb = p?.reporting_manager_name || p?.reporting_manager || p?.line_manager;
+    if (typeof fromOb === "string" && fromOb.trim()) {
+      sources.reportingManagerName = "onboarding";
+    }
+  }
+  if (terms?.reporting_manager_title?.trim()) {
+    sources.reportingManagerTitle = "active_terms";
+  } else {
+    const p = (ob?.personal_info as Record<string, any> | null) || null;
+    const fromOb = p?.reporting_manager_title || p?.line_manager_title;
+    if (typeof fromOb === "string" && fromOb.trim()) {
+      sources.reportingManagerTitle = "onboarding";
+    }
+  }
+
   return sources;
 }
 
