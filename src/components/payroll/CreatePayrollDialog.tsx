@@ -88,21 +88,51 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
         // Add entries for all active + starter employees (leavers excluded)
         const eligibleEmployees = employees.filter(e => e.status === "active" || e.status === "starter");
         if (eligibleEmployees.length > 0) {
-          const entries = eligibleEmployees.map(emp => ({
-            payroll_period_id: newPeriod.id,
-            employee_id: emp.id,
-            hourly_rate: emp.hourly_rate,
-            service_charge: emp.service_charge || 0,
-            timesheet_hours: 0,
-            performance_bonus: 0,
-            special_bonus: 0,
-            total_pay: 0,
-          }));
+          // Phase 2C — prefer active employment terms as of period start.
+          const tenantIdForDefaults = (eligibleEmployees[0] as any).tenant_id as string | undefined;
+          const { fetchActiveTermsMap, resolveRateSource } = await import(
+            "@/lib/payroll-rate-source"
+          );
+          const termsMap = tenantIdForDefaults
+            ? await fetchActiveTermsMap(
+                tenantIdForDefaults,
+                eligibleEmployees.map(e => e.id),
+                startDate,
+              )
+            : new Map();
+
+          let fallbackCount = 0;
+          const entries = eligibleEmployees.map(emp => {
+            const defaults = resolveRateSource(termsMap.get(emp.id), {
+              id: emp.id,
+              hourly_rate: emp.hourly_rate,
+              service_charge: (emp as any).service_charge,
+              department: (emp as any).department,
+            });
+            if (defaults.source === "profile_fallback") fallbackCount += 1;
+            return {
+              payroll_period_id: newPeriod.id,
+              employee_id: emp.id,
+              hourly_rate: defaults.hourly_rate,
+              service_charge: defaults.service_charge,
+              timesheet_hours: 0,
+              performance_bonus: 0,
+              special_bonus: 0,
+              total_pay: 0,
+            };
+          });
 
           await supabase.from("payroll_entries").insert(entries as any);
-        }
 
-        toast.success(`Payroll period created with ${eligibleEmployees.length} employees.`);
+          toast.success(
+            `Payroll period created with ${eligibleEmployees.length} employees.` +
+              (fallbackCount > 0
+                ? ` ${fallbackCount} used profile fallback (no active contract terms).`
+                : ""),
+          );
+        } else {
+          toast.success(`Payroll period created with 0 employees.`);
+        }
       }
 
       setOpen(false);
