@@ -1,5 +1,9 @@
 import type { ContractVariables } from "./contractTemplates";
 import type { ContractType } from "./contractTemplates";
+import {
+  buildAppointmentReportingSentence,
+  defaultFallbackReportingRole,
+} from "@/lib/contract-appointment";
 
 // ─── Audit Flags ───
 export type ClauseFlag =
@@ -379,6 +383,11 @@ export function getClauseContent(
   const isDutyManager = contractType === "management";
   const roleLabel = isManagement ? "Duty Manager" : "Team Member";
   const reportingTo = isManagement ? "the Operations Manager" : "the Front of House Manager";
+  const appointmentReportingSentence = buildAppointmentReportingSentence({
+    managerName: v.reportingManagerName,
+    managerTitle: v.reportingManagerTitle,
+    fallbackRole: defaultFallbackReportingRole(isManagement),
+  });
 
   switch (clauseId) {
     // ─── 1. INTERPRETATION ───
@@ -400,7 +409,8 @@ export function getClauseContent(
     case "appointment":
       if (isManagement) {
         return [
-          { type: "paragraph", text: `Upon and subject to the terms of the Appointment, the Company will from the Effective Date employ the Employee as ${v.jobTitle}, reporting to ${reportingTo}, as the case may be.` },
+          { type: "paragraph", text: `Upon and subject to the terms of the Appointment, the Company will from the Effective Date employ the Employee as ${v.jobTitle}.` },
+          { type: "paragraph", text: appointmentReportingSentence },
           { type: "subheading", text: `The responsibilities of the ${roleLabel} include, but are not limited to:` },
           { type: "subheading", text: "Overall" },
           { type: "bullets", items: [
@@ -431,7 +441,8 @@ export function getClauseContent(
         // Team Member — FOH vs Kitchen
         const isKitchen = contractType === "kitchen";
         return [
-          { type: "paragraph", text: `Upon and subject to the terms of the Appointment, the Company will from the Effective Date employ the Employee as ${v.jobTitle}, reporting to ${reportingTo}, as the case may be.` },
+          { type: "paragraph", text: `Upon and subject to the terms of the Appointment, the Company will from the Effective Date employ the Employee as ${v.jobTitle}.` },
+          { type: "paragraph", text: appointmentReportingSentence },
           { type: "subheading", text: `The responsibilities of the ${roleLabel} include, but are not limited to:` },
           { type: "subheading", text: "General Conduct and Compliance" },
           { type: "bullets", items: [

@@ -110,6 +110,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     probationPeriod: "2 months",
     workLocation: "",
     employmentType: "variable_hours",
+    reportingManagerName: "",
+    reportingManagerTitle: "",
   });
 
   const [savedDocumentId, setSavedDocumentId] = useState<string | null>(null);
@@ -463,6 +465,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         probationPeriod: "2 months",
         workLocation: "",
         employmentType: "variable_hours",
+        reportingManagerName: "",
+        reportingManagerTitle: "",
       });
     }, 300);
   };
@@ -703,6 +707,45 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   </div>
                 </div>
               </div>
+
+              {/* Phase 5H — Reporting Manager (optional, draft-form only) */}
+              <div
+                className="rounded-lg border border-border bg-muted/30 p-4 space-y-3"
+                data-testid="reporting-manager-section"
+              >
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <User className="h-4 w-4 text-primary" />
+                  Reporting Manager
+                  <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground -mt-1">
+                  Used only in the Appointment section of this draft contract. Not saved back to the employee profile.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Manager Name</Label>
+                    <Input
+                      data-testid="reporting-manager-name-input"
+                      value={variables.reportingManagerName || ""}
+                      onChange={(e) => updateField("reportingManagerName", e.target.value)}
+                      placeholder="e.g. Alex Carter"
+                      className="bg-card"
+                    />
+                    <FieldSourceHint field="reportingManagerName" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1.5 block">Manager Job Title</Label>
+                    <Input
+                      data-testid="reporting-manager-title-input"
+                      value={variables.reportingManagerTitle || ""}
+                      onChange={(e) => updateField("reportingManagerTitle", e.target.value)}
+                      placeholder="e.g. Operations Manager"
+                      className="bg-card"
+                    />
+                    <FieldSourceHint field="reportingManagerTitle" />
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
@@ -728,6 +771,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     ["weeklyHours", variables.weeklyHours ? `${variables.weeklyHours} hrs/week` : ""],
                     ["workLocation", variables.workLocation],
                     ["noticePeriod", variables.noticePeriod],
+                    ["reportingManagerName", variables.reportingManagerName || ""],
+                    ["reportingManagerTitle", variables.reportingManagerTitle || ""],
                   ] as const)
                     .filter(([field, value]) => {
                       // Always show critical fields (even if missing); only show
@@ -736,6 +781,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                         "guaranteedServiceChargeRate",
                         "estimatedServiceChargeRate",
                         "troncSchemeName",
+                        "reportingManagerName",
+                        "reportingManagerTitle",
                       ]);
                       return !optional.has(field) || (value && String(value).trim() !== "");
                     })

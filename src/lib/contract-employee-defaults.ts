@@ -45,6 +45,8 @@ export interface ContractDefaultsActiveTerms {
   notice_period_weeks?: number | null;
   department?: string | null;
   effective_from?: string | null;
+  reporting_manager_name?: string | null;
+  reporting_manager_title?: string | null;
 }
 
 export interface ContractDefaultsInput {
@@ -151,6 +153,20 @@ export function mapEmployeeToContractDefaults(input: ContractDefaultsInput): Map
     (typeof terms?.effective_from === "string" && terms.effective_from) ||
     undefined;
 
+  // Phase 5H — Reporting manager. Prefer active terms, fall back to
+  // onboarding personal_info. Never derived from the role.
+  const obManagerName =
+    (typeof ob?.personal_info?.reporting_manager_name === "string" && ob.personal_info.reporting_manager_name.trim()) ||
+    (typeof ob?.personal_info?.reporting_manager === "string" && ob.personal_info.reporting_manager.trim()) ||
+    (typeof ob?.personal_info?.line_manager === "string" && ob.personal_info.line_manager.trim()) ||
+    undefined;
+  const obManagerTitle =
+    (typeof ob?.personal_info?.reporting_manager_title === "string" && ob.personal_info.reporting_manager_title.trim()) ||
+    (typeof ob?.personal_info?.line_manager_title === "string" && ob.personal_info.line_manager_title.trim()) ||
+    undefined;
+  const reportingManagerName = terms?.reporting_manager_name?.trim() || obManagerName || undefined;
+  const reportingManagerTitle = terms?.reporting_manager_title?.trim() || obManagerTitle || undefined;
+
   const variables: Partial<ContractVariables> = {
     employeeName: fullName || undefined,
     homeAddress,
@@ -166,6 +182,8 @@ export function mapEmployeeToContractDefaults(input: ContractDefaultsInput): Map
     noticePeriod,
     workLocation: terms?.work_location?.trim() || undefined,
     employmentType,
+    reportingManagerName,
+    reportingManagerTitle,
   };
 
   // Strip undefined keys so callers can iterate cleanly.

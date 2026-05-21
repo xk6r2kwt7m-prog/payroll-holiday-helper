@@ -8,6 +8,10 @@ import {
 import type { ContractVariables } from "./contractTemplates";
 import type { ContractType } from "./contractTemplates";
 import { getEmploymentTypeLabel } from "./contractTemplates";
+import {
+  buildAppointmentReportingSentence,
+  defaultFallbackReportingRole,
+} from "@/lib/contract-appointment";
 
 const TEAL = "#5a9e91";
 const DARK = "#1e2a2f";
@@ -188,6 +192,11 @@ export function ContractPDF({
   const isManagement = contractType === "management" || contractType === "supervisor";
   const roleLabel = isManagement ? "Duty Manager" : "Team Member";
   const reportingTo = isManagement ? "the Operations Manager" : "the Front of House Manager";
+  const appointmentReportingSentence = buildAppointmentReportingSentence({
+    managerName: variables.reportingManagerName,
+    managerTitle: variables.reportingManagerTitle,
+    fallbackRole: defaultFallbackReportingRole(isManagement),
+  });
 
   const formattedDate = new Date(variables.effectiveDate).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -281,8 +290,9 @@ export function ContractPDF({
         <Text style={styles.sectionTitle}>2. Appointment</Text>
         <Text style={styles.paragraph}>
           Upon and subject to the terms of the Appointment, the Company will from the Effective Date employ the Employee as{" "}
-          <Text style={styles.bold}>{variables.jobTitle}</Text>, reporting to {reportingTo}, as the case may be.
+          <Text style={styles.bold}>{variables.jobTitle}</Text>.
         </Text>
+        <Text style={styles.paragraph}>{appointmentReportingSentence}</Text>
         <Text style={styles.subSectionTitle}>
           The responsibilities of the {roleLabel} include, but are not limited to:
         </Text>
