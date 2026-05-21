@@ -403,6 +403,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       setNmwOverride(null);
       setEmployeeSignTokenId(null);
       setSelectedEmployeeId("");
+      setUserEdited(new Set());
+      setContractTypeEdited(false);
       setVariables({
         employeeName: "",
         homeAddress: "",
