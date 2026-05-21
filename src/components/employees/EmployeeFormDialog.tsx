@@ -1268,6 +1268,52 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Phase 5I — Offer to prepare a draft employment contract immediately
+        after a new employee is created. Does NOT generate, sign, or lock
+        the contract — only opens the existing draft contract flow with the
+        new employee preselected. */}
+    <AlertDialog
+      open={!!contractPrompt}
+      onOpenChange={(o) => { if (!o) setContractPrompt(null); }}
+    >
+      <AlertDialogContent data-testid="after-create-contract-prompt">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Employee created successfully</AlertDialogTitle>
+          <AlertDialogDescription>
+            Create an employment contract for {contractPrompt?.name} now? We'll
+            pre-fill the draft with the details you just entered. You can review
+            and edit everything before generating.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel data-testid="after-create-contract-skip">Skip for now</AlertDialogCancel>
+          <AlertDialogAction
+            data-testid="after-create-contract-confirm"
+            onClick={() => {
+              if (contractPrompt) {
+                setContractDialogEmployeeId(contractPrompt.id);
+                setContractDialogOpen(true);
+              }
+              setContractPrompt(null);
+            }}
+          >
+            Create contract now
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {contractDialogEmployeeId && (
+      <ContractFormDialog
+        open={contractDialogOpen}
+        onOpenChange={(o) => {
+          setContractDialogOpen(o);
+          if (!o) setContractDialogEmployeeId(undefined);
+        }}
+        preselectedEmployeeId={contractDialogEmployeeId}
+      />
+    )}
     </>
   );
 }
