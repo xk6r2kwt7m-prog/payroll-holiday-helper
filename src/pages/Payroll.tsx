@@ -158,7 +158,8 @@ const Payroll = () => {
   const [checklistAcks, setChecklistAcks] = useState<Set<string>>(new Set());
   const [checklistConfirmed, setChecklistConfirmed] = useState(false);
   // Reset acks/confirmation when the selected period changes.
-  useMemo(() => {
+  // Phase 5B — proper side-effect; previously incorrectly used useMemo.
+  useEffect(() => {
     setChecklistAcks(new Set());
     setChecklistConfirmed(false);
   }, [selectedPeriod?.id]);
