@@ -4,6 +4,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Edit2, Save, X, User, Building, CreditCard, FileText, Calendar, MapPin, Check, ShieldCheck, Globe, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ContractFormDialog } from "@/components/contracts/ContractFormDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,6 +58,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const [niMasked, setNiMasked] = useState(false);
   const [originalNi, setOriginalNi] = useState("");
   const [wageOverrideReason, setWageOverrideReason] = useState("");
+  // Phase 5I — after-create draft-contract prompt
+  const [contractPrompt, setContractPrompt] = useState<{ id: string; name: string } | null>(null);
+  const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [contractDialogEmployeeId, setContractDialogEmployeeId] = useState<string | undefined>(undefined);
   
   const [formData, setFormData] = useState({
     forename: "",
@@ -462,6 +477,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
 
       setOpen(false);
       setWageOverrideReason("");
+      // Phase 5I — after a successful create (not edit), offer to prepare a
+      // draft contract immediately. We only prompt; the manager must
+      // intentionally continue through the existing contract workflow.
+      if (!employee && employeeId) {
+        setContractPrompt({
+          id: employeeId,
+          name: `${formData.forename.trim()} ${formData.surname.trim()}`.trim() || "this employee",
+        });
+      }
       onSuccess?.();
 
       // Privacy: Worker must self-activate their own Talent Pool profile.
@@ -1244,6 +1268,52 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Phase 5I — Offer to prepare a draft employment contract immediately
+        after a new employee is created. Does NOT generate, sign, or lock
+        the contract — only opens the existing draft contract flow with the
+        new employee preselected. */}
+    <AlertDialog
+      open={!!contractPrompt}
+      onOpenChange={(o) => { if (!o) setContractPrompt(null); }}
+    >
+      <AlertDialogContent data-testid="after-create-contract-prompt">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Employee created successfully</AlertDialogTitle>
+          <AlertDialogDescription>
+            Create an employment contract for {contractPrompt?.name} now? We'll
+            pre-fill the draft with the details you just entered. You can review
+            and edit everything before generating.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel data-testid="after-create-contract-skip">Skip for now</AlertDialogCancel>
+          <AlertDialogAction
+            data-testid="after-create-contract-confirm"
+            onClick={() => {
+              if (contractPrompt) {
+                setContractDialogEmployeeId(contractPrompt.id);
+                setContractDialogOpen(true);
+              }
+              setContractPrompt(null);
+            }}
+          >
+            Create contract now
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {contractDialogEmployeeId && (
+      <ContractFormDialog
+        open={contractDialogOpen}
+        onOpenChange={(o) => {
+          setContractDialogOpen(o);
+          if (!o) setContractDialogEmployeeId(undefined);
+        }}
+        preselectedEmployeeId={contractDialogEmployeeId}
+      />
+    )}
     </>
   );
 }
