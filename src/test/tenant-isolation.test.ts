@@ -1,30 +1,34 @@
 import { describe, it, expect } from "vitest";
-import { calculateCapeVerdeProportionalLeave, isCapeVerdeNightWork } from "@/hooks/useCountryRules";
+import {
+  calculateCapeVerdeProportionalLeave,
+  isCapeVerdeNightWork,
+  PAY_TYPES,
+  OVERTIME_MODELS,
+  HOLIDAY_ENTITLEMENT_METHODS,
+} from "@/hooks/useCountryRules";
+import * as shiftDefaults from "@/components/schedule/shiftDefaults";
+import * as contractTemplates from "@/components/contracts/contractTemplates";
 
 describe("Tenant Isolation", () => {
   it("new tenant starts with no inherited branches", () => {
-    const shiftDefaults = require("@/components/schedule/shiftDefaults");
     expect(shiftDefaults.getMinimumStaff("SomeBranch", "FOH", "Mon")).toBe(2);
     expect(shiftDefaults.getMinimumStaff("AnyBranch", "BOH", "Wed")).toBe(2);
     expect(shiftDefaults.getMinimumStaff("NewPlace", "CPU", "Fri")).toBe(2);
   });
 
   it("shiftDefaults does not contain hardcoded branch names", () => {
-    const src = require("@/components/schedule/shiftDefaults");
-    const fnString = src.getMinimumStaff.toString();
+    const fnString = shiftDefaults.getMinimumStaff.toString();
     expect(fnString).not.toContain("Fitzrovia");
     expect(fnString).not.toContain("Carnaby");
     expect(fnString).not.toContain("Brixton");
   });
 
   it("WORK_LOCATIONS is empty (no hardcoded addresses)", () => {
-    const { WORK_LOCATIONS } = require("@/components/contracts/contractTemplates");
-    expect(WORK_LOCATIONS).toEqual([]);
+    expect(contractTemplates.WORK_LOCATIONS).toEqual([]);
   });
 
   it("contract templates do not contain hardcoded tenant addresses", () => {
-    const mod = require("@/components/contracts/contractTemplates");
-    const srcString = JSON.stringify(mod);
+    const srcString = JSON.stringify(contractTemplates);
     expect(srcString).not.toContain("Fitzrovia");
     expect(srcString).not.toContain("Carnaby");
     expect(srcString).not.toContain("Brixton");
@@ -61,7 +65,6 @@ describe("Cape Verde Labour Rules", () => {
 
 describe("Country Rules Engine", () => {
   it("PAY_TYPES includes all required models", () => {
-    const { PAY_TYPES } = require("@/hooks/useCountryRules");
     const values = PAY_TYPES.map((p: any) => p.value);
     expect(values).toContain("hourly");
     expect(values).toContain("daily_rate");
@@ -73,7 +76,6 @@ describe("Country Rules Engine", () => {
   });
 
   it("OVERTIME_MODELS includes standard options", () => {
-    const { OVERTIME_MODELS } = require("@/hooks/useCountryRules");
     const values = OVERTIME_MODELS.map((o: any) => o.value);
     expect(values).toContain("none");
     expect(values).toContain("time_and_half");
@@ -81,7 +83,6 @@ describe("Country Rules Engine", () => {
   });
 
   it("HOLIDAY_ENTITLEMENT_METHODS includes all methods", () => {
-    const { HOLIDAY_ENTITLEMENT_METHODS } = require("@/hooks/useCountryRules");
     const values = HOLIDAY_ENTITLEMENT_METHODS.map((m: any) => m.value);
     expect(values).toContain("accrual");
     expect(values).toContain("fixed_days");
