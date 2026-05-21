@@ -781,6 +781,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                         "guaranteedServiceChargeRate",
                         "estimatedServiceChargeRate",
                         "troncSchemeName",
+                        "reportingManagerName",
+                        "reportingManagerTitle",
                       ]);
                       return !optional.has(field) || (value && String(value).trim() !== "");
                     })
