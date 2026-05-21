@@ -787,6 +787,22 @@ const Payroll = () => {
           />
         )}
 
+        {/* Phase 5A — Approval readiness checklist (read-only gate) */}
+        {selectedPeriod && phase5Report && (
+          <PayrollApprovalChecklist
+            period_status={selectedPeriod.status}
+            entries={phase5Report.entries}
+            manualAdjustmentsByEntryId={manualAdjustmentsByEntryId}
+            canApproveRole={isAdmin}
+            isApproving={approvePeriod.isPending}
+            onApproveRequested={handleApprove}
+            acknowledged={checklistAcks}
+            onAcknowledgedChange={setChecklistAcks}
+            confirmed={checklistConfirmed}
+            onConfirmedChange={setChecklistConfirmed}
+          />
+        )}
+
         {/* Approval Workflow */}
         {selectedPeriod && (
           <PayrollApprovalWorkflow
@@ -804,6 +820,7 @@ const Payroll = () => {
             zeroHoursCount={zeroHoursCount}
             unresolvedImportIssues={blockingIssues}
             excludedNames={allExcludedNames}
+            externalApprovalBlock={phase5ApprovalBlock}
           />
         )}
 
