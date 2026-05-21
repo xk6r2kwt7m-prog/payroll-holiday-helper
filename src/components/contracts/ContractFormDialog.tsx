@@ -771,6 +771,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     ["weeklyHours", variables.weeklyHours ? `${variables.weeklyHours} hrs/week` : ""],
                     ["workLocation", variables.workLocation],
                     ["noticePeriod", variables.noticePeriod],
+                    ["reportingManagerName", variables.reportingManagerName || ""],
+                    ["reportingManagerTitle", variables.reportingManagerTitle || ""],
                   ] as const)
                     .filter(([field, value]) => {
                       // Always show critical fields (even if missing); only show
