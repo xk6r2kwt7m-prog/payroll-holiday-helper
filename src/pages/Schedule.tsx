@@ -399,6 +399,8 @@ export default function Schedule() {
                     open={dayDialogOpen}
                     onOpenChange={setDayDialogOpen}
                     date={format(currentDate, "EEE d MMM")}
+                    dateIso={format(currentDate, "yyyy-MM-dd")}
+                    rotaTerms={rotaTerms}
                     branch={selectedBranch}
                     department={selectedDept}
                     employees={deptEmployees}
