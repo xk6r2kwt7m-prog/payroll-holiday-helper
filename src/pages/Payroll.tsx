@@ -45,6 +45,8 @@ import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePayrollImportStatus } from "@/hooks/usePayrollImportStatus";
 import { SendPayrollEmailDialog } from "@/components/payroll/SendPayrollEmailDialog";
+import { MinimumWageCompliancePanel } from "@/components/payroll/MinimumWageCompliancePanel";
+import { usePayrollMinimumWageCheck, useRecordNmwAudit } from "@/hooks/usePayrollMinimumWageCheck";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
@@ -128,6 +130,14 @@ const Payroll = () => {
   const currentEmployeeIds = entries.map((entry: any) => entry.employee_id);
   const { unresolvedIssues, excludedNames } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
   const blockingIssues = unresolvedIssues.filter(i => !reviewedIssueNames.has(i.csvName));
+
+  // Authoritative UK Minimum Wage compliance check for this period
+  const nmw = usePayrollMinimumWageCheck({
+    periodId: selectedPeriod?.id,
+    periodStartDate: selectedPeriod?.start_date,
+    entries,
+  });
+  const recordNmwAudit = useRecordNmwAudit();
 
   const handleMarkReviewed = (csvName: string) => {
     setReviewedIssueNames(prev => new Set([...prev, csvName]));
@@ -214,6 +224,12 @@ const Payroll = () => {
       toast.error("Cannot submit: unresolved blocking issues must be resolved first");
       return;
     }
+    if (nmw.summary.hasBlockers) {
+      toast.error(
+        `Cannot submit: ${nmw.summary.non_compliant} employee(s) below UK minimum wage. Correct with a top-up payment before submitting.`,
+      );
+      return;
+    }
     try {
       await submitForReview.mutateAsync(selectedPeriod.id);
       toast.success(t("payroll.submitted_review"));
@@ -241,8 +257,20 @@ const Payroll = () => {
       toast.error("Cannot approve: unresolved blocking issues must be resolved first");
       return;
     }
+    if (nmw.summary.hasBlockers) {
+      toast.error(
+        `Cannot approve: ${nmw.summary.non_compliant} employee(s) below UK minimum wage. Correct with a top-up payment before approval.`,
+      );
+      return;
+    }
     try {
       await approvePeriod.mutateAsync(selectedPeriod.id);
+      // Snapshot the compliance results to the audit table on approval (non-blocking).
+      if (nmw.canCheck) {
+        recordNmwAudit
+          .mutateAsync({ payrollPeriodId: selectedPeriod.id, results: nmw.results })
+          .catch((err) => console.error("Failed to record NMW audit", err));
+      }
       toast.success(t("payroll.approved_locked"));
       const adminEmail = companySettings?.company_email;
       if (adminEmail) {
@@ -261,6 +289,7 @@ const Payroll = () => {
       toast.error(t("payroll.failed_approve"));
     }
   };
+
 
   const handleReopen = async () => {
     if (!selectedPeriod) return;
@@ -622,6 +651,15 @@ const Payroll = () => {
               name: `${e.employees?.forename} ${e.employees?.surname}`,
             }))}
             isAdmin={isAdmin}
+          />
+        )}
+
+        {/* UK Minimum Wage compliance — authoritative, period-based */}
+        {selectedPeriod && entries.length > 0 && (
+          <MinimumWageCompliancePanel
+            results={nmw.results}
+            summary={nmw.summary}
+            canCheck={nmw.canCheck}
           />
         )}
 

@@ -3214,6 +3214,84 @@ export type Database = {
           },
         ]
       }
+      payroll_nmw_audit: {
+        Row: {
+          actual_hours: number
+          age_at_period_start: number | null
+          age_band: string
+          calculation_basis: Json
+          checked_at: string
+          checked_by: string | null
+          created_at: string
+          effective_rate: number | null
+          eligible_pay: number
+          employee_id: string
+          id: string
+          is_apprentice: boolean
+          override_reason: string | null
+          payroll_entry_id: string | null
+          payroll_period_id: string
+          required_rate: number
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          actual_hours?: number
+          age_at_period_start?: number | null
+          age_band: string
+          calculation_basis?: Json
+          checked_at?: string
+          checked_by?: string | null
+          created_at?: string
+          effective_rate?: number | null
+          eligible_pay?: number
+          employee_id: string
+          id?: string
+          is_apprentice?: boolean
+          override_reason?: string | null
+          payroll_entry_id?: string | null
+          payroll_period_id: string
+          required_rate: number
+          status: string
+          tenant_id: string
+        }
+        Update: {
+          actual_hours?: number
+          age_at_period_start?: number | null
+          age_band?: string
+          calculation_basis?: Json
+          checked_at?: string
+          checked_by?: string | null
+          created_at?: string
+          effective_rate?: number | null
+          eligible_pay?: number
+          employee_id?: string
+          id?: string
+          is_apprentice?: boolean
+          override_reason?: string | null
+          payroll_entry_id?: string | null
+          payroll_period_id?: string
+          required_rate?: number
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_nmw_audit_payroll_entry_id_fkey"
+            columns: ["payroll_entry_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_nmw_audit_payroll_period_id_fkey"
+            columns: ["payroll_period_id"]
+            isOneToOne: false
+            referencedRelation: "payroll_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_overpayments: {
         Row: {
           created_at: string
