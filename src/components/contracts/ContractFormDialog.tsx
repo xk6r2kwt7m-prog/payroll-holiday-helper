@@ -358,6 +358,15 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   };
 
   const handleConfirmAndSave = async () => {
+    // Phase 5L — defensive gate (UI button is already disabled when blocked).
+    if (!generationGate.canGenerate) {
+      toast({
+        title: "Required fields missing",
+        description: generationGate.message,
+        variant: "destructive",
+      });
+      return;
+    }
     setGenerating(true);
     try {
       const blob = await pdf(
