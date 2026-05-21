@@ -654,6 +654,15 @@ const Payroll = () => {
           />
         )}
 
+        {/* UK Minimum Wage compliance — authoritative, period-based */}
+        {selectedPeriod && entries.length > 0 && (
+          <MinimumWageCompliancePanel
+            results={nmw.results}
+            summary={nmw.summary}
+            canCheck={nmw.canCheck}
+          />
+        )}
+
         {/* Approval Workflow */}
         {selectedPeriod && (
           <PayrollApprovalWorkflow
