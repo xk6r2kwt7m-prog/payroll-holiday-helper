@@ -61,6 +61,13 @@ import { useMyOnboardingData } from "@/hooks/useEmployeeOnboarding";
 import { useQuery } from "@tanstack/react-query";
 import { getActiveEmploymentTerms } from "@/lib/employment-terms";
 import { mapEmployeeToContractDefaults } from "@/lib/contract-employee-defaults";
+import {
+  resolveContractFieldSources,
+  getMissingContractFields,
+  sourceLabel,
+  CONTRACT_FIELD_LABELS,
+  type ContractFieldSource,
+} from "@/lib/contract-form-review";
 
 interface ContractFormDialogProps {
   open: boolean;
@@ -220,6 +227,41 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   };
 
   const selectedEmployeeEarly = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
+
+  // Phase 5F — auto-fill source map + missing critical-field summary.
+  // Pure derivations from in-memory state; nothing is persisted.
+  const fieldSources = useMemo(() => {
+    if (!selectedEmployeeEarly) return {} as Partial<Record<keyof ContractVariables, ContractFieldSource>>;
+    return resolveContractFieldSources({
+      input: {
+        employee: selectedEmployeeEarly,
+        onboarding: onboardingData ?? null,
+        activeTerms: (activeTerms as any) ?? null,
+      },
+      variables,
+      userEdited,
+    });
+  }, [selectedEmployeeEarly, onboardingData, activeTerms, variables, userEdited]);
+
+  const missingCriticalFields = useMemo(
+    () => getMissingContractFields(variables),
+    [variables],
+  );
+
+  const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
+    const src = fieldSources[field];
+    if (!src || src === "missing") return null;
+    return (
+      <p
+        data-testid={`field-source-${field}`}
+        data-source={src}
+        className="text-[10px] text-muted-foreground mt-1"
+      >
+        {sourceLabel(src)}
+      </p>
+    );
+  };
+
 
   const validateStep1 = () => {
     if (!variables.employeeName.trim() || !variables.jobTitle.trim() || !selectedEmployeeId) {
@@ -471,6 +513,23 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           {/* STEP 1: Fill Details */}
           {step === "fill" && (
             <>
+              {/* Phase 5F — Missing critical fields summary */}
+              {selectedEmployeeId && missingCriticalFields.length > 0 && (
+                <div
+                  data-testid="missing-fields-warning"
+                  className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs"
+                >
+                  <p className="font-medium text-foreground mb-1">
+                    Some contract details are missing. Please review before generating the contract.
+                  </p>
+                  <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                    {missingCriticalFields.map((m) => (
+                      <li key={m.field} data-testid={`missing-field-${m.field}`}>{m.label}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Department & Type */}
               <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -510,6 +569,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                       ))}
                     </SelectContent>
                   </Select>
+                  <FieldSourceHint field="employmentType" />
                 </div>
               </div>
 
@@ -543,6 +603,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1.5 block">Full Name *</Label>
                       <Input value={variables.employeeName} onChange={(e) => updateField("employeeName", e.target.value)} placeholder="e.g. John Smith" className="bg-card" />
+                      <FieldSourceHint field="employeeName" />
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1.5 block">Job Title *</Label>
@@ -556,11 +617,13 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                           ))}
                         </SelectContent>
                       </Select>
+                      <FieldSourceHint field="jobTitle" />
                     </div>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Home Address</Label>
                     <Input value={variables.homeAddress} onChange={(e) => updateField("homeAddress", e.target.value)} placeholder="e.g. 52 Thornton Avenue, West Drayton, UB7 9JX" className="bg-card" />
+                    <FieldSourceHint field="homeAddress" />
                   </div>
                 </div>
               </div>
@@ -575,12 +638,15 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Start Date</Label>
                     <Input type="date" value={variables.effectiveDate} onChange={(e) => updateField("effectiveDate", e.target.value)} className="bg-card" />
+                    <FieldSourceHint field="effectiveDate" />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Average Weekly Hours</Label>
                     <Input value={variables.weeklyHours} onChange={(e) => updateField("weeklyHours", e.target.value)} placeholder="40" className="bg-card" />
+                    <FieldSourceHint field="weeklyHours" />
                   </div>
                 </div>
+
 
                 {/* Pay structure — base vs service charge (Phase 3) */}
                 <PayStructureFields
@@ -604,6 +670,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                         <SelectItem value="2 months">2 months</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FieldSourceHint field="noticePeriod" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -630,6 +697,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                         )}
                       </SelectContent>
                     </Select>
+                    <FieldSourceHint field="workLocation" />
                   </div>
                 </div>
               </div>
@@ -639,6 +707,42 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           {/* STEP 2: Confirm Details */}
           {step === "confirm" && (
             <div className="space-y-4">
+              {/* Phase 5F — Concise review summary */}
+              <div
+                data-testid="confirm-review-summary"
+                className="rounded-lg border border-border bg-muted/30 p-4 space-y-2 text-xs"
+              >
+                <p className="text-sm font-semibold text-foreground">Review summary</p>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  {([
+                    ["employeeName", variables.employeeName],
+                    ["jobTitle", variables.jobTitle],
+                    ["employmentType", variables.employmentType ? getEmploymentTypeLabel(variables.employmentType) : ""],
+                    ["effectiveDate", variables.effectiveDate],
+                    ["baseHourlyRate", variables.baseHourlyRate ? `£${variables.baseHourlyRate}/hr` : ""],
+                    ["weeklyHours", variables.weeklyHours ? `${variables.weeklyHours} hrs/week` : ""],
+                    ["workLocation", variables.workLocation],
+                    ["noticePeriod", variables.noticePeriod],
+                  ] as const).map(([field, value]) => (
+                    <div key={field} className="flex justify-between gap-3" data-testid={`review-row-${field}`}>
+                      <dt className="text-muted-foreground">{CONTRACT_FIELD_LABELS[field as keyof ContractVariables] || field}</dt>
+                      <dd className="font-medium text-foreground text-right truncate">
+                        {value || <span className="text-amber-600">Missing</span>}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                {missingCriticalFields.length > 0 && (
+                  <div
+                    data-testid="confirm-missing-warning"
+                    className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-amber-900 dark:text-amber-200"
+                  >
+                    Missing: {missingCriticalFields.map((m) => m.label).join(", ")}. You can still continue, but
+                    we recommend filling these in for a complete contract.
+                  </div>
+                )}
+              </div>
+
               <ContractPreview
                 variables={variables}
                 contractType={contractType}
