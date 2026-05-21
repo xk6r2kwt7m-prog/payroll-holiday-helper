@@ -550,9 +550,17 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
             }
             existingByEmployeeId.delete(emp.matchedId);
           } else {
-            // Employee in CSV but not in copied period — create new entry
-            const rate = emp.hourlyRate || 0;
-            const sc = emp.serviceCharge || 0;
+            // Employee in CSV but not in copied period — create new entry.
+            // Phase 2C: prefer active employment terms; fall back to CSV-matched profile rate.
+            const _defaults = resolveRateSource(importTermsMap.get(emp.matchedId!), {
+              id: emp.matchedId!,
+              hourly_rate: emp.hourlyRate,
+              service_charge: emp.serviceCharge,
+              department: emp.department,
+            });
+            const rate = _defaults.hourly_rate || 0;
+            const sc = _defaults.service_charge || 0;
+
 
             const { data: newEntry, error: insertError } = await supabase
               .from("payroll_entries")
