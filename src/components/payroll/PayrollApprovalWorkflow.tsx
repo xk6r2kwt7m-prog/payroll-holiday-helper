@@ -468,6 +468,9 @@ export function PayrollApprovalWorkflow({
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          {externalApprovalBlock && (
+            <p className="mt-2 text-xs text-warning text-right">{externalApprovalBlock}</p>
+          )}
         </div>
       )}
 
