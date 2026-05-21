@@ -670,6 +670,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                         <SelectItem value="2 months">2 months</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FieldSourceHint field="noticePeriod" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
