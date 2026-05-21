@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Calendar, Clock, MapPin, Coffee, MessageSquare, Trash2, MoreHorizontal, ChevronDown, Repeat, CalendarDays, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, MapPin, Coffee, MessageSquare, Trash2, MoreHorizontal, ChevronDown, Repeat, CalendarDays, AlertTriangle, Info } from "lucide-react";
 import { useEmployeeReadiness } from "@/hooks/useOnboardingReadiness";
 import type { Employee } from "@/hooks/useEmployees";
+import type { RotaTermsApi } from "@/hooks/useRotaTerms";
 
 interface ShiftCellDialogProps {
   open: boolean;
