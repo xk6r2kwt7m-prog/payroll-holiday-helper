@@ -127,9 +127,13 @@ export function MinimumWageCompliancePanel({ results, summary, canCheck, termsBy
                     const meta = STATUS_META[r.status];
                     const Icon = meta.icon;
                     const termsRow = termsByEmployee?.[r.employee_id] ?? null;
+                    const termsBaseRate =
+                      (termsRow as any)?.base_hourly_rate ??
+                      termsRow?.hourly_rate ??
+                      null;
                     const termsRate =
-                      termsRow?.hourly_rate !== null && termsRow?.hourly_rate !== undefined
-                        ? Number(termsRow.hourly_rate)
+                      termsBaseRate !== null && termsBaseRate !== undefined
+                        ? Number(termsBaseRate)
                         : null;
                     const payrollRate =
                       r.actual_hours > 0 ? r.calculation_basis.basic_pay / r.actual_hours : null;
@@ -139,7 +143,14 @@ export function MinimumWageCompliancePanel({ results, summary, canCheck, termsBy
                         : false;
                     return (
                       <tr key={`${r.employee_id}-${r.payroll_entry_id ?? ""}`} className="border-b border-border/50 last:border-0">
-                        <td className="py-2 pr-3">{r.employee_name}</td>
+                        <td className="py-2 pr-3">
+                          {r.employee_name}
+                          {r.relies_on_service_charge && (
+                            <Badge variant="outline" className="ml-2 text-[10px] bg-destructive/10 text-destructive border-destructive/30">
+                              Relies on SC
+                            </Badge>
+                          )}
+                        </td>
                         <td className="py-2 pr-3 text-muted-foreground">
                           {r.age_at_period_start !== null ? `${r.age_at_period_start}` : "—"} ·{" "}
                           {r.age_band_label}
@@ -176,6 +187,12 @@ export function MinimumWageCompliancePanel({ results, summary, canCheck, termsBy
                               </TooltipTrigger>
                               <TooltipContent className="max-w-xs text-xs">
                                 {r.message}
+                                {r.relies_on_service_charge && (
+                                  <div className="mt-1 text-destructive">
+                                    Compliance would only be met if service charge / tips were added to basic pay.
+                                    Service charge cannot be used to make up National Minimum Wage.
+                                  </div>
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>

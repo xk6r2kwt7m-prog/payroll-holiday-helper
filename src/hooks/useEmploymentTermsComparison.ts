@@ -152,13 +152,18 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
         status = "no_active_terms";
         warnings.push("No active employment terms found for this period date.");
       } else {
-        const termsRate = terms.hourly_rate !== null ? Number(terms.hourly_rate) : null;
+        // Phase 3: compare against base_hourly_rate (legal basic rate), falling back
+        // to legacy hourly_rate if base not set. Service charge is excluded from
+        // this comparison on purpose — it is a separate pay component.
+        const termsBase =
+          (terms as any).base_hourly_rate ?? terms.hourly_rate ?? null;
+        const termsRate = termsBase !== null ? Number(termsBase) : null;
         if (termsRate !== null) {
           rateDiff = +(payrollRate - termsRate).toFixed(4);
           if (Math.abs(rateDiff) > RATE_EPSILON) {
             rateMismatch = true;
             warnings.push(
-              `Payroll rate £${payrollRate.toFixed(2)} differs from active contract terms £${termsRate.toFixed(2)}.`,
+              `Payroll rate £${payrollRate.toFixed(2)} differs from active contract basic rate £${termsRate.toFixed(2)}.`,
             );
           }
         }
