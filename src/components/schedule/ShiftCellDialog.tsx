@@ -277,11 +277,34 @@ export function ShiftCellDialog({
 
         {/* Footer — Total + actions */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-muted/30">
-          <div className="text-sm text-foreground">
-            <span className="text-muted-foreground">Total </span>
-            <span className="font-semibold">{totalInfo.hoursStr}</span>
-            {totalInfo.cost > 0 && (
-              <span className="text-muted-foreground ml-1">· £{totalInfo.cost.toFixed(2)}</span>
+          <div className="text-sm text-foreground min-w-0">
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-muted-foreground">Total </span>
+              <span className="font-semibold">{totalInfo.hoursStr}</span>
+              {totalInfo.baseCost > 0 && (
+                <span className="text-muted-foreground ml-1">
+                  · Base £{totalInfo.baseCost.toFixed(2)}
+                  {totalInfo.scCost > 0 && (
+                    <> + SC £{totalInfo.scCost.toFixed(2)}</>
+                  )}
+                </span>
+              )}
+              {totalInfo.source === "profile_fallback" && totalInfo.baseRate > 0 && employeeId !== "open" && (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full"
+                  title="No active contract terms for this date — using employee profile rate as fallback."
+                >
+                  <Info className="h-2.5 w-2.5" /> Profile fallback
+                </span>
+              )}
+            </div>
+            {totalInfo.baseRate > 0 && (
+              <div className="text-[10px] text-muted-foreground/80 mt-0.5 tabular-nums">
+                Base £{totalInfo.baseRate.toFixed(2)}/hr
+                {totalInfo.guaranteedScRate > 0 && (
+                  <> + SC £{totalInfo.guaranteedScRate.toFixed(2)}/hr</>
+                )}
+              </div>
             )}
           </div>
           <div className="flex items-center gap-1.5">
