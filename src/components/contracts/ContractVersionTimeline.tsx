@@ -138,5 +138,14 @@ export function ContractVersionTimeline({ contractId }: Props) {
         );
       })}
     </ol>
+      {employeeId && (
+        <div className="pt-2 border-t">
+          <EmploymentTermsSnapshotPanel
+            employeeId={employeeId}
+            rootContractId={rootContractId}
+          />
+        </div>
+      )}
+    </div>
   );
 }
