@@ -74,6 +74,7 @@ import {
   payDetailsStatusLabel,
   reportingManagerStatusLabel,
 } from "@/lib/contract-draft-evidence";
+import { getContractGenerationGate } from "@/lib/contract-generation-gate";
 
 interface ContractFormDialogProps {
   open: boolean;
@@ -285,6 +286,21 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     ],
   );
 
+  // Phase 5L — pure generation gate (hard-required vs soft warnings).
+  const generationGate = useMemo(
+    () =>
+      getContractGenerationGate({
+        variables,
+        companyLegalName,
+        companyAddress,
+        fieldSources,
+        manualReviewFields: readiness.manualCriticalFields,
+      }),
+    [variables, companyLegalName, companyAddress, fieldSources, readiness.manualCriticalFields],
+  );
+
+
+
   const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
     const src = fieldSources[field];
     if (!src || src === "missing") return null;
@@ -342,6 +358,15 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   };
 
   const handleConfirmAndSave = async () => {
+    // Phase 5L — defensive gate (UI button is already disabled when blocked).
+    if (!generationGate.canGenerate) {
+      toast({
+        title: "Required fields missing",
+        description: generationGate.message,
+        variant: "destructive",
+      });
+      return;
+    }
     setGenerating(true);
     try {
       const blob = await pdf(
@@ -947,6 +972,49 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                 </Button>
               </div>
 
+              {/* Phase 5L — Generation gate panel */}
+              <div
+                data-testid="generation-gate-panel"
+                data-can-generate={String(generationGate.canGenerate)}
+                className={`rounded-lg border p-3 text-xs space-y-2 ${
+                  generationGate.canGenerate
+                    ? "border-primary/20 bg-primary/5"
+                    : "border-destructive/30 bg-destructive/5"
+                }`}
+              >
+                <p className="font-medium text-foreground">{generationGate.message}</p>
+                {generationGate.blockingFields.length > 0 && (
+                  <div data-testid="gate-blocking">
+                    <p className="text-muted-foreground">Required fields missing:</p>
+                    <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                      {generationGate.blockingFields.map((b) => (
+                        <li key={b.field} data-testid={`gate-blocking-${b.field}`}>{b.label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {generationGate.warningFields.length > 0 && (
+                  <div data-testid="gate-warnings">
+                    <p className="text-muted-foreground">Warnings to review (not blocking):</p>
+                    <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                      {generationGate.warningFields.map((w) => (
+                        <li key={w.field} data-testid={`gate-warning-${w.field}`}>{w.label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {generationGate.manualReviewFields.length > 0 && (
+                  <div data-testid="gate-manual-review">
+                    <p className="text-muted-foreground">Manually entered critical fields (review):</p>
+                    <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                      {generationGate.manualReviewFields.map((m) => (
+                        <li key={m.field}>{m.label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground">
                 <ShieldCheck className="h-4 w-4 text-primary inline mr-1" />
                 Clicking "Generate & Save" will create the PDF contract (17 sections, UK-compliant) and store it securely. You'll then be able to send it for signing.
@@ -1107,8 +1175,10 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                 <ArrowLeft className="h-4 w-4" /> Edit
               </Button>
               <Button
+                data-testid="generate-and-save-button"
                 onClick={handleConfirmAndSave}
-                disabled={generating}
+                disabled={generating || !generationGate.canGenerate}
+                title={generationGate.canGenerate ? undefined : generationGate.message}
                 className="gradient-primary w-full sm:w-auto order-1 sm:order-2"
               >
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
