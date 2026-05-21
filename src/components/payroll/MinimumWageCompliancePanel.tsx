@@ -115,6 +115,7 @@ export function MinimumWageCompliancePanel({ results, summary, canCheck, termsBy
                   <th className="text-right py-2 pr-3 font-medium">Eligible pay</th>
                   <th className="text-right py-2 pr-3 font-medium">Effective £/hr</th>
                   <th className="text-right py-2 pr-3 font-medium">Required £/hr</th>
+                  <th className="text-right py-2 pr-3 font-medium">Terms £/hr</th>
                   <th className="text-left py-2 font-medium">Status</th>
                 </tr>
               </thead>
@@ -125,6 +126,17 @@ export function MinimumWageCompliancePanel({ results, summary, canCheck, termsBy
                   .map((r) => {
                     const meta = STATUS_META[r.status];
                     const Icon = meta.icon;
+                    const termsRow = termsByEmployee?.[r.employee_id] ?? null;
+                    const termsRate =
+                      termsRow?.hourly_rate !== null && termsRow?.hourly_rate !== undefined
+                        ? Number(termsRow.hourly_rate)
+                        : null;
+                    const payrollRate =
+                      r.actual_hours > 0 ? r.calculation_basis.basic_pay / r.actual_hours : null;
+                    const ratesDiffer =
+                      termsRate !== null && payrollRate !== null
+                        ? Math.abs(termsRate - payrollRate) > 0.005
+                        : false;
                     return (
                       <tr key={`${r.employee_id}-${r.payroll_entry_id ?? ""}`} className="border-b border-border/50 last:border-0">
                         <td className="py-2 pr-3">{r.employee_name}</td>
@@ -139,6 +151,16 @@ export function MinimumWageCompliancePanel({ results, summary, canCheck, termsBy
                         </td>
                         <td className="py-2 pr-3 text-right tabular-nums">
                           {r.required_rate > 0 ? `£${r.required_rate.toFixed(2)}` : "—"}
+                        </td>
+                        <td className="py-2 pr-3 text-right tabular-nums">
+                          {termsRate !== null ? (
+                            <span className={ratesDiffer ? "text-warning font-medium" : ""}>
+                              £{termsRate.toFixed(2)}
+                              {ratesDiffer && <span className="ml-1 opacity-70">≠</span>}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="py-2">
                           <TooltipProvider>
