@@ -198,6 +198,16 @@ export function EmploymentTermsComparisonPanel({
           </p>
         </CollapsibleContent>
       </Collapsible>
+
+      {payrollPeriodId && periodStatus && (
+        <SyncFromTermsDialog
+          open={syncOpen}
+          onOpenChange={setSyncOpen}
+          payrollPeriodId={payrollPeriodId}
+          periodStatus={periodStatus}
+          rows={rows}
+        />
+      )}
     </Card>
   );
 }
