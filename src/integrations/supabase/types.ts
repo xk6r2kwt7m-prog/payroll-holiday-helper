@@ -7310,6 +7310,47 @@ export type Database = {
       }
     }
     Functions: {
+      activate_contract_terms: {
+        Args: { _contract_id: string }
+        Returns: {
+          annual_salary: number | null
+          contract_id: string | null
+          contracted_hours: number | null
+          contracted_hours_basis: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          effective_from: string
+          effective_to: string | null
+          employee_id: string
+          employment_type: string | null
+          holiday_entitlement_method: string | null
+          hourly_rate: number | null
+          id: string
+          is_apprentice: boolean | null
+          notice_period_weeks: number | null
+          overtime_model: string | null
+          pay_type: string | null
+          probation_end_date: string | null
+          role_title: string | null
+          root_contract_id: string | null
+          service_charge_eligible: boolean | null
+          source_amendment_id: string | null
+          source_type: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          version_number: number
+          work_location: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "employee_contract_terms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      activate_scheduled_employment_terms: { Args: never; Returns: number }
       apply_to_vacancy: {
         Args: {
           _cover_message?: string
@@ -7369,6 +7410,46 @@ export type Database = {
           to: "employee_contract_terms"
           isOneToOne: true
           isSetofReturn: false
+        }
+      }
+      get_scheduled_employment_terms: {
+        Args: { _employee_id: string }
+        Returns: {
+          annual_salary: number | null
+          contract_id: string | null
+          contracted_hours: number | null
+          contracted_hours_basis: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          effective_from: string
+          effective_to: string | null
+          employee_id: string
+          employment_type: string | null
+          holiday_entitlement_method: string | null
+          hourly_rate: number | null
+          id: string
+          is_apprentice: boolean | null
+          notice_period_weeks: number | null
+          overtime_model: string | null
+          pay_type: string | null
+          probation_end_date: string | null
+          role_title: string | null
+          root_contract_id: string | null
+          service_charge_eligible: boolean | null
+          source_amendment_id: string | null
+          source_type: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          version_number: number
+          work_location: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "employee_contract_terms"
+          isOneToOne: false
+          isSetofReturn: true
         }
       }
       has_any_role: { Args: never; Returns: boolean }

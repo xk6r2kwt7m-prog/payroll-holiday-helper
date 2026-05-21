@@ -940,6 +940,31 @@ Deno.serve(async (req) => {
             .eq("new_contract_id", signingToken.employee_document_id);
         }
 
+        // Phase 2A: activate or schedule structured employment terms from this contract.
+        // This does NOT change payroll/rota logic — it just records the snapshot.
+        try {
+          const { error: termsErr } = await supabase.rpc("activate_contract_terms", {
+            _contract_id: signingToken.employee_document_id,
+          });
+          if (termsErr) {
+            console.error("activate_contract_terms failed", termsErr);
+            await supabase.from("audit_log").insert({
+              action: "create",
+              table_name: "employee_contract_terms",
+              record_id: signingToken.employee_document_id,
+              tenant_id: signingToken.tenant_id,
+              new_data: {
+                event: "employment_terms_activation_failed",
+                contract_id: signingToken.employee_document_id,
+                employee_id: signingToken.employee_id,
+                error: termsErr.message,
+              },
+            });
+          }
+        } catch (e) {
+          console.error("activate_contract_terms threw", e);
+        }
+
       } else if (currentSignerType === "employee") {
         await supabase
           .from("employee_documents")
