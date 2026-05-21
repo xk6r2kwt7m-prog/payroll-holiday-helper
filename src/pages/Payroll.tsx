@@ -794,6 +794,7 @@ const Payroll = () => {
             period_status={selectedPeriod.status}
             entries={phase5Report.entries}
             manualAdjustmentsByEntryId={manualAdjustmentsByEntryId}
+            // TODO: replace isAdmin with payroll-authorised permission when role model supports it.
             canApproveRole={isAdmin}
             isApproving={approvePeriod.isPending}
             onApproveRequested={handleApprove}
