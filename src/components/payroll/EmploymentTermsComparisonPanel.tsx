@@ -97,6 +97,17 @@ export function EmploymentTermsComparisonPanel({
             {summary.scheduled_pending > 0 && (
               <Pill kind="muted" label="Scheduled change" value={summary.scheduled_pending} />
             )}
+            {canSync && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={() => setSyncOpen(true)}
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Sync draft payroll rates from terms
+              </Button>
+            )}
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="h-7 px-2">
                 <ChevronDown
