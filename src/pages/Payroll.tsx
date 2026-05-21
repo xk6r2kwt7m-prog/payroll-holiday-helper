@@ -45,6 +45,8 @@ import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePayrollImportStatus } from "@/hooks/usePayrollImportStatus";
 import { SendPayrollEmailDialog } from "@/components/payroll/SendPayrollEmailDialog";
+import { MinimumWageCompliancePanel } from "@/components/payroll/MinimumWageCompliancePanel";
+import { usePayrollMinimumWageCheck, useRecordNmwAudit } from "@/hooks/usePayrollMinimumWageCheck";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
