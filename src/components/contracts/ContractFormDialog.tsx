@@ -54,6 +54,9 @@ import {
 } from "./contractTemplates";
 import { ContractPDF } from "./ContractPDF";
 import { useLocationSettings } from "@/hooks/useLocationSettings";
+import { PayStructureFields, type NmwOverrideState } from "./PayStructureFields";
+import { useCreateNmwOverride } from "@/hooks/useNmwOverride";
+import { evaluateWageCompliance } from "@/lib/uk-minimum-wage";
 
 interface ContractFormDialogProps {
   open: boolean;
