@@ -132,6 +132,7 @@ export function evaluatePayrollEntryNmw(
       status: "insufficient_data",
       shortfall: 0,
       message: "Date of birth missing — cannot determine minimum wage band.",
+      relies_on_service_charge: false,
       calculation_basis,
     };
   }
@@ -155,6 +156,7 @@ export function evaluatePayrollEntryNmw(
       status: "insufficient_data",
       shortfall: 0,
       message: "Zero worked hours — minimum wage cannot be tested for this period.",
+      relies_on_service_charge: false,
       calculation_basis,
     };
   }
@@ -178,6 +180,13 @@ export function evaluatePayrollEntryNmw(
     message = `Compliant — effective £${effective.toFixed(2)} vs required £${required.toFixed(2)}.`;
   }
 
+  // "Relies on service charge" — would the entry be compliant if SC was added?
+  // SC is NEVER counted in `eligible_pay`; this is a diagnostic flag only.
+  const sc = Number(entry.service_charge) || 0;
+  const effectiveWithSc = hours > 0 ? (eligiblePay + sc * hours) / hours : effective;
+  const relies_on_service_charge =
+    sc > 0 && effective < required && effectiveWithSc >= required;
+
   return {
     payroll_entry_id: entry.payroll_entry_id ?? null,
     employee_id: entry.employee_id,
@@ -193,6 +202,7 @@ export function evaluatePayrollEntryNmw(
     status,
     shortfall,
     message,
+    relies_on_service_charge,
     calculation_basis,
   };
 }
