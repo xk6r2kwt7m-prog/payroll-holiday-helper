@@ -442,7 +442,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
           await supabase.from("audit_log").insert({
             user_id: user?.id || null,
             tenant_id: tenantId,
-            action: (employee ? "update" : "create") as const,
+            action: employee ? ("update" as const) : ("create" as const),
             table_name: "employees",
             record_id: employeeId,
             new_data: {
