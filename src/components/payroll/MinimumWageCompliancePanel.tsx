@@ -16,11 +16,16 @@ import {
 } from "@/components/ui/tooltip";
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { NmwResult, NmwSummary, NmwStatus } from "@/lib/payroll-nmw";
+import type { Database } from "@/integrations/supabase/types";
+
+type TermsRow = Database["public"]["Tables"]["employee_contract_terms"]["Row"];
 
 interface Props {
   results: NmwResult[];
   summary: NmwSummary;
   canCheck: boolean;
+  /** Phase 2B — optional read-only map of active terms per employee. Display only. */
+  termsByEmployee?: Record<string, TermsRow | null>;
 }
 
 const STATUS_META: Record<
@@ -49,7 +54,7 @@ const STATUS_META: Record<
   },
 };
 
-export function MinimumWageCompliancePanel({ results, summary, canCheck }: Props) {
+export function MinimumWageCompliancePanel({ results, summary, canCheck, termsByEmployee }: Props) {
   const [open, setOpen] = useState(summary.hasBlockers);
 
   if (!canCheck) return null;
