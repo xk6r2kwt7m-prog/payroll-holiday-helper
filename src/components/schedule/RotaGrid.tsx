@@ -15,6 +15,7 @@ import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSens
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import type { Employee } from "@/hooks/useEmployees";
 import type { QuickFilter } from "./ScheduleFilters";
+import { useRotaTerms } from "@/hooks/useRotaTerms";
 
 interface RotaGridProps {
   weekDays: Date[];
@@ -66,6 +67,17 @@ export function RotaGrid({
     [employees, department]
   );
 
+  // Phase 3 — terms-aware rates for cost display (base + service charge split).
+  const windowStartIso = useMemo(
+    () => (weekDays[0] ? format(weekDays[0], "yyyy-MM-dd") : undefined),
+    [weekDays],
+  );
+  const windowEndIso = useMemo(
+    () => (weekDays[weekDays.length - 1] ? format(weekDays[weekDays.length - 1], "yyyy-MM-dd") : undefined),
+    [weekDays],
+  );
+  const rotaTerms = useRotaTerms(deptEmployees, windowStartIso, windowEndIso);
+
   const shiftsForDay = (day: Date) =>
     shifts?.filter(
       (s: any) =>
@@ -101,6 +113,41 @@ export function RotaGrid({
       }
     }
     return totalMinutes / 60;
+  };
+
+  /**
+   * Per-employee weekly cost split into base and guaranteed service charge.
+   * Each shift uses the active employment terms for that shift's date so
+   * mid-week rate changes are respected. Falls back to the employee profile
+   * if no terms exist (flagged via `usedFallback`).
+   */
+  const getEmployeeWeeklyCost = (employeeId: string) => {
+    let base = 0;
+    let sc = 0;
+    let usedFallback = false;
+    for (const day of weekDays) {
+      const shift = getShiftForEmployeeDay(employeeId, day);
+      if (!shift) continue;
+      const [sh, sm] = (shift.start_time || "00:00").split(":").map(Number);
+      const [eh, em] = (shift.end_time || "00:00").split(":").map(Number);
+      let mins = (eh * 60 + em) - (sh * 60 + sm);
+      if (mins < 0) mins += 24 * 60;
+      const hours = mins / 60;
+      const cost = rotaTerms.getShiftCost({
+        employeeId,
+        dateIso: shift.shift_date,
+        hours,
+      });
+      base += cost.base_cost;
+      sc += cost.guaranteed_sc_cost;
+      if (cost.source === "profile_fallback") usedFallback = true;
+    }
+    return {
+      base: +base.toFixed(2),
+      sc: +sc.toFixed(2),
+      total: +(base + sc).toFixed(2),
+      usedFallback,
+    };
   };
 
   const [defaultEmployeeId, setDefaultEmployeeId] = useState<string | null>(null);
@@ -394,8 +441,7 @@ export function RotaGrid({
             <tbody>
               {filteredEmployees.map((emp, empIdx) => {
                 const weeklyHours = getEmployeeWeeklyHours(emp.id);
-                const hourlyRate = Number(emp.hourly_rate) || 0;
-                const weeklyCost = weeklyHours * hourlyRate;
+                const weeklyCost = getEmployeeWeeklyCost(emp.id);
                 const hasNoShifts = weeklyHours === 0;
 
                 return (
@@ -424,14 +470,36 @@ export function RotaGrid({
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[11px] sm:text-xs font-medium text-foreground leading-tight">
                             {isMobile ? emp.forename : `${emp.forename} ${emp.surname?.[0] || ""}.`}
+                            {!isMobile && weeklyCost.usedFallback && weeklyHours > 0 && (
+                              <span
+                                title="Using employee profile fallback, not contract terms."
+                                className="ml-1 text-[8px] uppercase tracking-wide text-warning"
+                              >
+                                · fallback
+                              </span>
+                            )}
                           </div>
                           <div className="text-[9px] text-muted-foreground/60 leading-tight mt-0.5 tabular-nums">
                             {weeklyHours > 0
                               ? `${Math.floor(weeklyHours)}h${Math.round((weeklyHours % 1) * 60) > 0 ? ` ${Math.round((weeklyHours % 1) * 60)}m` : ""}`
                               : "—"
                             }
-                            {!isMobile && weeklyCost > 0 && (
-                              <span className="hidden sm:inline text-muted-foreground/45"> · £{weeklyCost.toFixed(0)}</span>
+                            {!isMobile && weeklyCost.total > 0 && (
+                              <span
+                                className="hidden sm:inline text-muted-foreground/45"
+                                title={
+                                  weeklyCost.sc > 0
+                                    ? `Base £${weeklyCost.base.toFixed(2)} + service charge £${weeklyCost.sc.toFixed(2)}`
+                                    : `Base £${weeklyCost.base.toFixed(2)}`
+                                }
+                              >
+                                {" "}· £{weeklyCost.base.toFixed(0)}
+                                {weeklyCost.sc > 0 && (
+                                  <span className="text-muted-foreground/35">
+                                    {" "}+ SC £{weeklyCost.sc.toFixed(0)}
+                                  </span>
+                                )}
+                              </span>
                             )}
                           </div>
                         </div>

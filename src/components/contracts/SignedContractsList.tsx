@@ -342,15 +342,20 @@ export function SignedContractsList() {
         </div>
       )}
 
-      {amendmentTarget && (
-        <CreateAmendmentDialog
-          open={!!amendmentTarget}
-          onOpenChange={(o) => !o && setAmendmentTarget(null)}
-          previousContractId={amendmentTarget.id}
-          previousContractName={amendmentTarget.document_name}
-          employeeName={`${amendmentTarget.employees?.forename || ""} ${amendmentTarget.employees?.surname || ""}`}
-        />
-      )}
+      {amendmentTarget && (() => {
+        const emp = employees?.find((e) => e.id === amendmentTarget.employees?.id);
+        return (
+          <CreateAmendmentDialog
+            open={!!amendmentTarget}
+            onOpenChange={(o) => !o && setAmendmentTarget(null)}
+            previousContractId={amendmentTarget.id}
+            previousContractName={amendmentTarget.document_name}
+            employeeName={`${amendmentTarget.employees?.forename || ""} ${amendmentTarget.employees?.surname || ""}`}
+            employeeId={amendmentTarget.employees?.id || null}
+            employeeDob={(emp as { date_of_birth?: string | null } | undefined)?.date_of_birth || null}
+          />
+        );
+      })()}
       {terminateTarget && (
         <TerminateContractDialog
           open={!!terminateTarget}
