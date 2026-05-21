@@ -477,6 +477,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
 
       setOpen(false);
       setWageOverrideReason("");
+      // Phase 5I — after a successful create (not edit), offer to prepare a
+      // draft contract immediately. We only prompt; the manager must
+      // intentionally continue through the existing contract workflow.
+      if (!employee && employeeId) {
+        setContractPrompt({
+          id: employeeId,
+          name: `${formData.forename.trim()} ${formData.surname.trim()}`.trim() || "this employee",
+        });
+      }
       onSuccess?.();
 
       // Privacy: Worker must self-activate their own Talent Pool profile.
