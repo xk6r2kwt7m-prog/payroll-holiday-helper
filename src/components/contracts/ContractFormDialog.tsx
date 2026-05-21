@@ -109,6 +109,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const [sendingContractEmail, setSendingContractEmail] = useState(false);
   const [contractEmailSent, setContractEmailSent] = useState(false);
   const [employeeSignTokenId, setEmployeeSignTokenId] = useState<string | null>(null);
+  const [nmwOverride, setNmwOverride] = useState<NmwOverrideState | null>(null);
+  const createNmwOverride = useCreateNmwOverride();
 
   const contractEligibleEmployees = useMemo(
     () => employees?.filter((e) => ["active", "starter", "onboarding"].includes(e.status)) || [],
