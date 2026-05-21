@@ -126,11 +126,13 @@ export function PayStructureFields({
               className="bg-card"
               inputMode="decimal"
             />
+            <PaySourceHint field="baseHourlyRate" />
             <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
               Contractual hourly rate before any service charge, tronc, bonus
               or discretionary payment. National Minimum Wage is measured
               against this figure only.
             </p>
+
           </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1.5 block">
