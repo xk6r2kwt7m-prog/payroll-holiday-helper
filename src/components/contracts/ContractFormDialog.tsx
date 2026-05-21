@@ -563,7 +563,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     }, 300);
   };
 
-  const stepNumber = step === "fill" ? 1 : step === "confirm" ? 2 : 3;
+  const stepNumber =
+    step === "fill" ? 1 : step === "confirm" ? 2 : step === "issue" ? 3 : 4;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -579,16 +580,18 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
             </div>
             {step === "fill" && "New Employment Contract"}
             {step === "confirm" && "Confirm Details"}
+            {step === "issue" && "Issue Contract"}
             {step === "sign" && "Send for Signing"}
           </DialogTitle>
           <DialogDescription>
             {step === "fill" && "Fill in the employment details below to generate a UK-compliant contract."}
             {step === "confirm" && "Review the contract details before generating."}
+            {step === "issue" && "Contract generated and saved as draft. Confirm to issue it to the employee."}
             {step === "sign" && "Generate signing links for the employee and yourself."}
           </DialogDescription>
           {/* Step indicator */}
           <div className="flex items-center gap-2 pt-3">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center gap-2 flex-1">
                 <div
                   className={`h-1.5 flex-1 rounded-full transition-colors ${
@@ -601,9 +604,11 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
             <span>Details</span>
             <span>Confirm</span>
+            <span>Issue</span>
             <span>Sign</span>
           </div>
         </DialogHeader>
+
 
         <div className="px-5 py-4 sm:px-6 space-y-5">
           {/* STEP 1: Fill Details */}
