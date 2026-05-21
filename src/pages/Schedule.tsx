@@ -26,6 +26,7 @@ import { CalendarClock } from "lucide-react";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { useRotaTerms } from "@/hooks/useRotaTerms";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type ViewMode = "week" | "day";
@@ -178,6 +179,19 @@ export default function Schedule() {
     () => activeEmployees.filter((e) => e.department === selectedDept),
     [activeEmployees, selectedDept]
   );
+
+  // Phase 3 — terms-aware rates (base + service charge split) for day-view dialog & wizard.
+  const rotaWindowStart = useMemo(
+    () => (schedule.weekDays[0] ? format(schedule.weekDays[0], "yyyy-MM-dd") : undefined),
+    [schedule.weekDays],
+  );
+  const rotaWindowEnd = useMemo(
+    () => (schedule.weekDays[schedule.weekDays.length - 1]
+      ? format(schedule.weekDays[schedule.weekDays.length - 1], "yyyy-MM-dd")
+      : undefined),
+    [schedule.weekDays],
+  );
+  const rotaTerms = useRotaTerms(activeEmployees, rotaWindowStart, rotaWindowEnd);
 
   // Empty state — no branch configured
   if (!schedule.isLoading && tenantBranches.length === 0) {
@@ -385,6 +399,8 @@ export default function Schedule() {
                     open={dayDialogOpen}
                     onOpenChange={setDayDialogOpen}
                     date={format(currentDate, "EEE d MMM")}
+                    dateIso={format(currentDate, "yyyy-MM-dd")}
+                    rotaTerms={rotaTerms}
                     branch={selectedBranch}
                     department={selectedDept}
                     employees={deptEmployees}
@@ -478,6 +494,7 @@ export default function Schedule() {
         onDeptChange={setSelectedDept}
         onCreateShifts={schedule.handleBulkCreateShifts}
         isPending={schedule.isBulkCreating}
+        rotaTerms={rotaTerms}
       />
     </AppLayout>
   );

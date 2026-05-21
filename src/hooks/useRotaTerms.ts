@@ -40,7 +40,7 @@ export interface ShiftCostInput {
   hours: number;
 }
 
-interface RotaTermsApi {
+export interface RotaTermsApi {
   isLoading: boolean;
   /** Pick rates for an employee on a date. Always returns a value, even with no terms (uses fallback). */
   getRates: (employeeId: string | null | undefined, dateIso: string) => RotaRates;

@@ -595,6 +595,8 @@ export function RotaGrid({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         date={selectedDay ? format(selectedDay, "EEE d MMM") : ""}
+        dateIso={selectedDay ? format(selectedDay, "yyyy-MM-dd") : undefined}
+        rotaTerms={rotaTerms}
         branch={branch}
         department={department}
         employees={deptEmployees}

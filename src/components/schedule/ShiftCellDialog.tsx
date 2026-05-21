@@ -4,14 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Calendar, Clock, MapPin, Coffee, MessageSquare, Trash2, MoreHorizontal, ChevronDown, Repeat, CalendarDays, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, MapPin, Coffee, MessageSquare, Trash2, MoreHorizontal, ChevronDown, Repeat, CalendarDays, AlertTriangle, Info } from "lucide-react";
 import { useEmployeeReadiness } from "@/hooks/useOnboardingReadiness";
 import type { Employee } from "@/hooks/useEmployees";
+import type { RotaTermsApi } from "@/hooks/useRotaTerms";
 
 interface ShiftCellDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   date: string;
+  /** ISO date (yyyy-MM-dd) of the shift — used to resolve active employment terms. */
+  dateIso?: string;
+  /** Phase 3 — terms-aware rate resolver. When provided, cost is shown as Base + SC split. */
+  rotaTerms?: RotaTermsApi;
   branch: string;
   department: string;
   employees: Employee[];
@@ -43,6 +48,8 @@ export function ShiftCellDialog({
   open,
   onOpenChange,
   date,
+  dateIso,
+  rotaTerms,
   branch,
   department,
   employees,
@@ -88,7 +95,8 @@ export function ShiftCellDialog({
 
   const isEditing = !!existingShift;
 
-  // Calculate total hours
+  // Calculate total hours + Phase 3 base/SC split.
+  // NMW + labour% must always use base only — SC is never folded into a single hidden rate.
   const totalInfo = useMemo(() => {
     const [sh, sm] = startTime.split(":").map(Number);
     const [eh, em] = endTime.split(":").map(Number);
@@ -97,16 +105,37 @@ export function ShiftCellDialog({
     const paidMinutes = Math.max(0, totalMinutes - breakMinutes);
     const hours = paidMinutes / 60;
     const emp = employees.find(e => e.id === employeeId);
-    const rate = Number(emp?.hourly_rate) || 0;
-    const cost = hours * rate;
+
+    const hasTerms = !!rotaTerms && !!dateIso && employeeId !== "open" && !!employeeId;
+    let baseRate = 0;
+    let guaranteedScRate = 0;
+    let source: "employment_terms" | "profile_fallback" = "profile_fallback";
+
+    if (hasTerms) {
+      const rates = rotaTerms!.getRates(employeeId, dateIso!);
+      baseRate = rates.base_rate;
+      guaranteedScRate = rates.guaranteed_sc_rate;
+      source = rates.source;
+    } else if (emp) {
+      baseRate = Number(emp.hourly_rate) || 0;
+      guaranteedScRate = Number((emp as any).service_charge) || 0;
+      source = "profile_fallback";
+    }
+
+    const baseCost = hours * baseRate;
+    const scCost = hours * guaranteedScRate;
     return {
       totalMinutes,
       paidMinutes,
       hours,
-      cost,
+      baseRate,
+      guaranteedScRate,
+      baseCost,
+      scCost,
+      source,
       hoursStr: `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`,
     };
-  }, [startTime, endTime, breakMinutes, employeeId, employees]);
+  }, [startTime, endTime, breakMinutes, employeeId, employees, rotaTerms, dateIso]);
 
   // Get selected employee and readiness
   const selectedEmployee = employees.find(e => e.id === employeeId);
@@ -248,11 +277,34 @@ export function ShiftCellDialog({
 
         {/* Footer — Total + actions */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-muted/30">
-          <div className="text-sm text-foreground">
-            <span className="text-muted-foreground">Total </span>
-            <span className="font-semibold">{totalInfo.hoursStr}</span>
-            {totalInfo.cost > 0 && (
-              <span className="text-muted-foreground ml-1">· £{totalInfo.cost.toFixed(2)}</span>
+          <div className="text-sm text-foreground min-w-0">
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-muted-foreground">Total </span>
+              <span className="font-semibold">{totalInfo.hoursStr}</span>
+              {totalInfo.baseCost > 0 && (
+                <span className="text-muted-foreground ml-1">
+                  · Base £{totalInfo.baseCost.toFixed(2)}
+                  {totalInfo.scCost > 0 && (
+                    <> + SC £{totalInfo.scCost.toFixed(2)}</>
+                  )}
+                </span>
+              )}
+              {totalInfo.source === "profile_fallback" && totalInfo.baseRate > 0 && employeeId !== "open" && (
+                <span
+                  className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full"
+                  title="No active contract terms for this date — using employee profile rate as fallback."
+                >
+                  <Info className="h-2.5 w-2.5" /> Profile fallback
+                </span>
+              )}
+            </div>
+            {totalInfo.baseRate > 0 && (
+              <div className="text-[10px] text-muted-foreground/80 mt-0.5 tabular-nums">
+                Base £{totalInfo.baseRate.toFixed(2)}/hr
+                {totalInfo.guaranteedScRate > 0 && (
+                  <> + SC £{totalInfo.guaranteedScRate.toFixed(2)}/hr</>
+                )}
+              </div>
             )}
           </div>
           <div className="flex items-center gap-1.5">
