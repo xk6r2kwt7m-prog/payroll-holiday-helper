@@ -435,11 +435,14 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         }
       }
 
-      setStep("sign");
+      // Phase 5M — generation ≠ issuing. Move to the explicit issue
+      // confirmation step instead of jumping straight to send/sign.
+      setStep("issue");
 
       toast({
-        title: "Contract saved",
-        description: "Contract generated and stored. Now send for signing.",
+        title: "Contract generated",
+        description:
+          "Contract was generated and saved as a draft. Review and confirm before issuing it to the employee.",
       });
     } catch (err) {
       console.error("PDF generation/upload error:", err);
