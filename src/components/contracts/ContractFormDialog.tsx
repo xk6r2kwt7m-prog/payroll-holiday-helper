@@ -304,6 +304,30 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     [variables, companyLegalName, companyAddress, fieldSources, readiness.manualCriticalFields],
   );
 
+  // Phase 5M — workflow status derived from in-memory dialog state (no DB write).
+  // generated → contract PDF was saved but NOT issued/sent yet.
+  // issued    → manager explicitly confirmed and a signing link was sent.
+  // signed    → real signature flow completes elsewhere (no fake signing here).
+  const workflowStatus: ContractWorkflowStatus = useMemo(() => {
+    if (contractEmailSent) return "issued";
+    if (savedDocumentId) return "generated";
+    return "draft";
+  }, [savedDocumentId, contractEmailSent]);
+
+  // Phase 5M — pure issue-confirmation summary (does not send, sign or persist).
+  const issueSummary = useMemo(
+    () =>
+      buildContractIssueSummary({
+        variables,
+        gate: generationGate,
+        evidence: draftEvidence,
+        isGenerated: !!savedDocumentId,
+      }),
+    [variables, generationGate, draftEvidence, savedDocumentId],
+  );
+
+
+
 
 
   const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
