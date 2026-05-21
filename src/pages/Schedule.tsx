@@ -180,6 +180,19 @@ export default function Schedule() {
     [activeEmployees, selectedDept]
   );
 
+  // Phase 3 — terms-aware rates (base + service charge split) for day-view dialog & wizard.
+  const rotaWindowStart = useMemo(
+    () => (schedule.weekDays[0] ? format(schedule.weekDays[0], "yyyy-MM-dd") : undefined),
+    [schedule.weekDays],
+  );
+  const rotaWindowEnd = useMemo(
+    () => (schedule.weekDays[schedule.weekDays.length - 1]
+      ? format(schedule.weekDays[schedule.weekDays.length - 1], "yyyy-MM-dd")
+      : undefined),
+    [schedule.weekDays],
+  );
+  const rotaTerms = useRotaTerms(activeEmployees, rotaWindowStart, rotaWindowEnd);
+
   // Empty state — no branch configured
   if (!schedule.isLoading && tenantBranches.length === 0) {
     return (
