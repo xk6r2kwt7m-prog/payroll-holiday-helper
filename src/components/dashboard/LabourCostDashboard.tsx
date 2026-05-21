@@ -47,6 +47,11 @@ export function LabourCostDashboard() {
 
   return (
     <div className="space-y-3">
+      {fallbackCount > 0 && (
+        <div className="text-[10px] text-warning bg-warning/10 border border-warning/20 rounded px-2 py-1">
+          Using employee profile fallback for {fallbackCount} staff — no active contract terms found.
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
           {t("ops.labour_cost_today")}
@@ -89,6 +94,7 @@ export function LabourCostDashboard() {
         <StatCard
           title={t("ops.cost_today")}
           value={fmt.formatCurrency(totalCost)}
+          subtitle={scCost > 0 ? `Base ${fmt.formatCurrency(baseCost)} + SC ${fmt.formatCurrency(scCost)}` : undefined}
           icon={<DollarSign className="h-4 w-4" />}
           variant="primary"
           index={0}
