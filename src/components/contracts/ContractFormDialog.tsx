@@ -697,6 +697,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                         )}
                       </SelectContent>
                     </Select>
+                    <FieldSourceHint field="workLocation" />
                   </div>
                 </div>
               </div>
