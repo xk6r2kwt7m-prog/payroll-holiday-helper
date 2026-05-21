@@ -18,6 +18,10 @@ import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
 import { CreatePayrollDialog } from "@/components/payroll/CreatePayrollDialog";
 import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable";
 import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWorkflow";
+import { PayrollApprovalChecklist } from "@/components/payroll/PayrollApprovalChecklist";
+import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
+import { buildApprovalChecklist, canApprove as canApproveChecklist } from "@/lib/payroll-approval-checklist";
+import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
 import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySection";
 import { PayrollSalesInput } from "@/components/payroll/PayrollSalesInput";
 import { PayrollReminders } from "@/components/payroll/PayrollReminders";
@@ -147,6 +151,84 @@ const Payroll = () => {
     periodStartDate: selectedPeriod?.start_date,
     entries,
   });
+
+  // Phase 5A — Approval readiness checklist assembly. Read-only; never
+  // mutates payroll data. Service charge stays excluded from NMW.
+  const { data: payrollAdjustments = [] } = usePayrollAdjustments(selectedPeriod?.id);
+  const [checklistAcks, setChecklistAcks] = useState<Set<string>>(new Set());
+  const [checklistConfirmed, setChecklistConfirmed] = useState(false);
+  // Reset acks/confirmation when the selected period changes.
+  useMemo(() => {
+    setChecklistAcks(new Set());
+    setChecklistConfirmed(false);
+  }, [selectedPeriod?.id]);
+
+  const phase5Report = useMemo(() => {
+    if (!selectedPeriod || entries.length === 0) return null;
+    const termsMap = new Map<string, any[]>();
+    for (const r of termsComparison.rows) {
+      if (r.terms) termsMap.set(r.employee_id, [r.terms]);
+    }
+    const entriesLike = (entries as any[]).map((e) => ({
+      id: e.id,
+      employee_id: e.employee_id,
+      employee_name: e.employees
+        ? `${e.employees.forename ?? ""} ${e.employees.surname ?? ""}`.trim() || "Unknown"
+        : "Unknown",
+      date_of_birth: e.employees?.date_of_birth ?? null,
+      is_apprentice: false,
+      timesheet_hours: Number(e.timesheet_hours) || 0,
+      hourly_rate: Number(e.hourly_rate) || 0,
+      service_charge: Number(e.service_charge ?? 0),
+      performance_bonus: Number(e.performance_bonus ?? 0),
+      special_bonus: Number(e.special_bonus ?? 0),
+      total_pay: Number(e.total_pay ?? 0),
+    }));
+    return buildPayrollPeriodReport(
+      {
+        id: selectedPeriod.id,
+        period_name: selectedPeriod.period_name,
+        start_date: selectedPeriod.start_date,
+        end_date: selectedPeriod.end_date,
+        status: selectedPeriod.status,
+      },
+      entriesLike,
+      termsMap,
+    );
+  }, [selectedPeriod, entries, termsComparison.rows]);
+
+  const manualAdjustmentsByEntryId = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const a of payrollAdjustments) {
+      m.set(a.payroll_entry_id, (m.get(a.payroll_entry_id) ?? 0) + 1);
+    }
+    return m;
+  }, [payrollAdjustments]);
+
+  const phase5Checklist = useMemo(() => {
+    if (!phase5Report || !selectedPeriod) return null;
+    return buildApprovalChecklist({
+      period_status: selectedPeriod.status,
+      entries: phase5Report.entries,
+      manualAdjustmentsByEntryId,
+    });
+  }, [phase5Report, selectedPeriod, manualAdjustmentsByEntryId]);
+
+  const phase5ApprovalBlock = useMemo<string | null>(() => {
+    if (!phase5Checklist) return null;
+    if (selectedPeriod?.status !== "pending") return null; // workflow only approves from pending
+    if (phase5Checklist.blocking_count > 0) {
+      return `Resolve ${phase5Checklist.blocking_count} blocking checklist item${phase5Checklist.blocking_count === 1 ? "" : "s"} before approving.`;
+    }
+    if (!canApproveChecklist(phase5Checklist, checklistAcks)) {
+      return "Acknowledge all warnings on the approval checklist before approving.";
+    }
+    if (!checklistConfirmed) {
+      return "Tick the explicit approval confirmation on the checklist before approving.";
+    }
+    return null;
+  }, [phase5Checklist, selectedPeriod?.status, checklistAcks, checklistConfirmed]);
+
 
   const handleMarkReviewed = (csvName: string) => {
     setReviewedIssueNames(prev => new Set([...prev, csvName]));
@@ -705,6 +787,22 @@ const Payroll = () => {
           />
         )}
 
+        {/* Phase 5A — Approval readiness checklist (read-only gate) */}
+        {selectedPeriod && phase5Report && (
+          <PayrollApprovalChecklist
+            period_status={selectedPeriod.status}
+            entries={phase5Report.entries}
+            manualAdjustmentsByEntryId={manualAdjustmentsByEntryId}
+            canApproveRole={isAdmin}
+            isApproving={approvePeriod.isPending}
+            onApproveRequested={handleApprove}
+            acknowledged={checklistAcks}
+            onAcknowledgedChange={setChecklistAcks}
+            confirmed={checklistConfirmed}
+            onConfirmedChange={setChecklistConfirmed}
+          />
+        )}
+
         {/* Approval Workflow */}
         {selectedPeriod && (
           <PayrollApprovalWorkflow
@@ -722,6 +820,7 @@ const Payroll = () => {
             zeroHoursCount={zeroHoursCount}
             unresolvedImportIssues={blockingIssues}
             excludedNames={allExcludedNames}
+            externalApprovalBlock={phase5ApprovalBlock}
           />
         )}
 

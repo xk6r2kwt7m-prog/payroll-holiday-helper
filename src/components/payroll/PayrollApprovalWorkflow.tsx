@@ -48,6 +48,12 @@ interface PayrollApprovalWorkflowProps {
   zeroHoursCount: number;
   unresolvedImportIssues?: PayrollImportIssue[];
   excludedNames?: string[];
+  /**
+   * Phase 5A — optional external gate. When set, the approve button is
+   * disabled and the reason is shown. Used to gate approval behind the
+   * Phase 5 approval-readiness checklist without replacing this workflow.
+   */
+  externalApprovalBlock?: string | null;
 }
 
 const workflowSteps = [
@@ -71,6 +77,7 @@ export function PayrollApprovalWorkflow({
   zeroHoursCount,
   unresolvedImportIssues = [],
   excludedNames = [],
+  externalApprovalBlock = null,
 }: PayrollApprovalWorkflowProps) {
   const currentStepIndex = workflowSteps.findIndex(s => s.status === period.status);
   const hasUnmatchedEmployees = unresolvedImportIssues.length > 0;
@@ -92,7 +99,7 @@ export function PayrollApprovalWorkflow({
   const auditErrors = auditFindings.filter(f => f.severity === "error");
   const auditWarnings = auditFindings.filter(f => f.severity === "warning");
   const hasBlockingErrors = blockingErrors.length > 0;
-  const canSubmitOrApprove = !hasUnmatchedEmployees && !hasBlockingErrors;
+  const canSubmitOrApprove = !hasUnmatchedEmployees && !hasBlockingErrors && !externalApprovalBlock;
 
   const recalculateTotals = useRecalculatePeriodTotals();
 
@@ -461,6 +468,9 @@ export function PayrollApprovalWorkflow({
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          {externalApprovalBlock && (
+            <p className="mt-2 text-xs text-warning text-right">{externalApprovalBlock}</p>
+          )}
         </div>
       )}
 

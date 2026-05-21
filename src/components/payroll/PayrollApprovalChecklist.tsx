@@ -28,17 +28,30 @@ interface Props extends ApprovalChecklistInput {
   isApproving?: boolean;
   /** Parent triggers the actual approve mutation (with its own audit). */
   onApproveRequested: (acknowledgedIds: string[]) => void;
+  /** Optional controlled acknowledgement set — used when the parent needs
+   *  to mirror the gate state (e.g. to disable an external approve button). */
+  acknowledged?: Set<string>;
+  onAcknowledgedChange?: (next: Set<string>) => void;
+  /** Optional controlled confirmation checkbox state. */
+  confirmed?: boolean;
+  onConfirmedChange?: (v: boolean) => void;
 }
 
 export function PayrollApprovalChecklist({
   canApproveRole,
   isApproving = false,
   onApproveRequested,
+  acknowledged,
+  onAcknowledgedChange,
+  confirmed: confirmedProp,
+  onConfirmedChange,
   ...input
 }: Props) {
   const result = useMemo(() => buildApprovalChecklist(input), [input]);
-  const [acks, setAcks] = useState<Set<string>>(new Set());
-  const [confirmed, setConfirmed] = useState(false);
+  const [acksUncontrolled, setAcksUncontrolled] = useState<Set<string>>(new Set());
+  const [confirmedUncontrolled, setConfirmedUncontrolled] = useState(false);
+  const acks = acknowledged ?? acksUncontrolled;
+  const confirmed = confirmedProp ?? confirmedUncontrolled;
 
   const blockers = result.items.filter((i) => i.status === "block");
   const warnings = result.items.filter((i) => i.status === "warning");
@@ -48,12 +61,15 @@ export function PayrollApprovalChecklist({
     canApproveRole && confirmed && canApprove(result, acks) && !result.period_already_approved;
 
   const toggleAck = (id: string, on: boolean) => {
-    setAcks((prev) => {
-      const next = new Set(prev);
-      if (on) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+    const next = new Set(acks);
+    if (on) next.add(id);
+    else next.delete(id);
+    if (onAcknowledgedChange) onAcknowledgedChange(next);
+    else setAcksUncontrolled(next);
+  };
+  const setConfirmed = (v: boolean) => {
+    if (onConfirmedChange) onConfirmedChange(v);
+    else setConfirmedUncontrolled(v);
   };
 
   return (
