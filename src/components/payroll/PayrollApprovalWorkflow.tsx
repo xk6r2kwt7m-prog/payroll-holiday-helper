@@ -48,6 +48,12 @@ interface PayrollApprovalWorkflowProps {
   zeroHoursCount: number;
   unresolvedImportIssues?: PayrollImportIssue[];
   excludedNames?: string[];
+  /**
+   * Phase 5A — optional external gate. When set, the approve button is
+   * disabled and the reason is shown. Used to gate approval behind the
+   * Phase 5 approval-readiness checklist without replacing this workflow.
+   */
+  externalApprovalBlock?: string | null;
 }
 
 const workflowSteps = [
