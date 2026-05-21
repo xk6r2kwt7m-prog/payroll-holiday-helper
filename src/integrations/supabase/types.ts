@@ -1313,6 +1313,138 @@ export type Database = {
           },
         ]
       }
+      employee_contract_terms: {
+        Row: {
+          annual_salary: number | null
+          contract_id: string | null
+          contracted_hours: number | null
+          contracted_hours_basis: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          effective_from: string
+          effective_to: string | null
+          employee_id: string
+          employment_type: string | null
+          holiday_entitlement_method: string | null
+          hourly_rate: number | null
+          id: string
+          is_apprentice: boolean | null
+          notice_period_weeks: number | null
+          overtime_model: string | null
+          pay_type: string | null
+          probation_end_date: string | null
+          role_title: string | null
+          root_contract_id: string | null
+          service_charge_eligible: boolean | null
+          source_amendment_id: string | null
+          source_type: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          version_number: number
+          work_location: string | null
+        }
+        Insert: {
+          annual_salary?: number | null
+          contract_id?: string | null
+          contracted_hours?: number | null
+          contracted_hours_basis?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          effective_from: string
+          effective_to?: string | null
+          employee_id: string
+          employment_type?: string | null
+          holiday_entitlement_method?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_apprentice?: boolean | null
+          notice_period_weeks?: number | null
+          overtime_model?: string | null
+          pay_type?: string | null
+          probation_end_date?: string | null
+          role_title?: string | null
+          root_contract_id?: string | null
+          service_charge_eligible?: boolean | null
+          source_amendment_id?: string | null
+          source_type: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          version_number?: number
+          work_location?: string | null
+        }
+        Update: {
+          annual_salary?: number | null
+          contract_id?: string | null
+          contracted_hours?: number | null
+          contracted_hours_basis?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string | null
+          effective_from?: string
+          effective_to?: string | null
+          employee_id?: string
+          employment_type?: string | null
+          holiday_entitlement_method?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_apprentice?: boolean | null
+          notice_period_weeks?: number | null
+          overtime_model?: string | null
+          pay_type?: string | null
+          probation_end_date?: string | null
+          role_title?: string | null
+          root_contract_id?: string | null
+          service_charge_eligible?: boolean | null
+          source_amendment_id?: string | null
+          source_type?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          version_number?: number
+          work_location?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_contract_terms_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_contract_terms_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_contract_terms_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_contract_terms_root_contract_id_fkey"
+            columns: ["root_contract_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_contract_terms_source_amendment_id_fkey"
+            columns: ["source_amendment_id"]
+            isOneToOne: false
+            referencedRelation: "contract_amendments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_documents: {
         Row: {
           amendment_reason: string | null
@@ -7198,6 +7330,46 @@ export type Database = {
       finalise_talent_purchase: {
         Args: { _actor_id?: string; _new_status: string; _purchase_id: string }
         Returns: Json
+      }
+      get_active_employment_terms: {
+        Args: { _as_of?: string; _employee_id: string }
+        Returns: {
+          annual_salary: number | null
+          contract_id: string | null
+          contracted_hours: number | null
+          contracted_hours_basis: string | null
+          created_at: string
+          created_by: string | null
+          department: string | null
+          effective_from: string
+          effective_to: string | null
+          employee_id: string
+          employment_type: string | null
+          holiday_entitlement_method: string | null
+          hourly_rate: number | null
+          id: string
+          is_apprentice: boolean | null
+          notice_period_weeks: number | null
+          overtime_model: string | null
+          pay_type: string | null
+          probation_end_date: string | null
+          role_title: string | null
+          root_contract_id: string | null
+          service_charge_eligible: boolean | null
+          source_amendment_id: string | null
+          source_type: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          version_number: number
+          work_location: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "employee_contract_terms"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       has_any_role: { Args: never; Returns: boolean }
       has_role: {
