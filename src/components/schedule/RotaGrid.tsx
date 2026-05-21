@@ -15,6 +15,7 @@ import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSens
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import type { Employee } from "@/hooks/useEmployees";
 import type { QuickFilter } from "./ScheduleFilters";
+import { useRotaTerms } from "@/hooks/useRotaTerms";
 
 interface RotaGridProps {
   weekDays: Date[];
