@@ -132,6 +132,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         ...prev,
         employeeName: `${emp.forename} ${emp.surname}`,
         hourlyRate: emp.hourly_rate?.toString() || "",
+        baseHourlyRate: emp.hourly_rate?.toString() || "",
         jobTitle: getDefaultJobTitle(autoType),
         effectiveDate: emp.start_date || new Date().toISOString().split("T")[0],
         noticePeriod: "two weeks",
