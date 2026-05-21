@@ -20,6 +20,8 @@ import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable"
 import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWorkflow";
 import { PayrollApprovalChecklist } from "@/components/payroll/PayrollApprovalChecklist";
 import { PayrollApprovalEvidence } from "@/components/payroll/PayrollApprovalEvidence";
+import { buildPayrollApprovalEvidence } from "@/lib/payroll-approval-evidence";
+
 
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
 import { buildApprovalChecklist, canApprove as canApproveChecklist } from "@/lib/payroll-approval-checklist";
