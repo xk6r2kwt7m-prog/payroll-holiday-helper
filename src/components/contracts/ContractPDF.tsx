@@ -8,6 +8,10 @@ import {
 import type { ContractVariables } from "./contractTemplates";
 import type { ContractType } from "./contractTemplates";
 import { getEmploymentTypeLabel } from "./contractTemplates";
+import {
+  buildAppointmentReportingSentence,
+  defaultFallbackReportingRole,
+} from "@/lib/contract-appointment";
 
 const TEAL = "#5a9e91";
 const DARK = "#1e2a2f";
