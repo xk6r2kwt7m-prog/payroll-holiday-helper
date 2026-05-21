@@ -228,6 +228,41 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
   const selectedEmployeeEarly = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
 
+  // Phase 5F — auto-fill source map + missing critical-field summary.
+  // Pure derivations from in-memory state; nothing is persisted.
+  const fieldSources = useMemo(() => {
+    if (!selectedEmployeeEarly) return {} as Partial<Record<keyof ContractVariables, ContractFieldSource>>;
+    return resolveContractFieldSources({
+      input: {
+        employee: selectedEmployeeEarly,
+        onboarding: onboardingData ?? null,
+        activeTerms: (activeTerms as any) ?? null,
+      },
+      variables,
+      userEdited,
+    });
+  }, [selectedEmployeeEarly, onboardingData, activeTerms, variables, userEdited]);
+
+  const missingCriticalFields = useMemo(
+    () => getMissingContractFields(variables),
+    [variables],
+  );
+
+  const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
+    const src = fieldSources[field];
+    if (!src || src === "missing") return null;
+    return (
+      <p
+        data-testid={`field-source-${field}`}
+        data-source={src}
+        className="text-[10px] text-muted-foreground mt-1"
+      >
+        {sourceLabel(src)}
+      </p>
+    );
+  };
+
+
   const validateStep1 = () => {
     if (!variables.employeeName.trim() || !variables.jobTitle.trim() || !selectedEmployeeId) {
       toast({
