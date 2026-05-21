@@ -441,8 +441,7 @@ export function RotaGrid({
             <tbody>
               {filteredEmployees.map((emp, empIdx) => {
                 const weeklyHours = getEmployeeWeeklyHours(emp.id);
-                const hourlyRate = Number(emp.hourly_rate) || 0;
-                const weeklyCost = weeklyHours * hourlyRate;
+                const weeklyCost = getEmployeeWeeklyCost(emp.id);
                 const hasNoShifts = weeklyHours === 0;
 
                 return (
@@ -471,14 +470,36 @@ export function RotaGrid({
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-[11px] sm:text-xs font-medium text-foreground leading-tight">
                             {isMobile ? emp.forename : `${emp.forename} ${emp.surname?.[0] || ""}.`}
+                            {!isMobile && weeklyCost.usedFallback && weeklyHours > 0 && (
+                              <span
+                                title="Using employee profile fallback, not contract terms."
+                                className="ml-1 text-[8px] uppercase tracking-wide text-warning"
+                              >
+                                · fallback
+                              </span>
+                            )}
                           </div>
                           <div className="text-[9px] text-muted-foreground/60 leading-tight mt-0.5 tabular-nums">
                             {weeklyHours > 0
                               ? `${Math.floor(weeklyHours)}h${Math.round((weeklyHours % 1) * 60) > 0 ? ` ${Math.round((weeklyHours % 1) * 60)}m` : ""}`
                               : "—"
                             }
-                            {!isMobile && weeklyCost > 0 && (
-                              <span className="hidden sm:inline text-muted-foreground/45"> · £{weeklyCost.toFixed(0)}</span>
+                            {!isMobile && weeklyCost.total > 0 && (
+                              <span
+                                className="hidden sm:inline text-muted-foreground/45"
+                                title={
+                                  weeklyCost.sc > 0
+                                    ? `Base £${weeklyCost.base.toFixed(2)} + service charge £${weeklyCost.sc.toFixed(2)}`
+                                    : `Base £${weeklyCost.base.toFixed(2)}`
+                                }
+                              >
+                                {" "}· £{weeklyCost.base.toFixed(0)}
+                                {weeklyCost.sc > 0 && (
+                                  <span className="text-muted-foreground/35">
+                                    {" "}+ SC £{weeklyCost.sc.toFixed(0)}
+                                  </span>
+                                )}
+                              </span>
                             )}
                           </div>
                         </div>
