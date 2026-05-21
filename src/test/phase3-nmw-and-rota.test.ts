@@ -84,7 +84,12 @@ describe("Phase 3 — NMW gate (contract & amendment)", () => {
   });
 
   it("payroll-level NMW: relies_on_service_charge is diagnostic only, SC stays excluded from eligible pay", () => {
-    // base £10/hr × 10 hours = £100; SC £5/hr × 10 = £50; required £12.71/hr.
+    // base £10/hr × 10 hours = £100 eligible; service_charge is a flat per-entry
+    // amount (£50) per current payroll model; required £12.71/hr × 10h = £127.10.
+    // Without SC, entry is under NMW (£100 < £127.10) → non_compliant.
+    // With SC added in, total package (£100 + £50 = £150) would exceed it →
+    // diagnostic flag `relies_on_service_charge` should be true, but SC must
+    // never enter `eligible_pay`.
     const r = evaluatePayrollEntryNmw(
       {
         employee_id: "e1",
@@ -92,7 +97,7 @@ describe("Phase 3 — NMW gate (contract & amendment)", () => {
         date_of_birth: DOB_30YO,
         timesheet_hours: 10,
         hourly_rate: 10,
-        service_charge: 5,
+        service_charge: 50,
       },
       "2026-05-01",
     );
