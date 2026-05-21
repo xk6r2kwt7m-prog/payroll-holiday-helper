@@ -121,6 +121,22 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     [employees]
   );
 
+  // Fields the user has manually edited for the currently selected employee.
+  // We never overwrite these via auto-fill. Reset when a different employee
+  // is picked.
+  const [userEdited, setUserEdited] = useState<Set<keyof ContractVariables>>(new Set());
+  const [contractTypeEdited, setContractTypeEdited] = useState(false);
+
+  // Fetch onboarding + active employment terms for the selected employee.
+  // These are read-only lookups; they do not mutate any profile data.
+  const { data: onboardingData } = useMyOnboardingData(selectedEmployeeId || undefined);
+  const { data: activeTerms } = useQuery({
+    queryKey: ["active-employment-terms", selectedEmployeeId],
+    queryFn: () => getActiveEmploymentTerms(selectedEmployeeId),
+    enabled: !!selectedEmployeeId,
+    staleTime: 60_000,
+  });
+
   useEffect(() => {
     if (!open || !preselectedEmployeeId || !contractEligibleEmployees.length) return;
     const match = contractEligibleEmployees.find((e) => e.id === preselectedEmployeeId);
@@ -130,28 +146,57 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   }, [open, preselectedEmployeeId, contractEligibleEmployees]);
 
   const handleEmployeeSelect = (employeeId: string) => {
-    setSelectedEmployeeId(employeeId);
-    const emp = contractEligibleEmployees.find((e) => e.id === employeeId);
-    if (emp) {
-      const deptMap: Record<string, ContractType> = { FOH: "foh", BOH: "kitchen", CPU: "kitchen" };
-      const autoType: ContractType = deptMap[emp.department] || "foh";
-      setContractType(autoType);
-
-      setVariables((prev) => ({
-        ...prev,
-        employeeName: `${emp.forename} ${emp.surname}`,
-        hourlyRate: emp.hourly_rate?.toString() || "",
-        baseHourlyRate: emp.hourly_rate?.toString() || "",
-        jobTitle: getDefaultJobTitle(autoType),
-        effectiveDate: emp.start_date || new Date().toISOString().split("T")[0],
-        noticePeriod: "two weeks",
-        probationPeriod: "2 months",
-      }));
+    if (employeeId !== selectedEmployeeId) {
+      // New employee picked — clear per-employee manual-edit tracking so the
+      // freshly fetched profile/onboarding data can populate the form.
+      setUserEdited(new Set());
+      setContractTypeEdited(false);
     }
+    setSelectedEmployeeId(employeeId);
   };
 
+  // Auto-fill effect — runs whenever the selected employee or any of the
+  // backing data sources (employee list, onboarding, active terms) change.
+  // Skips any field that the user has manually edited.
+  useEffect(() => {
+    if (!selectedEmployeeId) return;
+    const emp = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
+    if (!emp) return;
+
+    const { variables: defaults, contractType: derivedType } = mapEmployeeToContractDefaults({
+      employee: emp,
+      onboarding: onboardingData ?? null,
+      activeTerms: (activeTerms as any) ?? null,
+    });
+
+    if (!contractTypeEdited) {
+      setContractType(derivedType);
+    }
+
+    setVariables((prev) => {
+      const next = { ...prev } as ContractVariables;
+      for (const [key, value] of Object.entries(defaults)) {
+        const k = key as keyof ContractVariables;
+        if (userEdited.has(k)) continue;
+        if (value === undefined || value === null || value === "") continue;
+        (next as any)[k] = value;
+      }
+      // Keep legacy hourlyRate in sync if baseHourlyRate was auto-filled.
+      if (!userEdited.has("baseHourlyRate") && defaults.baseHourlyRate) {
+        next.hourlyRate = defaults.baseHourlyRate;
+      }
+      return next;
+    });
+  }, [selectedEmployeeId, onboardingData, activeTerms, contractEligibleEmployees, userEdited, contractTypeEdited]);
+
   const handleContractTypeChange = (type: ContractType) => {
+    setContractTypeEdited(true);
     setContractType(type);
+    setUserEdited((prev) => {
+      const next = new Set(prev);
+      next.add("jobTitle");
+      return next;
+    });
     setVariables((prev) => ({
       ...prev,
       jobTitle: getDefaultJobTitle(type),
@@ -159,12 +204,18 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   };
 
   const updateField = (field: keyof ContractVariables, value: string) => {
+    setUserEdited((prev) => {
+      if (prev.has(field)) return prev;
+      const next = new Set(prev);
+      next.add(field);
+      return next;
+    });
     setVariables((prev) => {
-      const next = { ...prev, [field]: value } as ContractVariables;
+      const nextVars = { ...prev, [field]: value } as ContractVariables;
       // Keep legacy hourlyRate in sync with baseHourlyRate so existing
       // downstream consumers (older saved drafts, audit logs) still work.
-      if (field === "baseHourlyRate") next.hourlyRate = value;
-      return next;
+      if (field === "baseHourlyRate") nextVars.hourlyRate = value;
+      return nextVars;
     });
   };
 
