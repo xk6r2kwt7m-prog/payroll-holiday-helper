@@ -828,6 +828,17 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     we recommend filling these in for a complete contract.
                   </div>
                 )}
+                {readiness.manualCriticalFields.length > 0 && (
+                  <div
+                    data-testid="confirm-manual-warning"
+                    data-readiness-status={readiness.status}
+                    className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-amber-900 dark:text-amber-200"
+                  >
+                    Some important fields were entered manually
+                    {`: ${readiness.manualCriticalFields.map((m) => m.label).join(", ")}`}.
+                    Please confirm they are correct before generating.
+                  </div>
+                )}
               </div>
 
               <ContractPreview
