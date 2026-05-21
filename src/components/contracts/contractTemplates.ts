@@ -3,7 +3,21 @@ export interface ContractVariables {
   homeAddress: string;
   jobTitle: string;
   effectiveDate: string;
+  /**
+   * @deprecated Use baseHourlyRate. Retained for backwards compatibility
+   * with older drafts; it is now mirrored from baseHourlyRate at save time.
+   */
   hourlyRate: string;
+  /** Contractual base pay before any service charge / tronc / bonus. NMW is measured against this. */
+  baseHourlyRate: string;
+  /** Guaranteed service charge top-up paid per hour. Excluded from NMW. */
+  guaranteedServiceChargeRate: string;
+  /** Indicative only — NOT guaranteed. Excluded from NMW. */
+  estimatedServiceChargeRate: string;
+  /** Optional. Free-text name of the tronc scheme. */
+  troncSchemeName: string;
+  /** Optional. Plain-English policy note shown in the contract. */
+  serviceChargePolicyNote: string;
   weeklyHours: string;
   noticePeriod: string;
   probationPeriod: string;
@@ -77,6 +91,27 @@ export function getDefaultJobTitle(type: ContractType) {
   return JOB_TITLES[type]?.[0] || "Team Member";
 }
 
-// WORK_LOCATIONS is now dynamically loaded from tenant location_settings.
-// Use useLocationSettings() to fetch the current tenant's locations.
 export const WORK_LOCATIONS: string[] = [];
+
+/**
+ * Defensive helper for older saved drafts that only set `hourlyRate`.
+ * Returns a base hourly rate, falling back to `hourlyRate` so existing
+ * draft contracts keep rendering. Service charge fields default to 0.
+ */
+export function resolveContractPayFields(v: Partial<ContractVariables>) {
+  const baseStr = (v.baseHourlyRate ?? v.hourlyRate ?? "") as string;
+  const base = Number(baseStr) || 0;
+  const guaranteed = Number(v.guaranteedServiceChargeRate ?? "") || 0;
+  const estimated = Number(v.estimatedServiceChargeRate ?? "") || 0;
+  return {
+    base,
+    guaranteed,
+    estimated,
+    total: +(base + guaranteed + estimated).toFixed(2),
+    baseStr: baseStr || "0.00",
+    guaranteedStr: guaranteed ? guaranteed.toFixed(2) : "",
+    estimatedStr: estimated ? estimated.toFixed(2) : "",
+    troncSchemeName: (v.troncSchemeName || "").trim(),
+    serviceChargePolicyNote: (v.serviceChargePolicyNote || "").trim(),
+  };
+}

@@ -54,6 +54,9 @@ import {
 } from "./contractTemplates";
 import { ContractPDF } from "./ContractPDF";
 import { useLocationSettings } from "@/hooks/useLocationSettings";
+import { PayStructureFields, type NmwOverrideState } from "./PayStructureFields";
+import { useCreateNmwOverride } from "@/hooks/useNmwOverride";
+import { evaluateWageCompliance } from "@/lib/uk-minimum-wage";
 
 interface ContractFormDialogProps {
   open: boolean;
@@ -86,6 +89,11 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     jobTitle: "",
     effectiveDate: new Date().toISOString().split("T")[0],
     hourlyRate: "",
+    baseHourlyRate: "",
+    guaranteedServiceChargeRate: "",
+    estimatedServiceChargeRate: "",
+    troncSchemeName: "",
+    serviceChargePolicyNote: "",
     weeklyHours: "40",
     noticePeriod: "two weeks",
     probationPeriod: "2 months",
@@ -101,6 +109,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const [sendingContractEmail, setSendingContractEmail] = useState(false);
   const [contractEmailSent, setContractEmailSent] = useState(false);
   const [employeeSignTokenId, setEmployeeSignTokenId] = useState<string | null>(null);
+  const [nmwOverride, setNmwOverride] = useState<NmwOverrideState | null>(null);
+  const createNmwOverride = useCreateNmwOverride();
 
   const contractEligibleEmployees = useMemo(
     () => employees?.filter((e) => ["active", "starter", "onboarding"].includes(e.status)) || [],
@@ -127,6 +137,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         ...prev,
         employeeName: `${emp.forename} ${emp.surname}`,
         hourlyRate: emp.hourly_rate?.toString() || "",
+        baseHourlyRate: emp.hourly_rate?.toString() || "",
         jobTitle: getDefaultJobTitle(autoType),
         effectiveDate: emp.start_date || new Date().toISOString().split("T")[0],
         noticePeriod: "two weeks",
@@ -144,8 +155,16 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   };
 
   const updateField = (field: keyof ContractVariables, value: string) => {
-    setVariables((prev) => ({ ...prev, [field]: value }));
+    setVariables((prev) => {
+      const next = { ...prev, [field]: value } as ContractVariables;
+      // Keep legacy hourlyRate in sync with baseHourlyRate so existing
+      // downstream consumers (older saved drafts, audit logs) still work.
+      if (field === "baseHourlyRate") next.hourlyRate = value;
+      return next;
+    });
   };
+
+  const selectedEmployeeEarly = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
 
   const validateStep1 = () => {
     if (!variables.employeeName.trim() || !variables.jobTitle.trim() || !selectedEmployeeId) {
@@ -155,6 +174,35 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         variant: "destructive",
       });
       return false;
+    }
+    if (!variables.baseHourlyRate || Number(variables.baseHourlyRate) <= 0) {
+      toast({
+        title: "Base hourly rate required",
+        description: "Enter a base hourly rate (before service charge).",
+        variant: "destructive",
+      });
+      return false;
+    }
+    // NMW gate — base rate only, service charge is excluded.
+    const dob = selectedEmployeeEarly?.date_of_birth || null;
+    if (dob) {
+      const refDate = variables.effectiveDate ? new Date(variables.effectiveDate) : new Date();
+      const comp = evaluateWageCompliance({
+        dobIso: dob,
+        hourlyRate: Number(variables.baseHourlyRate) || 0,
+        referenceDate: isNaN(refDate.getTime()) ? new Date() : refDate,
+      });
+      if (comp.status === "below") {
+        if (!nmwOverride?.acknowledged || nmwOverride.reason.trim().length === 0) {
+          toast({
+            title: "Below National Minimum Wage",
+            description:
+              "The base hourly rate is below NMW. Service charge cannot make this up. Provide a manager override reason to continue.",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
     }
     return true;
   };
@@ -177,6 +225,28 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       });
 
       setSavedDocumentId(result.id);
+
+      // Phase 3 — write immutable NMW override audit row if applicable.
+      if (nmwOverride?.acknowledged && nmwOverride.reason.trim()) {
+        try {
+          await createNmwOverride.mutateAsync({
+            employee_id: selectedEmployeeId,
+            contract_id: result.id,
+            base_hourly_rate: nmwOverride.base_hourly_rate,
+            required_minimum_rate: nmwOverride.required_minimum_rate,
+            age_band: nmwOverride.age_band,
+            override_reason: nmwOverride.reason,
+          });
+        } catch (e) {
+          console.error("Failed to write NMW override audit row:", e);
+          toast({
+            title: "Override not recorded",
+            description: (e as Error)?.message || "Could not write audit row.",
+            variant: "destructive",
+          });
+        }
+      }
+
       setStep("sign");
 
       toast({
@@ -275,6 +345,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       setEmployeeSignLink(null);
       setEmployerSignLink(null);
       setContractEmailSent(false);
+      setNmwOverride(null);
       setEmployeeSignTokenId(null);
       setSelectedEmployeeId("");
       setVariables({
@@ -283,6 +354,11 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         jobTitle: "",
         effectiveDate: new Date().toISOString().split("T")[0],
         hourlyRate: "",
+        baseHourlyRate: "",
+        guaranteedServiceChargeRate: "",
+        estimatedServiceChargeRate: "",
+        troncSchemeName: "",
+        serviceChargePolicyNote: "",
         weeklyHours: "40",
         noticePeriod: "two weeks",
         probationPeriod: "2 months",
@@ -444,15 +520,22 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     <Input type="date" value={variables.effectiveDate} onChange={(e) => updateField("effectiveDate", e.target.value)} className="bg-card" />
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-1.5 block">Hourly Rate (£)</Label>
-                    <Input value={variables.hourlyRate} onChange={(e) => updateField("hourlyRate", e.target.value)} placeholder="12.50" className="bg-card" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Average Weekly Hours</Label>
                     <Input value={variables.weeklyHours} onChange={(e) => updateField("weeklyHours", e.target.value)} placeholder="40" className="bg-card" />
                   </div>
+                </div>
+
+                {/* Pay structure — base vs service charge (Phase 3) */}
+                <PayStructureFields
+                  variables={variables}
+                  onChange={updateField}
+                  employeeDob={selectedEmployee?.date_of_birth ?? null}
+                  effectiveDate={variables.effectiveDate}
+                  onOverrideChange={setNmwOverride}
+                  nmwOverride={nmwOverride}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Notice Period</Label>
                     <Select value={variables.noticePeriod} onValueChange={(v) => updateField("noticePeriod", v)}>

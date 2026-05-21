@@ -24,10 +24,18 @@ export interface FieldChange {
  * Fields considered "material" — changing any of these on an issued contract
  * invalidates existing signatures, and on a signed contract always requires
  * employee re-signature on the amendment.
+ *
+ * Phase 3 split: `hourly_rate` is kept for legacy drafts, but new amendments
+ * should prefer `base_hourly_rate` and the dedicated service charge fields.
  */
 export const MATERIAL_FIELDS: { key: string; label: string }[] = [
   { key: "annual_salary", label: "Annual salary" },
-  { key: "hourly_rate", label: "Hourly rate" },
+  { key: "base_hourly_rate", label: "Base hourly rate" },
+  { key: "guaranteed_service_charge_rate", label: "Guaranteed service charge per hour" },
+  { key: "estimated_service_charge_rate", label: "Estimated service charge per hour" },
+  { key: "tronc_scheme_name", label: "Tronc scheme name" },
+  { key: "service_charge_policy_note", label: "Service charge policy note" },
+  { key: "hourly_rate", label: "Hourly rate (legacy)" },
   { key: "weekly_hours", label: "Contracted weekly hours" },
   { key: "role", label: "Role / job title" },
   { key: "workplace", label: "Workplace / location" },
@@ -35,6 +43,11 @@ export const MATERIAL_FIELDS: { key: string; label: string }[] = [
   { key: "probation_months", label: "Probation length" },
   { key: "notice_period", label: "Notice period" },
 ];
+
+// Service-charge fields and tronc notes are documented as material because
+// they change the contractual pay structure, but they are NEVER counted
+// toward National Minimum Wage compliance — the NMW gate uses
+// `base_hourly_rate` only.
 
 const MATERIAL_KEYS = new Set(MATERIAL_FIELDS.map((f) => f.key));
 

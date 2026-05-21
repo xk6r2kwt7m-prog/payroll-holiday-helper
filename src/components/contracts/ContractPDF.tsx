@@ -456,37 +456,49 @@ export function ContractPDF({
         {/* 7. SALARY */}
         <Text style={styles.sectionTitle}>7. Salary and Other Benefits</Text>
         <Text style={styles.subSectionTitle}>7.1 Salary</Text>
-        {isManagement ? (
-          <>
-            <Text style={styles.paragraph}>
-              The Company will pay to the {roleLabel} a salary from the Effective Date in the amount calculated as below:
-            </Text>
-            <View style={styles.infoBox}>
-              <Text style={styles.bold}>£{variables.hourlyRate} per hour, composing of a base rate, including service charge element.</Text>
-            </View>
-            <Text style={styles.paragraph}>
-              In addition to the base salary, after the successful completion of the probation period, the {roleLabel} will be eligible for a performance bonus of up to £2,000 per year. This bonus will be distributed on a monthly basis, subject to individual and company performance metrics as determined by the Company at its sole discretion.
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.paragraph}>
-              The Company will pay the {roleLabel} a salary from the Effective Date at the rate of:
-            </Text>
-            <View style={styles.infoBox}>
-              <Text style={styles.bold}>£{variables.hourlyRate} per hour, which includes a guaranteed service charge.</Text>
-            </View>
-          </>
-        )}
-        <Text style={styles.paragraph}>
-          The Salary will be payable by monthly instalments in arrears and will be subject to such deductions as may be required by law or under the terms of the Appointment.
-        </Text>
-        <Text style={styles.paragraph}>
-          Any increase in salary is related both to Company and individual performance and is at the sole discretion of the Company.
-        </Text>
-        <Text style={styles.paragraph}>
-          The {roleLabel} acknowledges and agrees that their salary is a confidential matter that cannot be disclosed to other parties.
-        </Text>
+        {(() => {
+          const base = Number(variables.baseHourlyRate || variables.hourlyRate) || 0;
+          const guaranteedSc = Number(variables.guaranteedServiceChargeRate) || 0;
+          const estimatedSc = Number(variables.estimatedServiceChargeRate) || 0;
+          const tronc = (variables.troncSchemeName || "").trim();
+          const policy = (variables.serviceChargePolicyNote || "").trim();
+          return (
+            <>
+              <Text style={styles.paragraph}>
+                The Company will pay the {roleLabel} a base hourly rate from the Effective Date as set out below:
+              </Text>
+              <View style={styles.infoBox}>
+                <Text style={styles.bold}>£{base.toFixed(2)} per hour (base hourly rate)</Text>
+              </View>
+              <Text style={styles.paragraph}>
+                Your base hourly rate is £{base.toFixed(2)} per hour. This is your contractual hourly rate before any service charge, tronc payment, bonus, or discretionary payment.
+              </Text>
+              {guaranteedSc > 0 && (
+                <Text style={styles.paragraph}>
+                  In addition to your base hourly rate of £{base.toFixed(2)} per hour, you will receive a guaranteed service charge payment of £{guaranteedSc.toFixed(2)} per hour, where applicable. This service charge payment is separate from your base hourly rate and does not form part of the calculation for National Minimum Wage compliance.
+                </Text>
+              )}
+              {estimatedSc > 0 && (
+                <Text style={styles.paragraph}>
+                  You may also receive service charge or tronc payments. The estimated service charge of £{estimatedSc.toFixed(2)} per hour shown in this contract is indicative only and is not guaranteed unless expressly stated as guaranteed. Service charge and tronc payments are separate from your base hourly rate and must not be used to satisfy National Minimum Wage.
+                </Text>
+              )}
+              {tronc && (
+                <Text style={styles.paragraph}>
+                  Service charge or tronc payments may be administered under the following scheme: {tronc}. The rules of that scheme may be updated from time to time, subject to applicable law and company policy.
+                </Text>
+              )}
+              {policy && (
+                <Text style={styles.paragraph}>Service charge policy note: {policy}</Text>
+              )}
+              {isManagement && (
+                <Text style={styles.paragraph}>
+                  In addition to the base hourly rate, after the successful completion of the probation period, the {roleLabel} will be eligible for a performance bonus of up to £2,000 per year, subject to individual and company performance metrics as determined by the Company at its sole discretion. Any such bonus is separate from base pay and does not count toward National Minimum Wage compliance.
+                </Text>
+              )}
+            </>
+          );
+        })()}
         <Text style={styles.subSectionTitle}>7.2 National Insurance</Text>
         <Text style={styles.paragraph}>
           The Company shall be responsible to withhold, where appropriate, and pay both the Company and the {roleLabel} national insurance contributions. National insurance contributions payable by the {roleLabel} shall be deducted from their salary.
