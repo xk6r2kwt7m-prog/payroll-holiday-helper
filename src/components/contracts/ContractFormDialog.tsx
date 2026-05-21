@@ -1166,8 +1166,10 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                 <ArrowLeft className="h-4 w-4" /> Edit
               </Button>
               <Button
+                data-testid="generate-and-save-button"
                 onClick={handleConfirmAndSave}
-                disabled={generating}
+                disabled={generating || !generationGate.canGenerate}
+                title={generationGate.canGenerate ? undefined : generationGate.message}
                 className="gradient-primary w-full sm:w-auto order-1 sm:order-2"
               >
                 {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
