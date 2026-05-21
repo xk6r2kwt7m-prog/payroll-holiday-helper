@@ -12,11 +12,12 @@ import {
   DrawerTitle,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { ChevronLeft, ChevronRight, Check, Clock, Users, AlertTriangle, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Clock, Users, AlertTriangle, Zap, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/hooks/useEmployees";
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import { getPresetsForDepartment, type ShiftPreset } from "./ShiftTemplatePresets";
+import type { RotaTermsApi } from "@/hooks/useRotaTerms";
 
 interface MobileShiftWizardProps {
   open: boolean;
