@@ -48,6 +48,8 @@ export function ShiftCellDialog({
   open,
   onOpenChange,
   date,
+  dateIso,
+  rotaTerms,
   branch,
   department,
   employees,
