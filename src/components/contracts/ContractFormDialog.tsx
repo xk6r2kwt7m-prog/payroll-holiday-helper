@@ -251,6 +251,12 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     [variables],
   );
 
+  // Phase 5J — derive a calm readiness status from existing review helpers.
+  const readiness = useMemo(
+    () => deriveContractReadiness({ missing: missingCriticalFields, sources: fieldSources }),
+    [missingCriticalFields, fieldSources],
+  );
+
   const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
     const src = fieldSources[field];
     if (!src || src === "missing") return null;
