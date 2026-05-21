@@ -618,8 +618,15 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
           if (!emp.matchedId || !emp.hourlyRate) continue;
 
           const hours = emp.totalHours;
-          const rate = emp.hourlyRate;
-          const sc = emp.serviceCharge || 0;
+          // Phase 2C — prefer active employment terms; fall back to CSV-matched profile rate.
+          const _defaults = resolveRateSource(importTermsMap.get(emp.matchedId!), {
+            id: emp.matchedId!,
+            hourly_rate: emp.hourlyRate,
+            service_charge: emp.serviceCharge,
+            department: emp.department,
+          });
+          const rate = _defaults.hourly_rate;
+          const sc = _defaults.service_charge;
           const holidayAccrued = calculateAccrual(hours, 0.1207);
 
           const locNotes = emp.locations.length > 1
