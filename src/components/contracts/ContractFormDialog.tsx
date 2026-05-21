@@ -40,6 +40,7 @@ import {
   Link2,
   Loader2,
   Mail,
+  Send,
   MapPin,
   ShieldCheck,
   User,
