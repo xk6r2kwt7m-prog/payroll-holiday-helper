@@ -45,6 +45,8 @@ export interface ContractDefaultsActiveTerms {
   notice_period_weeks?: number | null;
   department?: string | null;
   effective_from?: string | null;
+  reporting_manager_name?: string | null;
+  reporting_manager_title?: string | null;
 }
 
 export interface ContractDefaultsInput {
