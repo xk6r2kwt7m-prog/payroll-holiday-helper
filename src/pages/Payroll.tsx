@@ -47,6 +47,8 @@ import { usePayrollImportStatus } from "@/hooks/usePayrollImportStatus";
 import { SendPayrollEmailDialog } from "@/components/payroll/SendPayrollEmailDialog";
 import { MinimumWageCompliancePanel } from "@/components/payroll/MinimumWageCompliancePanel";
 import { usePayrollMinimumWageCheck, useRecordNmwAudit } from "@/hooks/usePayrollMinimumWageCheck";
+import { EmploymentTermsComparisonPanel } from "@/components/payroll/EmploymentTermsComparisonPanel";
+import { useEmploymentTermsComparison } from "@/hooks/useEmploymentTermsComparison";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
@@ -138,6 +140,13 @@ const Payroll = () => {
     entries,
   });
   const recordNmwAudit = useRecordNmwAudit();
+
+  // Phase 2B — read-only comparison of payroll vs employee_contract_terms.
+  // Does NOT change calculations, totals, or approval logic.
+  const termsComparison = useEmploymentTermsComparison({
+    periodStartDate: selectedPeriod?.start_date,
+    entries,
+  });
 
   const handleMarkReviewed = (csvName: string) => {
     setReviewedIssueNames(prev => new Set([...prev, csvName]));
@@ -660,6 +669,19 @@ const Payroll = () => {
             results={nmw.results}
             summary={nmw.summary}
             canCheck={nmw.canCheck}
+            termsByEmployee={Object.fromEntries(
+              termsComparison.rows.map((r) => [r.employee_id, r.terms])
+            )}
+          />
+        )}
+
+        {/* Phase 2B — Employment Terms comparison (read-only, advisory) */}
+        {selectedPeriod && entries.length > 0 && (
+          <EmploymentTermsComparisonPanel
+            rows={termsComparison.rows}
+            summary={termsComparison.summary}
+            canCheck={termsComparison.canCheck}
+            periodStartDate={selectedPeriod.start_date}
           />
         )}
 
