@@ -58,6 +58,10 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const [niMasked, setNiMasked] = useState(false);
   const [originalNi, setOriginalNi] = useState("");
   const [wageOverrideReason, setWageOverrideReason] = useState("");
+  // Phase 5I — after-create draft-contract prompt
+  const [contractPrompt, setContractPrompt] = useState<{ id: string; name: string } | null>(null);
+  const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [contractDialogEmployeeId, setContractDialogEmployeeId] = useState<string | undefined>(undefined);
   
   const [formData, setFormData] = useState({
     forename: "",
