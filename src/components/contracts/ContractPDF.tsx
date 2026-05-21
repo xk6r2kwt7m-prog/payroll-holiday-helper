@@ -192,6 +192,11 @@ export function ContractPDF({
   const isManagement = contractType === "management" || contractType === "supervisor";
   const roleLabel = isManagement ? "Duty Manager" : "Team Member";
   const reportingTo = isManagement ? "the Operations Manager" : "the Front of House Manager";
+  const appointmentReportingSentence = buildAppointmentReportingSentence({
+    managerName: variables.reportingManagerName,
+    managerTitle: variables.reportingManagerTitle,
+    fallbackRole: defaultFallbackReportingRole(isManagement),
+  });
 
   const formattedDate = new Date(variables.effectiveDate).toLocaleDateString("en-GB", {
     day: "numeric",
