@@ -656,7 +656,9 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   effectiveDate={variables.effectiveDate}
                   onOverrideChange={setNmwOverride}
                   nmwOverride={nmwOverride}
+                  fieldSources={fieldSources}
                 />
+
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
