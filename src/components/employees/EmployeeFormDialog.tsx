@@ -760,6 +760,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                   </div>
                 </div>
 
+                <MinimumWageCheck
+                  result={evaluateWageCompliance({
+                    dobIso: formData.date_of_birth,
+                    hourlyRate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+                  })}
+                  overrideReason={wageOverrideReason}
+                  onOverrideReasonChange={setWageOverrideReason}
+                />
+
                 <div className="rounded-lg bg-muted/50 p-4 space-y-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Calendar className="h-4 w-4" />
