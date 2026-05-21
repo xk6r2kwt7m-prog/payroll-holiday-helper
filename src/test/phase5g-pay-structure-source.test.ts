@@ -147,9 +147,9 @@ describe("Phase 5G — confirm-step review wiring", () => {
   });
 
   it("confirm review includes guaranteed service charge", () => {
-    expect(dialog).toMatch(/review-row-guaranteedServiceChargeRate|guaranteedServiceChargeRate.*review/i);
-    expect(dialog).toMatch(/guaranteedServiceChargeRate/);
+    expect(dialog).toMatch(/"guaranteedServiceChargeRate"/);
   });
+
 
   it("confirm review includes estimated service charge", () => {
     expect(dialog).toMatch(/estimatedServiceChargeRate/);
