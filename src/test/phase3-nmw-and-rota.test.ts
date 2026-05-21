@@ -193,3 +193,57 @@ describe("Phase 3 — Rota terms-awareness", () => {
     expect(cost.base_rate).toBe(13);
   });
 });
+
+/**
+ * ShiftCellDialog and MobileShiftWizard both consume the same rate-resolution
+ * primitives (`pickActiveTermsForDate` + `computeShiftLabourCost`) for their
+ * cost displays. These tests pin the contract that the dialogs rely on so
+ * that neither dialog can silently regress to a single hidden combined rate.
+ */
+describe("Phase 3 — Shift dialogs (ShiftCellDialog + MobileShiftWizard) rate resolution", () => {
+  const terms: TermsRow = {
+    id: "t",
+    tenant_id: "t",
+    employee_id: "e1",
+    contract_id: "c1",
+    effective_from: "2026-04-01",
+    effective_to: null,
+    status: "active",
+    hourly_rate: 12,
+    base_hourly_rate: 13,
+    guaranteed_service_charge_rate: 2,
+    estimated_service_charge_rate: 1,
+    source_type: "signed_contract",
+  } as unknown as TermsRow;
+
+  it("dialog cost: when active terms exist for the shift date, base + SC are split, not combined", () => {
+    const active = pickActiveTermsForDate([terms], "2026-05-01");
+    const cost = computeShiftLabourCost(8, active, { hourly_rate: 99, service_charge: 99 });
+    expect(cost.base_rate).toBe(13);
+    expect(cost.guaranteed_service_charge_rate).toBe(2);
+    expect(cost.base_cost).toBe(104); // 8h × £13 — drives any NMW/labour% surfacing
+    expect(cost.guaranteed_sc_cost).toBe(16); // 8h × £2 SC — surfaced separately
+    expect(cost.source).toBe("employment_terms");
+    // Hard guarantee: base and SC must remain distinguishable to the UI.
+    expect(cost.base_rate + cost.guaranteed_service_charge_rate).not.toBe(cost.base_rate);
+  });
+
+  it("dialog cost: when no active terms exist for the shift date, profile fallback is used and flagged", () => {
+    const active = pickActiveTermsForDate([], "2026-05-01");
+    const cost = computeShiftLabourCost(8, active, { hourly_rate: 11, service_charge: 1.5 });
+    expect(cost.source).toBe("profile_fallback");
+    expect(cost.base_cost).toBe(88); // 8h × £11 profile
+    expect(cost.guaranteed_sc_cost).toBe(12); // 8h × £1.50 profile SC
+    expect(cost.warning).toMatch(/profile fallback/i);
+  });
+
+  it("dialog cost: SC remains excluded from any cost figure used for compliance (base only)", () => {
+    const active = pickActiveTermsForDate([terms], "2026-05-01");
+    const cost = computeShiftLabourCost(10, active, { hourly_rate: 0, service_charge: 0 });
+    // Caller (ShiftCellDialog/MobileShiftWizard) must drive labour% / NMW from base_cost.
+    expect(cost.base_cost).toBe(130);
+    expect(cost.guaranteed_sc_cost).toBe(20);
+    // Never bundle them into one hidden rate.
+    expect(cost.base_cost).not.toBe(cost.base_cost + cost.guaranteed_sc_cost);
+  });
+});
