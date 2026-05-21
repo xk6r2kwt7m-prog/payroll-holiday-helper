@@ -869,6 +869,60 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                 )}
               </div>
 
+              {/* Phase 5K — Draft preparation evidence summary (display-only, not persisted) */}
+              <div
+                data-testid="draft-evidence-summary"
+                data-readiness-status={draftEvidence.readinessStatus}
+                data-from-employee-creation={String(draftEvidence.generatedFromEmployeeCreationFlow)}
+                className="rounded-lg border border-border bg-muted/30 p-4 space-y-2 text-xs"
+              >
+                <p className="text-sm font-semibold text-foreground">Draft preparation summary</p>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Readiness</dt>
+                    <dd className="font-medium text-foreground" data-testid="evidence-readiness">
+                      {readiness.bannerTitle}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Auto-filled fields</dt>
+                    <dd className="font-medium text-foreground" data-testid="evidence-autofilled-count">
+                      {draftEvidence.autoFilledCount}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Manually entered critical fields</dt>
+                    <dd className="font-medium text-foreground" data-testid="evidence-manual-count">
+                      {draftEvidence.manuallyEnteredCriticalFields.length}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Missing critical fields</dt>
+                    <dd className="font-medium text-foreground" data-testid="evidence-missing-count">
+                      {draftEvidence.missingCriticalFields.length}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Reporting manager</dt>
+                    <dd className="font-medium text-foreground" data-testid="evidence-reporting-manager">
+                      {reportingManagerStatusLabel(draftEvidence.reportingManagerStatus)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Pay details</dt>
+                    <dd className="font-medium text-foreground" data-testid="evidence-pay-details">
+                      {payDetailsStatusLabel(draftEvidence.payDetailsStatus)}
+                    </dd>
+                  </div>
+                </dl>
+                {draftEvidence.missingCriticalFields.length > 0 && (
+                  <p className="text-muted-foreground" data-testid="evidence-missing-list">
+                    Missing: {draftEvidence.missingCriticalFields.map((m) => m.label).join(", ")}
+                  </p>
+                )}
+              </div>
+
+
               <ContractPreview
                 variables={variables}
                 contractType={contractType}
