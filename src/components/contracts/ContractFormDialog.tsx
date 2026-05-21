@@ -616,11 +616,13 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                           ))}
                         </SelectContent>
                       </Select>
+                      <FieldSourceHint field="jobTitle" />
                     </div>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Home Address</Label>
                     <Input value={variables.homeAddress} onChange={(e) => updateField("homeAddress", e.target.value)} placeholder="e.g. 52 Thornton Avenue, West Drayton, UB7 9JX" className="bg-card" />
+                    <FieldSourceHint field="homeAddress" />
                   </div>
                 </div>
               </div>
@@ -635,12 +637,15 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Start Date</Label>
                     <Input type="date" value={variables.effectiveDate} onChange={(e) => updateField("effectiveDate", e.target.value)} className="bg-card" />
+                    <FieldSourceHint field="effectiveDate" />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Average Weekly Hours</Label>
                     <Input value={variables.weeklyHours} onChange={(e) => updateField("weeklyHours", e.target.value)} placeholder="40" className="bg-card" />
+                    <FieldSourceHint field="weeklyHours" />
                   </div>
                 </div>
+
 
                 {/* Pay structure — base vs service charge (Phase 3) */}
                 <PayStructureFields
