@@ -290,8 +290,9 @@ export function ContractPDF({
         <Text style={styles.sectionTitle}>2. Appointment</Text>
         <Text style={styles.paragraph}>
           Upon and subject to the terms of the Appointment, the Company will from the Effective Date employ the Employee as{" "}
-          <Text style={styles.bold}>{variables.jobTitle}</Text>, reporting to {reportingTo}, as the case may be.
+          <Text style={styles.bold}>{variables.jobTitle}</Text>.
         </Text>
+        <Text style={styles.paragraph}>{appointmentReportingSentence}</Text>
         <Text style={styles.subSectionTitle}>
           The responsibilities of the {roleLabel} include, but are not limited to:
         </Text>
