@@ -383,6 +383,11 @@ export function getClauseContent(
   const isDutyManager = contractType === "management";
   const roleLabel = isManagement ? "Duty Manager" : "Team Member";
   const reportingTo = isManagement ? "the Operations Manager" : "the Front of House Manager";
+  const appointmentReportingSentence = buildAppointmentReportingSentence({
+    managerName: v.reportingManagerName,
+    managerTitle: v.reportingManagerTitle,
+    fallbackRole: defaultFallbackReportingRole(isManagement),
+  });
 
   switch (clauseId) {
     // ─── 1. INTERPRETATION ───
