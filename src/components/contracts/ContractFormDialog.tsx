@@ -87,7 +87,7 @@ interface ContractFormDialogProps {
   preselectedEmployeeId?: string;
 }
 
-type Step = "fill" | "confirm" | "sign";
+type Step = "fill" | "confirm" | "issue" | "sign";
 
 export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }: ContractFormDialogProps) {
   const { toast } = useToast();
