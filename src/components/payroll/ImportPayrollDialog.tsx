@@ -477,7 +477,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
         "@/lib/payroll-rate-source"
       );
       const periodStartForTerms =
-        (useExistingPeriod && selectedPeriod?.start_date) ||
+        (useExistingPeriod && incomingPeriod?.start_date) ||
         startDate ||
         new Date().toISOString().slice(0, 10);
       const importTermsMap = await fetchActiveTermsMap(
