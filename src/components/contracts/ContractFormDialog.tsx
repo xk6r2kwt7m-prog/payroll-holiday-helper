@@ -150,7 +150,13 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   };
 
   const updateField = (field: keyof ContractVariables, value: string) => {
-    setVariables((prev) => ({ ...prev, [field]: value }));
+    setVariables((prev) => {
+      const next = { ...prev, [field]: value } as ContractVariables;
+      // Keep legacy hourlyRate in sync with baseHourlyRate so existing
+      // downstream consumers (older saved drafts, audit logs) still work.
+      if (field === "baseHourlyRate") next.hourlyRate = value;
+      return next;
+    });
   };
 
   const validateStep1 = () => {
