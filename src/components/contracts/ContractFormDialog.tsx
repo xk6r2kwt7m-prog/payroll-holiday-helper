@@ -40,6 +40,7 @@ import {
   Link2,
   Loader2,
   Mail,
+  Send,
   MapPin,
   ShieldCheck,
   User,
@@ -75,6 +76,11 @@ import {
   reportingManagerStatusLabel,
 } from "@/lib/contract-draft-evidence";
 import { getContractGenerationGate } from "@/lib/contract-generation-gate";
+import {
+  buildContractIssueSummary,
+  contractWorkflowStatusLabel,
+  type ContractWorkflowStatus,
+} from "@/lib/contract-issue-summary";
 
 interface ContractFormDialogProps {
   open: boolean;
@@ -82,7 +88,7 @@ interface ContractFormDialogProps {
   preselectedEmployeeId?: string;
 }
 
-type Step = "fill" | "confirm" | "sign";
+type Step = "fill" | "confirm" | "issue" | "sign";
 
 export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }: ContractFormDialogProps) {
   const { toast } = useToast();
@@ -299,6 +305,30 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     [variables, companyLegalName, companyAddress, fieldSources, readiness.manualCriticalFields],
   );
 
+  // Phase 5M — workflow status derived from in-memory dialog state (no DB write).
+  // generated → contract PDF was saved but NOT issued/sent yet.
+  // issued    → manager explicitly confirmed and a signing link was sent.
+  // signed    → real signature flow completes elsewhere (no fake signing here).
+  const workflowStatus: ContractWorkflowStatus = useMemo(() => {
+    if (contractEmailSent) return "issued";
+    if (savedDocumentId) return "generated";
+    return "draft";
+  }, [savedDocumentId, contractEmailSent]);
+
+  // Phase 5M — pure issue-confirmation summary (does not send, sign or persist).
+  const issueSummary = useMemo(
+    () =>
+      buildContractIssueSummary({
+        variables,
+        gate: generationGate,
+        evidence: draftEvidence,
+        isGenerated: !!savedDocumentId,
+      }),
+    [variables, generationGate, draftEvidence, savedDocumentId],
+  );
+
+
+
 
 
   const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
@@ -406,11 +436,14 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         }
       }
 
-      setStep("sign");
+      // Phase 5M — generation ≠ issuing. Move to the explicit issue
+      // confirmation step instead of jumping straight to send/sign.
+      setStep("issue");
 
       toast({
-        title: "Contract saved",
-        description: "Contract generated and stored. Now send for signing.",
+        title: "Contract generated",
+        description:
+          "Contract was generated and saved as a draft. Review and confirm before issuing it to the employee.",
       });
     } catch (err) {
       console.error("PDF generation/upload error:", err);
@@ -531,7 +564,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     }, 300);
   };
 
-  const stepNumber = step === "fill" ? 1 : step === "confirm" ? 2 : 3;
+  const stepNumber =
+    step === "fill" ? 1 : step === "confirm" ? 2 : step === "issue" ? 3 : 4;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -547,16 +581,18 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
             </div>
             {step === "fill" && "New Employment Contract"}
             {step === "confirm" && "Confirm Details"}
+            {step === "issue" && "Issue Contract"}
             {step === "sign" && "Send for Signing"}
           </DialogTitle>
           <DialogDescription>
             {step === "fill" && "Fill in the employment details below to generate a UK-compliant contract."}
             {step === "confirm" && "Review the contract details before generating."}
+            {step === "issue" && "Contract generated and saved as draft. Confirm to issue it to the employee."}
             {step === "sign" && "Generate signing links for the employee and yourself."}
           </DialogDescription>
           {/* Step indicator */}
           <div className="flex items-center gap-2 pt-3">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center gap-2 flex-1">
                 <div
                   className={`h-1.5 flex-1 rounded-full transition-colors ${
@@ -569,9 +605,11 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           <div className="flex justify-between text-[10px] text-muted-foreground pt-1">
             <span>Details</span>
             <span>Confirm</span>
+            <span>Issue</span>
             <span>Sign</span>
           </div>
         </DialogHeader>
+
 
         <div className="px-5 py-4 sm:px-6 space-y-5">
           {/* STEP 1: Fill Details */}
@@ -1022,7 +1060,104 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
             </div>
           )}
 
-          {/* STEP 3: Sign */}
+          {/* STEP 3: Issue confirmation (Phase 5M) — generation ≠ issuing. */}
+          {step === "issue" && (
+            <div className="space-y-4" data-testid="issue-confirmation-panel">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">
+                    Contract generated and saved as draft
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Status:{" "}
+                  <span data-testid="workflow-status" data-status={workflowStatus}>
+                    {contractWorkflowStatusLabel(workflowStatus)}
+                  </span>
+                  . The contract has not been issued or signed yet.
+                </p>
+              </div>
+
+              <div
+                className="rounded-xl border border-border bg-card p-4 space-y-2"
+                data-testid="issue-summary"
+              >
+                <p className="text-sm font-semibold text-foreground">Review before issuing</p>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">Employee</dt>
+                    <dd className="font-medium">{issueSummary.employeeName}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Job title</dt>
+                    <dd className="font-medium">{issueSummary.jobTitle}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Start date</dt>
+                    <dd className="font-medium">{issueSummary.startDate}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Contract type</dt>
+                    <dd className="font-medium">{issueSummary.employmentTypeLabel}</dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-muted-foreground">Pay</dt>
+                    <dd className="font-medium">{issueSummary.paySummary}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Work location</dt>
+                    <dd className="font-medium">{issueSummary.workLocation}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Reporting manager</dt>
+                    <dd className="font-medium">{issueSummary.reportingManagerLine}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              {issueSummary.hasSoftWarnings && (
+                <div
+                  data-testid="issue-soft-warnings"
+                  className="rounded-xl border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground"
+                >
+                  <p className="font-semibold mb-1">Soft warnings</p>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {issueSummary.softWarningLabels.map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {issueSummary.hasManualCriticalFields && (
+                <div
+                  data-testid="issue-manual-fields"
+                  className="rounded-xl border border-amber-300/40 bg-amber-50 p-3 text-xs text-amber-900"
+                >
+                  <p className="font-semibold mb-1">
+                    Manually entered critical fields
+                  </p>
+                  <p className="mb-1">
+                    These were entered by hand rather than auto-filled from existing data:
+                  </p>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {issueSummary.manualCriticalFieldLabels.map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                <ShieldCheck className="h-4 w-4 text-primary inline mr-1" />
+                {issueSummary.confirmationMessage}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Sign */}
+
           {step === "sign" && (
             <div className="space-y-4">
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center space-y-2">
@@ -1187,11 +1322,34 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
             </>
           )}
 
+          {step === "issue" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="w-full sm:w-auto order-2 sm:order-1"
+              >
+                Close — issue later
+              </Button>
+              <Button
+                data-testid="issue-contract-button"
+                onClick={() => setStep("sign")}
+                disabled={!issueSummary.canIssue}
+                title={issueSummary.blockingReason || undefined}
+                className="gradient-primary w-full sm:w-auto order-1 sm:order-2"
+              >
+                <Send className="h-4 w-4" />
+                Issue contract to employee
+              </Button>
+            </>
+          )}
+
           {step === "sign" && (
             <Button onClick={handleClose} className="w-full gradient-primary">
               Done
             </Button>
           )}
+
         </DialogFooter>
       </DialogContent>
     </Dialog>
