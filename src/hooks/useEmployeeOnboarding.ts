@@ -144,7 +144,7 @@ export function useSubmitOnboarding() {
 
       const { error } = await supabase
         .from("employees")
-        .update(updates)
+        .update(updates as never)
         .eq("id", employeeId);
       if (error) throw error;
 

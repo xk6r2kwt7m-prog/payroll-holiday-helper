@@ -288,7 +288,7 @@ export function EditablePayrollTable({
 
           await supabase
             .from("employees")
-            .update(empUpdates)
+            .update(empUpdates as never)
             .eq("id", entry.employee_id);
 
           // Log each change in employee_changes for audit trail

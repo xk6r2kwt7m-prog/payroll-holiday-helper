@@ -168,7 +168,7 @@ export function PayrollHolidaySection({
 
       const { error } = await supabase
         .from("holiday_payments")
-        .update(updates)
+        .update(updates as never)
         .eq("id", hp.id);
       if (error) throw error;
 

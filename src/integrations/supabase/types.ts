@@ -424,6 +424,96 @@ export type Database = {
           },
         ]
       }
+      contract_amendments: {
+        Row: {
+          activated_at: string | null
+          amendment_type: string
+          created_at: string
+          created_by: string
+          effective_date: string
+          employee_id: string
+          employee_resigned_at: string | null
+          employer_resigned_at: string | null
+          field_changes: Json
+          id: string
+          new_contract_id: string
+          previous_contract_id: string
+          reason: string | null
+          requires_resignature: boolean
+          tenant_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          amendment_type: string
+          created_at?: string
+          created_by: string
+          effective_date: string
+          employee_id: string
+          employee_resigned_at?: string | null
+          employer_resigned_at?: string | null
+          field_changes?: Json
+          id?: string
+          new_contract_id: string
+          previous_contract_id: string
+          reason?: string | null
+          requires_resignature?: boolean
+          tenant_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          amendment_type?: string
+          created_at?: string
+          created_by?: string
+          effective_date?: string
+          employee_id?: string
+          employee_resigned_at?: string | null
+          employer_resigned_at?: string | null
+          field_changes?: Json
+          id?: string
+          new_contract_id?: string
+          previous_contract_id?: string
+          reason?: string | null
+          requires_resignature?: boolean
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_amendments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_amendments_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_amendments_new_contract_id_fkey"
+            columns: ["new_contract_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_amendments_previous_contract_id_fkey"
+            columns: ["previous_contract_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_amendments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_signatures: {
         Row: {
           consent_given: boolean | null
@@ -433,6 +523,8 @@ export type Database = {
           employee_document_id: string
           employee_id: string
           id: string
+          invalidated_at: string | null
+          invalidated_reason: string | null
           ip_address: string | null
           signatory_title: string | null
           signature_data: string | null
@@ -454,6 +546,8 @@ export type Database = {
           employee_document_id: string
           employee_id: string
           id?: string
+          invalidated_at?: string | null
+          invalidated_reason?: string | null
           ip_address?: string | null
           signatory_title?: string | null
           signature_data?: string | null
@@ -475,6 +569,8 @@ export type Database = {
           employee_document_id?: string
           employee_id?: string
           id?: string
+          invalidated_at?: string | null
+          invalidated_reason?: string | null
           ip_address?: string | null
           signatory_title?: string | null
           signature_data?: string | null
@@ -1219,15 +1315,20 @@ export type Database = {
       }
       employee_documents: {
         Row: {
+          amendment_reason: string | null
+          amendment_summary: string | null
+          amendment_type: string | null
           contract_last_token_id: string | null
           contract_send_error: string | null
           contract_send_status: string | null
           contract_sent_at: string | null
           contract_sent_to: string | null
+          contract_state: string | null
           created_at: string
           document_name: string
           document_status: string
           document_type: Database["public"]["Enums"]["document_type"]
+          effective_date: string | null
           employee_id: string
           employer_signatory_email: string | null
           employer_signatory_name: string | null
@@ -1244,25 +1345,37 @@ export type Database = {
           id: string
           mime_type: string | null
           notes: string | null
+          parent_contract_id: string | null
           rejected_reason: string | null
+          root_contract_id: string | null
+          superseded_at: string | null
+          superseded_by: string | null
           tenant_id: string
+          terminated_at: string | null
+          terminated_reason: string | null
           updated_at: string
           uploaded_by: string | null
           verification_date: string | null
           verification_method: string | null
           verification_notes: string | null
           verified_by: string | null
+          version_number: number
         }
         Insert: {
+          amendment_reason?: string | null
+          amendment_summary?: string | null
+          amendment_type?: string | null
           contract_last_token_id?: string | null
           contract_send_error?: string | null
           contract_send_status?: string | null
           contract_sent_at?: string | null
           contract_sent_to?: string | null
+          contract_state?: string | null
           created_at?: string
           document_name: string
           document_status?: string
           document_type: Database["public"]["Enums"]["document_type"]
+          effective_date?: string | null
           employee_id: string
           employer_signatory_email?: string | null
           employer_signatory_name?: string | null
@@ -1279,25 +1392,37 @@ export type Database = {
           id?: string
           mime_type?: string | null
           notes?: string | null
+          parent_contract_id?: string | null
           rejected_reason?: string | null
+          root_contract_id?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
           tenant_id: string
+          terminated_at?: string | null
+          terminated_reason?: string | null
           updated_at?: string
           uploaded_by?: string | null
           verification_date?: string | null
           verification_method?: string | null
           verification_notes?: string | null
           verified_by?: string | null
+          version_number?: number
         }
         Update: {
+          amendment_reason?: string | null
+          amendment_summary?: string | null
+          amendment_type?: string | null
           contract_last_token_id?: string | null
           contract_send_error?: string | null
           contract_send_status?: string | null
           contract_sent_at?: string | null
           contract_sent_to?: string | null
+          contract_state?: string | null
           created_at?: string
           document_name?: string
           document_status?: string
           document_type?: Database["public"]["Enums"]["document_type"]
+          effective_date?: string | null
           employee_id?: string
           employer_signatory_email?: string | null
           employer_signatory_name?: string | null
@@ -1314,14 +1439,21 @@ export type Database = {
           id?: string
           mime_type?: string | null
           notes?: string | null
+          parent_contract_id?: string | null
           rejected_reason?: string | null
+          root_contract_id?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
           tenant_id?: string
+          terminated_at?: string | null
+          terminated_reason?: string | null
           updated_at?: string
           uploaded_by?: string | null
           verification_date?: string | null
           verification_method?: string | null
           verification_notes?: string | null
           verified_by?: string | null
+          version_number?: number
         }
         Relationships: [
           {
@@ -1336,6 +1468,27 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_documents_parent_contract_id_fkey"
+            columns: ["parent_contract_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_documents_root_contract_id_fkey"
+            columns: ["root_contract_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_documents_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
             referencedColumns: ["id"]
           },
           {

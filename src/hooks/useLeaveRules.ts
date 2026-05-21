@@ -123,7 +123,7 @@ export function useUpdateTenantLeaveSettings() {
 
       const { data, error } = await supabase
         .from("tenant_leave_settings")
-        .update(updates)
+        .update(updates as never)
         .eq("tenant_id", tenantId)
         .select()
         .single();

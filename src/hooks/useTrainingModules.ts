@@ -173,7 +173,7 @@ export function useUpdateModuleStatus() {
       }
       const { error } = await supabase
         .from("training_library")
-        .update(updates)
+        .update(updates as never)
         .eq("id", id);
       if (error) throw error;
 
@@ -241,7 +241,7 @@ export function useUpdateQuizQuestion() {
       await assertPermission("manage_training", tenantId!);
       const { error } = await supabase
         .from("training_quiz_questions")
-        .update(updates)
+        .update(updates as never)
         .eq("id", id);
       if (error) throw error;
     },
@@ -355,7 +355,7 @@ export function useSubmitQuiz() {
       }
       const { error } = await supabase
         .from("training_assignments")
-        .update(updates)
+        .update(updates as never)
         .eq("id", assignmentId);
       if (error) throw error;
 
@@ -415,7 +415,7 @@ export function useManagerSignoff() {
 
       const { error } = await supabase
         .from("training_assignments")
-        .update(updates)
+        .update(updates as never)
         .eq("id", assignmentId);
       if (error) throw error;
 
