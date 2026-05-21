@@ -186,6 +186,8 @@ export function PayStructureFields({
               placeholder="e.g. Front-of-House Tronc"
               className="bg-card"
             />
+            <PaySourceHint field="troncSchemeName" />
+
           </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1.5 block">
