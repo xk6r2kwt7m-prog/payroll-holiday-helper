@@ -33,6 +33,7 @@ export function ContractVersionTimeline({ contractId }: Props) {
   }
 
   return (
+    <div className="space-y-4">
     <ol className="space-y-3">
       {versions.map((v, idx) => {
         const row = v as Record<string, unknown>;
