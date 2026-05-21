@@ -46,6 +46,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const [niMismatchError, setNiMismatchError] = useState(false);
   const [niMasked, setNiMasked] = useState(false);
   const [originalNi, setOriginalNi] = useState("");
+  const [wageOverrideReason, setWageOverrideReason] = useState("");
   
   const [formData, setFormData] = useState({
     forename: "",
