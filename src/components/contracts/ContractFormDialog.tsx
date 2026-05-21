@@ -656,7 +656,9 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   effectiveDate={variables.effectiveDate}
                   onOverrideChange={setNmwOverride}
                   nmwOverride={nmwOverride}
+                  fieldSources={fieldSources}
                 />
+
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -714,16 +716,30 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
               >
                 <p className="text-sm font-semibold text-foreground">Review summary</p>
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                  {([
+                  {(([
                     ["employeeName", variables.employeeName],
                     ["jobTitle", variables.jobTitle],
                     ["employmentType", variables.employmentType ? getEmploymentTypeLabel(variables.employmentType) : ""],
                     ["effectiveDate", variables.effectiveDate],
                     ["baseHourlyRate", variables.baseHourlyRate ? `£${variables.baseHourlyRate}/hr` : ""],
+                    ["guaranteedServiceChargeRate", Number(variables.guaranteedServiceChargeRate) > 0 ? `£${variables.guaranteedServiceChargeRate}/hr` : ""],
+                    ["estimatedServiceChargeRate", Number(variables.estimatedServiceChargeRate) > 0 ? `£${variables.estimatedServiceChargeRate}/hr` : ""],
+                    ["troncSchemeName", variables.troncSchemeName || ""],
                     ["weeklyHours", variables.weeklyHours ? `${variables.weeklyHours} hrs/week` : ""],
                     ["workLocation", variables.workLocation],
                     ["noticePeriod", variables.noticePeriod],
-                  ] as const).map(([field, value]) => (
+                  ] as const)
+                    .filter(([field, value]) => {
+                      // Always show critical fields (even if missing); only show
+                      // optional pay extras when they have a value.
+                      const optional = new Set<string>([
+                        "guaranteedServiceChargeRate",
+                        "estimatedServiceChargeRate",
+                        "troncSchemeName",
+                      ]);
+                      return !optional.has(field) || (value && String(value).trim() !== "");
+                    })
+                  ).map(([field, value]) => (
                     <div key={field} className="flex justify-between gap-3" data-testid={`review-row-${field}`}>
                       <dt className="text-muted-foreground">{CONTRACT_FIELD_LABELS[field as keyof ContractVariables] || field}</dt>
                       <dd className="font-medium text-foreground text-right truncate">
@@ -731,6 +747,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                       </dd>
                     </div>
                   ))}
+
                 </dl>
                 {missingCriticalFields.length > 0 && (
                   <div

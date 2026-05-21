@@ -26,6 +26,7 @@ import {
   calculateAgeYears,
 } from "@/lib/uk-minimum-wage";
 import type { ContractVariables } from "./contractTemplates";
+import { sourceLabel, type ContractFieldSource } from "@/lib/contract-form-review";
 
 export interface NmwOverrideState {
   /** True only when the user has explicitly chosen to override. */
@@ -44,7 +45,15 @@ interface Props {
   effectiveDate: string;
   onOverrideChange: (next: NmwOverrideState | null) => void;
   nmwOverride: NmwOverrideState | null;
+  /**
+   * Phase 5G — optional resolved source map for pay fields. When provided,
+   * each pay-related input renders a small muted helper label indicating
+   * whether the value came from active terms, the employee profile, manual
+   * entry, etc. Read-only display; no calculation logic is affected.
+   */
+  fieldSources?: Partial<Record<keyof ContractVariables, ContractFieldSource>>;
 }
+
 
 export function PayStructureFields({
   variables,
@@ -53,7 +62,22 @@ export function PayStructureFields({
   effectiveDate,
   onOverrideChange,
   nmwOverride,
+  fieldSources,
 }: Props) {
+  const PaySourceHint = ({ field }: { field: keyof ContractVariables }) => {
+    const src = fieldSources?.[field];
+    if (!src) return null;
+    return (
+      <p
+        data-testid={`pay-source-${field}`}
+        data-source={src}
+        className="text-[10px] text-muted-foreground mt-1"
+      >
+        {sourceLabel(src)}
+      </p>
+    );
+  };
+
   const referenceDate = useMemo(() => {
     const d = effectiveDate ? new Date(effectiveDate) : new Date();
     return isNaN(d.getTime()) ? new Date() : d;
@@ -102,11 +126,13 @@ export function PayStructureFields({
               className="bg-card"
               inputMode="decimal"
             />
+            <PaySourceHint field="baseHourlyRate" />
             <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
               Contractual hourly rate before any service charge, tronc, bonus
               or discretionary payment. National Minimum Wage is measured
               against this figure only.
             </p>
+
           </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1.5 block">
@@ -121,10 +147,12 @@ export function PayStructureFields({
               className="bg-card"
               inputMode="decimal"
             />
+            <PaySourceHint field="guaranteedServiceChargeRate" />
             <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
               Separate from base pay. Cannot be used to satisfy National
               Minimum Wage.
             </p>
+
           </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1.5 block">
@@ -139,9 +167,11 @@ export function PayStructureFields({
               className="bg-card"
               inputMode="decimal"
             />
+            <PaySourceHint field="estimatedServiceChargeRate" />
             <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
               Indicative only — not guaranteed.
             </p>
+
           </div>
         </div>
 
@@ -156,6 +186,8 @@ export function PayStructureFields({
               placeholder="e.g. Front-of-House Tronc"
               className="bg-card"
             />
+            <PaySourceHint field="troncSchemeName" />
+
           </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1.5 block">
@@ -170,6 +202,8 @@ export function PayStructureFields({
               className="bg-card min-h-[40px]"
               rows={2}
             />
+            <PaySourceHint field="serviceChargePolicyNote" />
+
           </div>
         </div>
 
