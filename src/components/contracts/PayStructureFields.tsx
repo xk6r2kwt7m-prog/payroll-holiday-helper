@@ -147,10 +147,12 @@ export function PayStructureFields({
               className="bg-card"
               inputMode="decimal"
             />
+            <PaySourceHint field="guaranteedServiceChargeRate" />
             <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
               Separate from base pay. Cannot be used to satisfy National
               Minimum Wage.
             </p>
+
           </div>
           <div>
             <Label className="text-xs text-muted-foreground mb-1.5 block">
