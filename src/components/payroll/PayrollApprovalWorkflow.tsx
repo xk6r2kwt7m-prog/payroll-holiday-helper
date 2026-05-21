@@ -77,6 +77,7 @@ export function PayrollApprovalWorkflow({
   zeroHoursCount,
   unresolvedImportIssues = [],
   excludedNames = [],
+  externalApprovalBlock = null,
 }: PayrollApprovalWorkflowProps) {
   const currentStepIndex = workflowSteps.findIndex(s => s.status === period.status);
   const hasUnmatchedEmployees = unresolvedImportIssues.length > 0;
@@ -98,7 +99,7 @@ export function PayrollApprovalWorkflow({
   const auditErrors = auditFindings.filter(f => f.severity === "error");
   const auditWarnings = auditFindings.filter(f => f.severity === "warning");
   const hasBlockingErrors = blockingErrors.length > 0;
-  const canSubmitOrApprove = !hasUnmatchedEmployees && !hasBlockingErrors;
+  const canSubmitOrApprove = !hasUnmatchedEmployees && !hasBlockingErrors && !externalApprovalBlock;
 
   const recalculateTotals = useRecalculatePeriodTotals();
 
