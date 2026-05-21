@@ -23,6 +23,14 @@ export interface ContractVariables {
   probationPeriod: string;
   workLocation: string;
   employmentType: EmploymentType;
+  /**
+   * Optional reporting manager (Phase 5H). Draft-form-only.
+   * Used to personalise the Appointment / Reporting sentence.
+   * Not persisted back to the employee profile.
+   */
+  reportingManagerName?: string;
+  /** Optional reporting manager job title (Phase 5H). Draft-form-only. */
+  reportingManagerTitle?: string;
 }
 
 export type EmploymentType = "full_time" | "part_time" | "variable_hours";
