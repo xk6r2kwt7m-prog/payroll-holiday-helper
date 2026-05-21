@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp, Check } from "lucide-react";
-import { isSameDay } from "date-fns";
+import { isSameDay, format } from "date-fns";
 import { getMinimumStaff, type DayOfWeek, DAY_ABBR } from "./shiftDefaults";
 import {
   Drawer,
@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useRotaTerms } from "@/hooks/useRotaTerms";
 
 interface ScheduleSummaryProps {
   shifts: any[];
   weekDays: Date[];
   branch: string;
   department: string;
-  employees: { id: string; forename: string; surname: string; hourly_rate: number; department: string; status: string }[];
+  employees: { id: string; forename: string; surname: string; hourly_rate: number; service_charge?: number | null; department: string; status: string }[];
   complianceWarningCount: number;
 }
 
@@ -64,6 +65,14 @@ export function ScheduleSummary({
     });
   }, [weekDays, branchDeptShifts, branch, department]);
 
+  const windowStart = weekDays[0] ? format(weekDays[0], "yyyy-MM-dd") : undefined;
+  const windowEnd = weekDays[weekDays.length - 1] ? format(weekDays[weekDays.length - 1], "yyyy-MM-dd") : undefined;
+  const rotaTerms = useRotaTerms(
+    deptEmployees.map((e) => ({ id: e.id, hourly_rate: e.hourly_rate, service_charge: e.service_charge ?? 0 })),
+    windowStart,
+    windowEnd,
+  );
+
   const stats = useMemo(() => {
     const totalShifts = branchDeptShifts.length;
     const assignedShifts = branchDeptShifts.filter((s: any) => s.employee_id).length;
@@ -75,20 +84,38 @@ export function ScheduleSummary({
     );
     const unscheduledEmployees = deptEmployees.filter((e) => !employeesWithShifts.has(e.id));
 
-    let totalCost = 0;
+    let baseCost = 0;
+    let scCost = 0;
+    let fallbackCount = 0;
     for (const shift of branchDeptShifts) {
       if (!shift.employee_id) continue;
-      const emp = employees.find((e) => e.id === shift.employee_id);
-      const rate = Number(emp?.hourly_rate) || 0;
       const [sh, sm] = (shift.start_time || "00:00").split(":").map(Number);
       const [eh, em] = (shift.end_time || "00:00").split(":").map(Number);
       let mins = (eh * 60 + em) - (sh * 60 + sm);
       if (mins < 0) mins += 24 * 60;
-      totalCost += (mins / 60) * rate;
+      const c = rotaTerms.getShiftCost({
+        employeeId: shift.employee_id,
+        dateIso: shift.shift_date,
+        hours: mins / 60,
+      });
+      baseCost += c.base_cost;
+      scCost += c.guaranteed_sc_cost;
+      if (c.source === "profile_fallback") fallbackCount += 1;
     }
 
-    return { totalShifts, assignedShifts, unassigned, published, understaffedDays, unscheduledEmployees, totalCost };
-  }, [branchDeptShifts, coverage, deptEmployees, employees]);
+    return {
+      totalShifts,
+      assignedShifts,
+      unassigned,
+      published,
+      understaffedDays,
+      unscheduledEmployees,
+      totalCost: +(baseCost + scCost).toFixed(2),
+      baseCost: +baseCost.toFixed(2),
+      scCost: +scCost.toFixed(2),
+      fallbackCount,
+    };
+  }, [branchDeptShifts, coverage, deptEmployees, rotaTerms]);
 
   const gapDays = coverage.filter((c) => c.status !== "ok");
 
@@ -127,12 +154,28 @@ export function ScheduleSummary({
                 </span>
               )}
               {stats.totalCost > 0 && (
-                <span className="tabular-nums text-muted-foreground/70">
-                  £{stats.totalCost.toFixed(0)}
+                <span
+                  className="tabular-nums text-muted-foreground/70"
+                  title={
+                    stats.scCost > 0
+                      ? `Base £${stats.baseCost.toFixed(2)} + service charge £${stats.scCost.toFixed(2)}`
+                      : `Base £${stats.baseCost.toFixed(2)}`
+                  }
+                >
+                  £{stats.baseCost.toFixed(0)}
+                  {stats.scCost > 0 && (
+                    <span className="text-muted-foreground/45"> + SC £{stats.scCost.toFixed(0)}</span>
+                  )}
                 </span>
               )}
-            </div>
-            <div className="text-muted-foreground/40">
+              {stats.fallbackCount > 0 && (
+                <span
+                  className="text-warning text-[10px]"
+                  title="Some shifts use the employee profile fallback, not active contract terms."
+                >
+                  fallback
+                </span>
+              )}
               {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </div>
           </button>
