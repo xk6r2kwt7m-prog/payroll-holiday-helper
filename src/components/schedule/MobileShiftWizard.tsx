@@ -67,6 +67,7 @@ export function MobileShiftWizard({
   initialDepartment,
   departments,
   onDeptChange,
+  rotaTerms,
 }: MobileShiftWizardProps) {
   const [step, setStep] = useState<WizardStep>("day");
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
