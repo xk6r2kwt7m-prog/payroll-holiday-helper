@@ -13,6 +13,10 @@ interface ShiftCellDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   date: string;
+  /** ISO date (yyyy-MM-dd) of the shift — used to resolve active employment terms. */
+  dateIso?: string;
+  /** Phase 3 — terms-aware rate resolver. When provided, cost is shown as Base + SC split. */
+  rotaTerms?: RotaTermsApi;
   branch: string;
   department: string;
   employees: Employee[];
