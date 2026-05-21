@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { AvailabilityEditor as AvailabilityEditorLazy } from "@/components/workforce/AvailabilityEditor";
 import { useTenant } from "@/hooks/useTenant";
 import { usePlanLimits } from "@/hooks/useSubscription";
+import { evaluateWageCompliance } from "@/lib/uk-minimum-wage";
+import { MinimumWageCheck } from "./MinimumWageCheck";
 
 type DepartmentType = string;
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
@@ -44,6 +46,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   const [niMismatchError, setNiMismatchError] = useState(false);
   const [niMasked, setNiMasked] = useState(false);
   const [originalNi, setOriginalNi] = useState("");
+  const [wageOverrideReason, setWageOverrideReason] = useState("");
   
   const [formData, setFormData] = useState({
     forename: "",
@@ -224,6 +227,19 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
     if (validationErrors.length > 0) {
       toast.error(validationErrors.join(". "));
       setActiveTab("personal");
+      return;
+    }
+
+    // UK Minimum Wage early-warning gate (admin override required if below)
+    const wageCheck = evaluateWageCompliance({
+      dobIso: formData.date_of_birth,
+      hourlyRate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+    });
+    if (wageCheck.status === "below" && !wageOverrideReason.trim()) {
+      toast.error(
+        `Hourly rate £${wageCheck.currentRate?.toFixed(2)} is below the UK legal minimum £${wageCheck.requiredMinimum?.toFixed(2)} for age ${wageCheck.age}. Provide an override reason to continue.`,
+      );
+      setActiveTab("employment");
       return;
     }
 
@@ -419,7 +435,33 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
         });
       }
 
+      // Audit log: record minimum-wage override if admin saved a below-minimum rate.
+      if (wageCheck.status === "below" && wageOverrideReason.trim()) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.from("audit_log").insert({
+            user_id: user?.id || null,
+            tenant_id: tenantId,
+            action: employee ? ("update" as const) : ("create" as const),
+            table_name: "employees",
+            record_id: employeeId,
+            new_data: {
+              event: "uk_minimum_wage_override",
+              age: wageCheck.age,
+              band: wageCheck.band,
+              required_minimum: wageCheck.requiredMinimum,
+              current_rate: wageCheck.currentRate,
+              shortfall: wageCheck.delta,
+              reason: wageOverrideReason.trim(),
+            },
+          });
+        } catch (auditErr) {
+          console.warn("[ADD_EMPLOYEE] Wage override audit log failed (non-blocking):", auditErr);
+        }
+      }
+
       setOpen(false);
+      setWageOverrideReason("");
       onSuccess?.();
 
       // Privacy: Worker must self-activate their own Talent Pool profile.
@@ -756,6 +798,15 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
                     />
                   </div>
                 </div>
+
+                <MinimumWageCheck
+                  result={evaluateWageCompliance({
+                    dobIso: formData.date_of_birth,
+                    hourlyRate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+                  })}
+                  overrideReason={wageOverrideReason}
+                  onOverrideReasonChange={setWageOverrideReason}
+                />
 
                 <div className="rounded-lg bg-muted/50 p-4 space-y-4">
                   <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
