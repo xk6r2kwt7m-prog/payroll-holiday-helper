@@ -64,7 +64,9 @@ export function useSyncPayrollFromTerms() {
 
       // Sequential to keep audit ordering clean and not flood with parallel writes
       for (const row of plan) {
-        const updates: Record<string, unknown> = { hourly_rate: row.new_rate };
+        const updates: { hourly_rate: number; service_charge?: number } = {
+          hourly_rate: row.new_rate,
+        };
         if (row.new_service_charge !== null && row.new_service_charge !== row.old_service_charge) {
           updates.service_charge = row.new_service_charge;
         }
