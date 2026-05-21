@@ -46,7 +46,7 @@ import {
   MapPin,
 } from "lucide-react";
 
-function fmt£(n: number | null | undefined): string {
+function fmtGbp(n: number | null | undefined): string {
   if (n === null || n === undefined || !isFinite(n)) return "—";
   return `£${(Math.round(n * 100) / 100).toFixed(2)}`;
 }
@@ -218,12 +218,12 @@ export function LabourCostReport() {
 
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <SummaryCard label="Base labour cost" value={fmt£(agg.base_pay_total)} hint="NMW eligible base pay" />
-            <SummaryCard label="Guaranteed service charge" value={fmt£(agg.guaranteed_sc_committed_total)} hint="From active contract terms — NOT NMW eligible" />
-            <SummaryCard label="Estimated service charge" value={fmt£(agg.estimated_sc_committed_total)} hint="Indicative only — NOT NMW eligible" />
-            <SummaryCard label="Actual service charge paid" value={fmt£(agg.actual_service_charge_paid_total)} hint="From payroll entries — NOT NMW eligible" />
-            <SummaryCard label="Eligible NMW pay" value={fmt£(agg.eligible_nmw_pay)} hint="Base + performance + special. Excludes service charge." />
-            <SummaryCard label="Total labour value" value={fmt£(agg.total_labour_value)} hint="Base pay + bonuses + actual SC paid" />
+            <SummaryCard label="Base labour cost" value={fmtGbp(agg.base_pay_total)} hint="NMW eligible base pay" />
+            <SummaryCard label="Guaranteed service charge" value={fmtGbp(agg.guaranteed_sc_committed_total)} hint="From active contract terms — NOT NMW eligible" />
+            <SummaryCard label="Estimated service charge" value={fmtGbp(agg.estimated_sc_committed_total)} hint="Indicative only — NOT NMW eligible" />
+            <SummaryCard label="Actual service charge paid" value={fmtGbp(agg.actual_service_charge_paid_total)} hint="From payroll entries — NOT NMW eligible" />
+            <SummaryCard label="Eligible NMW pay" value={fmtGbp(agg.eligible_nmw_pay)} hint="Base + performance + special. Excludes service charge." />
+            <SummaryCard label="Total labour value" value={fmtGbp(agg.total_labour_value)} hint="Base pay + bonuses + actual SC paid" />
             <SummaryCard
               label="Base labour %"
               value={fmtPct(agg.baseLabourPct)}
@@ -280,13 +280,13 @@ export function LabourCostReport() {
                     <TableRow key={r.period_id} className="cursor-pointer" onClick={() => setSelectedId(r.period_id)}>
                       <TableCell className="text-xs font-medium">{r.period_name}</TableCell>
                       <TableCell className="text-right text-xs tabular-nums">{r.totals.hours.toFixed(1)}</TableCell>
-                      <TableCell className="text-right text-xs tabular-nums">{fmt£(r.totals.base_pay_total)}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{fmtGbp(r.totals.base_pay_total)}</TableCell>
                       <TableCell className="text-right text-xs tabular-nums">
-                        {fmt£(r.totals.performance_bonus_total + r.totals.special_bonus_total)}
+                        {fmtGbp(r.totals.performance_bonus_total + r.totals.special_bonus_total)}
                       </TableCell>
-                      <TableCell className="text-right text-xs tabular-nums">{fmt£(r.totals.actual_service_charge_paid_total)}</TableCell>
-                      <TableCell className="text-right text-xs font-medium tabular-nums">{fmt£(r.totals.total_labour_value)}</TableCell>
-                      <TableCell className="text-right text-xs tabular-nums">{r.sales_total > 0 ? fmt£(r.sales_total) : "—"}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{fmtGbp(r.totals.actual_service_charge_paid_total)}</TableCell>
+                      <TableCell className="text-right text-xs font-medium tabular-nums">{fmtGbp(r.totals.total_labour_value)}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{r.sales_total > 0 ? fmtGbp(r.sales_total) : "—"}</TableCell>
                       <TableCell className="text-right text-xs tabular-nums">
                         {r.base_labour_pct != null ? (
                           <span className={r.base_labour_pct > 35 ? "text-destructive font-medium" : ""}>
@@ -366,12 +366,12 @@ export function LabourCostReport() {
                         <TableCell className="text-right text-xs tabular-nums">
                           {r.hours > 0 ? `£${(r.base_pay / r.hours).toFixed(2)}` : "—"}
                         </TableCell>
-                        <TableCell className="text-right text-xs tabular-nums">{fmt£(r.base_pay)}</TableCell>
-                        <TableCell className="text-right text-xs tabular-nums">{fmt£(r.performance_bonus + r.special_bonus)}</TableCell>
-                        <TableCell className="text-right text-xs tabular-nums">{fmt£(r.actual_service_charge_paid)}</TableCell>
-                        <TableCell className="text-right text-xs tabular-nums">{fmt£(r.guaranteed_sc_committed)}</TableCell>
-                        <TableCell className="text-right text-xs tabular-nums">{fmt£(r.estimated_sc_committed)}</TableCell>
-                        <TableCell className="text-right text-xs font-medium tabular-nums">{fmt£(r.total_labour_value)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">{fmtGbp(r.base_pay)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">{fmtGbp(r.performance_bonus + r.special_bonus)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">{fmtGbp(r.actual_service_charge_paid)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">{fmtGbp(r.guaranteed_sc_committed)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">{fmtGbp(r.estimated_sc_committed)}</TableCell>
+                        <TableCell className="text-right text-xs font-medium tabular-nums">{fmtGbp(r.total_labour_value)}</TableCell>
                         <TableCell className="text-xs">
                           {r.terms_source === "employment_terms" ? (
                             <span className="text-muted-foreground">Contract terms</span>
@@ -438,11 +438,11 @@ export function LabourCostReport() {
                     <TableRow key={s.location_name}>
                       <TableCell className="text-xs font-medium">{s.location_name}</TableCell>
                       <TableCell className="text-right text-xs tabular-nums">{s.hours.toFixed(1)}</TableCell>
-                      <TableCell className="text-right text-xs tabular-nums">{fmt£(s.base_cost)}</TableCell>
-                      <TableCell className="text-right text-xs tabular-nums">{fmt£(s.guaranteed_sc_cost)}</TableCell>
-                      <TableCell className="text-right text-xs tabular-nums">{fmt£(s.estimated_sc_cost)}</TableCell>
-                      <TableCell className="text-right text-xs tabular-nums">{fmt£(s.actual_service_charge_paid)}</TableCell>
-                      <TableCell className="text-right text-xs font-medium tabular-nums">{fmt£(s.total_labour_value)}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{fmtGbp(s.base_cost)}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{fmtGbp(s.guaranteed_sc_cost)}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{fmtGbp(s.estimated_sc_cost)}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{fmtGbp(s.actual_service_charge_paid)}</TableCell>
+                      <TableCell className="text-right text-xs font-medium tabular-nums">{fmtGbp(s.total_labour_value)}</TableCell>
                       <TableCell className="text-right text-xs">{s.fallback_count > 0 ? <Badge variant="secondary" className="text-[10px]">{s.fallback_count}</Badge> : "—"}</TableCell>
                       <TableCell className="text-right text-xs">{s.nmw_risk_count > 0 ? <Badge variant="destructive" className="text-[10px]">{s.nmw_risk_count}</Badge> : "—"}</TableCell>
                     </TableRow>
