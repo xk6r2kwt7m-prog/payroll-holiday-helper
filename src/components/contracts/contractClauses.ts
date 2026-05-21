@@ -441,7 +441,8 @@ export function getClauseContent(
         // Team Member — FOH vs Kitchen
         const isKitchen = contractType === "kitchen";
         return [
-          { type: "paragraph", text: `Upon and subject to the terms of the Appointment, the Company will from the Effective Date employ the Employee as ${v.jobTitle}, reporting to ${reportingTo}, as the case may be.` },
+          { type: "paragraph", text: `Upon and subject to the terms of the Appointment, the Company will from the Effective Date employ the Employee as ${v.jobTitle}.` },
+          { type: "paragraph", text: appointmentReportingSentence },
           { type: "subheading", text: `The responsibilities of the ${roleLabel} include, but are not limited to:` },
           { type: "subheading", text: "General Conduct and Compliance" },
           { type: "bullets", items: [
