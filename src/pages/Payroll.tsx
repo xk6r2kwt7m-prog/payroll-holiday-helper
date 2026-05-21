@@ -131,6 +131,14 @@ const Payroll = () => {
   const { unresolvedIssues, excludedNames } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
   const blockingIssues = unresolvedIssues.filter(i => !reviewedIssueNames.has(i.csvName));
 
+  // Authoritative UK Minimum Wage compliance check for this period
+  const nmw = usePayrollMinimumWageCheck({
+    periodId: selectedPeriod?.id,
+    periodStartDate: selectedPeriod?.start_date,
+    entries,
+  });
+  const recordNmwAudit = useRecordNmwAudit();
+
   const handleMarkReviewed = (csvName: string) => {
     setReviewedIssueNames(prev => new Set([...prev, csvName]));
   };
