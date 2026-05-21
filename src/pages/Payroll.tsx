@@ -682,6 +682,8 @@ const Payroll = () => {
             summary={termsComparison.summary}
             canCheck={termsComparison.canCheck}
             periodStartDate={selectedPeriod.start_date}
+            payrollPeriodId={selectedPeriod.id}
+            periodStatus={selectedPeriod.status}
           />
         )}
 
