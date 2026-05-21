@@ -814,6 +814,19 @@ const Payroll = () => {
           />
         )}
 
+        {/* Phase 5C — Read-only approval evidence snapshot */}
+        {selectedPeriod && phase5Checklist && (
+          <PayrollApprovalEvidence
+            period={selectedPeriod}
+            entryCount={entries.length}
+            checklist={phase5Checklist}
+            acknowledgedIds={checklistAcks}
+            confirmed={checklistConfirmed}
+            approvalBlock={phase5ApprovalBlock}
+          />
+        )}
+
+
         {/* Approval Workflow */}
         {selectedPeriod && (
           <PayrollApprovalWorkflow
