@@ -435,7 +435,33 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
         });
       }
 
+      // Audit log: record minimum-wage override if admin saved a below-minimum rate.
+      if (wageCheck.status === "below" && wageOverrideReason.trim()) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase.from("audit_log").insert({
+            user_id: user?.id || null,
+            tenant_id: tenantId,
+            action: (employee ? "update" : "create") as const,
+            table_name: "employees",
+            record_id: employeeId,
+            new_data: {
+              event: "uk_minimum_wage_override",
+              age: wageCheck.age,
+              band: wageCheck.band,
+              required_minimum: wageCheck.requiredMinimum,
+              current_rate: wageCheck.currentRate,
+              shortfall: wageCheck.delta,
+              reason: wageOverrideReason.trim(),
+            },
+          });
+        } catch (auditErr) {
+          console.warn("[ADD_EMPLOYEE] Wage override audit log failed (non-blocking):", auditErr);
+        }
+      }
+
       setOpen(false);
+      setWageOverrideReason("");
       onSuccess?.();
 
       // Privacy: Worker must self-activate their own Talent Pool profile.
