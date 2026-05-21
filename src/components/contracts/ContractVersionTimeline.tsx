@@ -1,5 +1,6 @@
 import { useContractVersionHistory } from "@/hooks/useContractAmendments";
 import { ContractStateBadge } from "./ContractStateBadge";
+import { EmploymentTermsSnapshotPanel } from "./EmploymentTermsSnapshotPanel";
 import { amendmentTypeLabel } from "@/lib/contract-amendments";
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
@@ -12,6 +13,11 @@ interface Props {
 
 export function ContractVersionTimeline({ contractId }: Props) {
   const { data: versions, isLoading } = useContractVersionHistory(contractId);
+  const firstRow = versions?.[0] as Record<string, unknown> | undefined;
+  const employeeId = firstRow?.employee_id as string | undefined;
+  const rootContractId =
+    (firstRow?.root_contract_id as string | undefined) ??
+    (firstRow?.id as string | undefined);
 
   if (isLoading) {
     return (
