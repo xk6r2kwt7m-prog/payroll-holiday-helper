@@ -75,6 +75,11 @@ import {
   reportingManagerStatusLabel,
 } from "@/lib/contract-draft-evidence";
 import { getContractGenerationGate } from "@/lib/contract-generation-gate";
+import {
+  buildContractIssueSummary,
+  contractWorkflowStatusLabel,
+  type ContractWorkflowStatus,
+} from "@/lib/contract-issue-summary";
 
 interface ContractFormDialogProps {
   open: boolean;
