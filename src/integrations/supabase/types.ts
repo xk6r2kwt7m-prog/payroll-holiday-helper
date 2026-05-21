@@ -514,6 +514,67 @@ export type Database = {
           },
         ]
       }
+      contract_minimum_wage_overrides: {
+        Row: {
+          age_band: string | null
+          base_hourly_rate: number
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          id: string
+          override_reason: string
+          required_minimum_rate: number
+          tenant_id: string
+        }
+        Insert: {
+          age_band?: string | null
+          base_hourly_rate: number
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          id?: string
+          override_reason: string
+          required_minimum_rate: number
+          tenant_id: string
+        }
+        Update: {
+          age_band?: string | null
+          base_hourly_rate?: number
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          id?: string
+          override_reason?: string
+          required_minimum_rate?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_minimum_wage_overrides_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_minimum_wage_overrides_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_minimum_wage_overrides_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_signatures: {
         Row: {
           consent_given: boolean | null
@@ -1315,7 +1376,9 @@ export type Database = {
       }
       employee_contract_terms: {
         Row: {
+          actual_service_charge_paid: number | null
           annual_salary: number | null
+          base_hourly_rate: number | null
           contract_id: string | null
           contracted_hours: number | null
           contracted_hours_basis: string | null
@@ -1326,6 +1389,8 @@ export type Database = {
           effective_to: string | null
           employee_id: string
           employment_type: string | null
+          estimated_service_charge_rate: number | null
+          guaranteed_service_charge_rate: number | null
           holiday_entitlement_method: string | null
           hourly_rate: number | null
           id: string
@@ -1337,16 +1402,20 @@ export type Database = {
           role_title: string | null
           root_contract_id: string | null
           service_charge_eligible: boolean | null
+          service_charge_policy_note: string | null
           source_amendment_id: string | null
           source_type: string
           status: string
           tenant_id: string
+          tronc_scheme_name: string | null
           updated_at: string
           version_number: number
           work_location: string | null
         }
         Insert: {
+          actual_service_charge_paid?: number | null
           annual_salary?: number | null
+          base_hourly_rate?: number | null
           contract_id?: string | null
           contracted_hours?: number | null
           contracted_hours_basis?: string | null
@@ -1357,6 +1426,8 @@ export type Database = {
           effective_to?: string | null
           employee_id: string
           employment_type?: string | null
+          estimated_service_charge_rate?: number | null
+          guaranteed_service_charge_rate?: number | null
           holiday_entitlement_method?: string | null
           hourly_rate?: number | null
           id?: string
@@ -1368,16 +1439,20 @@ export type Database = {
           role_title?: string | null
           root_contract_id?: string | null
           service_charge_eligible?: boolean | null
+          service_charge_policy_note?: string | null
           source_amendment_id?: string | null
           source_type: string
           status?: string
           tenant_id: string
+          tronc_scheme_name?: string | null
           updated_at?: string
           version_number?: number
           work_location?: string | null
         }
         Update: {
+          actual_service_charge_paid?: number | null
           annual_salary?: number | null
+          base_hourly_rate?: number | null
           contract_id?: string | null
           contracted_hours?: number | null
           contracted_hours_basis?: string | null
@@ -1388,6 +1463,8 @@ export type Database = {
           effective_to?: string | null
           employee_id?: string
           employment_type?: string | null
+          estimated_service_charge_rate?: number | null
+          guaranteed_service_charge_rate?: number | null
           holiday_entitlement_method?: string | null
           hourly_rate?: number | null
           id?: string
@@ -1399,10 +1476,12 @@ export type Database = {
           role_title?: string | null
           root_contract_id?: string | null
           service_charge_eligible?: boolean | null
+          service_charge_policy_note?: string | null
           source_amendment_id?: string | null
           source_type?: string
           status?: string
           tenant_id?: string
+          tronc_scheme_name?: string | null
           updated_at?: string
           version_number?: number
           work_location?: string | null
@@ -7313,7 +7392,9 @@ export type Database = {
       activate_contract_terms: {
         Args: { _contract_id: string }
         Returns: {
+          actual_service_charge_paid: number | null
           annual_salary: number | null
+          base_hourly_rate: number | null
           contract_id: string | null
           contracted_hours: number | null
           contracted_hours_basis: string | null
@@ -7324,6 +7405,8 @@ export type Database = {
           effective_to: string | null
           employee_id: string
           employment_type: string | null
+          estimated_service_charge_rate: number | null
+          guaranteed_service_charge_rate: number | null
           holiday_entitlement_method: string | null
           hourly_rate: number | null
           id: string
@@ -7335,10 +7418,12 @@ export type Database = {
           role_title: string | null
           root_contract_id: string | null
           service_charge_eligible: boolean | null
+          service_charge_policy_note: string | null
           source_amendment_id: string | null
           source_type: string
           status: string
           tenant_id: string
+          tronc_scheme_name: string | null
           updated_at: string
           version_number: number
           work_location: string | null
@@ -7375,7 +7460,9 @@ export type Database = {
       get_active_employment_terms: {
         Args: { _as_of?: string; _employee_id: string }
         Returns: {
+          actual_service_charge_paid: number | null
           annual_salary: number | null
+          base_hourly_rate: number | null
           contract_id: string | null
           contracted_hours: number | null
           contracted_hours_basis: string | null
@@ -7386,6 +7473,8 @@ export type Database = {
           effective_to: string | null
           employee_id: string
           employment_type: string | null
+          estimated_service_charge_rate: number | null
+          guaranteed_service_charge_rate: number | null
           holiday_entitlement_method: string | null
           hourly_rate: number | null
           id: string
@@ -7397,10 +7486,12 @@ export type Database = {
           role_title: string | null
           root_contract_id: string | null
           service_charge_eligible: boolean | null
+          service_charge_policy_note: string | null
           source_amendment_id: string | null
           source_type: string
           status: string
           tenant_id: string
+          tronc_scheme_name: string | null
           updated_at: string
           version_number: number
           work_location: string | null
@@ -7415,7 +7506,9 @@ export type Database = {
       get_scheduled_employment_terms: {
         Args: { _employee_id: string }
         Returns: {
+          actual_service_charge_paid: number | null
           annual_salary: number | null
+          base_hourly_rate: number | null
           contract_id: string | null
           contracted_hours: number | null
           contracted_hours_basis: string | null
@@ -7426,6 +7519,8 @@ export type Database = {
           effective_to: string | null
           employee_id: string
           employment_type: string | null
+          estimated_service_charge_rate: number | null
+          guaranteed_service_charge_rate: number | null
           holiday_entitlement_method: string | null
           hourly_rate: number | null
           id: string
@@ -7437,10 +7532,12 @@ export type Database = {
           role_title: string | null
           root_contract_id: string | null
           service_charge_eligible: boolean | null
+          service_charge_policy_note: string | null
           source_amendment_id: string | null
           source_type: string
           status: string
           tenant_id: string
+          tronc_scheme_name: string | null
           updated_at: string
           version_number: number
           work_location: string | null

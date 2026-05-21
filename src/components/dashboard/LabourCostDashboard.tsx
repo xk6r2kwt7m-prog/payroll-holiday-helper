@@ -21,9 +21,14 @@ export function LabourCostDashboard() {
 
   const totalCost = labour?.totalCost ?? 0;
   const totalHours = labour?.totalHours ?? 0;
+  const baseCost = (labour as any)?.baseCost ?? totalCost;
+  const scCost = (labour as any)?.scCost ?? 0;
+  const fallbackCount = (labour as any)?.fallbackCount ?? 0;
   const avgHourlyCost = totalHours > 0 ? totalCost / totalHours : 0;
   const revenueAmount = revenue?.revenue_amount ?? 0;
-  const labourPercent = revenueAmount > 0 ? (totalCost / revenueAmount) * 100 : 0;
+  // Labour % vs revenue uses BASE labour cost only — service charge is a
+  // pass-through pay component to staff, not an operating labour cost.
+  const labourPercent = revenueAmount > 0 ? (baseCost / revenueAmount) * 100 : 0;
 
   const handleSaveRevenue = async () => {
     const amount = parseFloat(revenueInput);
@@ -42,6 +47,11 @@ export function LabourCostDashboard() {
 
   return (
     <div className="space-y-3">
+      {fallbackCount > 0 && (
+        <div className="text-[10px] text-warning bg-warning/10 border border-warning/20 rounded px-2 py-1">
+          Using employee profile fallback for {fallbackCount} staff — no active contract terms found.
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
           {t("ops.labour_cost_today")}
@@ -84,6 +94,7 @@ export function LabourCostDashboard() {
         <StatCard
           title={t("ops.cost_today")}
           value={fmt.formatCurrency(totalCost)}
+          subtitle={scCost > 0 ? `Base ${fmt.formatCurrency(baseCost)} + SC ${fmt.formatCurrency(scCost)}` : undefined}
           icon={<DollarSign className="h-4 w-4" />}
           variant="primary"
           index={0}

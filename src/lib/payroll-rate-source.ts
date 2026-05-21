@@ -72,21 +72,29 @@ export function resolveRateSource(
   terms: TermsRow | undefined | null,
   fallback: EmployeeFallback,
 ): RateSource {
-  if (terms && terms.hourly_rate !== null && terms.hourly_rate !== undefined) {
-    return {
-      source: "terms",
-      hourly_rate: Number(terms.hourly_rate),
-      service_charge:
+  if (terms) {
+    // Phase 3: prefer base_hourly_rate (legal basic rate) over legacy hourly_rate.
+    const base = (terms as any).base_hourly_rate ?? terms.hourly_rate ?? null;
+    if (base !== null && base !== undefined) {
+      const guaranteed = (terms as any).guaranteed_service_charge_rate;
+      const scForEntry =
         terms.service_charge_eligible === false
           ? 0
-          : Number(fallback.service_charge ?? 0),
-      service_charge_eligible: terms.service_charge_eligible ?? null,
-      department: terms.department ?? fallback.department ?? null,
-      terms_id: terms.id,
-      contract_id: terms.contract_id,
-      effective_from: terms.effective_from,
-      source_type: terms.source_type,
-    };
+          : guaranteed !== null && guaranteed !== undefined
+            ? Number(guaranteed)
+            : Number(fallback.service_charge ?? 0);
+      return {
+        source: "terms",
+        hourly_rate: Number(base),
+        service_charge: scForEntry,
+        service_charge_eligible: terms.service_charge_eligible ?? null,
+        department: terms.department ?? fallback.department ?? null,
+        terms_id: terms.id,
+        contract_id: terms.contract_id,
+        effective_from: terms.effective_from,
+        source_type: terms.source_type,
+      };
+    }
   }
   return {
     source: "profile_fallback",
