@@ -74,6 +74,7 @@ import {
   payDetailsStatusLabel,
   reportingManagerStatusLabel,
 } from "@/lib/contract-draft-evidence";
+import { getContractGenerationGate } from "@/lib/contract-generation-gate";
 
 interface ContractFormDialogProps {
   open: boolean;
