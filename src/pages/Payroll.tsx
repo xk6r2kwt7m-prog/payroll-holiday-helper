@@ -217,18 +217,25 @@ const Payroll = () => {
 
   const phase5ApprovalBlock = useMemo<string | null>(() => {
     if (!phase5Checklist) return null;
-    if (selectedPeriod?.status !== "pending") return null; // workflow only approves from pending
+    if (selectedPeriod?.status === "approved" || phase5Checklist.period_already_approved) {
+      return null;
+    }
+    if (selectedPeriod?.status !== "pending") {
+      return "Final approval is only available once the period is moved to pending review.";
+    }
     if (phase5Checklist.blocking_count > 0) {
-      return `Resolve ${phase5Checklist.blocking_count} blocking checklist item${phase5Checklist.blocking_count === 1 ? "" : "s"} before approving.`;
+      const n = phase5Checklist.blocking_count;
+      return `Resolve ${n} blocking checklist item${n === 1 ? "" : "s"} before approval can proceed.`;
     }
     if (!canApproveChecklist(phase5Checklist, checklistAcks)) {
-      return "Acknowledge all warnings on the approval checklist before approving.";
+      return "Warnings on the approval checklist must be reviewed and acknowledged before approval.";
     }
     if (!checklistConfirmed) {
-      return "Tick the explicit approval confirmation on the checklist before approving.";
+      return "The approval confirmation must be ticked on the checklist before approval.";
     }
     return null;
   }, [phase5Checklist, selectedPeriod?.status, checklistAcks, checklistConfirmed]);
+
 
 
   const handleMarkReviewed = (csvName: string) => {
