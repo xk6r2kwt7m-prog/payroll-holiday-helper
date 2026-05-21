@@ -1321,11 +1321,34 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
             </>
           )}
 
+          {step === "issue" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="w-full sm:w-auto order-2 sm:order-1"
+              >
+                Close — issue later
+              </Button>
+              <Button
+                data-testid="issue-contract-button"
+                onClick={() => setStep("sign")}
+                disabled={!issueSummary.canIssue}
+                title={issueSummary.blockingReason || undefined}
+                className="gradient-primary w-full sm:w-auto order-1 sm:order-2"
+              >
+                <Send className="h-4 w-4" />
+                Issue contract to employee
+              </Button>
+            </>
+          )}
+
           {step === "sign" && (
             <Button onClick={handleClose} className="w-full gradient-primary">
               Done
             </Button>
           )}
+
         </DialogFooter>
       </DialogContent>
     </Dialog>
