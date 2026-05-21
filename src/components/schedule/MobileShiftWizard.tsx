@@ -678,17 +678,49 @@ export function MobileShiftWizard({
                   {selectedEmployeeIds.map((id) => {
                     const emp = deptEmployees.find((e) => e.id === id);
                     if (!emp) return null;
-                    const cost = calcHours() * (Number(emp.hourly_rate) || 0);
+                    const hours = calcHours();
+                    const dateIso = selectedDay ? format(selectedDay, "yyyy-MM-dd") : undefined;
+                    // Phase 3 — prefer active employment terms; SC stays separate from base.
+                    let baseRate = Number(emp.hourly_rate) || 0;
+                    let scRate = Number((emp as any).service_charge) || 0;
+                    let source: "employment_terms" | "profile_fallback" = "profile_fallback";
+                    if (rotaTerms && dateIso) {
+                      const rates = rotaTerms.getRates(id, dateIso);
+                      baseRate = rates.base_rate;
+                      scRate = rates.guaranteed_sc_rate;
+                      source = rates.source;
+                    }
+                    const baseCost = hours * baseRate;
+                    const scCost = hours * scRate;
                     return (
                       <div key={id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-card border border-border">
-                        <div className="flex items-center gap-2">
-                          <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
                             {emp.forename[0]}{emp.surname?.[0] || ""}
                           </div>
-                          <span className="text-sm font-medium">{emp.forename} {emp.surname}</span>
+                          <div className="min-w-0">
+                            <span className="text-sm font-medium block truncate">{emp.forename} {emp.surname}</span>
+                            {source === "profile_fallback" && baseRate > 0 && (
+                              <span
+                                className="inline-flex items-center gap-0.5 text-[9px] font-medium text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 px-1 py-0.5 rounded-full mt-0.5"
+                                title="No active contract terms for this date — using employee profile rate as fallback."
+                              >
+                                <Info className="h-2 w-2" /> Profile fallback
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        {cost > 0 && (
-                          <span className="text-xs text-muted-foreground">£{cost.toFixed(2)}</span>
+                        {baseCost > 0 && (
+                          <div className="text-right shrink-0">
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              Base £{baseCost.toFixed(2)}
+                            </span>
+                            {scCost > 0 && (
+                              <span className="block text-[10px] text-muted-foreground/80 tabular-nums">
+                                + SC £{scCost.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                     );
