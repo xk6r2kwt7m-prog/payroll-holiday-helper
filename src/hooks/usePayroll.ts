@@ -397,14 +397,31 @@ export function useCopyPayrollPeriod() {
           return empStatus === "active" || empStatus === "starter";
         });
 
+        // Phase 2C — prefer active employment terms (as of NEW period start)
+        // when seeding the copied entries. Falls back to the previous entry's
+        // rate / service_charge if no active terms row exists.
+        const { fetchActiveTermsMap, resolveRateSource } = await import(
+          "@/lib/payroll-rate-source"
+        );
+        const termsMap = await fetchActiveTermsMap(
+          tenantId!,
+          eligibleEntries.map((e: any) => e.employee_id),
+          startDate,
+        );
+
         const newEntries = eligibleEntries.map((entry: any) => {
           const perfBonus = entry.performance_bonus || 0;
           const specBonus = entry.special_bonus || 0;
+          const defaults = resolveRateSource(termsMap.get(entry.employee_id), {
+            id: entry.employee_id,
+            hourly_rate: entry.hourly_rate,
+            service_charge: entry.service_charge,
+          });
           return {
             payroll_period_id: newPeriod.id,
             employee_id: entry.employee_id,
-            hourly_rate: entry.hourly_rate,
-            service_charge: entry.service_charge,
+            hourly_rate: defaults.hourly_rate,
+            service_charge: defaults.service_charge,
             timesheet_hours: 0,
             imported_hours: null,
             performance_bonus: entry.performance_bonus,

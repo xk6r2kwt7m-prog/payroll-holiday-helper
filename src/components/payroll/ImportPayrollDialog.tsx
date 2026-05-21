@@ -470,6 +470,23 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       let periodId: string;
       let entriesCreated = 0;
 
+      // Phase 2C — resolve active employment terms once per import for any
+      // NEW payroll entries we create (existing entries are never overwritten
+      // here). Existing entries keep their previously-imported rate.
+      const { fetchActiveTermsMap, resolveRateSource } = await import(
+        "@/lib/payroll-rate-source"
+      );
+      const periodStartForTerms =
+        (useExistingPeriod && incomingPeriod?.start_date) ||
+        startDate ||
+        new Date().toISOString().slice(0, 10);
+      const importTermsMap = await fetchActiveTermsMap(
+        tenantId!,
+        matchedEntries.map(e => e.matchedId).filter(Boolean) as string[],
+        periodStartForTerms,
+      );
+
+
       if (useExistingPeriod && existingPeriodId) {
         periodId = existingPeriodId;
         await supabase
@@ -533,9 +550,17 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
             }
             existingByEmployeeId.delete(emp.matchedId);
           } else {
-            // Employee in CSV but not in copied period — create new entry
-            const rate = emp.hourlyRate || 0;
-            const sc = emp.serviceCharge || 0;
+            // Employee in CSV but not in copied period — create new entry.
+            // Phase 2C: prefer active employment terms; fall back to CSV-matched profile rate.
+            const _defaults = resolveRateSource(importTermsMap.get(emp.matchedId!), {
+              id: emp.matchedId!,
+              hourly_rate: emp.hourlyRate,
+              service_charge: emp.serviceCharge,
+              department: emp.department,
+            });
+            const rate = _defaults.hourly_rate || 0;
+            const sc = _defaults.service_charge || 0;
+
 
             const { data: newEntry, error: insertError } = await supabase
               .from("payroll_entries")
@@ -593,8 +618,15 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
           if (!emp.matchedId || !emp.hourlyRate) continue;
 
           const hours = emp.totalHours;
-          const rate = emp.hourlyRate;
-          const sc = emp.serviceCharge || 0;
+          // Phase 2C — prefer active employment terms; fall back to CSV-matched profile rate.
+          const _defaults = resolveRateSource(importTermsMap.get(emp.matchedId!), {
+            id: emp.matchedId!,
+            hourly_rate: emp.hourlyRate,
+            service_charge: emp.serviceCharge,
+            department: emp.department,
+          });
+          const rate = _defaults.hourly_rate;
+          const sc = _defaults.service_charge;
           const holidayAccrued = calculateAccrual(hours, 0.1207);
 
           const locNotes = emp.locations.length > 1

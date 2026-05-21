@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { SyncFromTermsDialog } from "@/components/payroll/SyncFromTermsDialog";
+import { RefreshCw } from "lucide-react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -32,6 +34,9 @@ interface Props {
   summary: TermsComparisonSummary;
   canCheck: boolean;
   periodStartDate?: string | null;
+  /** Phase 2C — needed for sync action. Omit to disable sync. */
+  payrollPeriodId?: string;
+  periodStatus?: string;
 }
 
 /**
@@ -43,14 +48,25 @@ interface Props {
  * Does NOT block approval. Does NOT change calculations. Does NOT mutate
  * payroll entries, periods, or employee profile fields. Purely advisory.
  */
-export function EmploymentTermsComparisonPanel({ rows, summary, canCheck, periodStartDate }: Props) {
+export function EmploymentTermsComparisonPanel({
+  rows,
+  summary,
+  canCheck,
+  periodStartDate,
+  payrollPeriodId,
+  periodStatus,
+}: Props) {
   const hasAnyDrift =
     summary.rate_mismatch > 0 ||
     summary.department_mismatch > 0 ||
     summary.no_active_terms > 0;
   const [open, setOpen] = useState(hasAnyDrift);
+  const [syncOpen, setSyncOpen] = useState(false);
 
   if (!canCheck) return null;
+
+  const isLocked = periodStatus === "approved";
+  const canSync = !!payrollPeriodId && !isLocked && summary.rate_mismatch > 0;
 
   const headlineCls = hasAnyDrift
     ? "border-warning/40 bg-warning/5"
@@ -80,6 +96,17 @@ export function EmploymentTermsComparisonPanel({ rows, summary, canCheck, period
             <Pill kind="muted" label="Backfill only" value={summary.backfill_only} />
             {summary.scheduled_pending > 0 && (
               <Pill kind="muted" label="Scheduled change" value={summary.scheduled_pending} />
+            )}
+            {canSync && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-xs"
+                onClick={() => setSyncOpen(true)}
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Sync draft payroll rates from terms
+              </Button>
             )}
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="h-7 px-2">
@@ -171,6 +198,16 @@ export function EmploymentTermsComparisonPanel({ rows, summary, canCheck, period
           </p>
         </CollapsibleContent>
       </Collapsible>
+
+      {payrollPeriodId && periodStatus && (
+        <SyncFromTermsDialog
+          open={syncOpen}
+          onOpenChange={setSyncOpen}
+          payrollPeriodId={payrollPeriodId}
+          periodStatus={periodStatus}
+          rows={rows}
+        />
+      )}
     </Card>
   );
 }
