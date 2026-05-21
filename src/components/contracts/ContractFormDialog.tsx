@@ -513,6 +513,23 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           {/* STEP 1: Fill Details */}
           {step === "fill" && (
             <>
+              {/* Phase 5F — Missing critical fields summary */}
+              {selectedEmployeeId && missingCriticalFields.length > 0 && (
+                <div
+                  data-testid="missing-fields-warning"
+                  className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs"
+                >
+                  <p className="font-medium text-foreground mb-1">
+                    Some contract details are missing. Please review before generating the contract.
+                  </p>
+                  <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                    {missingCriticalFields.map((m) => (
+                      <li key={m.field} data-testid={`missing-field-${m.field}`}>{m.label}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Department & Type */}
               <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
