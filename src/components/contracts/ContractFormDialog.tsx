@@ -461,15 +461,22 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     <Input type="date" value={variables.effectiveDate} onChange={(e) => updateField("effectiveDate", e.target.value)} className="bg-card" />
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-1.5 block">Hourly Rate (£)</Label>
-                    <Input value={variables.hourlyRate} onChange={(e) => updateField("hourlyRate", e.target.value)} placeholder="12.50" className="bg-card" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Average Weekly Hours</Label>
                     <Input value={variables.weeklyHours} onChange={(e) => updateField("weeklyHours", e.target.value)} placeholder="40" className="bg-card" />
                   </div>
+                </div>
+
+                {/* Pay structure — base vs service charge (Phase 3) */}
+                <PayStructureFields
+                  variables={variables}
+                  onChange={updateField}
+                  employeeDob={selectedEmployee?.date_of_birth ?? null}
+                  effectiveDate={variables.effectiveDate}
+                  onOverrideChange={setNmwOverride}
+                  nmwOverride={nmwOverride}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Notice Period</Label>
                     <Select value={variables.noticePeriod} onValueChange={(v) => updateField("noticePeriod", v)}>
