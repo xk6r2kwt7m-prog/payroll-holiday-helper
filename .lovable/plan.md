@@ -1,179 +1,132 @@
-# Contract Amendment & Versioning System
+# Contract Amendment System — Operational Safety Audit & Next Phase
 
-Signed contracts become **legally immutable**. Changes flow through new versions linked to the original via a parent chain. Original signed PDFs and signatures are preserved forever.
+## 1. Current source of truth (audit findings)
 
----
-
-## 1. Contract lifecycle states
-
-Replace the loose `contract_send_status` values with a strict lifecycle stored on `employee_documents`:
-
-| State | Meaning | Editable? |
+| Operational concern | Reads from | Evidence |
 |---|---|---|
-| `draft` | Being prepared, never sent | Fully editable |
-| `issued` | Sent for signature, not yet fully signed | Editable but any material change invalidates existing signatures and forces re-issue |
-| `signed` | Fully signed by both parties | **Locked** — no edits, amendments only |
-| `superseded` | Replaced by a newer version | Locked, read-only history |
-| `terminated` | Contract ended (resignation, dismissal, mutual) | Locked, read-only history |
+| Payroll entry rate (at creation) | `employees.hourly_rate` snapshotted into `payroll_entries.hourly_rate` | `usePayroll.ts:68,406`, `AddEmployeeToPeriodDialog.tsx:62-72`, `CreatePayrollDialog.tsx:94`, `ImportPayrollDialog.tsx:266,403` |
+| Payroll edits ("update employee master") | Writes back to `employees.hourly_rate` | `EditablePayrollTable.tsx:278-300,392-398` |
+| Live labour cost / today's cost | `employees.hourly_rate` joined live | `useLabourCost.ts:57-71`, `LiveLabourDashboard.tsx:29` |
+| Rota costing & forecasts | `employees.hourly_rate` joined live | `ScheduleReport.tsx:90`, `ShiftCellDialog`, `ScheduleAnalytics` |
+| Financial dashboard / past cost | `employees.hourly_rate` joined live (mutates retroactively) | `useFinancialData.ts:113-150` |
+| Minimum-wage check | `employees.hourly_rate` + `date_of_birth` in form only | `EmployeeFormDialog`, `lib/uk-minimum-wage.ts` |
+| Department / role / workplace / contracted hours | `employees.*` directly (mutable) | profile form, `EmployeeBranches`, etc. |
+| Signed contract terms | Stored only in PDF + `extracted_data` / `field_changes` jsonb on `employee_documents` | not joined to anything operational |
 
-Material fields (trigger signature invalidation on `issued`): salary, hours, role, workplace, start date, probation length, notice period.
+**Conclusion: signed contracts do not feed any operational calculation.** They are document-safe but operationally inert.
 
----
+## 2. Risks
 
-## 2. Database schema changes
+1. **Silent drift** — signing a £13.50 amendment without remembering to update `employees.hourly_rate` leaves every future payroll, rota cost, and NMW check on the stale rate.
+2. **Retroactive cost mutation** — `useFinancialData`, `useLabourCost`, `LiveLabourDashboard`, `ScheduleAnalytics` recompute past labour cost by joining `employees.hourly_rate` *as it is today*. Editing the profile silently rewrites "what last week cost". Violates the project rule: no silent changes to historical data.
+3. **No effective-dated terms** — a contract signed today to start 1 June cannot be represented. Activation is a manual profile edit on the morning.
+4. **NMW check is profile-only, not period-based** — does not use actual hours × actual eligible pay per reference period, the HMRC test.
+5. **Material profile edits bypass the contract** — department, role, branch, pay type, contracted hours can all be changed freely with no signed amendment.
+6. **Payroll "update master" path** mutates `employees.hourly_rate` from inside payroll, with no link to any contract amendment.
 
-### Migration 1 — Add lifecycle + versioning columns to `employee_documents`
+## 3. Recommended data model — `employee_contract_terms`
 
-```sql
-ALTER TABLE public.employee_documents
-  ADD COLUMN contract_state text,                  -- draft | issued | signed | superseded | terminated
-  ADD COLUMN version_number int NOT NULL DEFAULT 1,
-  ADD COLUMN parent_contract_id uuid REFERENCES public.employee_documents(id),
-  ADD COLUMN root_contract_id uuid REFERENCES public.employee_documents(id),  -- top of chain, for fast history queries
-  ADD COLUMN superseded_by uuid REFERENCES public.employee_documents(id),
-  ADD COLUMN superseded_at timestamptz,
-  ADD COLUMN effective_date date,
-  ADD COLUMN amendment_type text,                  -- salary | hours | role | workplace | probation | clauses | other
-  ADD COLUMN amendment_summary text,
-  ADD COLUMN amendment_reason text,
-  ADD COLUMN terminated_at timestamptz,
-  ADD COLUMN terminated_reason text;
+Append-only table; one row per effective term-set per employee.
 
--- Backfill state from existing contract_send_status / final_signed_pdf_url
-UPDATE public.employee_documents
-SET contract_state = CASE
-  WHEN final_signed_pdf_url IS NOT NULL THEN 'signed'
-  WHEN contract_send_status IN ('sent','partially_signed') THEN 'issued'
-  ELSE 'draft'
-END
-WHERE document_type = 'contract';
-
--- Backfill root_contract_id = self for existing rows
-UPDATE public.employee_documents SET root_contract_id = id WHERE document_type = 'contract' AND root_contract_id IS NULL;
+```
+employee_contract_terms
+  id                   uuid pk
+  tenant_id            uuid not null
+  employee_id          uuid not null
+  contract_id          uuid not null  -- employee_documents.id (signed version)
+  source_amendment_id  uuid           -- contract_amendments.id, null for v1
+  version_number       int  not null
+  effective_from       date not null
+  effective_to         date           -- null = open-ended/current
+  status               text not null  -- scheduled | active | superseded | terminated
+  hourly_rate          numeric(10,2)
+  annual_salary        numeric(12,2)
+  pay_type             text           -- hourly | salary
+  contracted_hours     numeric(5,2)
+  contracted_hours_basis text         -- weekly | monthly | variable
+  department           text
+  role_title           text
+  work_location        text
+  employment_type      text           -- full_time | part_time | variable_hours
+  is_apprentice        boolean default false
+  probation_end_date   date
+  notice_period_weeks  int
+  overtime_model       text
+  holiday_entitlement_method text
+  service_charge_eligible boolean
+  created_at           timestamptz default now()
+  created_by           uuid
 ```
 
-### Migration 2 — Lock signed contracts via trigger
+Constraints / safety:
+- Unique `(employee_id, effective_from)`.
+- Exclusion constraint: no two `active` rows for the same employee overlap.
+- Trigger: inserting a row with `status='active'` closes the previous active row (`effective_to = new.effective_from - 1`, `status='superseded'`).
+- App-layer is **insert-only**. Updates blocked by trigger except for `status` and `effective_to` transitions.
+- RLS: tenant-scoped, manager-or-above for select, admin for insert.
 
-```sql
-CREATE FUNCTION public.protect_signed_contracts() RETURNS trigger ...
--- Blocks UPDATE/DELETE on employee_documents where contract_state IN ('signed','superseded','terminated')
--- Allowed transitions:
---   signed → superseded (only when superseded_by is being set)
---   signed → terminated (only when terminated_at is being set)
--- Blocks any change to file_path, final_signed_pdf_url, final_document_hash, extracted_data on locked rows
-```
+## 4. Activation logic
 
-### Migration 3 — Amendment audit table
+- v1 contract signed → insert row with `effective_from = max(employee.start_date, signed_at)`, status = `active`.
+- Amendment signed → insert row with `effective_from = amendment.effective_date`.
+  - if `effective_from <= today` → status `active`, immediately close previous row.
+  - if `effective_from >  today` → status `scheduled`; previous active row stays active.
+- Daily cron flips `scheduled → active` and closes prior row when their date arrives.
+- Contract terminated → set `effective_to = terminated_at`, status `terminated`.
 
-```sql
-CREATE TABLE public.contract_amendments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  previous_contract_id uuid NOT NULL REFERENCES employee_documents(id),
-  new_contract_id uuid NOT NULL REFERENCES employee_documents(id),
-  employee_id uuid NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
-  amendment_type text NOT NULL,
-  field_changes jsonb NOT NULL,    -- [{field, previous_value, new_value}]
-  reason text,
-  effective_date date NOT NULL,
-  created_by uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  employee_resigned_at timestamptz,
-  employer_resigned_at timestamptz
-);
-ALTER TABLE public.contract_amendments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Tenant admins manage amendments" ON public.contract_amendments
-  FOR ALL TO authenticated USING (is_tenant_admin(tenant_id)) WITH CHECK (is_tenant_admin(tenant_id));
-```
+## 5. Payroll integration
 
-Original signed PDFs stay in `employee-documents` storage bucket untouched. Each version is a separate `employee_documents` row pointing to its own file_path.
+- New resolver `getEffectiveTerms(employee_id, asOfDate)` returns the row where `effective_from <= asOfDate AND (effective_to IS NULL OR effective_to >= asOfDate)`.
+- `AddEmployeeToPeriodDialog`, `CreatePayrollDialog`, `ImportPayrollDialog` read rate from terms as-of **period end date**, not from `employees.hourly_rate`.
+- Historical periods recompute against terms as-of their own period — past totals never shift again.
+- `payroll_entries` continues to snapshot at creation (already correct).
+- `EditablePayrollTable` "update employee master" path is removed in favour of "create contract amendment" CTA. Direct overrides on a single entry remain allowed (period-scoped only, already audited).
+- Rota/labour reads (`useLabourCost`, `useFinancialData`, `LiveLabourDashboard`, `ScheduleReport`, `ScheduleAnalytics`) switch to resolver as-of shift date.
 
----
+## 6. Minimum wage integration
 
-## 3. Frontend / component changes
+Per-pay-period engine:
+1. Resolve employee age on **first day of the pay reference period**.
+2. Resolve `is_apprentice` and active terms for the period.
+3. Pick legal minimum from `UK_WAGE_RATES` for that band on that date.
+4. Compute eligible pay (basic pay, exclude tips/service charge/expenses) and actual hours from approved timesheets.
+5. `effective_rate = eligible_pay / actual_hours`.
+6. If `effective_rate < legal_minimum` → block period approval unless admin records an override reason → `audit_log`.
+7. Form-side check (`MinimumWageCheck`) stays as early warning only — explicitly labelled.
 
-### New files
-- `src/hooks/useContractAmendments.ts` — list amendments, create amendment, terminate contract
-- `src/components/contracts/CreateAmendmentDialog.tsx` — pre-fills from current contract, lets admin change material fields, captures reason + effective_date
-- `src/components/contracts/ContractVersionTimeline.tsx` — vertical timeline (v1 signed → v2 amendment pending → v3 active) with status badges
-- `src/components/contracts/ContractStateBadge.tsx` — colour-coded badge for the 5 states
-- `src/lib/contract-amendments.ts` — pure helpers: `diffContractFields()`, `isMaterialChange()`, `nextVersionNumber()`
+## 7. UI implications
 
-### Edited files
-- `src/components/contracts/SignedContractsList.tsx` — show state badge, version label, "Create Amendment" / "Terminate" buttons; group by `root_contract_id`
-- `src/components/contracts/ContractFormDialog.tsx` — when launched as an amendment, freeze immutable fields (employee, original start date) and show a "what's changing" diff before sending
-- `src/components/contracts/ContractPDF.tsx` — render "Amendment #N to contract dated …" header for v>1
-- `src/pages/Contracts.tsx` — wire the version timeline into the employee filter view
-- `src/components/employees/` profile contracts tab — surface the timeline
-- `supabase/functions/sign-contract/index.ts` — on full signature, set `contract_state='signed'`; when amendment is signed, set previous version `contract_state='superseded'`, `superseded_by=new.id`, `superseded_at=now()` in a single transaction
+- **Employee profile**: "Current terms" card sourced from active row, with caption "Source: Contract v2 (signed 12 Mar 2026)". Material fields become read-only with "Create amendment" CTA.
+- **Contract tab**: version timeline already exists — add status pills `v1 Superseded · v2 Active · v3 Scheduled 1 Jun`.
+- **Payroll detail**: rate cell shows source ("from Contract v2"); warn if entry rate differs from terms-as-of-period.
+- **Minimum wage compliance screen**: per-period table — age that period, band, legal min, effective rate, status, override reason.
+- **Dashboard**: banner for scheduled amendments activating within 14 days.
 
----
+## 8. Safest implementation order (no edits yet)
 
-## 4. How amendments + signatures work
+1. **Schema only** behind feature flag. Backfill one `active` row per employee from current `employees.*`.
+2. **Write path**: extend `sign-contract` edge function and `useContractAmendments` to insert into `employee_contract_terms` on signature.
+3. **Trigger-sync `employees.*` from active terms row** (one-way) so legacy reads keep working during rollout.
+4. **Switch payroll reads** (`AddEmployeeToPeriodDialog`, `CreatePayrollDialog`, `ImportPayrollDialog`, `usePayroll`) to resolver as-of period end.
+5. **Period-level NMW engine** with block + override at approve.
+6. **Switch rota/labour reads** (`useLabourCost`, `useFinancialData`, `LiveLabourDashboard`, `ScheduleReport`, `ScheduleAnalytics`) to resolver as-of shift date.
+7. **Lock profile material-field edits** behind "Create amendment" CTA; keep audit-logged override escape hatch.
+8. **UI surfacing**: timeline pills, source captions, scheduled banner, NMW screen.
 
-1. Admin clicks **Create Amendment** on a signed contract.
-2. System creates a new `employee_documents` row:
-   - `parent_contract_id` = previous version id
-   - `root_contract_id` = original v1 id
-   - `version_number` = parent.version_number + 1
-   - `contract_state` = `draft`
-   - `amendment_type`, `amendment_summary`, `effective_date` captured in dialog
-3. Admin edits, previews, sends. Same signing flow as a fresh contract.
-4. On full signature (both parties), edge function:
-   - sets new row to `signed`
-   - sets previous row to `superseded`, fills `superseded_by`, `superseded_at`
-   - inserts `contract_amendments` row with field diff
-5. Material-field changes on an `issued` (not-yet-signed) contract: existing signatures are invalidated (`contract_signatures.invalidated_at` — added in Migration 1), contract returns to `draft`, must be re-issued.
+## Files likely affected
 
-All previous signed PDFs (`final_signed_pdf_url`) and `contract_signatures` rows are **never deleted or mutated**.
+- DB: new migration (table + triggers + RLS + resolver SQL fn `get_effective_terms`).
+- Hooks: `useContractAmendments` (extend), new `useEmployeeContractTerms`, `useLabourCost`, `useFinancialData`, `useNmwCompliance`.
+- Payroll: `usePayroll`, `AddEmployeeToPeriodDialog`, `CreatePayrollDialog`, `ImportPayrollDialog`, `EditablePayrollTable`.
+- Rota: `ScheduleReport`, `ScheduleAnalytics`, `ShiftCellDialog`, `LiveLabourDashboard`.
+- Employees: `EmployeeFormDialog`, `MinimumWageCheck`, profile Work tab.
+- Contracts: `ContractVersionTimeline`, `CreateAmendmentDialog`, `SignedContractsList`.
+- Edge: `sign-contract`.
+- Audit: reuse existing `audit_log`.
 
----
+## Guardrails (non-negotiable)
 
-## 5. UI on employee profile → Contracts
-
-```text
-Contract history
-─────────────────────────────────────────────
-●  v3  Active        Signed 12 May 2026   [View PDF]
-│       Amendment: salary £28k → £31k
-│
-●  v2  Superseded    Signed 03 Jan 2026   [View PDF]
-│       Amendment: role Server → Supervisor
-│
-●  v1  Superseded    Signed 14 Aug 2024   [View PDF]
-        Original contract
-─────────────────────────────────────────────
-[ Create Amendment ]   [ Terminate Contract ]
-```
-
-States rendered with `ContractStateBadge`: Draft (grey), Issued / Pending Signature (amber), Active (green), Superseded (slate), Terminated (red outline).
-
----
-
-## 6. Legal protection
-
-Material amendments (salary, contracted hours, workplace, role) **cannot become active without the employee re-signing** — enforced by:
-- The new version starts in `draft`, must reach `signed` via the normal two-party flow
-- Until that happens, the previous version remains `signed` and active
-- Frontend never silently mutates the previous version; the trigger rejects it at the DB level
-
-Non-material clarifications (typo fixes, clause wording with no operational change) still create a new version but admin can mark `amendment_type='clauses'` and skip employee re-sign only if no material field changed — UI surfaces a clear warning.
-
----
-
-## 7. Migration requirements (order)
-
-1. Schema migration (columns + amendments table + invalidation column on `contract_signatures`)
-2. Backfill `contract_state` and `root_contract_id` for existing contracts
-3. Lock trigger on `employee_documents`
-4. Deploy frontend + edge function updates together (state transitions must match)
-
-No data loss: existing contracts become v1 with `contract_state` derived from current status, original signatures untouched.
-
----
-
-## 8. Out of scope (not in this change)
-
-- Bulk amendments across multiple employees
-- Counter-offer / negotiation UI
-- Automated payroll sync on salary amendments (kept manual; flagged in next iteration)
+- `payroll_entries` and signed contract PDFs / hashes are never mutated.
+- `employee_contract_terms` is append-only.
+- Any direct `employees.*` material edit outside the amendment flow requires an override reason → `audit_log`.
+- All historical reports must remain reproducible bit-for-bit after the migration.
