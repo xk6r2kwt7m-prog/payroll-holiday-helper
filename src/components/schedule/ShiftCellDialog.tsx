@@ -95,7 +95,8 @@ export function ShiftCellDialog({
 
   const isEditing = !!existingShift;
 
-  // Calculate total hours
+  // Calculate total hours + Phase 3 base/SC split.
+  // NMW + labour% must always use base only — SC is never folded into a single hidden rate.
   const totalInfo = useMemo(() => {
     const [sh, sm] = startTime.split(":").map(Number);
     const [eh, em] = endTime.split(":").map(Number);
@@ -104,16 +105,37 @@ export function ShiftCellDialog({
     const paidMinutes = Math.max(0, totalMinutes - breakMinutes);
     const hours = paidMinutes / 60;
     const emp = employees.find(e => e.id === employeeId);
-    const rate = Number(emp?.hourly_rate) || 0;
-    const cost = hours * rate;
+
+    const hasTerms = !!rotaTerms && !!dateIso && employeeId !== "open" && !!employeeId;
+    let baseRate = 0;
+    let guaranteedScRate = 0;
+    let source: "employment_terms" | "profile_fallback" = "profile_fallback";
+
+    if (hasTerms) {
+      const rates = rotaTerms!.getRates(employeeId, dateIso!);
+      baseRate = rates.base_rate;
+      guaranteedScRate = rates.guaranteed_sc_rate;
+      source = rates.source;
+    } else if (emp) {
+      baseRate = Number(emp.hourly_rate) || 0;
+      guaranteedScRate = Number((emp as any).service_charge) || 0;
+      source = "profile_fallback";
+    }
+
+    const baseCost = hours * baseRate;
+    const scCost = hours * guaranteedScRate;
     return {
       totalMinutes,
       paidMinutes,
       hours,
-      cost,
+      baseRate,
+      guaranteedScRate,
+      baseCost,
+      scCost,
+      source,
       hoursStr: `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`,
     };
-  }, [startTime, endTime, breakMinutes, employeeId, employees]);
+  }, [startTime, endTime, breakMinutes, employeeId, employees, rotaTerms, dateIso]);
 
   // Get selected employee and readiness
   const selectedEmployee = employees.find(e => e.id === employeeId);
