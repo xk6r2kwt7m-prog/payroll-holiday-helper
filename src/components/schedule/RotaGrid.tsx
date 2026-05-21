@@ -67,6 +67,17 @@ export function RotaGrid({
     [employees, department]
   );
 
+  // Phase 3 — terms-aware rates for cost display (base + service charge split).
+  const windowStartIso = useMemo(
+    () => (weekDays[0] ? format(weekDays[0], "yyyy-MM-dd") : undefined),
+    [weekDays],
+  );
+  const windowEndIso = useMemo(
+    () => (weekDays[weekDays.length - 1] ? format(weekDays[weekDays.length - 1], "yyyy-MM-dd") : undefined),
+    [weekDays],
+  );
+  const rotaTerms = useRotaTerms(deptEmployees, windowStartIso, windowEndIso);
+
   const shiftsForDay = (day: Date) =>
     shifts?.filter(
       (s: any) =>
@@ -102,6 +113,41 @@ export function RotaGrid({
       }
     }
     return totalMinutes / 60;
+  };
+
+  /**
+   * Per-employee weekly cost split into base and guaranteed service charge.
+   * Each shift uses the active employment terms for that shift's date so
+   * mid-week rate changes are respected. Falls back to the employee profile
+   * if no terms exist (flagged via `usedFallback`).
+   */
+  const getEmployeeWeeklyCost = (employeeId: string) => {
+    let base = 0;
+    let sc = 0;
+    let usedFallback = false;
+    for (const day of weekDays) {
+      const shift = getShiftForEmployeeDay(employeeId, day);
+      if (!shift) continue;
+      const [sh, sm] = (shift.start_time || "00:00").split(":").map(Number);
+      const [eh, em] = (shift.end_time || "00:00").split(":").map(Number);
+      let mins = (eh * 60 + em) - (sh * 60 + sm);
+      if (mins < 0) mins += 24 * 60;
+      const hours = mins / 60;
+      const cost = rotaTerms.getShiftCost({
+        employeeId,
+        dateIso: shift.shift_date,
+        hours,
+      });
+      base += cost.base_cost;
+      sc += cost.guaranteed_sc_cost;
+      if (cost.source === "profile_fallback") usedFallback = true;
+    }
+    return {
+      base: +base.toFixed(2),
+      sc: +sc.toFixed(2),
+      total: +(base + sc).toFixed(2),
+      usedFallback,
+    };
   };
 
   const [defaultEmployeeId, setDefaultEmployeeId] = useState<string | null>(null);
