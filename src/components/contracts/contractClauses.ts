@@ -539,31 +539,38 @@ export function getClauseContent(
         { type: "paragraph", text: "Due to the nature of the business, the required hours of work may vary, and the Team Member acknowledges that, at times, they may be asked to work fewer or more hours based on operational requirements. Any changes to the agreed hours will be made with mutual consent and will be in line with the Employment Rights Act 1996." },
       ];
 
-    // ─── 7. SALARY ───
-    case "salary":
-      if (isManagement) {
-        return [
-          { type: "subheading", text: "7.1 Salary" },
-          { type: "paragraph", text: `The Company will pay to the ${roleLabel} a salary from the Effective Date in the amount calculated as below:` },
-          { type: "highlight", text: `£${v.hourlyRate} per hour, composing of a base rate, including service charge element.` },
-          { type: "paragraph", text: `In addition to the base salary, after the successful completion of the probation period, the ${roleLabel} will be eligible for a performance bonus of up to £2,000 per year. This bonus will be distributed on a monthly basis, subject to individual and company performance metrics as determined by the Company at its sole discretion.` },
-          { type: "paragraph", text: "The Salary will be payable by monthly instalments in arrears and will be subject to such deductions as may be required by law or under the terms of the Appointment." },
-          { type: "paragraph", text: `Any increase in salary is related both to Company and individual performance and is at the sole discretion of the Company.` },
-          { type: "paragraph", text: `The ${roleLabel} acknowledges and agrees that their salary is a confidential matter that cannot be disclosed to other parties.` },
-          { type: "subheading", text: "7.2 National Insurance" },
-          { type: "paragraph", text: `The Company shall be responsible to withhold, where appropriate, and pay both the Company and the ${roleLabel} national insurance contributions. National insurance contributions payable by the ${roleLabel} shall be deducted from their salary.` },
-        ];
-      }
-      return [
+    // ─── 7. SALARY (Phase 3 — base vs service charge split) ───
+    case "salary": {
+      const base = Number(v.baseHourlyRate || v.hourlyRate) || 0;
+      const guaranteedSc = Number(v.guaranteedServiceChargeRate) || 0;
+      const estimatedSc = Number(v.estimatedServiceChargeRate) || 0;
+      const tronc = (v.troncSchemeName || "").trim();
+      const policy = (v.serviceChargePolicyNote || "").trim();
+      const blocks: ContentBlock[] = [
         { type: "subheading", text: "7.1 Salary" },
-        { type: "paragraph", text: `The Company will pay the ${roleLabel} a salary from the Effective Date at the rate of:` },
-        { type: "highlight", text: `£${v.hourlyRate} per hour, which includes a guaranteed service charge.` },
-        { type: "paragraph", text: "The salary will be paid in equal monthly instalments, payable in arrears. The salary will be subject to any deductions required by law, including tax and National Insurance contributions." },
-        { type: "paragraph", text: "Any potential salary increase will be based on both the Company's performance and the Team Member's individual performance, at the sole discretion of the Company." },
-        { type: "paragraph", text: `The ${roleLabel} acknowledges and agrees that their salary is a confidential matter and must not be disclosed to other parties without the prior consent of the Company.` },
-        { type: "subheading", text: "7.2 National Insurance" },
-        { type: "paragraph", text: `The Company shall be responsible to withhold, where appropriate, and pay both the Company and the ${roleLabel} national insurance contributions. National insurance contributions payable by the ${roleLabel} shall be deducted from their salary.` },
+        { type: "paragraph", text: `The Company will pay the ${roleLabel} a base hourly rate from the Effective Date as set out below:` },
+        { type: "highlight", text: `£${base.toFixed(2)} per hour (base hourly rate)` },
+        { type: "paragraph", text: `Your base hourly rate is £${base.toFixed(2)} per hour. This is your contractual hourly rate before any service charge, tronc payment, bonus, or discretionary payment.` },
       ];
+      if (guaranteedSc > 0) {
+        blocks.push({ type: "paragraph", text: `In addition to your base hourly rate of £${base.toFixed(2)} per hour, you will receive a guaranteed service charge payment of £${guaranteedSc.toFixed(2)} per hour, where applicable. This service charge payment is separate from your base hourly rate and does not form part of the calculation for National Minimum Wage compliance.` });
+      }
+      if (estimatedSc > 0) {
+        blocks.push({ type: "paragraph", text: `You may also receive service charge or tronc payments. The estimated service charge of £${estimatedSc.toFixed(2)} per hour shown in this contract is indicative only and is not guaranteed unless expressly stated as guaranteed. Service charge and tronc payments are separate from your base hourly rate and must not be used to satisfy National Minimum Wage.` });
+      }
+      if (tronc) {
+        blocks.push({ type: "paragraph", text: `Service charge or tronc payments may be administered under the following scheme: ${tronc}. The rules of that scheme may be updated from time to time, subject to applicable law and company policy.` });
+      }
+      if (policy) {
+        blocks.push({ type: "paragraph", text: `Service charge policy note: ${policy}` });
+      }
+      blocks.push({ type: "paragraph", text: "The salary will be paid in equal monthly instalments, payable in arrears, subject to any deductions required by law including tax and National Insurance contributions." });
+      blocks.push({ type: "paragraph", text: `Any potential increase to the base hourly rate is at the sole discretion of the Company.` });
+      blocks.push({ type: "paragraph", text: `The ${roleLabel} acknowledges and agrees that their pay details are confidential and must not be disclosed to other parties without the prior consent of the Company.` });
+      blocks.push({ type: "subheading", text: "7.2 National Insurance" });
+      blocks.push({ type: "paragraph", text: `The Company shall be responsible to withhold, where appropriate, and pay both the Company and the ${roleLabel} national insurance contributions. National insurance contributions payable by the ${roleLabel} shall be deducted from their salary.` });
+      return blocks;
+    }
 
     // ─── 8. SICKNESS ───
     case "sickness":
@@ -689,18 +696,29 @@ export function getClauseContent(
  */
 export function getKeyTermsSummary(variables: ContractVariables, contractType: ContractType) {
   const isManagement = contractType === "management" || contractType === "supervisor";
-  return [
+  const base = Number(variables.baseHourlyRate || variables.hourlyRate) || 0;
+  const guaranteedSc = Number(variables.guaranteedServiceChargeRate) || 0;
+  const estimatedSc = Number(variables.estimatedServiceChargeRate) || 0;
+  const totalEstimated = +(base + guaranteedSc + estimatedSc).toFixed(2);
+  const terms = [
     { label: "Employee", value: variables.employeeName },
     { label: "Job Title", value: variables.jobTitle },
     { label: "Role Type", value: isManagement ? "Management" : "Team Member" },
     { label: "Start Date", value: new Date(variables.effectiveDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) },
-    { label: "Hourly Rate", value: `£${variables.hourlyRate}/hr` },
+    { label: "Base hourly rate", value: `£${base.toFixed(2)}/hr` },
+    { label: "Guaranteed service charge", value: `£${guaranteedSc.toFixed(2)}/hr` },
+    { label: "Estimated service charge", value: estimatedSc > 0 ? `£${estimatedSc.toFixed(2)}/hr (not guaranteed)` : "—" },
+    { label: "Total estimated hourly value", value: `£${totalEstimated.toFixed(2)}/hr` },
     { label: "Weekly Hours", value: `${variables.weeklyHours}h` },
     { label: "Notice Period", value: variables.noticePeriod },
     { label: "Probation", value: variables.probationPeriod },
     { label: "Work Location", value: variables.workLocation || "Not specified" },
     { label: "Department", value: contractType.toUpperCase() },
   ];
+  if (variables.troncSchemeName?.trim()) {
+    terms.push({ label: "Tronc scheme", value: variables.troncSchemeName.trim() });
+  }
+  return terms;
 }
 
 /**

@@ -345,6 +345,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       setEmployeeSignLink(null);
       setEmployerSignLink(null);
       setContractEmailSent(false);
+      setNmwOverride(null);
       setEmployeeSignTokenId(null);
       setSelectedEmployeeId("");
       setVariables({
