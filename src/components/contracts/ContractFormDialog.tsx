@@ -963,6 +963,49 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                 </Button>
               </div>
 
+              {/* Phase 5L — Generation gate panel */}
+              <div
+                data-testid="generation-gate-panel"
+                data-can-generate={String(generationGate.canGenerate)}
+                className={`rounded-lg border p-3 text-xs space-y-2 ${
+                  generationGate.canGenerate
+                    ? "border-primary/20 bg-primary/5"
+                    : "border-destructive/30 bg-destructive/5"
+                }`}
+              >
+                <p className="font-medium text-foreground">{generationGate.message}</p>
+                {generationGate.blockingFields.length > 0 && (
+                  <div data-testid="gate-blocking">
+                    <p className="text-muted-foreground">Required fields missing:</p>
+                    <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                      {generationGate.blockingFields.map((b) => (
+                        <li key={b.field} data-testid={`gate-blocking-${b.field}`}>{b.label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {generationGate.warningFields.length > 0 && (
+                  <div data-testid="gate-warnings">
+                    <p className="text-muted-foreground">Warnings to review (not blocking):</p>
+                    <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                      {generationGate.warningFields.map((w) => (
+                        <li key={w.field} data-testid={`gate-warning-${w.field}`}>{w.label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {generationGate.manualReviewFields.length > 0 && (
+                  <div data-testid="gate-manual-review">
+                    <p className="text-muted-foreground">Manually entered critical fields (review):</p>
+                    <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+                      {generationGate.manualReviewFields.map((m) => (
+                        <li key={m.field}>{m.label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground">
                 <ShieldCheck className="h-4 w-4 text-primary inline mr-1" />
                 Clicking "Generate & Save" will create the PDF contract (17 sections, UK-compliant) and store it securely. You'll then be able to send it for signing.
