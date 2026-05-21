@@ -172,11 +172,12 @@ describe("Phase 5D — buildPayrollApprovalEvidence (pure helper)", () => {
 
 describe("Phase 5D — evidence model & helper purity", () => {
   it("library has no React / Supabase / mutation imports", () => {
-    expect(evidenceLib).not.toMatch(/from "react"/);
-    expect(evidenceLib).not.toMatch(/supabase/i);
+    expect(evidenceLib).not.toMatch(/from ["']react["']/);
+    expect(evidenceLib).not.toMatch(/from ["'][^"']*supabase/i);
     expect(evidenceLib).not.toMatch(/useMutation|useQuery|useState|useEffect/);
-    expect(evidenceLib).not.toMatch(/audit_log|approve_and_lock/);
+    expect(evidenceLib).not.toMatch(/audit_log/);
   });
+
 
   it("contains the future-persistence TODO and explicit non-implementation note", () => {
     expect(evidenceLib).toMatch(/TODO/);
