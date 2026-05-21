@@ -20,6 +20,8 @@ import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable"
 import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWorkflow";
 import { PayrollApprovalChecklist } from "@/components/payroll/PayrollApprovalChecklist";
 import { PayrollApprovalEvidence } from "@/components/payroll/PayrollApprovalEvidence";
+import { buildPayrollApprovalEvidence } from "@/lib/payroll-approval-evidence";
+
 
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
 import { buildApprovalChecklist, canApprove as canApproveChecklist } from "@/lib/payroll-approval-checklist";
@@ -814,17 +816,21 @@ const Payroll = () => {
           />
         )}
 
-        {/* Phase 5C — Read-only approval evidence snapshot */}
+        {/* Phase 5C/5D — Read-only approval evidence snapshot */}
         {selectedPeriod && phase5Checklist && (
           <PayrollApprovalEvidence
-            period={selectedPeriod}
-            entryCount={entries.length}
-            checklist={phase5Checklist}
-            acknowledgedIds={checklistAcks}
-            confirmed={checklistConfirmed}
-            approvalBlock={phase5ApprovalBlock}
+            evidence={buildPayrollApprovalEvidence({
+              period: selectedPeriod,
+              payrollEntryCount: entries.length,
+              checklist: phase5Checklist,
+              acknowledgedIds: checklistAcks,
+              approvalConfirmed: checklistConfirmed,
+              approvalBlockedReason: phase5ApprovalBlock,
+            })}
           />
         )}
+
+
 
 
         {/* Approval Workflow */}
