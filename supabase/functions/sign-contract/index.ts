@@ -907,10 +907,39 @@ Deno.serve(async (req) => {
           .from("employee_documents")
           .update({
             contract_send_status: "fully_signed",
+            contract_state: "signed",
             final_signed_pdf_url: finalPath,
             final_document_hash: finalPackage.finalHash,
           } as any)
           .eq("id", signingToken.employee_document_id);
+
+        // If this contract is an amendment, supersede the parent and stamp the amendment log.
+        const { data: signedDoc } = await supabase
+          .from("employee_documents")
+          .select("parent_contract_id")
+          .eq("id", signingToken.employee_document_id)
+          .maybeSingle();
+        const parentContractId = (signedDoc as any)?.parent_contract_id;
+        if (parentContractId) {
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_state: "superseded",
+              superseded_by: signingToken.employee_document_id,
+              superseded_at: new Date().toISOString(),
+            } as any)
+            .eq("id", parentContractId);
+
+          await supabase
+            .from("contract_amendments")
+            .update({
+              employee_resigned_at: new Date().toISOString(),
+              employer_resigned_at: new Date().toISOString(),
+              activated_at: new Date().toISOString(),
+            } as any)
+            .eq("new_contract_id", signingToken.employee_document_id);
+        }
+
       } else if (currentSignerType === "employee") {
         await supabase
           .from("employee_documents")
