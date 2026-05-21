@@ -148,7 +148,7 @@ describe("Phase 5K safety", () => {
     expect(src).not.toMatch(/\.insert\(|\.update\(|\.delete\(|\.upsert\(/);
     // Includes the future-audit TODO marker
     expect(src).toMatch(/TODO\(phase-future\)/);
-    expect(src).toMatch(/Persistence is intentionally not implemented/i);
+    expect(src).toMatch(/Persistence is\s+intentionally not implemented/i);
   });
 
   it("confirm step renders the evidence summary wired to the helper", async () => {
