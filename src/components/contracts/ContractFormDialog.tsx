@@ -61,6 +61,13 @@ import { useMyOnboardingData } from "@/hooks/useEmployeeOnboarding";
 import { useQuery } from "@tanstack/react-query";
 import { getActiveEmploymentTerms } from "@/lib/employment-terms";
 import { mapEmployeeToContractDefaults } from "@/lib/contract-employee-defaults";
+import {
+  resolveContractFieldSources,
+  getMissingContractFields,
+  sourceLabel,
+  CONTRACT_FIELD_LABELS,
+  type ContractFieldSource,
+} from "@/lib/contract-form-review";
 
 interface ContractFormDialogProps {
   open: boolean;
