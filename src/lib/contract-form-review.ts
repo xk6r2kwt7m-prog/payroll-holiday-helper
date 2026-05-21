@@ -50,6 +50,8 @@ export const CONTRACT_FIELD_LABELS: Partial<Record<keyof ContractVariables, stri
   troncSchemeName: "Tronc scheme",
   serviceChargePolicyNote: "Service charge policy",
   probationPeriod: "Probation period",
+  reportingManagerName: "Reporting manager",
+  reportingManagerTitle: "Reporting manager title",
 };
 
 /**
