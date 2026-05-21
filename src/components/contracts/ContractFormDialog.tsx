@@ -602,6 +602,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1.5 block">Full Name *</Label>
                       <Input value={variables.employeeName} onChange={(e) => updateField("employeeName", e.target.value)} placeholder="e.g. John Smith" className="bg-card" />
+                      <FieldSourceHint field="employeeName" />
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1.5 block">Job Title *</Label>
