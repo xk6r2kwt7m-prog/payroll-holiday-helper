@@ -262,6 +262,29 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     [missingCriticalFields, fieldSources],
   );
 
+  // Phase 5K — pure, non-persisted evidence snapshot for review-only display.
+  const draftEvidence = useMemo(
+    () =>
+      buildContractDraftEvidence({
+        employee: selectedEmployeeEarly ? { id: selectedEmployeeEarly.id } : null,
+        contractType,
+        contractValues: variables,
+        fieldSources,
+        missingFields: missingCriticalFields,
+        readinessStatus: readiness.status,
+        fromEmployeeCreationFlow: Boolean(preselectedEmployeeId),
+      }),
+    [
+      selectedEmployeeEarly,
+      contractType,
+      variables,
+      fieldSources,
+      missingCriticalFields,
+      readiness.status,
+      preselectedEmployeeId,
+    ],
+  );
+
   const FieldSourceHint = ({ field }: { field: keyof ContractVariables }) => {
     const src = fieldSources[field];
     if (!src || src === "missing") return null;
