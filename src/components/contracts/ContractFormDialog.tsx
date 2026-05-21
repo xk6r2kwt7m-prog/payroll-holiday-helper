@@ -164,6 +164,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     });
   };
 
+  const selectedEmployeeEarly = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
+
   const validateStep1 = () => {
     if (!variables.employeeName.trim() || !variables.jobTitle.trim() || !selectedEmployeeId) {
       toast({
@@ -172,6 +174,35 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         variant: "destructive",
       });
       return false;
+    }
+    if (!variables.baseHourlyRate || Number(variables.baseHourlyRate) <= 0) {
+      toast({
+        title: "Base hourly rate required",
+        description: "Enter a base hourly rate (before service charge).",
+        variant: "destructive",
+      });
+      return false;
+    }
+    // NMW gate — base rate only, service charge is excluded.
+    const dob = selectedEmployeeEarly?.date_of_birth || null;
+    if (dob) {
+      const refDate = variables.effectiveDate ? new Date(variables.effectiveDate) : new Date();
+      const comp = evaluateWageCompliance({
+        dobIso: dob,
+        hourlyRate: Number(variables.baseHourlyRate) || 0,
+        referenceDate: isNaN(refDate.getTime()) ? new Date() : refDate,
+      });
+      if (comp.status === "below") {
+        if (!nmwOverride?.acknowledged || nmwOverride.reason.trim().length === 0) {
+          toast({
+            title: "Below National Minimum Wage",
+            description:
+              "The base hourly rate is below NMW. Service charge cannot make this up. Provide a manager override reason to continue.",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
     }
     return true;
   };
@@ -194,6 +225,28 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       });
 
       setSavedDocumentId(result.id);
+
+      // Phase 3 — write immutable NMW override audit row if applicable.
+      if (nmwOverride?.acknowledged && nmwOverride.reason.trim()) {
+        try {
+          await createNmwOverride.mutateAsync({
+            employee_id: selectedEmployeeId,
+            contract_id: result.id,
+            base_hourly_rate: nmwOverride.base_hourly_rate,
+            required_minimum_rate: nmwOverride.required_minimum_rate,
+            age_band: nmwOverride.age_band,
+            override_reason: nmwOverride.reason,
+          });
+        } catch (e) {
+          console.error("Failed to write NMW override audit row:", e);
+          toast({
+            title: "Override not recorded",
+            description: (e as Error)?.message || "Could not write audit row.",
+            variant: "destructive",
+          });
+        }
+      }
+
       setStep("sign");
 
       toast({
