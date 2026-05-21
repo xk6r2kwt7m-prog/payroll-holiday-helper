@@ -465,6 +465,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         probationPeriod: "2 months",
         workLocation: "",
         employmentType: "variable_hours",
+        reportingManagerName: "",
+        reportingManagerTitle: "",
       });
     }, 300);
   };
