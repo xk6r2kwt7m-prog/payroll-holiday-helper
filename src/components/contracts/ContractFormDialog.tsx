@@ -1059,7 +1059,104 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
             </div>
           )}
 
-          {/* STEP 3: Sign */}
+          {/* STEP 3: Issue confirmation (Phase 5M) — generation ≠ issuing. */}
+          {step === "issue" && (
+            <div className="space-y-4" data-testid="issue-confirmation-panel">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">
+                    Contract generated and saved as draft
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Status:{" "}
+                  <span data-testid="workflow-status" data-status={workflowStatus}>
+                    {contractWorkflowStatusLabel(workflowStatus)}
+                  </span>
+                  . The contract has not been issued or signed yet.
+                </p>
+              </div>
+
+              <div
+                className="rounded-xl border border-border bg-card p-4 space-y-2"
+                data-testid="issue-summary"
+              >
+                <p className="text-sm font-semibold text-foreground">Review before issuing</p>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">Employee</dt>
+                    <dd className="font-medium">{issueSummary.employeeName}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Job title</dt>
+                    <dd className="font-medium">{issueSummary.jobTitle}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Start date</dt>
+                    <dd className="font-medium">{issueSummary.startDate}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Contract type</dt>
+                    <dd className="font-medium">{issueSummary.employmentTypeLabel}</dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-muted-foreground">Pay</dt>
+                    <dd className="font-medium">{issueSummary.paySummary}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Work location</dt>
+                    <dd className="font-medium">{issueSummary.workLocation}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Reporting manager</dt>
+                    <dd className="font-medium">{issueSummary.reportingManagerLine}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              {issueSummary.hasSoftWarnings && (
+                <div
+                  data-testid="issue-soft-warnings"
+                  className="rounded-xl border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground"
+                >
+                  <p className="font-semibold mb-1">Soft warnings</p>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {issueSummary.softWarningLabels.map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {issueSummary.hasManualCriticalFields && (
+                <div
+                  data-testid="issue-manual-fields"
+                  className="rounded-xl border border-amber-300/40 bg-amber-50 p-3 text-xs text-amber-900"
+                >
+                  <p className="font-semibold mb-1">
+                    Manually entered critical fields
+                  </p>
+                  <p className="mb-1">
+                    These were entered by hand rather than auto-filled from existing data:
+                  </p>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {issueSummary.manualCriticalFieldLabels.map((l) => (
+                      <li key={l}>{l}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+                <ShieldCheck className="h-4 w-4 text-primary inline mr-1" />
+                {issueSummary.confirmationMessage}
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Sign */}
+
           {step === "sign" && (
             <div className="space-y-4">
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center space-y-2">
