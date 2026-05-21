@@ -62,7 +62,22 @@ export function PayStructureFields({
   effectiveDate,
   onOverrideChange,
   nmwOverride,
+  fieldSources,
 }: Props) {
+  const PaySourceHint = ({ field }: { field: keyof ContractVariables }) => {
+    const src = fieldSources?.[field];
+    if (!src) return null;
+    return (
+      <p
+        data-testid={`pay-source-${field}`}
+        data-source={src}
+        className="text-[10px] text-muted-foreground mt-1"
+      >
+        {sourceLabel(src)}
+      </p>
+    );
+  };
+
   const referenceDate = useMemo(() => {
     const d = effectiveDate ? new Date(effectiveDate) : new Date();
     return isNaN(d.getTime()) ? new Date() : d;
