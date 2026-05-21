@@ -68,6 +68,7 @@ import {
   CONTRACT_FIELD_LABELS,
   type ContractFieldSource,
 } from "@/lib/contract-form-review";
+import { deriveContractReadiness } from "@/lib/contract-readiness";
 
 interface ContractFormDialogProps {
   open: boolean;
