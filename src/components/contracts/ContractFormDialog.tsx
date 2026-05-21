@@ -707,6 +707,42 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           {/* STEP 2: Confirm Details */}
           {step === "confirm" && (
             <div className="space-y-4">
+              {/* Phase 5F — Concise review summary */}
+              <div
+                data-testid="confirm-review-summary"
+                className="rounded-lg border border-border bg-muted/30 p-4 space-y-2 text-xs"
+              >
+                <p className="text-sm font-semibold text-foreground">Review summary</p>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  {([
+                    ["employeeName", variables.employeeName],
+                    ["jobTitle", variables.jobTitle],
+                    ["employmentType", variables.employmentType ? getEmploymentTypeLabel(variables.employmentType) : ""],
+                    ["effectiveDate", variables.effectiveDate],
+                    ["baseHourlyRate", variables.baseHourlyRate ? `£${variables.baseHourlyRate}/hr` : ""],
+                    ["weeklyHours", variables.weeklyHours ? `${variables.weeklyHours} hrs/week` : ""],
+                    ["workLocation", variables.workLocation],
+                    ["noticePeriod", variables.noticePeriod],
+                  ] as const).map(([field, value]) => (
+                    <div key={field} className="flex justify-between gap-3" data-testid={`review-row-${field}`}>
+                      <dt className="text-muted-foreground">{CONTRACT_FIELD_LABELS[field as keyof ContractVariables] || field}</dt>
+                      <dd className="font-medium text-foreground text-right truncate">
+                        {value || <span className="text-amber-600">Missing</span>}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                {missingCriticalFields.length > 0 && (
+                  <div
+                    data-testid="confirm-missing-warning"
+                    className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-amber-900 dark:text-amber-200"
+                  >
+                    Missing: {missingCriticalFields.map((m) => m.label).join(", ")}. You can still continue, but
+                    we recommend filling these in for a complete contract.
+                  </div>
+                )}
+              </div>
+
               <ContractPreview
                 variables={variables}
                 contractType={contractType}
