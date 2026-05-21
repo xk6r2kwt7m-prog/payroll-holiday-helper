@@ -224,6 +224,12 @@ const Payroll = () => {
       toast.error("Cannot submit: unresolved blocking issues must be resolved first");
       return;
     }
+    if (nmw.summary.hasBlockers) {
+      toast.error(
+        `Cannot submit: ${nmw.summary.non_compliant} employee(s) below UK minimum wage. Correct with a top-up payment before submitting.`,
+      );
+      return;
+    }
     try {
       await submitForReview.mutateAsync(selectedPeriod.id);
       toast.success(t("payroll.submitted_review"));
@@ -251,8 +257,20 @@ const Payroll = () => {
       toast.error("Cannot approve: unresolved blocking issues must be resolved first");
       return;
     }
+    if (nmw.summary.hasBlockers) {
+      toast.error(
+        `Cannot approve: ${nmw.summary.non_compliant} employee(s) below UK minimum wage. Correct with a top-up payment before approval.`,
+      );
+      return;
+    }
     try {
       await approvePeriod.mutateAsync(selectedPeriod.id);
+      // Snapshot the compliance results to the audit table on approval (non-blocking).
+      if (nmw.canCheck) {
+        recordNmwAudit
+          .mutateAsync({ payrollPeriodId: selectedPeriod.id, results: nmw.results })
+          .catch((err) => console.error("Failed to record NMW audit", err));
+      }
       toast.success(t("payroll.approved_locked"));
       const adminEmail = companySettings?.company_email;
       if (adminEmail) {
@@ -271,6 +289,7 @@ const Payroll = () => {
       toast.error(t("payroll.failed_approve"));
     }
   };
+
 
   const handleReopen = async () => {
     if (!selectedPeriod) return;
