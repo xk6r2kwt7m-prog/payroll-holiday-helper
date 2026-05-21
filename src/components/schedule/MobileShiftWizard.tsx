@@ -44,6 +44,8 @@ interface MobileShiftWizardProps {
   initialDepartment?: string;
   departments?: readonly string[];
   onDeptChange?: (dept: string) => void;
+  /** Phase 3 — terms-aware rate resolver. When provided, review shows Base + SC split. */
+  rotaTerms?: RotaTermsApi;
 }
 
 type WizardStep = "day" | "dept" | "staff" | "time" | "review";
