@@ -637,21 +637,23 @@ describe("Final audit / 9. Safety checks (source-level)", () => {
   });
 
   it("status-transition map and lock guard agree on terminal states", () => {
+    // Map workflow statuses back to the DB ContractState strings the lock
+    // guard actually receives. "locked" is a workflow-only concept (the DB
+    // keeps the row in "signed" with a separate lock flag elsewhere), so
+    // it is exercised via the "signed" DB state here.
+    const dbStateFor: Record<string, string> = {
+      signed: "signed",
+      locked: "signed",
+      superseded: "superseded",
+      voided: "terminated",
+    };
     for (const status of LOCKED_STATUSES) {
-      // signed and locked still allow amend/supersede paths; superseded/voided
-      // are view-only. Either way, isLocked must be true and edit_draft must
-      // not appear in allowed actions.
-      const dbState =
-        status === "voided"
-          ? "terminated"
-          : status === "superseded"
-            ? "superseded"
-            : status;
-      const g = getContractLockGuard(dbState);
+      const g = getContractLockGuard(dbStateFor[status]);
       expect(g.isLocked).toBe(true);
       expect(g.allowedActions).not.toContain("edit_draft");
     }
   });
+
 });
 
 // ---------------------------------------------------------------------------
