@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { AvailabilityEditor as AvailabilityEditorLazy } from "@/components/workforce/AvailabilityEditor";
 import { useTenant } from "@/hooks/useTenant";
 import { usePlanLimits } from "@/hooks/useSubscription";
+import { evaluateWageCompliance } from "@/lib/uk-minimum-wage";
+import { MinimumWageCheck } from "./MinimumWageCheck";
 
 type DepartmentType = string;
 type EmployeeStatus = Database["public"]["Enums"]["employee_status"];
