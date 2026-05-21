@@ -1,5 +1,9 @@
 import type { ContractVariables } from "./contractTemplates";
 import type { ContractType } from "./contractTemplates";
+import {
+  buildAppointmentReportingSentence,
+  defaultFallbackReportingRole,
+} from "@/lib/contract-appointment";
 
 // ─── Audit Flags ───
 export type ClauseFlag =
