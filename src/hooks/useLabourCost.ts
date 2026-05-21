@@ -47,35 +47,63 @@ export function useTodayLabourCost(date: string) {
   return useQuery({
     queryKey: ["today_labour_cost", tenantId, date],
     queryFn: async () => {
-      if (!tenantId) return { totalHours: 0, totalCost: 0, entries: [] };
+      if (!tenantId) return { totalHours: 0, totalCost: 0, baseCost: 0, scCost: 0, fallbackCount: 0, entries: [] };
 
-      // Get today's time entries with employee hourly rates
       const { data: entries, error } = await supabase
         .from("time_entries")
         .select(`
-          id, clock_in_time, clock_out_time, total_hours, status,
-          employees (id, forename, surname, hourly_rate, department)
+          id, clock_in_time, clock_out_time, total_hours, status, employee_id,
+          employees (id, forename, surname, hourly_rate, service_charge, department)
         `)
         .eq("tenant_id", tenantId)
         .gte("clock_in_time", `${date}T00:00:00`)
         .lte("clock_in_time", `${date}T23:59:59`)
         .order("clock_in_time", { ascending: false });
-
       if (error) throw error;
 
+      // Phase 3: pull active employment terms as of `date` for cost split.
+      const empIds = Array.from(new Set((entries ?? []).map((e: any) => e.employee_id).filter(Boolean)));
+      let termsByEmp = new Map<string, any>();
+      if (empIds.length > 0) {
+        const { data: termsRows } = await supabase
+          .from("employee_contract_terms")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .in("employee_id", empIds)
+          .lte("effective_from", date)
+          .or(`effective_to.is.null,effective_to.gt.${date}`)
+          .in("status", ["active", "superseded"])
+          .order("effective_from", { ascending: false });
+        for (const t of (termsRows ?? []) as any[]) {
+          if (!termsByEmp.has(t.employee_id)) termsByEmp.set(t.employee_id, t);
+        }
+      }
+
       let totalHours = 0;
-      let totalCost = 0;
+      let baseCost = 0;
+      let scCost = 0;
+      let fallbackCount = 0;
 
       for (const e of entries || []) {
         const hours = e.total_hours || 0;
-        const rate = (e.employees as any)?.hourly_rate || 0;
+        const emp: any = e.employees || {};
+        const terms = termsByEmp.get(e.employee_id);
+        const baseRate = terms
+          ? Number(terms.base_hourly_rate ?? terms.hourly_rate ?? 0)
+          : Number(emp.hourly_rate || 0);
+        const scRate = terms
+          ? Number(terms.guaranteed_service_charge_rate ?? 0)
+          : Number(emp.service_charge || 0);
+        if (!terms) fallbackCount += 1;
         totalHours += hours;
-        totalCost += hours * rate;
+        baseCost += hours * baseRate;
+        scCost += hours * scRate;
       }
 
-      return { totalHours, totalCost, entries: entries || [] };
+      const totalCost = baseCost + scCost;
+      return { totalHours, totalCost, baseCost, scCost, fallbackCount, entries: entries || [] };
     },
     enabled: !!tenantId && !!date,
-    refetchInterval: 60_000, // refresh every minute
+    refetchInterval: 60_000,
   });
 }

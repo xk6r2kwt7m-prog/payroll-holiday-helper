@@ -21,9 +21,14 @@ export function LabourCostDashboard() {
 
   const totalCost = labour?.totalCost ?? 0;
   const totalHours = labour?.totalHours ?? 0;
+  const baseCost = (labour as any)?.baseCost ?? totalCost;
+  const scCost = (labour as any)?.scCost ?? 0;
+  const fallbackCount = (labour as any)?.fallbackCount ?? 0;
   const avgHourlyCost = totalHours > 0 ? totalCost / totalHours : 0;
   const revenueAmount = revenue?.revenue_amount ?? 0;
-  const labourPercent = revenueAmount > 0 ? (totalCost / revenueAmount) * 100 : 0;
+  // Labour % vs revenue uses BASE labour cost only — service charge is a
+  // pass-through pay component to staff, not an operating labour cost.
+  const labourPercent = revenueAmount > 0 ? (baseCost / revenueAmount) * 100 : 0;
 
   const handleSaveRevenue = async () => {
     const amount = parseFloat(revenueInput);
