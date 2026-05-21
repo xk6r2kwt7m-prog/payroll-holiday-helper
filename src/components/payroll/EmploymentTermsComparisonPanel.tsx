@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { SyncFromTermsDialog } from "@/components/payroll/SyncFromTermsDialog";
+import { RefreshCw } from "lucide-react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -32,6 +34,9 @@ interface Props {
   summary: TermsComparisonSummary;
   canCheck: boolean;
   periodStartDate?: string | null;
+  /** Phase 2C — needed for sync action. Omit to disable sync. */
+  payrollPeriodId?: string;
+  periodStatus?: string;
 }
 
 /**
@@ -43,14 +48,25 @@ interface Props {
  * Does NOT block approval. Does NOT change calculations. Does NOT mutate
  * payroll entries, periods, or employee profile fields. Purely advisory.
  */
-export function EmploymentTermsComparisonPanel({ rows, summary, canCheck, periodStartDate }: Props) {
+export function EmploymentTermsComparisonPanel({
+  rows,
+  summary,
+  canCheck,
+  periodStartDate,
+  payrollPeriodId,
+  periodStatus,
+}: Props) {
   const hasAnyDrift =
     summary.rate_mismatch > 0 ||
     summary.department_mismatch > 0 ||
     summary.no_active_terms > 0;
   const [open, setOpen] = useState(hasAnyDrift);
+  const [syncOpen, setSyncOpen] = useState(false);
 
   if (!canCheck) return null;
+
+  const isLocked = periodStatus === "approved";
+  const canSync = !!payrollPeriodId && !isLocked && summary.rate_mismatch > 0;
 
   const headlineCls = hasAnyDrift
     ? "border-warning/40 bg-warning/5"
