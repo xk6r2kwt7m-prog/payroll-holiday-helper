@@ -158,17 +158,35 @@ const Payroll = () => {
     const emp = allEmployees.find((e: any) => e.id === employeeId);
     if (!emp) { toast.error("Employee not found"); return; }
     try {
+      // Phase 2C — prefer active employment terms as of period start date,
+      // fall back to employee profile if no active terms exist.
+      const { getEntryDefaultsFromTerms } = await import("@/lib/payroll-rate-source");
+      const defaults = await getEntryDefaultsFromTerms(
+        (emp as any).tenant_id,
+        emp.id,
+        selectedPeriod.start_date,
+        {
+          id: emp.id,
+          hourly_rate: emp.hourly_rate,
+          service_charge: (emp as any).service_charge,
+          department: (emp as any).department,
+        },
+      );
       await createEntry.mutateAsync({
         payroll_period_id: selectedPeriod.id,
         employee_id: emp.id,
-        hourly_rate: emp.hourly_rate,
-        service_charge: (emp as any).service_charge || 0,
+        hourly_rate: defaults.hourly_rate,
+        service_charge: defaults.service_charge,
         timesheet_hours: 0,
         performance_bonus: 0,
         special_bonus: 0,
         total_pay: 0,
       } as any);
-      toast.success(`${emp.forename} ${emp.surname} added to this payroll period`);
+      toast.success(
+        defaults.source === "terms"
+          ? `${emp.forename} ${emp.surname} added (rate £${defaults.hourly_rate.toFixed(2)} from active contract terms).`
+          : `${emp.forename} ${emp.surname} added (rate £${defaults.hourly_rate.toFixed(2)} from profile — no active contract terms found).`,
+      );
     } catch {
       toast.error("Failed to add employee to period");
     }
