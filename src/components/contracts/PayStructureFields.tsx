@@ -202,6 +202,8 @@ export function PayStructureFields({
               className="bg-card min-h-[40px]"
               rows={2}
             />
+            <PaySourceHint field="serviceChargePolicyNote" />
+
           </div>
         </div>
 
