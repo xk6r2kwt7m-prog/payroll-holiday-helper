@@ -470,6 +470,23 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       let periodId: string;
       let entriesCreated = 0;
 
+      // Phase 2C — resolve active employment terms once per import for any
+      // NEW payroll entries we create (existing entries are never overwritten
+      // here). Existing entries keep their previously-imported rate.
+      const { fetchActiveTermsMap, resolveRateSource } = await import(
+        "@/lib/payroll-rate-source"
+      );
+      const periodStartForTerms =
+        (useExistingPeriod && selectedPeriod?.start_date) ||
+        startDate ||
+        new Date().toISOString().slice(0, 10);
+      const importTermsMap = await fetchActiveTermsMap(
+        tenantId!,
+        matchedEntries.map(e => e.matchedId).filter(Boolean) as string[],
+        periodStartForTerms,
+      );
+
+
       if (useExistingPeriod && existingPeriodId) {
         periodId = existingPeriodId;
         await supabase
