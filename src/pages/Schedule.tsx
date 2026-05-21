@@ -26,6 +26,7 @@ import { CalendarClock } from "lucide-react";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { useRotaTerms } from "@/hooks/useRotaTerms";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type ViewMode = "week" | "day";
