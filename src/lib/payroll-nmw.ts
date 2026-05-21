@@ -65,6 +65,12 @@ export interface NmwResult {
   status: NmwStatus;
   shortfall: number; // positive number = £ short per pay period; 0 if not non-compliant
   message: string;
+  /**
+   * True when this entry would *only* be compliant if service charge / tips
+   * were counted as basic pay. Surfaces the "relying on SC for NMW" risk.
+   * Service charge is NEVER added to eligible pay regardless of this flag.
+   */
+  relies_on_service_charge: boolean;
   calculation_basis: {
     basic_pay: number;
     performance_bonus: number;
