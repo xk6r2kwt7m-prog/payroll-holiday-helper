@@ -524,6 +524,22 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           {/* STEP 1: Fill Details */}
           {step === "fill" && (
             <>
+              {/* Phase 5J — Readiness banner */}
+              {selectedEmployeeId && (
+                <div
+                  data-testid="readiness-banner"
+                  data-readiness-status={readiness.status}
+                  className={`rounded-lg border p-3 text-xs ${
+                    readiness.bannerTone === "warning"
+                      ? "border-amber-500/30 bg-amber-500/5"
+                      : "border-primary/20 bg-primary/5"
+                  }`}
+                >
+                  <p className="font-medium text-foreground">{readiness.bannerTitle}</p>
+                  <p className="text-muted-foreground mt-0.5">{readiness.bannerDescription}</p>
+                </div>
+              )}
+
               {/* Phase 5F — Missing critical fields summary */}
               {selectedEmployeeId && missingCriticalFields.length > 0 && (
                 <div
