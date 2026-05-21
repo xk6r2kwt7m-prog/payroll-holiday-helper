@@ -26,6 +26,7 @@ import {
   calculateAgeYears,
 } from "@/lib/uk-minimum-wage";
 import type { ContractVariables } from "./contractTemplates";
+import { sourceLabel, type ContractFieldSource } from "@/lib/contract-form-review";
 
 export interface NmwOverrideState {
   /** True only when the user has explicitly chosen to override. */
@@ -44,7 +45,15 @@ interface Props {
   effectiveDate: string;
   onOverrideChange: (next: NmwOverrideState | null) => void;
   nmwOverride: NmwOverrideState | null;
+  /**
+   * Phase 5G — optional resolved source map for pay fields. When provided,
+   * each pay-related input renders a small muted helper label indicating
+   * whether the value came from active terms, the employee profile, manual
+   * entry, etc. Read-only display; no calculation logic is affected.
+   */
+  fieldSources?: Partial<Record<keyof ContractVariables, ContractFieldSource>>;
 }
+
 
 export function PayStructureFields({
   variables,
