@@ -69,6 +69,11 @@ import {
   type ContractFieldSource,
 } from "@/lib/contract-form-review";
 import { deriveContractReadiness } from "@/lib/contract-readiness";
+import {
+  buildContractDraftEvidence,
+  payDetailsStatusLabel,
+  reportingManagerStatusLabel,
+} from "@/lib/contract-draft-evidence";
 
 interface ContractFormDialogProps {
   open: boolean;
