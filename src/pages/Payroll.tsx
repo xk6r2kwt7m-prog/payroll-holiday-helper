@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { buildLocationSplitRows } from "@/lib/payroll-report-transform";
 
@@ -158,7 +158,8 @@ const Payroll = () => {
   const [checklistAcks, setChecklistAcks] = useState<Set<string>>(new Set());
   const [checklistConfirmed, setChecklistConfirmed] = useState(false);
   // Reset acks/confirmation when the selected period changes.
-  useMemo(() => {
+  // Phase 5B — proper side-effect; previously incorrectly used useMemo.
+  useEffect(() => {
     setChecklistAcks(new Set());
     setChecklistConfirmed(false);
   }, [selectedPeriod?.id]);
@@ -793,6 +794,7 @@ const Payroll = () => {
             period_status={selectedPeriod.status}
             entries={phase5Report.entries}
             manualAdjustmentsByEntryId={manualAdjustmentsByEntryId}
+            // TODO: replace isAdmin with payroll-authorised permission when role model supports it.
             canApproveRole={isAdmin}
             isApproving={approvePeriod.isPending}
             onApproveRequested={handleApprove}
