@@ -291,7 +291,7 @@ export function useUpdateLibraryItem() {
       await assertPermission("manage_training", tenantId!);
       const { error } = await supabase
         .from("training_library")
-        .update(updates as Record<string, unknown>)
+        .update(updates as never)
         .eq("id", id);
       if (error) throw error;
       await writeTrainingAudit({
@@ -526,7 +526,7 @@ export function useUpdateAssignment() {
     }) => {
       const { error } = await supabase
         .from("training_assignments")
-        .update(updates)
+        .update(updates as never)
         .eq("id", id);
       if (error) throw error;
       await writeTrainingAudit({
