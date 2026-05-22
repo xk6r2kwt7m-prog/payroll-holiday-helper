@@ -3980,34 +3980,46 @@ export type Database = {
       }
       schedule_template_shifts: {
         Row: {
+          break_minutes: number | null
           created_at: string
           day_of_week: number
+          department: string | null
           employee_id: string | null
           end_time: string
           id: string
           notes: string | null
+          required_headcount: number
+          role: string | null
           start_time: string
           template_id: string
           tenant_id: string
         }
         Insert: {
+          break_minutes?: number | null
           created_at?: string
           day_of_week: number
+          department?: string | null
           employee_id?: string | null
           end_time: string
           id?: string
           notes?: string | null
+          required_headcount?: number
+          role?: string | null
           start_time: string
           template_id: string
           tenant_id: string
         }
         Update: {
+          break_minutes?: number | null
           created_at?: string
           day_of_week?: number
+          department?: string | null
           employee_id?: string | null
           end_time?: string
           id?: string
           notes?: string | null
+          required_headcount?: number
+          role?: string | null
           start_time?: string
           template_id?: string
           tenant_id?: string
@@ -4050,8 +4062,12 @@ export type Database = {
           created_by: string | null
           department: string
           id: string
+          is_archived: boolean
+          is_default: boolean
           name: string
+          scope: string
           tenant_id: string
+          updated_at: string
         }
         Insert: {
           branch: string
@@ -4059,8 +4075,12 @@ export type Database = {
           created_by?: string | null
           department: string
           id?: string
+          is_archived?: boolean
+          is_default?: boolean
           name: string
+          scope?: string
           tenant_id: string
+          updated_at?: string
         }
         Update: {
           branch?: string
@@ -4068,8 +4088,12 @@ export type Database = {
           created_by?: string | null
           department?: string
           id?: string
+          is_archived?: boolean
+          is_default?: boolean
           name?: string
+          scope?: string
           tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
