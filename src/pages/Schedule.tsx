@@ -15,7 +15,13 @@ import { type QuickFilter } from "@/components/schedule/ScheduleFilters";
 import { PublishConfirmDrawer } from "@/components/schedule/PublishConfirmDrawer";
 import { SaveTemplateDialog } from "@/components/schedule/SaveTemplateDialog";
 import { LoadTemplateDialog } from "@/components/schedule/LoadTemplateDialog";
+import { TemplatePreviewDialog } from "@/components/schedule/TemplatePreviewDialog";
+import { TemplateManagerDialog } from "@/components/schedule/TemplateManagerDialog";
 import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
+import { buildTemplatePreview, shiftsToRemoveForApply, type TemplatePreview, type ApplyMode } from "@/lib/schedule-template-preview";
+import { supabase } from "@/integrations/supabase/client";
+import { useBulkDeleteShifts } from "@/hooks/useSchedule";
+import { toast } from "sonner";
 import { useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR, getMinimumStaff } from "@/components/schedule/shiftDefaults";
 import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
@@ -83,6 +89,10 @@ export default function Schedule() {
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
   const [autoFillOpen, setAutoFillOpen] = useState(false);
+  const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
+  const [previewState, setPreviewState] = useState<{ templateId: string; preview: TemplatePreview } | null>(null);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const bulkDeleteShifts = useBulkDeleteShifts();
 
   const { isAdmin } = useAuth();
   // Permission-based access
