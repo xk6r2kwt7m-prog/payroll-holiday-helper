@@ -41,15 +41,18 @@ export function CopyPreviousWeekDialog({
 
   const prevWeekStart = startOfWeek(subWeeks(currentWeekStart, 1), { weekStartsOn: 1 });
   const prevWeekEnd = endOfWeek(prevWeekStart, { weekStartsOn: 1 });
+  const hasExisting = existingShiftCount > 0;
+  const [confirmedAddAlongside, setConfirmedAddAlongside] = useState(false);
 
   const handleCopy = async () => {
+    if (hasExisting && !confirmedAddAlongside) return; // explicit confirmation required
     if (copyMode === "from_previous") {
       await onCopy(
         format(prevWeekStart, "yyyy-MM-dd"),
         format(prevWeekEnd, "yyyy-MM-dd")
       );
     }
-    // "to_next" could be added later
+    setConfirmedAddAlongside(false);
     setOpen(false);
   };
 
