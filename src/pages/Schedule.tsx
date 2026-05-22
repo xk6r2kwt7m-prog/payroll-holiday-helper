@@ -114,6 +114,50 @@ export default function Schedule() {
     schedule.weekDays
   );
 
+  // Phase: aggregate rota issues + derive week state for header pill
+  const rotaIssues = useMemo(() => {
+    return aggregateRotaIssues({
+      shifts: (schedule.branchShifts || []).map((s: any) => ({
+        id: s.id,
+        employee_id: s.employee_id,
+        shift_date: s.shift_date,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        branch: s.branch,
+        department: s.department,
+        role: s.role,
+      })),
+      employees: activeEmployees.map((e: any) => ({
+        id: e.id,
+        status: e.status,
+        branch: e.branch,
+        department: e.department,
+        role: e.role,
+        forename: e.forename,
+        surname: e.surname,
+        contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+      })),
+      availability: [],
+      approvedLeave: [],
+    });
+  }, [schedule.branchShifts, activeEmployees]);
+
+  const criticalCount = rotaIssues.filter((i) => i.severity === "critical").length
+    + complianceWarnings.filter((w) => w.severity === "critical").length;
+
+  const weekState = useMemo(
+    () => getScheduleWeekState({
+      shifts: schedule.branchShifts || [],
+      criticalWarningCount: criticalCount,
+    }),
+    [schedule.branchShifts, criticalCount]
+  );
+
+  const unassignedShifts = useMemo(
+    () => (schedule.branchDeptShifts || []).filter((s: any) => !s.employee_id),
+    [schedule.branchDeptShifts]
+  );
+
   // Quick filter stats
   const filterStats = useMemo(() => {
     const deptShifts = schedule.branchDeptShifts;
