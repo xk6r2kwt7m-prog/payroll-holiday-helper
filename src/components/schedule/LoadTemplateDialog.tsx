@@ -42,6 +42,7 @@ export function LoadTemplateDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   onCopyFromAnotherWeek,
+  onManageTemplates,
 }: LoadTemplateDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = controlledOpen ?? internalOpen;
