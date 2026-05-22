@@ -55,7 +55,7 @@ export function TemplatePreviewDialog({
               <div className="flex flex-wrap gap-1">
                 {warningGroups.map(([code, n]) => (
                   <Badge key={code} variant="outline" className="text-[10px] border-amber-400 text-amber-800">
-                    {code.replaceAll("_", " ")} × {n}
+                    {code.replace(/_/g, " ")} × {n}
                   </Badge>
                 ))}
               </div>
