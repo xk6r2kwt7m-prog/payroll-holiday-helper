@@ -39,6 +39,9 @@ import { useRotaTerms } from "@/hooks/useRotaTerms";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getScheduleWeekState } from "@/lib/schedule-week-state";
 import { aggregateRotaIssues } from "@/lib/schedule-rota-issues";
+import { evaluatePublishGate } from "@/lib/schedule-publish-gate";
+import { isPublishedChange, type PublishedChangeKind } from "@/lib/schedule-staff-visibility";
+import { PublishedChangeConfirmDialog } from "@/components/schedule/PublishedChangeConfirmDialog";
 
 type ViewMode = "week" | "day";
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
