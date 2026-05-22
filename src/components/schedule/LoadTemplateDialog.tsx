@@ -22,6 +22,7 @@ interface LoadTemplateDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onCopyFromAnotherWeek?: () => void;
+  onManageTemplates?: () => void;
 }
 
 const SCOPE_OPTIONS: { id: Scope; label: string; description: string }[] = [
