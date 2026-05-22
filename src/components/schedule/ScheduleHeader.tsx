@@ -120,6 +120,11 @@ export function ScheduleHeader({
   canUndoPublish,
   undoTimeRemaining,
   onUndoPublish,
+  weekStateLabel,
+  weekStateTone = "neutral",
+  onAutoFillGaps,
+  hasUnassigned,
+  rotaIssuesSlot,
 }: ScheduleHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const navigate = useNavigate();
