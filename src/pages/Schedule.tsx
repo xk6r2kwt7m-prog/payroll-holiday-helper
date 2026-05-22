@@ -20,14 +20,19 @@ import { useComplianceWarnings } from "@/components/schedule/ComplianceWarnings"
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR, getMinimumStaff } from "@/components/schedule/shiftDefaults";
 import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
 import { MobileManagerBar } from "@/components/schedule/MobileManagerBar";
+import { RotaIssuesPanel } from "@/components/schedule/RotaIssuesPanel";
+import { AutoFillGapsDialog } from "@/components/schedule/AutoFillGapsDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { useRotaTerms } from "@/hooks/useRotaTerms";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getScheduleWeekState } from "@/lib/schedule-week-state";
+import { aggregateRotaIssues } from "@/lib/schedule-rota-issues";
 
 type ViewMode = "week" | "day";
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
@@ -77,6 +82,7 @@ export default function Schedule() {
   const [wizardInitialDay, setWizardInitialDay] = useState<Date | null>(null);
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
+  const [autoFillOpen, setAutoFillOpen] = useState(false);
 
   const { isAdmin } = useAuth();
   // Permission-based access
