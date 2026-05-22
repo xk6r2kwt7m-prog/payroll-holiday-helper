@@ -157,6 +157,7 @@ export function buildTemplatePreview(input: TemplatePreviewInput): TemplatePrevi
       // Add to sim so subsequent template shifts don't double-book
       if (assignedEmployeeId) {
         simExisting.push({
+          id: `sim-${simExisting.length}-${previewShifts.length}`,
           employee_id: assignedEmployeeId,
           shift_date,
           start_time: p.start_time,
