@@ -316,6 +316,25 @@ export default function Schedule() {
             canUndoPublish={schedule.publishRollbackInfo.canUndo}
             undoTimeRemaining={undoTimeStr}
             onUndoPublish={schedule.handleUndoPublish}
+            weekStateLabel={weekState.label}
+            weekStateTone={weekState.tone}
+            onAutoFillGaps={() => setAutoFillOpen(true)}
+            hasUnassigned={unassignedShifts.length > 0}
+            rotaIssuesSlot={
+              (rotaIssues.length + complianceWarnings.length) > 0 ? (
+                <RotaIssuesPanel
+                  issues={[
+                    ...rotaIssues,
+                    ...complianceWarnings.map((w) => ({
+                      code: (w.type === "rest_period" ? "missing_break" : "over_contracted_hours") as any,
+                      severity: w.severity,
+                      message: w.message,
+                      employeeId: w.employeeId,
+                    })),
+                  ]}
+                />
+              ) : null
+            }
           />
         </div>
 
