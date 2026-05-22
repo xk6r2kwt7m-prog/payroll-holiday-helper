@@ -664,11 +664,23 @@ export default function Schedule() {
       <LoadTemplateDialog
         branch={selectedBranch}
         department={selectedDept}
-        onLoad={schedule.handleLoadTemplate}
+        onLoad={handleTemplateLoadRequest}
         isPending={schedule.isLoadingTemplate}
         open={loadTemplateOpen}
         onOpenChange={setLoadTemplateOpen}
         onCopyFromAnotherWeek={() => setCopyPrevOpen(true)}
+      />
+      <TemplatePreviewDialog
+        preview={previewState?.preview ?? null}
+        open={!!previewState}
+        onOpenChange={(o) => { if (!o) setPreviewState(null); }}
+        onConfirm={handleConfirmApplyTemplate}
+        isPending={isApplyingTemplate}
+      />
+      <TemplateManagerDialog
+        branch={selectedBranch}
+        open={templateManagerOpen}
+        onOpenChange={setTemplateManagerOpen}
       />
       <AutoFillGapsDialog
         open={autoFillOpen}
