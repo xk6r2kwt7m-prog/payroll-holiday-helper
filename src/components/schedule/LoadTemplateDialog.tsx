@@ -132,6 +132,15 @@ export function LoadTemplateDialog({
                 </button>
               );
             })}
+            {onManageTemplates && (
+              <button
+                onClick={() => { setOpen(false); onManageTemplates(); }}
+                data-testid="load-template-manage"
+                className="mt-1 text-[11px] text-muted-foreground hover:text-foreground text-left px-1 py-1.5"
+              >
+                Manage templates…
+              </button>
+            )}
           </div>
         )}
 
