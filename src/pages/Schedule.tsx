@@ -39,6 +39,9 @@ import { useRotaTerms } from "@/hooks/useRotaTerms";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getScheduleWeekState } from "@/lib/schedule-week-state";
 import { aggregateRotaIssues } from "@/lib/schedule-rota-issues";
+import { evaluatePublishGate } from "@/lib/schedule-publish-gate";
+import { isPublishedChange, type PublishedChangeKind } from "@/lib/schedule-staff-visibility";
+import { PublishedChangeConfirmDialog } from "@/components/schedule/PublishedChangeConfirmDialog";
 
 type ViewMode = "week" | "day";
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
@@ -167,6 +170,103 @@ export default function Schedule() {
     () => (schedule.branchDeptShifts || []).filter((s: any) => !s.employee_id),
     [schedule.branchDeptShifts]
   );
+
+  // Phase 3 — publish gate evaluation (hard blockers + soft warnings + summary)
+  const publishGate = useMemo(() => {
+    return evaluatePublishGate({
+      shifts: (schedule.branchShifts || []).map((s: any) => ({
+        id: s.id,
+        employee_id: s.employee_id,
+        shift_date: s.shift_date,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        branch: s.branch,
+        department: s.department,
+        role: s.role,
+        is_published: !!s.is_published,
+      })),
+      employees: activeEmployees.map((e: any) => ({
+        id: e.id,
+        status: e.status,
+        branch: e.branch,
+        department: e.department,
+        role: e.role,
+        forename: e.forename,
+        surname: e.surname,
+        contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+      })),
+      availability: [],
+      approvedLeave: [],
+      allowUnassigned: false,
+    });
+  }, [schedule.branchShifts, activeEmployees]);
+
+  // Phase 3 — post-publish change confirmation state
+  const [pendingPublishedChange, setPendingPublishedChange] = useState<{
+    kind: PublishedChangeKind;
+    shiftId: string;
+    shiftSummary: string;
+    apply: () => Promise<void> | void;
+  } | null>(null);
+
+  const shiftById = useCallback(
+    (id: string) => (schedule.branchShifts || []).find((s: any) => s.id === id),
+    [schedule.branchShifts]
+  );
+
+  const summariseShift = (s: any): string => {
+    if (!s) return "";
+    return `${s.shift_date} · ${(s.start_time || "").slice(0, 5)}–${(s.end_time || "").slice(0, 5)}${s.department ? " · " + s.department : ""}`;
+  };
+
+  const guardedUpdateShift = useCallback(
+    async (id: string, patch: any) => {
+      const existing = shiftById(id);
+      if (isPublishedChange(existing)) {
+        const before = existing;
+        const after = { ...existing, ...patch };
+        let kind: PublishedChangeKind = "edit";
+        if (before.employee_id && patch.employee_id !== undefined && patch.employee_id !== before.employee_id) {
+          kind = patch.employee_id ? "reassign" : "cancel";
+        }
+        return new Promise<void>((resolve) => {
+          setPendingPublishedChange({
+            kind,
+            shiftId: id,
+            shiftSummary: summariseShift(after),
+            apply: async () => {
+              await schedule.handleUpdateShift(id, patch);
+              resolve();
+            },
+          });
+        });
+      }
+      return schedule.handleUpdateShift(id, patch);
+    },
+    [shiftById, schedule]
+  );
+
+  const guardedDeleteShift = useCallback(
+    async (id: string) => {
+      const existing = shiftById(id);
+      if (isPublishedChange(existing)) {
+        return new Promise<void>((resolve) => {
+          setPendingPublishedChange({
+            kind: "delete",
+            shiftId: id,
+            shiftSummary: summariseShift(existing),
+            apply: async () => {
+              await schedule.handleDeleteShift(id);
+              resolve();
+            },
+          });
+        });
+      }
+      return schedule.handleDeleteShift(id);
+    },
+    [shiftById, schedule]
+  );
+
 
   // Quick filter stats
   const filterStats = useMemo(() => {
@@ -540,8 +640,8 @@ export default function Schedule() {
                         department={deptVal}
                         isAdmin={canEditSchedules}
                         onCreateShift={schedule.handleCreateShift}
-                        onUpdateShift={schedule.handleUpdateShift}
-                        onDeleteShift={schedule.handleDeleteShift}
+                        onUpdateShift={guardedUpdateShift}
+                        onDeleteShift={guardedDeleteShift}
                         isPending={schedule.isPending}
                         onNavigateToBranch={(b) => setSelectedBranch(b)}
                         quickFilter={quickFilter}
@@ -565,8 +665,8 @@ export default function Schedule() {
                   department={selectedDept}
                   isAdmin={canEditSchedules}
                   onCreateShift={schedule.handleCreateShift}
-                  onUpdateShift={schedule.handleUpdateShift}
-                  onDeleteShift={schedule.handleDeleteShift}
+                  onUpdateShift={guardedUpdateShift}
+                  onDeleteShift={guardedDeleteShift}
                   isPending={schedule.isPending}
                   onNavigateToBranch={(b) => setSelectedBranch(b)}
                   quickFilter={quickFilter}
@@ -581,7 +681,7 @@ export default function Schedule() {
                     isAdmin={canEditSchedules}
                     onAddClick={() => { setDayDialogShift(null); setDayDialogOpen(true); }}
                     onEditClick={(shift) => { setDayDialogShift(shift); setDayDialogOpen(true); }}
-                    onDeleteClick={schedule.handleDeleteShift}
+                    onDeleteClick={guardedDeleteShift}
                   />
                   <ShiftCellDialog
                     open={dayDialogOpen}
@@ -597,7 +697,7 @@ export default function Schedule() {
                     existingShift={dayDialogShift}
                     onSave={async (data) => {
                       if (dayDialogShift) {
-                        await schedule.handleUpdateShift(dayDialogShift.id, {
+                        await guardedUpdateShift(dayDialogShift.id, {
                           employee_id: data.employee_id,
                           start_time: data.start_time,
                           end_time: data.end_time,
@@ -618,7 +718,7 @@ export default function Schedule() {
                       }
                       setDayDialogOpen(false);
                     }}
-                    onDelete={(id) => { schedule.handleDeleteShift(id); setDayDialogOpen(false); }}
+                    onDelete={(id) => { guardedDeleteShift(id); setDayDialogOpen(false); }}
                     isPending={schedule.isPending}
                   />
                 </>
@@ -641,6 +741,25 @@ export default function Schedule() {
         complianceWarnings={complianceWarnings.length}
         isPublishing={schedule.isPublishing}
         onConfirmPublish={schedule.handlePublish}
+        assignedShifts={publishGate.summary.assignedShifts}
+        unassignedShifts={publishGate.summary.unassignedShifts}
+        affectedEmployeeCount={publishGate.summary.affectedEmployeeCount}
+        affectedDepartments={publishGate.summary.affectedDepartments}
+        blockers={publishGate.blockers}
+        warnings={publishGate.warnings}
+      />
+      <PublishedChangeConfirmDialog
+        open={!!pendingPublishedChange}
+        onOpenChange={(o) => { if (!o) setPendingPublishedChange(null); }}
+        kind={pendingPublishedChange?.kind ?? "edit"}
+        shiftSummary={pendingPublishedChange?.shiftSummary}
+        willNotifyStaff
+        isPending={schedule.isPending}
+        onConfirm={async () => {
+          const change = pendingPublishedChange;
+          setPendingPublishedChange(null);
+          if (change) await change.apply();
+        }}
       />
       <CopyPreviousWeekDialog
         currentWeekStart={schedule.weekStart}
@@ -730,7 +849,7 @@ export default function Schedule() {
         }}
         onApply={async (assignments) => {
           for (const a of assignments) {
-            await schedule.handleUpdateShift(a.shiftId, {
+            await guardedUpdateShift(a.shiftId, {
               employee_id: a.employeeId,
               status: "scheduled",
             });
