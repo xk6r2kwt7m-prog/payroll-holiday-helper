@@ -697,7 +697,7 @@ export default function Schedule() {
                     existingShift={dayDialogShift}
                     onSave={async (data) => {
                       if (dayDialogShift) {
-                        await schedule.handleUpdateShift(dayDialogShift.id, {
+                        await guardedUpdateShift(dayDialogShift.id, {
                           employee_id: data.employee_id,
                           start_time: data.start_time,
                           end_time: data.end_time,
@@ -718,7 +718,7 @@ export default function Schedule() {
                       }
                       setDayDialogOpen(false);
                     }}
-                    onDelete={(id) => { schedule.handleDeleteShift(id); setDayDialogOpen(false); }}
+                    onDelete={(id) => { guardedDeleteShift(id); setDayDialogOpen(false); }}
                     isPending={schedule.isPending}
                   />
                 </>
@@ -830,7 +830,7 @@ export default function Schedule() {
         }}
         onApply={async (assignments) => {
           for (const a of assignments) {
-            await schedule.handleUpdateShift(a.shiftId, {
+            await guardedUpdateShift(a.shiftId, {
               employee_id: a.employeeId,
               status: "scheduled",
             });
