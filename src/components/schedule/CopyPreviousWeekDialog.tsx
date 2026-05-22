@@ -77,17 +77,33 @@ export function CopyPreviousWeekDialog({
                   </Label>
                 </div>
               </RadioGroup>
-              {existingShiftCount > 0 && (
-                <p className="text-xs text-destructive font-medium">
-                  ⚠ Current week already has {existingShiftCount} shifts. Copied shifts will be added alongside existing ones.
-                </p>
+              {hasExisting && (
+                <div className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                  <p className="text-xs text-destructive font-medium">
+                    ⚠ Current week already has {existingShiftCount} shifts. Existing shifts will NOT be overwritten — copied shifts are added alongside.
+                  </p>
+                  <label className="flex items-start gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={confirmedAddAlongside}
+                      onChange={(e) => setConfirmedAddAlongside(e.target.checked)}
+                      data-testid="copy-week-confirm-alongside"
+                      className="mt-0.5"
+                    />
+                    <span>I understand existing shifts stay and copied shifts are added alongside.</span>
+                  </label>
+                </div>
               )}
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleCopy} disabled={isPending}>
+          <AlertDialogAction
+            onClick={handleCopy}
+            disabled={isPending || (hasExisting && !confirmedAddAlongside)}
+            data-testid="copy-week-confirm"
+          >
             {isPending ? "Copying..." : "Copy"}
           </AlertDialogAction>
         </AlertDialogFooter>
