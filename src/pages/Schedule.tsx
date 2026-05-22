@@ -389,18 +389,44 @@ export default function Schedule() {
 
           {/* Empty state when no shifts exist */}
           {!schedule.isLoading && (schedule.shifts?.length === 0) && (
-            <EmptyState
-              icon={CalendarClock}
-              title="No shifts this week"
-              description={canEditSchedules
-                ? isMobile
-                  ? "Tap Build Shift above to start, or use the ⋮ menu to copy last week or load a saved template."
-                  : "Start building your rota by adding shifts, copying from last week, or loading a template."
-                : "No shifts have been published for this week yet. Check back later or contact your manager."
-              }
-              actionLabel={canEditSchedules && !isMobile ? "Build Shift" : undefined}
-              onAction={canEditSchedules && !isMobile ? () => { setWizardInitialDay(null); setWizardOpen(true); } : undefined}
-            />
+            <div className="flex flex-col items-center" data-testid="schedule-empty-state">
+              <EmptyState
+                icon={CalendarClock}
+                title="No shifts this week"
+                description={canEditSchedules
+                  ? "Start building your rota by adding shifts, loading a template, or copying last week."
+                  : "No shifts have been published for this week yet. Check back later or contact your manager."
+                }
+              />
+              {canEditSchedules && (
+                <div className="flex flex-wrap items-center justify-center gap-2 -mt-2 pb-6">
+                  <Button
+                    size="sm"
+                    onClick={() => { setWizardInitialDay(null); setWizardOpen(true); }}
+                    data-testid="empty-build-shift"
+                  >
+                    Build Shift
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setLoadTemplateOpen(true)}
+                    data-testid="empty-load-template"
+                  >
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    Load Template
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setCopyPrevOpen(true)}
+                    data-testid="empty-copy-last-week"
+                  >
+                    Copy last week
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
 
           {(schedule.shifts?.length ?? 0) > 0 && (
