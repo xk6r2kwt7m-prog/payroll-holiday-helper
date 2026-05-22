@@ -365,6 +365,7 @@ export default function Schedule() {
     }
   }, [previewState, schedule, bulkDeleteShifts]);
 
+  return (
     <AppLayout>
       <div className="flex flex-col h-full -m-4 sm:-m-6">
         {/* Compact top control area */}
