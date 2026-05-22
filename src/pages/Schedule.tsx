@@ -353,35 +353,6 @@ export default function Schedule() {
   );
   const rotaTerms = useRotaTerms(activeEmployees, rotaWindowStart, rotaWindowEnd);
 
-  // Empty state — no branch configured
-  if (!schedule.isLoading && tenantBranches.length === 0) {
-    return (
-      <AppLayout>
-        <EmptyState
-          icon={CalendarClock}
-          title="No locations set up"
-          description="Add at least one location before building your schedule. Locations define where your team works and what shifts are available."
-          hint="You can set up locations, operating hours, and geofencing in workplace settings."
-          actionLabel="Add a Location"
-          actionHref="/settings?group=workplaces&section=locations"
-          secondaryLabel="View Locations"
-          secondaryHref="/locations"
-        />
-      </AppLayout>
-    );
-  }
-
-  if (!tenantReady) {
-    return (
-      <AppLayout>
-        <div className="space-y-4 p-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-96" />
-        </div>
-      </AppLayout>
-    );
-  }
-
   // Build preview when a template is chosen — preview supersedes direct apply
   const handleTemplateLoadRequest = useCallback(async (templateId: string) => {
     try {
@@ -464,6 +435,38 @@ export default function Schedule() {
       setIsApplyingTemplate(false);
     }
   }, [previewState, schedule, bulkDeleteShifts]);
+
+
+
+  // Empty state — no branch configured
+  if (!schedule.isLoading && tenantBranches.length === 0) {
+    return (
+      <AppLayout>
+        <EmptyState
+          icon={CalendarClock}
+          title="No locations set up"
+          description="Add at least one location before building your schedule. Locations define where your team works and what shifts are available."
+          hint="You can set up locations, operating hours, and geofencing in workplace settings."
+          actionLabel="Add a Location"
+          actionHref="/settings?group=workplaces&section=locations"
+          secondaryLabel="View Locations"
+          secondaryHref="/locations"
+        />
+      </AppLayout>
+    );
+  }
+
+  if (!tenantReady) {
+    return (
+      <AppLayout>
+        <div className="space-y-4 p-4">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-96" />
+        </div>
+      </AppLayout>
+    );
+  }
+
 
   return (
     <AppLayout>
