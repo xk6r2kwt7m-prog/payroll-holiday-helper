@@ -741,6 +741,25 @@ export default function Schedule() {
         complianceWarnings={complianceWarnings.length}
         isPublishing={schedule.isPublishing}
         onConfirmPublish={schedule.handlePublish}
+        assignedShifts={publishGate.summary.assignedShifts}
+        unassignedShifts={publishGate.summary.unassignedShifts}
+        affectedEmployeeCount={publishGate.summary.affectedEmployeeCount}
+        affectedDepartments={publishGate.summary.affectedDepartments}
+        blockers={publishGate.blockers}
+        warnings={publishGate.warnings}
+      />
+      <PublishedChangeConfirmDialog
+        open={!!pendingPublishedChange}
+        onOpenChange={(o) => { if (!o) setPendingPublishedChange(null); }}
+        kind={pendingPublishedChange?.kind ?? "edit"}
+        shiftSummary={pendingPublishedChange?.shiftSummary}
+        willNotifyStaff
+        isPending={schedule.isPending}
+        onConfirm={async () => {
+          const change = pendingPublishedChange;
+          setPendingPublishedChange(null);
+          if (change) await change.apply();
+        }}
       />
       <CopyPreviousWeekDialog
         currentWeekStart={schedule.weekStart}
