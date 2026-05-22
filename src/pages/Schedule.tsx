@@ -575,6 +575,61 @@ export default function Schedule() {
         isPending={schedule.isLoadingTemplate}
         open={loadTemplateOpen}
         onOpenChange={setLoadTemplateOpen}
+        onCopyFromAnotherWeek={() => setCopyPrevOpen(true)}
+      />
+      <AutoFillGapsDialog
+        open={autoFillOpen}
+        onOpenChange={setAutoFillOpen}
+        unassignedShifts={unassignedShifts.map((s: any) => ({
+          id: s.id,
+          employee_id: null,
+          shift_date: s.shift_date,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          branch: s.branch,
+          department: s.department,
+          role: s.role,
+        }))}
+        employees={activeEmployees.map((e: any) => ({
+          id: e.id,
+          status: e.status,
+          branch: e.branch,
+          department: e.department,
+          role: e.role,
+          contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+          forename: e.forename,
+          surname: e.surname,
+        })) as any}
+        context={{
+          candidates: activeEmployees.map((e: any) => ({
+            id: e.id,
+            status: e.status,
+            branch: e.branch,
+            department: e.department,
+            role: e.role,
+            contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+          })),
+          availability: [],
+          approvedLeave: [],
+          existingShifts: (schedule.branchShifts || []).map((s: any) => ({
+            id: s.id,
+            employee_id: s.employee_id,
+            shift_date: s.shift_date,
+            start_time: s.start_time,
+            end_time: s.end_time,
+            branch: s.branch,
+            department: s.department,
+            role: s.role,
+          })),
+        }}
+        onApply={async (assignments) => {
+          for (const a of assignments) {
+            await schedule.handleUpdateShift(a.shiftId, {
+              employee_id: a.employeeId,
+              status: "scheduled",
+            });
+          }
+        }}
       />
       <MobileShiftWizard
         open={wizardOpen}
