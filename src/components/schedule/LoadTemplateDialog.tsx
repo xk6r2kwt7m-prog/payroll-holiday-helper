@@ -22,6 +22,7 @@ interface LoadTemplateDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onCopyFromAnotherWeek?: () => void;
+  onManageTemplates?: () => void;
 }
 
 const SCOPE_OPTIONS: { id: Scope; label: string; description: string }[] = [
@@ -41,6 +42,7 @@ export function LoadTemplateDialog({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   onCopyFromAnotherWeek,
+  onManageTemplates,
 }: LoadTemplateDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = controlledOpen ?? internalOpen;
@@ -130,6 +132,15 @@ export function LoadTemplateDialog({
                 </button>
               );
             })}
+            {onManageTemplates && (
+              <button
+                onClick={() => { setOpen(false); onManageTemplates(); }}
+                data-testid="load-template-manage"
+                className="mt-1 text-[11px] text-muted-foreground hover:text-foreground text-left px-1 py-1.5"
+              >
+                Manage templates…
+              </button>
+            )}
           </div>
         )}
 

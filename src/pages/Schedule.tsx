@@ -15,7 +15,13 @@ import { type QuickFilter } from "@/components/schedule/ScheduleFilters";
 import { PublishConfirmDrawer } from "@/components/schedule/PublishConfirmDrawer";
 import { SaveTemplateDialog } from "@/components/schedule/SaveTemplateDialog";
 import { LoadTemplateDialog } from "@/components/schedule/LoadTemplateDialog";
+import { TemplatePreviewDialog } from "@/components/schedule/TemplatePreviewDialog";
+import { TemplateManagerDialog } from "@/components/schedule/TemplateManagerDialog";
 import { CopyPreviousWeekDialog } from "@/components/schedule/CopyPreviousWeekDialog";
+import { buildTemplatePreview, shiftsToRemoveForApply, type TemplatePreview, type ApplyMode } from "@/lib/schedule-template-preview";
+import { supabase } from "@/integrations/supabase/client";
+import { useBulkDeleteShifts } from "@/hooks/useSchedule";
+import { toast } from "sonner";
 import { useComplianceWarnings } from "@/components/schedule/ComplianceWarnings";
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR, getMinimumStaff } from "@/components/schedule/shiftDefaults";
 import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
@@ -83,6 +89,10 @@ export default function Schedule() {
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
   const [autoFillOpen, setAutoFillOpen] = useState(false);
+  const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
+  const [previewState, setPreviewState] = useState<{ templateId: string; preview: TemplatePreview } | null>(null);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
+  const bulkDeleteShifts = useBulkDeleteShifts();
 
   const { isAdmin } = useAuth();
   // Permission-based access
@@ -271,6 +281,89 @@ export default function Schedule() {
       </AppLayout>
     );
   }
+
+  // Build preview when a template is chosen — preview supersedes direct apply
+  const handleTemplateLoadRequest = useCallback(async (templateId: string) => {
+    try {
+      const { data: tpl, error: tErr } = await supabase
+        .from("schedule_templates")
+        .select("*")
+        .eq("id", templateId)
+        .single();
+      if (tErr) throw tErr;
+      const { data: shifts, error: sErr } = await supabase
+        .from("schedule_template_shifts")
+        .select("*")
+        .eq("template_id", templateId);
+      if (sErr) throw sErr;
+
+      const preview = buildTemplatePreview({
+        templateName: (tpl as any).name,
+        branch: selectedBranch,
+        scopeDepartment: (tpl as any).scope === "site" ? "site" : (tpl as any).department,
+        patternShifts: (shifts || []).map((s: any) => ({
+          day_of_week: s.day_of_week,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          department: s.department ?? (tpl as any).department,
+          role: s.role,
+          required_headcount: s.required_headcount ?? 1,
+          preferred_employee_id: s.employee_id,
+          break_minutes: s.break_minutes,
+          notes: s.notes,
+        })),
+        weekStartIso: schedule.weekStartStr,
+        existingShifts: (schedule.branchShifts || []).map((s: any) => ({
+          id: s.id,
+          shift_date: s.shift_date,
+          branch: s.branch,
+          department: s.department,
+          is_published: !!s.is_published,
+          employee_id: s.employee_id,
+        })),
+        candidates: activeEmployees.map((e: any) => ({
+          id: e.id,
+          status: e.status,
+          branch: e.branch,
+          department: e.department,
+          role: e.role,
+          contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+        })),
+        ctx: { availability: [], approvedLeave: [] },
+      });
+      setPreviewState({ templateId, preview });
+      setLoadTemplateOpen(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to load template preview");
+    }
+  }, [selectedBranch, schedule.weekStartStr, schedule.branchShifts, activeEmployees]);
+
+  const handleConfirmApplyTemplate = useCallback(async (mode: ApplyMode) => {
+    if (!previewState || mode === "cancel") {
+      setPreviewState(null);
+      return;
+    }
+    setIsApplyingTemplate(true);
+    try {
+      const toRemove = shiftsToRemoveForApply(
+        previewState.preview,
+        (schedule.branchShifts || []).map((s: any) => ({
+          id: s.id, shift_date: s.shift_date, branch: s.branch,
+          department: s.department, is_published: !!s.is_published, employee_id: s.employee_id,
+        })),
+        mode,
+      );
+      if (toRemove.length > 0) {
+        await bulkDeleteShifts.mutateAsync(toRemove);
+      }
+      await schedule.handleLoadTemplate(previewState.templateId);
+      setPreviewState(null);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to apply template");
+    } finally {
+      setIsApplyingTemplate(false);
+    }
+  }, [previewState, schedule, bulkDeleteShifts]);
 
   return (
     <AppLayout>
@@ -571,11 +664,24 @@ export default function Schedule() {
       <LoadTemplateDialog
         branch={selectedBranch}
         department={selectedDept}
-        onLoad={schedule.handleLoadTemplate}
+        onLoad={handleTemplateLoadRequest}
         isPending={schedule.isLoadingTemplate}
         open={loadTemplateOpen}
         onOpenChange={setLoadTemplateOpen}
         onCopyFromAnotherWeek={() => setCopyPrevOpen(true)}
+        onManageTemplates={() => setTemplateManagerOpen(true)}
+      />
+      <TemplatePreviewDialog
+        preview={previewState?.preview ?? null}
+        open={!!previewState}
+        onOpenChange={(o) => { if (!o) setPreviewState(null); }}
+        onConfirm={handleConfirmApplyTemplate}
+        isPending={isApplyingTemplate}
+      />
+      <TemplateManagerDialog
+        branch={selectedBranch}
+        open={templateManagerOpen}
+        onOpenChange={setTemplateManagerOpen}
       />
       <AutoFillGapsDialog
         open={autoFillOpen}
