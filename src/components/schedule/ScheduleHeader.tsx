@@ -34,6 +34,7 @@ import {
   MapPin,
   DollarSign,
   Undo2,
+  Wand2,
 } from "lucide-react";
 import { format, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,11 @@ interface ScheduleHeaderProps {
   canUndoPublish?: boolean;
   undoTimeRemaining?: string;
   onUndoPublish?: () => void;
+  weekStateLabel?: string;
+  weekStateTone?: "neutral" | "info" | "success" | "warning" | "danger";
+  onAutoFillGaps?: () => void;
+  hasUnassigned?: boolean;
+  rotaIssuesSlot?: React.ReactNode;
 }
 
 export function ScheduleHeader({
@@ -114,6 +120,11 @@ export function ScheduleHeader({
   canUndoPublish,
   undoTimeRemaining,
   onUndoPublish,
+  weekStateLabel,
+  weekStateTone = "neutral",
+  onAutoFillGaps,
+  hasUnassigned,
+  rotaIssuesSlot,
 }: ScheduleHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const navigate = useNavigate();
@@ -196,6 +207,41 @@ export function ScheduleHeader({
           </Button>
         </div>
 
+        {/* Week state pill */}
+        {weekStateLabel && (
+          <span
+            data-testid="week-state-pill"
+            data-week-state-tone={weekStateTone}
+            className={cn(
+              "hidden sm:inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium shrink-0",
+              weekStateTone === "success" && "bg-success/10 text-success",
+              weekStateTone === "warning" && "bg-amber-100 text-amber-700",
+              weekStateTone === "danger" && "bg-destructive/10 text-destructive",
+              weekStateTone === "info" && "bg-primary/10 text-primary",
+              weekStateTone === "neutral" && "bg-muted text-muted-foreground"
+            )}
+          >
+            {weekStateLabel}
+          </span>
+        )}
+
+        {/* Rota issues badge slot (tappable warnings panel) */}
+        {rotaIssuesSlot}
+
+        {/* Load Template — primary alongside Build Shift */}
+        {isAdmin && onLoadTemplate && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onLoadTemplate}
+            data-testid="load-template-button"
+            className="h-7 gap-1.5 text-[11px] shrink-0 rounded-full px-3"
+          >
+            <FolderOpen className="h-3 w-3" />
+            Load Template
+          </Button>
+        )}
+
         {/* Publish / Undo */}
         {isAdmin && (
           <div className="flex items-center gap-1.5 shrink-0">
@@ -260,6 +306,17 @@ export function ScheduleHeader({
                 <FolderOpen className="h-3.5 w-3.5" />
                 Load template
               </DropdownMenuItem>
+              {onAutoFillGaps && (
+                <DropdownMenuItem
+                  onClick={onAutoFillGaps}
+                  disabled={!hasUnassigned}
+                  data-testid="auto-fill-gaps-menu"
+                  className="gap-2 text-[13px]"
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Auto-fill gaps
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">Bulk Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={onMarkAllEmpty} disabled={assignedCount === 0} className="gap-2 text-[13px]">

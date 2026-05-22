@@ -45,12 +45,26 @@ export function MobileManagerBar({
       <Button
         size="sm"
         onClick={onBuildShift}
-        className="h-11 gap-1.5 text-sm shrink-0 rounded-full px-5 shadow-sm font-semibold"
+        className="h-11 gap-1.5 text-sm shrink-0 rounded-full px-4 shadow-sm font-semibold"
         disabled={department === "All"}
       >
         <Plus className="h-4 w-4" />
         Build Shift
       </Button>
+
+      {/* Load Template — promoted to primary alongside Build Shift */}
+      {onLoadTemplate && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onLoadTemplate}
+          data-testid="mobile-load-template-button"
+          className="h-11 gap-1.5 text-sm shrink-0 rounded-full px-4"
+        >
+          <FolderOpen className="h-4 w-4" />
+          Load Template
+        </Button>
+      )}
 
       {/* Quick publish */}
       {hasUnpublished && onPublishDay && (

@@ -20,14 +20,19 @@ import { useComplianceWarnings } from "@/components/schedule/ComplianceWarnings"
 import { getDefaultTimes, type DayOfWeek, DAY_ABBR, getMinimumStaff } from "@/components/schedule/shiftDefaults";
 import { MobileShiftWizard } from "@/components/schedule/MobileShiftWizard";
 import { MobileManagerBar } from "@/components/schedule/MobileManagerBar";
+import { RotaIssuesPanel } from "@/components/schedule/RotaIssuesPanel";
+import { AutoFillGapsDialog } from "@/components/schedule/AutoFillGapsDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { useRotaTerms } from "@/hooks/useRotaTerms";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getScheduleWeekState } from "@/lib/schedule-week-state";
+import { aggregateRotaIssues } from "@/lib/schedule-rota-issues";
 
 type ViewMode = "week" | "day";
 const DEPARTMENTS = ["FOH", "BOH", "CPU"] as const;
@@ -77,6 +82,7 @@ export default function Schedule() {
   const [wizardInitialDay, setWizardInitialDay] = useState<Date | null>(null);
   const [dayDialogOpen, setDayDialogOpen] = useState(false);
   const [dayDialogShift, setDayDialogShift] = useState<any>(null);
+  const [autoFillOpen, setAutoFillOpen] = useState(false);
 
   const { isAdmin } = useAuth();
   // Permission-based access
@@ -106,6 +112,50 @@ export default function Schedule() {
     schedule.shifts || [],
     activeEmployees,
     schedule.weekDays
+  );
+
+  // Phase: aggregate rota issues + derive week state for header pill
+  const rotaIssues = useMemo(() => {
+    return aggregateRotaIssues({
+      shifts: (schedule.branchShifts || []).map((s: any) => ({
+        id: s.id,
+        employee_id: s.employee_id,
+        shift_date: s.shift_date,
+        start_time: s.start_time,
+        end_time: s.end_time,
+        branch: s.branch,
+        department: s.department,
+        role: s.role,
+      })),
+      employees: activeEmployees.map((e: any) => ({
+        id: e.id,
+        status: e.status,
+        branch: e.branch,
+        department: e.department,
+        role: e.role,
+        forename: e.forename,
+        surname: e.surname,
+        contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+      })),
+      availability: [],
+      approvedLeave: [],
+    });
+  }, [schedule.branchShifts, activeEmployees]);
+
+  const criticalCount = rotaIssues.filter((i) => i.severity === "critical").length
+    + complianceWarnings.filter((w) => w.severity === "critical").length;
+
+  const weekState = useMemo(
+    () => getScheduleWeekState({
+      shifts: schedule.branchShifts || [],
+      criticalWarningCount: criticalCount,
+    }),
+    [schedule.branchShifts, criticalCount]
+  );
+
+  const unassignedShifts = useMemo(
+    () => (schedule.branchDeptShifts || []).filter((s: any) => !s.employee_id),
+    [schedule.branchDeptShifts]
   );
 
   // Quick filter stats
@@ -266,6 +316,25 @@ export default function Schedule() {
             canUndoPublish={schedule.publishRollbackInfo.canUndo}
             undoTimeRemaining={undoTimeStr}
             onUndoPublish={schedule.handleUndoPublish}
+            weekStateLabel={weekState.label}
+            weekStateTone={weekState.tone}
+            onAutoFillGaps={() => setAutoFillOpen(true)}
+            hasUnassigned={unassignedShifts.length > 0}
+            rotaIssuesSlot={
+              (rotaIssues.length + complianceWarnings.length) > 0 ? (
+                <RotaIssuesPanel
+                  issues={[
+                    ...rotaIssues,
+                    ...complianceWarnings.map((w) => ({
+                      code: (w.type === "rest_period" ? "missing_break" : "over_contracted_hours") as any,
+                      severity: w.severity,
+                      message: w.message,
+                      employeeId: w.employeeId,
+                    })),
+                  ]}
+                />
+              ) : null
+            }
           />
         </div>
 
@@ -320,18 +389,44 @@ export default function Schedule() {
 
           {/* Empty state when no shifts exist */}
           {!schedule.isLoading && (schedule.shifts?.length === 0) && (
-            <EmptyState
-              icon={CalendarClock}
-              title="No shifts this week"
-              description={canEditSchedules
-                ? isMobile
-                  ? "Tap Build Shift above to start, or use the ⋮ menu to copy last week or load a saved template."
-                  : "Start building your rota by adding shifts, copying from last week, or loading a template."
-                : "No shifts have been published for this week yet. Check back later or contact your manager."
-              }
-              actionLabel={canEditSchedules && !isMobile ? "Build Shift" : undefined}
-              onAction={canEditSchedules && !isMobile ? () => { setWizardInitialDay(null); setWizardOpen(true); } : undefined}
-            />
+            <div className="flex flex-col items-center" data-testid="schedule-empty-state">
+              <EmptyState
+                icon={CalendarClock}
+                title="No shifts this week"
+                description={canEditSchedules
+                  ? "Start building your rota by adding shifts, loading a template, or copying last week."
+                  : "No shifts have been published for this week yet. Check back later or contact your manager."
+                }
+              />
+              {canEditSchedules && (
+                <div className="flex flex-wrap items-center justify-center gap-2 -mt-2 pb-6">
+                  <Button
+                    size="sm"
+                    onClick={() => { setWizardInitialDay(null); setWizardOpen(true); }}
+                    data-testid="empty-build-shift"
+                  >
+                    Build Shift
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setLoadTemplateOpen(true)}
+                    data-testid="empty-load-template"
+                  >
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    Load Template
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setCopyPrevOpen(true)}
+                    data-testid="empty-copy-last-week"
+                  >
+                    Copy last week
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
 
           {(schedule.shifts?.length ?? 0) > 0 && (
@@ -480,6 +575,61 @@ export default function Schedule() {
         isPending={schedule.isLoadingTemplate}
         open={loadTemplateOpen}
         onOpenChange={setLoadTemplateOpen}
+        onCopyFromAnotherWeek={() => setCopyPrevOpen(true)}
+      />
+      <AutoFillGapsDialog
+        open={autoFillOpen}
+        onOpenChange={setAutoFillOpen}
+        unassignedShifts={unassignedShifts.map((s: any) => ({
+          id: s.id,
+          employee_id: null,
+          shift_date: s.shift_date,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          branch: s.branch,
+          department: s.department,
+          role: s.role,
+        }))}
+        employees={activeEmployees.map((e: any) => ({
+          id: e.id,
+          status: e.status,
+          branch: e.branch,
+          department: e.department,
+          role: e.role,
+          contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+          forename: e.forename,
+          surname: e.surname,
+        })) as any}
+        context={{
+          candidates: activeEmployees.map((e: any) => ({
+            id: e.id,
+            status: e.status,
+            branch: e.branch,
+            department: e.department,
+            role: e.role,
+            contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+          })),
+          availability: [],
+          approvedLeave: [],
+          existingShifts: (schedule.branchShifts || []).map((s: any) => ({
+            id: s.id,
+            employee_id: s.employee_id,
+            shift_date: s.shift_date,
+            start_time: s.start_time,
+            end_time: s.end_time,
+            branch: s.branch,
+            department: s.department,
+            role: s.role,
+          })),
+        }}
+        onApply={async (assignments) => {
+          for (const a of assignments) {
+            await schedule.handleUpdateShift(a.shiftId, {
+              employee_id: a.employeeId,
+              status: "scheduled",
+            });
+          }
+        }}
       />
       <MobileShiftWizard
         open={wizardOpen}

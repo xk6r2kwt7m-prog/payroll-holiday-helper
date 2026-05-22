@@ -1,132 +1,111 @@
-# Contract Amendment System — Operational Safety Audit & Next Phase
+## Schedule Tab Improvement — Build Shift + Load Template, Smart Assignment, Week State, Warnings, Auto-fill
 
-## 1. Current source of truth (audit findings)
+This plan keeps the work scoped to **UI + pure presentation helpers**. No payroll, timesheet, holiday, employee profile, contract or DB schema changes. Existing dialogs (`LoadTemplateDialog`, `CopyPreviousWeekDialog`, `SaveTemplateDialog`, `ComplianceWarnings`) are reused.
 
-| Operational concern | Reads from | Evidence |
-|---|---|---|
-| Payroll entry rate (at creation) | `employees.hourly_rate` snapshotted into `payroll_entries.hourly_rate` | `usePayroll.ts:68,406`, `AddEmployeeToPeriodDialog.tsx:62-72`, `CreatePayrollDialog.tsx:94`, `ImportPayrollDialog.tsx:266,403` |
-| Payroll edits ("update employee master") | Writes back to `employees.hourly_rate` | `EditablePayrollTable.tsx:278-300,392-398` |
-| Live labour cost / today's cost | `employees.hourly_rate` joined live | `useLabourCost.ts:57-71`, `LiveLabourDashboard.tsx:29` |
-| Rota costing & forecasts | `employees.hourly_rate` joined live | `ScheduleReport.tsx:90`, `ShiftCellDialog`, `ScheduleAnalytics` |
-| Financial dashboard / past cost | `employees.hourly_rate` joined live (mutates retroactively) | `useFinancialData.ts:113-150` |
-| Minimum-wage check | `employees.hourly_rate` + `date_of_birth` in form only | `EmployeeFormDialog`, `lib/uk-minimum-wage.ts` |
-| Department / role / workplace / contracted hours | `employees.*` directly (mutable) | profile form, `EmployeeBranches`, etc. |
-| Signed contract terms | Stored only in PDF + `extracted_data` / `field_changes` jsonb on `employee_documents` | not joined to anything operational |
+### What changes
 
-**Conclusion: signed contracts do not feed any operational calculation.** They are document-safe but operationally inert.
+1. **Header CTA pair (`ScheduleHeader.tsx`, `Schedule.tsx`, `MobileManagerBar.tsx`)**
+   - Promote **Load Template** to a primary action sitting next to **Build Shift** on both desktop header and mobile manager bar.
+   - Keep the overflow menu options as a backup (Copy previous week, Save template, etc.).
+   - Empty-state CTA gets two buttons: **Build Shift** + **Load Template** (and a tertiary "Copy last week" link).
 
-## 2. Risks
+2. **Load Template flow (`LoadTemplateDialog.tsx`)**
+   - Convert dialog into a two-step picker with the six requested options:
+     - Load full site template
+     - Load FOH template
+     - Load BOH template
+     - Load CPU template
+     - Load last used template (read from `localStorage` per tenant+branch)
+     - Load from another week (opens an inline week-picker → uses existing copy-week mutation)
+   - Department-scoped options filter the saved-template list by `department`. Full-site loads templates with `department = "All"` or aggregates.
+   - All loaded shifts are written as `is_published = false` (already the case in `useLoadTemplate`).
 
-1. **Silent drift** — signing a £13.50 amendment without remembering to update `employees.hourly_rate` leaves every future payroll, rota cost, and NMW check on the stale rate.
-2. **Retroactive cost mutation** — `useFinancialData`, `useLabourCost`, `LiveLabourDashboard`, `ScheduleAnalytics` recompute past labour cost by joining `employees.hourly_rate` *as it is today*. Editing the profile silently rewrites "what last week cost". Violates the project rule: no silent changes to historical data.
-3. **No effective-dated terms** — a contract signed today to start 1 June cannot be represented. Activation is a manual profile edit on the morning.
-4. **NMW check is profile-only, not period-based** — does not use actual hours × actual eligible pay per reference period, the HMRC test.
-5. **Material profile edits bypass the contract** — department, role, branch, pay type, contracted hours can all be changed freely with no signed amendment.
-6. **Payroll "update master" path** mutates `employees.hourly_rate` from inside payroll, with no link to any contract amendment.
+3. **Smart auto-assignment helper (`src/lib/schedule-auto-assign.ts`, pure)**
+   - New pure function `suggestAssignmentForShift(shift, ctx)` returning either an `employeeId` or `unassigned` with reasons.
+   - Inputs (all passed in — no Supabase/React imports): candidate employees, their availability slots, approved leave ranges, contracted weekly hours, existing same-week shifts.
+   - Hard exclusions: inactive, on approved leave, marked unavailable for that day/slot, overlapping shift on the same day, wrong department/site/role.
+   - Soft scoring: prefer matching role, prefer lower current-week assigned hours vs contracted hours.
+   - Returns `{ employeeId | null, reasons: WarningCode[] }`. Never assigns when unsafe — falls back to unassigned + warning.
 
-## 3. Recommended data model — `employee_contract_terms`
+4. **Copy last week & template loading wired to helper**
+   - In `useScheduleActions.handleCopyPrevWeek` and the load-template path, after server-side copy returns the new rows, run a **client-side reassignment pass** that:
+     - Keeps assignments where the candidate is still safe.
+     - Clears assignments that fail safety checks and emits a per-shift warning.
+     - Never overwrites existing shifts in the target week without a confirmation toast/dialog (this is already handled by `CopyPreviousWeekDialog`'s warning; we make it a true block requiring explicit "Add alongside" confirmation).
+   - Result starts as **Draft** (unpublished). Publishing remains an explicit, separate action.
 
-Append-only table; one row per effective term-set per employee.
+5. **Week state badge (`src/lib/schedule-week-state.ts`, pure + `ScheduleHeader`)**
+   - Pure helper `getScheduleWeekState({ shifts, warnings })` returns one of:
+     - `not_started` — 0 shifts
+     - `draft` — has shifts, none published
+     - `needs_attention` — has any critical warning or unassigned shift in a published-ready week
+     - `ready_to_publish` — has shifts, none published, no critical warnings, all required slots covered
+     - `published` — all shifts published
+   - Header shows a small coloured pill rendering the state label.
 
-```
-employee_contract_terms
-  id                   uuid pk
-  tenant_id            uuid not null
-  employee_id          uuid not null
-  contract_id          uuid not null  -- employee_documents.id (signed version)
-  source_amendment_id  uuid           -- contract_amendments.id, null for v1
-  version_number       int  not null
-  effective_from       date not null
-  effective_to         date           -- null = open-ended/current
-  status               text not null  -- scheduled | active | superseded | terminated
-  hourly_rate          numeric(10,2)
-  annual_salary        numeric(12,2)
-  pay_type             text           -- hourly | salary
-  contracted_hours     numeric(5,2)
-  contracted_hours_basis text         -- weekly | monthly | variable
-  department           text
-  role_title           text
-  work_location        text
-  employment_type      text           -- full_time | part_time | variable_hours
-  is_apprentice        boolean default false
-  probation_end_date   date
-  notice_period_weeks  int
-  overtime_model       text
-  holiday_entitlement_method text
-  service_charge_eligible boolean
-  created_at           timestamptz default now()
-  created_by           uuid
-```
+6. **Tappable warning panel (`src/components/schedule/RotaIssuesPanel.tsx`, new) + warnings helper (`src/lib/schedule-rota-issues.ts`, pure)**
+   - Helper aggregates rota issues across the week (unassigned shifts, employee unavailable, employee on leave, missing role, over contracted hours, overlapping shift, missing break, insufficient FOH/BOH/CPU cover).
+   - Reuses existing `useComplianceWarnings` rest/weekly-hours output, merges with new structural issues.
+   - The existing red badge becomes a button opening `RotaIssuesPanel` (Sheet/Popover) listing actionable items grouped by type with day + shift link.
 
-Constraints / safety:
-- Unique `(employee_id, effective_from)`.
-- Exclusion constraint: no two `active` rows for the same employee overlap.
-- Trigger: inserting a row with `status='active'` closes the previous active row (`effective_to = new.effective_from - 1`, `status='superseded'`).
-- App-layer is **insert-only**. Updates blocked by trigger except for `status` and `effective_to` transitions.
-- RLS: tenant-scoped, manager-or-above for select, admin for insert.
+7. **Auto-fill gaps (`src/components/schedule/AutoFillGapsDialog.tsx`, new)**
+   - Triggered from the new "Auto-fill gaps" menu item (visible when draft + has unassigned shifts).
+   - Uses `suggestAssignmentForShift` for every unassigned shift in the visible scope.
+   - Shows a table: shift → suggested employee → reason → checkbox.
+   - Manager confirms; only confirmed rows are applied via existing `bulkUpdate` mutation. Nothing applied automatically.
 
-## 4. Activation logic
+8. **Safety guarantees (enforced by helpers & code review)**
+   - No publish trigger.
+   - No staff notifications sent from template/copy/auto-fill paths (only existing publish path notifies).
+   - No mutation of payroll, holiday, contract, profile, or timesheet tables.
+   - No DB migrations.
+   - Existing shifts in target week are never deleted/overwritten silently.
+   - Inactive / on-leave / unavailable / overlapping employees are filtered out before suggestion.
 
-- v1 contract signed → insert row with `effective_from = max(employee.start_date, signed_at)`, status = `active`.
-- Amendment signed → insert row with `effective_from = amendment.effective_date`.
-  - if `effective_from <= today` → status `active`, immediately close previous row.
-  - if `effective_from >  today` → status `scheduled`; previous active row stays active.
-- Daily cron flips `scheduled → active` and closes prior row when their date arrives.
-- Contract terminated → set `effective_to = terminated_at`, status `terminated`.
+### Tests (`src/test/phase-schedule-improvements.test.ts`, new)
 
-## 5. Payroll integration
+Single suite covering pure helpers + minimal render smoke for the header. No new e2e.
 
-- New resolver `getEffectiveTerms(employee_id, asOfDate)` returns the row where `effective_from <= asOfDate AND (effective_to IS NULL OR effective_to >= asOfDate)`.
-- `AddEmployeeToPeriodDialog`, `CreatePayrollDialog`, `ImportPayrollDialog` read rate from terms as-of **period end date**, not from `employees.hourly_rate`.
-- Historical periods recompute against terms as-of their own period — past totals never shift again.
-- `payroll_entries` continues to snapshot at creation (already correct).
-- `EditablePayrollTable` "update employee master" path is removed in favour of "create contract amendment" CTA. Direct overrides on a single entry remain allowed (period-scoped only, already audited).
-- Rota/labour reads (`useLabourCost`, `useFinancialData`, `LiveLabourDashboard`, `ScheduleReport`, `ScheduleAnalytics`) switch to resolver as-of shift date.
+- Header: "Load Template" button appears next to "Build Shift" for users with edit permission.
+- Empty state: both buttons render when no shifts exist.
+- `LoadTemplateDialog` renders the six options; selecting FOH only lists FOH templates; same for BOH/CPU; full-site shows all.
+- `suggestAssignmentForShift`:
+  - skips inactive employees → returns `null` + reason `inactive`
+  - skips employees on approved leave → reason `on_leave`
+  - skips unavailable employees → reason `unavailable`
+  - skips employees with overlapping shift → reason `overlap`
+  - prefers role match
+  - returns `null` when no safe candidate
+- Copy/load flow: results have `is_published === false` (Draft).
+- Copy flow: never overwrites an existing shift in target week (asserts existing shift untouched, new shift added alongside only after confirmation).
+- `getScheduleWeekState`: returns correct state for each fixture (`not_started`, `draft`, `ready_to_publish`, `needs_attention`, `published`).
+- `aggregateRotaIssues`: returns expected issue types for fixture shifts.
+- Warning panel: clicking the badge opens the panel and lists the issues.
+- `AutoFillGapsDialog`: only suggests safe employees; nothing is applied until manager confirms.
+- Purity check: the three new `src/lib/` files import nothing from `react`, `@tanstack/react-query`, or `@/integrations/supabase`.
 
-## 6. Minimum wage integration
+### Files
 
-Per-pay-period engine:
-1. Resolve employee age on **first day of the pay reference period**.
-2. Resolve `is_apprentice` and active terms for the period.
-3. Pick legal minimum from `UK_WAGE_RATES` for that band on that date.
-4. Compute eligible pay (basic pay, exclude tips/service charge/expenses) and actual hours from approved timesheets.
-5. `effective_rate = eligible_pay / actual_hours`.
-6. If `effective_rate < legal_minimum` → block period approval unless admin records an override reason → `audit_log`.
-7. Form-side check (`MinimumWageCheck`) stays as early warning only — explicitly labelled.
+Created
+- `src/lib/schedule-auto-assign.ts`
+- `src/lib/schedule-week-state.ts`
+- `src/lib/schedule-rota-issues.ts`
+- `src/components/schedule/RotaIssuesPanel.tsx`
+- `src/components/schedule/AutoFillGapsDialog.tsx`
+- `src/test/phase-schedule-improvements.test.ts`
 
-## 7. UI implications
+Edited
+- `src/components/schedule/ScheduleHeader.tsx` (add Load Template primary button, week-state pill, wire issues badge)
+- `src/components/schedule/LoadTemplateDialog.tsx` (add department + last-used + from-another-week options)
+- `src/components/schedule/MobileManagerBar.tsx` (promote Load Template alongside Build Shift)
+- `src/components/schedule/CopyPreviousWeekDialog.tsx` (require explicit "Add alongside existing" confirmation when target week already has shifts)
+- `src/hooks/useScheduleActions.ts` (run client-side safety reassignment after copy/load; clears unsafe assignments and surfaces warnings — no payroll/holiday/contract calls)
+- `src/pages/Schedule.tsx` (render new buttons in empty state, mount `RotaIssuesPanel` and `AutoFillGapsDialog`)
 
-- **Employee profile**: "Current terms" card sourced from active row, with caption "Source: Contract v2 (signed 12 Mar 2026)". Material fields become read-only with "Create amendment" CTA.
-- **Contract tab**: version timeline already exists — add status pills `v1 Superseded · v2 Active · v3 Scheduled 1 Jun`.
-- **Payroll detail**: rate cell shows source ("from Contract v2"); warn if entry rate differs from terms-as-of-period.
-- **Minimum wage compliance screen**: per-period table — age that period, band, legal min, effective rate, status, override reason.
-- **Dashboard**: banner for scheduled amendments activating within 14 days.
+### Not in scope
 
-## 8. Safest implementation order (no edits yet)
-
-1. **Schema only** behind feature flag. Backfill one `active` row per employee from current `employees.*`.
-2. **Write path**: extend `sign-contract` edge function and `useContractAmendments` to insert into `employee_contract_terms` on signature.
-3. **Trigger-sync `employees.*` from active terms row** (one-way) so legacy reads keep working during rollout.
-4. **Switch payroll reads** (`AddEmployeeToPeriodDialog`, `CreatePayrollDialog`, `ImportPayrollDialog`, `usePayroll`) to resolver as-of period end.
-5. **Period-level NMW engine** with block + override at approve.
-6. **Switch rota/labour reads** (`useLabourCost`, `useFinancialData`, `LiveLabourDashboard`, `ScheduleReport`, `ScheduleAnalytics`) to resolver as-of shift date.
-7. **Lock profile material-field edits** behind "Create amendment" CTA; keep audit-logged override escape hatch.
-8. **UI surfacing**: timeline pills, source captions, scheduled banner, NMW screen.
-
-## Files likely affected
-
-- DB: new migration (table + triggers + RLS + resolver SQL fn `get_effective_terms`).
-- Hooks: `useContractAmendments` (extend), new `useEmployeeContractTerms`, `useLabourCost`, `useFinancialData`, `useNmwCompliance`.
-- Payroll: `usePayroll`, `AddEmployeeToPeriodDialog`, `CreatePayrollDialog`, `ImportPayrollDialog`, `EditablePayrollTable`.
-- Rota: `ScheduleReport`, `ScheduleAnalytics`, `ShiftCellDialog`, `LiveLabourDashboard`.
-- Employees: `EmployeeFormDialog`, `MinimumWageCheck`, profile Work tab.
-- Contracts: `ContractVersionTimeline`, `CreateAmendmentDialog`, `SignedContractsList`.
-- Edge: `sign-contract`.
-- Audit: reuse existing `audit_log`.
-
-## Guardrails (non-negotiable)
-
-- `payroll_entries` and signed contract PDFs / hashes are never mutated.
-- `employee_contract_terms` is append-only.
-- Any direct `employees.*` material edit outside the amendment flow requires an override reason → `audit_log`.
-- All historical reports must remain reproducible bit-for-bit after the migration.
+- Backend schedule schema, RLS, edge functions
+- Payroll, timesheet, holiday, contract, employee-profile logic
+- Automatic publishing or staff notifications
+- New tenant-template content (existing tenant templates are reused)
+- E2E Playwright suite changes (existing `e2e/schedule.spec.ts` remains)
