@@ -640,8 +640,8 @@ export default function Schedule() {
                         department={deptVal}
                         isAdmin={canEditSchedules}
                         onCreateShift={schedule.handleCreateShift}
-                        onUpdateShift={schedule.handleUpdateShift}
-                        onDeleteShift={schedule.handleDeleteShift}
+                        onUpdateShift={guardedUpdateShift}
+                        onDeleteShift={guardedDeleteShift}
                         isPending={schedule.isPending}
                         onNavigateToBranch={(b) => setSelectedBranch(b)}
                         quickFilter={quickFilter}
@@ -665,8 +665,8 @@ export default function Schedule() {
                   department={selectedDept}
                   isAdmin={canEditSchedules}
                   onCreateShift={schedule.handleCreateShift}
-                  onUpdateShift={schedule.handleUpdateShift}
-                  onDeleteShift={schedule.handleDeleteShift}
+                  onUpdateShift={guardedUpdateShift}
+                  onDeleteShift={guardedDeleteShift}
                   isPending={schedule.isPending}
                   onNavigateToBranch={(b) => setSelectedBranch(b)}
                   quickFilter={quickFilter}
@@ -681,7 +681,7 @@ export default function Schedule() {
                     isAdmin={canEditSchedules}
                     onAddClick={() => { setDayDialogShift(null); setDayDialogOpen(true); }}
                     onEditClick={(shift) => { setDayDialogShift(shift); setDayDialogOpen(true); }}
-                    onDeleteClick={schedule.handleDeleteShift}
+                    onDeleteClick={guardedDeleteShift}
                   />
                   <ShiftCellDialog
                     open={dayDialogOpen}
