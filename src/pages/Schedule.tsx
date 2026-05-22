@@ -669,6 +669,7 @@ export default function Schedule() {
         open={loadTemplateOpen}
         onOpenChange={setLoadTemplateOpen}
         onCopyFromAnotherWeek={() => setCopyPrevOpen(true)}
+        onManageTemplates={() => setTemplateManagerOpen(true)}
       />
       <TemplatePreviewDialog
         preview={previewState?.preview ?? null}
