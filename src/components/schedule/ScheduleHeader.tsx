@@ -34,6 +34,7 @@ import {
   MapPin,
   DollarSign,
   Undo2,
+  Wand2,
 } from "lucide-react";
 import { format, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -76,6 +77,11 @@ interface ScheduleHeaderProps {
   canUndoPublish?: boolean;
   undoTimeRemaining?: string;
   onUndoPublish?: () => void;
+  weekStateLabel?: string;
+  weekStateTone?: "neutral" | "info" | "success" | "warning" | "danger";
+  onAutoFillGaps?: () => void;
+  hasUnassigned?: boolean;
+  rotaIssuesSlot?: React.ReactNode;
 }
 
 export function ScheduleHeader({
