@@ -15,6 +15,9 @@ import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPayment
 import { SettleLeaverDialog } from "@/components/holidays/SettleLeaverDialog";
 import { useEmployees } from "@/hooks/useEmployees";
 import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
+import { TimesheetAliasManager } from "@/components/payroll/TimesheetAliasManager";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Bookmark } from "lucide-react";
 import { CreatePayrollDialog } from "@/components/payroll/CreatePayrollDialog";
 import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable";
 import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWorkflow";
