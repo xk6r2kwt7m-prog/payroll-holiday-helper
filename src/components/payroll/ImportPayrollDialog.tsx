@@ -17,8 +17,10 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateAccrual } from "@/hooks/useLeaveRules";
 import { useTenant } from "@/hooks/useTenant";
-import { matchEmployee, type MatchableEmployee, type MatchMethod } from "@/lib/payroll-matching";
+import { matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMethod, type SavedAlias } from "@/lib/payroll-matching";
+import { findMissingFromFile } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
+import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
 import { CreateEmployeeFromImport } from "./CreateEmployeeFromImport";
 
 // ─── CSV section → location/department mappings ───
@@ -121,7 +123,8 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
 
 function aggregateByEmployee(
   rows: ParsedRow[],
-  employees: MatchableEmployee[]
+  employees: MatchableEmployee[],
+  savedAliases: SavedAlias[] = [],
 ): AggregatedEmployee[] {
   const empMap = new Map<string, AggregatedEmployee>();
 
@@ -129,7 +132,13 @@ function aggregateByEmployee(
     const nameLower = row.csvName.toLowerCase().trim();
     if (SKIP_NAMES.has(nameLower)) continue;
 
-    const { employee: matchedEmp, method } = matchEmployee(row.csvName, employees);
+    // Use the full priority matcher so saved aliases are honoured during
+    // CSV parsing (previously only honoured post-import in the issues panel).
+    const { employee: matchedEmp, method } = matchEmployeeRow(
+      { name: row.csvName },
+      employees,
+      savedAliases,
+    );
     const matchKey = matchedEmp
       ? `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase()
       : nameLower;
@@ -192,6 +201,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   const { data: employees = [] } = useEmployees(true);
   const { data: periods = [] } = usePayrollPeriods();
   const { tenantId } = useTenant();
+  const { activeAliases, saveAlias } = usePayrollImportAliases();
 
   // Default to selected draft period if available; otherwise auto-suggest next
   useEffect(() => {
@@ -280,7 +290,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
     setAggregated(prev => prev.map(emp => {
       if (!emp.unmatched || emp.resolution) return emp;
-      const { employee: matched, method } = matchEmployee(emp.csvName, matchableEmployees);
+      const { employee: matched, method } = matchEmployeeRow({ name: emp.csvName }, matchableEmployees, activeAliases);
       if (!matched) return emp;
       return {
         ...emp,
@@ -296,7 +306,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
         isLeaver: matched.status === "leaver",
       };
     }));
-  }, [matchableEmployees]);
+  }, [matchableEmployees, activeAliases]);
 
   const handleFileChange = useCallback(async (f: File | null) => {
     setFile(f);
@@ -306,7 +316,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
     try {
       const text = await f.text();
       const rows = parseTimesheetCSV(text);
-      const agg = aggregateByEmployee(rows, matchableEmployees);
+      const agg = aggregateByEmployee(rows, matchableEmployees, activeAliases);
 
       const errors: string[] = [];
       for (const emp of agg) {
@@ -344,7 +354,10 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
     const matchedEmp = employees.find(e => e.id === employeeId);
     if (!matchedEmp) return;
 
-    // Persist alias for future imports if the CSV name differs from the employee's full name
+    // Persist alias for future imports if the CSV name differs from the employee's full name.
+    // Writes to BOTH the employee-level `import_aliases` array (legacy, used by the
+    // legacy matcher) AND the new `payroll_import_aliases` table (used by
+    // matchEmployeeRow). Never mutates the employee's forename/surname.
     const fullName = `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase();
     const csvNameLower = csvName.trim().toLowerCase();
     if (csvNameLower !== fullName) {
@@ -359,8 +372,14 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
           queryClient.invalidateQueries({ queryKey: ["employees"] });
         }
       } catch (err) {
-        console.error("Failed to persist import alias:", err);
+        console.error("Failed to persist import alias on employee:", err);
         // Non-blocking: match still proceeds even if alias save fails
+      }
+      try {
+        await saveAlias({ rawName: csvName.trim(), employeeId: matchedEmp.id });
+      } catch (err) {
+        console.error("Failed to persist payroll_import_aliases entry:", err);
+        // Non-blocking
       }
     }
 
@@ -427,6 +446,20 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   const matchedEntries = aggregated.filter(e => !e.unmatched);
   const totalHours = aggregated.reduce((s, e) => s + e.totalHours, 0);
   const canApproveAfterImport = unresolvedCount === 0;
+
+  // Missing-from-file: active/starter employees NOT matched to any CSV row.
+  // Shown as a warning before final import so the manager can confirm the
+  // 0.00 hours is intentional (and not a silent name-match failure).
+  const missingFromFile = useMemo(() => {
+    if (aggregated.length === 0) return [];
+    const matchedIds = aggregated
+      .filter((e) => e.matchedId && e.resolution !== "excluded")
+      .map((e) => e.matchedId as string);
+    return findMissingFromFile(matchableEmployees, matchedIds);
+  }, [aggregated, matchableEmployees]);
+  const zeroHourMatched = aggregated.filter(
+    (e) => !e.unmatched && e.resolution !== "excluded" && e.totalHours === 0,
+  );
 
   const handleImport = async () => {
     if (!periodName || !startDate || !endDate) {
@@ -955,8 +988,50 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               </div>
             )}
 
+            {missingFromFile.length > 0 && (
+              <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
+                <p className="font-medium text-warning flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  {missingFromFile.length} active employee{missingFromFile.length !== 1 ? "s" : ""} not matched in uploaded file
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  These employees exist in the database but no row in the uploaded timesheet matched them. If they should have hours, the file may use a different name — use the "Match to employee" control on any unmatched row below to confirm and (optionally) remember the alias.
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {missingFromFile.slice(0, 20).map((m) => (
+                    <Badge key={m.employeeId} variant="outline" className="text-[10px]">
+                      {m.fullName}{m.status === "starter" ? " • Starter" : ""}
+                    </Badge>
+                  ))}
+                  {missingFromFile.length > 20 && (
+                    <Badge variant="outline" className="text-[10px]">+{missingFromFile.length - 20} more</Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {zeroHourMatched.length > 0 && (
+              <div className="rounded-lg bg-muted/40 border border-border p-3 text-sm">
+                <p className="font-medium text-foreground flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  {zeroHourMatched.length} matched row{zeroHourMatched.length !== 1 ? "s" : ""} with 0.00 hours
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Shown for transparency. These will import as 0.00h unless excluded.
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {zeroHourMatched.slice(0, 20).map((e) => (
+                    <Badge key={e.csvName} variant="outline" className="text-[10px]">
+                      {e.matchedForename} {e.matchedSurname}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <ScrollArea className="flex-1 max-h-[380px] border rounded-lg">
               <div className="divide-y divide-border">
+
                 {aggregated.map((emp, idx) => (
                   <div key={idx} className={`px-4 py-2.5 text-sm ${
                     emp.resolution === "excluded" ? "bg-muted/30 opacity-60" :
