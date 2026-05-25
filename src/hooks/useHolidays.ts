@@ -479,6 +479,142 @@ export function useUpdateHolidayPayment() {
   });
 }
 
+/**
+ * Controlled correction for an orphan holiday_ledger row whose
+ * source holiday_payments record no longer exists.
+ *
+ * Strategy: write a REVERSING ledger entry (entry_type='correction')
+ * with opposite hours and amount. We never delete the original orphan
+ * row so the audit trail is preserved.
+ *
+ * Safety:
+ *  - Requires `approve_holidays` permission (admin in practice).
+ *  - Verifies the ledger row really is orphan (no matching payment).
+ *  - Verifies the ledger row is a holiday_taken entry sourced from
+ *    holiday_payments.
+ *  - Refuses if a holiday_payments row with that source_id exists with
+ *    a payroll period in approved/locked status (defensive; orphans by
+ *    definition have no payment, but we double-check).
+ *  - Recalculates totals for any payroll period implied by other
+ *    payments for the same employee + leave year is NOT necessary —
+ *    we only touch the ledger.
+ */
+export function useReverseOrphanLedgerEntry() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+
+  return useMutation({
+    mutationFn: async ({
+      ledgerId,
+      reason,
+    }: {
+      ledgerId: string;
+      reason?: string;
+    }) => {
+      await assertPermission("approve_holidays", tenantId!);
+
+      // 1. Load the orphan candidate
+      const { data: row, error: loadErr } = await supabase
+        .from("holiday_ledger")
+        .select(
+          "id, employee_id, tenant_id, leave_year_start, entry_date, entry_type, hours, amount, source_table, source_id, notes"
+        )
+        .eq("id", ledgerId)
+        .maybeSingle();
+      if (loadErr) throw loadErr;
+      if (!row) throw new Error("Ledger entry not found");
+
+      if (row.entry_type !== "holiday_taken") {
+        throw new Error(
+          "Only holiday_taken ledger rows can be reversed via this flow."
+        );
+      }
+      if (row.source_table !== "holiday_payments" || !row.source_id) {
+        throw new Error(
+          "Only holiday_payments-sourced ledger rows can be reversed via this flow."
+        );
+      }
+
+      // 2. Verify orphan: the linked payment must not exist
+      const { data: payment, error: payErr } = await supabase
+        .from("holiday_payments")
+        .select("id, payroll_period_id")
+        .eq("id", row.source_id)
+        .maybeSingle();
+      if (payErr) throw payErr;
+      if (payment) {
+        // Not orphan — refuse. If the payment lives in an approved/locked
+        // period, surface that explicitly.
+        if (payment.payroll_period_id) {
+          const { data: period } = await supabase
+            .from("payroll_periods")
+            .select("status")
+            .eq("id", payment.payroll_period_id)
+            .maybeSingle();
+          if (
+            period?.status &&
+            period.status !== "draft" &&
+            period.status !== "pending"
+          ) {
+            throw new Error(
+              `Cannot reverse: linked payment is in an ${period.status} payroll period. Reopen the period through a controlled process first.`
+            );
+          }
+        }
+        throw new Error(
+          "Ledger row is not orphan: the linked holiday payment still exists. Delete the payment via the holiday payment controls instead."
+        );
+      }
+
+      // 3. Insert a reversing correction entry
+      const reverseHours = -Number(row.hours);
+      const reverseAmount =
+        row.amount != null ? -Number(row.amount) : null;
+      const noteParts = [
+        "Reversal of orphan holiday ledger entry after deleted holiday payment",
+        `original ledger: ${row.id}`,
+        `original source: holiday_payments:${row.source_id}`,
+      ];
+      if (reason && reason.trim().length > 0) {
+        noteParts.push(`reason: ${reason.trim()}`);
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { data: inserted, error: insErr } = await supabase
+        .from("holiday_ledger")
+        .insert({
+          employee_id: row.employee_id,
+          tenant_id: row.tenant_id,
+          leave_year_start: row.leave_year_start,
+          entry_date: new Date().toISOString().slice(0, 10),
+          entry_type: "correction",
+          hours: reverseHours,
+          amount: reverseAmount,
+          source_table: "holiday_ledger",
+          source_id: row.id,
+          notes: noteParts.join(" · "),
+          created_by: user?.id ?? null,
+        })
+        .select()
+        .single();
+      if (insErr) throw insErr;
+
+      return {
+        reversal: inserted,
+        original: row,
+      };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["holiday_ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments_year_total"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+    },
+  });
+}
+
 // Shared helper: recalculate a payroll period's holidays_total and grand_total
 export async function recalcPayrollPeriodTotals(periodId: string) {
   // Sum all holiday payments for this period
