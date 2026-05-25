@@ -125,13 +125,11 @@ export function PayrollHolidaySection({
 
   const handleDelete = async (id: string) => {
     try {
-      await supabase.from("holiday_payments").delete().eq("id", id);
-      await recalcPayrollPeriodTotals(periodId);
-      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
-      toast.success("Holiday payment removed");
-    } catch {
-      toast.error("Failed to remove");
+      await deletePayment.mutateAsync(id);
+      toast.success("Holiday payment removed — balance restored");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to remove";
+      toast.error(msg);
     }
   };
 
