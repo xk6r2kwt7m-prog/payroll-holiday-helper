@@ -329,8 +329,71 @@ export function InvestigateLedgerDialog({
                         </Badge>
                       )}
                     </div>
+                    {iss.code === "ledger_without_payment" && isAdmin && iss.ledgerId && (
+                      <div className="pt-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px]"
+                          onClick={() => {
+                            setReversalReason("");
+                            setPendingReversalId(iss.ledgerId!);
+                          }}
+                        >
+                          <Undo2 className="h-3 w-3 mr-1" />
+                          Reverse orphan ledger entry
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation modal for orphan ledger reversal */}
+        <OrphanReversalConfirm
+          open={pendingReversalId !== null}
+          onOpenChange={(v) => {
+            if (!v) setPendingReversalId(null);
+          }}
+          ledgerRow={
+            pendingReversalId
+              ? ledger.find((l) => l.id === pendingReversalId) ?? null
+              : null
+          }
+          employeeName={employeeName}
+          leaveYear={yr}
+          currentAvailable={summary.availableHours}
+          reason={reversalReason}
+          onReasonChange={setReversalReason}
+          isPending={reverseOrphan.isPending}
+          onConfirm={async () => {
+            if (!pendingReversalId) return;
+            try {
+              await reverseOrphan.mutateAsync({
+                ledgerId: pendingReversalId,
+                reason: reversalReason,
+              });
+              toast({
+                title: "Orphan ledger entry reversed",
+                description:
+                  "A reversing correction was written. The original orphan row is preserved for audit.",
+              });
+              setPendingReversalId(null);
+              setReversalReason("");
+            } catch (err: any) {
+              toast({
+                title: "Reversal failed",
+                description: err?.message ?? "Unknown error",
+                variant: "destructive",
+              });
+            }
+          }}
+        />
+
               ))}
             </div>
           </div>
