@@ -123,7 +123,8 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
 
 function aggregateByEmployee(
   rows: ParsedRow[],
-  employees: MatchableEmployee[]
+  employees: MatchableEmployee[],
+  savedAliases: SavedAlias[] = [],
 ): AggregatedEmployee[] {
   const empMap = new Map<string, AggregatedEmployee>();
 
@@ -131,7 +132,13 @@ function aggregateByEmployee(
     const nameLower = row.csvName.toLowerCase().trim();
     if (SKIP_NAMES.has(nameLower)) continue;
 
-    const { employee: matchedEmp, method } = matchEmployee(row.csvName, employees);
+    // Use the full priority matcher so saved aliases are honoured during
+    // CSV parsing (previously only honoured post-import in the issues panel).
+    const { employee: matchedEmp, method } = matchEmployeeRow(
+      { name: row.csvName },
+      employees,
+      savedAliases,
+    );
     const matchKey = matchedEmp
       ? `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase()
       : nameLower;
