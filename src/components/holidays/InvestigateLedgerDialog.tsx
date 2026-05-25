@@ -545,3 +545,154 @@ function SummaryCell({
     </div>
   );
 }
+
+interface OrphanReversalConfirmProps {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  ledgerRow: LedgerRow | null;
+  employeeName: string;
+  leaveYear: number;
+  currentAvailable: number;
+  reason: string;
+  onReasonChange: (v: string) => void;
+  isPending: boolean;
+  onConfirm: () => void | Promise<void>;
+}
+
+function OrphanReversalConfirm({
+  open,
+  onOpenChange,
+  ledgerRow,
+  employeeName,
+  leaveYear,
+  currentAvailable,
+  reason,
+  onReasonChange,
+  isPending,
+  onConfirm,
+}: OrphanReversalConfirmProps) {
+  const hoursToReverse = ledgerRow ? -Number(ledgerRow.hours) : 0;
+  const amountToReverse =
+    ledgerRow && ledgerRow.amount != null ? -Number(ledgerRow.amount) : null;
+  const projectedAvailable = currentAvailable + hoursToReverse;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Undo2 className="h-4 w-4 text-primary" />
+            Reverse orphan ledger entry
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            This writes a reversing correction entry. The original orphan
+            ledger row is preserved for audit. This does not change any
+            approved payroll period.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        {ledgerRow && (
+          <div className="space-y-3 text-sm">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <Field label="Employee" value={employeeName} />
+              <Field label="Leave year" value={String(leaveYear)} />
+              <Field
+                label="Orphan entry date"
+                value={new Date(ledgerRow.entry_date).toLocaleDateString("en-GB")}
+              />
+              <Field
+                label="Hours to restore"
+                value={`${formatHours(hoursToReverse)} h`}
+                tone="success"
+              />
+              <Field
+                label="Amount to reverse"
+                value={amountToReverse != null ? formatCurrency(amountToReverse) : "—"}
+              />
+              <Field
+                label="Projected available"
+                value={`${formatHours(projectedAvailable)} h`}
+                tone={projectedAvailable >= 0 ? "success" : "destructive"}
+              />
+              <div className="col-span-2">
+                <Field
+                  label="Original source"
+                  value={
+                    ledgerRow.source_table && ledgerRow.source_id
+                      ? `${ledgerRow.source_table}:${ledgerRow.source_id}`
+                      : "—"
+                  }
+                  mono
+                />
+              </div>
+            </div>
+
+            <p className="text-xs rounded-md bg-success/5 border border-success/20 p-2 text-success">
+              This will restore {formatHours(hoursToReverse)} h to{" "}
+              {employeeName}'s balance by reversing an orphan ledger entry.
+              This does not change approved payroll.
+            </p>
+
+            <div className="space-y-1">
+              <Label htmlFor="reversal-reason" className="text-xs">
+                Reason (recorded in audit trail)
+              </Label>
+              <Textarea
+                id="reversal-reason"
+                placeholder="e.g. Deleted holiday payment for leaver settlement"
+                value={reason}
+                onChange={(e) => onReasonChange(e.target.value)}
+                className="text-xs min-h-[60px]"
+              />
+            </div>
+          </div>
+        )}
+
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              void onConfirm();
+            }}
+            disabled={isPending || !ledgerRow}
+          >
+            {isPending && <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />}
+            Confirm reversal
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function Field({
+  label,
+  value,
+  tone,
+  mono,
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "destructive";
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-muted/20 px-2 py-1.5">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "text-xs font-medium mt-0.5",
+          mono && "font-mono break-all",
+          tone === "success" && "text-success",
+          tone === "destructive" && "text-destructive"
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
