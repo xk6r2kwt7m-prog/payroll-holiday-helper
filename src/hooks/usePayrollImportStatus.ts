@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useEmployees } from "@/hooks/useEmployees";
-import { matchEmployee, type MatchableEmployee } from "@/lib/payroll-matching";
+import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
+import { matchEmployeeRow, type MatchableEmployee } from "@/lib/payroll-matching";
 
 export interface PayrollImportIssue {
   csvName: string;
@@ -20,6 +21,7 @@ function toStringArray(value: unknown): string[] {
 export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: string[] = []) {
   const { tenantId } = useTenant();
   const { data: employees = [] } = useEmployees(true);
+  const { activeAliases } = usePayrollImportAliases();
 
   const { data: importRecord, isLoading } = useQuery({
     queryKey: ["payroll_import_status", tenantId, periodId],
@@ -64,7 +66,7 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
     const issues: PayrollImportIssue[] = [];
 
     for (const csvName of allFlaggedNames) {
-      const { employee } = matchEmployee(csvName, matchableEmployees);
+      const { employee } = matchEmployeeRow({ name: csvName }, matchableEmployees, activeAliases);
 
       if (!employee) {
         issues.push({ csvName, issue: "not_in_database" });
@@ -98,7 +100,7 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
     }
 
     return issues;
-  }, [currentEmployeeIds, employees, importRecord]);
+  }, [currentEmployeeIds, employees, importRecord, activeAliases]);
 
   const excludedNames = useMemo(
     () => toStringArray((importRecord as any)?.errors?.excluded),

@@ -15,6 +15,9 @@ import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPayment
 import { SettleLeaverDialog } from "@/components/holidays/SettleLeaverDialog";
 import { useEmployees } from "@/hooks/useEmployees";
 import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
+import { TimesheetAliasManager } from "@/components/payroll/TimesheetAliasManager";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Bookmark } from "lucide-react";
 import { CreatePayrollDialog } from "@/components/payroll/CreatePayrollDialog";
 import { EditablePayrollTable } from "@/components/payroll/EditablePayrollTable";
 import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWorkflow";
@@ -663,6 +666,21 @@ const Payroll = () => {
                 <AddHolidayPaymentDialog />
                 <CreatePayrollDialog />
                 <ImportPayrollDialog selectedPeriod={selectedPeriod} />
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <Bookmark className="h-4 w-4" /> Saved aliases
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                      <DialogTitle>Timesheet import aliases</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto">
+                      <TimesheetAliasManager />
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
 

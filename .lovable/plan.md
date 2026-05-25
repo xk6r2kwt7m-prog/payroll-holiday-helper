@@ -1,111 +1,105 @@
-## Schedule Tab Improvement — Build Shift + Load Template, Smart Assignment, Week State, Warnings, Auto-fill
+## Payroll Timesheet Import — Saved Alias & Manual Matching
 
-This plan keeps the work scoped to **UI + pure presentation helpers**. No payroll, timesheet, holiday, employee profile, contract or DB schema changes. Existing dialogs (`LoadTemplateDialog`, `CopyPreviousWeekDialog`, `SaveTemplateDialog`, `ComplianceWarnings`) are reused.
+### Goal
+Stop re-asking managers about the same unclear timesheet names. When a manager confirms a match once, remember it as a safe **import alias** that auto-matches in future imports — without ever changing the employee's legal name or profile.
 
-### What changes
+### What I'll build
 
-1. **Header CTA pair (`ScheduleHeader.tsx`, `Schedule.tsx`, `MobileManagerBar.tsx`)**
-   - Promote **Load Template** to a primary action sitting next to **Build Shift** on both desktop header and mobile manager bar.
-   - Keep the overflow menu options as a backup (Copy previous week, Save template, etc.).
-   - Empty-state CTA gets two buttons: **Build Shift** + **Load Template** (and a tertiary "Copy last week" link).
+**1. Storage (schema change — needs your approval)**
 
-2. **Load Template flow (`LoadTemplateDialog.tsx`)**
-   - Convert dialog into a two-step picker with the six requested options:
-     - Load full site template
-     - Load FOH template
-     - Load BOH template
-     - Load CPU template
-     - Load last used template (read from `localStorage` per tenant+branch)
-     - Load from another week (opens an inline week-picker → uses existing copy-week mutation)
-   - Department-scoped options filter the saved-template list by `department`. Full-site loads templates with `department = "All"` or aggregates.
-   - All loaded shifts are written as `is_published = false` (already the case in `useLoadTemplate`).
+A new dedicated `payroll_import_aliases` table is the safest option (separate from the legacy `employees.import_aliases` array, which has no audit trail, no usage tracking, no source attribution, and can't be deactivated cleanly).
 
-3. **Smart auto-assignment helper (`src/lib/schedule-auto-assign.ts`, pure)**
-   - New pure function `suggestAssignmentForShift(shift, ctx)` returning either an `employeeId` or `unassigned` with reasons.
-   - Inputs (all passed in — no Supabase/React imports): candidate employees, their availability slots, approved leave ranges, contracted weekly hours, existing same-week shifts.
-   - Hard exclusions: inactive, on approved leave, marked unavailable for that day/slot, overlapping shift on the same day, wrong department/site/role.
-   - Soft scoring: prefer matching role, prefer lower current-week assigned hours vs contracted hours.
-   - Returns `{ employeeId | null, reasons: WarningCode[] }`. Never assigns when unsafe — falls back to unassigned + warning.
+Fields:
+- `id`, `tenant_id`, `branch_id` (nullable)
+- `source_system` (`uploaded_timesheet` | `csv_import` | `deputy`)
+- `raw_timesheet_name`, `normalised_timesheet_name`
+- `employee_id` (FK to employees)
+- `confirmed_by`, `confirmed_at`
+- `last_used_at`, `usage_count`
+- `is_active` (soft deactivate, never hard delete)
+- Unique on `(tenant_id, normalised_timesheet_name, source_system)` where `is_active = true`
+- RLS: tenant-scoped, manager+ to read, manager+ to write
 
-4. **Copy last week & template loading wired to helper**
-   - In `useScheduleActions.handleCopyPrevWeek` and the load-template path, after server-side copy returns the new rows, run a **client-side reassignment pass** that:
-     - Keeps assignments where the candidate is still safe.
-     - Clears assignments that fail safety checks and emits a per-shift warning.
-     - Never overwrites existing shifts in the target week without a confirmation toast/dialog (this is already handled by `CopyPreviousWeekDialog`'s warning; we make it a true block requiring explicit "Add alongside" confirmation).
-   - Result starts as **Draft** (unpublished). Publishing remains an explicit, separate action.
+No payroll, NMW, service-charge, approval or audit logic touched.
 
-5. **Week state badge (`src/lib/schedule-week-state.ts`, pure + `ScheduleHeader`)**
-   - Pure helper `getScheduleWeekState({ shifts, warnings })` returns one of:
-     - `not_started` — 0 shifts
-     - `draft` — has shifts, none published
-     - `needs_attention` — has any critical warning or unassigned shift in a published-ready week
-     - `ready_to_publish` — has shifts, none published, no critical warnings, all required slots covered
-     - `published` — all shifts published
-   - Header shows a small coloured pill rendering the state label.
+**2. Matching priority (updated `src/lib/payroll-matching.ts`)**
 
-6. **Tappable warning panel (`src/components/schedule/RotaIssuesPanel.tsx`, new) + warnings helper (`src/lib/schedule-rota-issues.ts`, pure)**
-   - Helper aggregates rota issues across the week (unassigned shifts, employee unavailable, employee on leave, missing role, over contracted hours, overlapping shift, missing break, insufficient FOH/BOH/CPU cover).
-   - Reuses existing `useComplianceWarnings` rest/weekly-hours output, merges with new structural issues.
-   - The existing red badge becomes a button opening `RotaIssuesPanel` (Sheet/Popover) listing actionable items grouped by type with day + shift link.
+```
+1. Employee ID (if column present)
+2. Email (if column present)
+3. Saved alias (new — from payroll_import_aliases)
+4. Exact full-name (unique active employee)
+5. Strong unique likely match (existing alias array / preferred / legacy map)
+6. → Manual manager selection
+```
 
-7. **Auto-fill gaps (`src/components/schedule/AutoFillGapsDialog.tsx`, new)**
-   - Triggered from the new "Auto-fill gaps" menu item (visible when draft + has unassigned shifts).
-   - Uses `suggestAssignmentForShift` for every unassigned shift in the visible scope.
-   - Shows a table: shift → suggested employee → reason → checkbox.
-   - Manager confirms; only confirmed rows are applied via existing `bulkUpdate` mutation. Nothing applied automatically.
+Conflict rules: if file has an ID/email that points to a *different* employee than a saved alias, alias is ignored and row is flagged ambiguous.
 
-8. **Safety guarantees (enforced by helpers & code review)**
-   - No publish trigger.
-   - No staff notifications sent from template/copy/auto-fill paths (only existing publish path notifies).
-   - No mutation of payroll, holiday, contract, profile, or timesheet tables.
-   - No DB migrations.
-   - Existing shifts in target week are never deleted/overwritten silently.
-   - Inactive / on-leave / unavailable / overlapping employees are filtered out before suggestion.
+**3. Manual confirmation UI**
 
-### Tests (`src/test/phase-schedule-improvements.test.ts`, new)
+In the existing **Unresolved Issues** panel (`UnresolvedIssuesPanel` / `usePayrollImportStatus`), when a manager picks an employee for an unmatched name, add a checkbox:
 
-Single suite covering pure helpers + minimal render smoke for the header. No new e2e.
+> ☑ Remember this match for future imports
 
-- Header: "Load Template" button appears next to "Build Shift" for users with edit permission.
-- Empty state: both buttons render when no shifts exist.
-- `LoadTemplateDialog` renders the six options; selecting FOH only lists FOH templates; same for BOH/CPU; full-site shows all.
-- `suggestAssignmentForShift`:
-  - skips inactive employees → returns `null` + reason `inactive`
-  - skips employees on approved leave → reason `on_leave`
-  - skips unavailable employees → reason `unavailable`
-  - skips employees with overlapping shift → reason `overlap`
-  - prefers role match
-  - returns `null` when no safe candidate
-- Copy/load flow: results have `is_published === false` (Draft).
-- Copy flow: never overwrites an existing shift in target week (asserts existing shift untouched, new shift added alongside only after confirmation).
-- `getScheduleWeekState`: returns correct state for each fixture (`not_started`, `draft`, `ready_to_publish`, `needs_attention`, `published`).
-- `aggregateRotaIssues`: returns expected issue types for fixture shifts.
-- Warning panel: clicking the badge opens the panel and lists the issues.
-- `AutoFillGapsDialog`: only suggests safe employees; nothing is applied until manager confirms.
-- Purity check: the three new `src/lib/` files import nothing from `react`, `@tanstack/react-query`, or `@/integrations/supabase`.
+If checked → insert into `payroll_import_aliases`. If unchecked → one-time match only.
+
+**4. Alias safety**
+
+Block / require re-review when:
+- Same raw name maps to >1 active employee (ambiguous)
+- Target employee is `leaver` or `archived` (inactive)
+- Branch mismatch (warn, where branch context is set)
+- Alias conflicts with file-supplied ID/email
+- Two timesheet rows resolve to the same employee
+- Alias `is_active = false`
+
+**5. Alias management screen**
+
+New tab inside **Payroll → Import** (or Settings → Payroll): `TimesheetAliasManager`
+- List active + inactive aliases
+- Show employee, source, last used, usage count, confirmed by/at
+- Deactivate / reactivate
+- Re-point to a different employee (creates new row, deactivates old — preserves history)
+
+**6. Import review screen**
+
+Extend the existing pre-import review to show a `matchSource` column per row:
+`Employee ID | Email | Saved alias | Exact name | Likely match | Manual | Unmatched | Ambiguous`
+
+Plus a "Missing from file" section listing active employees not in the upload (warning, non-blocking).
+
+**7. Import blocking**
+
+Final Import button disabled until: no ambiguous, no unmatched (unless explicitly excluded), no duplicate target mappings, no alias conflicts, no inactive selections, period not approved/locked.
+
+**8. Draft preservation (already in place — preserved as-is)**
+
+Existing draft → update `timesheet_hours` only. Rates, bonuses, service charge, manual adjustments, copied values untouched. Approved periods remain fully protected.
+
+**9. Tests**
+
+New file `src/test/phase-payroll-import-aliases.test.ts` covering all 23 cases you listed (exact match, manual save, alias reuse, alias does not mutate legal name, alias preview source, conflict/inactive/branch/ID/email override rules, deactivation, blocking rules, draft preservation, approved-period protection, no-logic-change assertions).
 
 ### Files
 
-Created
-- `src/lib/schedule-auto-assign.ts`
-- `src/lib/schedule-week-state.ts`
-- `src/lib/schedule-rota-issues.ts`
-- `src/components/schedule/RotaIssuesPanel.tsx`
-- `src/components/schedule/AutoFillGapsDialog.tsx`
-- `src/test/phase-schedule-improvements.test.ts`
+**New**
+- `supabase/migrations/<ts>_payroll_import_aliases.sql`
+- `src/hooks/usePayrollImportAliases.ts`
+- `src/components/payroll/TimesheetAliasManager.tsx`
+- `src/components/payroll/ImportReviewTable.tsx` (match-source column + missing-employees panel)
+- `src/test/phase-payroll-import-aliases.test.ts`
 
-Edited
-- `src/components/schedule/ScheduleHeader.tsx` (add Load Template primary button, week-state pill, wire issues badge)
-- `src/components/schedule/LoadTemplateDialog.tsx` (add department + last-used + from-another-week options)
-- `src/components/schedule/MobileManagerBar.tsx` (promote Load Template alongside Build Shift)
-- `src/components/schedule/CopyPreviousWeekDialog.tsx` (require explicit "Add alongside existing" confirmation when target week already has shifts)
-- `src/hooks/useScheduleActions.ts` (run client-side safety reassignment after copy/load; clears unsafe assignments and surfaces warnings — no payroll/holiday/contract calls)
-- `src/pages/Schedule.tsx` (render new buttons in empty state, mount `RotaIssuesPanel` and `AutoFillGapsDialog`)
+**Edited (surgical)**
+- `src/lib/payroll-matching.ts` — add `saved_alias` tier + ID/email tiers
+- `src/hooks/usePayrollImportStatus.ts` — surface match source, conflict detection
+- `src/components/payroll/ImportPayrollDialog.tsx` — manual-match "Remember" checkbox, review step, blocking
+- Wherever `UnresolvedIssuesPanel` is wired — pass alias-save callback
 
-### Not in scope
+### Out of scope (per your guardrails)
+- No changes to NMW, payroll calc, service-charge, approval, audit, holiday, contract, profile logic
+- No employee legal-name mutation
+- No hard deletes (deactivate only)
+- No silent automatic alias creation — always requires manager confirmation
 
-- Backend schedule schema, RLS, edge functions
-- Payroll, timesheet, holiday, contract, employee-profile logic
-- Automatic publishing or staff notifications
-- New tenant-template content (existing tenant templates are reused)
-- E2E Playwright suite changes (existing `e2e/schedule.spec.ts` remains)
+### Approval needed
+Schema change for `payroll_import_aliases`. Approve and I'll run the migration, then build the matching + UI + tests.

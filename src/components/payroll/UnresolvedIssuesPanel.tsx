@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { AlertCircle, ChevronDown, ChevronUp, CheckCircle2, UserPlus, UserMinus, Eye, ArrowRight } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, CheckCircle2, UserPlus, UserMinus, Eye, ArrowRight, BookmarkPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useNavigate } from "react-router-dom";
+import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
+import { useToast } from "@/hooks/use-toast";
 import type { PayrollImportIssue } from "@/hooks/usePayrollImportStatus";
 
 interface UnresolvedIssuesPanelProps {
@@ -25,7 +28,10 @@ export function UnresolvedIssuesPanel({
 }: UnresolvedIssuesPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [localReviewed, setLocalReviewed] = useState<Set<string>>(new Set());
+  const [rememberMap, setRememberMap] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
+  const { saveAlias } = usePayrollImportAliases();
+  const { toast } = useToast();
 
   const reviewedIssues = externalReviewed ?? localReviewed;
 
@@ -41,6 +47,27 @@ export function UnresolvedIssuesPanel({
     }
     onMarkReviewed?.(csvName);
   };
+
+  const handleAddToPeriod = async (issue: PayrollImportIssue) => {
+    if (!issue.employeeId) return;
+    onAddToPeriod?.(issue.employeeId);
+    if (rememberMap[issue.csvName]) {
+      try {
+        await saveAlias({ rawName: issue.csvName, employeeId: issue.employeeId });
+        toast({
+          title: "Match remembered",
+          description: `"${issue.csvName}" will auto-match ${issue.employeeName ?? "this employee"} in future imports.`,
+        });
+      } catch (err: any) {
+        toast({
+          title: "Could not save alias",
+          description: err?.message ?? "The employee was added but the alias was not saved.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
 
   const getIssueDescription = (issue: PayrollImportIssue) => {
     switch (issue.issue) {
@@ -111,9 +138,13 @@ export function UnresolvedIssuesPanel({
                   getDescription={getIssueDescription}
                   getSuggested={getSuggestedAction}
                   onMarkReviewed={handleMarkReviewed}
-                  onAddToPeriod={onAddToPeriod}
+                  onAddToPeriod={() => handleAddToPeriod(issue)}
                   onExclude={onExclude}
                   navigate={navigate}
+                  remember={!!rememberMap[issue.csvName]}
+                  onToggleRemember={(checked) =>
+                    setRememberMap((m) => ({ ...m, [issue.csvName]: checked }))
+                  }
                   isBlocking
                 />
               ))}
@@ -164,16 +195,26 @@ function IssueCard({
   onExclude,
   navigate,
   isBlocking,
+  remember,
+  onToggleRemember,
 }: {
   issue: PayrollImportIssue;
   getDescription: (i: PayrollImportIssue) => string;
   getSuggested: (i: PayrollImportIssue) => string;
   onMarkReviewed?: (csvName: string) => void;
-  onAddToPeriod?: (employeeId: string) => void;
+  onAddToPeriod?: () => void;
   onExclude?: (csvName: string) => void;
   navigate: ReturnType<typeof useNavigate>;
   isBlocking: boolean;
+  remember?: boolean;
+  onToggleRemember?: (checked: boolean) => void;
 }) {
+  const canRemember =
+    isBlocking &&
+    issue.issue === "exists_not_added" &&
+    !!issue.employeeId &&
+    !!onToggleRemember;
+
   return (
     <div className={`rounded-lg border bg-background p-3 space-y-2 ${
       isBlocking ? "border-destructive/30" : "border-border/60"
@@ -194,12 +235,30 @@ function IssueCard({
         )}
       </div>
 
+      {canRemember && (
+        <label className="flex items-start gap-2 rounded-md bg-muted/40 border border-border/60 p-2 cursor-pointer">
+          <Checkbox
+            checked={!!remember}
+            onCheckedChange={(v) => onToggleRemember?.(v === true)}
+            className="mt-0.5"
+          />
+          <div className="text-xs">
+            <span className="font-medium flex items-center gap-1">
+              <BookmarkPlus className="h-3 w-3" /> Remember this match for future imports
+            </span>
+            <span className="text-muted-foreground">
+              Save "{issue.csvName}" as a timesheet alias for {issue.employeeName}. Does not change the employee's legal name.
+            </span>
+          </div>
+        </label>
+      )}
+
       {isBlocking && (
         <div className="flex flex-wrap gap-1.5">
           {issue.issue === "exists_not_added" && issue.employeeId && onAddToPeriod && (
-            <Button size="sm" className="h-7 text-xs" onClick={() => onAddToPeriod(issue.employeeId!)}>
+            <Button size="sm" className="h-7 text-xs" onClick={() => onAddToPeriod()}>
               <UserPlus className="h-3 w-3 mr-1" />
-              Add to payroll
+              {remember ? "Add & remember" : "Add to payroll"}
             </Button>
           )}
           {issue.employeeId && (
