@@ -394,10 +394,6 @@ export function InvestigateLedgerDialog({
           }}
         />
 
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Ledger rows */}
         <div className="space-y-2">
