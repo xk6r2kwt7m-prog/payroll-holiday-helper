@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { AlertCircle, ChevronDown, ChevronUp, CheckCircle2, UserPlus, UserMinus, Eye, ArrowRight } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, CheckCircle2, UserPlus, UserMinus, Eye, ArrowRight, BookmarkPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useNavigate } from "react-router-dom";
+import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
+import { useToast } from "@/hooks/use-toast";
 import type { PayrollImportIssue } from "@/hooks/usePayrollImportStatus";
 
 interface UnresolvedIssuesPanelProps {
