@@ -988,7 +988,47 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               </div>
             )}
 
-            <ScrollArea className="flex-1 max-h-[380px] border rounded-lg">
+            {missingFromFile.length > 0 && (
+              <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
+                <p className="font-medium text-warning flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  {missingFromFile.length} active employee{missingFromFile.length !== 1 ? "s" : ""} not matched in uploaded file
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  These employees exist in the database but no row in the uploaded timesheet matched them. If they should have hours, the file may use a different name — use the "Match to employee" control on any unmatched row below to confirm and (optionally) remember the alias.
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {missingFromFile.slice(0, 20).map((m) => (
+                    <Badge key={m.employeeId} variant="outline" className="text-[10px]">
+                      {m.fullName}{m.status === "starter" ? " • Starter" : ""}
+                    </Badge>
+                  ))}
+                  {missingFromFile.length > 20 && (
+                    <Badge variant="outline" className="text-[10px]">+{missingFromFile.length - 20} more</Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {zeroHourMatched.length > 0 && (
+              <div className="rounded-lg bg-muted/40 border border-border p-3 text-sm">
+                <p className="font-medium text-foreground flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  {zeroHourMatched.length} matched row{zeroHourMatched.length !== 1 ? "s" : ""} with 0.00 hours
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Shown for transparency. These will import as 0.00h unless excluded.
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {zeroHourMatched.slice(0, 20).map((e) => (
+                    <Badge key={e.csvName} variant="outline" className="text-[10px]">
+                      {e.matchedForename} {e.matchedSurname}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
               <div className="divide-y divide-border">
                 {aggregated.map((emp, idx) => (
                   <div key={idx} className={`px-4 py-2.5 text-sm ${
