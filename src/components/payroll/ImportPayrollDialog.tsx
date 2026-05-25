@@ -306,7 +306,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
         isLeaver: matched.status === "leaver",
       };
     }));
-  }, [matchableEmployees]);
+  }, [matchableEmployees, activeAliases]);
 
   const handleFileChange = useCallback(async (f: File | null) => {
     setFile(f);
