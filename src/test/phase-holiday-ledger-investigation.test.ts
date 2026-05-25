@@ -188,9 +188,8 @@ describe("Holiday ledger investigation — integrity issues", () => {
 });
 
 describe("Holiday ledger investigation — read-only contract", () => {
-  it("the integrity lib exports NO mutation helpers", () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod = require("@/lib/holiday-ledger-integrity");
+  it("the integrity lib exports NO mutation helpers", async () => {
+    const mod = await import("@/lib/holiday-ledger-integrity");
     const banned = ["delete", "update", "insert", "save", "mutate", "recalc"];
     for (const name of Object.keys(mod)) {
       for (const b of banned) {
