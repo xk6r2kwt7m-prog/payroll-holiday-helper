@@ -28,7 +28,10 @@ export function UnresolvedIssuesPanel({
 }: UnresolvedIssuesPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [localReviewed, setLocalReviewed] = useState<Set<string>>(new Set());
+  const [rememberMap, setRememberMap] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
+  const { saveAlias } = usePayrollImportAliases();
+  const { toast } = useToast();
 
   const reviewedIssues = externalReviewed ?? localReviewed;
 
