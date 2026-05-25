@@ -318,6 +318,19 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 </div>
               </div>
 
+              {selectedEmployee && (
+                <div className="pt-1 flex justify-end">
+                  <InvestigateLedgerDialog
+                    employeeId={selectedEmployee.id}
+                    employeeName={`${selectedEmployee.forename} ${selectedEmployee.surname}`}
+                    year={parseInt(summaryYear)}
+                    triggerVariant="ghost"
+                    triggerLabel="Investigate ledger"
+                    triggerClassName="text-[11px] h-7"
+                  />
+                </div>
+              )}
+
               {/* Leaver approval section */}
               {isLeaver && employeeSummary.balance > 0 && (
                 <div className="space-y-2 mt-2">
