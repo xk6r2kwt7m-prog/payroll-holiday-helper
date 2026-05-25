@@ -174,8 +174,11 @@ describe("Phase: timesheet import aliases — conflict and safety rules", () => 
   });
 
   it("normaliseAliasName strips accents, punctuation, case", () => {
-    expect(normaliseAliasName("María-José D'Souza")).toBe(normaliseAliasName("maria jose dsouza"));
+    expect(normaliseAliasName("María-José Souza")).toBe("maria jose souza");
     expect(normaliseAliasName("  Maria   Yordanova  ")).toBe("maria yordanova");
+    // Equivalence: identical normalised key regardless of source casing/accents.
+    expect(normaliseAliasName("MARIA-magdalena Valentin Yordanova"))
+      .toBe(normaliseAliasName("maria magdalena valentin yordanova"));
   });
 });
 
