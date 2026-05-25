@@ -66,7 +66,7 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
     const issues: PayrollImportIssue[] = [];
 
     for (const csvName of allFlaggedNames) {
-      const { employee } = matchEmployee(csvName, matchableEmployees);
+      const { employee } = matchEmployeeRow({ name: csvName }, matchableEmployees, activeAliases);
 
       if (!employee) {
         issues.push({ csvName, issue: "not_in_database" });
