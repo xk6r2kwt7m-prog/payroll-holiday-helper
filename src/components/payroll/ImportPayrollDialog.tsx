@@ -447,6 +447,20 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   const totalHours = aggregated.reduce((s, e) => s + e.totalHours, 0);
   const canApproveAfterImport = unresolvedCount === 0;
 
+  // Missing-from-file: active/starter employees NOT matched to any CSV row.
+  // Shown as a warning before final import so the manager can confirm the
+  // 0.00 hours is intentional (and not a silent name-match failure).
+  const missingFromFile = useMemo(() => {
+    if (aggregated.length === 0) return [];
+    const matchedIds = aggregated
+      .filter((e) => e.matchedId && e.resolution !== "excluded")
+      .map((e) => e.matchedId as string);
+    return findMissingFromFile(matchableEmployees, matchedIds);
+  }, [aggregated, matchableEmployees]);
+  const zeroHourMatched = aggregated.filter(
+    (e) => !e.unmatched && e.resolution !== "excluded" && e.totalHours === 0,
+  );
+
   const handleImport = async () => {
     if (!periodName || !startDate || !endDate) {
       toast.error("Please fill in all required fields");
