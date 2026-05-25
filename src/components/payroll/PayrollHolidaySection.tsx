@@ -79,6 +79,8 @@ export function PayrollHolidaySection({
 
   const { data: employees = [] } = useEmployees();
   const createPayment = useCreateHolidayPayment();
+  const deletePayment = useDeleteHolidayPayment();
+  const updatePayment = useUpdateHolidayPayment();
   const queryClient = useQueryClient();
 
   const activeEmployees = employees.filter((e) => e.status !== "leaver");
