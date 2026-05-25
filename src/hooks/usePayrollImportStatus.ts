@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useEmployees } from "@/hooks/useEmployees";
-import { matchEmployee, type MatchableEmployee } from "@/lib/payroll-matching";
+import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
+import { matchEmployeeRow, type MatchableEmployee } from "@/lib/payroll-matching";
 
 export interface PayrollImportIssue {
   csvName: string;
