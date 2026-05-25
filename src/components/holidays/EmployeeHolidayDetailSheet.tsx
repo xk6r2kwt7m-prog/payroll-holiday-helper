@@ -15,6 +15,7 @@ import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 import { AdjustHolidayBalanceDialog } from "./AdjustHolidayBalanceDialog";
 import { HolidayLedgerTab } from "./HolidayLedgerTab";
+import { InvestigateLedgerDialog } from "./InvestigateLedgerDialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface HolidayPaymentRecord {
