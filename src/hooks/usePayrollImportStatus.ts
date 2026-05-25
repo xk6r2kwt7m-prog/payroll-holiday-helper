@@ -21,6 +21,7 @@ function toStringArray(value: unknown): string[] {
 export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: string[] = []) {
   const { tenantId } = useTenant();
   const { data: employees = [] } = useEmployees(true);
+  const { activeAliases } = usePayrollImportAliases();
 
   const { data: importRecord, isLoading } = useQuery({
     queryKey: ["payroll_import_status", tenantId, periodId],
