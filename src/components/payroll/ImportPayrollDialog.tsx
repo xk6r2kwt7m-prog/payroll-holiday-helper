@@ -1029,7 +1029,9 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               </div>
             )}
 
+            <ScrollArea className="flex-1 max-h-[380px] border rounded-lg">
               <div className="divide-y divide-border">
+
                 {aggregated.map((emp, idx) => (
                   <div key={idx} className={`px-4 py-2.5 text-sm ${
                     emp.resolution === "excluded" ? "bg-muted/30 opacity-60" :
