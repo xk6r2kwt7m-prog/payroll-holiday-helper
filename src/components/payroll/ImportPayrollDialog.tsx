@@ -201,6 +201,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   const { data: employees = [] } = useEmployees(true);
   const { data: periods = [] } = usePayrollPeriods();
   const { tenantId } = useTenant();
+  const { activeAliases, saveAlias } = usePayrollImportAliases();
 
   // Default to selected draft period if available; otherwise auto-suggest next
   useEffect(() => {
