@@ -3371,6 +3371,79 @@ export type Database = {
           },
         ]
       }
+      payroll_import_aliases: {
+        Row: {
+          branch_id: string | null
+          confirmed_at: string
+          confirmed_by: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          normalised_timesheet_name: string
+          raw_timesheet_name: string
+          source_system: string
+          tenant_id: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          branch_id?: string | null
+          confirmed_at?: string
+          confirmed_by?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          normalised_timesheet_name: string
+          raw_timesheet_name: string
+          source_system?: string
+          tenant_id: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          branch_id?: string | null
+          confirmed_at?: string
+          confirmed_by?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          normalised_timesheet_name?: string
+          raw_timesheet_name?: string
+          source_system?: string
+          tenant_id?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_import_aliases_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_import_aliases_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_import_aliases_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_imports: {
         Row: {
           created_at: string
