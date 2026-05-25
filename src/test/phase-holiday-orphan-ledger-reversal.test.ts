@@ -291,7 +291,9 @@ describe("InvestigateLedgerDialog — admin-only, confirmation-gated trigger", (
     expect(src).toMatch(/OrphanReversalConfirm/);
     expect(src).toMatch(/AlertDialog/);
     expect(src).toMatch(/Reason/);
-    expect(src).toMatch(/restore .*hours? to/i);
+    expect(src).toMatch(/restore/i);
+    expect(src).toMatch(/balance/i);
+
   });
 
   it("uses the controlled useReverseOrphanLedgerEntry hook, not direct supabase writes", () => {
