@@ -241,3 +241,109 @@ export function matchEmployee(
 
   return { employee: undefined, method: "none" };
 }
+
+/**
+ * Full-priority matcher for a timesheet row.
+ *
+ * Priority:
+ *   1. Employee ID (file column)
+ *   2. Email (file column)
+ *   3. Saved alias (payroll_import_aliases — active only)
+ *   4. Exact / case-insensitive full-name (unique active)
+ *   5. Strong unique likely match (import_alias / preferred_name / legacy map)
+ *   6. -> manual (caller must collect manager selection)
+ *
+ * Conflict rules:
+ *   - If ID and email are both present and resolve to different employees -> requiresReview.
+ *   - If a saved alias points to a different employee than ID/email in the same row -> alias ignored, requiresReview.
+ *   - If saved-alias target is inactive (leaver / archived) -> requiresReview, no auto-apply.
+ *   - If saved alias is_active = false -> ignored.
+ */
+export function matchEmployeeRow(
+  row: ImportRow,
+  employees: MatchableEmployee[],
+  savedAliases: SavedAlias[] = []
+): MatchResult {
+  const byId = row.employeeId
+    ? employees.find((e) => e.id === row.employeeId)
+    : undefined;
+  const byEmail =
+    row.email && row.email.includes("@")
+      ? employees.find(
+          (e) => e.email && e.email.toLowerCase() === row.email!.toLowerCase()
+        )
+      : undefined;
+
+  // Hard conflict: ID and email both present and disagree.
+  if (byId && byEmail && byId.id !== byEmail.id) {
+    return {
+      employee: undefined,
+      method: "none",
+      requiresReview: true,
+      reviewReason: "Employee ID and email in the file point to different employees.",
+    };
+  }
+
+  // 1. Employee ID wins (overrides aliases).
+  if (byId) return { employee: byId, method: "employee_id" };
+
+  // 2. Email wins (overrides aliases).
+  if (byEmail) return { employee: byEmail, method: "email" };
+
+  // 3. Saved alias.
+  const norm = normaliseAliasName(row.name);
+  const alias = savedAliases.find(
+    (a) => a.is_active && a.normalised_timesheet_name === norm
+  );
+  if (alias) {
+    const target = employees.find((e) => e.id === alias.employee_id);
+    if (!target) {
+      return {
+        employee: undefined,
+        method: "none",
+        requiresReview: true,
+        reviewReason: "Saved alias points to an employee that no longer exists.",
+      };
+    }
+    if (target.status !== "active" && target.status !== "starter") {
+      return {
+        employee: target,
+        method: "saved_alias",
+        requiresReview: true,
+        reviewReason: `Saved alias points to an inactive employee (${target.status}).`,
+      };
+    }
+    return { employee: target, method: "saved_alias" };
+  }
+
+  // 4-5. Fall back to name-based matcher.
+  return matchEmployee(row.name, employees);
+}
+
+/** Detect ambiguous mappings: same target employee selected for >1 different raw names. */
+export function findDuplicateTargets(
+  decisions: Array<{ csvName: string; employeeId: string | null }>
+): Array<{ employeeId: string; csvNames: string[] }> {
+  const byTarget = new Map<string, string[]>();
+  for (const d of decisions) {
+    if (!d.employeeId) continue;
+    const arr = byTarget.get(d.employeeId) ?? [];
+    arr.push(d.csvName);
+    byTarget.set(d.employeeId, arr);
+  }
+  return Array.from(byTarget.entries())
+    .filter(([, names]) => names.length > 1)
+    .map(([employeeId, csvNames]) => ({ employeeId, csvNames }));
+}
+
+/** Active employees from DB not represented in the imported file. Warning only. */
+export function findMissingActiveEmployees(
+  employees: MatchableEmployee[],
+  matchedEmployeeIds: Iterable<string>
+): MatchableEmployee[] {
+  const matched = new Set(matchedEmployeeIds);
+  return employees.filter(
+    (e) => (e.status === "active" || e.status === "starter") && !matched.has(e.id)
+  );
+}
+
