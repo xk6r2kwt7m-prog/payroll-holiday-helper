@@ -120,9 +120,14 @@ export function InvestigateLedgerDialog({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState(String(year));
+  const [pendingReversalId, setPendingReversalId] = useState<string | null>(null);
+  const [reversalReason, setReversalReason] = useState("");
   const yr = parseInt(selectedYear, 10);
   const leaveYearStart = `${yr}-01-01`;
   const leaveYearEnd = `${yr}-12-31`;
+
+  const { isAdmin } = useAuth();
+  const reverseOrphan = useReverseOrphanLedgerEntry();
 
   const { tenantId } = useTenant();
   const { data: rawLedger, isLoading: ledgerLoading } = useHolidayLedger(
