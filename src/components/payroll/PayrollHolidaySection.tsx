@@ -30,6 +30,7 @@ import {
   formatCurrency,
 } from "@/hooks/useHolidays";
 import { useEmployees } from "@/hooks/useEmployees";
+import { InvestigateLedgerDialog } from "@/components/holidays/InvestigateLedgerDialog";
 
 interface HolidayPaymentRow {
   id: string;
