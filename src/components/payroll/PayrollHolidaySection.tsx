@@ -23,7 +23,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useCreateHolidayPayment, formatCurrency, recalcPayrollPeriodTotals } from "@/hooks/useHolidays";
+import {
+  useCreateHolidayPayment,
+  useDeleteHolidayPayment,
+  useUpdateHolidayPayment,
+  formatCurrency,
+  recalcPayrollPeriodTotals,
+} from "@/hooks/useHolidays";
 import { useEmployees } from "@/hooks/useEmployees";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
