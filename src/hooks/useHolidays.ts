@@ -308,6 +308,177 @@ export function useCreateHolidayPayment() {
   });
 }
 
+/**
+ * Delete a holiday payment AND reverse its matching holiday_ledger entry
+ * so the employee's available balance is restored.
+ *
+ * Safety:
+ *  - Blocks deletion if the linked payroll period is approved/locked.
+ *  - Removes the matching ledger entry (source_table='holiday_payments',
+ *    source_id=paymentId, entry_type='holiday_taken') BEFORE deleting
+ *    the payment row, so the ledger never points at a missing source.
+ *  - Recalculates payroll period totals.
+ */
+export function useDeleteHolidayPayment() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+
+  return useMutation({
+    mutationFn: async (paymentId: string) => {
+      await assertPermission("approve_holidays", tenantId!);
+
+      // 1. Load the payment + linked period status
+      const { data: payment, error: loadErr } = await supabase
+        .from("holiday_payments")
+        .select("id, payroll_period_id, employee_id, hours, total")
+        .eq("id", paymentId)
+        .maybeSingle();
+      if (loadErr) throw loadErr;
+      if (!payment) throw new Error("Holiday payment not found");
+
+      if (payment.payroll_period_id) {
+        const { data: period, error: periodErr } = await supabase
+          .from("payroll_periods")
+          .select("status")
+          .eq("id", payment.payroll_period_id)
+          .maybeSingle();
+        if (periodErr) throw periodErr;
+        const status = period?.status;
+        if (status && status !== "draft" && status !== "pending") {
+          throw new Error(
+            `Cannot delete: payroll period is ${status}. Reopen the period first.`
+          );
+        }
+      }
+
+      // 2. Reverse the ledger entry FIRST (so balance restores even if step 3 fails)
+      const { error: ledgerErr } = await supabase
+        .from("holiday_ledger")
+        .delete()
+        .eq("source_table", "holiday_payments")
+        .eq("source_id", paymentId)
+        .eq("entry_type", "holiday_taken");
+      if (ledgerErr) throw ledgerErr;
+
+      // 3. Delete the payment
+      const { error: payErr } = await supabase
+        .from("holiday_payments")
+        .delete()
+        .eq("id", paymentId);
+      if (payErr) throw payErr;
+
+      // 4. Recalc period totals
+      if (payment.payroll_period_id) {
+        await recalcPayrollPeriodTotals(payment.payroll_period_id);
+      }
+
+      return { paymentId, employeeId: payment.employee_id };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments_year_total"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+    },
+  });
+}
+
+/**
+ * Update a holiday payment AND keep its matching ledger entry in sync,
+ * so the available balance always reflects the edited hours/amount.
+ */
+export function useUpdateHolidayPayment() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<{
+        hours: number;
+        rate: number;
+        total: number;
+        holiday_taken_date: string;
+        leave_year_start: string;
+        leave_year_end: string;
+        notes: string | null;
+      }>;
+    }) => {
+      await assertPermission("approve_holidays", tenantId!);
+
+      // Guard: cannot edit payments in approved/locked periods
+      const { data: payment } = await supabase
+        .from("holiday_payments")
+        .select("payroll_period_id, employee_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (payment?.payroll_period_id) {
+        const { data: period } = await supabase
+          .from("payroll_periods")
+          .select("status")
+          .eq("id", payment.payroll_period_id)
+          .maybeSingle();
+        const status = period?.status;
+        if (status && status !== "draft" && status !== "pending") {
+          throw new Error(
+            `Cannot edit: payroll period is ${status}. Reopen the period first.`
+          );
+        }
+      }
+
+      const { data, error } = await supabase
+        .from("holiday_payments")
+        .update(updates as never)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+
+      // Sync the matching ledger entry's hours/amount/date so balance derivation stays correct
+      const ledgerUpdate: Record<string, unknown> = {};
+      if (typeof updates.hours === "number") {
+        ledgerUpdate.hours = -Math.abs(updates.hours);
+      }
+      if (typeof updates.total === "number") {
+        ledgerUpdate.amount = -Math.abs(updates.total);
+      }
+      if (updates.holiday_taken_date) {
+        ledgerUpdate.entry_date = updates.holiday_taken_date;
+      }
+      if (updates.leave_year_start) {
+        ledgerUpdate.leave_year_start = updates.leave_year_start;
+      }
+      if (Object.keys(ledgerUpdate).length > 0) {
+        await supabase
+          .from("holiday_ledger")
+          .update(ledgerUpdate as never)
+          .eq("source_table", "holiday_payments")
+          .eq("source_id", id)
+          .eq("entry_type", "holiday_taken");
+      }
+
+      if (payment?.payroll_period_id) {
+        await recalcPayrollPeriodTotals(payment.payroll_period_id);
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments_year_total"] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
+    },
+  });
+}
+
 // Shared helper: recalculate a payroll period's holidays_total and grand_total
 export async function recalcPayrollPeriodTotals(periodId: string) {
   // Sum all holiday payments for this period

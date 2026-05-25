@@ -23,10 +23,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useCreateHolidayPayment, formatCurrency, recalcPayrollPeriodTotals } from "@/hooks/useHolidays";
+import {
+  useCreateHolidayPayment,
+  useDeleteHolidayPayment,
+  useUpdateHolidayPayment,
+  formatCurrency,
+} from "@/hooks/useHolidays";
 import { useEmployees } from "@/hooks/useEmployees";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
 
 interface HolidayPaymentRow {
   id: string;
@@ -73,7 +76,9 @@ export function PayrollHolidaySection({
 
   const { data: employees = [] } = useEmployees();
   const createPayment = useCreateHolidayPayment();
-  const queryClient = useQueryClient();
+  const deletePayment = useDeleteHolidayPayment();
+  const updatePayment = useUpdateHolidayPayment();
+  
 
   const activeEmployees = employees.filter((e) => e.status !== "leaver");
   const canEdit = isAdmin && (periodStatus === "draft" || periodStatus === "pending");
@@ -117,13 +122,11 @@ export function PayrollHolidaySection({
 
   const handleDelete = async (id: string) => {
     try {
-      await supabase.from("holiday_payments").delete().eq("id", id);
-      await recalcPayrollPeriodTotals(periodId);
-      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
-      toast.success("Holiday payment removed");
-    } catch {
-      toast.error("Failed to remove");
+      await deletePayment.mutateAsync(id);
+      toast.success("Holiday payment removed — balance restored");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to remove";
+      toast.error(msg);
     }
   };
 
@@ -166,19 +169,13 @@ export function PayrollHolidaySection({
         updates.leave_year_end = `${d.getFullYear()}-12-31`;
       }
 
-      const { error } = await supabase
-        .from("holiday_payments")
-        .update(updates as never)
-        .eq("id", hp.id);
-      if (error) throw error;
+      await updatePayment.mutateAsync({ id: hp.id, updates });
 
-      await recalcPayrollPeriodTotals(periodId);
-      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
       toast.success(`Holiday payment updated: ${formatCurrency(newTotal)}`);
       cancelEdit();
-    } catch {
-      toast.error("Failed to update holiday payment");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update holiday payment";
+      toast.error(msg);
     } finally {
       setEditSaving(false);
     }
