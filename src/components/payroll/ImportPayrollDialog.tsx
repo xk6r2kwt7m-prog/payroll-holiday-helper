@@ -290,7 +290,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
     setAggregated(prev => prev.map(emp => {
       if (!emp.unmatched || emp.resolution) return emp;
-      const { employee: matched, method } = matchEmployee(emp.csvName, matchableEmployees);
+      const { employee: matched, method } = matchEmployeeRow({ name: emp.csvName }, matchableEmployees, activeAliases);
       if (!matched) return emp;
       return {
         ...emp,
