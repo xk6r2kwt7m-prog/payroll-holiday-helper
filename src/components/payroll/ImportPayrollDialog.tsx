@@ -17,8 +17,10 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateAccrual } from "@/hooks/useLeaveRules";
 import { useTenant } from "@/hooks/useTenant";
-import { matchEmployee, type MatchableEmployee, type MatchMethod } from "@/lib/payroll-matching";
+import { matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMethod, type SavedAlias } from "@/lib/payroll-matching";
+import { findMissingFromFile } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
+import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
 import { CreateEmployeeFromImport } from "./CreateEmployeeFromImport";
 
 // ─── CSV section → location/department mappings ───
