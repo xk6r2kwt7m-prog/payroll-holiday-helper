@@ -265,14 +265,14 @@ describe("useReverseOrphanLedgerEntry — safety contract (source inspection)", 
   });
 
   it("does not modify employee profile data, payroll rates, NMW or service-charge logic", () => {
-    const hookSlice = src
-      .split("useReverseOrphanLedgerEntry")[1]
-      ?.split("export function ")[0] ?? "";
+    const after = src.split("useReverseOrphanLedgerEntry")[1] ?? "";
+    const hookSlice = after.split("// Shared helper")[0] ?? after;
     expect(hookSlice).not.toMatch(/from\(["']employees["']\)/);
     expect(hookSlice).not.toMatch(/from\(["']payroll_entries["']\)/);
     expect(hookSlice).not.toMatch(/nmw|minimum_wage/i);
     expect(hookSlice).not.toMatch(/service[_-]?charge/i);
   });
+
 });
 
 describe("InvestigateLedgerDialog — admin-only, confirmation-gated trigger", () => {
