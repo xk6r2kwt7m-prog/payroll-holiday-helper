@@ -298,6 +298,24 @@ export function PayrollHolidaySection({
                       {Number(hp.hours).toFixed(1)}h × {formatCurrency(Number(hp.rate))}
                     </span>
                     <span className="font-semibold text-warning text-xs sm:text-sm">{formatCurrency(Number(hp.total))}</span>
+                    {hp.employee_id && (
+                      <InvestigateLedgerDialog
+                        employeeId={hp.employee_id}
+                        employeeName={
+                          hp.employees
+                            ? `${hp.employees.forename} ${hp.employees.surname}`
+                            : hp.employee_name
+                        }
+                        year={
+                          hp.holiday_taken_date
+                            ? new Date(hp.holiday_taken_date).getFullYear()
+                            : new Date().getFullYear()
+                        }
+                        triggerVariant="ghost"
+                        triggerLabel=""
+                        triggerClassName="h-7 w-7 p-0"
+                      />
+                    )}
                     {canEdit && (
                       <>
                         <Button
