@@ -1,10 +1,11 @@
 /**
- * Read-only Holiday Ledger Investigation dialog.
+ * Holiday Ledger Investigation dialog.
  *
- * STRICT INVARIANT: this view performs NO writes. It does not call any
- * mutation, recalculation, delete, update, insert, or RPC. It only reads
- * from `holiday_ledger`, `holiday_payments`, and `payroll_periods` for the
- * selected employee + leave year and displays everything.
+ * The view itself is read-only. The only write path exposed here is a
+ * narrowly-scoped, admin-only, confirmation-gated correction for
+ * ORPHAN holiday_ledger rows whose source holiday_payments record has
+ * been deleted. The correction writes a REVERSING ledger entry (it
+ * never deletes the original orphan row) so the audit trail is kept.
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,8 @@ import {
   ExternalLink,
   Lock,
   FileText,
+  Undo2,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,7 +29,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -34,11 +49,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import { useAuth } from "@/hooks/useAuth";
 import { useHolidayLedger } from "@/hooks/useHolidayLedger";
-import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import {
+  formatCurrency,
+  formatHours,
+  useReverseOrphanLedgerEntry,
+} from "@/hooks/useHolidays";
 import {
   findIntegrityIssues,
   summariseLedger,
@@ -99,9 +120,14 @@ export function InvestigateLedgerDialog({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState(String(year));
+  const [pendingReversalId, setPendingReversalId] = useState<string | null>(null);
+  const [reversalReason, setReversalReason] = useState("");
   const yr = parseInt(selectedYear, 10);
   const leaveYearStart = `${yr}-01-01`;
   const leaveYearEnd = `${yr}-12-31`;
+
+  const { isAdmin } = useAuth();
+  const reverseOrphan = useReverseOrphanLedgerEntry();
 
   const { tenantId } = useTenant();
   const { data: rawLedger, isLoading: ledgerLoading } = useHolidayLedger(
@@ -303,12 +329,71 @@ export function InvestigateLedgerDialog({
                         </Badge>
                       )}
                     </div>
+                    {iss.code === "ledger_without_payment" && isAdmin && iss.ledgerId && (
+                      <div className="pt-1.5">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-[11px]"
+                          onClick={() => {
+                            setReversalReason("");
+                            setPendingReversalId(iss.ledgerId!);
+                          }}
+                        >
+                          <Undo2 className="h-3 w-3 mr-1" />
+                          Reverse orphan ledger entry
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
         )}
+
+        {/* Confirmation modal for orphan ledger reversal */}
+        <OrphanReversalConfirm
+          open={pendingReversalId !== null}
+          onOpenChange={(v) => {
+            if (!v) setPendingReversalId(null);
+          }}
+          ledgerRow={
+            pendingReversalId
+              ? ledger.find((l) => l.id === pendingReversalId) ?? null
+              : null
+          }
+          employeeName={employeeName}
+          leaveYear={yr}
+          currentAvailable={summary.availableHours}
+          reason={reversalReason}
+          onReasonChange={setReversalReason}
+          isPending={reverseOrphan.isPending}
+          onConfirm={async () => {
+            if (!pendingReversalId) return;
+            try {
+              await reverseOrphan.mutateAsync({
+                ledgerId: pendingReversalId,
+                reason: reversalReason,
+              });
+              toast({
+                title: "Orphan ledger entry reversed",
+                description:
+                  "A reversing correction was written. The original orphan row is preserved for audit.",
+              });
+              setPendingReversalId(null);
+              setReversalReason("");
+            } catch (err: any) {
+              toast({
+                title: "Reversal failed",
+                description: err?.message ?? "Unknown error",
+                variant: "destructive",
+              });
+            }
+          }}
+        />
+
 
         {/* Ledger rows */}
         <div className="space-y-2">
@@ -425,8 +510,9 @@ export function InvestigateLedgerDialog({
         </div>
 
         <p className="text-[10px] text-muted-foreground italic text-center pt-1">
-          Read-only investigation. No deletions, edits or recalculations are
-          triggered by opening this view.
+          Read-only investigation. The orphan ledger reversal is the only
+          write path and is admin-only, confirmation-gated, and preserves
+          the original orphan row for audit.
         </p>
       </DialogContent>
     </Dialog>
@@ -459,3 +545,154 @@ function SummaryCell({
     </div>
   );
 }
+
+interface OrphanReversalConfirmProps {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  ledgerRow: LedgerRow | null;
+  employeeName: string;
+  leaveYear: number;
+  currentAvailable: number;
+  reason: string;
+  onReasonChange: (v: string) => void;
+  isPending: boolean;
+  onConfirm: () => void | Promise<void>;
+}
+
+function OrphanReversalConfirm({
+  open,
+  onOpenChange,
+  ledgerRow,
+  employeeName,
+  leaveYear,
+  currentAvailable,
+  reason,
+  onReasonChange,
+  isPending,
+  onConfirm,
+}: OrphanReversalConfirmProps) {
+  const hoursToReverse = ledgerRow ? -Number(ledgerRow.hours) : 0;
+  const amountToReverse =
+    ledgerRow && ledgerRow.amount != null ? -Number(ledgerRow.amount) : null;
+  const projectedAvailable = currentAvailable + hoursToReverse;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Undo2 className="h-4 w-4 text-primary" />
+            Reverse orphan ledger entry
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            This writes a reversing correction entry. The original orphan
+            ledger row is preserved for audit. This does not change any
+            approved payroll period.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        {ledgerRow && (
+          <div className="space-y-3 text-sm">
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <Field label="Employee" value={employeeName} />
+              <Field label="Leave year" value={String(leaveYear)} />
+              <Field
+                label="Orphan entry date"
+                value={new Date(ledgerRow.entry_date).toLocaleDateString("en-GB")}
+              />
+              <Field
+                label="Hours to restore"
+                value={`${formatHours(hoursToReverse)} h`}
+                tone="success"
+              />
+              <Field
+                label="Amount to reverse"
+                value={amountToReverse != null ? formatCurrency(amountToReverse) : "—"}
+              />
+              <Field
+                label="Projected available"
+                value={`${formatHours(projectedAvailable)} h`}
+                tone={projectedAvailable >= 0 ? "success" : "destructive"}
+              />
+              <div className="col-span-2">
+                <Field
+                  label="Original source"
+                  value={
+                    ledgerRow.source_table && ledgerRow.source_id
+                      ? `${ledgerRow.source_table}:${ledgerRow.source_id}`
+                      : "—"
+                  }
+                  mono
+                />
+              </div>
+            </div>
+
+            <p className="text-xs rounded-md bg-success/5 border border-success/20 p-2 text-success">
+              This will restore {formatHours(hoursToReverse)} h to{" "}
+              {employeeName}'s balance by reversing an orphan ledger entry.
+              This does not change approved payroll.
+            </p>
+
+            <div className="space-y-1">
+              <Label htmlFor="reversal-reason" className="text-xs">
+                Reason (recorded in audit trail)
+              </Label>
+              <Textarea
+                id="reversal-reason"
+                placeholder="e.g. Deleted holiday payment for leaver settlement"
+                value={reason}
+                onChange={(e) => onReasonChange(e.target.value)}
+                className="text-xs min-h-[60px]"
+              />
+            </div>
+          </div>
+        )}
+
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              void onConfirm();
+            }}
+            disabled={isPending || !ledgerRow}
+          >
+            {isPending && <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />}
+            Confirm reversal
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function Field({
+  label,
+  value,
+  tone,
+  mono,
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "destructive";
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-muted/20 px-2 py-1.5">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "text-xs font-medium mt-0.5",
+          mono && "font-mono break-all",
+          tone === "success" && "text-success",
+          tone === "destructive" && "text-destructive"
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+

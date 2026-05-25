@@ -249,3 +249,100 @@ export function hasApprovedPeriodImpact(issues: IntegrityIssue[]): boolean {
     (i) => i.periodStatus && APPROVED_STATUSES.includes(i.periodStatus)
   );
 }
+
+/**
+ * Pure planner for the controlled "Reverse orphan ledger entry" action.
+ *
+ * Inputs are the ledger row the admin wants to reverse plus the current
+ * holiday_payments rows for that employee + leave year. Returns whether
+ * the reversal is allowed and the projected reversing entry. No I/O.
+ */
+export interface OrphanReversalPlan {
+  allowed: boolean;
+  reason?: string;
+  hoursToReverse: number;
+  amountToReverse: number | null;
+  projectedAvailable: number;
+  reversingEntry: {
+    entry_type: "correction";
+    hours: number;
+    amount: number | null;
+    source_table: "holiday_ledger";
+    source_id: string;
+    notes: string;
+  } | null;
+}
+
+export function planOrphanReversal(input: {
+  ledgerRow: LedgerRow;
+  currentPayments: PaymentRow[];
+  currentAvailable: number;
+  reason?: string;
+  /** Optional: the period status of the row's source payment, if known. */
+  sourcePeriodStatus?: PeriodStatus | null;
+}): OrphanReversalPlan {
+  const { ledgerRow, currentPayments, currentAvailable, reason, sourcePeriodStatus } = input;
+
+  const hoursToReverse = -Number(ledgerRow.hours);
+  const amountToReverse =
+    ledgerRow.amount != null ? -Number(ledgerRow.amount) : null;
+  const projectedAvailable = currentAvailable + hoursToReverse;
+
+  const refuse = (reasonStr: string): OrphanReversalPlan => ({
+    allowed: false,
+    reason: reasonStr,
+    hoursToReverse,
+    amountToReverse,
+    projectedAvailable: currentAvailable,
+    reversingEntry: null,
+  });
+
+  if (ledgerRow.entry_type !== "holiday_taken") {
+    return refuse(
+      "Only holiday_taken ledger rows can be reversed via this flow."
+    );
+  }
+  if (ledgerRow.source_table !== "holiday_payments" || !ledgerRow.source_id) {
+    return refuse(
+      "Only holiday_payments-sourced ledger rows can be reversed via this flow."
+    );
+  }
+
+  const stillExists = currentPayments.some((p) => p.id === ledgerRow.source_id);
+  if (stillExists) {
+    return refuse(
+      "Ledger row is not orphan: the linked holiday payment still exists."
+    );
+  }
+
+  if (sourcePeriodStatus && APPROVED_STATUSES.includes(sourcePeriodStatus)) {
+    return refuse(
+      "This issue affects an approved or locked payroll period. Reopen or reverse through a controlled process before correction."
+    );
+  }
+
+  const noteParts = [
+    "Reversal of orphan holiday ledger entry after deleted holiday payment",
+    `original ledger: ${ledgerRow.id}`,
+    `original source: holiday_payments:${ledgerRow.source_id}`,
+  ];
+  if (reason && reason.trim().length > 0) {
+    noteParts.push(`reason: ${reason.trim()}`);
+  }
+
+  return {
+    allowed: true,
+    hoursToReverse,
+    amountToReverse,
+    projectedAvailable,
+    reversingEntry: {
+      entry_type: "correction",
+      hours: hoursToReverse,
+      amount: amountToReverse,
+      source_table: "holiday_ledger",
+      source_id: ledgerRow.id,
+      notes: noteParts.join(" · "),
+    },
+  };
+}
+
