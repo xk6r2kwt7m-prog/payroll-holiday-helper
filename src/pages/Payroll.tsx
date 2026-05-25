@@ -666,6 +666,21 @@ const Payroll = () => {
                 <AddHolidayPaymentDialog />
                 <CreatePayrollDialog />
                 <ImportPayrollDialog selectedPeriod={selectedPeriod} />
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <Bookmark className="h-4 w-4" /> Saved aliases
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                      <DialogTitle>Timesheet import aliases</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto">
+                      <TimesheetAliasManager />
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
 
