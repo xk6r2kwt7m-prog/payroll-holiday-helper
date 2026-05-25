@@ -27,17 +27,50 @@ export interface MatchableEmployee {
 }
 
 export type MatchMethod =
+  | "employee_id"
+  | "email"
+  | "saved_alias"
   | "exact"
   | "case_insensitive"
-  | "email"
   | "import_alias"
   | "preferred_name"
   | "legacy_name_map"
+  | "manual"
   | "none";
 
 export interface MatchResult {
   employee: MatchableEmployee | undefined;
   method: MatchMethod;
+  /** True when the result must NOT auto-apply — e.g. saved alias points to inactive employee or there is a conflict. */
+  requiresReview?: boolean;
+  /** Optional human-readable reason for required review. */
+  reviewReason?: string;
+}
+
+export interface SavedAlias {
+  raw_timesheet_name: string;
+  normalised_timesheet_name: string;
+  employee_id: string;
+  is_active: boolean;
+}
+
+export interface ImportRow {
+  /** Free-text name as it appears in the file. */
+  name: string;
+  /** Optional explicit employee id column from the file. */
+  employeeId?: string | null;
+  /** Optional explicit email column from the file. */
+  email?: string | null;
+}
+
+/** Deterministic, accent-insensitive, punctuation-stripped key for alias storage and lookup. */
+export function normaliseAliasName(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 // Legacy hardcoded alias map — kept for backward compatibility.
