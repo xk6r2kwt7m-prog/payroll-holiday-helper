@@ -15,6 +15,7 @@ import { useLeaveRules } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 import { AdjustHolidayBalanceDialog } from "./AdjustHolidayBalanceDialog";
 import { HolidayLedgerTab } from "./HolidayLedgerTab";
+import { InvestigateLedgerDialog } from "./InvestigateLedgerDialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface HolidayPaymentRecord {
@@ -398,7 +399,14 @@ export function EmployeeHolidayDetailSheet({
             </div>
           </TabsContent>
 
-          <TabsContent value="ledger">
+          <TabsContent value="ledger" className="space-y-3">
+            <div className="flex justify-end">
+              <InvestigateLedgerDialog
+                employeeId={employeeId}
+                employeeName={employeeName}
+                year={year}
+              />
+            </div>
             <HolidayLedgerTab employeeId={employeeId} year={year} />
           </TabsContent>
         </Tabs>

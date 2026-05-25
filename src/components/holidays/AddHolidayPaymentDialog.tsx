@@ -27,6 +27,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { cn } from "@/lib/utils";
+import { InvestigateLedgerDialog } from "./InvestigateLedgerDialog";
 interface AddHolidayPaymentDialogProps {
   defaultEmployeeId?: string;
   onSuccess?: () => void;
@@ -316,6 +317,19 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                   <span className="font-medium">{formatCurrency(employeeSummary.totalPaid)}</span>
                 </div>
               </div>
+
+              {selectedEmployee && (
+                <div className="pt-1 flex justify-end">
+                  <InvestigateLedgerDialog
+                    employeeId={selectedEmployee.id}
+                    employeeName={`${selectedEmployee.forename} ${selectedEmployee.surname}`}
+                    year={parseInt(summaryYear)}
+                    triggerVariant="ghost"
+                    triggerLabel="Investigate ledger"
+                    triggerClassName="text-[11px] h-7"
+                  />
+                </div>
+              )}
 
               {/* Leaver approval section */}
               {isLeaver && employeeSummary.balance > 0 && (
