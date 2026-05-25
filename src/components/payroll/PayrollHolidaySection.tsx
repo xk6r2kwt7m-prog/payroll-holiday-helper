@@ -28,11 +28,8 @@ import {
   useDeleteHolidayPayment,
   useUpdateHolidayPayment,
   formatCurrency,
-  recalcPayrollPeriodTotals,
 } from "@/hooks/useHolidays";
 import { useEmployees } from "@/hooks/useEmployees";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
 
 interface HolidayPaymentRow {
   id: string;
