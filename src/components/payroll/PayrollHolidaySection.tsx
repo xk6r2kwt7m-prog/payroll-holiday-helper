@@ -78,7 +78,7 @@ export function PayrollHolidaySection({
   const createPayment = useCreateHolidayPayment();
   const deletePayment = useDeleteHolidayPayment();
   const updatePayment = useUpdateHolidayPayment();
-  const queryClient = useQueryClient();
+  
 
   const activeEmployees = employees.filter((e) => e.status !== "leaver");
   const canEdit = isAdmin && (periodStatus === "draft" || periodStatus === "pending");
