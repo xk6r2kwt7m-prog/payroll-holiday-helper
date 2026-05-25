@@ -27,6 +27,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { cn } from "@/lib/utils";
+import { InvestigateLedgerDialog } from "./InvestigateLedgerDialog";
 interface AddHolidayPaymentDialogProps {
   defaultEmployeeId?: string;
   onSuccess?: () => void;
