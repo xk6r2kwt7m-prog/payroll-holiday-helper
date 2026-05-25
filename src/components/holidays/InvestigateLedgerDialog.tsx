@@ -510,8 +510,9 @@ export function InvestigateLedgerDialog({
         </div>
 
         <p className="text-[10px] text-muted-foreground italic text-center pt-1">
-          Read-only investigation. No deletions, edits or recalculations are
-          triggered by opening this view.
+          Read-only investigation. The orphan ledger reversal is the only
+          write path and is admin-only, confirmation-gated, and preserves
+          the original orphan row for audit.
         </p>
       </DialogContent>
     </Dialog>
