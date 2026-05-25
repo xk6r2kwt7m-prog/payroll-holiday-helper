@@ -138,9 +138,13 @@ export function UnresolvedIssuesPanel({
                   getDescription={getIssueDescription}
                   getSuggested={getSuggestedAction}
                   onMarkReviewed={handleMarkReviewed}
-                  onAddToPeriod={onAddToPeriod}
+                  onAddToPeriod={() => handleAddToPeriod(issue)}
                   onExclude={onExclude}
                   navigate={navigate}
+                  remember={!!rememberMap[issue.csvName]}
+                  onToggleRemember={(checked) =>
+                    setRememberMap((m) => ({ ...m, [issue.csvName]: checked }))
+                  }
                   isBlocking
                 />
               ))}
