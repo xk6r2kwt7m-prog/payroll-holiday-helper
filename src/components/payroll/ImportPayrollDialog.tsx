@@ -879,7 +879,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
         {/* ── Step 2: File Upload ── */}
         {step === "upload" && (
-          <div className="space-y-4 py-2">
+          <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-1">
             <div className="rounded-lg bg-muted/50 border border-border p-3">
               <p className="text-sm text-muted-foreground">
                 Importing into <strong>{periodName}</strong> ({startDate} → {endDate})
