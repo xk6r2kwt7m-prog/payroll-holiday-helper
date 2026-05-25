@@ -354,7 +354,10 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
     const matchedEmp = employees.find(e => e.id === employeeId);
     if (!matchedEmp) return;
 
-    // Persist alias for future imports if the CSV name differs from the employee's full name
+    // Persist alias for future imports if the CSV name differs from the employee's full name.
+    // Writes to BOTH the employee-level `import_aliases` array (legacy, used by the
+    // legacy matcher) AND the new `payroll_import_aliases` table (used by
+    // matchEmployeeRow). Never mutates the employee's forename/surname.
     const fullName = `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase();
     const csvNameLower = csvName.trim().toLowerCase();
     if (csvNameLower !== fullName) {
@@ -369,8 +372,14 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
           queryClient.invalidateQueries({ queryKey: ["employees"] });
         }
       } catch (err) {
-        console.error("Failed to persist import alias:", err);
+        console.error("Failed to persist import alias on employee:", err);
         // Non-blocking: match still proceeds even if alias save fails
+      }
+      try {
+        await saveAlias({ rawName: csvName.trim(), employeeId: matchedEmp.id });
+      } catch (err) {
+        console.error("Failed to persist payroll_import_aliases entry:", err);
+        // Non-blocking
       }
     }
 
