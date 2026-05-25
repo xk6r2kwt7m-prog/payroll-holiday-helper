@@ -1,10 +1,11 @@
 /**
- * Read-only Holiday Ledger Investigation dialog.
+ * Holiday Ledger Investigation dialog.
  *
- * STRICT INVARIANT: this view performs NO writes. It does not call any
- * mutation, recalculation, delete, update, insert, or RPC. It only reads
- * from `holiday_ledger`, `holiday_payments`, and `payroll_periods` for the
- * selected employee + leave year and displays everything.
+ * The view itself is read-only. The only write path exposed here is a
+ * narrowly-scoped, admin-only, confirmation-gated correction for
+ * ORPHAN holiday_ledger rows whose source holiday_payments record has
+ * been deleted. The correction writes a REVERSING ledger entry (it
+ * never deletes the original orphan row) so the audit trail is kept.
  */
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +16,8 @@ import {
   ExternalLink,
   Lock,
   FileText,
+  Undo2,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,7 +29,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -34,11 +49,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import { useAuth } from "@/hooks/useAuth";
 import { useHolidayLedger } from "@/hooks/useHolidayLedger";
-import { formatCurrency, formatHours } from "@/hooks/useHolidays";
+import {
+  formatCurrency,
+  formatHours,
+  useReverseOrphanLedgerEntry,
+} from "@/hooks/useHolidays";
 import {
   findIntegrityIssues,
   summariseLedger,
