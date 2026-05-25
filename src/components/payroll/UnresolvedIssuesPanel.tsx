@@ -195,16 +195,26 @@ function IssueCard({
   onExclude,
   navigate,
   isBlocking,
+  remember,
+  onToggleRemember,
 }: {
   issue: PayrollImportIssue;
   getDescription: (i: PayrollImportIssue) => string;
   getSuggested: (i: PayrollImportIssue) => string;
   onMarkReviewed?: (csvName: string) => void;
-  onAddToPeriod?: (employeeId: string) => void;
+  onAddToPeriod?: () => void;
   onExclude?: (csvName: string) => void;
   navigate: ReturnType<typeof useNavigate>;
   isBlocking: boolean;
+  remember?: boolean;
+  onToggleRemember?: (checked: boolean) => void;
 }) {
+  const canRemember =
+    isBlocking &&
+    issue.issue === "exists_not_added" &&
+    !!issue.employeeId &&
+    !!onToggleRemember;
+
   return (
     <div className={`rounded-lg border bg-background p-3 space-y-2 ${
       isBlocking ? "border-destructive/30" : "border-border/60"
@@ -225,12 +235,30 @@ function IssueCard({
         )}
       </div>
 
+      {canRemember && (
+        <label className="flex items-start gap-2 rounded-md bg-muted/40 border border-border/60 p-2 cursor-pointer">
+          <Checkbox
+            checked={!!remember}
+            onCheckedChange={(v) => onToggleRemember?.(v === true)}
+            className="mt-0.5"
+          />
+          <div className="text-xs">
+            <span className="font-medium flex items-center gap-1">
+              <BookmarkPlus className="h-3 w-3" /> Remember this match for future imports
+            </span>
+            <span className="text-muted-foreground">
+              Save "{issue.csvName}" as a timesheet alias for {issue.employeeName}. Does not change the employee's legal name.
+            </span>
+          </div>
+        </label>
+      )}
+
       {isBlocking && (
         <div className="flex flex-wrap gap-1.5">
           {issue.issue === "exists_not_added" && issue.employeeId && onAddToPeriod && (
-            <Button size="sm" className="h-7 text-xs" onClick={() => onAddToPeriod(issue.employeeId!)}>
+            <Button size="sm" className="h-7 text-xs" onClick={() => onAddToPeriod()}>
               <UserPlus className="h-3 w-3 mr-1" />
-              Add to payroll
+              {remember ? "Add & remember" : "Add to payroll"}
             </Button>
           )}
           {issue.employeeId && (
