@@ -172,19 +172,13 @@ export function PayrollHolidaySection({
         updates.leave_year_end = `${d.getFullYear()}-12-31`;
       }
 
-      const { error } = await supabase
-        .from("holiday_payments")
-        .update(updates as never)
-        .eq("id", hp.id);
-      if (error) throw error;
+      await updatePayment.mutateAsync({ id: hp.id, updates });
 
-      await recalcPayrollPeriodTotals(periodId);
-      queryClient.invalidateQueries({ queryKey: ["holiday_payments"] });
-      queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
       toast.success(`Holiday payment updated: ${formatCurrency(newTotal)}`);
       cancelEdit();
-    } catch {
-      toast.error("Failed to update holiday payment");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to update holiday payment";
+      toast.error(msg);
     } finally {
       setEditSaving(false);
     }
