@@ -100,7 +100,7 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
     }
 
     return issues;
-  }, [currentEmployeeIds, employees, importRecord]);
+  }, [currentEmployeeIds, employees, importRecord, activeAliases]);
 
   const excludedNames = useMemo(
     () => toStringArray((importRecord as any)?.errors?.excluded),
