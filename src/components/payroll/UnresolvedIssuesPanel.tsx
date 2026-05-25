@@ -48,6 +48,27 @@ export function UnresolvedIssuesPanel({
     onMarkReviewed?.(csvName);
   };
 
+  const handleAddToPeriod = async (issue: PayrollImportIssue) => {
+    if (!issue.employeeId) return;
+    onAddToPeriod?.(issue.employeeId);
+    if (rememberMap[issue.csvName]) {
+      try {
+        await saveAlias({ rawName: issue.csvName, employeeId: issue.employeeId });
+        toast({
+          title: "Match remembered",
+          description: `"${issue.csvName}" will auto-match ${issue.employeeName ?? "this employee"} in future imports.`,
+        });
+      } catch (err: any) {
+        toast({
+          title: "Could not save alias",
+          description: err?.message ?? "The employee was added but the alias was not saved.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+
   const getIssueDescription = (issue: PayrollImportIssue) => {
     switch (issue.issue) {
       case "exists_not_added":
