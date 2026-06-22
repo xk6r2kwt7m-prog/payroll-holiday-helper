@@ -211,6 +211,7 @@ Deno.serve(async (req) => {
       const { data: newEmp, error: empErr } = await supabase
         .from("employees")
         .insert({
+          tenant_id: tenantId,
           forename: lookupForename.split(" ")[0] || lookupForename,
           surname: lookupSurname || "Unknown",
           department: dept,
