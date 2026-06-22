@@ -201,23 +201,135 @@ export function computeBasis(input: BasisInput): BasisResult {
   }
 
   // full_employment
-  const sums = sumLedger(ledger);
+  //
+  // CRITICAL: a naive sum of every ledger row double-counts when both
+  // detailed prior-year accrual/taken rows AND a summary `carry_over_in`
+  // row for the same prior year are present (system-wide pattern from the
+  // 2026-03 holiday_balances backfill). We compute year-by-year and only
+  // honour `carry_over_in` when there is no detailed prior-year history
+  // to derive the same number from.
+  const fe = computeFullEmploymentBalance(ledger);
   const paid = payments.reduce((s, p) => s + Number(p.total || 0), 0);
   const workedHours = payrollEntries.reduce((s, e) => s + Number(e.timesheet_hours || 0), 0);
   notes.push(
-    "Scope: full employment period. Includes every ledger row across all leave years (carry-overs, corrections, manual adjustments).",
+    "Scope: full employment period. Year-aware net (carry-over-in is skipped when prior-year detail rows already cover the same hours).",
   );
+  if (fe.carryOverDuplicationDetected) {
+    notes.push(
+      "⚠ Carry-over duplication detected — the ledger contains both prior-year detail rows AND a carry_over_in summary. Settle Leaver is blocked until this is reconciled.",
+    );
+  }
   return {
     basis: "full_employment",
-    accrued: sums.accrued,
-    carryOver: sums.carryOver,
-    taken: sums.taken,
+    accrued: fe.accrued,
+    carryOver: fe.carryOver,
+    taken: fe.taken,
     paid,
-    manualAdjustments: sums.manualAdjustments,
+    manualAdjustments: fe.manualAdjustments,
     workedHours,
-    balance: sums.accrued + sums.carryOver - sums.taken,
+    balance: fe.balance,
     balanceAmount: null,
     notes,
+    carryOverDuplicationDetected: fe.carryOverDuplicationDetected,
+  };
+}
+
+/**
+ * Year-aware full-employment balance calculator.
+ *
+ * Buckets ledger rows by calendar year (using `entry_date`), and for each
+ * year computes: accrued + manual_adjustments − taken.  A `carry_over_in`
+ * row for year Y is honoured ONLY when there are no detailed accrual or
+ * taken rows in any prior year — otherwise it is treated as a redundant
+ * summary that would double-count the detail rows.
+ *
+ * Returns the same accrued / carryOver / taken / manualAdjustments fields
+ * a flat sum would produce, plus a `carryOverDuplicationDetected` flag so
+ * the caller can warn or block.
+ */
+export function computeFullEmploymentBalance(ledger: LedgerRow[]): {
+  accrued: number;
+  carryOver: number;
+  taken: number;
+  manualAdjustments: number;
+  balance: number;
+  carryOverDuplicationDetected: boolean;
+} {
+  type Bucket = {
+    accrued: number;
+    carryIn: number;
+    taken: number;
+    adj: number;
+    hasDetail: boolean;
+  };
+  const buckets = new Map<number, Bucket>();
+  const get = (yr: number): Bucket => {
+    let b = buckets.get(yr);
+    if (!b) {
+      b = { accrued: 0, carryIn: 0, taken: 0, adj: 0, hasDetail: false };
+      buckets.set(yr, b);
+    }
+    return b;
+  };
+  for (const e of ledger) {
+    const d = new Date(e.entry_date);
+    if (isNaN(d.getTime())) continue;
+    const yr = d.getUTCFullYear();
+    const b = get(yr);
+    const h = Number(e.hours);
+    switch (e.entry_type) {
+      case "accrual":
+        b.accrued += h;
+        b.hasDetail = true;
+        break;
+      case "carry_over_in":
+        b.carryIn += h;
+        break;
+      case "holiday_taken":
+      case "payout_on_termination":
+      case "carry_over_out":
+      case "expiry":
+        b.taken += Math.abs(h);
+        b.hasDetail = true;
+        break;
+      case "manual_adjustment":
+      case "correction":
+        b.adj += h;
+        b.hasDetail = true;
+        break;
+    }
+  }
+
+  const years = [...buckets.keys()].sort((a, b) => a - b);
+  let accrued = 0;
+  let carryOver = 0;
+  let taken = 0;
+  let manualAdjustments = 0;
+  let duplication = false;
+  for (const yr of years) {
+    const b = buckets.get(yr)!;
+    accrued += b.accrued;
+    taken += b.taken;
+    manualAdjustments += b.adj;
+    if (b.carryIn !== 0) {
+      const priorHasDetail = years.some(
+        (y) => y < yr && buckets.get(y)!.hasDetail,
+      );
+      if (priorHasDetail) {
+        // Skip the carry_over_in — detailed prior rows already cover it.
+        duplication = true;
+      } else {
+        carryOver += b.carryIn;
+      }
+    }
+  }
+  return {
+    accrued,
+    carryOver,
+    taken,
+    manualAdjustments,
+    balance: accrued + carryOver - taken + manualAdjustments,
+    carryOverDuplicationDetected: duplication,
   };
 }
 
