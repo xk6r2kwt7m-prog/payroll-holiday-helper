@@ -152,11 +152,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Cache employee lookups
+    // Cache employee lookups — scoped to the requested tenant
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, forename, surname, department");
-    
+      .select("id, forename, surname, department")
+      .eq("tenant_id", tenantId);
+
     const empCache = new Map<string, string>();
     for (const emp of employees || []) {
       const key = `${emp.forename.toLowerCase()}|${emp.surname.toLowerCase()}`;
@@ -167,6 +168,8 @@ Deno.serve(async (req) => {
       periodsCreated: 0,
       entriesCreated: 0,
       holidaysCreated: 0,
+      ledgerRowsCreated: 0,
+      ledgerDuplicatesSkipped: 0,
       employeesCreated: 0,
       unmatchedEntries: [] as string[],
       unmatchedHolidays: [] as string[],
