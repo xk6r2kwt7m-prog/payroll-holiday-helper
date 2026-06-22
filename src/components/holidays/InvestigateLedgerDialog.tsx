@@ -59,7 +59,9 @@ import {
   formatCurrency,
   formatHours,
   useReverseOrphanLedgerEntry,
+  useBackfillMissingAccruals,
 } from "@/hooks/useHolidays";
+import { findMissingAccrualEntries, type PayrollEntryLite } from "@/lib/holiday-entitlement-basis";
 import {
   findIntegrityIssues,
   summariseLedger,
@@ -128,12 +130,38 @@ export function InvestigateLedgerDialog({
 
   const { isAdmin } = useAuth();
   const reverseOrphan = useReverseOrphanLedgerEntry();
+  const backfillAccruals = useBackfillMissingAccruals();
 
   const { tenantId } = useTenant();
   const { data: rawLedger, isLoading: ledgerLoading } = useHolidayLedger(
     open ? employeeId : undefined,
     open ? leaveYearStart : undefined
   );
+
+  // Detect accrual gaps: payroll_entries with holiday_accrued_hours > 0 that
+  // are NOT represented in the ledger as `accrual` rows linked back to them.
+  const { data: payrollEntriesForYear = [] } = useQuery({
+    enabled: open && !!tenantId && !!employeeId,
+    queryKey: ["investigate_payroll_entries", tenantId, employeeId, yr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payroll_entries")
+        .select(
+          "id, payroll_period_id, holiday_accrued_hours, timesheet_hours, payroll_periods(start_date, end_date, status)"
+        )
+        .eq("tenant_id", tenantId!)
+        .eq("employee_id", employeeId);
+      if (error) throw error;
+      return (data ?? []).map((e: any) => ({
+        id: e.id,
+        payroll_period_id: e.payroll_period_id,
+        period_start_date: e.payroll_periods?.start_date ?? "",
+        period_status: e.payroll_periods?.status ?? "",
+        holiday_accrued_hours: Number(e.holiday_accrued_hours || 0),
+        timesheet_hours: Number(e.timesheet_hours || 0),
+      })) as PayrollEntryLite[];
+    },
+  });
 
   // READ-ONLY: fetch holiday_payments for this employee + leave year
   const { data: payments, isLoading: paymentsLoading } = useQuery({
@@ -192,6 +220,13 @@ export function InvestigateLedgerDialog({
     periodsById,
   });
   const approvedImpact = hasApprovedPeriodImpact(issues);
+
+  const accrualGaps = findMissingAccrualEntries({
+    leaveYear: yr,
+    ledger,
+    payrollEntries: payrollEntriesForYear,
+  });
+  const totalGapHours = accrualGaps.reduce((s, g) => s + g.expectedAccrual, 0);
 
   // running balance for the table
   let running = 0;
@@ -349,6 +384,70 @@ export function InvestigateLedgerDialog({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Accrual gap detector */}
+        {accrualGaps.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+              <ShieldAlert className="h-3.5 w-3.5 text-warning" />
+              Missing accrual entries ({accrualGaps.length})
+            </h4>
+            <div className="rounded-lg border border-warning/30 bg-warning/5 p-2.5 text-xs space-y-2">
+              <p className="text-warning">
+                {accrualGaps.length} payroll {accrualGaps.length === 1 ? "entry has" : "entries have"} <strong>{formatHours(totalGapHours)}h</strong> of accrued holiday that is not in the ledger. The Holiday / Leave tab includes this; the ledger-based balance does not.
+              </p>
+              <ul className="space-y-0.5 text-foreground">
+                {accrualGaps.slice(0, 5).map((g) => (
+                  <li key={g.payrollEntryId} className="flex items-center gap-2">
+                    <Badge variant="outline" className={cn("text-[10px]", STATUS_BADGE[g.periodStatus] || "")}>
+                      {g.periodStatus}
+                    </Badge>
+                    <span className="font-mono text-[11px]">{g.periodStartDate}</span>
+                    <span>+{formatHours(g.expectedAccrual)}h</span>
+                  </li>
+                ))}
+                {accrualGaps.length > 5 && (
+                  <li className="text-muted-foreground">…and {accrualGaps.length - 5} more.</li>
+                )}
+              </ul>
+              {isAdmin && (
+                <div className="pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    disabled={backfillAccruals.isPending}
+                    onClick={async () => {
+                      try {
+                        const res = await backfillAccruals.mutateAsync({
+                          employeeId,
+                          leaveYear: yr,
+                        });
+                        toast({
+                          title: "Accrual backfill complete",
+                          description: `${res.inserted} ledger ${res.inserted === 1 ? "entry" : "entries"} added · ${res.skipped} already present.`,
+                        });
+                      } catch (err: any) {
+                        toast({
+                          title: "Backfill failed",
+                          description: err?.message ?? "Unknown error",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    {backfillAccruals.isPending ? (
+                      <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Backfilling…</>
+                    ) : (
+                      <>Backfill missing accrual entries</>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
