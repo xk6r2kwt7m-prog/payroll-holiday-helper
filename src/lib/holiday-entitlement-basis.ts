@@ -395,6 +395,7 @@ export function findMissingAccrualEntries(input: {
   payrollEntries: PayrollEntryLite[];
 }): AccrualGap[] {
   const { leaveYear, ledger, payrollEntries } = input;
+  const APPROVED_STATUSES = new Set(["approved", "finalised", "finalized"]);
   const presentSourceIds = new Set(
     ledger
       .filter((r) => r.entry_type === "accrual" && r.source_table === "payroll_entries" && r.source_id)
@@ -404,6 +405,9 @@ export function findMissingAccrualEntries(input: {
   for (const e of payrollEntries) {
     const periodYear = new Date(e.period_start_date).getUTCFullYear();
     if (periodYear !== leaveYear) continue;
+    // Only flag gaps for periods whose accrual should be committed (approved).
+    // Draft / pending periods have no obligation to a ledger row yet.
+    if (!APPROVED_STATUSES.has(String(e.period_status || "").toLowerCase())) continue;
     const expected = Number(e.holiday_accrued_hours || 0);
     if (expected <= 0) continue;
     if (presentSourceIds.has(e.id)) continue;
@@ -417,3 +421,4 @@ export function findMissingAccrualEntries(input: {
   }
   return gaps;
 }
+
