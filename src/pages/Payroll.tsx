@@ -29,6 +29,7 @@ import { buildPayrollApprovalEvidence } from "@/lib/payroll-approval-evidence";
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
 import { buildApprovalChecklist, canApprove as canApproveChecklist } from "@/lib/payroll-approval-checklist";
 import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
+import { usePayrollApprovalGuardrails } from "@/hooks/usePayrollApprovalGuardrails";
 import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySection";
 import { PayrollSalesInput } from "@/components/payroll/PayrollSalesInput";
 import { PayrollReminders } from "@/components/payroll/PayrollReminders";
