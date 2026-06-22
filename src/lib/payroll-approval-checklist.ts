@@ -98,21 +98,34 @@ export function buildApprovalChecklist(
     });
   }
 
-  const nmwRisks = entries.filter((e) => e.nmw.status === "non_compliant");
+  const nmwAll = entries.filter((e) => e.nmw.status === "non_compliant");
+  const overrides = nmwOverrideEmployeeIds ?? new Set<string>();
+  const nmwBlocking = nmwAll.filter((e) => !overrides.has(e.employee_id));
+  const nmwOverridden = nmwAll.filter((e) => overrides.has(e.employee_id));
   items.push(
-    nmwRisks.length > 0
+    nmwBlocking.length > 0
       ? blockItem(
           "nmw_non_compliant",
           "Entries below National Minimum Wage",
-          `${nmwRisks.length} entr${nmwRisks.length === 1 ? "y is" : "ies are"} below the legal NMW base rate. Service charge cannot be used to satisfy NMW.`,
-          nmwRisks,
+          `${nmwBlocking.length} entr${nmwBlocking.length === 1 ? "y is" : "ies are"} below the legal NMW base rate with no authorised override on file. Service charge cannot be used to satisfy NMW. Add a contract minimum-wage override row or correct the rate before approval.`,
+          nmwBlocking,
         )
       : passItem(
           "nmw_non_compliant",
           "All entries meet National Minimum Wage",
-          "Base hourly pay meets or exceeds the legal NMW rate. Service charge is correctly excluded.",
+          "Base hourly pay meets NMW, or a documented override is on file. Service charge is correctly excluded.",
         ),
   );
+  if (nmwOverridden.length > 0) {
+    items.push(
+      warnItem(
+        "nmw_override_in_use",
+        "NMW overrides are in use",
+        `${nmwOverridden.length} entr${nmwOverridden.length === 1 ? "y has" : "ies have"} a sub-NMW rate covered by an authorised override row. Acknowledge before approval.`,
+        nmwOverridden,
+      ),
+    );
+  }
 
   const missingRate = entries.filter((e) => e.hours > 0 && e.base_pay <= 0);
   items.push(
