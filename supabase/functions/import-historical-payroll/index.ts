@@ -130,13 +130,26 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { periods } = await req.json();
+    const { periods, tenantId, importedBy } = await req.json();
 
     if (!periods || !Array.isArray(periods)) {
       return new Response(JSON.stringify({ error: "periods array required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (!tenantId || typeof tenantId !== "string") {
+      return new Response(
+        JSON.stringify({
+          error:
+            "tenantId is required. Historical imports must be scoped to a tenant to preserve isolation and audit trails.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Cache employee lookups
