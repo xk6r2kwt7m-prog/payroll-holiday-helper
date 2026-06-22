@@ -59,7 +59,9 @@ import {
   formatCurrency,
   formatHours,
   useReverseOrphanLedgerEntry,
+  useBackfillMissingAccruals,
 } from "@/hooks/useHolidays";
+import { findMissingAccrualEntries, type PayrollEntryLite } from "@/lib/holiday-entitlement-basis";
 import {
   findIntegrityIssues,
   summariseLedger,
