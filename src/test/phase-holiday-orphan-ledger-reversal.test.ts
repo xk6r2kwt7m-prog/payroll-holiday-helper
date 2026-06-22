@@ -265,8 +265,10 @@ describe("useReverseOrphanLedgerEntry — safety contract (source inspection)", 
   });
 
   it("does not modify employee profile data, payroll rates, NMW or service-charge logic", () => {
-    const after = src.split("useReverseOrphanLedgerEntry")[1] ?? "";
-    const hookSlice = after.split("// Shared helper")[0] ?? after;
+    // Slice only the body of useReverseOrphanLedgerEntry: from its definition
+    // to the next exported hook, so unrelated hooks below are not inspected.
+    const after = src.split("export function useReverseOrphanLedgerEntry")[1] ?? "";
+    const hookSlice = after.split(/\nexport function /)[0] ?? after;
     expect(hookSlice).not.toMatch(/from\(["']employees["']\)/);
     expect(hookSlice).not.toMatch(/from\(["']payroll_entries["']\)/);
     expect(hookSlice).not.toMatch(/nmw|minimum_wage/i);
