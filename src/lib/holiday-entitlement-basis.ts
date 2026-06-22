@@ -262,10 +262,16 @@ export function buildSourceComparison(input: ComparisonInput): SourceRow[] {
   const { leaveYear, ledger, payments, payrollEntries, balanceSnapshot, manualRecalculation } = input;
   const ys = yearStartOf(leaveYear);
 
-  // Legacy computed (matches the existing Holiday / Leave tab logic):
+  // Legacy computed (Holiday / Leave tab). Only APPROVED periods are committed
+  // to payroll, so only their accruals are comparable to the ledger. Draft /
+  // pending periods are previews and intentionally excluded — otherwise every
+  // in-progress payroll run would surface as a false-positive mismatch.
+  const APPROVED_STATUSES = new Set(["approved", "finalised", "finalized"]);
   const legacyAccrued = payrollEntries
     .filter((e) => new Date(e.period_start_date).getUTCFullYear() === leaveYear)
+    .filter((e) => APPROVED_STATUSES.has(String(e.period_status || "").toLowerCase()))
     .reduce((s, e) => s + Number(e.holiday_accrued_hours || 0), 0);
+
   const yearPayments = payments.filter((p) => p.leave_year_start === ys);
   const legacyTaken = yearPayments.reduce((s, p) => s + Math.abs(Number(p.hours || 0)), 0);
   const legacyPaid = yearPayments.reduce((s, p) => s + Number(p.total || 0), 0);
