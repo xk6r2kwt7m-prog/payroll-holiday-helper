@@ -130,12 +130,38 @@ export function InvestigateLedgerDialog({
 
   const { isAdmin } = useAuth();
   const reverseOrphan = useReverseOrphanLedgerEntry();
+  const backfillAccruals = useBackfillMissingAccruals();
 
   const { tenantId } = useTenant();
   const { data: rawLedger, isLoading: ledgerLoading } = useHolidayLedger(
     open ? employeeId : undefined,
     open ? leaveYearStart : undefined
   );
+
+  // Detect accrual gaps: payroll_entries with holiday_accrued_hours > 0 that
+  // are NOT represented in the ledger as `accrual` rows linked back to them.
+  const { data: payrollEntriesForYear = [] } = useQuery({
+    enabled: open && !!tenantId && !!employeeId,
+    queryKey: ["investigate_payroll_entries", tenantId, employeeId, yr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payroll_entries")
+        .select(
+          "id, payroll_period_id, holiday_accrued_hours, timesheet_hours, payroll_periods(start_date, end_date, status)"
+        )
+        .eq("tenant_id", tenantId!)
+        .eq("employee_id", employeeId);
+      if (error) throw error;
+      return (data ?? []).map((e: any) => ({
+        id: e.id,
+        payroll_period_id: e.payroll_period_id,
+        period_start_date: e.payroll_periods?.start_date ?? "",
+        period_status: e.payroll_periods?.status ?? "",
+        holiday_accrued_hours: Number(e.holiday_accrued_hours || 0),
+        timesheet_hours: Number(e.timesheet_hours || 0),
+      })) as PayrollEntryLite[];
+    },
+  });
 
   // READ-ONLY: fetch holiday_payments for this employee + leave year
   const { data: payments, isLoading: paymentsLoading } = useQuery({
