@@ -236,6 +236,7 @@ Deno.serve(async (req) => {
       const { data: pp, error: ppErr } = await supabase
         .from("payroll_periods")
         .insert({
+          tenant_id: tenantId,
           period_name: `${period.period_name} [Historical]`,
           start_date: period.start_date,
           end_date: period.end_date,
