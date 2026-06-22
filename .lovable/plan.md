@@ -1,105 +1,135 @@
-## Payroll Timesheet Import — Saved Alias & Manual Matching
+## Investigation findings (Kazumi Ortega, 812f8912)
 
-### Goal
-Stop re-asking managers about the same unclear timesheet names. When a manager confirms a match once, remember it as a safe **import alias** that auto-matches in future imports — without ever changing the employee's legal name or profile.
+I ran the numbers directly against the database. The three screens are showing **three different calculations of the same balance**, and each is reading a different source:
 
-### What I'll build
+### 2026 ledger (holiday_ledger) — what Settle Leaver and Investigate Ledger use
+| Date | Type | Hours | Source |
+|---|---|---|---|
+| 2026-01-01 | carry_over_in | +182.05 | holiday_balances |
+| 2026-01-15 | holiday_taken | **-187.00** | holiday_balances (NOT holiday_payments) — note: *"Backfill reconciliation: hours_taken from balance snapshot (no holiday_payments source)"* |
+| 2026-01-26 | accrual | +3.45 | payroll_entries (Feb 2026 period) |
 
-**1. Storage (schema change — needs your approval)**
+→ accrued 3.45, carry 182.05, taken 187, balance **-1.50h** (matches Settle Leaver exactly).
 
-A new dedicated `payroll_import_aliases` table is the safest option (separate from the legacy `employees.import_aliases` array, which has no audit trail, no usage tracking, no source attribution, and can't be deactivated cleanly).
+### 2026 payroll_entries — what the Holiday / Leave tab actually sums
+| Period | Status | holiday_accrued_hours |
+|---|---|---|
+| 26 Jan–22 Feb | approved | 3.45 |
+| 23 Feb–22 Mar | approved | 0.00 |
+| 23 Mar–19 Apr | approved | 6.00 |
+| 20 Apr–24 May | pending  | 20.04 |
+| 25 May–21 Jun | draft    | 4.67 |
 
-Fields:
-- `id`, `tenant_id`, `branch_id` (nullable)
-- `source_system` (`uploaded_timesheet` | `csv_import` | `deputy`)
-- `raw_timesheet_name`, `normalised_timesheet_name`
-- `employee_id` (FK to employees)
-- `confirmed_by`, `confirmed_at`
-- `last_used_at`, `usage_count`
-- `is_active` (soft deactivate, never hard delete)
-- Unique on `(tenant_id, normalised_timesheet_name, source_system)` where `is_active = true`
-- RLS: tenant-scoped, manager+ to read, manager+ to write
+Sum = **34.16h accrued** (matches Holiday tab).
+holiday_payments for 2026 leave year = **0 rows** → taken shown as 0.00.
+holiday_balances.hours_carried_over (2026) = 182.05.
+→ accrued 34.16 + carry 182.05 − taken 0 = **216.21h** (matches Holiday tab "216.1").
 
-No payroll, NMW, service-charge, approval or audit logic touched.
+### 2026 holiday_balances snapshot
+Stored as: accrued 3.45, taken 187, carry 182.05 → -1.50h (aligned with ledger).
 
-**2. Matching priority (updated `src/lib/payroll-matching.ts`)**
+## Which screen is correct?
 
-```
-1. Employee ID (if column present)
-2. Email (if column present)
-3. Saved alias (new — from payroll_import_aliases)
-4. Exact full-name (unique active employee)
-5. Strong unique likely match (existing alias array / preferred / legacy map)
-6. → Manual manager selection
-```
+**Neither is fully correct, but they answer different questions.**
 
-Conflict rules: if file has an ID/email that points to a *different* employee than a saved alias, alias is ignored and row is flagged ambiguous.
+- **Settle Leaver / Investigate Ledger** (-1.50h) is using the **ledger as single source of truth** (matches our governance rule), but the ledger is **incomplete**:
+  - Only 1 of 5 2026 payroll_entries was written to the ledger as `accrual` (3.45h). The other 4 periods (0, 6.00, 20.04, 4.67 = +30.71h) were **never backfilled into the ledger**.
+  - It contains a **-187h orphan `holiday_taken` row** sourced from `holiday_balances` directly, with no matching `holiday_payments` record. This is the same pattern as the Viktoriia bug — a snapshot was reconciled into the ledger but the underlying payment record does not exist.
+- **Holiday / Leave tab** (216.1h) is using **payroll_entries + holiday_payments + holiday_balances** directly and never touches the ledger. It correctly sees the 4 missing accrual periods, but it also misses the 187h that someone clearly recorded as taken (otherwise it would not be on the snapshot).
 
-**3. Manual confirmation UI**
+So:
+- The Holiday tab is **right about accrual** (34.16h is what the approved/pending payroll periods actually generated).
+- The ledger / Settle Leaver is **right that 187h were marked taken somewhere** (the snapshot row exists), but **wrong to count it without a payment trail**.
 
-In the existing **Unresolved Issues** panel (`UnresolvedIssuesPanel` / `usePayrollImportStatus`), when a manager picks an employee for an unmatched name, add a checkbox:
+The true balance, if those 187h are real holiday taken, is `34.16 + 182.05 − 187 = 29.21h`. If the 187h is the same kind of orphan as Viktoriia's, the true balance is `34.16 + 182.05 = 216.21h`. Manager decision required.
 
-> ☑ Remember this match for future imports
+## Source-of-truth mismatch across the app
 
-If checked → insert into `payroll_import_aliases`. If unchecked → one-time match only.
+| Screen | Accrued source | Taken source | Carry source |
+|---|---|---|---|
+| Holiday / Leave tab (`pages/Holidays.tsx`) | `payroll_entries.holiday_accrued_hours` | `holiday_payments.hours` | `holiday_balances.hours_carried_over` |
+| Settle Leaver (`SettleLeaverDialog`) | `holiday_ledger` (via `useHolidayYearSummary`) | `holiday_ledger` | `holiday_ledger` |
+| Investigate Ledger | `holiday_ledger` | `holiday_ledger` | `holiday_ledger` |
+| Payroll period rows | `payroll_entries.holiday_accrued_hours` | n/a | n/a |
 
-**4. Alias safety**
+This violates the **Unified Balance Logic** memory: `useHolidayYearSummary` should be the only source. The Holiday tab is the outlier.
 
-Block / require re-review when:
-- Same raw name maps to >1 active employee (ambiguous)
-- Target employee is `leaver` or `archived` (inactive)
-- Branch mismatch (warn, where branch context is set)
-- Alias conflicts with file-supplied ID/email
-- Two timesheet rows resolve to the same employee
-- Alias `is_active = false`
+## Scope: who else is affected?
 
-**5. Alias management screen**
+Anyone who (a) has payroll_entries with `holiday_accrued_hours > 0` that were created after the last ledger backfill, **or** (b) has a `holiday_balances.hours_taken` value with no matching `holiday_payments` rows, will show the same inconsistency. I will run a query as part of the fix to list every affected employee.
 
-New tab inside **Payroll → Import** (or Settings → Payroll): `TimesheetAliasManager`
-- List active + inactive aliases
-- Show employee, source, last used, usage count, confirmed by/at
-- Deactivate / reactivate
-- Re-point to a different employee (creates new row, deactivates old — preserves history)
+## Plan
 
-**6. Import review screen**
+### A. Make the ledger the single source of truth everywhere (no silent change to calculations)
+1. Refactor `pages/Holidays.tsx` summary builder to read from `useHolidayYearSummary` (per-employee) instead of summing `payroll_entries` / `holiday_payments` / `holiday_balances` directly. Carry-over fallback for years where the ledger has no `carry_over_in` row remains supported.
+2. Keep the comparison view on `Holidays.tsx` showing both the ledger value and the legacy computed value, so the manager can spot divergence and trigger a backfill — never silently overwrites historical data.
 
-Extend the existing pre-import review to show a `matchSource` column per row:
-`Employee ID | Email | Saved alias | Exact name | Likely match | Manual | Unmatched | Ambiguous`
+### B. Diagnostic + safe backfill tools (admin only, all reversible)
+1. Add an **"Accrual gap"** detector: for each (employee, leave_year), compare `sum(payroll_entries.holiday_accrued_hours where period.status in approved/pending/draft)` to `sum(holiday_ledger.accrual where source_table='payroll_entries')`. Surface gap in `InvestigateLedgerDialog` warnings panel.
+2. Add admin button "Backfill missing accrual entries" that inserts ledger rows of type `accrual` (one per missing `payroll_entries` row), source-linked to the payroll entry, blocked when the period is approved+locked unless the entry itself has no ledger row yet (creation is additive, never modifies existing rows).
+3. Reuse the existing **orphan ledger reversal** flow for `-187h` style rows (already shipped).
 
-Plus a "Missing from file" section listing active employees not in the upload (warning, non-blocking).
+### C. New "Holiday Entitlement Basis" section on Settle Leaver
+Add a card above the balance summary with 4 mutually-exclusive options (radio group). For each option, calculate from the same `holiday_ledger` + `payroll_entries` + `holiday_payments` sources, but with different filters:
 
-**7. Import blocking**
+- **A. Current payroll period only** — sum `payroll_entries.holiday_accrued_hours` for selected period; taken = holiday_payments in that period; balance = accrual − taken.
+- **B. Current holiday year only** — same as today's calculation scoped to leave year, no carry.
+- **C. Full employment period including previous years** (DEFAULT FOR LEAVERS) — uses all ledger entries from `employees.start_date` forward, including `carry_over_in` rows and `manual_adjustment`/`correction` rows.
+- **D. Manual verified adjustment** — admin-only, exposes hours+reason+supporting note inputs; on submit writes a `manual_adjustment` ledger row with `notes` (audit) before recording the settlement payment. Permission gate: `approve_holidays`.
 
-Final Import button disabled until: no ambiguous, no unmatched (unless explicitly excluded), no duplicate target mappings, no alias conflicts, no inactive selections, period not approved/locked.
+The auto-filled hours field is driven by whichever option is selected. Switching options recomputes; the form does not persist values across switches without confirmation.
 
-**8. Draft preservation (already in place — preserved as-is)**
+### D. Source comparison table on Settle Leaver
+Below the basis selector, render a comparison table:
 
-Existing draft → update `timesheet_hours` only. Rates, bonuses, service charge, manual adjustments, copied values untouched. Approved periods remain fully protected.
+| Source | Accrued | Carry | Taken | Paid | Balance |
+|---|---|---|---|---|---|
+| Holiday / Leave tab (legacy computed) | … | … | … | … | … |
+| Holiday ledger (single source of truth) | … | … | … | … | … |
+| Holiday balances snapshot | … | … | … | … | … |
+| Manual recalculation (this dialog) | … | … | … | … | … |
 
-**9. Tests**
+If any two rows diverge by more than 0.01h, show:
+> ⚠ **Holiday balance mismatch detected. Please review before settling this employee.**
+…with a "Open Investigate Ledger" deep link. The Settle button is **disabled** when a mismatch exists unless the admin ticks an extra "I have reviewed the mismatch and choose to proceed" confirmation (with audit log capturing the choice).
 
-New file `src/test/phase-payroll-import-aliases.test.ts` covering all 23 cases you listed (exact match, manual save, alias reuse, alias does not mutate legal name, alias preview source, conflict/inactive/branch/ID/email override rules, deactivation, blocking rules, draft preservation, approved-period protection, no-logic-change assertions).
+### E. Header fields on Settle Leaver
+Show: employee start date, selected entitlement basis, current holiday year, actual approved hours worked (sum from `payroll_entries`), accrued, carry-over, taken, already-paid, manual adjustments, final balance (h), final balance (£).
 
-### Files
+### F. Tests
+1. `phase-holiday-source-of-truth.test.ts` — verifies Holidays page summary uses ledger, falls back to carry-over snapshot only when ledger has no `carry_over_in` row.
+2. `phase-settle-leaver-entitlement-basis.test.ts` — verifies A/B/C/D calculation correctness, leaver default = C, mismatch detection, disabled-submit-on-mismatch behaviour, audit logging of overrides.
+3. `phase-holiday-accrual-gap.test.ts` — verifies detector lists missing `payroll_entries → ledger` rows and that the backfill only inserts (never updates) ledger rows.
 
-**New**
-- `supabase/migrations/<ts>_payroll_import_aliases.sql`
-- `src/hooks/usePayrollImportAliases.ts`
-- `src/components/payroll/TimesheetAliasManager.tsx`
-- `src/components/payroll/ImportReviewTable.tsx` (match-source column + missing-employees panel)
-- `src/test/phase-payroll-import-aliases.test.ts`
+### G. Invariants preserved
+- No changes to NMW, service charge, rate calc, payroll period status transitions, employee profile fields, or the existing approved/locked write protections.
+- All new mutations are additive (`INSERT` only on `holiday_ledger`) and audit-trailed.
+- No automatic recalculation runs on load — the admin must trigger backfills or manual adjustments explicitly (matches project rule "No silent changes").
 
-**Edited (surgical)**
-- `src/lib/payroll-matching.ts` — add `saved_alias` tier + ID/email tiers
-- `src/hooks/usePayrollImportStatus.ts` — surface match source, conflict detection
-- `src/components/payroll/ImportPayrollDialog.tsx` — manual-match "Remember" checkbox, review step, blocking
-- Wherever `UnresolvedIssuesPanel` is wired — pass alias-save callback
+### Technical detail (engineering reference)
+- New hook `useEntitlementBasisCalculator(employeeId, basis, leaveYear, periodId)` returns `{ accrued, carryOver, taken, paid, manualAdjustments, balance, sourceRows }`.
+- New component `<EntitlementBasisSelector>` (radio group + descriptions) inside `SettleLeaverDialog.tsx`.
+- New component `<HolidaySourceComparisonTable>` reused by SettleLeaverDialog and InvestigateLedgerDialog.
+- New lib `src/lib/holiday-entitlement-basis.ts` — pure functions per basis option, deterministic and unit-tested.
+- New SQL migration: none required — table shape already supports `manual_adjustment` and the new code only reads existing tables and inserts ledger rows through the existing `useReverseOrphanLedgerEntry` / new `useInsertLedgerAdjustment` hook (permission-gated).
 
-### Out of scope (per your guardrails)
-- No changes to NMW, payroll calc, service-charge, approval, audit, holiday, contract, profile logic
-- No employee legal-name mutation
-- No hard deletes (deactivate only)
-- No silent automatic alias creation — always requires manager confirmation
+### Out of scope (will NOT touch)
+- Payroll calculation, NMW logic, service-charge logic, rate sources.
+- Employee profile fields, contract terms, rate history.
+- Schedule, shift, timesheet logic.
+- Any existing approved/locked payroll period.
 
-### Approval needed
-Schema change for `payroll_import_aliases`. Approve and I'll run the migration, then build the matching + UI + tests.
+## Answers to your specific questions
+1. **Which is correct?** Neither is fully correct. The Settle Leaver figure correctly applies the ledger but the ledger is missing 30.71h of legitimate 2026 accruals and contains a 187h orphan taken row. The Holiday tab correctly sees the accrual but ignores the 187h taken record.
+2. **Why different accrued?** Ledger has only 1 of 5 2026 payroll_entries (auto-backfill stopped). Holiday tab sums all 5.
+3. **Why 0 vs 187 taken?** No `holiday_payments` exists for 2026; the 187h lives only on the `holiday_balances` snapshot and an orphan ledger row.
+4. **Settlement using current period only?** No — it uses the full leave year ledger via `useHolidayYearSummary`.
+5. **Historical leave pulled in but hidden?** Yes — the 187h orphan from a snapshot.
+6. **Previous-year records included incorrectly?** Carry-over of 182.05h is consistent across all three sources.
+7. **Carry-over correct?** Yes.
+8. **Different source of truth?** Yes — Holiday tab uses payroll_entries + holiday_payments + holiday_balances; Settle Leaver uses ledger.
+9. **Ledger / snapshot / live aligned?** Snapshot and ledger agree; Holidays tab disagrees.
+10. **Affects only Kazumi?** Likely affects any employee with 2026 payroll_entries created after the auto-backfill stopped, plus anyone with `holiday_balances.hours_taken` not backed by holiday_payments. Detector in step B1 will list them.
+11. **Employees with approved hours but missing accrual?** Yes — same detector will surface them.
+
+Shall I implement?
