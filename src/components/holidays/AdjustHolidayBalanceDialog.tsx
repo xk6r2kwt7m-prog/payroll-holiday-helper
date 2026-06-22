@@ -51,18 +51,52 @@ export function AdjustHolidayBalanceDialog({
   const [hours, setHours] = useState("");
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
+  const [largeConfirmed, setLargeConfirmed] = useState(false);
+  const [duplicateAck, setDuplicateAck] = useState(false);
+  const [duplicateMatch, setDuplicateMatch] = useState<null | { id: string; entry_date: string; hours: number }>(null);
   const queryClient = useQueryClient();
 
   const hoursNum = parseFloat(hours) || 0;
+  const isLargeAdjustment = Math.abs(hoursNum) > 20;
 
   const previewAccrued = adjustmentType === "accrued" ? currentAccrued + hoursNum : currentAccrued;
   const previewTaken = adjustmentType === "taken" ? currentTaken + hoursNum : currentTaken;
   const previewBalance = previewAccrued - previewTaken;
 
+  const checkDuplicate = async () => {
+    if (!hoursNum) {
+      setDuplicateMatch(null);
+      return null;
+    }
+    const { data } = await supabase
+      .from("holiday_ledger")
+      .select("id, entry_date, hours")
+      .eq("employee_id", employeeId)
+      .eq("entry_type", "holiday_taken")
+      .gte("entry_date", `${year}-01-01`)
+      .lte("entry_date", `${year}-12-31`);
+    const match = (data ?? []).find((r: any) => Math.abs(Number(r.hours)) === Math.abs(hoursNum));
+    setDuplicateMatch(match ? { id: match.id, entry_date: match.entry_date, hours: Number(match.hours) } : null);
+    return match ?? null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hours || !reason) {
       toast.error("Hours and reason are required");
+      return;
+    }
+    if (isLargeAdjustment && !largeConfirmed) {
+      toast.error("Large corrections (>20h) require explicit confirmation");
+      return;
+    }
+    if (isLargeAdjustment && (!notes || notes.trim().length < 10)) {
+      toast.error("Large corrections require a detailed note (min 10 chars)");
+      return;
+    }
+    const dup = await checkDuplicate();
+    if (dup && !duplicateAck) {
+      toast.error("Magnitude matches an existing holiday-taken entry — please review and tick acknowledgement");
       return;
     }
 
@@ -96,6 +130,9 @@ export function AdjustHolidayBalanceDialog({
     setHours("");
     setReason("");
     setNotes("");
+    setLargeConfirmed(false);
+    setDuplicateAck(false);
+    setDuplicateMatch(null);
   };
 
   return (
