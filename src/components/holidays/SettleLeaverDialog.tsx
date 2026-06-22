@@ -264,6 +264,12 @@ export function SettleLeaverDialog() {
   const basisBalance = basisResult?.balance ?? 0;
   const isOverdraw = basisResult ? parseFloat(hours) > basisBalance + 0.005 : false;
   const isZeroBalance = basisResult ? basisBalance <= 0 : false;
+  // Year-aware duplication guard: when the ledger contains both prior-year
+  // detail rows AND a carry_over_in summary row, full_employment basis would
+  // double-count. Block settlement until the data is reconciled.
+  const carryOverDuplicationDetected =
+    basis === "full_employment" &&
+    basisResult?.carryOverDuplicationDetected === true;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,6 +279,12 @@ export function SettleLeaverDialog() {
     }
     if (!approved) {
       toast.error("Please approve the settlement before recording");
+      return;
+    }
+    if (carryOverDuplicationDetected && basis !== "manual") {
+      toast.error(
+        "Holiday balance requires review before settlement. Possible carry-over duplication detected.",
+      );
       return;
     }
     if (mismatch.hasMismatch && !mismatchAck) {
