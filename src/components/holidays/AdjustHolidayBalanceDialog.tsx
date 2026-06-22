@@ -261,8 +261,41 @@ export function AdjustHolidayBalanceDialog({
             <span>This adjustment will be logged in the audit trail and cannot be undone. Create a reverse adjustment if needed.</span>
           </div>
 
+          {isLargeAdjustment && (
+            <div className="space-y-2 p-2 rounded bg-destructive/10 border border-destructive/30 text-xs">
+              <p className="font-semibold text-destructive">Large correction ({formatHours(Math.abs(hoursNum))} h &gt; 20 h)</p>
+              <p className="text-muted-foreground">Detailed note (min 10 chars) and explicit confirmation required.</p>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={largeConfirmed} onChange={e => setLargeConfirmed(e.target.checked)} />
+                <span>I confirm this large correction is correct and authorised.</span>
+              </label>
+            </div>
+          )}
+
+          {duplicateMatch && (
+            <div className="space-y-2 p-2 rounded bg-warning/10 border border-warning/30 text-xs">
+              <p className="font-semibold">Possible duplicate</p>
+              <p className="text-muted-foreground">
+                Matches existing holiday-taken entry on {duplicateMatch.entry_date} ({formatHours(duplicateMatch.hours)} h).
+                If this correction is meant to reverse that entry, link it in notes.
+              </p>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={duplicateAck} onChange={e => setDuplicateAck(e.target.checked)} />
+                <span>I have reviewed and acknowledge the duplicate risk.</span>
+              </label>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={checkDuplicate}
+              disabled={!hoursNum}
+            >
+              Check for duplicates
+            </Button>
             <Button type="submit" disabled={!hours || !reason}>
               Save Adjustment
             </Button>
