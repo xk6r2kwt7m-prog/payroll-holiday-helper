@@ -281,6 +281,7 @@ Deno.serve(async (req) => {
         const { error: entryErr } = await supabase
           .from("payroll_entries")
           .insert({
+            tenant_id: tenantId,
             payroll_period_id: periodId,
             employee_id: empId,
             hourly_rate: entry.hourly_rate,
