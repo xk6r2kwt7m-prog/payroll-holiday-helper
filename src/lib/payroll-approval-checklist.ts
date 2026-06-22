@@ -72,7 +72,13 @@ export interface ApprovalChecklistResult {
 export function buildApprovalChecklist(
   input: ApprovalChecklistInput,
 ): ApprovalChecklistResult {
-  const { entries, manualAdjustmentsByEntryId } = input;
+  const {
+    entries,
+    manualAdjustmentsByEntryId,
+    nmwOverrideEmployeeIds,
+    scIneligibleEntryIds,
+    scOverrideNoteEntryIds,
+  } = input;
   const isAlreadyApproved = input.period_status === "approved";
   const items: ChecklistItem[] = [];
 
