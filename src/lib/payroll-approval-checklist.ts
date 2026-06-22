@@ -201,6 +201,43 @@ export function buildApprovalChecklist(
         ),
   );
 
+  // G4 — Service charge paid to SC-ineligible employees
+  const scIneligible = scIneligibleEntryIds ?? new Set<string>();
+  const scOverrideNotes = scOverrideNoteEntryIds ?? new Set<string>();
+  const scIneligibleAll = entries.filter(
+    (e) => scIneligible.has(e.entry_id) && e.actual_service_charge_paid > 0,
+  );
+  const scIneligibleBlocking = scIneligibleAll.filter(
+    (e) => !scOverrideNotes.has(e.entry_id),
+  );
+  const scIneligibleOverridden = scIneligibleAll.filter((e) =>
+    scOverrideNotes.has(e.entry_id),
+  );
+  items.push(
+    scIneligibleBlocking.length > 0
+      ? blockItem(
+          "sc_paid_to_ineligible",
+          "Service charge paid to ineligible employees",
+          `${scIneligibleBlocking.length} entr${scIneligibleBlocking.length === 1 ? "y pays" : "ies pay"} service charge to an SC-ineligible employee with no per-line override note. Either remove the SC, mark the employee eligible, or attach an override note before approval.`,
+          scIneligibleBlocking,
+        )
+      : passItem(
+          "sc_paid_to_ineligible",
+          "No SC paid to ineligible employees",
+          "Every service-charge payment goes to an SC-eligible employee, or has an explicit per-line override note.",
+        ),
+  );
+  if (scIneligibleOverridden.length > 0) {
+    items.push(
+      warnItem(
+        "sc_eligibility_override_in_use",
+        "Service-charge eligibility overrides in use",
+        `${scIneligibleOverridden.length} SC payment${scIneligibleOverridden.length === 1 ? "" : "s"} to an ineligible employee carry an explicit per-line override note. Acknowledge before approval.`,
+        scIneligibleOverridden,
+      ),
+    );
+  }
+
   // --- warning checks (require acknowledgement) ----------------------------
 
   const fallback = entries.filter((e) => e.terms_source === "profile_fallback");
