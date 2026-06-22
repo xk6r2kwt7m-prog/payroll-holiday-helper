@@ -221,6 +221,13 @@ export function InvestigateLedgerDialog({
   });
   const approvedImpact = hasApprovedPeriodImpact(issues);
 
+  const accrualGaps = findMissingAccrualEntries({
+    leaveYear: yr,
+    ledger,
+    payrollEntries: payrollEntriesForYear,
+  });
+  const totalGapHours = accrualGaps.reduce((s, g) => s + g.expectedAccrual, 0);
+
   // running balance for the table
   let running = 0;
   const rows = ledger.map((e) => {
