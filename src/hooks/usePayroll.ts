@@ -71,6 +71,7 @@ export function usePayrollEntries(periodId?: string) {
             sort_code,
             ni_number,
             date_of_birth,
+            service_charge_eligible,
             passport_no,
             sharing_code,
             settlement_status,
