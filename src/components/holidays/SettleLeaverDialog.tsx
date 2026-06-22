@@ -281,7 +281,7 @@ export function SettleLeaverDialog() {
       toast.error("Please approve the settlement before recording");
       return;
     }
-    if (carryOverDuplicationDetected && basis !== "manual") {
+    if (carryOverDuplicationDetected) {
       toast.error(
         "Holiday balance requires review before settlement. Possible carry-over duplication detected.",
       );
