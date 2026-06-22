@@ -110,11 +110,13 @@ describe("import-historical-payroll — patched contract", () => {
       "holiday_payments",
       "holiday_ledger",
     ]) {
-      const idx = importFnSrc.indexOf(`from("${table}")`);
-      expect(idx, `expected from("${table}")`).toBeGreaterThan(0);
-      // Look at the next 600 chars after this `.from(...).insert` for tenant_id
-      const slice = importFnSrc.slice(idx, idx + 600);
-      expect(slice, `${table} insert must set tenant_id`).toMatch(/tenant_id:\s*tenantId/);
+      // Match a `.from("<table>") ... .insert({ ... })` block and assert
+      // tenant_id is present inside it. The cache-priming SELECTs on
+      // `employees` are intentionally skipped by anchoring on `.insert(`.
+      const pattern = new RegExp(
+        `from\\([\\"\\']${table}[\\"\\']\\)[^]*?\\.insert\\(\\s*\\{[^}]*tenant_id:\\s*tenantId`,
+      );
+      expect(importFnSrc, `${table} insert must set tenant_id`).toMatch(pattern);
     }
   });
 });
