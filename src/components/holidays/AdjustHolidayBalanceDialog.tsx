@@ -51,18 +51,52 @@ export function AdjustHolidayBalanceDialog({
   const [hours, setHours] = useState("");
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
+  const [largeConfirmed, setLargeConfirmed] = useState(false);
+  const [duplicateAck, setDuplicateAck] = useState(false);
+  const [duplicateMatch, setDuplicateMatch] = useState<null | { id: string; entry_date: string; hours: number }>(null);
   const queryClient = useQueryClient();
 
   const hoursNum = parseFloat(hours) || 0;
+  const isLargeAdjustment = Math.abs(hoursNum) > 20;
 
   const previewAccrued = adjustmentType === "accrued" ? currentAccrued + hoursNum : currentAccrued;
   const previewTaken = adjustmentType === "taken" ? currentTaken + hoursNum : currentTaken;
   const previewBalance = previewAccrued - previewTaken;
 
+  const checkDuplicate = async () => {
+    if (!hoursNum) {
+      setDuplicateMatch(null);
+      return null;
+    }
+    const { data } = await supabase
+      .from("holiday_ledger")
+      .select("id, entry_date, hours")
+      .eq("employee_id", employeeId)
+      .eq("entry_type", "holiday_taken")
+      .gte("entry_date", `${year}-01-01`)
+      .lte("entry_date", `${year}-12-31`);
+    const match = (data ?? []).find((r: any) => Math.abs(Number(r.hours)) === Math.abs(hoursNum));
+    setDuplicateMatch(match ? { id: match.id, entry_date: match.entry_date, hours: Number(match.hours) } : null);
+    return match ?? null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hours || !reason) {
       toast.error("Hours and reason are required");
+      return;
+    }
+    if (isLargeAdjustment && !largeConfirmed) {
+      toast.error("Large corrections (>20h) require explicit confirmation");
+      return;
+    }
+    if (isLargeAdjustment && (!notes || notes.trim().length < 10)) {
+      toast.error("Large corrections require a detailed note (min 10 chars)");
+      return;
+    }
+    const dup = await checkDuplicate();
+    if (dup && !duplicateAck) {
+      toast.error("Magnitude matches an existing holiday-taken entry — please review and tick acknowledgement");
       return;
     }
 
@@ -96,6 +130,9 @@ export function AdjustHolidayBalanceDialog({
     setHours("");
     setReason("");
     setNotes("");
+    setLargeConfirmed(false);
+    setDuplicateAck(false);
+    setDuplicateMatch(null);
   };
 
   return (
@@ -224,8 +261,41 @@ export function AdjustHolidayBalanceDialog({
             <span>This adjustment will be logged in the audit trail and cannot be undone. Create a reverse adjustment if needed.</span>
           </div>
 
+          {isLargeAdjustment && (
+            <div className="space-y-2 p-2 rounded bg-destructive/10 border border-destructive/30 text-xs">
+              <p className="font-semibold text-destructive">Large correction ({formatHours(Math.abs(hoursNum))} h &gt; 20 h)</p>
+              <p className="text-muted-foreground">Detailed note (min 10 chars) and explicit confirmation required.</p>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={largeConfirmed} onChange={e => setLargeConfirmed(e.target.checked)} />
+                <span>I confirm this large correction is correct and authorised.</span>
+              </label>
+            </div>
+          )}
+
+          {duplicateMatch && (
+            <div className="space-y-2 p-2 rounded bg-warning/10 border border-warning/30 text-xs">
+              <p className="font-semibold">Possible duplicate</p>
+              <p className="text-muted-foreground">
+                Matches existing holiday-taken entry on {duplicateMatch.entry_date} ({formatHours(duplicateMatch.hours)} h).
+                If this correction is meant to reverse that entry, link it in notes.
+              </p>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={duplicateAck} onChange={e => setDuplicateAck(e.target.checked)} />
+                <span>I have reviewed and acknowledge the duplicate risk.</span>
+              </label>
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={checkDuplicate}
+              disabled={!hoursNum}
+            >
+              Check for duplicates
+            </Button>
             <Button type="submit" disabled={!hours || !reason}>
               Save Adjustment
             </Button>
