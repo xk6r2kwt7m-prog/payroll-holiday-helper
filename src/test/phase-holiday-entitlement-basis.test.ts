@@ -146,10 +146,13 @@ describe("holiday-entitlement-basis", () => {
       expect(rows).toHaveLength(4);
       const legacy = rows.find((r) => r.source === "holiday_tab_legacy")!;
       const ledger = rows.find((r) => r.source === "holiday_ledger")!;
-      expect(legacy.accrued).toBeCloseTo(34.16);
+      // Legacy now scopes to APPROVED periods only (3.45 + 0 + 6.00 = 9.45)
+      // — pending / draft periods are previews, not committed accruals.
+      expect(legacy.accrued).toBeCloseTo(9.45);
       expect(legacy.taken).toBe(0); // no 2026 payments
-      expect(legacy.balance).toBeCloseTo(216.21);
+      expect(legacy.balance).toBeCloseTo(191.5);
       expect(ledger.balance).toBeCloseTo(-1.5);
+
 
       const m = detectMismatch(rows);
       expect(m.hasMismatch).toBe(true);
