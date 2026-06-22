@@ -362,6 +362,16 @@ export function EditablePayrollTable({
   const confirmAdjustmentNote = async () => {
     if (!pendingSave) return;
     const { entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus } = pendingSave;
+
+    // G3 — non-empty note required when entry has 0 hours and a non-zero pay value
+    const totalPayValue =
+      hourlyRate * hours + serviceCharge * hours + perfBonus + specBonus;
+    if (hours === 0 && totalPayValue !== 0 && !adjustmentNote.trim()) {
+      toast.error(
+        "A note is required when posting a non-zero amount to a zero-hour entry. Explain the reason (e.g. bonus, retro pay, correction).",
+      );
+      return;
+    }
     setNoteDialogOpen(false);
 
     // Record structured adjustment audit entries

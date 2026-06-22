@@ -221,6 +221,21 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
     if (!formData.forename.trim()) validationErrors.push("First name is required");
     if (!formData.surname.trim()) validationErrors.push("Surname is required");
 
+    // G2 — DOB sanity gate (must mirror the DB trigger)
+    if (formData.date_of_birth) {
+      const dob = new Date(formData.date_of_birth);
+      const today = new Date();
+      const minAdult = new Date(today);
+      minAdult.setFullYear(today.getFullYear() - 14);
+      if (isNaN(dob.getTime())) {
+        validationErrors.push("Date of birth is not a valid date");
+      } else if (dob > today) {
+        validationErrors.push("Date of birth cannot be in the future");
+      } else if (dob > minAdult) {
+        validationErrors.push("Date of birth must be at least 14 years ago — please check the year");
+      }
+    }
+
     // For editing existing employees, hourly rate is always required
     // For new starters, default to 0 if not provided (payroll readiness will flag it)
     if (!isNewEmployee && (!formData.hourly_rate || isNaN(parseFloat(formData.hourly_rate)))) {

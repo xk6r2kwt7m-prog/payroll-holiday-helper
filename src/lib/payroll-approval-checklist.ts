@@ -37,6 +37,24 @@ export interface ApprovalChecklistInput {
   entries: PayrollEntryReport[];
   /** Optional manual-adjustment lookup keyed by payroll_entry_id. */
   manualAdjustmentsByEntryId?: Map<string, number>;
+  /**
+   * G1 — employee_ids with an authorised NMW override on file
+   * (`contract_minimum_wage_overrides` or `payroll_nmw_audit.override_reason`).
+   * NMW failures for these employees do not block approval, but remain visible
+   * as a warning.
+   */
+  nmwOverrideEmployeeIds?: Set<string>;
+  /**
+   * G4 — entry_ids paying service charge that belong to an SC-ineligible
+   * employee (`employees.service_charge_eligible = false`).
+   */
+  scIneligibleEntryIds?: Set<string>;
+  /**
+   * G4 — entry_ids that carry an explicit per-line SC-eligibility override
+   * note. Without an override note, an SC-ineligible-paid entry blocks
+   * approval.
+   */
+  scOverrideNoteEntryIds?: Set<string>;
 }
 
 export interface ApprovalChecklistResult {
@@ -54,7 +72,13 @@ export interface ApprovalChecklistResult {
 export function buildApprovalChecklist(
   input: ApprovalChecklistInput,
 ): ApprovalChecklistResult {
-  const { entries, manualAdjustmentsByEntryId } = input;
+  const {
+    entries,
+    manualAdjustmentsByEntryId,
+    nmwOverrideEmployeeIds,
+    scIneligibleEntryIds,
+    scOverrideNoteEntryIds,
+  } = input;
   const isAlreadyApproved = input.period_status === "approved";
   const items: ChecklistItem[] = [];
 
@@ -74,21 +98,34 @@ export function buildApprovalChecklist(
     });
   }
 
-  const nmwRisks = entries.filter((e) => e.nmw.status === "non_compliant");
+  const nmwAll = entries.filter((e) => e.nmw.status === "non_compliant");
+  const overrides = nmwOverrideEmployeeIds ?? new Set<string>();
+  const nmwBlocking = nmwAll.filter((e) => !overrides.has(e.employee_id));
+  const nmwOverridden = nmwAll.filter((e) => overrides.has(e.employee_id));
   items.push(
-    nmwRisks.length > 0
+    nmwBlocking.length > 0
       ? blockItem(
           "nmw_non_compliant",
           "Entries below National Minimum Wage",
-          `${nmwRisks.length} entr${nmwRisks.length === 1 ? "y is" : "ies are"} below the legal NMW base rate. Service charge cannot be used to satisfy NMW.`,
-          nmwRisks,
+          `${nmwBlocking.length} entr${nmwBlocking.length === 1 ? "y is" : "ies are"} below the legal NMW base rate with no authorised override on file. Service charge cannot be used to satisfy NMW. Add a contract minimum-wage override row or correct the rate before approval.`,
+          nmwBlocking,
         )
       : passItem(
           "nmw_non_compliant",
           "All entries meet National Minimum Wage",
-          "Base hourly pay meets or exceeds the legal NMW rate. Service charge is correctly excluded.",
+          "Base hourly pay meets NMW, or a documented override is on file. Service charge is correctly excluded.",
         ),
   );
+  if (nmwOverridden.length > 0) {
+    items.push(
+      warnItem(
+        "nmw_override_in_use",
+        "NMW overrides are in use",
+        `${nmwOverridden.length} entr${nmwOverridden.length === 1 ? "y has" : "ies have"} a sub-NMW rate covered by an authorised override row. Acknowledge before approval.`,
+        nmwOverridden,
+      ),
+    );
+  }
 
   const missingRate = entries.filter((e) => e.hours > 0 && e.base_pay <= 0);
   items.push(
@@ -163,6 +200,43 @@ export function buildApprovalChecklist(
           "Base rates meet NMW independently of any service-charge supplement.",
         ),
   );
+
+  // G4 — Service charge paid to SC-ineligible employees
+  const scIneligible = scIneligibleEntryIds ?? new Set<string>();
+  const scOverrideNotes = scOverrideNoteEntryIds ?? new Set<string>();
+  const scIneligibleAll = entries.filter(
+    (e) => scIneligible.has(e.entry_id) && e.actual_service_charge_paid > 0,
+  );
+  const scIneligibleBlocking = scIneligibleAll.filter(
+    (e) => !scOverrideNotes.has(e.entry_id),
+  );
+  const scIneligibleOverridden = scIneligibleAll.filter((e) =>
+    scOverrideNotes.has(e.entry_id),
+  );
+  items.push(
+    scIneligibleBlocking.length > 0
+      ? blockItem(
+          "sc_paid_to_ineligible",
+          "Service charge paid to ineligible employees",
+          `${scIneligibleBlocking.length} entr${scIneligibleBlocking.length === 1 ? "y pays" : "ies pay"} service charge to an SC-ineligible employee with no per-line override note. Either remove the SC, mark the employee eligible, or attach an override note before approval.`,
+          scIneligibleBlocking,
+        )
+      : passItem(
+          "sc_paid_to_ineligible",
+          "No SC paid to ineligible employees",
+          "Every service-charge payment goes to an SC-eligible employee, or has an explicit per-line override note.",
+        ),
+  );
+  if (scIneligibleOverridden.length > 0) {
+    items.push(
+      warnItem(
+        "sc_eligibility_override_in_use",
+        "Service-charge eligibility overrides in use",
+        `${scIneligibleOverridden.length} SC payment${scIneligibleOverridden.length === 1 ? "" : "s"} to an ineligible employee carry an explicit per-line override note. Acknowledge before approval.`,
+        scIneligibleOverridden,
+      ),
+    );
+  }
 
   // --- warning checks (require acknowledgement) ----------------------------
 
