@@ -71,6 +71,13 @@ export interface BasisResult {
   /** Currency value if there is a known rate; otherwise null. */
   balanceAmount: number | null;
   notes: string[];
+  /**
+   * True when the ledger contains BOTH detailed prior-year accrual/taken
+   * rows AND a `carry_over_in` row that already summarises them. Settle
+   * Leaver MUST block in this case — the raw sum would double-count the
+   * prior year.
+   */
+  carryOverDuplicationDetected?: boolean;
 }
 
 const yearStartOf = (year: number) => `${year}-01-01`;
