@@ -37,6 +37,24 @@ export interface ApprovalChecklistInput {
   entries: PayrollEntryReport[];
   /** Optional manual-adjustment lookup keyed by payroll_entry_id. */
   manualAdjustmentsByEntryId?: Map<string, number>;
+  /**
+   * G1 — employee_ids with an authorised NMW override on file
+   * (`contract_minimum_wage_overrides` or `payroll_nmw_audit.override_reason`).
+   * NMW failures for these employees do not block approval, but remain visible
+   * as a warning.
+   */
+  nmwOverrideEmployeeIds?: Set<string>;
+  /**
+   * G4 — entry_ids paying service charge that belong to an SC-ineligible
+   * employee (`employees.service_charge_eligible = false`).
+   */
+  scIneligibleEntryIds?: Set<string>;
+  /**
+   * G4 — entry_ids that carry an explicit per-line SC-eligibility override
+   * note. Without an override note, an SC-ineligible-paid entry blocks
+   * approval.
+   */
+  scOverrideNoteEntryIds?: Set<string>;
 }
 
 export interface ApprovalChecklistResult {
