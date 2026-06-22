@@ -146,10 +146,13 @@ describe("holiday-entitlement-basis", () => {
       expect(rows).toHaveLength(4);
       const legacy = rows.find((r) => r.source === "holiday_tab_legacy")!;
       const ledger = rows.find((r) => r.source === "holiday_ledger")!;
-      expect(legacy.accrued).toBeCloseTo(34.16);
+      // Legacy now scopes to APPROVED periods only (3.45 + 0 + 6.00 = 9.45)
+      // — pending / draft periods are previews, not committed accruals.
+      expect(legacy.accrued).toBeCloseTo(9.45);
       expect(legacy.taken).toBe(0); // no 2026 payments
-      expect(legacy.balance).toBeCloseTo(216.21);
+      expect(legacy.balance).toBeCloseTo(191.5);
       expect(ledger.balance).toBeCloseTo(-1.5);
+
 
       const m = detectMismatch(rows);
       expect(m.hasMismatch).toBe(true);
@@ -184,18 +187,20 @@ describe("holiday-entitlement-basis", () => {
   });
 
   describe("findMissingAccrualEntries", () => {
-    it("flags Kazumi's 4 missing 2026 accrual entries", () => {
+    it("flags Kazumi's missing APPROVED 2026 accrual entries only", () => {
       const gaps = findMissingAccrualEntries({
         leaveYear: 2026,
         ledger: KAZUMI_LEDGER,
         payrollEntries: KAZUMI_ENTRIES,
       });
-      // pe-feb is in ledger; pe-mar has 0h accrual → skipped; others are gaps
+      // pe-feb is in ledger; pe-mar has 0h → skipped; pe-may pending & pe-jun
+      // draft are not yet committed; only pe-apr (approved, missing) is a gap.
       const ids = gaps.map((g) => g.payrollEntryId).sort();
-      expect(ids).toEqual(["pe-apr", "pe-jun", "pe-may"]);
+      expect(ids).toEqual(["pe-apr"]);
       const totalH = gaps.reduce((s, g) => s + g.expectedAccrual, 0);
-      expect(totalH).toBeCloseTo(30.71);
+      expect(totalH).toBeCloseTo(6.0);
     });
+
 
     it("returns empty when ledger is fully aligned", () => {
       const ledger: LedgerRow[] = KAZUMI_ENTRIES.filter((e) => e.holiday_accrued_hours > 0).map(

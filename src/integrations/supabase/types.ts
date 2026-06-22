@@ -7549,6 +7549,10 @@ export type Database = {
         Args: { hours_worked: number }
         Returns: number
       }
+      ensure_accrual_ledger_for_entry: {
+        Args: { _entry_id: string }
+        Returns: undefined
+      }
       expire_talent_credits: { Args: never; Returns: Json }
       finalise_talent_purchase: {
         Args: { _actor_id?: string; _new_status: string; _purchase_id: string }
