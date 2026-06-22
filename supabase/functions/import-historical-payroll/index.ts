@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { periods } = await req.json();
+    const { periods, tenantId, importedBy } = await req.json();
 
     if (!periods || !Array.isArray(periods)) {
       return new Response(JSON.stringify({ error: "periods array required" }), {
@@ -139,11 +139,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cache employee lookups
+    if (!tenantId || typeof tenantId !== "string") {
+      return new Response(
+        JSON.stringify({
+          error:
+            "tenantId is required. Historical imports must be scoped to a tenant to preserve isolation and audit trails.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Cache employee lookups — scoped to the requested tenant
     const { data: employees } = await supabase
       .from("employees")
-      .select("id, forename, surname, department");
-    
+      .select("id, forename, surname, department")
+      .eq("tenant_id", tenantId);
+
     const empCache = new Map<string, string>();
     for (const emp of employees || []) {
       const key = `${emp.forename.toLowerCase()}|${emp.surname.toLowerCase()}`;
@@ -154,6 +168,8 @@ Deno.serve(async (req) => {
       periodsCreated: 0,
       entriesCreated: 0,
       holidaysCreated: 0,
+      ledgerRowsCreated: 0,
+      ledgerDuplicatesSkipped: 0,
       employeesCreated: 0,
       unmatchedEntries: [] as string[],
       unmatchedHolidays: [] as string[],
@@ -195,6 +211,7 @@ Deno.serve(async (req) => {
       const { data: newEmp, error: empErr } = await supabase
         .from("employees")
         .insert({
+          tenant_id: tenantId,
           forename: lookupForename.split(" ")[0] || lookupForename,
           surname: lookupSurname || "Unknown",
           department: dept,
@@ -219,6 +236,7 @@ Deno.serve(async (req) => {
       const { data: pp, error: ppErr } = await supabase
         .from("payroll_periods")
         .insert({
+          tenant_id: tenantId,
           period_name: `${period.period_name} [Historical]`,
           start_date: period.start_date,
           end_date: period.end_date,
@@ -263,6 +281,7 @@ Deno.serve(async (req) => {
         const { error: entryErr } = await supabase
           .from("payroll_entries")
           .insert({
+            tenant_id: tenantId,
             payroll_period_id: periodId,
             employee_id: empId,
             hourly_rate: entry.hourly_rate,
@@ -302,10 +321,12 @@ Deno.serve(async (req) => {
         const endDate = new Date(period.end_date);
         const midDate = new Date((startDate.getTime() + endDate.getTime()) / 2);
         const holidayDate = midDate.toISOString().split("T")[0];
+        const leaveYearStart = `${new Date(holidayDate).getUTCFullYear()}-01-01`;
 
-        const { error: holErr } = await supabase
+        const { data: holRow, error: holErr } = await supabase
           .from("holiday_payments")
           .insert({
+            tenant_id: tenantId,
             payroll_period_id: periodId,
             employee_id: empId,
             employee_name: hol.employee_name,
@@ -313,14 +334,82 @@ Deno.serve(async (req) => {
             hours: hol.hours,
             total: hol.total,
             holiday_taken_date: holidayDate,
+            leave_year_start: leaveYearStart,
             notes: `[Historical] ${hol.status || ""}`.trim(),
-          });
+          })
+          .select("id")
+          .single();
 
         if (holErr) {
           results.errors.push(`Holiday error for ${hol.employee_name}: ${holErr.message}`);
-        } else {
-          results.holidaysCreated++;
+          continue;
         }
+
+        results.holidaysCreated++;
+
+        // Write the matching holiday_ledger holiday_taken row when we
+        // have a valid employee. The unique index uq_holiday_ledger_source
+        // (source_table, source_id, entry_type) blocks duplicates if this
+        // import is replayed.
+        if (empId && holRow?.id) {
+          const hoursValue = -Math.abs(Number(hol.hours || 0));
+          const amountValue =
+            hol.total != null ? -Math.abs(Number(hol.total)) : null;
+
+          const { error: ledgerErr } = await supabase
+            .from("holiday_ledger")
+            .insert({
+              tenant_id: tenantId,
+              employee_id: empId,
+              leave_year_start: leaveYearStart,
+              entry_date: holidayDate,
+              entry_type: "holiday_taken",
+              hours: hoursValue,
+              amount: amountValue,
+              source_table: "holiday_payments",
+              source_id: holRow.id,
+              notes: `[Historical import] Holiday taken: ${Math.abs(Number(hol.hours || 0))}h`,
+              created_by: importedBy || null,
+            });
+
+          if (ledgerErr) {
+            const msg = ledgerErr.message || "";
+            const isDuplicate =
+              ledgerErr.code === "23505" ||
+              msg.toLowerCase().includes("duplicate") ||
+              msg.toLowerCase().includes("unique");
+            if (isDuplicate) {
+              results.ledgerDuplicatesSkipped++;
+            } else {
+              results.errors.push(
+                `Ledger error for ${hol.employee_name}: ${msg}`,
+              );
+            }
+          } else {
+            results.ledgerRowsCreated++;
+          }
+        }
+
+        // Audit trail — non-silent record of every imported payment
+        await supabase.from("audit_log").insert({
+          tenant_id: tenantId,
+          user_id: importedBy || null,
+          action: "insert",
+          table_name: "holiday_payments",
+          record_id: holRow?.id ?? null,
+          new_data: {
+            source: "import-historical-payroll",
+            employee_name: hol.employee_name,
+            employee_id: empId,
+            payroll_period_id: periodId,
+            leave_year_start: leaveYearStart,
+            holiday_taken_date: holidayDate,
+            hours: hol.hours,
+            rate: hol.rate,
+            total: hol.total,
+            ledger_linked: !!empId,
+          },
+        });
       }
     }
 
