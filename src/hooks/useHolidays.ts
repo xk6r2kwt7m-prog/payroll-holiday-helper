@@ -615,6 +615,139 @@ export function useReverseOrphanLedgerEntry() {
   });
 }
 
+/**
+ * Backfill missing accrual ledger entries for a single employee+leave year.
+ * INSERT-only, admin-gated, skips entries already present in the ledger.
+ */
+export function useBackfillMissingAccruals() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+
+  return useMutation({
+    mutationFn: async ({
+      employeeId,
+      leaveYear,
+    }: {
+      employeeId: string;
+      leaveYear: number;
+    }) => {
+      await assertPermission("approve_holidays", tenantId!);
+
+      const { data: entries, error: entriesErr } = await supabase
+        .from("payroll_entries")
+        .select("id, payroll_period_id, holiday_accrued_hours, payroll_periods(start_date, end_date, period_name, status)")
+        .eq("employee_id", employeeId)
+        .eq("tenant_id", tenantId!);
+      if (entriesErr) throw entriesErr;
+
+      const relevant = (entries ?? []).filter((e: any) => {
+        const start = e.payroll_periods?.start_date;
+        if (!start) return false;
+        if (new Date(start).getUTCFullYear() !== leaveYear) return false;
+        return Number(e.holiday_accrued_hours || 0) > 0;
+      });
+
+      if (relevant.length === 0) return { inserted: 0, skipped: 0 };
+
+      const { data: existing, error: existingErr } = await supabase
+        .from("holiday_ledger")
+        .select("source_id")
+        .eq("employee_id", employeeId)
+        .eq("tenant_id", tenantId!)
+        .eq("entry_type", "accrual")
+        .eq("source_table", "payroll_entries");
+      if (existingErr) throw existingErr;
+
+      const presentIds = new Set((existing ?? []).map((r: any) => r.source_id).filter(Boolean));
+      const toInsert = relevant.filter((e: any) => !presentIds.has(e.id));
+
+      if (toInsert.length === 0) return { inserted: 0, skipped: relevant.length };
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const leaveYearStart = `${leaveYear}-01-01`;
+
+      const rows = toInsert.map((e: any) => ({
+        employee_id: employeeId,
+        tenant_id: tenantId!,
+        leave_year_start: leaveYearStart,
+        entry_date: e.payroll_periods.end_date || e.payroll_periods.start_date,
+        entry_type: "accrual" as const,
+        hours: Number(e.holiday_accrued_hours),
+        amount: null,
+        source_table: "payroll_entries",
+        source_id: e.id,
+        notes: `Backfill missing accrual from ${e.payroll_periods.period_name || "payroll period"} [Settle Leaver flow]`,
+        created_by: user?.id ?? null,
+      }));
+
+      const { error: insErr } = await supabase.from("holiday_ledger").insert(rows);
+      if (insErr) throw insErr;
+
+      return { inserted: rows.length, skipped: relevant.length - rows.length };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["holiday_ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_balances", tenantId] });
+    },
+  });
+}
+
+/**
+ * Insert an explicit manual_adjustment ledger row (Settle Leaver basis D).
+ * INSERT-only, admin-gated, requires reason.
+ */
+export function useInsertLedgerManualAdjustment() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+
+  return useMutation({
+    mutationFn: async (args: {
+      employeeId: string;
+      leaveYear: number;
+      hours: number;
+      amount: number | null;
+      reason: string;
+      note: string;
+    }) => {
+      await assertPermission("approve_holidays", tenantId!);
+      if (!args.reason || args.reason.trim().length === 0) {
+        throw new Error("Reason is required for manual verified adjustments.");
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      const leaveYearStart = `${args.leaveYear}-01-01`;
+      const noteParts = [
+        "Settle Leaver — manual verified adjustment",
+        `reason: ${args.reason.trim()}`,
+      ];
+      if (args.note && args.note.trim().length > 0) {
+        noteParts.push(`note: ${args.note.trim()}`);
+      }
+      const { data, error } = await supabase
+        .from("holiday_ledger")
+        .insert({
+          employee_id: args.employeeId,
+          tenant_id: tenantId!,
+          leave_year_start: leaveYearStart,
+          entry_date: new Date().toISOString().slice(0, 10),
+          entry_type: "manual_adjustment",
+          hours: args.hours,
+          amount: args.amount,
+          source_table: "holiday_ledger",
+          source_id: null,
+          notes: noteParts.join(" · "),
+          created_by: user?.id ?? null,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["holiday_ledger"] });
+    },
+  });
+}
+
 // Shared helper: recalculate a payroll period's holidays_total and grand_total
 export async function recalcPayrollPeriodTotals(periodId: string) {
   // Sum all holiday payments for this period
