@@ -29,6 +29,7 @@ import { buildPayrollApprovalEvidence } from "@/lib/payroll-approval-evidence";
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
 import { buildApprovalChecklist, canApprove as canApproveChecklist } from "@/lib/payroll-approval-checklist";
 import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
+import { usePayrollApprovalGuardrails } from "@/hooks/usePayrollApprovalGuardrails";
 import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySection";
 import { PayrollSalesInput } from "@/components/payroll/PayrollSalesInput";
 import { PayrollReminders } from "@/components/payroll/PayrollReminders";
@@ -213,14 +214,30 @@ const Payroll = () => {
     return m;
   }, [payrollAdjustments]);
 
+  // G1 + G4 live data sources for the approval checklist
+  const approvalGuardrails = usePayrollApprovalGuardrails({
+    entries: entries as any[],
+    periodId: selectedPeriod?.id,
+  });
+
   const phase5Checklist = useMemo(() => {
     if (!phase5Report || !selectedPeriod) return null;
     return buildApprovalChecklist({
       period_status: selectedPeriod.status,
       entries: phase5Report.entries,
       manualAdjustmentsByEntryId,
+      nmwOverrideEmployeeIds: approvalGuardrails.nmwOverrideEmployeeIds,
+      scIneligibleEntryIds: approvalGuardrails.scIneligibleEntryIds,
+      scOverrideNoteEntryIds: approvalGuardrails.scOverrideNoteEntryIds,
     });
-  }, [phase5Report, selectedPeriod, manualAdjustmentsByEntryId]);
+  }, [
+    phase5Report,
+    selectedPeriod,
+    manualAdjustmentsByEntryId,
+    approvalGuardrails.nmwOverrideEmployeeIds,
+    approvalGuardrails.scIneligibleEntryIds,
+    approvalGuardrails.scOverrideNoteEntryIds,
+  ]);
 
   const phase5ApprovalBlock = useMemo<string | null>(() => {
     if (!phase5Checklist) return null;
