@@ -126,7 +126,7 @@ describe("Phase 2 — notes are informational, never blocking", () => {
       period_status: "draft",
       entries: [],
       manualAdjustmentsByEntryId: new Map(),
-      comparison: cmp,
+      comparisonSummary: cmp.summary,
     } as any);
 
     expect(items.find((i) => i.id === "comparison_notes_total")).toBeUndefined();
