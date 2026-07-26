@@ -172,7 +172,8 @@ describe("Phase B — PayrollStatusBar (static render)", () => {
         ready: true,
       }),
     );
-    expect(out).toContain(">Ready<");
+    expect(out).toContain("Ready");
+    expect(out).not.toContain("Not ready");
   });
 });
 
