@@ -14,6 +14,7 @@
  *     This checklist is an *additional* manager-facing safety surface.
  */
 import type { PayrollEntryReport } from "@/lib/labour-reporting";
+import type { PayrollComparisonSummary } from "@/lib/payroll-change-review";
 
 export type ChecklistStatus = "pass" | "warning" | "block";
 
@@ -55,6 +56,12 @@ export interface ApprovalChecklistInput {
    * approval.
    */
   scOverrideNoteEntryIds?: Set<string>;
+  /**
+   * Month-on-month comparison summary. When provided, adds non-blocking
+   * warning items surfacing rate/SC/hours movement vs the previous period.
+   * Never blocks approval — this is a manager-facing awareness surface.
+   */
+  comparisonSummary?: PayrollComparisonSummary | null;
 }
 
 export interface ApprovalChecklistResult {
@@ -319,6 +326,83 @@ export function buildApprovalChecklist(
           "No hour or rate overrides recorded against this period.",
         ),
   );
+
+  // --- month-on-month comparison summary (non-blocking) -------------------
+  const cmp = input.comparisonSummary;
+  if (cmp && cmp.has_previous_period) {
+    if (cmp.rate_changes > 0) {
+      items.push({
+        id: "comparison_rate_changes",
+        status: "warning",
+        blocking: false,
+        requires_ack: false,
+        title: "Pay rate changes vs previous period",
+        detail: `${cmp.rate_changes} employee${cmp.rate_changes === 1 ? "'s" : "s'"} hourly rate changed since the last period. Review before approval.`,
+        count: cmp.rate_changes,
+        affected_employee_ids: [],
+      });
+    }
+    if (cmp.service_charge_changes > 0) {
+      items.push({
+        id: "comparison_sc_changes",
+        status: "warning",
+        blocking: false,
+        requires_ack: false,
+        title: "Service charge changes vs previous period",
+        detail: `${cmp.service_charge_changes} employee${cmp.service_charge_changes === 1 ? "'s" : "s'"} service charge amount changed since the last period.`,
+        count: cmp.service_charge_changes,
+        affected_employee_ids: [],
+      });
+    }
+    if (cmp.zero_hours_with_prior_hours > 0) {
+      items.push({
+        id: "comparison_zero_hours",
+        status: "warning",
+        blocking: false,
+        requires_ack: true,
+        title: "Employees with 0.00h but had hours last period",
+        detail: `${cmp.zero_hours_with_prior_hours} employee${cmp.zero_hours_with_prior_hours === 1 ? "" : "s"} recorded 0.00h this period despite working last period. Confirm this is intentional.`,
+        count: cmp.zero_hours_with_prior_hours,
+        affected_employee_ids: [],
+      });
+    }
+    if (cmp.missing_from_timesheet > 0) {
+      items.push({
+        id: "comparison_missing_from_timesheet",
+        status: "warning",
+        blocking: false,
+        requires_ack: true,
+        title: "Employees missing from imported timesheet",
+        detail: `${cmp.missing_from_timesheet} active employee${cmp.missing_from_timesheet === 1 ? " is" : "s are"} missing from the imported timesheet. Verify before approval.`,
+        count: cmp.missing_from_timesheet,
+        affected_employee_ids: [],
+      });
+    }
+    if (cmp.large_weekly_hours_movement > 0) {
+      items.push({
+        id: "comparison_hours_movement",
+        status: "warning",
+        blocking: false,
+        requires_ack: false,
+        title: "Large weekly-hours movement",
+        detail: `${cmp.large_weekly_hours_movement} employee${cmp.large_weekly_hours_movement === 1 ? "" : "s"} moved by more than 25% on weekly-average hours (period length already normalised).`,
+        count: cmp.large_weekly_hours_movement,
+        affected_employee_ids: [],
+      });
+    }
+    if (cmp.pdf_visible_notes > 0) {
+      items.push({
+        id: "comparison_pdf_notes",
+        status: "pass",
+        blocking: false,
+        requires_ack: false,
+        title: "Notes marked for payroll PDF",
+        detail: `${cmp.pdf_visible_notes} internal note${cmp.pdf_visible_notes === 1 ? " is" : "s are"} set to appear on the payroll PDF.`,
+        count: cmp.pdf_visible_notes,
+        affected_employee_ids: [],
+      });
+    }
+  }
 
   // Approval is blocked while any block-status item is present.
   const blocking_count = items.filter((i) => i.blocking).length;

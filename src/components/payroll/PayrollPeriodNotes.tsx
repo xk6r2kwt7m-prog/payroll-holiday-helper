@@ -3,6 +3,7 @@ import { StickyNote, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Dialog,
@@ -23,6 +24,7 @@ import {
   usePayrollPeriodNotes,
   useCreatePayrollPeriodNote,
   useDeletePayrollPeriodNote,
+  useUpdatePayrollPeriodNoteVisibility,
 } from "@/hooks/usePayrollPeriodNotes";
 
 interface PayrollPeriodNotesProps {
@@ -42,10 +44,13 @@ export function PayrollPeriodNotesSection({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [noteText, setNoteText] = useState("");
+  const [category, setCategory] = useState<string>("other");
+  const [showOnPdf, setShowOnPdf] = useState(false);
 
   const { data: notes = [] } = usePayrollPeriodNotes(periodId);
   const createNote = useCreatePayrollPeriodNote();
   const deleteNote = useDeletePayrollPeriodNote();
+  const updateVisibility = useUpdatePayrollPeriodNoteVisibility();
 
   const handleCreate = async () => {
     if (!selectedEmployee || !noteText.trim()) return;
@@ -54,11 +59,15 @@ export function PayrollPeriodNotesSection({
         payroll_period_id: periodId,
         employee_id: selectedEmployee,
         note: noteText.trim(),
+        category,
+        show_on_pdf: showOnPdf,
       });
-      toast.success("Internal note added");
+      toast.success(showOnPdf ? "Note added — will appear on PDF" : "Internal note added");
       setDialogOpen(false);
       setNoteText("");
       setSelectedEmployee("");
+      setCategory("other");
+      setShowOnPdf(false);
     } catch {
       toast.error("Failed to add note");
     }
@@ -129,21 +138,42 @@ export function PayrollPeriodNotesSection({
               {notes.map((note) => (
                 <div key={note.id} className="flex items-start justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 p-2.5">
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground">{getEmployeeName(note.employee_id)}</p>
+                    <p className="text-xs font-medium text-foreground">
+                      {getEmployeeName(note.employee_id)}
+                      {note.category && (
+                        <span className="ml-2 text-[10px] font-normal text-muted-foreground uppercase tracking-wide">
+                          {note.category}
+                        </span>
+                      )}
+                      {note.show_on_pdf && (
+                        <Badge variant="outline" className="ml-2 text-[10px]">PDF</Badge>
+                      )}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{note.note}</p>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {new Date(note.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                     </p>
                   </div>
                   {isAdmin && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => handleDelete(note.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Checkbox
+                          checked={note.show_on_pdf}
+                          onCheckedChange={(v) =>
+                            updateVisibility.mutate({ id: note.id, show_on_pdf: v === true })
+                          }
+                        />
+                        Show on PDF
+                      </label>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDelete(note.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -157,7 +187,7 @@ export function PayrollPeriodNotesSection({
           <DialogHeader>
             <DialogTitle>Add Period Note</DialogTitle>
             <p className="text-xs text-muted-foreground">
-              This note belongs to <strong>{periodName}</strong> only and stays private by default. It is only included in the PDF/export when <strong>Include Period Notes</strong> is enabled in the Report Builder.
+              This note belongs to <strong>{periodName}</strong> only. It stays private unless you tick "Show on payroll PDF" — that per-note setting overrides the global Report Builder toggle.
             </p>
           </DialogHeader>
           <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
@@ -170,12 +200,33 @@ export function PayrollPeriodNotesSection({
               ))}
             </SelectContent>
           </Select>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger>
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="rate">Rate change</SelectItem>
+              <SelectItem value="service_charge">Service charge change</SelectItem>
+              <SelectItem value="timesheet">Timesheet import</SelectItem>
+              <SelectItem value="manual_adjustment">Manual adjustment</SelectItem>
+              <SelectItem value="holiday">Holiday pay</SelectItem>
+              <SelectItem value="bonus">Bonus</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
           <Textarea
             placeholder="Internal note (e.g. hours reduced by agreement, bonus arrangement)"
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             className="min-h-[80px]"
           />
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Checkbox
+              checked={showOnPdf}
+              onCheckedChange={(v) => setShowOnPdf(v === true)}
+            />
+            Show this note on payroll PDF
+          </label>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button

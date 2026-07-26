@@ -8,6 +8,8 @@ export interface PayrollPeriodNote {
   employee_id: string;
   tenant_id: string;
   note: string;
+  category: string | null;
+  show_on_pdf: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -26,7 +28,7 @@ export function usePayrollPeriodNotes(periodId?: string) {
         .eq("payroll_period_id", periodId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as PayrollPeriodNote[];
+      return (data ?? []) as unknown as PayrollPeriodNote[];
     },
     enabled: !!tenantId && !!periodId,
   });
@@ -41,12 +43,18 @@ export function useCreatePayrollPeriodNote() {
       payroll_period_id: string;
       employee_id: string;
       note: string;
+      category?: string | null;
+      show_on_pdf?: boolean;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase
         .from("payroll_period_notes")
         .insert({
-          ...params,
+          payroll_period_id: params.payroll_period_id,
+          employee_id: params.employee_id,
+          note: params.note,
+          category: params.category ?? null,
+          show_on_pdf: params.show_on_pdf ?? false,
           tenant_id: tenantId!,
           created_by: user?.id || null,
         } as any);
@@ -66,6 +74,23 @@ export function useDeletePayrollPeriodNote() {
         .from("payroll_period_notes")
         .delete()
         .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payroll_period_notes"] });
+    },
+  });
+}
+
+/** Toggle just the PDF visibility on an existing note. Does not modify text. */
+export function useUpdatePayrollPeriodNoteVisibility() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { id: string; show_on_pdf: boolean }) => {
+      const { error } = await supabase
+        .from("payroll_period_notes")
+        .update({ show_on_pdf: params.show_on_pdf } as any)
+        .eq("id", params.id);
       if (error) throw error;
     },
     onSuccess: () => {

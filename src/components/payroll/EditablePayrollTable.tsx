@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
+import { EmployeeChangeReviewDialog } from "./EmployeeChangeReviewDialog";
 import { useCreatePayrollAdjustment, usePayrollAdjustments, usePriorPeriodAdjustments } from "@/hooks/usePayrollAdjustments";
 import { useTenant } from "@/hooks/useTenant";
 import { Badge } from "@/components/ui/badge";
@@ -96,6 +97,12 @@ interface EditablePayrollTableProps {
   showServiceCharge?: boolean;
   /** Employee IDs that appeared in a prior payroll period (used to suppress "Starter" badge) */
   priorPeriodEmployeeIds?: Set<string>;
+  /** Month-on-month comparison, keyed by employee_id. Non-blocking UI only. */
+  comparisonByEmployee?: Map<string, import("@/lib/payroll-change-review").EmployeeChange>;
+  /** Human-readable label of the previous period ("May 2026"). */
+  previousPeriodLabel?: string | null;
+  /** Human-readable label of the current period ("June 2026"). */
+  periodLabel?: string | null;
 }
 
 interface EditingEntry {
@@ -115,6 +122,9 @@ export function EditablePayrollTable({
   showBonusColumn = true,
   showServiceCharge = true,
   priorPeriodEmployeeIds = new Set(),
+  comparisonByEmployee,
+  previousPeriodLabel = null,
+  periodLabel = null,
 }: EditablePayrollTableProps) {
   const { tenantId } = useTenant();
   const { data: leaveRules } = useLeaveRules();
@@ -136,6 +146,8 @@ export function EditablePayrollTable({
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<{ entry: PayrollEntry; hours: number; hourlyRate: number; serviceCharge: number; perfBonus: number; specBonus: number } | null>(null);
   const [adjustmentNote, setAdjustmentNote] = useState("");
+  const [reviewEmployeeId, setReviewEmployeeId] = useState<string | null>(null);
+
 
   const queryClient = useQueryClient();
   const createAdjustment = useCreatePayrollAdjustment();
@@ -701,6 +713,40 @@ export function EditablePayrollTable({
                           employeeId={entry.employee_id}
                           employeeName={`${emp?.forename} ${emp?.surname}`}
                         />
+                        {(() => {
+                          const cmp = comparisonByEmployee?.get(entry.employee_id);
+                          if (!cmp) return null;
+                          const hasSignal =
+                            cmp.overall_severity !== "none" ||
+                            cmp.is_new_starter ||
+                            cmp.is_leaver ||
+                            cmp.hours.zero_hours_but_had_hours ||
+                            cmp.hours.missing_from_timesheet;
+                          if (!hasSignal) return null;
+                          const tone =
+                            cmp.overall_severity === "red"
+                              ? "bg-destructive/10 text-destructive border-destructive/20"
+                              : cmp.overall_severity === "amber"
+                                ? "bg-warning/15 text-warning border-warning/30"
+                                : "bg-primary/10 text-primary border-primary/20";
+                          return (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReviewEmployeeId(entry.employee_id);
+                              }}
+                              className={cn(
+                                "ml-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium hover:opacity-80",
+                                tone,
+                              )}
+                              title="Review month-on-month changes"
+                            >
+                              <GitCompare className="h-3 w-3" />
+                              Review changes
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </TableCell>
@@ -970,6 +1016,22 @@ export function EditablePayrollTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {reviewEmployeeId && comparisonByEmployee?.get(reviewEmployeeId) && (
+        <EmployeeChangeReviewDialog
+          open={!!reviewEmployeeId}
+          onOpenChange={(v) => !v && setReviewEmployeeId(null)}
+          change={comparisonByEmployee.get(reviewEmployeeId)!}
+          employeeId={reviewEmployeeId}
+          employeeName={(() => {
+            const e = entries.find((x) => x.employee_id === reviewEmployeeId);
+            return e ? `${e.employees?.forename ?? ""} ${e.employees?.surname ?? ""}`.trim() : "";
+          })()}
+          periodId={periodId}
+          periodName={periodLabel ?? ""}
+          previousPeriodName={previousPeriodLabel ?? undefined}
+          canEdit={isAdmin}
+        />
+      )}
     </div>
   );
 }
