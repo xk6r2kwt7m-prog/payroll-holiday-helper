@@ -87,7 +87,12 @@ export interface PayrollComparisonSummary {
   leavers: number;
   large_weekly_hours_movement: number;
   large_gross_pay_movement: number;
+  /** Total payroll_period_notes for the current period. */
+  total_notes: number;
+  /** Notes flagged `show_on_pdf = true`. */
   pdf_visible_notes: number;
+  /** total_notes - pdf_visible_notes. */
+  internal_only_notes: number;
   has_previous_period: boolean;
 }
 
