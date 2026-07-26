@@ -326,6 +326,14 @@ interface PayrollReportConfig {
   showAuditFooter: boolean;
 }
 
+export interface PayrollPDFPeriodNote {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  note: string;
+  created_at: string;
+}
+
 interface PayrollPDFProps {
   period: PayrollPeriod;
   entries: PayrollEntry[];
@@ -339,6 +347,7 @@ interface PayrollPDFProps {
   logoUrl?: string;
   reportConfig?: PayrollReportConfig;
   locationData?: PayrollEntryLocation[];
+  periodNotes?: PayrollPDFPeriodNote[];
 }
 
 function fmt(amount: number): string {
