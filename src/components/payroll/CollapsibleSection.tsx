@@ -20,7 +20,7 @@ export interface CollapsibleSectionProps {
   badge?: { label: string; tone?: "neutral" | "warning" | "success" | "danger" } | null;
   defaultOpen?: boolean;
   testId?: string;
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 const toneClass: Record<string, string> = {
