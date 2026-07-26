@@ -83,7 +83,14 @@ export function PayrollReportBuilder({
 
   const periodNotes = useMemo(() => {
     const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
-    return rawPeriodNotes.map((n) => {
+    // When the global "Include Period Notes" toggle is ON, include every
+    // note. When it is OFF, still surface notes that the manager explicitly
+    // marked with `show_on_pdf = true` — per-note visibility is a manual
+    // override that must always be honoured.
+    const source = config.showNotes
+      ? rawPeriodNotes
+      : rawPeriodNotes.filter((n) => n.show_on_pdf);
+    return source.map((n) => {
       const emp: any = empById.get(n.employee_id);
       return {
         id: n.id,
@@ -93,7 +100,7 @@ export function PayrollReportBuilder({
         created_at: n.created_at,
       };
     });
-  }, [rawPeriodNotes, allEmployees]);
+  }, [rawPeriodNotes, allEmployees, config.showNotes]);
 
   const adjustments = useMemo(() => {
     const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
