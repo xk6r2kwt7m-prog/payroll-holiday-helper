@@ -222,6 +222,36 @@ const Payroll = () => {
     periodId: selectedPeriod?.id,
   });
 
+  // Month-on-month change review (read-only, non-blocking)
+  const { data: periodNotesForCmp = [] } = usePayrollPeriodNotes(selectedPeriod?.id);
+  const pdfVisibleNotesCount = useMemo(
+    () => periodNotesForCmp.filter((n: any) => n.show_on_pdf).length,
+    [periodNotesForCmp],
+  );
+  const comparison = usePayrollComparison({
+    currentPeriod: selectedPeriod
+      ? {
+          id: selectedPeriod.id,
+          start_date: selectedPeriod.start_date,
+          end_date: selectedPeriod.end_date,
+          status: selectedPeriod.status,
+        }
+      : null,
+    currentEntries: entries as any[],
+    previousPeriod: immediatePriorPeriod
+      ? {
+          id: immediatePriorPeriod.id,
+          start_date: immediatePriorPeriod.start_date,
+          end_date: immediatePriorPeriod.end_date,
+          status: immediatePriorPeriod.status,
+        }
+      : null,
+    previousEntries: priorEntries as any[],
+    manualAdjustmentsByEntryId,
+    pdfVisibleNotesCount,
+    everSeenEmployeeIds: priorPeriodEmployeeIds,
+  });
+
   const phase5Checklist = useMemo(() => {
     if (!phase5Report || !selectedPeriod) return null;
     return buildApprovalChecklist({
@@ -231,6 +261,7 @@ const Payroll = () => {
       nmwOverrideEmployeeIds: approvalGuardrails.nmwOverrideEmployeeIds,
       scIneligibleEntryIds: approvalGuardrails.scIneligibleEntryIds,
       scOverrideNoteEntryIds: approvalGuardrails.scOverrideNoteEntryIds,
+      comparisonSummary: comparison?.summary ?? null,
     });
   }, [
     phase5Report,
@@ -239,6 +270,7 @@ const Payroll = () => {
     approvalGuardrails.nmwOverrideEmployeeIds,
     approvalGuardrails.scIneligibleEntryIds,
     approvalGuardrails.scOverrideNoteEntryIds,
+    comparison,
   ]);
 
   const phase5ApprovalBlock = useMemo<string | null>(() => {
