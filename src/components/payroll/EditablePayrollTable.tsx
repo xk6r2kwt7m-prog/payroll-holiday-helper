@@ -712,13 +712,20 @@ export function EditablePayrollTable({
                         />
                         {(() => {
                           const cmp = comparisonByEmployee?.get(entry.employee_id);
-                          if (!cmp || (!cmp.has_changes && !cmp.flags.length)) return null;
+                          if (!cmp) return null;
+                          const hasSignal =
+                            cmp.overall_severity !== "none" ||
+                            cmp.is_new_starter ||
+                            cmp.is_leaver ||
+                            cmp.hours.zero_hours_alert ||
+                            cmp.hours.missing_from_timesheet;
+                          if (!hasSignal) return null;
                           const tone =
-                            cmp.severity === "high"
-                              ? "bg-warning/15 text-warning border-warning/30"
-                              : cmp.severity === "medium"
-                                ? "bg-primary/10 text-primary border-primary/20"
-                                : "bg-muted text-muted-foreground border-border";
+                            cmp.overall_severity === "red"
+                              ? "bg-destructive/10 text-destructive border-destructive/20"
+                              : cmp.overall_severity === "amber"
+                                ? "bg-warning/15 text-warning border-warning/30"
+                                : "bg-primary/10 text-primary border-primary/20";
                           return (
                             <button
                               type="button"
