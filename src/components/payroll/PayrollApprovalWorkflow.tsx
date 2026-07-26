@@ -434,7 +434,7 @@ export function PayrollApprovalWorkflow({
             <div className="flex-1 min-w-0">
               <p className="font-medium text-card-foreground text-sm">Pending Review</p>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Review all entries before approving.
+                Review all entries. Approval is completed from the readiness checklist above.
               </p>
             </div>
           </div>
@@ -456,31 +456,6 @@ export function PayrollApprovalWorkflow({
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={onReopen}>Reopen</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" disabled={isApproving || !canSubmitOrApprove} className="bg-success hover:bg-success/90 text-success-foreground w-full sm:w-auto min-h-[44px]">
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  {isApproving ? "Approving..." : "Approve & Lock"}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Approve and lock {period.period_name}?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Once approved, this payroll period will be <strong>permanently locked</strong>.
-                    No further edits can be made.
-                    <br /><br />
-                    To make changes after approval, you will need to reopen the period.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={onApprove} className="bg-success hover:bg-success/90 text-success-foreground">
-                    Approve & Lock
-                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
