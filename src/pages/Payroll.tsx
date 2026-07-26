@@ -948,9 +948,9 @@ const Payroll = () => {
           <CollapsibleSection
             title="Employment terms check"
             summary="Rate mismatches surface as review warnings. Backfill-only and missing-terms rows are informational."
-            count={termsComparison.summary?.mismatches ?? 0}
+            count={termsComparison.summary?.rate_mismatch ?? 0}
             badge={
-              (termsComparison.summary?.mismatches ?? 0) > 0
+              (termsComparison.summary?.rate_mismatch ?? 0) > 0
                 ? { label: "Mismatches", tone: "warning" }
                 : { label: "No mismatches", tone: "neutral" }
             }
