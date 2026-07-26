@@ -16,6 +16,7 @@ import { PayrollPDF } from "./PayrollPDF";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
+import { usePayrollPeriodNotes } from "@/hooks/usePayrollPeriodNotes";
 
 interface PayrollReportBuilderProps {
   open: boolean;
