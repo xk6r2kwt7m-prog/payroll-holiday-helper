@@ -111,6 +111,10 @@ interface EditablePayrollTableProps {
   previousPeriodLabel?: string | null;
   /** Human-readable label of the current period ("June 2026"). */
   periodLabel?: string | null;
+  /** Employees paid holiday in this period (used for the Holiday pay filter/badge). */
+  holidayPaidEmployeeIds?: Set<string>;
+  /** NMW status per employee ID for row badges + Issues filter. */
+  nmwStatusByEmployee?: Map<string, "compliant" | "at_risk" | "non_compliant">;
 }
 
 interface EditingEntry {
