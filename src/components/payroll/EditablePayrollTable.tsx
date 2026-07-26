@@ -717,7 +717,7 @@ export function EditablePayrollTable({
                             cmp.overall_severity !== "none" ||
                             cmp.is_new_starter ||
                             cmp.is_leaver ||
-                            cmp.hours.zero_hours_alert ||
+                            cmp.hours.zero_hours_but_had_hours ||
                             cmp.hours.missing_from_timesheet;
                           if (!hasSignal) return null;
                           const tone =
