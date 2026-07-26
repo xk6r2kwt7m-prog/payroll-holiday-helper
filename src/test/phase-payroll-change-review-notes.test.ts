@@ -158,13 +158,13 @@ describe("Phase 2 — notes do NOT affect payroll numbers", () => {
       currentEntries: [
         entry({ employee_id: "a", entry_id: "a1", hourly_rate: 13, timesheet_hours: 170 }),
         entry({ employee_id: "b", entry_id: "b1", service_charge: 80, performance_bonus: 50 }),
-      ],
+      ] as CompareEntry[],
       previousPeriod: period("p1", "2026-05-01", "2026-05-28"),
       previousEntries: [
         entry({ employee_id: "a", entry_id: "a0", hourly_rate: 12, timesheet_hours: 160 }),
         entry({ employee_id: "b", entry_id: "b0", service_charge: 50, performance_bonus: 0 }),
-      ],
-    } as const;
+      ] as CompareEntry[],
+    };
 
     const zero = buildPeriodComparison({
       ...args,
