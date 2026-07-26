@@ -24,6 +24,11 @@ import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWor
 import { PayrollApprovalChecklist } from "@/components/payroll/PayrollApprovalChecklist";
 import { PayrollApprovalEvidence } from "@/components/payroll/PayrollApprovalEvidence";
 import { buildPayrollApprovalEvidence } from "@/lib/payroll-approval-evidence";
+import { PayrollStatusBar } from "@/components/payroll/PayrollStatusBar";
+import { PayrollActionRequired } from "@/components/payroll/PayrollActionRequired";
+import { PayrollReviewAcknowledge } from "@/components/payroll/PayrollReviewAcknowledge";
+import { CollapsibleSection } from "@/components/payroll/CollapsibleSection";
+import { derivePayrollPageSeverity } from "@/lib/payroll-page-severity";
 
 
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
