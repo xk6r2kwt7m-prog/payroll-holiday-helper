@@ -771,6 +771,7 @@ export function EditablePayrollTable({
             {filteredEntries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={canEdit ? 11 : 10} className="text-center py-8 text-sm text-muted-foreground" data-testid="payroll-table-empty-filter">
+
                   No employees match this filter.
                 </TableCell>
               </TableRow>
