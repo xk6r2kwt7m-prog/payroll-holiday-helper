@@ -87,7 +87,12 @@ export interface PayrollComparisonSummary {
   leavers: number;
   large_weekly_hours_movement: number;
   large_gross_pay_movement: number;
+  /** Total payroll_period_notes for the current period. */
+  total_notes: number;
+  /** Notes flagged `show_on_pdf = true`. */
   pdf_visible_notes: number;
+  /** total_notes - pdf_visible_notes. */
+  internal_only_notes: number;
   has_previous_period: boolean;
 }
 
@@ -154,6 +159,8 @@ export interface BuildComparisonInput {
   /** Number of `payroll_period_notes` for the current period with
    *  `show_on_pdf = true`. Surfaced in the approval summary only. */
   pdfVisibleNotesCount?: number;
+  /** Total number of `payroll_period_notes` for the current period. */
+  totalNotesCount?: number;
   /** Optional set of employee_ids that appeared in ANY prior period.
    *  Used to distinguish a genuine new starter from a returning employee. */
   everSeenEmployeeIds?: Set<string>;
@@ -167,6 +174,7 @@ export function buildPeriodComparison(input: BuildComparisonInput): PayrollCompa
     previousEntries = [],
     manualAdjustmentsByEntryId,
     pdfVisibleNotesCount = 0,
+    totalNotesCount = 0,
     everSeenEmployeeIds,
   } = input;
 
@@ -349,6 +357,7 @@ export function buildPeriodComparison(input: BuildComparisonInput): PayrollCompa
   const summary = summarizeComparison(changes, {
     hasPrev,
     pdfVisibleNotesCount,
+    totalNotesCount,
   });
 
   return {
@@ -362,7 +371,7 @@ export function buildPeriodComparison(input: BuildComparisonInput): PayrollCompa
 
 export function summarizeComparison(
   changes: Map<string, EmployeeChange>,
-  opts: { hasPrev: boolean; pdfVisibleNotesCount: number },
+  opts: { hasPrev: boolean; pdfVisibleNotesCount: number; totalNotesCount?: number },
 ): PayrollComparisonSummary {
   let rate_changes = 0;
   let service_charge_changes = 0;
@@ -384,6 +393,10 @@ export function summarizeComparison(
     if (c.gross_pay.severity === "amber") large_gross_pay_movement++;
   }
 
+  const pdf_visible_notes = opts.pdfVisibleNotesCount;
+  const total_notes = Math.max(opts.totalNotesCount ?? pdf_visible_notes, pdf_visible_notes);
+  const internal_only_notes = Math.max(0, total_notes - pdf_visible_notes);
+
   return {
     rate_changes,
     service_charge_changes,
@@ -393,7 +406,9 @@ export function summarizeComparison(
     leavers,
     large_weekly_hours_movement,
     large_gross_pay_movement,
-    pdf_visible_notes: opts.pdfVisibleNotesCount,
+    total_notes,
+    pdf_visible_notes,
+    internal_only_notes,
     has_previous_period: opts.hasPrev,
   };
 }

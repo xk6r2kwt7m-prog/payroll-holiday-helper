@@ -228,6 +228,7 @@ const Payroll = () => {
     () => periodNotesForCmp.filter((n: any) => n.show_on_pdf).length,
     [periodNotesForCmp],
   );
+  const totalNotesCount = periodNotesForCmp.length;
   const comparison = usePayrollComparison({
     currentPeriod: selectedPeriod
       ? {
@@ -249,6 +250,7 @@ const Payroll = () => {
     previousEntries: priorEntries as any[],
     manualAdjustmentsByEntryId,
     pdfVisibleNotesCount,
+    totalNotesCount,
     everSeenEmployeeIds: priorPeriodEmployeeIds,
   });
 

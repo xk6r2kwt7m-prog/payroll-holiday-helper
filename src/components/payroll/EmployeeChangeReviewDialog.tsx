@@ -321,7 +321,7 @@ export function EmployeeChangeReviewDialog({
 
         {!notesEnabled && (
           <p className="text-[11px] text-muted-foreground">
-            Read-only review. Notes and PDF visibility are enabled in a later phase.
+            Read-only review.
           </p>
         )}
       </DialogContent>

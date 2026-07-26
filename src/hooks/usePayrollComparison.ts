@@ -49,6 +49,7 @@ interface Args {
   previousEntries?: RawEntry[];
   manualAdjustmentsByEntryId?: Map<string, number>;
   pdfVisibleNotesCount?: number;
+  totalNotesCount?: number;
   everSeenEmployeeIds?: Set<string>;
 }
 
@@ -66,6 +67,7 @@ export function usePayrollComparison(args: Args): PayrollComparison | null {
       ),
       manualAdjustmentsByEntryId: args.manualAdjustmentsByEntryId,
       pdfVisibleNotesCount: args.pdfVisibleNotesCount,
+      totalNotesCount: args.totalNotesCount,
       everSeenEmployeeIds: args.everSeenEmployeeIds,
     };
     return buildPeriodComparison(input);
@@ -81,6 +83,7 @@ export function usePayrollComparison(args: Args): PayrollComparison | null {
     args.previousEntries,
     args.manualAdjustmentsByEntryId,
     args.pdfVisibleNotesCount,
+    args.totalNotesCount,
     args.everSeenEmployeeIds,
   ]);
 }
