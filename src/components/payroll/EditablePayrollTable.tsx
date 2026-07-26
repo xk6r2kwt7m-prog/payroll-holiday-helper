@@ -1018,12 +1018,15 @@ export function EditablePayrollTable({
           open={!!reviewEmployeeId}
           onOpenChange={(v) => !v && setReviewEmployeeId(null)}
           change={comparisonByEmployee.get(reviewEmployeeId)!}
+          employeeId={reviewEmployeeId}
           employeeName={(() => {
             const e = entries.find((x) => x.employee_id === reviewEmployeeId);
             return e ? `${e.employees?.forename ?? ""} ${e.employees?.surname ?? ""}`.trim() : "";
           })()}
           periodId={periodId}
+          periodName={periodLabel ?? ""}
           previousPeriodName={previousPeriodLabel ?? undefined}
+          canEdit={isAdmin}
         />
       )}
     </div>
