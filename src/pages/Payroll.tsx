@@ -903,6 +903,44 @@ const Payroll = () => {
           <PayrollReviewAcknowledge items={pageSeverity.warnings} />
         )}
 
+        {/* Phase C — Payroll Table promoted to primary work surface.
+            Sits directly after the status bar, Action Required and Review &
+            Acknowledge, and above the collapsed detail sections. */}
+        {entries.length > 0 && selectedPeriod && (
+          <EditablePayrollTable
+            entries={entries as any}
+            periodId={selectedPeriod.id}
+            periodStatus={selectedPeriod.status}
+            isAdmin={isAdmin}
+            onExport={handleExport}
+            showBonusColumn={payrollPrefs?.showBonusColumn !== false}
+            showServiceCharge={payrollPrefs?.showServiceCharge !== false}
+            priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+            comparisonByEmployee={comparison?.changes}
+            previousPeriodLabel={immediatePriorPeriod?.period_name ?? null}
+            periodLabel={selectedPeriod?.period_name ?? null}
+            holidayPaidEmployeeIds={
+              new Set(
+                (holidayPayments as any[])
+                  .map((p) => p.employee_id)
+                  .filter(Boolean),
+              )
+            }
+            nmwStatusByEmployee={
+              new Map(
+                (nmw.results ?? []).map((r: any) => [
+                  r.employee_id,
+                  r.status === "non_compliant"
+                    ? "non_compliant"
+                    : r.status === "at_risk"
+                      ? "at_risk"
+                      : "compliant",
+                ]),
+              )
+            }
+          />
+        )}
+
         {/* Period-Specific Internal Notes — collapsed by default (Phase B) */}
         {selectedPeriod && entries.length > 0 && (
           <CollapsibleSection
@@ -1118,22 +1156,7 @@ const Payroll = () => {
           </div>
         )}
 
-        {/* Payroll Table */}
-        {entries.length > 0 && selectedPeriod && (
-          <EditablePayrollTable
-            entries={entries as any}
-            periodId={selectedPeriod.id}
-            periodStatus={selectedPeriod.status}
-            isAdmin={isAdmin}
-            onExport={handleExport}
-            showBonusColumn={payrollPrefs?.showBonusColumn !== false}
-            showServiceCharge={payrollPrefs?.showServiceCharge !== false}
-            priorPeriodEmployeeIds={priorPeriodEmployeeIds}
-            comparisonByEmployee={comparison?.changes}
-            previousPeriodLabel={immediatePriorPeriod?.period_name ?? null}
-            periodLabel={selectedPeriod?.period_name ?? null}
-          />
-        )}
+        {/* Phase C — payroll table has moved above the collapsed detail sections. */}
 
         {/* Report Builder Modal */}
         {selectedPeriod && (

@@ -1,5 +1,13 @@
 import { useState, useMemo } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare, Eye } from "lucide-react";
+import {
+  filterEntries,
+  computeRowBadges,
+  synthesizeZeroChange,
+  PAYROLL_TABLE_FILTERS,
+  type PayrollTableFilter,
+} from "@/lib/payroll-table-filters";
+import type { EmployeeChange } from "@/lib/payroll-change-review";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
 import { EmployeeChangeReviewDialog } from "./EmployeeChangeReviewDialog";
@@ -103,6 +111,10 @@ interface EditablePayrollTableProps {
   previousPeriodLabel?: string | null;
   /** Human-readable label of the current period ("June 2026"). */
   periodLabel?: string | null;
+  /** Employees paid holiday in this period (used for the Holiday pay filter/badge). */
+  holidayPaidEmployeeIds?: Set<string>;
+  /** NMW status per employee ID for row badges + Issues filter. */
+  nmwStatusByEmployee?: Map<string, "compliant" | "at_risk" | "non_compliant">;
 }
 
 interface EditingEntry {
@@ -125,6 +137,8 @@ export function EditablePayrollTable({
   comparisonByEmployee,
   previousPeriodLabel = null,
   periodLabel = null,
+  holidayPaidEmployeeIds,
+  nmwStatusByEmployee,
 }: EditablePayrollTableProps) {
   const { tenantId } = useTenant();
   const { data: leaveRules } = useLeaveRules();
@@ -141,6 +155,7 @@ export function EditablePayrollTable({
   const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
   const [removeEmployeeName, setRemoveEmployeeName] = useState("");
   const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "alphabetical_surname" | "department" | "status" | "hours_desc" | "hours_asc">("default");
+  const [filterMode, setFilterMode] = useState<PayrollTableFilter>("all");
 
   // Adjustment note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
@@ -202,6 +217,65 @@ export function EditablePayrollTable({
         return sorted;
     }
   }, [entries, sortMode]);
+
+  const filterCtx = useMemo(
+    () => ({
+      comparisonByEmployee,
+      adjustedEmployeeIds,
+      holidayPaidEmployeeIds,
+      nmwStatusByEmployee,
+    }),
+    [comparisonByEmployee, adjustedEmployeeIds, holidayPaidEmployeeIds, nmwStatusByEmployee],
+  );
+
+  const filteredEntries = useMemo(
+    () =>
+      filterEntries(
+        sortedEntries.map((e) => ({
+          ...e,
+          holiday_accrued_hours: e.holiday_accrued_hours ?? null,
+          adjustment_note: e.adjustment_note ?? null,
+          imported_hours: e.imported_hours ?? null,
+        })) as unknown as PayrollEntry[],
+        filterMode,
+        filterCtx,
+      ),
+    [sortedEntries, filterMode, filterCtx],
+  );
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<PayrollTableFilter, number> = {
+      all: sortedEntries.length,
+      issues: 0,
+      pay_changes: 0,
+      zero_hours: 0,
+      holiday_pay: 0,
+      manual_adjustments: 0,
+      missing_timesheet: 0,
+    };
+    for (const e of sortedEntries) {
+      const eForFilter = {
+        ...e,
+        holiday_accrued_hours: e.holiday_accrued_hours ?? null,
+        adjustment_note: e.adjustment_note ?? null,
+        imported_hours: e.imported_hours ?? null,
+      };
+      for (const f of PAYROLL_TABLE_FILTERS) {
+        if (f.id === "all") continue;
+        if (
+          filterEntries(
+            [eForFilter as unknown as PayrollEntry],
+            f.id,
+            filterCtx,
+          ).length > 0
+        ) {
+          counts[f.id]++;
+        }
+      }
+    }
+    return counts;
+  }, [sortedEntries, filterCtx]);
+
   const handleRemoveFromPeriod = async () => {
     if (!removeEntryId) return;
     try {
@@ -628,7 +702,47 @@ export function EditablePayrollTable({
           </Select>
         </div>
       </div>
-      
+
+      {/* Phase C — filter chips */}
+      <div
+        className="border-b border-border px-4 sm:px-6 py-2 flex flex-wrap gap-1.5 bg-muted/10"
+        data-testid="payroll-table-filters"
+        role="tablist"
+      >
+        {PAYROLL_TABLE_FILTERS.map((f) => {
+          const isActive = filterMode === f.id;
+          const count = filterCounts[f.id];
+          return (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              data-testid={`payroll-filter-${f.id}`}
+              onClick={() => setFilterMode(f.id)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-muted-foreground border-border hover:bg-muted/60",
+              )}
+            >
+              <span>{f.label}</span>
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0 text-[10px] leading-none",
+                  isActive
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -641,7 +755,7 @@ export function EditablePayrollTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="w-[200px]">Employee</TableHead>
+              <TableHead className="w-[220px] sticky left-0 z-10 bg-muted/30">Employee</TableHead>
               <TableHead>Dept</TableHead>
               <TableHead className="text-right">Rate</TableHead>
               <TableHead className="text-right">Service</TableHead>
@@ -650,11 +764,19 @@ export function EditablePayrollTable({
               <TableHead className="text-right">Spec Bonus</TableHead>
               <TableHead className="text-right">Holiday Accrued</TableHead>
               <TableHead className="text-right">Total Pay</TableHead>
-              {canEdit && <TableHead className="w-[100px]"></TableHead>}
+              <TableHead className="w-[100px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedEntries.map((entry) => {
+            {filteredEntries.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={canEdit ? 11 : 10} className="text-center py-8 text-sm text-muted-foreground" data-testid="payroll-table-empty-filter">
+
+                  No employees match this filter.
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {filteredEntries.map((entry) => {
               const isEditing = editingId === entry.id;
               const emp = entry.employees;
               const isSelected = selectedIds.has(entry.id);
@@ -678,7 +800,10 @@ export function EditablePayrollTable({
                       />
                     </TableCell>
                   )}
-                  <TableCell onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    className="sticky left-0 z-10 bg-card"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -745,6 +870,55 @@ export function EditablePayrollTable({
                               <GitCompare className="h-3 w-3" />
                               Review changes
                             </button>
+                          );
+                        })()}
+                        {(() => {
+                          const badges = computeRowBadges(
+                            {
+                              id: entry.id,
+                              employee_id: entry.employee_id,
+                              timesheet_hours: Number(entry.timesheet_hours),
+                              holiday_accrued_hours: entry.holiday_accrued_hours,
+                              adjustment_note: entry.adjustment_note,
+                              imported_hours: entry.imported_hours,
+                            },
+                            filterCtx,
+                          );
+                          const chips: { key: string; label: string; tone: string; testId: string }[] = [];
+                          if (badges.nmwFail)
+                            chips.push({ key: "nmw-fail", label: "NMW fail", tone: "bg-destructive/10 text-destructive border-destructive/30", testId: "row-badge-nmw-fail" });
+                          if (badges.nmwAtRisk && !badges.nmwFail)
+                            chips.push({ key: "nmw-risk", label: "NMW at risk", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-nmw-risk" });
+                          if (badges.missingTimesheet)
+                            chips.push({ key: "missing-ts", label: "Missing timesheet", tone: "bg-destructive/10 text-destructive border-destructive/30", testId: "row-badge-missing-timesheet" });
+                          if (badges.zeroHours)
+                            chips.push({ key: "zero", label: "Zero hours", tone: "bg-muted text-muted-foreground border-border", testId: "row-badge-zero-hours" });
+                          if (badges.rateChanged)
+                            chips.push({ key: "rate", label: "Rate changed", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-rate-changed" });
+                          if (badges.scChanged)
+                            chips.push({ key: "sc", label: "SC changed", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-sc-changed" });
+                          if (badges.manualAdjustment)
+                            chips.push({ key: "adj", label: "Manual adjustment", tone: "bg-primary/10 text-primary border-primary/20", testId: "row-badge-manual-adjustment" });
+                          if (badges.holidayPay)
+                            chips.push({ key: "hol", label: "Holiday pay", tone: "bg-accent/15 text-accent-foreground border-border", testId: "row-badge-holiday-pay" });
+                          if (badges.internalNote)
+                            chips.push({ key: "note", label: "Internal note", tone: "bg-muted text-muted-foreground border-border", testId: "row-badge-internal-note" });
+                          if (chips.length === 0) return null;
+                          return (
+                            <div className="flex flex-wrap gap-1 mt-1" data-testid={`row-badges-${entry.employee_id}`}>
+                              {chips.map((c) => (
+                                <span
+                                  key={c.key}
+                                  data-testid={c.testId}
+                                  className={cn(
+                                    "inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium",
+                                    c.tone,
+                                  )}
+                                >
+                                  {c.label}
+                                </span>
+                              ))}
+                            </div>
                           );
                         })()}
                       </div>
@@ -913,9 +1087,19 @@ export function EditablePayrollTable({
                       <TableCell className="text-right font-semibold">
                         {formatCurrency(Number(entry.total_pay))}
                       </TableCell>
-                      {canEdit && (
+                      {canEdit ? (
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => setReviewEmployeeId(entry.employee_id)}
+                              title="View details"
+                              data-testid={`row-details-${entry.employee_id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <Button
                               size="icon"
                               variant="ghost"
@@ -938,6 +1122,19 @@ export function EditablePayrollTable({
                             </Button>
                           </div>
                         </TableCell>
+                      ) : (
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={() => setReviewEmployeeId(entry.employee_id)}
+                            title="View details"
+                            data-testid={`row-details-${entry.employee_id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       )}
                     </>
                   )}
@@ -959,7 +1156,7 @@ export function EditablePayrollTable({
               <TableCell className="text-right font-bold text-primary">
                 {formatCurrency(totals.total)}
               </TableCell>
-              {canEdit && <TableCell />}
+              <TableCell />
             </TableRow>
           </tfoot>
         </Table>
@@ -1016,23 +1213,41 @@ export function EditablePayrollTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {reviewEmployeeId && comparisonByEmployee?.get(reviewEmployeeId) && (
-        <EmployeeChangeReviewDialog
-          open={!!reviewEmployeeId}
-          onOpenChange={(v) => !v && setReviewEmployeeId(null)}
-          change={comparisonByEmployee.get(reviewEmployeeId)!}
-          employeeId={reviewEmployeeId}
-          employeeName={(() => {
-            const e = entries.find((x) => x.employee_id === reviewEmployeeId);
-            return e ? `${e.employees?.forename ?? ""} ${e.employees?.surname ?? ""}`.trim() : "";
-          })()}
-          periodId={periodId}
-          periodName={periodLabel ?? ""}
-          previousPeriodName={previousPeriodLabel ?? undefined}
-          canEdit={isAdmin}
-          notesEnabled
-        />
-      )}
+      {reviewEmployeeId && (() => {
+        const entry = entries.find((x) => x.employee_id === reviewEmployeeId);
+        if (!entry) return null;
+        const existing = comparisonByEmployee?.get(reviewEmployeeId);
+        const change: EmployeeChange =
+          existing ??
+          synthesizeZeroChange({
+            employee_id: reviewEmployeeId,
+            entry_id: entry.id,
+            hourly_rate: Number(entry.hourly_rate),
+            service_charge: Number(entry.service_charge ?? 0),
+            timesheet_hours: Number(entry.timesheet_hours),
+            holiday_pay: 0,
+            bonus:
+              Number(entry.performance_bonus ?? 0) +
+              Number(entry.special_bonus ?? 0),
+            gross_pay: Number(entry.total_pay ?? 0),
+            is_new_starter: entry.employees?.status === "starter",
+            is_leaver: entry.employees?.status === "leaver",
+          });
+        return (
+          <EmployeeChangeReviewDialog
+            open={!!reviewEmployeeId}
+            onOpenChange={(v) => !v && setReviewEmployeeId(null)}
+            change={change}
+            employeeId={reviewEmployeeId}
+            employeeName={`${entry.employees?.forename ?? ""} ${entry.employees?.surname ?? ""}`.trim()}
+            periodId={periodId}
+            periodName={periodLabel ?? ""}
+            previousPeriodName={previousPeriodLabel ?? undefined}
+            canEdit={isAdmin}
+            notesEnabled
+          />
+        );
+      })()}
     </div>
   );
 }
