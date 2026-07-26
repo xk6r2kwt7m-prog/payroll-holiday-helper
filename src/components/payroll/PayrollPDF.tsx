@@ -334,6 +334,18 @@ export interface PayrollPDFPeriodNote {
   created_at: string;
 }
 
+export interface PayrollPDFAdjustment {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  field_name: string;
+  old_value: number | null;
+  new_value: number | null;
+  delta: number | null;
+  note: string | null;
+  created_at: string;
+}
+
 interface PayrollPDFProps {
   period: PayrollPeriod;
   entries: PayrollEntry[];
@@ -348,7 +360,9 @@ interface PayrollPDFProps {
   reportConfig?: PayrollReportConfig;
   locationData?: PayrollEntryLocation[];
   periodNotes?: PayrollPDFPeriodNote[];
+  adjustments?: PayrollPDFAdjustment[];
 }
+
 
 function fmt(amount: number): string {
   return `£${amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
