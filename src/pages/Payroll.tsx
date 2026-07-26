@@ -712,28 +712,56 @@ const Payroll = () => {
 
         {/* Main Payroll Content */}
         <div className="space-y-4 sm:space-y-6">
-            {/* Admin actions — gated by permission */}
+            {/* Admin actions — gated by permission.
+                Phase A: collapsed behind an "Actions" toggle on mobile,
+                fully visible from sm: upward. All admin actions remain reachable. */}
             {canViewPayData && isAdmin && (
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                <SettleLeaverDialog />
-                <AddHolidayPaymentDialog />
-                <CreatePayrollDialog />
-                <ImportPayrollDialog selectedPeriod={selectedPeriod} />
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <Bookmark className="h-4 w-4" /> Saved aliases
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-                    <DialogHeader>
-                      <DialogTitle>Timesheet import aliases</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-1 overflow-y-auto">
-                      <TimesheetAliasManager />
-                    </div>
-                  </DialogContent>
-                </Dialog>
+              <div data-testid="payroll-admin-actions">
+                <div className="sm:hidden">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between h-9"
+                    onClick={() => setMobileActionsOpen((v) => !v)}
+                    aria-expanded={mobileActionsOpen}
+                    data-testid="mobile-actions-toggle"
+                  >
+                    <span>Actions</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        mobileActionsOpen && "rotate-180",
+                      )}
+                    />
+                  </Button>
+                </div>
+                <div
+                  data-testid="payroll-admin-actions-list"
+                  className={cn(
+                    "flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-0 sm:flex",
+                    mobileActionsOpen ? "flex" : "hidden sm:flex",
+                  )}
+                >
+                  <SettleLeaverDialog />
+                  <AddHolidayPaymentDialog />
+                  <CreatePayrollDialog />
+                  <ImportPayrollDialog selectedPeriod={selectedPeriod} />
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <Bookmark className="h-4 w-4" /> Saved aliases
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle>Timesheet import aliases</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex-1 overflow-y-auto">
+                        <TimesheetAliasManager />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             )}
 
