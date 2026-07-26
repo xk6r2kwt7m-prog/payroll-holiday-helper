@@ -96,6 +96,10 @@ interface EditablePayrollTableProps {
   showServiceCharge?: boolean;
   /** Employee IDs that appeared in a prior payroll period (used to suppress "Starter" badge) */
   priorPeriodEmployeeIds?: Set<string>;
+  /** Month-on-month comparison, keyed by employee_id. Non-blocking UI only. */
+  comparisonByEmployee?: Map<string, import("@/lib/payroll-change-review").EmployeeChange>;
+  /** Human-readable label of the previous period ("May 2026"). */
+  previousPeriodLabel?: string | null;
 }
 
 interface EditingEntry {
@@ -115,6 +119,8 @@ export function EditablePayrollTable({
   showBonusColumn = true,
   showServiceCharge = true,
   priorPeriodEmployeeIds = new Set(),
+  comparisonByEmployee,
+  previousPeriodLabel = null,
 }: EditablePayrollTableProps) {
   const { tenantId } = useTenant();
   const { data: leaveRules } = useLeaveRules();
