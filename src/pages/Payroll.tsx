@@ -1156,22 +1156,7 @@ const Payroll = () => {
           </div>
         )}
 
-        {/* Payroll Table */}
-        {entries.length > 0 && selectedPeriod && (
-          <EditablePayrollTable
-            entries={entries as any}
-            periodId={selectedPeriod.id}
-            periodStatus={selectedPeriod.status}
-            isAdmin={isAdmin}
-            onExport={handleExport}
-            showBonusColumn={payrollPrefs?.showBonusColumn !== false}
-            showServiceCharge={payrollPrefs?.showServiceCharge !== false}
-            priorPeriodEmployeeIds={priorPeriodEmployeeIds}
-            comparisonByEmployee={comparison?.changes}
-            previousPeriodLabel={immediatePriorPeriod?.period_name ?? null}
-            periodLabel={selectedPeriod?.period_name ?? null}
-          />
-        )}
+        {/* Phase C — payroll table has moved above the collapsed detail sections. */}
 
         {/* Report Builder Modal */}
         {selectedPeriod && (
