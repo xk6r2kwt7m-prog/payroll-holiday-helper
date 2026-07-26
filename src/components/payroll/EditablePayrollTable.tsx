@@ -1024,7 +1024,6 @@ export function EditablePayrollTable({
           })()}
           periodId={periodId}
           previousPeriodName={previousPeriodLabel ?? undefined}
-          isAdmin={isAdmin}
         />
       )}
     </div>
