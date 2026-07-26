@@ -76,6 +76,7 @@ const Payroll = () => {
   const { tenantId } = useTenant();
   
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
   const [reviewedIssueNames, setReviewedIssueNames] = useState<Set<string>>(new Set());
 
