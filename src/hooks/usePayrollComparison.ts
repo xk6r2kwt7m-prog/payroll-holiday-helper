@@ -67,6 +67,7 @@ export function usePayrollComparison(args: Args): PayrollComparison | null {
       ),
       manualAdjustmentsByEntryId: args.manualAdjustmentsByEntryId,
       pdfVisibleNotesCount: args.pdfVisibleNotesCount,
+      totalNotesCount: args.totalNotesCount,
       everSeenEmployeeIds: args.everSeenEmployeeIds,
     };
     return buildPeriodComparison(input);
