@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { buildLocationSplitRows } from "@/lib/payroll-report-transform";
 
-import { DollarSign, Clock, FileText, FileDown } from "lucide-react";
+import { DollarSign, Clock, FileText, FileDown, ChevronDown } from "lucide-react";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -76,6 +76,7 @@ const Payroll = () => {
   const { tenantId } = useTenant();
   
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [reportBuilderOpen, setReportBuilderOpen] = useState(false);
   const [reviewedIssueNames, setReviewedIssueNames] = useState<Set<string>>(new Set());
 
@@ -712,28 +713,56 @@ const Payroll = () => {
 
         {/* Main Payroll Content */}
         <div className="space-y-4 sm:space-y-6">
-            {/* Admin actions — gated by permission */}
+            {/* Admin actions — gated by permission.
+                Phase A: collapsed behind an "Actions" toggle on mobile,
+                fully visible from sm: upward. All admin actions remain reachable. */}
             {canViewPayData && isAdmin && (
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                <SettleLeaverDialog />
-                <AddHolidayPaymentDialog />
-                <CreatePayrollDialog />
-                <ImportPayrollDialog selectedPeriod={selectedPeriod} />
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <Bookmark className="h-4 w-4" /> Saved aliases
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-                    <DialogHeader>
-                      <DialogTitle>Timesheet import aliases</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex-1 overflow-y-auto">
-                      <TimesheetAliasManager />
-                    </div>
-                  </DialogContent>
-                </Dialog>
+              <div data-testid="payroll-admin-actions">
+                <div className="sm:hidden">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between h-9"
+                    onClick={() => setMobileActionsOpen((v) => !v)}
+                    aria-expanded={mobileActionsOpen}
+                    data-testid="mobile-actions-toggle"
+                  >
+                    <span>Actions</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        mobileActionsOpen && "rotate-180",
+                      )}
+                    />
+                  </Button>
+                </div>
+                <div
+                  data-testid="payroll-admin-actions-list"
+                  className={cn(
+                    "flex-wrap gap-1.5 sm:gap-2 mt-2 sm:mt-0 sm:flex",
+                    mobileActionsOpen ? "flex" : "hidden sm:flex",
+                  )}
+                >
+                  <SettleLeaverDialog />
+                  <AddHolidayPaymentDialog />
+                  <CreatePayrollDialog />
+                  <ImportPayrollDialog selectedPeriod={selectedPeriod} />
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <Bookmark className="h-4 w-4" /> Saved aliases
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle>Timesheet import aliases</DialogTitle>
+                      </DialogHeader>
+                      <div className="flex-1 overflow-y-auto">
+                        <TimesheetAliasManager />
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             )}
 
@@ -870,7 +899,9 @@ const Payroll = () => {
           />
         )}
 
-        {/* Phase 5A — Approval readiness checklist (read-only gate) */}
+        {/* Phase 5A + Phase A — Approval readiness checklist with compact evidence footer.
+            The standalone PayrollApprovalEvidence card has been merged in here to
+            reduce duplicate approval-state cards. */}
         {selectedPeriod && phase5Report && (
           <PayrollApprovalChecklist
             period_status={selectedPeriod.status}
@@ -884,22 +915,21 @@ const Payroll = () => {
             onAcknowledgedChange={setChecklistAcks}
             confirmed={checklistConfirmed}
             onConfirmedChange={setChecklistConfirmed}
+            evidence={
+              phase5Checklist
+                ? buildPayrollApprovalEvidence({
+                    period: selectedPeriod,
+                    payrollEntryCount: entries.length,
+                    checklist: phase5Checklist,
+                    acknowledgedIds: checklistAcks,
+                    approvalConfirmed: checklistConfirmed,
+                    approvalBlockedReason: phase5ApprovalBlock,
+                  })
+                : null
+            }
           />
         )}
 
-        {/* Phase 5C/5D — Read-only approval evidence snapshot */}
-        {selectedPeriod && phase5Checklist && (
-          <PayrollApprovalEvidence
-            evidence={buildPayrollApprovalEvidence({
-              period: selectedPeriod,
-              payrollEntryCount: entries.length,
-              checklist: phase5Checklist,
-              acknowledgedIds: checklistAcks,
-              approvalConfirmed: checklistConfirmed,
-              approvalBlockedReason: phase5ApprovalBlock,
-            })}
-          />
-        )}
 
 
 
@@ -956,30 +986,11 @@ const Payroll = () => {
           />
         )}
 
-        {/* Rate Discrepancy Warning */}
-        {rateDiscrepancies.length > 0 && (
-          <SensitiveSection
-            sectionKey="payroll-rate-discrepancies"
-            category="compensation"
-            title={t("payroll.rate_change")}
-          >
-            <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
-              <div className="flex items-start gap-2.5 mb-2">
-                <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">{t("payroll.rate_change")}</Badge>
-                <p className="font-medium text-card-foreground text-xs sm:text-sm">
-                  {t("payroll.rate_differences", { count: rateDiscrepancies.length })}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {rateDiscrepancies.slice(0, 5).map((e: any) => (
-                  <Badge key={e.id} variant="outline" className="text-[10px] sm:text-xs">
-                    {e.employees?.forename}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </SensitiveSection>
-        )}
+        {/* Phase A — standalone rate discrepancy card removed.
+            Detection is preserved via rateDiscrepancies and remains surfaced through
+            EmploymentTermsComparisonPanel, PayrollApprovalChecklist, and row-level
+            warnings in EditablePayrollTable. */}
+
 
         {/* Loading State */}
         {(loadingPeriods || loadingEntries) && (

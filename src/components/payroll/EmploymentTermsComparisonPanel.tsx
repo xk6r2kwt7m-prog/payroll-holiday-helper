@@ -56,11 +56,13 @@ export function EmploymentTermsComparisonPanel({
   payrollPeriodId,
   periodStatus,
 }: Props) {
-  const hasAnyDrift =
-    summary.rate_mismatch > 0 ||
-    summary.department_mismatch > 0 ||
-    summary.no_active_terms > 0;
-  const [open, setOpen] = useState(hasAnyDrift);
+  // Phase A — only true drift (rate / department mismatches) drives the amber
+  // headline. "No active terms" and "backfill only" are informational and
+  // render neutral so they do not compete visually with real blockers.
+  const hasDrift = summary.rate_mismatch > 0 || summary.department_mismatch > 0;
+  const hasInfoOnly =
+    !hasDrift && (summary.no_active_terms > 0 || summary.backfill_only > 0);
+  const [open, setOpen] = useState(hasDrift);
   const [syncOpen, setSyncOpen] = useState(false);
 
   if (!canCheck) return null;
@@ -68,9 +70,9 @@ export function EmploymentTermsComparisonPanel({
   const isLocked = periodStatus === "approved";
   const canSync = !!payrollPeriodId && !isLocked && summary.rate_mismatch > 0;
 
-  const headlineCls = hasAnyDrift
+  const headlineCls = hasDrift
     ? "border-warning/40 bg-warning/5"
-    : summary.backfill_only > 0
+    : hasInfoOnly
       ? "border-border bg-muted/30"
       : "border-success/30 bg-success/5";
 
@@ -92,7 +94,7 @@ export function EmploymentTermsComparisonPanel({
             <Pill kind="ok" label="Match" value={summary.matches} />
             <Pill kind="warn" label="Rate mismatch" value={summary.rate_mismatch} />
             <Pill kind="warn" label="Dept mismatch" value={summary.department_mismatch} />
-            <Pill kind="warn" label="No active terms" value={summary.no_active_terms} />
+            <Pill kind="muted" label="No active terms" value={summary.no_active_terms} />
             <Pill kind="muted" label="Backfill only" value={summary.backfill_only} />
             {summary.scheduled_pending > 0 && (
               <Pill kind="muted" label="Scheduled change" value={summary.scheduled_pending} />
@@ -237,9 +239,11 @@ function Pill({
 
 function StatusBadge({ row }: { row: TermsComparisonRow }) {
   if (row.status === "no_active_terms") {
+    // Phase A — informational (missing contract terms), rendered neutral so it
+    // does not visually compete with real blockers. Detection unchanged.
     return (
-      <Badge variant="outline" className="gap-1 bg-warning/10 text-warning border-warning/20">
-        <AlertTriangle className="h-3 w-3" />
+      <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground border-border">
+        <Info className="h-3 w-3" />
         No active terms
       </Badge>
     );
