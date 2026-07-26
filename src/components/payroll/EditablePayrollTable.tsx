@@ -1213,23 +1213,41 @@ export function EditablePayrollTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {reviewEmployeeId && comparisonByEmployee?.get(reviewEmployeeId) && (
-        <EmployeeChangeReviewDialog
-          open={!!reviewEmployeeId}
-          onOpenChange={(v) => !v && setReviewEmployeeId(null)}
-          change={comparisonByEmployee.get(reviewEmployeeId)!}
-          employeeId={reviewEmployeeId}
-          employeeName={(() => {
-            const e = entries.find((x) => x.employee_id === reviewEmployeeId);
-            return e ? `${e.employees?.forename ?? ""} ${e.employees?.surname ?? ""}`.trim() : "";
-          })()}
-          periodId={periodId}
-          periodName={periodLabel ?? ""}
-          previousPeriodName={previousPeriodLabel ?? undefined}
-          canEdit={isAdmin}
-          notesEnabled
-        />
-      )}
+      {reviewEmployeeId && (() => {
+        const entry = entries.find((x) => x.employee_id === reviewEmployeeId);
+        if (!entry) return null;
+        const existing = comparisonByEmployee?.get(reviewEmployeeId);
+        const change: EmployeeChange =
+          existing ??
+          synthesizeZeroChange({
+            employee_id: reviewEmployeeId,
+            entry_id: entry.id,
+            hourly_rate: Number(entry.hourly_rate),
+            service_charge: Number(entry.service_charge ?? 0),
+            timesheet_hours: Number(entry.timesheet_hours),
+            holiday_pay: 0,
+            bonus:
+              Number(entry.performance_bonus ?? 0) +
+              Number(entry.special_bonus ?? 0),
+            gross_pay: Number(entry.total_pay ?? 0),
+            is_new_starter: entry.employees?.status === "starter",
+            is_leaver: entry.employees?.status === "leaver",
+          });
+        return (
+          <EmployeeChangeReviewDialog
+            open={!!reviewEmployeeId}
+            onOpenChange={(v) => !v && setReviewEmployeeId(null)}
+            change={change}
+            employeeId={reviewEmployeeId}
+            employeeName={`${entry.employees?.forename ?? ""} ${entry.employees?.surname ?? ""}`.trim()}
+            periodId={periodId}
+            periodName={periodLabel ?? ""}
+            previousPeriodName={previousPeriodLabel ?? undefined}
+            canEdit={isAdmin}
+            notesEnabled
+          />
+        );
+      })()}
     </div>
   );
 }
