@@ -702,7 +702,47 @@ export function EditablePayrollTable({
           </Select>
         </div>
       </div>
-      
+
+      {/* Phase C — filter chips */}
+      <div
+        className="border-b border-border px-4 sm:px-6 py-2 flex flex-wrap gap-1.5 bg-muted/10"
+        data-testid="payroll-table-filters"
+        role="tablist"
+      >
+        {PAYROLL_TABLE_FILTERS.map((f) => {
+          const isActive = filterMode === f.id;
+          const count = filterCounts[f.id];
+          return (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              data-testid={`payroll-filter-${f.id}`}
+              onClick={() => setFilterMode(f.id)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card text-muted-foreground border-border hover:bg-muted/60",
+              )}
+            >
+              <span>{f.label}</span>
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0 text-[10px] leading-none",
+                  isActive
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
