@@ -83,6 +83,7 @@ export function usePayrollComparison(args: Args): PayrollComparison | null {
     args.previousEntries,
     args.manualAdjustmentsByEntryId,
     args.pdfVisibleNotesCount,
+    args.totalNotesCount,
     args.everSeenEmployeeIds,
   ]);
 }
