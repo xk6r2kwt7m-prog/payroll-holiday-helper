@@ -56,11 +56,13 @@ export function EmploymentTermsComparisonPanel({
   payrollPeriodId,
   periodStatus,
 }: Props) {
-  const hasAnyDrift =
-    summary.rate_mismatch > 0 ||
-    summary.department_mismatch > 0 ||
-    summary.no_active_terms > 0;
-  const [open, setOpen] = useState(hasAnyDrift);
+  // Phase A — only true drift (rate / department mismatches) drives the amber
+  // headline. "No active terms" and "backfill only" are informational and
+  // render neutral so they do not compete visually with real blockers.
+  const hasDrift = summary.rate_mismatch > 0 || summary.department_mismatch > 0;
+  const hasInfoOnly =
+    !hasDrift && (summary.no_active_terms > 0 || summary.backfill_only > 0);
+  const [open, setOpen] = useState(hasDrift);
   const [syncOpen, setSyncOpen] = useState(false);
 
   if (!canCheck) return null;
@@ -68,9 +70,9 @@ export function EmploymentTermsComparisonPanel({
   const isLocked = periodStatus === "approved";
   const canSync = !!payrollPeriodId && !isLocked && summary.rate_mismatch > 0;
 
-  const headlineCls = hasAnyDrift
+  const headlineCls = hasDrift
     ? "border-warning/40 bg-warning/5"
-    : summary.backfill_only > 0
+    : hasInfoOnly
       ? "border-border bg-muted/30"
       : "border-success/30 bg-success/5";
 
