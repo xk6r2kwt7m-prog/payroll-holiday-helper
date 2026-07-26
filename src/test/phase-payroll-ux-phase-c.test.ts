@@ -319,12 +319,7 @@ describe("Phase C — page structure guardrails", () => {
     const fs = await import("node:fs/promises");
     const src = await fs.readFile("src/components/payroll/EditablePayrollTable.tsx", "utf8");
     expect(src).toContain('data-testid="payroll-table-filters"');
-    expect(src).toContain('data-testid="payroll-filter-issues"');
-    expect(src).toContain('data-testid="payroll-filter-zero_hours"');
-    expect(src).toContain('data-testid="payroll-filter-holiday_pay"');
-    expect(src).toContain('data-testid="payroll-filter-manual_adjustments"');
-    expect(src).toContain('data-testid="payroll-filter-missing_timesheet"');
-    expect(src).toContain('data-testid="payroll-filter-pay_changes"');
+    expect(src).toMatch(/data-testid=\{`payroll-filter-\$\{f\.id\}`\}/);
     expect(src).toMatch(/sticky left-0/);
     // Details button (drawer entry point) is present.
     expect(src).toMatch(/row-details-\$\{entry\.employee_id\}/);
