@@ -390,18 +390,7 @@ export function buildApprovalChecklist(
         affected_employee_ids: [],
       });
     }
-    if (cmp.pdf_visible_notes > 0) {
-      items.push({
-        id: "comparison_pdf_notes",
-        status: "pass",
-        blocking: false,
-        requires_ack: false,
-        title: "Notes marked for payroll PDF",
-        detail: `${cmp.pdf_visible_notes} internal note${cmp.pdf_visible_notes === 1 ? " is" : "s are"} set to appear on the payroll PDF.`,
-        count: cmp.pdf_visible_notes,
-        affected_employee_ids: [],
-      });
-    }
+    // Phase 2 will add a "Notes marked for payroll PDF" summary item here.
   }
 
   // Approval is blocked while any block-status item is present.
