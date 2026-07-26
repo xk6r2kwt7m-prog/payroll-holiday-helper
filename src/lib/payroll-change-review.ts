@@ -357,6 +357,7 @@ export function buildPeriodComparison(input: BuildComparisonInput): PayrollCompa
   const summary = summarizeComparison(changes, {
     hasPrev,
     pdfVisibleNotesCount,
+    totalNotesCount,
   });
 
   return {
