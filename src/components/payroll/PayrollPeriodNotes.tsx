@@ -23,6 +23,7 @@ import {
   usePayrollPeriodNotes,
   useCreatePayrollPeriodNote,
   useDeletePayrollPeriodNote,
+  useUpdatePayrollPeriodNoteVisibility,
 } from "@/hooks/usePayrollPeriodNotes";
 
 interface PayrollPeriodNotesProps {
@@ -136,21 +137,42 @@ export function PayrollPeriodNotesSection({
               {notes.map((note) => (
                 <div key={note.id} className="flex items-start justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 p-2.5">
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground">{getEmployeeName(note.employee_id)}</p>
+                    <p className="text-xs font-medium text-foreground">
+                      {getEmployeeName(note.employee_id)}
+                      {note.category && (
+                        <span className="ml-2 text-[10px] font-normal text-muted-foreground uppercase tracking-wide">
+                          {note.category}
+                        </span>
+                      )}
+                      {note.show_on_pdf && (
+                        <Badge variant="outline" className="ml-2 text-[10px]">PDF</Badge>
+                      )}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{note.note}</p>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       {new Date(note.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                     </p>
                   </div>
                   {isAdmin && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => handleDelete(note.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <Checkbox
+                          checked={note.show_on_pdf}
+                          onCheckedChange={(v) =>
+                            updateVisibility.mutate({ id: note.id, show_on_pdf: v === true })
+                          }
+                        />
+                        Show on PDF
+                      </label>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDelete(note.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
