@@ -14,6 +14,7 @@
  *     This checklist is an *additional* manager-facing safety surface.
  */
 import type { PayrollEntryReport } from "@/lib/labour-reporting";
+import type { PayrollComparisonSummary } from "@/lib/payroll-change-review";
 
 export type ChecklistStatus = "pass" | "warning" | "block";
 
@@ -55,6 +56,12 @@ export interface ApprovalChecklistInput {
    * approval.
    */
   scOverrideNoteEntryIds?: Set<string>;
+  /**
+   * Month-on-month comparison summary. When provided, adds non-blocking
+   * warning items surfacing rate/SC/hours movement vs the previous period.
+   * Never blocks approval — this is a manager-facing awareness surface.
+   */
+  comparisonSummary?: PayrollComparisonSummary | null;
 }
 
 export interface ApprovalChecklistResult {

@@ -205,7 +205,7 @@ export function PayrollReportBuilder({
           reportConfig={config}
           companyName={companyName}
           locationData={locationData}
-          periodNotes={config.showNotes ? periodNotes : []}
+          periodNotes={periodNotes}
           adjustments={config.columns.adjustments && config.financial.includeAdjustments ? adjustments : []}
         />
       ).toBlob();
@@ -278,7 +278,7 @@ export function PayrollReportBuilder({
           reportConfig={config}
           companyName={companyName}
           locationData={locationData}
-          periodNotes={config.showNotes ? periodNotes : []}
+          periodNotes={periodNotes}
           adjustments={config.columns.adjustments && config.financial.includeAdjustments ? adjustments : []}
         />
       ).toBlob();
