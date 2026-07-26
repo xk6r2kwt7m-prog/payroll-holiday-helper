@@ -159,6 +159,8 @@ export interface BuildComparisonInput {
   /** Number of `payroll_period_notes` for the current period with
    *  `show_on_pdf = true`. Surfaced in the approval summary only. */
   pdfVisibleNotesCount?: number;
+  /** Total number of `payroll_period_notes` for the current period. */
+  totalNotesCount?: number;
   /** Optional set of employee_ids that appeared in ANY prior period.
    *  Used to distinguish a genuine new starter from a returning employee. */
   everSeenEmployeeIds?: Set<string>;
