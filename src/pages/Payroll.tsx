@@ -24,6 +24,11 @@ import { PayrollApprovalWorkflow } from "@/components/payroll/PayrollApprovalWor
 import { PayrollApprovalChecklist } from "@/components/payroll/PayrollApprovalChecklist";
 import { PayrollApprovalEvidence } from "@/components/payroll/PayrollApprovalEvidence";
 import { buildPayrollApprovalEvidence } from "@/lib/payroll-approval-evidence";
+import { PayrollStatusBar } from "@/components/payroll/PayrollStatusBar";
+import { PayrollActionRequired } from "@/components/payroll/PayrollActionRequired";
+import { PayrollReviewAcknowledge } from "@/components/payroll/PayrollReviewAcknowledge";
+import { CollapsibleSection } from "@/components/payroll/CollapsibleSection";
+import { derivePayrollPageSeverity } from "@/lib/payroll-page-severity";
 
 
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
@@ -297,6 +302,16 @@ const Payroll = () => {
     return null;
   }, [phase5Checklist, selectedPeriod?.status, checklistAcks, checklistConfirmed]);
 
+  // Phase B — severity projection for status bar / Action Required / Review panels.
+  const pageSeverity = useMemo(
+    () =>
+      derivePayrollPageSeverity({
+        checklist: phase5Checklist ?? null,
+        importBlockingIssueCount: unresolvedIssues.filter(i => !reviewedIssueNames.has(i.csvName)).length,
+        nmwBlockerCount: (nmw?.summary?.non_compliant as number | undefined) ?? 0,
+      }),
+    [phase5Checklist, unresolvedIssues, reviewedIssueNames, nmw?.summary?.non_compliant],
+  );
 
 
   const handleMarkReviewed = (csvName: string) => {
@@ -711,6 +726,22 @@ const Payroll = () => {
 
         <PayrollNavStrip />
 
+        {/* Phase B — compact top payroll status bar */}
+        {selectedPeriod && (
+          <PayrollStatusBar
+            periodName={selectedPeriod.period_name}
+            statusLabel={statusLabels[selectedPeriod.status] ?? selectedPeriod.status}
+            statusTone={(selectedPeriod.status as any) || "draft"}
+            employeeCount={entries.length}
+            totalPay={totalPay}
+            holidayTotal={holidayTotal}
+            blockerCount={pageSeverity.blockerCount}
+            warningCount={pageSeverity.warningCount}
+            ready={pageSeverity.ready && !phase5ApprovalBlock}
+            readyDetail={phase5ApprovalBlock}
+          />
+        )}
+
         {/* Main Payroll Content */}
         <div className="space-y-4 sm:space-y-6">
             {/* Admin actions — gated by permission.
@@ -862,20 +893,44 @@ const Payroll = () => {
           />
         )}
 
-        {/* Period-Specific Internal Notes */}
+        {/* Phase B — Action Required (true blockers only) */}
         {selectedPeriod && entries.length > 0 && (
-          <PayrollPeriodNotesSection
-            periodId={selectedPeriod.id}
-            periodName={selectedPeriod.period_name}
-            employees={entries.map((e: any) => ({
-              id: e.employee_id,
-              name: `${e.employees?.forename} ${e.employees?.surname}`,
-            }))}
-            isAdmin={isAdmin}
-          />
+          <PayrollActionRequired items={pageSeverity.blockers} />
         )}
 
-        {/* UK Minimum Wage compliance — authoritative, period-based */}
+        {/* Phase B — Review & Acknowledge (warnings, non-blocking) */}
+        {selectedPeriod && entries.length > 0 && (
+          <PayrollReviewAcknowledge items={pageSeverity.warnings} />
+        )}
+
+        {/* Period-Specific Internal Notes — collapsed by default (Phase B) */}
+        {selectedPeriod && entries.length > 0 && (
+          <CollapsibleSection
+            title="Period notes"
+            summary="Internal notes for this payroll period; individual notes may be included on the PDF."
+            count={totalNotesCount}
+            badge={
+              pdfVisibleNotesCount > 0
+                ? { label: `${pdfVisibleNotesCount} on PDF`, tone: "neutral" }
+                : null
+            }
+            defaultOpen={false}
+            testId="collapsible-period-notes"
+          >
+            <PayrollPeriodNotesSection
+              periodId={selectedPeriod.id}
+              periodName={selectedPeriod.period_name}
+              employees={entries.map((e: any) => ({
+                id: e.employee_id,
+                name: `${e.employees?.forename} ${e.employees?.surname}`,
+              }))}
+              isAdmin={isAdmin}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* UK Minimum Wage compliance — summary card remains visible; detail
+            table inside the panel is already collapsible. */}
         {selectedPeriod && entries.length > 0 && (
           <MinimumWageCompliancePanel
             results={nmw.results}
@@ -887,16 +942,30 @@ const Payroll = () => {
           />
         )}
 
-        {/* Phase 2B — Employment Terms comparison (read-only, advisory) */}
+        {/* Phase 2B — Employment Terms comparison — collapsed by default (Phase B).
+            Rate mismatches remain surfaced by the checklist & row-level warnings. */}
         {selectedPeriod && entries.length > 0 && (
-          <EmploymentTermsComparisonPanel
-            rows={termsComparison.rows}
-            summary={termsComparison.summary}
-            canCheck={termsComparison.canCheck}
-            periodStartDate={selectedPeriod.start_date}
-            payrollPeriodId={selectedPeriod.id}
-            periodStatus={selectedPeriod.status}
-          />
+          <CollapsibleSection
+            title="Employment terms check"
+            summary="Rate mismatches surface as review warnings. Backfill-only and missing-terms rows are informational."
+            count={termsComparison.summary?.rate_mismatch ?? 0}
+            badge={
+              (termsComparison.summary?.rate_mismatch ?? 0) > 0
+                ? { label: "Mismatches", tone: "warning" }
+                : { label: "No mismatches", tone: "neutral" }
+            }
+            defaultOpen={false}
+            testId="collapsible-employment-terms"
+          >
+            <EmploymentTermsComparisonPanel
+              rows={termsComparison.rows}
+              summary={termsComparison.summary}
+              canCheck={termsComparison.canCheck}
+              periodStartDate={selectedPeriod.start_date}
+              payrollPeriodId={selectedPeriod.id}
+              periodStatus={selectedPeriod.status}
+            />
+          </CollapsibleSection>
         )}
 
         {/* Phase 5A + Phase A — Approval readiness checklist with compact evidence footer.
@@ -955,35 +1024,64 @@ const Payroll = () => {
           />
         )}
 
-        {/* Holiday Pay Section */}
+        {/* Holiday Pay Section — collapsed by default (Phase B) */}
         {selectedPeriod && (
-          <PayrollHolidaySection
-            periodId={selectedPeriod.id}
-            periodStatus={selectedPeriod.status}
-            holidayPayments={holidayPayments as any}
-            isAdmin={isAdmin}
-          />
+          <CollapsibleSection
+            title="Holiday pay"
+            summary="Holiday payments recorded against this payroll period."
+            count={holidayPayments.length}
+            badge={
+              holidayTotal > 0
+                ? { label: formatCurrency(holidayTotal), tone: "neutral" }
+                : null
+            }
+            defaultOpen={false}
+            testId="collapsible-holiday-pay"
+          >
+            <PayrollHolidaySection
+              periodId={selectedPeriod.id}
+              periodStatus={selectedPeriod.status}
+              holidayPayments={holidayPayments as any}
+              isAdmin={isAdmin}
+            />
+          </CollapsibleSection>
         )}
 
-        {/* Sales & Labour Analytics */}
+        {/* Sales & Labour Analytics — collapsed by default (Phase B) */}
         {selectedPeriod && entries.length > 0 && (
-          <PayrollSalesInput
-            periodId={selectedPeriod.id}
-            periodStatus={selectedPeriod.status}
-            currentSalesTotal={selectedPeriod.sales_total}
-            totalPayroll={totalPay}
-            managementPayroll={managementPayroll}
-            isAdmin={isAdmin}
-          />
+          <CollapsibleSection
+            title="Sales & labour"
+            summary="Enter period sales to see labour cost as a % of revenue."
+            badge={{ label: "Insight", tone: "neutral" }}
+            defaultOpen={false}
+            testId="collapsible-sales-labour"
+          >
+            <PayrollSalesInput
+              periodId={selectedPeriod.id}
+              periodStatus={selectedPeriod.status}
+              currentSalesTotal={selectedPeriod.sales_total}
+              totalPayroll={totalPay}
+              managementPayroll={managementPayroll}
+              isAdmin={isAdmin}
+            />
+          </CollapsibleSection>
         )}
 
-        {/* Inline Period Analytics */}
+        {/* Inline Period Analytics — collapsed by default (Phase B). Insight only. */}
         {selectedPeriod && entries.length > 0 && (
-          <PayrollInlineAnalytics
-            currentPeriodId={selectedPeriod.id}
-            entries={entries}
-            holidayPayments={holidayPayments as any}
-          />
+          <CollapsibleSection
+            title="Period analytics"
+            summary="Trends and comparisons. Insight only — not part of approval readiness."
+            badge={{ label: "Insight", tone: "neutral" }}
+            defaultOpen={false}
+            testId="collapsible-period-analytics"
+          >
+            <PayrollInlineAnalytics
+              currentPeriodId={selectedPeriod.id}
+              entries={entries}
+              holidayPayments={holidayPayments as any}
+            />
+          </CollapsibleSection>
         )}
 
         {/* Phase A — standalone rate discrepancy card removed.
