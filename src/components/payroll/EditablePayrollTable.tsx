@@ -799,7 +799,10 @@ export function EditablePayrollTable({
                       />
                     </TableCell>
                   )}
-                  <TableCell onClick={(e) => e.stopPropagation()}>
+                  <TableCell
+                    className="sticky left-0 z-10 bg-card"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-primary/10 text-primary text-xs">
