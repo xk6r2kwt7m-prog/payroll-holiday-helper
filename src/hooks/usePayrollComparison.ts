@@ -49,6 +49,7 @@ interface Args {
   previousEntries?: RawEntry[];
   manualAdjustmentsByEntryId?: Map<string, number>;
   pdfVisibleNotesCount?: number;
+  totalNotesCount?: number;
   everSeenEmployeeIds?: Set<string>;
 }
 
