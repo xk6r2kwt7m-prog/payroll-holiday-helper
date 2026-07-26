@@ -77,6 +77,21 @@ export function PayrollReportBuilder({
 
   // Fetch location data for this period
   const { data: locationData = [] } = usePayrollEntryLocations(period?.id);
+  const { data: rawPeriodNotes = [] } = usePayrollPeriodNotes(period?.id);
+
+  const periodNotes = useMemo(() => {
+    const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
+    return rawPeriodNotes.map((n) => {
+      const emp: any = empById.get(n.employee_id);
+      return {
+        id: n.id,
+        employee_id: n.employee_id,
+        employee_name: emp ? `${emp.forename} ${emp.surname}` : "Unknown",
+        note: n.note,
+        created_at: n.created_at,
+      };
+    });
+  }, [rawPeriodNotes, allEmployees]);
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
