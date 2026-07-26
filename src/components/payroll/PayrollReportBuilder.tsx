@@ -531,7 +531,7 @@ export function PayrollReportBuilder({
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                     <Switch checked={config.showNotes} onCheckedChange={(v) => setConfig((p) => ({ ...p, showNotes: v }))} className="scale-75" />
-                    <span className="text-xs">Show Payroll Notes</span>
+                    <span className="text-xs">Include Period Notes</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                     <Switch checked={config.showAuditFooter} onCheckedChange={(v) => setConfig((p) => ({ ...p, showAuditFooter: v }))} className="scale-75" />
