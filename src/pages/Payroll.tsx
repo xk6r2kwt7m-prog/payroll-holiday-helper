@@ -302,6 +302,16 @@ const Payroll = () => {
     return null;
   }, [phase5Checklist, selectedPeriod?.status, checklistAcks, checklistConfirmed]);
 
+  // Phase B — severity projection for status bar / Action Required / Review panels.
+  const pageSeverity = useMemo(
+    () =>
+      derivePayrollPageSeverity({
+        checklist: phase5Checklist ?? null,
+        importBlockingIssueCount: unresolvedIssues.filter(i => !reviewedIssueNames.has(i.csvName)).length,
+        nmwBlockerCount: (nmw?.summary?.non_compliant as number | undefined) ?? 0,
+      }),
+    [phase5Checklist, unresolvedIssues, reviewedIssueNames, nmw?.summary?.non_compliant],
+  );
 
 
   const handleMarkReviewed = (csvName: string) => {
