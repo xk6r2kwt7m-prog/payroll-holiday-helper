@@ -199,6 +199,7 @@ export function PayrollReportBuilder({
           companyName={companyName}
           locationData={locationData}
           periodNotes={config.showNotes ? periodNotes : []}
+          adjustments={config.columns.adjustments && config.financial.includeAdjustments ? adjustments : []}
         />
       ).toBlob();
 
