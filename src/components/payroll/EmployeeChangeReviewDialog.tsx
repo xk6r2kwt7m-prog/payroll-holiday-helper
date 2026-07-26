@@ -32,6 +32,12 @@ interface Props {
   previousPeriodName?: string;
   change: EmployeeChange | undefined;
   canEdit: boolean;
+  /**
+   * Phase 2 feature flag. When false (default), the pop-up is a strict
+   * read-only view: no note list, no note creation, no PDF toggles.
+   * Phase 1 keeps this off — the comparison surface must not write data.
+   */
+  notesEnabled?: boolean;
 }
 
 const CATEGORIES = [
@@ -57,8 +63,9 @@ export function EmployeeChangeReviewDialog({
   previousPeriodName,
   change,
   canEdit,
+  notesEnabled = false,
 }: Props) {
-  const { data: allNotes = [] } = usePayrollPeriodNotes(periodId);
+  const { data: allNotes = [] } = usePayrollPeriodNotes(notesEnabled ? periodId : undefined);
   const notes = useMemo(
     () => allNotes.filter((n: PayrollPeriodNote) => n.employee_id === employeeId),
     [allNotes, employeeId],
@@ -234,78 +241,88 @@ export function EmployeeChangeReviewDialog({
           </p>
         )}
 
-        <div className="space-y-2">
-          <p className="text-xs font-medium">Existing notes</p>
-          {notes.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No notes for this employee in this period.</p>
-          ) : (
-            <div className="space-y-1.5 max-h-32 overflow-auto">
-              {notes.map((n) => (
-                <div
-                  key={n.id}
-                  className="flex items-start justify-between gap-2 rounded border border-border/60 bg-muted/30 p-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs">{n.note}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {n.category ?? "note"} · {new Date(n.created_at).toLocaleDateString("en-GB")}
-                    </p>
-                  </div>
-                  {canEdit && (
-                    <label className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
-                      <Checkbox
-                        checked={n.show_on_pdf}
-                        onCheckedChange={(v) =>
-                          updateVis.mutate({ id: n.id, show_on_pdf: v === true })
-                        }
-                      />
-                      PDF
-                    </label>
-                  )}
+        {notesEnabled && (
+          <>
+            <div className="space-y-2">
+              <p className="text-xs font-medium">Existing notes</p>
+              {notes.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No notes for this employee in this period.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-32 overflow-auto">
+                  {notes.map((n) => (
+                    <div
+                      key={n.id}
+                      className="flex items-start justify-between gap-2 rounded border border-border/60 bg-muted/30 p-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs">{n.note}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {n.category ?? "note"} · {new Date(n.created_at).toLocaleDateString("en-GB")}
+                        </p>
+                      </div>
+                      {canEdit && (
+                        <label className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
+                          <Checkbox
+                            checked={n.show_on_pdf}
+                            onCheckedChange={(v) =>
+                              updateVis.mutate({ id: n.id, show_on_pdf: v === true })
+                            }
+                          />
+                          PDF
+                        </label>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        {canEdit && (
-          <div className="space-y-2 rounded-md border border-border p-3">
-            <p className="text-xs font-medium">Add note</p>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c.value} value={c.value} className="text-xs">
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Textarea
-              placeholder="Note (e.g. rate uplift from 1 June)"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="min-h-[60px] text-xs"
-            />
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Checkbox
-                checked={showOnPdf}
-                onCheckedChange={(v) => setShowOnPdf(v === true)}
-              />
-              Show this note on payroll PDF
-            </label>
-            <div className="flex justify-end">
-              <Button
-                size="sm"
-                onClick={handleAdd}
-                disabled={!text.trim() || createNote.isPending}
-              >
-                Add note
-              </Button>
-            </div>
-          </div>
+            {canEdit && (
+              <div className="space-y-2 rounded-md border border-border p-3">
+                <p className="text-xs font-medium">Add note</p>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value} className="text-xs">
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Textarea
+                  placeholder="Note (e.g. rate uplift from 1 June)"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  className="min-h-[60px] text-xs"
+                />
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Checkbox
+                    checked={showOnPdf}
+                    onCheckedChange={(v) => setShowOnPdf(v === true)}
+                  />
+                  Show this note on payroll PDF
+                </label>
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    onClick={handleAdd}
+                    disabled={!text.trim() || createNote.isPending}
+                  >
+                    Add note
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {!notesEnabled && (
+          <p className="text-[11px] text-muted-foreground">
+            Read-only review. Notes and PDF visibility are enabled in a later phase.
+          </p>
         )}
       </DialogContent>
     </Dialog>
