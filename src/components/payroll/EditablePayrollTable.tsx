@@ -1023,7 +1023,7 @@ export function EditablePayrollTable({
             return e ? `${e.employees?.forename ?? ""} ${e.employees?.surname ?? ""}`.trim() : "";
           })()}
           periodId={periodId}
-          previousPeriodLabel={previousPeriodLabel}
+          previousPeriodName={previousPeriodLabel ?? undefined}
           isAdmin={isAdmin}
         />
       )}
