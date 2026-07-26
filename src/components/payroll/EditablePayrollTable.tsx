@@ -755,7 +755,7 @@ export function EditablePayrollTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="w-[200px]">Employee</TableHead>
+              <TableHead className="w-[220px] sticky left-0 z-10 bg-muted/30">Employee</TableHead>
               <TableHead>Dept</TableHead>
               <TableHead className="text-right">Rate</TableHead>
               <TableHead className="text-right">Service</TableHead>
