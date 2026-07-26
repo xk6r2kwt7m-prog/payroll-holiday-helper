@@ -61,6 +61,8 @@ import { MinimumWageCompliancePanel } from "@/components/payroll/MinimumWageComp
 import { usePayrollMinimumWageCheck, useRecordNmwAudit } from "@/hooks/usePayrollMinimumWageCheck";
 import { EmploymentTermsComparisonPanel } from "@/components/payroll/EmploymentTermsComparisonPanel";
 import { useEmploymentTermsComparison } from "@/hooks/useEmploymentTermsComparison";
+import { usePayrollComparison } from "@/hooks/usePayrollComparison";
+import { usePayrollPeriodNotes } from "@/hooks/usePayrollPeriodNotes";
 
 const PAYROLL_DISPLAY_DEFAULTS = {
   showBonusColumn: true,
