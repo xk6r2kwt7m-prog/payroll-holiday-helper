@@ -733,6 +733,61 @@ export function PayrollPDF({
           </View>
         )}
 
+        {showAdjustments && (
+          <View style={{ marginTop: 10 }} wrap={false}>
+            <Text style={styles.sectionTitle}>Manual Adjustments</Text>
+            <Text style={{ fontSize: 6, color: GRAY, marginBottom: 3 }}>
+              Manual edits to hourly rate, service charge, or hours vs. imported timesheet values.
+            </Text>
+            <View style={{ backgroundColor: "#f8fafc", borderWidth: 0.5, borderColor: BORDER, borderRadius: 3, padding: 6 }}>
+              <View style={{ flexDirection: "row", paddingBottom: 2, borderBottomWidth: 0.5, borderBottomColor: BORDER }}>
+                <Text style={{ fontSize: 6, fontFamily: "Helvetica-Bold", color: GRAY, width: "22%" }}>Employee</Text>
+                <Text style={{ fontSize: 6, fontFamily: "Helvetica-Bold", color: GRAY, width: "16%" }}>Field</Text>
+                <Text style={{ fontSize: 6, fontFamily: "Helvetica-Bold", color: GRAY, width: "12%", textAlign: "right" }}>From</Text>
+                <Text style={{ fontSize: 6, fontFamily: "Helvetica-Bold", color: GRAY, width: "12%", textAlign: "right" }}>To</Text>
+                <Text style={{ fontSize: 6, fontFamily: "Helvetica-Bold", color: GRAY, width: "28%" }}>Reason</Text>
+                <Text style={{ fontSize: 6, fontFamily: "Helvetica-Bold", color: GRAY, width: "10%", textAlign: "right" }}>Date</Text>
+              </View>
+              {adjustments.map((a) => {
+                const fieldLabels: Record<string, string> = {
+                  hourly_rate: "Hourly Rate",
+                  service_charge: "Service Charge",
+                  timesheet_hours: "Hours",
+                  performance_bonus: "Perf. Bonus",
+                  special_bonus: "Special Bonus",
+                };
+                const label = fieldLabels[a.field_name] || a.field_name;
+                const isHours = a.field_name === "timesheet_hours";
+                const fmtVal = (v: number | null) =>
+                  v === null || v === undefined ? "—" : isHours ? v.toFixed(2) : fmt(Number(v));
+                return (
+                  <View
+                    key={a.id}
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: 2.5,
+                      borderTopWidth: 0.5,
+                      borderTopColor: BORDER,
+                    }}
+                  >
+                    <Text style={{ fontSize: 7, fontFamily: "Helvetica-Bold", color: DARK, width: "22%" }}>
+                      {a.employee_name}
+                    </Text>
+                    <Text style={{ fontSize: 7, color: DARK, width: "16%" }}>{label}</Text>
+                    <Text style={{ fontSize: 7, color: DARK, width: "12%", textAlign: "right" }}>{fmtVal(a.old_value)}</Text>
+                    <Text style={{ fontSize: 7, fontFamily: "Helvetica-Bold", color: DARK, width: "12%", textAlign: "right" }}>{fmtVal(a.new_value)}</Text>
+                    <Text style={{ fontSize: 6.5, color: GRAY, width: "28%" }}>{a.note || "—"}</Text>
+                    <Text style={{ fontSize: 6, color: GRAY, width: "10%", textAlign: "right" }}>
+                      {new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+
         <Footer />
       </Page>
 
