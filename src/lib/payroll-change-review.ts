@@ -174,6 +174,7 @@ export function buildPeriodComparison(input: BuildComparisonInput): PayrollCompa
     previousEntries = [],
     manualAdjustmentsByEntryId,
     pdfVisibleNotesCount = 0,
+    totalNotesCount = 0,
     everSeenEmployeeIds,
   } = input;
 
