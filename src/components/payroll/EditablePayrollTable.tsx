@@ -155,6 +155,7 @@ export function EditablePayrollTable({
   const [removeEntryId, setRemoveEntryId] = useState<string | null>(null);
   const [removeEmployeeName, setRemoveEmployeeName] = useState("");
   const [sortMode, setSortMode] = useState<"default" | "alphabetical" | "alphabetical_surname" | "department" | "status" | "hours_desc" | "hours_asc">("default");
+  const [filterMode, setFilterMode] = useState<PayrollTableFilter>("all");
 
   // Adjustment note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
