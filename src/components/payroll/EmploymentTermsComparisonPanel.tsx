@@ -239,9 +239,11 @@ function Pill({
 
 function StatusBadge({ row }: { row: TermsComparisonRow }) {
   if (row.status === "no_active_terms") {
+    // Phase A — informational (missing contract terms), rendered neutral so it
+    // does not visually compete with real blockers. Detection unchanged.
     return (
-      <Badge variant="outline" className="gap-1 bg-warning/10 text-warning border-warning/20">
-        <AlertTriangle className="h-3 w-3" />
+      <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground border-border">
+        <Info className="h-3 w-3" />
         No active terms
       </Badge>
     );
