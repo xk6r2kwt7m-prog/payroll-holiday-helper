@@ -871,6 +871,55 @@ export function EditablePayrollTable({
                             </button>
                           );
                         })()}
+                        {(() => {
+                          const badges = computeRowBadges(
+                            {
+                              id: entry.id,
+                              employee_id: entry.employee_id,
+                              timesheet_hours: Number(entry.timesheet_hours),
+                              holiday_accrued_hours: entry.holiday_accrued_hours,
+                              adjustment_note: entry.adjustment_note,
+                              imported_hours: entry.imported_hours,
+                            },
+                            filterCtx,
+                          );
+                          const chips: { key: string; label: string; tone: string; testId: string }[] = [];
+                          if (badges.nmwFail)
+                            chips.push({ key: "nmw-fail", label: "NMW fail", tone: "bg-destructive/10 text-destructive border-destructive/30", testId: "row-badge-nmw-fail" });
+                          if (badges.nmwAtRisk && !badges.nmwFail)
+                            chips.push({ key: "nmw-risk", label: "NMW at risk", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-nmw-risk" });
+                          if (badges.missingTimesheet)
+                            chips.push({ key: "missing-ts", label: "Missing timesheet", tone: "bg-destructive/10 text-destructive border-destructive/30", testId: "row-badge-missing-timesheet" });
+                          if (badges.zeroHours)
+                            chips.push({ key: "zero", label: "Zero hours", tone: "bg-muted text-muted-foreground border-border", testId: "row-badge-zero-hours" });
+                          if (badges.rateChanged)
+                            chips.push({ key: "rate", label: "Rate changed", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-rate-changed" });
+                          if (badges.scChanged)
+                            chips.push({ key: "sc", label: "SC changed", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-sc-changed" });
+                          if (badges.manualAdjustment)
+                            chips.push({ key: "adj", label: "Manual adjustment", tone: "bg-primary/10 text-primary border-primary/20", testId: "row-badge-manual-adjustment" });
+                          if (badges.holidayPay)
+                            chips.push({ key: "hol", label: "Holiday pay", tone: "bg-accent/15 text-accent-foreground border-border", testId: "row-badge-holiday-pay" });
+                          if (badges.internalNote)
+                            chips.push({ key: "note", label: "Internal note", tone: "bg-muted text-muted-foreground border-border", testId: "row-badge-internal-note" });
+                          if (chips.length === 0) return null;
+                          return (
+                            <div className="flex flex-wrap gap-1 mt-1" data-testid={`row-badges-${entry.employee_id}`}>
+                              {chips.map((c) => (
+                                <span
+                                  key={c.key}
+                                  data-testid={c.testId}
+                                  className={cn(
+                                    "inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium",
+                                    c.tone,
+                                  )}
+                                >
+                                  {c.label}
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </TableCell>
