@@ -62,6 +62,7 @@ import FohAllergyTraining from "./pages/FohAllergyTraining";
 import FohUpsellingTraining from "./pages/FohUpsellingTraining";
 import FohPrintableTraining from "./pages/FohPrintableTraining";
 import Integrations from "./pages/Integrations";
+import OAuthConsent from "./pages/OAuthConsent";
 import { CommandPalette } from "@/components/CommandPalette";
 import { CookieConsent } from "@/components/CookieConsent";
 
@@ -94,6 +95,7 @@ const App = () => (
             <Route path="/select-workspace" element={<SelectWorkspace />} />
             <Route path="/sign/:token" element={<SignContract />} />
             <Route path="/document/view" element={<DocumentView />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
             {/* Dashboard — all authenticated users */}
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />

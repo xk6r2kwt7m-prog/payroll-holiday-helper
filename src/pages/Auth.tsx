@@ -47,15 +47,21 @@ const Auth = () => {
   const { user, signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
+  // Preserve ?next= across sign-in and sign-up so OAuth consent flows return to the consent URL.
+  const rawNext = searchParams.get("next");
+  const safeNext =
+    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+  const postAuthTarget = safeNext ?? "/";
+
   useEffect(() => {
-    if (user) navigate("/");
-  }, [user, navigate]);
+    if (user) navigate(postAuthTarget);
+  }, [user, navigate, postAuthTarget]);
 
   const handleLogin = async () => {
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
+      result.error.issues.forEach((err) => {
         if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
       });
       setErrors(fieldErrors);
@@ -71,15 +77,16 @@ const Auth = () => {
       );
     } else {
       toast.success("Welcome back!");
-      navigate("/");
+      navigate(postAuthTarget);
     }
   };
+
 
   const handleSignup = async () => {
     const result = signupSchema.safeParse({ fullName, email, password });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
-      result.error.errors.forEach((err) => {
+      result.error.issues.forEach((err) => {
         if (err.path[0]) fieldErrors[err.path[0] as string] = err.message;
       });
       setErrors(fieldErrors);
