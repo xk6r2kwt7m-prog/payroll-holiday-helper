@@ -1,5 +1,13 @@
 import { useState, useMemo } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare, Eye } from "lucide-react";
+import {
+  filterEntries,
+  computeRowBadges,
+  synthesizeZeroChange,
+  PAYROLL_TABLE_FILTERS,
+  type PayrollTableFilter,
+} from "@/lib/payroll-table-filters";
+import type { EmployeeChange } from "@/lib/payroll-change-review";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
 import { EmployeeChangeReviewDialog } from "./EmployeeChangeReviewDialog";
