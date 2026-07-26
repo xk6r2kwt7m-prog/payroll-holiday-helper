@@ -177,6 +177,7 @@ export function PayrollReportBuilder({
           reportConfig={config}
           companyName={companyName}
           locationData={locationData}
+          periodNotes={config.showNotes ? periodNotes : []}
         />
       ).toBlob();
 
