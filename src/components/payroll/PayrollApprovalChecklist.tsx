@@ -21,6 +21,7 @@ import {
   type ApprovalChecklistInput,
   type ChecklistItem,
 } from "@/lib/payroll-approval-checklist";
+import type { PayrollApprovalEvidence } from "@/lib/payroll-approval-evidence";
 
 interface Props extends ApprovalChecklistInput {
   /** Manager/admin/payroll-authorised user. Non-authorised users see read-only. */
@@ -35,6 +36,8 @@ interface Props extends ApprovalChecklistInput {
   /** Optional controlled confirmation checkbox state. */
   confirmed?: boolean;
   onConfirmedChange?: (v: boolean) => void;
+  /** Phase A — optional compact evidence footer to reduce duplicate approval cards. */
+  evidence?: PayrollApprovalEvidence | null;
 }
 
 export function PayrollApprovalChecklist({
