@@ -155,9 +155,9 @@ export function PayrollPeriodNotesSection({
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Add Internal Note</DialogTitle>
+            <DialogTitle>Add Period Note</DialogTitle>
             <p className="text-xs text-muted-foreground">
-              This note belongs to <strong>{periodName}</strong> only and will <strong>not</strong> appear in PDFs, exports, or future periods.
+              This note belongs to <strong>{periodName}</strong> only and stays private by default. It is only included in the PDF/export when <strong>Include Period Notes</strong> is enabled in the Report Builder.
             </p>
           </DialogHeader>
           <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
