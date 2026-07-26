@@ -79,6 +79,7 @@ export function PayrollReportBuilder({
   // Fetch location data for this period
   const { data: locationData = [] } = usePayrollEntryLocations(period?.id);
   const { data: rawPeriodNotes = [] } = usePayrollPeriodNotes(period?.id);
+  const { data: rawAdjustments = [] } = usePayrollAdjustments(period?.id);
 
   const periodNotes = useMemo(() => {
     const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
@@ -93,6 +94,25 @@ export function PayrollReportBuilder({
       };
     });
   }, [rawPeriodNotes, allEmployees]);
+
+  const adjustments = useMemo(() => {
+    const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
+    return rawAdjustments.map((a) => {
+      const emp: any = empById.get(a.employee_id);
+      return {
+        id: a.id,
+        employee_id: a.employee_id,
+        employee_name: emp ? `${emp.forename} ${emp.surname}` : "Unknown",
+        field_name: a.field_name,
+        old_value: a.old_value,
+        new_value: a.new_value,
+        delta: a.delta,
+        note: a.note,
+        created_at: a.created_at,
+      };
+    });
+  }, [rawAdjustments, allEmployees]);
+
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
