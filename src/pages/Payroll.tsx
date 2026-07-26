@@ -726,6 +726,22 @@ const Payroll = () => {
 
         <PayrollNavStrip />
 
+        {/* Phase B — compact top payroll status bar */}
+        {selectedPeriod && (
+          <PayrollStatusBar
+            periodName={selectedPeriod.period_name}
+            statusLabel={statusLabels[selectedPeriod.status] ?? selectedPeriod.status}
+            statusTone={(selectedPeriod.status as any) || "draft"}
+            employeeCount={entries.length}
+            totalPay={totalPay}
+            holidayTotal={holidayTotal}
+            blockerCount={pageSeverity.blockerCount}
+            warningCount={pageSeverity.warningCount}
+            ready={pageSeverity.ready && !phase5ApprovalBlock}
+            readyDetail={phase5ApprovalBlock}
+          />
+        )}
+
         {/* Main Payroll Content */}
         <div className="space-y-4 sm:space-y-6">
             {/* Admin actions — gated by permission.
