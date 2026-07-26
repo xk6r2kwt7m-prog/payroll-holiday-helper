@@ -101,6 +101,8 @@ interface EditablePayrollTableProps {
   comparisonByEmployee?: Map<string, import("@/lib/payroll-change-review").EmployeeChange>;
   /** Human-readable label of the previous period ("May 2026"). */
   previousPeriodLabel?: string | null;
+  /** Human-readable label of the current period ("June 2026"). */
+  periodLabel?: string | null;
 }
 
 interface EditingEntry {
@@ -122,6 +124,7 @@ export function EditablePayrollTable({
   priorPeriodEmployeeIds = new Set(),
   comparisonByEmployee,
   previousPeriodLabel = null,
+  periodLabel = null,
 }: EditablePayrollTableProps) {
   const { tenantId } = useTenant();
   const { data: leaveRules } = useLeaveRules();
