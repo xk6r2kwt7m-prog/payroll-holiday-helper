@@ -137,6 +137,8 @@ export function EditablePayrollTable({
   comparisonByEmployee,
   previousPeriodLabel = null,
   periodLabel = null,
+  holidayPaidEmployeeIds,
+  nmwStatusByEmployee,
 }: EditablePayrollTableProps) {
   const { tenantId } = useTenant();
   const { data: leaveRules } = useLeaveRules();
