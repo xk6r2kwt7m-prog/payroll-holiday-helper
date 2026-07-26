@@ -685,6 +685,33 @@ export function PayrollPDF({
           }
         })()}
 
+        {showPeriodNotes && (
+          <View style={{ marginTop: 10 }} wrap={false}>
+            <Text style={styles.sectionTitle}>Payroll Notes</Text>
+            <View style={{ backgroundColor: "#fffaf0", borderWidth: 0.5, borderColor: AMBER_BORDER, borderRadius: 3, padding: 6 }}>
+              {periodNotes.map((n, i) => (
+                <View
+                  key={n.id}
+                  style={{
+                    flexDirection: "row",
+                    paddingVertical: 3,
+                    borderTopWidth: i === 0 ? 0 : 0.5,
+                    borderTopColor: BORDER,
+                  }}
+                >
+                  <Text style={{ fontSize: 7, fontFamily: "Helvetica-Bold", color: DARK, width: "22%" }}>
+                    {n.employee_name}
+                  </Text>
+                  <Text style={{ fontSize: 7, color: DARK, width: "62%" }}>{n.note}</Text>
+                  <Text style={{ fontSize: 6, color: GRAY, width: "16%", textAlign: "right" }}>
+                    {new Date(n.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         <Footer />
       </Page>
 
