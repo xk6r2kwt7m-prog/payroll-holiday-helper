@@ -142,7 +142,7 @@ export function EditablePayrollTable({
   // Adjustment note dialog state
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<{ entry: PayrollEntry; hours: number; hourlyRate: number; serviceCharge: number; perfBonus: number; specBonus: number } | null>(null);
-  const [adjustmentNote, setAdjustmentNote] = useState("");
+  const [reviewEmployeeId, setReviewEmployeeId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const createAdjustment = useCreatePayrollAdjustment();
