@@ -1024,35 +1024,64 @@ const Payroll = () => {
           />
         )}
 
-        {/* Holiday Pay Section */}
+        {/* Holiday Pay Section — collapsed by default (Phase B) */}
         {selectedPeriod && (
-          <PayrollHolidaySection
-            periodId={selectedPeriod.id}
-            periodStatus={selectedPeriod.status}
-            holidayPayments={holidayPayments as any}
-            isAdmin={isAdmin}
-          />
+          <CollapsibleSection
+            title="Holiday pay"
+            summary="Holiday payments recorded against this payroll period."
+            count={holidayPayments.length}
+            badge={
+              holidayTotal > 0
+                ? { label: formatCurrency(holidayTotal), tone: "neutral" }
+                : null
+            }
+            defaultOpen={false}
+            testId="collapsible-holiday-pay"
+          >
+            <PayrollHolidaySection
+              periodId={selectedPeriod.id}
+              periodStatus={selectedPeriod.status}
+              holidayPayments={holidayPayments as any}
+              isAdmin={isAdmin}
+            />
+          </CollapsibleSection>
         )}
 
-        {/* Sales & Labour Analytics */}
+        {/* Sales & Labour Analytics — collapsed by default (Phase B) */}
         {selectedPeriod && entries.length > 0 && (
-          <PayrollSalesInput
-            periodId={selectedPeriod.id}
-            periodStatus={selectedPeriod.status}
-            currentSalesTotal={selectedPeriod.sales_total}
-            totalPayroll={totalPay}
-            managementPayroll={managementPayroll}
-            isAdmin={isAdmin}
-          />
+          <CollapsibleSection
+            title="Sales & labour"
+            summary="Enter period sales to see labour cost as a % of revenue."
+            badge={{ label: "Insight", tone: "neutral" }}
+            defaultOpen={false}
+            testId="collapsible-sales-labour"
+          >
+            <PayrollSalesInput
+              periodId={selectedPeriod.id}
+              periodStatus={selectedPeriod.status}
+              currentSalesTotal={selectedPeriod.sales_total}
+              totalPayroll={totalPay}
+              managementPayroll={managementPayroll}
+              isAdmin={isAdmin}
+            />
+          </CollapsibleSection>
         )}
 
-        {/* Inline Period Analytics */}
+        {/* Inline Period Analytics — collapsed by default (Phase B). Insight only. */}
         {selectedPeriod && entries.length > 0 && (
-          <PayrollInlineAnalytics
-            currentPeriodId={selectedPeriod.id}
-            entries={entries}
-            holidayPayments={holidayPayments as any}
-          />
+          <CollapsibleSection
+            title="Period analytics"
+            summary="Trends and comparisons. Insight only — not part of approval readiness."
+            badge={{ label: "Insight", tone: "neutral" }}
+            defaultOpen={false}
+            testId="collapsible-period-analytics"
+          >
+            <PayrollInlineAnalytics
+              currentPeriodId={selectedPeriod.id}
+              entries={entries}
+              holidayPayments={holidayPayments as any}
+            />
+          </CollapsibleSection>
         )}
 
         {/* Phase A — standalone rate discrepancy card removed.
