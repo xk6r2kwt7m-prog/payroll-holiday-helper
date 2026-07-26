@@ -957,30 +957,11 @@ const Payroll = () => {
           />
         )}
 
-        {/* Rate Discrepancy Warning */}
-        {rateDiscrepancies.length > 0 && (
-          <SensitiveSection
-            sectionKey="payroll-rate-discrepancies"
-            category="compensation"
-            title={t("payroll.rate_change")}
-          >
-            <div className="rounded-xl bg-warning/10 border border-warning/20 p-3 sm:p-4 animate-fade-in">
-              <div className="flex items-start gap-2.5 mb-2">
-                <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">{t("payroll.rate_change")}</Badge>
-                <p className="font-medium text-card-foreground text-xs sm:text-sm">
-                  {t("payroll.rate_differences", { count: rateDiscrepancies.length })}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {rateDiscrepancies.slice(0, 5).map((e: any) => (
-                  <Badge key={e.id} variant="outline" className="text-[10px] sm:text-xs">
-                    {e.employees?.forename}: {formatCurrency(Number(e.hourly_rate))} → {formatCurrency(Number(e.employees?.hourly_rate))}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </SensitiveSection>
-        )}
+        {/* Phase A — standalone rate discrepancy card removed.
+            Detection is preserved via rateDiscrepancies and remains surfaced through
+            EmploymentTermsComparisonPanel, PayrollApprovalChecklist, and row-level
+            warnings in EditablePayrollTable. */}
+
 
         {/* Loading State */}
         {(loadingPeriods || loadingEntries) && (
