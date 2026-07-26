@@ -217,6 +217,65 @@ export function EditablePayrollTable({
         return sorted;
     }
   }, [entries, sortMode]);
+
+  const filterCtx = useMemo(
+    () => ({
+      comparisonByEmployee,
+      adjustedEmployeeIds,
+      holidayPaidEmployeeIds,
+      nmwStatusByEmployee,
+    }),
+    [comparisonByEmployee, adjustedEmployeeIds, holidayPaidEmployeeIds, nmwStatusByEmployee],
+  );
+
+  const filteredEntries = useMemo(
+    () =>
+      filterEntries(
+        sortedEntries.map((e) => ({
+          ...e,
+          holiday_accrued_hours: e.holiday_accrued_hours ?? null,
+          adjustment_note: e.adjustment_note ?? null,
+          imported_hours: e.imported_hours ?? null,
+        })) as unknown as PayrollEntry[],
+        filterMode,
+        filterCtx,
+      ),
+    [sortedEntries, filterMode, filterCtx],
+  );
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<PayrollTableFilter, number> = {
+      all: sortedEntries.length,
+      issues: 0,
+      pay_changes: 0,
+      zero_hours: 0,
+      holiday_pay: 0,
+      manual_adjustments: 0,
+      missing_timesheet: 0,
+    };
+    for (const e of sortedEntries) {
+      const eForFilter = {
+        ...e,
+        holiday_accrued_hours: e.holiday_accrued_hours ?? null,
+        adjustment_note: e.adjustment_note ?? null,
+        imported_hours: e.imported_hours ?? null,
+      };
+      for (const f of PAYROLL_TABLE_FILTERS) {
+        if (f.id === "all") continue;
+        if (
+          filterEntries(
+            [eForFilter as unknown as PayrollEntry],
+            f.id,
+            filterCtx,
+          ).length > 0
+        ) {
+          counts[f.id]++;
+        }
+      }
+    }
+    return counts;
+  }, [sortedEntries, filterCtx]);
+
   const handleRemoveFromPeriod = async () => {
     if (!removeEntryId) return;
     try {
