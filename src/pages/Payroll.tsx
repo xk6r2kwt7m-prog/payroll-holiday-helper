@@ -1018,6 +1018,9 @@ const Payroll = () => {
             showBonusColumn={payrollPrefs?.showBonusColumn !== false}
             showServiceCharge={payrollPrefs?.showServiceCharge !== false}
             priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+            comparisonByEmployee={comparison?.changes}
+            previousPeriodLabel={immediatePriorPeriod?.period_name ?? null}
+            periodLabel={selectedPeriod?.period_name ?? null}
           />
         )}
 
