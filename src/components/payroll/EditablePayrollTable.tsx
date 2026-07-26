@@ -710,6 +710,33 @@ export function EditablePayrollTable({
                           employeeId={entry.employee_id}
                           employeeName={`${emp?.forename} ${emp?.surname}`}
                         />
+                        {(() => {
+                          const cmp = comparisonByEmployee?.get(entry.employee_id);
+                          if (!cmp || (!cmp.has_changes && !cmp.flags.length)) return null;
+                          const tone =
+                            cmp.severity === "high"
+                              ? "bg-warning/15 text-warning border-warning/30"
+                              : cmp.severity === "medium"
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : "bg-muted text-muted-foreground border-border";
+                          return (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReviewEmployeeId(entry.employee_id);
+                              }}
+                              className={cn(
+                                "ml-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium hover:opacity-80",
+                                tone,
+                              )}
+                              title="Review month-on-month changes"
+                            >
+                              <GitCompare className="h-3 w-3" />
+                              Review changes
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   </TableCell>
