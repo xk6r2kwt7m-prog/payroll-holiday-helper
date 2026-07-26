@@ -870,7 +870,9 @@ const Payroll = () => {
           />
         )}
 
-        {/* Phase 5A — Approval readiness checklist (read-only gate) */}
+        {/* Phase 5A + Phase A — Approval readiness checklist with compact evidence footer.
+            The standalone PayrollApprovalEvidence card has been merged in here to
+            reduce duplicate approval-state cards. */}
         {selectedPeriod && phase5Report && (
           <PayrollApprovalChecklist
             period_status={selectedPeriod.status}
@@ -884,22 +886,21 @@ const Payroll = () => {
             onAcknowledgedChange={setChecklistAcks}
             confirmed={checklistConfirmed}
             onConfirmedChange={setChecklistConfirmed}
+            evidence={
+              phase5Checklist
+                ? buildPayrollApprovalEvidence({
+                    period: selectedPeriod,
+                    payrollEntryCount: entries.length,
+                    checklist: phase5Checklist,
+                    acknowledgedIds: checklistAcks,
+                    approvalConfirmed: checklistConfirmed,
+                    approvalBlockedReason: phase5ApprovalBlock,
+                  })
+                : null
+            }
           />
         )}
 
-        {/* Phase 5C/5D — Read-only approval evidence snapshot */}
-        {selectedPeriod && phase5Checklist && (
-          <PayrollApprovalEvidence
-            evidence={buildPayrollApprovalEvidence({
-              period: selectedPeriod,
-              payrollEntryCount: entries.length,
-              checklist: phase5Checklist,
-              acknowledgedIds: checklistAcks,
-              approvalConfirmed: checklistConfirmed,
-              approvalBlockedReason: phase5ApprovalBlock,
-            })}
-          />
-        )}
 
 
 
