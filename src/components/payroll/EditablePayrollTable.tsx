@@ -1155,7 +1155,7 @@ export function EditablePayrollTable({
               <TableCell className="text-right font-bold text-primary">
                 {formatCurrency(totals.total)}
               </TableCell>
-              {canEdit && <TableCell />}
+              <TableCell />
             </TableRow>
           </tfoot>
         </Table>
