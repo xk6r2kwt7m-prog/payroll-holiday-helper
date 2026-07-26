@@ -48,6 +48,7 @@ export function PayrollApprovalChecklist({
   onAcknowledgedChange,
   confirmed: confirmedProp,
   onConfirmedChange,
+  evidence,
   ...input
 }: Props) {
   const result = useMemo(() => buildApprovalChecklist(input), [input]);
