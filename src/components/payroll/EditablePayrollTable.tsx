@@ -1086,9 +1086,19 @@ export function EditablePayrollTable({
                       <TableCell className="text-right font-semibold">
                         {formatCurrency(Number(entry.total_pay))}
                       </TableCell>
-                      {canEdit && (
+                      {canEdit ? (
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => setReviewEmployeeId(entry.employee_id)}
+                              title="View details"
+                              data-testid={`row-details-${entry.employee_id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             <Button
                               size="icon"
                               variant="ghost"
@@ -1110,6 +1120,19 @@ export function EditablePayrollTable({
                               <UserMinus className="h-4 w-4" />
                             </Button>
                           </div>
+                        </TableCell>
+                      ) : (
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={() => setReviewEmployeeId(entry.employee_id)}
+                            title="View details"
+                            data-testid={`row-details-${entry.employee_id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       )}
                     </>
