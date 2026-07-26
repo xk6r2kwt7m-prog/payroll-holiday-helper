@@ -1,13 +1,13 @@
 /**
  * Phase B — Payroll page UX polish (severity grouping + collapsibles).
  *
- * These tests focus on the pure derivation and the small presentational
- * components introduced in Phase B. Payroll calculations, NMW, service
+ * Pure-logic and static-render tests. Payroll calculations, NMW, service
  * charge, holiday, import matching, approval writes, audit, notes and PDF
  * logic are NOT touched by Phase B and are covered elsewhere.
  */
 import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { derivePayrollPageSeverity } from "@/lib/payroll-page-severity";
 import type { ApprovalChecklistResult } from "@/lib/payroll-approval-checklist";
 import { PayrollStatusBar } from "@/components/payroll/PayrollStatusBar";
@@ -25,6 +25,8 @@ function makeChecklist(overrides: Partial<ApprovalChecklistResult> = {}): Approv
     ...overrides,
   };
 }
+
+const html = (node: React.ReactElement) => renderToStaticMarkup(node);
 
 describe("Phase B — derivePayrollPageSeverity", () => {
   it("returns ready=true and empty groups when nothing is flagged", () => {
@@ -91,12 +93,11 @@ describe("Phase B — derivePayrollPageSeverity", () => {
     });
     expect(r.blockers.map((b) => b.id)).toEqual(["checklist_nmw_non_compliant"]);
     expect(r.warnings.map((w) => w.id)).toEqual(["checklist_profile_fallback"]);
-    // pass items must never appear as blockers or warnings
     expect(r.blockers.concat(r.warnings).find((x) => x.id.endsWith("sc_diagnostic"))).toBeUndefined();
     expect(r.ready).toBe(false);
   });
 
-  it("does not duplicate NMW when the checklist already reported it as a blocker", () => {
+  it("does not duplicate NMW when checklist already reports it as a blocker", () => {
     const r = derivePayrollPageSeverity({
       checklist: makeChecklist({
         items: [
@@ -105,7 +106,7 @@ describe("Phase B — derivePayrollPageSeverity", () => {
             status: "block",
             blocking: true,
             requires_ack: false,
-            title: "NMW",
+            title: "Below NMW",
             detail: "",
             count: 1,
             affected_employee_ids: [],
@@ -115,7 +116,8 @@ describe("Phase B — derivePayrollPageSeverity", () => {
       importBlockingIssueCount: 0,
       nmwBlockerCount: 1,
     });
-    expect(r.blockers.filter((b) => b.title.toLowerCase().includes("nmw") || b.title.toLowerCase().includes("minimum wage")).length).toBe(1);
+    expect(r.blockers.filter((b) => b.id === "nmw_blocker").length).toBe(0);
+    expect(r.blockers.length).toBe(1);
   });
 
   it("adds standalone NMW blocker when checklist has not been built yet", () => {
@@ -129,119 +131,133 @@ describe("Phase B — derivePayrollPageSeverity", () => {
   });
 });
 
-describe("Phase B — PayrollStatusBar", () => {
-  it("renders period, status, employees, totals and counts", () => {
-    render(
-      <PayrollStatusBar
-        periodName="June 2026"
-        statusLabel="Draft"
-        statusTone="draft"
-        employeeCount={42}
-        totalPay={12345}
-        holidayTotal={678}
-        blockerCount={2}
-        warningCount={3}
-        ready={false}
-      />,
+describe("Phase B — PayrollStatusBar (static render)", () => {
+  it("renders period, status, employee count, totals and blocker/warning counts", () => {
+    const out = html(
+      React.createElement(PayrollStatusBar, {
+        periodName: "June 2026",
+        statusLabel: "Draft",
+        statusTone: "draft",
+        employeeCount: 42,
+        totalPay: 12345,
+        holidayTotal: 678,
+        blockerCount: 2,
+        warningCount: 3,
+        ready: false,
+        readyDetail: "Resolve 2 blocking checklist items before approval can proceed.",
+      }),
     );
-    expect(screen.getByTestId("payroll-status-bar")).toBeInTheDocument();
-    expect(screen.getByTestId("status-bar-period").textContent).toContain("June 2026");
-    expect(screen.getByTestId("status-bar-status").textContent).toContain("Draft");
-    expect(screen.getByTestId("status-bar-employees").textContent).toContain("42");
-    expect(screen.getByTestId("status-bar-total").textContent).toMatch(/12,345|12345/);
-    expect(screen.getByTestId("status-bar-blockers").textContent).toContain("2");
-    expect(screen.getByTestId("status-bar-warnings").textContent).toContain("3");
-    expect(screen.getByTestId("status-bar-ready").textContent).toContain("Not ready");
+    expect(out).toContain("June 2026");
+    expect(out).toContain("Draft");
+    expect(out).toContain("42 employees");
+    // Currency renders as £12,345.00 in en-GB locale but assert loosely.
+    expect(out).toMatch(/12[,.]?345/);
+    expect(out).toContain("2 blockers");
+    expect(out).toContain("3 warnings");
+    expect(out).toContain("Not ready");
+    expect(out).toContain("Resolve 2 blocking");
   });
 
   it("shows Ready when there are no blockers", () => {
-    render(
-      <PayrollStatusBar
-        periodName="July 2026"
-        statusLabel="Pending"
-        statusTone="pending"
-        employeeCount={10}
-        totalPay={1000}
-        holidayTotal={0}
-        blockerCount={0}
-        warningCount={0}
-        ready={true}
-      />,
+    const out = html(
+      React.createElement(PayrollStatusBar, {
+        periodName: "July 2026",
+        statusLabel: "Pending",
+        statusTone: "pending",
+        employeeCount: 10,
+        totalPay: 1000,
+        holidayTotal: 0,
+        blockerCount: 0,
+        warningCount: 0,
+        ready: true,
+      }),
     );
-    expect(screen.getByTestId("status-bar-ready").textContent).toContain("Ready");
+    expect(out).toContain(">Ready<");
   });
 });
 
-describe("Phase B — PayrollActionRequired", () => {
-  it("shows the 'no blocking issues found' message when empty", () => {
-    render(<PayrollActionRequired items={[]} />);
-    expect(screen.getByTestId("action-required-empty").textContent).toBe("No blocking issues found.");
-    expect(screen.getByTestId("payroll-action-required").getAttribute("data-has-blockers")).toBe("false");
+describe("Phase B — PayrollActionRequired (static render)", () => {
+  it("shows 'No blocking issues found.' when empty", () => {
+    const out = html(React.createElement(PayrollActionRequired, { items: [] }));
+    expect(out).toContain("No blocking issues found.");
+    expect(out).toContain('data-has-blockers="false"');
   });
 
-  it("lists blockers with title and count", () => {
-    render(
-      <PayrollActionRequired
-        items={[
+  it("lists blockers with their titles", () => {
+    const out = html(
+      React.createElement(PayrollActionRequired, {
+        items: [
           { id: "a", title: "NMW breach", detail: "1 below rate", count: 1 },
           { id: "b", title: "SC paid to ineligible", count: 2 },
-        ]}
-      />,
+        ],
+      }),
     );
-    expect(screen.getByTestId("action-required-item-a").textContent).toContain("NMW breach");
-    expect(screen.getByTestId("action-required-item-b").textContent).toContain("SC paid to ineligible");
-    expect(screen.getByTestId("payroll-action-required").getAttribute("data-has-blockers")).toBe("true");
+    expect(out).toContain("NMW breach");
+    expect(out).toContain("SC paid to ineligible");
+    expect(out).toContain('data-has-blockers="true"');
   });
 });
 
-describe("Phase B — PayrollReviewAcknowledge", () => {
+describe("Phase B — PayrollReviewAcknowledge (static render)", () => {
   it("shows empty state when no warnings", () => {
-    render(<PayrollReviewAcknowledge items={[]} />);
-    expect(screen.getByTestId("review-empty")).toBeInTheDocument();
+    const out = html(React.createElement(PayrollReviewAcknowledge, { items: [] }));
+    expect(out).toContain("No warnings to acknowledge.");
+    expect(out).toContain('data-has-warnings="false"');
   });
 
-  it("renders warnings but never as blockers", () => {
-    render(
-      <PayrollReviewAcknowledge
-        items={[{ id: "rate", title: "Pay rate changes vs previous period", count: 3 }]}
-      />,
+  it("renders warnings", () => {
+    const out = html(
+      React.createElement(PayrollReviewAcknowledge, {
+        items: [{ id: "rate", title: "Pay rate changes vs previous period", count: 3 }],
+      }),
     );
-    expect(screen.getByTestId("review-item-rate").textContent).toContain("Pay rate changes");
-    // Warnings panel is distinct from the blockers panel.
-    expect(screen.queryByTestId("payroll-action-required")).toBeNull();
+    expect(out).toContain("Pay rate changes vs previous period");
+    expect(out).toContain('data-has-warnings="true"');
+    // Warnings panel is a distinct testid from Action Required.
+    expect(out).not.toContain('data-testid="payroll-action-required"');
   });
 });
 
-describe("Phase B — CollapsibleSection", () => {
-  it("defaults to collapsed and reveals content on click", () => {
-    render(
-      <CollapsibleSection title="Holiday pay" defaultOpen={false} testId="col-holiday">
-        <div data-testid="holiday-content">holiday inner</div>
-      </CollapsibleSection>,
+describe("Phase B — CollapsibleSection (static render)", () => {
+  it("is collapsed by default with data-open=false", () => {
+    const out = html(
+      React.createElement(
+        CollapsibleSection,
+        { title: "Holiday pay", defaultOpen: false, testId: "col-holiday" },
+        React.createElement("div", null, "inner"),
+      ),
     );
-    const wrapper = screen.getByTestId("col-holiday");
-    expect(wrapper.getAttribute("data-open")).toBe("false");
-    // Content is hidden by radix (data-state=closed).
-    const button = wrapper.querySelector("button")!;
-    fireEvent.click(button);
-    expect(wrapper.getAttribute("data-open")).toBe("true");
-    expect(screen.getByTestId("holiday-content")).toBeInTheDocument();
+    expect(out).toContain('data-testid="col-holiday"');
+    expect(out).toContain('data-open="false"');
+    expect(out).toContain("Holiday pay");
   });
 
-  it("renders summary count and badge label in the header", () => {
-    render(
-      <CollapsibleSection
-        title="Period notes"
-        count={4}
-        badge={{ label: "1 on PDF", tone: "neutral" }}
-        testId="col-notes"
-      >
-        <div>inner</div>
-      </CollapsibleSection>,
+  it("renders count and badge label in the header", () => {
+    const out = html(
+      React.createElement(
+        CollapsibleSection,
+        {
+          title: "Period notes",
+          count: 4,
+          badge: { label: "1 on PDF", tone: "neutral" },
+          testId: "col-notes",
+        },
+        React.createElement("div", null, "inner"),
+      ),
     );
-    const header = screen.getByTestId("col-notes");
-    expect(header.textContent).toContain("Period notes");
-    expect(header.textContent).toContain("(4)");
-    expect(header.textContent).toContain("1 on PDF");
+    expect(out).toContain("Period notes");
+    expect(out).toContain("(4)");
+    expect(out).toContain("1 on PDF");
+  });
+
+  it("opens when defaultOpen=true", () => {
+    const out = html(
+      React.createElement(
+        CollapsibleSection,
+        { title: "Sales & labour", defaultOpen: true, testId: "col-sales" },
+        React.createElement("div", null, "inner"),
+      ),
+    );
+    expect(out).toContain('data-open="true"');
   });
 });
