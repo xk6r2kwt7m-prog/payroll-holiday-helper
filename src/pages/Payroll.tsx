@@ -893,20 +893,44 @@ const Payroll = () => {
           />
         )}
 
-        {/* Period-Specific Internal Notes */}
+        {/* Phase B — Action Required (true blockers only) */}
         {selectedPeriod && entries.length > 0 && (
-          <PayrollPeriodNotesSection
-            periodId={selectedPeriod.id}
-            periodName={selectedPeriod.period_name}
-            employees={entries.map((e: any) => ({
-              id: e.employee_id,
-              name: `${e.employees?.forename} ${e.employees?.surname}`,
-            }))}
-            isAdmin={isAdmin}
-          />
+          <PayrollActionRequired items={pageSeverity.blockers} />
         )}
 
-        {/* UK Minimum Wage compliance — authoritative, period-based */}
+        {/* Phase B — Review & Acknowledge (warnings, non-blocking) */}
+        {selectedPeriod && entries.length > 0 && (
+          <PayrollReviewAcknowledge items={pageSeverity.warnings} />
+        )}
+
+        {/* Period-Specific Internal Notes — collapsed by default (Phase B) */}
+        {selectedPeriod && entries.length > 0 && (
+          <CollapsibleSection
+            title="Period notes"
+            summary="Internal notes for this payroll period; individual notes may be included on the PDF."
+            count={totalNotesCount}
+            badge={
+              pdfVisibleNotesCount > 0
+                ? { label: `${pdfVisibleNotesCount} on PDF`, tone: "neutral" }
+                : null
+            }
+            defaultOpen={false}
+            testId="collapsible-period-notes"
+          >
+            <PayrollPeriodNotesSection
+              periodId={selectedPeriod.id}
+              periodName={selectedPeriod.period_name}
+              employees={entries.map((e: any) => ({
+                id: e.employee_id,
+                name: `${e.employees?.forename} ${e.employees?.surname}`,
+              }))}
+              isAdmin={isAdmin}
+            />
+          </CollapsibleSection>
+        )}
+
+        {/* UK Minimum Wage compliance — summary card remains visible; detail
+            table inside the panel is already collapsible. */}
         {selectedPeriod && entries.length > 0 && (
           <MinimumWageCompliancePanel
             results={nmw.results}
@@ -918,16 +942,30 @@ const Payroll = () => {
           />
         )}
 
-        {/* Phase 2B — Employment Terms comparison (read-only, advisory) */}
+        {/* Phase 2B — Employment Terms comparison — collapsed by default (Phase B).
+            Rate mismatches remain surfaced by the checklist & row-level warnings. */}
         {selectedPeriod && entries.length > 0 && (
-          <EmploymentTermsComparisonPanel
-            rows={termsComparison.rows}
-            summary={termsComparison.summary}
-            canCheck={termsComparison.canCheck}
-            periodStartDate={selectedPeriod.start_date}
-            payrollPeriodId={selectedPeriod.id}
-            periodStatus={selectedPeriod.status}
-          />
+          <CollapsibleSection
+            title="Employment terms check"
+            summary="Rate mismatches surface as review warnings. Backfill-only and missing-terms rows are informational."
+            count={termsComparison.summary?.mismatches ?? 0}
+            badge={
+              (termsComparison.summary?.mismatches ?? 0) > 0
+                ? { label: "Mismatches", tone: "warning" }
+                : { label: "No mismatches", tone: "neutral" }
+            }
+            defaultOpen={false}
+            testId="collapsible-employment-terms"
+          >
+            <EmploymentTermsComparisonPanel
+              rows={termsComparison.rows}
+              summary={termsComparison.summary}
+              canCheck={termsComparison.canCheck}
+              periodStartDate={selectedPeriod.start_date}
+              payrollPeriodId={selectedPeriod.id}
+              periodStatus={selectedPeriod.status}
+            />
+          </CollapsibleSection>
         )}
 
         {/* Phase 5A + Phase A — Approval readiness checklist with compact evidence footer.
