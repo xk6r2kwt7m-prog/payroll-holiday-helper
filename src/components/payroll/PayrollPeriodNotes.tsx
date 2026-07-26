@@ -122,7 +122,7 @@ export function PayrollPeriodNotesSection({
 
           {notes.length === 0 ? (
             <p className="text-xs text-muted-foreground py-2">
-              No internal notes for {periodName}. Notes added here will only be visible to managers and will not appear in PDFs or exports.
+              No notes for {periodName}. Notes added here are private to managers by default, and are only included in the PDF/export when "Include Period Notes" is enabled in the Report Builder.
             </p>
           ) : (
             <div className="grid gap-2">
