@@ -764,7 +764,7 @@ export function EditablePayrollTable({
               <TableHead className="text-right">Spec Bonus</TableHead>
               <TableHead className="text-right">Holiday Accrued</TableHead>
               <TableHead className="text-right">Total Pay</TableHead>
-              {canEdit && <TableHead className="w-[100px]"></TableHead>}
+              <TableHead className="w-[100px] text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
