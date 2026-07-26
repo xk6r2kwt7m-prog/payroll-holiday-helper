@@ -162,6 +162,57 @@ export function PayrollApprovalChecklist({
           </details>
         )}
 
+        {evidence && (
+          <div
+            data-testid="approval-evidence-footer"
+            data-evidence-status={evidence.approvalStatus}
+            className="rounded-md border border-border bg-muted/30 p-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]"
+          >
+            <div className="col-span-2 flex items-center justify-between">
+              <span className="text-muted-foreground uppercase tracking-wide text-[10px]">
+                Approval evidence
+              </span>
+              <Badge variant="outline" className="text-[10px]">
+                {evidence.approvalStatusLabel}
+              </Badge>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Period: </span>
+              <span className="font-medium">{evidence.periodName}</span>
+              {evidence.periodDateRange && (
+                <span className="block text-muted-foreground text-[10px]">
+                  {evidence.periodDateRange}
+                </span>
+              )}
+            </div>
+            <div>
+              <span className="text-muted-foreground">Entries: </span>
+              <span className="font-medium" data-testid="evidence-footer-entry-count">
+                {evidence.payrollEntryCount}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Warnings: </span>
+              <span className="font-medium">{evidence.warningCount}</span>
+              {evidence.acknowledgementsRequired > 0 && (
+                <span className="ml-1 text-muted-foreground">
+                  ({evidence.acknowledgedWarningCount}/{evidence.acknowledgementsRequired} ack)
+                </span>
+              )}
+            </div>
+            <div>
+              <span className="text-muted-foreground">Confirmed: </span>
+              <span
+                className={
+                  evidence.approvalConfirmed ? "font-medium text-success" : "text-muted-foreground"
+                }
+              >
+                {evidence.approvalConfirmed ? "Yes" : "No"}
+              </span>
+            </div>
+          </div>
+        )}
+
         {canApproveRole && !result.period_already_approved && (
           <div className="rounded-md border border-border bg-background p-3 space-y-3">
             <label className="flex items-start gap-2 text-xs">
