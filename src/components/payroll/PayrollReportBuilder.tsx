@@ -83,13 +83,12 @@ export function PayrollReportBuilder({
 
   const periodNotes = useMemo(() => {
     const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
-    // When the global "Include Period Notes" toggle is ON, include every
-    // note. When it is OFF, still surface notes that the manager explicitly
-    // marked with `show_on_pdf = true` — per-note visibility is a manual
-    // override that must always be honoured.
-    const source = config.showNotes
-      ? rawPeriodNotes
-      : rawPeriodNotes.filter((n) => n.show_on_pdf);
+    // Phase 2 rule: internal-only notes must NEVER appear on the payroll PDF,
+    // regardless of the global "Include Period Notes" toggle. Only notes the
+    // manager has explicitly flagged with `show_on_pdf = true` are exported.
+    // The global toggle simply gates whether that PDF-visible set is rendered.
+    if (!config.showNotes) return [];
+    const source = rawPeriodNotes.filter((n) => n.show_on_pdf);
     return source.map((n) => {
       const emp: any = empById.get(n.employee_id);
       return {
