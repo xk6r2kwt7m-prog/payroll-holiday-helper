@@ -42,10 +42,13 @@ export function PayrollPeriodNotesSection({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [noteText, setNoteText] = useState("");
+  const [category, setCategory] = useState<string>("other");
+  const [showOnPdf, setShowOnPdf] = useState(false);
 
   const { data: notes = [] } = usePayrollPeriodNotes(periodId);
   const createNote = useCreatePayrollPeriodNote();
   const deleteNote = useDeletePayrollPeriodNote();
+  const updateVisibility = useUpdatePayrollPeriodNoteVisibility();
 
   const handleCreate = async () => {
     if (!selectedEmployee || !noteText.trim()) return;
@@ -54,11 +57,15 @@ export function PayrollPeriodNotesSection({
         payroll_period_id: periodId,
         employee_id: selectedEmployee,
         note: noteText.trim(),
+        category,
+        show_on_pdf: showOnPdf,
       });
-      toast.success("Internal note added");
+      toast.success(showOnPdf ? "Note added — will appear on PDF" : "Internal note added");
       setDialogOpen(false);
       setNoteText("");
       setSelectedEmployee("");
+      setCategory("other");
+      setShowOnPdf(false);
     } catch {
       toast.error("Failed to add note");
     }
