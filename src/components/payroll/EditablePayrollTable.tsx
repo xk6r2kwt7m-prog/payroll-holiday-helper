@@ -1013,6 +1013,20 @@ export function EditablePayrollTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {reviewEmployeeId && comparisonByEmployee?.get(reviewEmployeeId) && (
+        <EmployeeChangeReviewDialog
+          open={!!reviewEmployeeId}
+          onOpenChange={(v) => !v && setReviewEmployeeId(null)}
+          change={comparisonByEmployee.get(reviewEmployeeId)!}
+          employeeName={(() => {
+            const e = entries.find((x) => x.employee_id === reviewEmployeeId);
+            return e ? `${e.employees?.forename ?? ""} ${e.employees?.surname ?? ""}`.trim() : "";
+          })()}
+          periodId={periodId}
+          previousPeriodLabel={previousPeriodLabel}
+          isAdmin={isAdmin}
+        />
+      )}
     </div>
   );
 }
