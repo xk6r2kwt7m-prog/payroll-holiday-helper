@@ -390,7 +390,30 @@ export function buildApprovalChecklist(
         affected_employee_ids: [],
       });
     }
-    // Phase 2 will add a "Notes marked for payroll PDF" summary item here.
+    if (cmp.total_notes > 0) {
+      items.push({
+        id: "comparison_notes_total",
+        status: "pass",
+        blocking: false,
+        requires_ack: false,
+        title: "Payroll review notes added",
+        detail: `${cmp.total_notes} note${cmp.total_notes === 1 ? "" : "s"} recorded for this period (${cmp.internal_only_notes} internal, ${cmp.pdf_visible_notes} on PDF).`,
+        count: cmp.total_notes,
+        affected_employee_ids: [],
+      });
+    }
+    if (cmp.pdf_visible_notes > 0) {
+      items.push({
+        id: "comparison_pdf_notes",
+        status: "pass",
+        blocking: false,
+        requires_ack: false,
+        title: "Notes marked for payroll PDF",
+        detail: `${cmp.pdf_visible_notes} internal note${cmp.pdf_visible_notes === 1 ? " is" : "s are"} set to appear on the payroll PDF.`,
+        count: cmp.pdf_visible_notes,
+        affected_employee_ids: [],
+      });
+    }
   }
 
   // Approval is blocked while any block-status item is present.
