@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
+import { EmployeeChangeReviewDialog } from "./EmployeeChangeReviewDialog";
 import { useCreatePayrollAdjustment, usePayrollAdjustments, usePriorPeriodAdjustments } from "@/hooks/usePayrollAdjustments";
 import { useTenant } from "@/hooks/useTenant";
 import { Badge } from "@/components/ui/badge";
