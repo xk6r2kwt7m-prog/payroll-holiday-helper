@@ -94,7 +94,7 @@ export function EmploymentTermsComparisonPanel({
             <Pill kind="ok" label="Match" value={summary.matches} />
             <Pill kind="warn" label="Rate mismatch" value={summary.rate_mismatch} />
             <Pill kind="warn" label="Dept mismatch" value={summary.department_mismatch} />
-            <Pill kind="warn" label="No active terms" value={summary.no_active_terms} />
+            <Pill kind="muted" label="No active terms" value={summary.no_active_terms} />
             <Pill kind="muted" label="Backfill only" value={summary.backfill_only} />
             {summary.scheduled_pending > 0 && (
               <Pill kind="muted" label="Scheduled change" value={summary.scheduled_pending} />
