@@ -371,7 +371,7 @@ export function buildPeriodComparison(input: BuildComparisonInput): PayrollCompa
 
 export function summarizeComparison(
   changes: Map<string, EmployeeChange>,
-  opts: { hasPrev: boolean; pdfVisibleNotesCount: number },
+  opts: { hasPrev: boolean; pdfVisibleNotesCount: number; totalNotesCount?: number },
 ): PayrollComparisonSummary {
   let rate_changes = 0;
   let service_charge_changes = 0;
@@ -393,6 +393,10 @@ export function summarizeComparison(
     if (c.gross_pay.severity === "amber") large_gross_pay_movement++;
   }
 
+  const pdf_visible_notes = opts.pdfVisibleNotesCount;
+  const total_notes = Math.max(opts.totalNotesCount ?? pdf_visible_notes, pdf_visible_notes);
+  const internal_only_notes = Math.max(0, total_notes - pdf_visible_notes);
+
   return {
     rate_changes,
     service_charge_changes,
@@ -402,7 +406,9 @@ export function summarizeComparison(
     leavers,
     large_weekly_hours_movement,
     large_gross_pay_movement,
-    pdf_visible_notes: opts.pdfVisibleNotesCount,
+    total_notes,
+    pdf_visible_notes,
+    internal_only_notes,
     has_previous_period: opts.hasPrev,
   };
 }
