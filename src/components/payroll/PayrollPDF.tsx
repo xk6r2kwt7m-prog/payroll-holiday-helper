@@ -371,9 +371,11 @@ export function PayrollPDF({
   logoUrl,
   reportConfig,
   locationData = [],
+  periodNotes = [],
 }: PayrollPDFProps) {
   const rc = reportConfig;
   const hideAmounts = rc?.financial?.hideFinancialAmounts ?? false;
+  const showPeriodNotes = (rc?.showNotes ?? false) && periodNotes.length > 0;
 
   // Sorting based on config — alphabetical uses forename-first to match on-screen table
   const sortedEntries = [...entries].sort((a, b) => {
