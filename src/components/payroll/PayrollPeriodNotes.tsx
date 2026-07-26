@@ -187,7 +187,7 @@ export function PayrollPeriodNotesSection({
           <DialogHeader>
             <DialogTitle>Add Period Note</DialogTitle>
             <p className="text-xs text-muted-foreground">
-              This note belongs to <strong>{periodName}</strong> only and stays private by default. It is only included in the PDF/export when <strong>Include Period Notes</strong> is enabled in the Report Builder.
+              This note belongs to <strong>{periodName}</strong> only. It stays private unless you tick "Show on payroll PDF" — that per-note setting overrides the global Report Builder toggle.
             </p>
           </DialogHeader>
           <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
@@ -200,12 +200,33 @@ export function PayrollPeriodNotesSection({
               ))}
             </SelectContent>
           </Select>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger>
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="rate">Rate change</SelectItem>
+              <SelectItem value="service_charge">Service charge change</SelectItem>
+              <SelectItem value="timesheet">Timesheet import</SelectItem>
+              <SelectItem value="manual_adjustment">Manual adjustment</SelectItem>
+              <SelectItem value="holiday">Holiday pay</SelectItem>
+              <SelectItem value="bonus">Bonus</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
           <Textarea
             placeholder="Internal note (e.g. hours reduced by agreement, bonus arrangement)"
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             className="min-h-[80px]"
           />
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Checkbox
+              checked={showOnPdf}
+              onCheckedChange={(v) => setShowOnPdf(v === true)}
+            />
+            Show this note on payroll PDF
+          </label>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button
