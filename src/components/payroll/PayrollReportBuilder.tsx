@@ -16,6 +16,7 @@ import { PayrollPDF } from "./PayrollPDF";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
+import { usePayrollPeriodNotes } from "@/hooks/usePayrollPeriodNotes";
 
 interface PayrollReportBuilderProps {
   open: boolean;
@@ -76,6 +77,21 @@ export function PayrollReportBuilder({
 
   // Fetch location data for this period
   const { data: locationData = [] } = usePayrollEntryLocations(period?.id);
+  const { data: rawPeriodNotes = [] } = usePayrollPeriodNotes(period?.id);
+
+  const periodNotes = useMemo(() => {
+    const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
+    return rawPeriodNotes.map((n) => {
+      const emp: any = empById.get(n.employee_id);
+      return {
+        id: n.id,
+        employee_id: n.employee_id,
+        employee_name: emp ? `${emp.forename} ${emp.surname}` : "Unknown",
+        note: n.note,
+        created_at: n.created_at,
+      };
+    });
+  }, [rawPeriodNotes, allEmployees]);
 
   const toggleSection = (key: string) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -161,6 +177,7 @@ export function PayrollReportBuilder({
           reportConfig={config}
           companyName={companyName}
           locationData={locationData}
+          periodNotes={config.showNotes ? periodNotes : []}
         />
       ).toBlob();
 
@@ -232,6 +249,7 @@ export function PayrollReportBuilder({
           reportConfig={config}
           companyName={companyName}
           locationData={locationData}
+          periodNotes={config.showNotes ? periodNotes : []}
         />
       ).toBlob();
 
@@ -513,7 +531,7 @@ export function PayrollReportBuilder({
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                     <Switch checked={config.showNotes} onCheckedChange={(v) => setConfig((p) => ({ ...p, showNotes: v }))} className="scale-75" />
-                    <span className="text-xs">Show Payroll Notes</span>
+                    <span className="text-xs">Include Period Notes</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                     <Switch checked={config.showAuditFooter} onCheckedChange={(v) => setConfig((p) => ({ ...p, showAuditFooter: v }))} className="scale-75" />
