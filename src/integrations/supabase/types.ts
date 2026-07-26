@@ -3677,32 +3677,38 @@ export type Database = {
       }
       payroll_period_notes: {
         Row: {
+          category: string | null
           created_at: string
           created_by: string | null
           employee_id: string
           id: string
           note: string
           payroll_period_id: string
+          show_on_pdf: boolean
           tenant_id: string
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           employee_id: string
           id?: string
           note: string
           payroll_period_id: string
+          show_on_pdf?: boolean
           tenant_id: string
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           employee_id?: string
           id?: string
           note?: string
           payroll_period_id?: string
+          show_on_pdf?: boolean
           tenant_id?: string
           updated_at?: string
         }
