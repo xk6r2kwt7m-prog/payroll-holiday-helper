@@ -719,7 +719,11 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
         // New period from CSV only — create all entries fresh
         for (const emp of matchedEntries) {
-          if (!emp.matchedId || !emp.hourlyRate) continue;
+          // Never silently skip a matched starter just because their profile
+          // rate is 0/unset — create the entry with hours; the manager can
+          // set the rate on the payroll table. Missing matchedId still skips
+          // (defensive; matchedEntries filter should already exclude these).
+          if (!emp.matchedId) continue;
 
           const hours = emp.totalHours;
           // Phase 2C — prefer active employment terms; fall back to CSV-matched profile rate.
