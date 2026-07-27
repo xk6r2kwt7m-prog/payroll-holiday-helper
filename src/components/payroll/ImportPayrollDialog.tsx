@@ -1031,7 +1031,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
         {/* ── Step 3: Preview & Resolve ── */}
         {step === "preview" && (
-          <div className="flex-1 overflow-hidden flex flex-col gap-3 py-2">
+          <div className="flex-1 overflow-y-auto flex flex-col gap-3 py-2 pr-1 pb-4">
             {/* Summary bar */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Upload className="h-3 w-3" />
