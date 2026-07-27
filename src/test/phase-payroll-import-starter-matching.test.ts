@@ -165,3 +165,18 @@ describe("linkMissingToUnresolvedRows — cross-link hints, no auto-match", () =
     expect((enriched[0] as any).matchedId).toBeUndefined();
   });
 });
+
+describe("starter hours are not silently dropped when profile rate is 0", () => {
+  it("ImportPayrollDialog no longer guards the new-period entry loop on hourlyRate", () => {
+    const src = require("node:fs").readFileSync(
+      require("node:path").resolve(process.cwd(), "src/components/payroll/ImportPayrollDialog.tsx"),
+      "utf-8",
+    );
+    // The old bug: `if (!emp.matchedId || !emp.hourlyRate) continue;` silently
+    // skipped starters whose profile rate was 0 — their timesheet hours vanished.
+    // The guard must now only check matchedId.
+    expect(src).not.toMatch(/!emp\.matchedId\s*\|\|\s*!emp\.hourlyRate/);
+    // A missing-rate warning is appended to the entry note so managers see it.
+    expect(src).toMatch(/rate missing/i);
+  });
+});
