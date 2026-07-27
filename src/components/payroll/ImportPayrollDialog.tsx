@@ -54,6 +54,22 @@ interface ParsedRow {
   location: string;
 }
 
+export interface ParserSkippedSummary {
+  /** Rows that appeared before any recognised section header. */
+  beforeSection: number;
+  /** Rows whose section header was recognised but format could not be parsed. */
+  unknownFormat: number;
+  /** Rows explicitly skipped by hard-coded SKIP_NAMES (e.g. platform admins). */
+  skipNames: number;
+  /** Section headers with no configured location/department mapping. */
+  unmappedSections: string[];
+}
+
+export interface ParserResult {
+  rows: ParsedRow[];
+  skipped: ParserSkippedSummary;
+}
+
 export interface AggregatedEmployee {
   csvName: string;
   totalHours: number;
@@ -69,14 +85,24 @@ export interface AggregatedEmployee {
   resolution?: "matched" | "created" | "excluded";
   excludeReason?: string;
   isLeaver?: boolean;
+  isOnboarding?: boolean;
+  requiresReview?: boolean;
+  reviewReason?: string;
 }
 
 type Step = "period" | "upload" | "preview" | "done";
 
 // ─── CSV Parser ───
-function parseTimesheetCSV(csvText: string): ParsedRow[] {
+function parseTimesheetCSV(csvText: string): ParserResult {
   const lines = csvText.split("\n");
   const rows: ParsedRow[] = [];
+  const skipped: ParserSkippedSummary = {
+    beforeSection: 0,
+    unknownFormat: 0,
+    skipNames: 0,
+    unmappedSections: [],
+  };
+  const seenUnmapped = new Set<string>();
   let currentSection = "";
 
   // Detect Timesheet Hour column from header row
@@ -95,19 +121,35 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
     const sectionMatch = line.match(/^\s*"?\s*(\[.+?\].+?)"?\s*$/);
     if (sectionMatch) {
       currentSection = sectionMatch[1].trim();
+      if (!SECTION_LOCATION_MAP[currentSection] && !seenUnmapped.has(currentSection)) {
+        seenUnmapped.add(currentSection);
+        skipped.unmappedSections.push(currentSection);
+      }
       continue;
     }
 
     if (line.toLowerCase().includes("total for") || line.toLowerCase().includes("grand total") || line.toLowerCase().includes("unpaid leave")) continue;
 
     const cols = line.match(/("(?:[^"]|"")*"|[^,]*)/g);
-    if (!cols || cols.length < 3) continue;
+    if (!cols || cols.length < 3) {
+      skipped.unknownFormat++;
+      continue;
+    }
 
     const name = cols[0]?.replace(/"/g, "").trim();
     const timesheetHoursStr = cols[timesheetColIndex]?.replace(/"/g, "").replace(/,/g, "").trim();
 
-    if (!name || !currentSection) continue;
+    if (!name) continue;
     if (name.toLowerCase().startsWith("total for")) continue;
+
+    if (!currentSection) {
+      skipped.beforeSection++;
+      continue;
+    }
+    if (SKIP_NAMES.has(name.toLowerCase())) {
+      skipped.skipNames++;
+      continue;
+    }
 
     const hours = parseFloat(timesheetHoursStr) || 0;
     if (hours === 0 && timesheetHoursStr === "-") continue;
@@ -119,7 +161,7 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
       location: SECTION_LOCATION_MAP[currentSection] || currentSection,
     });
   }
-  return rows;
+  return { rows, skipped };
 }
 
 function aggregateByEmployee(
