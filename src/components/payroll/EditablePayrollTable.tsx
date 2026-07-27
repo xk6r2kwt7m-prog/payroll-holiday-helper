@@ -570,6 +570,14 @@ export function EditablePayrollTable({
       });
     }
 
+    // Replace the free-text note on every adjustment row with `finalNote`,
+    // which already carries the deterministic override description when
+    // imported hours changed. Non-hours rows keep the manager's note.
+    for (const r of adjustmentRows) {
+      if (r.field_name === "timesheet_hours") continue;
+      r.note = adjustmentNote || finalNote || "Manual adjustment";
+    }
+
     if (adjustmentRows.length > 0) {
       try {
         await createAdjustment.mutateAsync(adjustmentRows);
@@ -579,9 +587,39 @@ export function EditablePayrollTable({
       }
     }
 
-    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, adjustmentNote || "Manual adjustment");
+    // Optionally publish the imported-hours correction as a period note
+    // that will render on the payroll PDF.
+    if (hoursChanged && overrideShowOnPdf && tenantId) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: existing } = await supabase
+          .from("payroll_period_notes")
+          .select("id, note")
+          .eq("tenant_id", tenantId)
+          .eq("payroll_period_id", periodId)
+          .eq("employee_id", entry.employee_id);
+        if (!isDuplicateNote(finalNote, (existing ?? []) as any)) {
+          await supabase.from("payroll_period_notes").insert({
+            tenant_id: tenantId,
+            payroll_period_id: periodId,
+            employee_id: entry.employee_id,
+            note: finalNote,
+            category: "timesheet",
+            show_on_pdf: true,
+            created_by: user?.id || null,
+          } as any);
+          queryClient.invalidateQueries({ queryKey: ["payroll_period_notes"] });
+        }
+      } catch (e) {
+        console.error("Failed to publish PDF note for hours override", e);
+      }
+    }
+
+    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, finalNote || "Manual adjustment");
     setPendingSave(null);
     setAdjustmentNote("");
+    setOverrideCategory("");
+    setOverrideShowOnPdf(false);
   };
 
   const handleBulkZeroHours = async () => {
