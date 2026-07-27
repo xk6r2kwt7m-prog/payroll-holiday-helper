@@ -25,7 +25,7 @@ describe("payroll-status normalisation", () => {
 
   it("throws on invalid non-blank values", () => {
     expect(() => normalisePayrollStatus("finalised")).toThrow(/Invalid payroll status/);
-    expect(() => normalisePayrollStatus("APPROVED ")).not.toThrow(); // trims
+    expect(() => normalisePayrollStatus("APPROVED")).toThrow(/Invalid payroll status/);
     expect(normalisePayrollStatus("draft ")).toBe("draft");
   });
 });
