@@ -614,13 +614,27 @@ export function PayrollReportBuilder({
               const pdfCount = rawPeriodNotes.filter((n) => n.show_on_pdf).length;
               const internalCount = rawPeriodNotes.length - pdfCount;
               const willAppear = config.showNotes ? pdfCount : 0;
+              const adjOn =
+                config.columns.adjustments && config.financial.includeAdjustments;
+              const adjPdf = adjOn ? adjustmentsSummary.pdf_rows : 0;
+              const adjHidden = adjustmentsSummary.internal_hidden + (adjOn ? 0 : adjustmentsSummary.pdf_rows);
               return (
-                <div className="text-[11px]">
-                  Accountant will see <span className="font-medium text-foreground">{willAppear}</span> note{willAppear === 1 ? "" : "s"} on the PDF ·{" "}
-                  <span className="font-medium text-foreground">{internalCount + (config.showNotes ? 0 : pdfCount)}</span> kept internal
-                  {!config.showNotes && pdfCount > 0 && (
-                    <span className="ml-1 text-warning">(Period Notes toggle is off)</span>
-                  )}
+                <div className="text-[11px] space-y-0.5">
+                  <div>
+                    Accountant will see <span className="font-medium text-foreground">{adjPdf}</span>{" "}
+                    rate/service charge change{adjPdf === 1 ? "" : "s"} on this PDF ·{" "}
+                    <span className="font-medium text-foreground">{adjHidden}</span> internal note{adjHidden === 1 ? "" : "s"} hidden
+                    {!adjOn && adjustmentsSummary.pdf_rows > 0 && (
+                      <span className="ml-1 text-warning">(Adjustments toggle is off)</span>
+                    )}
+                  </div>
+                  <div>
+                    Period notes: <span className="font-medium text-foreground">{willAppear}</span> on PDF ·{" "}
+                    <span className="font-medium text-foreground">{internalCount + (config.showNotes ? 0 : pdfCount)}</span> kept internal
+                    {!config.showNotes && pdfCount > 0 && (
+                      <span className="ml-1 text-warning">(Period Notes toggle is off)</span>
+                    )}
+                  </div>
                 </div>
               );
             })()}
