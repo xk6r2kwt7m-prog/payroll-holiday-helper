@@ -530,7 +530,13 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
         periodId = existingPeriodId;
         await supabase
           .from("payroll_periods")
-          .update({ notes: periodNotes, imported_by: user?.id })
+          .update(
+            sanitisePayrollPeriodUpdate({
+              notes: periodNotes,
+              imported_by: user?.id,
+              // Never touch status when importing into an existing period.
+            }) as any,
+          )
           .eq("id", periodId);
 
         // Fetch existing entries to preserve bonuses/rates from copy
