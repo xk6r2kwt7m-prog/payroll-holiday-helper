@@ -1180,13 +1180,13 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
             {/* Warnings */}
             {unresolvedCount > 0 && (
-              <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
+              <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm" data-testid="unresolved-rows-panel">
                 <p className="font-medium text-warning flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
-                  {unresolvedCount} unresolved employee(s)
+                  {unresolvedCount} unresolved row{unresolvedCount !== 1 ? "s" : ""} in uploaded file
                 </p>
                 <p className="text-muted-foreground mt-1">
-                  You can still import, but <strong>approval will be blocked</strong> until all are matched, created, or excluded.
+                  These are <strong>names in the uploaded timesheet</strong> that could not be safely matched to an employee. Matched rows ({matchedEntries.length}) will still be imported now — <strong>approval will be blocked</strong> until every unresolved row is matched, created, or excluded. Unresolved rows are preserved on the payroll period and can be resolved from the "Action Required" panel after import.
                 </p>
               </div>
             )}
