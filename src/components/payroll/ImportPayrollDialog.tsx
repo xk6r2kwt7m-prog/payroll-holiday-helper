@@ -1352,7 +1352,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
         )}
 
         {/* ── Footer ── */}
-        <div className="flex items-center justify-between pt-2 border-t border-border">
+        <div className="shrink-0 flex items-center justify-between pt-2 border-t border-border bg-background">
           <div>
             {step === "upload" && (
               <Button variant="ghost" size="sm" onClick={() => setStep("period")} className="gap-1 text-xs">
