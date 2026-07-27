@@ -24,6 +24,10 @@ export interface MatchableEmployee {
   email: string | null;
   preferred_name?: string | null;
   import_aliases?: string[] | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  branch_id?: string | null;
+  archived_at?: string | null;
 }
 
 export type MatchMethod =
