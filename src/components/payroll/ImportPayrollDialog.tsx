@@ -1083,6 +1083,29 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               </div>
             )}
 
+            {parserSkipped && (parserSkipped.beforeSection > 0 || parserSkipped.unknownFormat > 0 || parserSkipped.skipNames > 0 || parserSkipped.unmappedSections.length > 0) && (
+              <div className="rounded-lg bg-muted/40 border border-border p-3 text-sm">
+                <p className="font-medium text-foreground flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  Rows skipped while reading the file
+                </p>
+                <ul className="text-xs text-muted-foreground mt-1 list-disc pl-5 space-y-0.5">
+                  {parserSkipped.beforeSection > 0 && (
+                    <li>{parserSkipped.beforeSection} row(s) appeared before the first recognised section header — check the file starts with a <code>[SECTION]</code> row.</li>
+                  )}
+                  {parserSkipped.unknownFormat > 0 && (
+                    <li>{parserSkipped.unknownFormat} row(s) could not be parsed (unexpected column layout).</li>
+                  )}
+                  {parserSkipped.skipNames > 0 && (
+                    <li>{parserSkipped.skipNames} row(s) matched the built-in skip list (platform admins, etc.).</li>
+                  )}
+                  {parserSkipped.unmappedSections.length > 0 && (
+                    <li>Unmapped section header(s): {parserSkipped.unmappedSections.join(", ")} — rows in these sections are still imported but their location label falls back to the raw header.</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
             {missingFromFile.length > 0 && (
               <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
                 <p className="font-medium text-warning flex items-center gap-2">
