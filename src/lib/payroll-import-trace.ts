@@ -191,7 +191,11 @@ export function findMissingFromFile(
 
       if (hasActivity) reason = "current_activity";
       else if (endsInPeriod) reason = "current_leaver";
-      else if (startsInPeriod || e.status === "starter") reason = "current_starter";
+      else if (startsInPeriod) reason = "current_starter";
+      // Only treat status=starter as current_starter when there is NO start_date
+      // recorded (unknown lifecycle). A stale status=starter with an old
+      // start_date must fall through to "active_in_period".
+      else if (!startDate && e.status === "starter") reason = "current_starter";
       else reason = "active_in_period";
     } else {
       // No period context — legacy behaviour: only active/starter qualify.

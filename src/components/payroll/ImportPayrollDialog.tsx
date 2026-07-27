@@ -791,11 +791,35 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entry_locations"] });
-      toast.success("Payroll imported!");
+      if (unmatchedNames.length > 0) {
+        toast.success(
+          `${entriesCreated} matched entries imported. ${unmatchedNames.length} unresolved row${unmatchedNames.length !== 1 ? "s" : ""} still require review before approval.`
+        );
+      } else {
+        toast.success(`${entriesCreated} matched entries imported into "${periodName}".`);
+      }
       onImportComplete?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Import error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to import payroll");
+      // Surface the real reason instead of a generic message.
+      const raw =
+        error?.message ||
+        error?.error_description ||
+        error?.hint ||
+        error?.details ||
+        (typeof error === "string" ? error : "");
+      const code = error?.code ? ` [${error.code}]` : "";
+      let friendly = raw || "Unknown error";
+      if (/permission|rls|not allowed|denied/i.test(raw)) {
+        friendly = `Permission denied — you may not have rights to update this period. ${raw}`;
+      } else if (/duplicate key|unique/i.test(raw)) {
+        friendly = `Duplicate employee mapping detected. ${raw}`;
+      } else if (/approved|locked/i.test(raw)) {
+        friendly = `This payroll period is approved and locked. ${raw}`;
+      } else if (/violates check|invalid input|numeric/i.test(raw)) {
+        friendly = `Invalid value rejected by database. ${raw}`;
+      }
+      toast.error(`Import failed${code}: ${friendly}`);
     } finally {
       setImporting(false);
     }
@@ -997,17 +1021,17 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
                 <p className="font-medium text-warning flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
-                  {missingFromFile.length} expected employee{missingFromFile.length !== 1 ? "s" : ""} not matched in uploaded file
+                  {missingFromFile.length} expected employee{missingFromFile.length !== 1 ? "s" : ""} missing from uploaded file
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  These employees are expected in the selected payroll period but no row in the uploaded timesheet matched them. If they should have hours, the file may use a different name — use the "Match to employee" control on any unmatched row below to confirm and (optionally) remember the alias.
+                  <strong>Review warning only — does not block import.</strong> These employees are expected in this payroll period (based on employment dates and current-period activity) but no row in the uploaded timesheet matched them. If they should have worked, the file may use a different name — scroll to any unmatched row below and use "Match to employee" to link it (optionally saving the alias for future imports). Otherwise they will simply have 0.00h for this period.
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
                   {missingFromFile.slice(0, 20).map((m) => {
                     const reasonLabel =
-                      m.reason === "current_starter" ? "Starter" :
+                      m.reason === "current_starter" ? "Starter this period" :
                       m.reason === "current_leaver" ? "Leaver (final pay)" :
-                      m.reason === "current_activity" ? "Current activity" :
+                      m.reason === "current_activity" ? "Current-period activity" :
                       "Active in period";
                     return (
                       <Badge key={m.employeeId} variant="outline" className="text-[10px]">
@@ -1156,13 +1180,13 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
             {/* Warnings */}
             {unresolvedCount > 0 && (
-              <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
+              <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm" data-testid="unresolved-rows-panel">
                 <p className="font-medium text-warning flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
-                  {unresolvedCount} unresolved employee(s)
+                  {unresolvedCount} unresolved row{unresolvedCount !== 1 ? "s" : ""} in uploaded file
                 </p>
                 <p className="text-muted-foreground mt-1">
-                  You can still import, but <strong>approval will be blocked</strong> until all are matched, created, or excluded.
+                  These are <strong>names in the uploaded timesheet</strong> that could not be safely matched to an employee. Matched rows ({matchedEntries.length}) will still be imported now — <strong>approval will be blocked</strong> until every unresolved row is matched, created, or excluded. Unresolved rows are preserved on the payroll period and can be resolved from the "Action Required" panel after import.
                 </p>
               </div>
             )}

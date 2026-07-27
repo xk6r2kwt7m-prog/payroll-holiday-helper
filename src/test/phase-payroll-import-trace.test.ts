@@ -252,7 +252,7 @@ describe("Phase: existing-draft import preservation invariants (regression lock)
   });
 
   it("preview surfaces a 'missing from uploaded file' warning section", () => {
-    expect(source).toMatch(/expected employee.*not matched in uploaded file/);
+    expect(source).toMatch(/expected employee.*missing from uploaded file/);
   });
 
   it("preview surfaces matched rows with 0.00 hours for transparency", () => {
