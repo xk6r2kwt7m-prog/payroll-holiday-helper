@@ -121,15 +121,27 @@ export function findMissingFromFile(
   employees: MatchableEmployee[],
   matchedEmployeeIds: Iterable<string>,
   linkedToPeriodIds: Iterable<string> = [],
+  period?: { start_date: string; end_date: string } | null,
 ): MissingFromFile[] {
   const matched = new Set(matchedEmployeeIds);
   const linked = new Set(linkedToPeriodIds);
   return employees
-    .filter(
-      (e) =>
-        (e.status === "active" || e.status === "starter") &&
-        !matched.has(e.id),
-    )
+    .filter((e) => {
+      if (matched.has(e.id)) return false;
+      // Period-aware exclusion: former employees whose end_date is before the
+      // period start should not be flagged as "missing from file".
+      if (period && (e as any).end_date) {
+        const end = String((e as any).end_date);
+        if (end < period.start_date) return false;
+      }
+      if ((e as any).status === "archived" || (e as any).status === "leaver") {
+        // Leavers/archived only count as missing if they overlap the period.
+        if (period && (e as any).end_date && String((e as any).end_date) < period.start_date) {
+          return false;
+        }
+      }
+      return (e.status === "active" || e.status === "starter" || e.status === "leaver");
+    })
     .map((e) => ({
       employeeId: e.id,
       fullName: `${e.forename} ${e.surname}`.trim(),
