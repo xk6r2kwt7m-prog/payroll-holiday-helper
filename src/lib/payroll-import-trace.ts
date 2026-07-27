@@ -170,7 +170,10 @@ export function findMissingFromFile(
   const matched = new Set(matchedEmployeeIds);
   const linked = new Set(linkedToPeriodIds);
   const activity = new Set(options.activityEmployeeIds ?? []);
-  const branchId = options.branchId ?? null;
+  // NOTE: options.branchId is deprecated and intentionally NOT applied — the
+  // employees table does not persist a branch_id column so any filter here
+  // would be a no-op that silently excludes real people. Kept in the type
+  // signature only for backward compatibility.
   const periodStart = period?.start_date ?? null;
   const periodEnd = period?.end_date ?? null;
 
@@ -184,10 +187,6 @@ export function findMissingFromFile(
 
     const startDate: string | null = anyE.start_date ?? null;
     const endDate: string | null = anyE.end_date ?? null;
-    const empBranch: string | null = anyE.branch_id ?? null;
-
-    // Branch filter — only exclude when both sides known and different
-    if (branchId && empBranch && empBranch !== branchId) continue;
 
     // Period-aware exclusions (only when we have a period window)
     let reason: MissingFromFile["reason"] = "active_in_period";
@@ -203,40 +202,108 @@ export function findMissingFromFile(
         if (endedBefore) continue;
         // Leaver / status=leaver without current-period end and no activity => skip
         if (e.status === "leaver" && !endsInPeriod) continue;
+        // Onboarding without in-period start and no activity => not relevant to this period
+        if (e.status === "onboarding" && !startsInPeriod) continue;
       }
 
       if (hasActivity) reason = "current_activity";
       else if (endsInPeriod) reason = "current_leaver";
-      else if (startsInPeriod) reason = "current_starter";
+      else if (startsInPeriod) {
+        reason = e.status === "onboarding" ? "current_onboarding" : "current_starter";
+      }
       // Only treat status=starter as current_starter when there is NO start_date
       // recorded (unknown lifecycle). A stale status=starter with an old
       // start_date must fall through to "active_in_period".
       else if (!startDate && e.status === "starter") reason = "current_starter";
+      else if (!startDate && e.status === "onboarding") reason = "current_onboarding";
       else reason = "active_in_period";
     } else {
-      // No period context — legacy behaviour: only active/starter qualify.
-      if (e.status !== "active" && e.status !== "starter") continue;
+      // No period context — legacy behaviour: only active/starter/onboarding qualify.
+      if (
+        e.status !== "active" &&
+        e.status !== "starter" &&
+        e.status !== "onboarding"
+      ) {
+        continue;
+      }
     }
 
-    // Employees with no lifecycle signals at all: require active/starter status
+    // Employees with no lifecycle signals at all: require active/starter/onboarding status
     if (periodStart && periodEnd && !startDate && !endDate) {
-      if (e.status !== "active" && e.status !== "starter") {
+      if (
+        e.status !== "active" &&
+        e.status !== "starter" &&
+        e.status !== "onboarding"
+      ) {
         if (!activity.has(e.id)) continue;
       }
     }
 
     out.push({
       employeeId: e.id,
-      fullName: `${e.forename} ${e.surname}`.trim(),
+      fullName: `${e.forename} ${e.surname}`.replace(/\s+/g, " ").trim(),
       status: e.status,
       linkedToPeriod: linked.has(e.id),
       reason,
       department: e.department,
-      branchId: empBranch,
+      branchId: null,
     });
   }
   return out;
 }
+
+/**
+ * Enrich each `MissingFromFile` entry with unresolved CSV names from the same
+ * file that share a forename token with the expected employee. Never
+ * auto-matches — this only provides a manager-facing hint ("Likely appears in
+ * file as: Carlos") plus an id list the UI can use for a "Match to this row"
+ * action.
+ */
+export function linkMissingToUnresolvedRows(
+  missing: MissingFromFile[],
+  unresolvedCsvNames: string[],
+  employees: MatchableEmployee[],
+): MissingFromFile[] {
+  if (missing.length === 0 || unresolvedCsvNames.length === 0) return missing;
+
+  const tokenise = (s: string) =>
+    s
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length >= 3);
+
+  const empById = new Map(employees.map((e) => [e.id, e]));
+  const unresolvedTokens = unresolvedCsvNames.map((raw) => ({
+    raw,
+    tokens: new Set(tokenise(raw)),
+  }));
+
+  return missing.map((m) => {
+    const emp = empById.get(m.employeeId);
+    if (!emp) return m;
+    const empTokens = new Set([
+      ...tokenise(emp.forename),
+      ...tokenise(emp.surname),
+      ...tokenise(emp.preferred_name ?? ""),
+      ...(emp.import_aliases ?? []).flatMap(tokenise),
+    ]);
+    if (empTokens.size === 0) return m;
+
+    const hits: string[] = [];
+    for (const u of unresolvedTokens) {
+      for (const t of u.tokens) {
+        if (empTokens.has(t)) {
+          hits.push(u.raw);
+          break;
+        }
+      }
+    }
+    return hits.length > 0 ? { ...m, likelyUnresolvedNames: hits } : m;
+  });
+}
+
 
 /** Rows where the file explicitly recorded 0.00 hours — shown for transparency. */
 export function findZeroHourRows(trace: ImportRowTrace[]): ImportRowTrace[] {
