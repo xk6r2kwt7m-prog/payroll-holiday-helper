@@ -1264,37 +1264,99 @@ export function EditablePayrollTable({
         </Table>
       </div>
 
-      {/* Adjustment Note Dialog — internal only, never exported */}
-      <Dialog open={noteDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setNoteDialogOpen(false);
-          setPendingSave(null);
-        }
-      }}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="text-base">Payroll Adjustment</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Values have been changed from the original/master record.
-              Add an internal note — this will <strong>not</strong> appear in exports or PDFs.
-            </p>
-          </DialogHeader>
-          <Textarea
-            placeholder="e.g. Special arrangement — agreed extra hours"
-            value={adjustmentNote}
-            onChange={(e) => setAdjustmentNote(e.target.value)}
-            className="min-h-[80px]"
-          />
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setNoteDialogOpen(false); setPendingSave(null); }}>
-              Cancel
-            </Button>
-            <Button onClick={confirmAdjustmentNote}>
-              Save with Note
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Adjustment / Imported Hours Override Dialog */}
+      {(() => {
+        const pending = pendingSave;
+        const imported = pending?.entry.imported_hours ?? null;
+        const hoursChangedFromImport =
+          !!pending && imported !== null && Math.abs(pending.hours - imported) > 0.001;
+        const empName = pending
+          ? `${pending.entry.employees?.first_name ?? ""} ${pending.entry.employees?.last_name ?? ""}`.trim()
+          : "";
+        const delta = pending && imported !== null ? pending.hours - imported : 0;
+        return (
+          <Dialog open={noteDialogOpen} onOpenChange={(open) => {
+            if (!open) {
+              setNoteDialogOpen(false);
+              setPendingSave(null);
+              setOverrideCategory("");
+              setOverrideShowOnPdf(false);
+            }
+          }}>
+            <DialogContent className="sm:max-w-[480px]">
+              <DialogHeader>
+                <DialogTitle className="text-base">
+                  {hoursChangedFromImport ? "Correct imported timesheet hours" : "Payroll Adjustment"}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  {hoursChangedFromImport
+                    ? <>You are changing the hours that were imported from the uploaded timesheet file. This will be recorded in the audit trail with a mandatory reason.</>
+                    : <>Values have been changed from the original/master record. Add an internal note — this will <strong>not</strong> appear in exports or PDFs.</>}
+                </p>
+              </DialogHeader>
+
+              {hoursChangedFromImport && pending && (
+                <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs space-y-1">
+                  <div className="font-medium text-foreground">{empName || "Employee"}</div>
+                  <div className="grid grid-cols-3 gap-2 text-muted-foreground">
+                    <div><span className="block text-[10px] uppercase">Imported</span><span className="text-foreground font-mono">{formatHours(imported!)}</span></div>
+                    <div><span className="block text-[10px] uppercase">Corrected</span><span className="text-foreground font-mono">{formatHours(pending.hours)}</span></div>
+                    <div><span className="block text-[10px] uppercase">Δ</span><span className={cn("font-mono", delta >= 0 ? "text-success" : "text-destructive")}>{delta >= 0 ? "+" : ""}{formatHours(delta)}</span></div>
+                  </div>
+                </div>
+              )}
+
+              {hoursChangedFromImport && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">Reason category <span className="text-destructive">*</span></label>
+                  <Select value={overrideCategory} onValueChange={setOverrideCategory}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select a reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OVERRIDE_REASON_CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <Textarea
+                placeholder={hoursChangedFromImport ? "Optional — extra context for auditors" : "e.g. Special arrangement — agreed extra hours"}
+                value={adjustmentNote}
+                onChange={(e) => setAdjustmentNote(e.target.value)}
+                className="min-h-[70px]"
+              />
+
+              {hoursChangedFromImport && (
+                <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={overrideShowOnPdf}
+                    onCheckedChange={(v) => setOverrideShowOnPdf(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Show this correction on the payroll PDF. When enabled, an entry is added to Period Notes so the reason is visible on the exported document.
+                  </span>
+                </label>
+              )}
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => { setNoteDialogOpen(false); setPendingSave(null); setOverrideCategory(""); setOverrideShowOnPdf(false); }}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmAdjustmentNote}
+                  disabled={hoursChangedFromImport && !overrideCategory}
+                >
+                  {hoursChangedFromImport ? "Save correction" : "Save with Note"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
 
       <AlertDialog open={!!removeEntryId} onOpenChange={(open) => !open && setRemoveEntryId(null)}>
         <AlertDialogContent>
