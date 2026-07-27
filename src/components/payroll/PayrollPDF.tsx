@@ -732,9 +732,10 @@ export function PayrollPDF({
 
         {showAdjustments && (
           <View style={{ marginTop: 10 }} wrap={false}>
-            <Text style={styles.sectionTitle}>Manual Adjustments</Text>
+            <Text style={styles.sectionTitle}>Rate &amp; Service Charge Changes</Text>
             <Text style={{ fontSize: 6, color: GRAY, marginBottom: 3 }}>
-              Manual edits to hourly rate, service charge, or hours vs. imported timesheet values.
+              Hourly rate and service charge changes recorded during this payroll period.
+              One line per employee per field. Internal audit history is kept in the system.
             </Text>
             <View style={{ backgroundColor: "#f8fafc", borderWidth: 0.5, borderColor: BORDER, borderRadius: 3, padding: 6 }}>
               <View style={{ flexDirection: "row", paddingBottom: 2, borderBottomWidth: 0.5, borderBottomColor: BORDER }}>
@@ -746,17 +747,17 @@ export function PayrollPDF({
                 <Text style={{ fontSize: 6, fontFamily: "Helvetica-Bold", color: GRAY, width: "10%", textAlign: "right" }}>Date</Text>
               </View>
               {adjustments.map((a) => {
-                const fieldLabels: Record<string, string> = {
-                  hourly_rate: "Hourly Rate",
-                  service_charge: "Service Charge",
-                  timesheet_hours: "Hours",
-                  performance_bonus: "Perf. Bonus",
-                  special_bonus: "Special Bonus",
-                };
-                const label = fieldLabels[a.field_name] || a.field_name;
-                const isHours = a.field_name === "timesheet_hours";
+                // Upstream (PayrollReportBuilder) has already filtered to
+                // hourly_rate / service_charge and deduped to one row per
+                // employee+field. `old_value` = earliest From, `new_value` = latest To.
+                const label =
+                  a.field_name === "hourly_rate"
+                    ? "Hourly Rate"
+                    : a.field_name === "service_charge"
+                    ? "Service Charge"
+                    : a.field_name;
                 const fmtVal = (v: number | null) =>
-                  v === null || v === undefined ? "—" : isHours ? v.toFixed(2) : fmt(Number(v));
+                  v === null || v === undefined ? "—" : fmt(Number(v));
                 return (
                   <View
                     key={a.id}
