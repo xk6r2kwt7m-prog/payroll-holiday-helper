@@ -21,6 +21,7 @@ import { matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMeth
 import { findMissingFromFile } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
+import { sanitisePayrollPeriodUpdate, normalisePayrollStatus } from "@/lib/payroll-status";
 import { CreateEmployeeFromImport } from "./CreateEmployeeFromImport";
 
 // ─── CSV section → location/department mappings ───
@@ -529,7 +530,13 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
         periodId = existingPeriodId;
         await supabase
           .from("payroll_periods")
-          .update({ notes: periodNotes, imported_by: user?.id })
+          .update(
+            sanitisePayrollPeriodUpdate({
+              notes: periodNotes,
+              imported_by: user?.id,
+              // Never touch status when importing into an existing period.
+            }) as any,
+          )
           .eq("id", periodId);
 
         // Fetch existing entries to preserve bonuses/rates from copy
@@ -634,17 +641,19 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       } else {
         const { data: period, error: periodError } = await supabase
           .from("payroll_periods")
-          .insert({
-            period_name: periodName,
-            start_date: startDate,
-            end_date: endDate,
-            pay_date: payDate || null,
-            period_weeks: periodWeeks,
-            status: "draft" as const,
-            imported_by: user?.id,
-            notes: periodNotes,
-            tenant_id: tenantId,
-          } as any)
+          .insert(
+            sanitisePayrollPeriodUpdate({
+              period_name: periodName,
+              start_date: startDate,
+              end_date: endDate,
+              pay_date: payDate || null,
+              period_weeks: periodWeeks,
+              status: normalisePayrollStatus("draft", "draft"),
+              imported_by: user?.id,
+              notes: periodNotes,
+              tenant_id: tenantId,
+            }) as any,
+          )
           .select()
           .single();
 
