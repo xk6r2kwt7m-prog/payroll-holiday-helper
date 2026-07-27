@@ -363,7 +363,8 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
     try {
       const text = await f.text();
-      const rows = parseTimesheetCSV(text);
+      const { rows, skipped } = parseTimesheetCSV(text);
+      setParserSkipped(skipped);
       const agg = aggregateByEmployee(rows, matchableEmployees, activeAliases);
 
       const errors: string[] = [];
