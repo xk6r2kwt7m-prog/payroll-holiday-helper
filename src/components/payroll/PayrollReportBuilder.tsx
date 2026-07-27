@@ -580,8 +580,24 @@ export function PayrollReportBuilder({
 
         {/* Footer Actions */}
         <div className="border-t border-border px-4 py-3 sm:px-6 flex flex-col sm:flex-row gap-2 sm:justify-between">
-          <div className="text-xs text-muted-foreground self-center">
-            {filteredEntries.length} employee{filteredEntries.length !== 1 ? "s" : ""} • {config.layoutStyle} layout
+          <div className="text-xs text-muted-foreground self-center space-y-0.5">
+            <div>
+              {filteredEntries.length} employee{filteredEntries.length !== 1 ? "s" : ""} • {config.layoutStyle} layout
+            </div>
+            {(() => {
+              const pdfCount = rawPeriodNotes.filter((n) => n.show_on_pdf).length;
+              const internalCount = rawPeriodNotes.length - pdfCount;
+              const willAppear = config.showNotes ? pdfCount : 0;
+              return (
+                <div className="text-[11px]">
+                  Accountant will see <span className="font-medium text-foreground">{willAppear}</span> note{willAppear === 1 ? "" : "s"} on the PDF ·{" "}
+                  <span className="font-medium text-foreground">{internalCount + (config.showNotes ? 0 : pdfCount)}</span> kept internal
+                  {!config.showNotes && pdfCount > 0 && (
+                    <span className="ml-1 text-warning">(Period Notes toggle is off)</span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handlePrint} disabled={generating || filteredEntries.length === 0} className="h-9 min-h-[44px]">
