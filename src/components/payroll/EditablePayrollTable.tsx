@@ -1,5 +1,14 @@
 import { useState, useMemo } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare, Eye } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare, Eye, History } from "lucide-react";
+import {
+  isStarterCalendarMonth,
+  prioritizeRowBadges,
+  BADGE_PRIORITY,
+  BADGE_TONE_CLASSES,
+  type RowBadge,
+  type BadgeTone,
+} from "@/lib/payroll-row-badge-priority";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   filterEntries,
   computeRowBadges,
