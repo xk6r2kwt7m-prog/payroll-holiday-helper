@@ -1417,7 +1417,14 @@ export function EditablePayrollTable({
 
               {pending && (
                 <div className="rounded-md border border-border bg-muted/30 p-3 text-xs space-y-2">
-                  <div className="font-medium text-foreground">{empName || "Employee"}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-medium text-foreground">{empName || "Employee"}</div>
+                    {hoursChangedFromImport && (
+                      <span className="text-[10px] uppercase tracking-wide text-warning bg-warning/10 border border-warning/30 rounded px-1.5 py-0.5">
+                        Source: uploaded timesheet
+                      </span>
+                    )}
+                  </div>
                   {pendingFieldChanges.map((c) => {
                     const isHoursOverride = c.field === "timesheet_hours" && hoursChangedFromImport;
                     const fmt = c.field === "timesheet_hours" ? formatHours : formatCurrency;
@@ -1425,10 +1432,7 @@ export function EditablePayrollTable({
                     return (
                       <div key={c.field} className="grid grid-cols-4 gap-2 items-center">
                         <div className="col-span-1 text-[11px] uppercase text-muted-foreground">
-                          {EDITABLE_FIELD_LABEL[c.field as EditableField]}
-                          {isHoursOverride && (
-                            <span className="ml-1 text-warning">(imported)</span>
-                          )}
+                          {isHoursOverride ? "Imported hours" : EDITABLE_FIELD_LABEL[c.field as EditableField]}
                         </div>
                         <div className="font-mono text-foreground">{fmt(c.previous)}</div>
                         <div className="font-mono text-foreground">→ {fmt(c.next)}</div>
@@ -1441,6 +1445,11 @@ export function EditablePayrollTable({
                       </div>
                     );
                   })}
+                  {hoursChangedFromImport && (
+                    <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/60">
+                      Timesheet hours changed from {formatHours(imported ?? 0)} to {formatHours(pending.hours)} after uploaded timesheet import.
+                    </p>
+                  )}
                 </div>
               )}
 
