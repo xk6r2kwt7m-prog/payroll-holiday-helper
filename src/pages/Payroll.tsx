@@ -271,10 +271,7 @@ const Payroll = () => {
       employee_id: e.employee_id,
       imported_hours: e.imported_hours ?? null,
     }));
-    // Lazy import to keep this file's dep graph flat.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { countImportedHoursOverrides } = require("@/lib/payroll-hours-override");
-    return countImportedHoursOverrides(entryList, payrollAdjustments);
+    return countImportedHoursOverrides(entryList, payrollAdjustments as any);
   }, [entries, payrollAdjustments]);
 
   const phase5Checklist = useMemo(() => {
