@@ -27,6 +27,11 @@ import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import {
+  getPeopleDashboardCounts,
+  isRelevantForOnboardingAttention,
+  isFormerEmployee,
+} from "@/lib/employee-lifecycle-display";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
