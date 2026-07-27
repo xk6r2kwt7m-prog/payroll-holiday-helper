@@ -1387,41 +1387,68 @@ export function EditablePayrollTable({
           ? `${pending.entry.employees?.forename ?? ""} ${pending.entry.employees?.surname ?? ""}`.trim()
           : "";
         const delta = pending && imported !== null ? pending.hours - imported : 0;
+        const nonHoursChanges = pendingFieldChanges.filter(
+          (c) => !(c.field === "timesheet_hours" && hoursChangedFromImport),
+        );
+        const needsEditReason = nonHoursChanges.length > 0;
+        const resetDialog = () => {
+          setNoteDialogOpen(false);
+          setPendingSave(null);
+          setPendingFieldChanges([]);
+          setOverrideCategory("");
+          setOverrideShowOnPdf(false);
+          setEditReasonCategory("");
+        };
         return (
-          <Dialog open={noteDialogOpen} onOpenChange={(open) => {
-            if (!open) {
-              setNoteDialogOpen(false);
-              setPendingSave(null);
-              setOverrideCategory("");
-              setOverrideShowOnPdf(false);
-            }
-          }}>
-            <DialogContent className="sm:max-w-[480px]">
+          <Dialog open={noteDialogOpen} onOpenChange={(open) => { if (!open) resetDialog(); }}>
+            <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-base">
-                  {hoursChangedFromImport ? "Correct imported timesheet hours" : "Payroll Adjustment"}
+                  {hoursChangedFromImport && !needsEditReason
+                    ? "Correct imported timesheet hours"
+                    : "Confirm payroll changes"}
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground">
-                  {hoursChangedFromImport
-                    ? <>You are changing the hours that were imported from the uploaded timesheet file. This will be recorded in the audit trail with a mandatory reason.</>
-                    : <>Values have been changed from the original/master record. Add an internal note — this will <strong>not</strong> appear in exports or PDFs.</>}
+                  Every change is recorded in the audit trail with a reason.
+                  Choose whether the note should appear on the payroll PDF for
+                  the accountant — by default notes stay internal only.
                 </p>
               </DialogHeader>
 
-              {hoursChangedFromImport && pending && (
-                <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs space-y-1">
+              {pending && (
+                <div className="rounded-md border border-border bg-muted/30 p-3 text-xs space-y-2">
                   <div className="font-medium text-foreground">{empName || "Employee"}</div>
-                  <div className="grid grid-cols-3 gap-2 text-muted-foreground">
-                    <div><span className="block text-[10px] uppercase">Imported</span><span className="text-foreground font-mono">{formatHours(imported!)}</span></div>
-                    <div><span className="block text-[10px] uppercase">Corrected</span><span className="text-foreground font-mono">{formatHours(pending.hours)}</span></div>
-                    <div><span className="block text-[10px] uppercase">Δ</span><span className={cn("font-mono", delta >= 0 ? "text-success" : "text-destructive")}>{delta >= 0 ? "+" : ""}{formatHours(delta)}</span></div>
-                  </div>
+                  {pendingFieldChanges.map((c) => {
+                    const isHoursOverride = c.field === "timesheet_hours" && hoursChangedFromImport;
+                    const fmt = c.field === "timesheet_hours" ? formatHours : formatCurrency;
+                    const diff = c.next - c.previous;
+                    return (
+                      <div key={c.field} className="grid grid-cols-4 gap-2 items-center">
+                        <div className="col-span-1 text-[11px] uppercase text-muted-foreground">
+                          {EDITABLE_FIELD_LABEL[c.field as EditableField]}
+                          {isHoursOverride && (
+                            <span className="ml-1 text-warning">(imported)</span>
+                          )}
+                        </div>
+                        <div className="font-mono text-foreground">{fmt(c.previous)}</div>
+                        <div className="font-mono text-foreground">→ {fmt(c.next)}</div>
+                        <div className={cn(
+                          "font-mono text-right",
+                          diff >= 0 ? "text-success" : "text-destructive",
+                        )}>
+                          {diff >= 0 ? "+" : ""}{fmt(diff)}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
               {hoursChangedFromImport && (
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-foreground">Reason category <span className="text-destructive">*</span></label>
+                  <label className="text-xs font-medium text-foreground">
+                    Timesheet correction reason <span className="text-destructive">*</span>
+                  </label>
                   <Select value={overrideCategory} onValueChange={setOverrideCategory}>
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="Select a reason" />
@@ -1432,44 +1459,70 @@ export function EditablePayrollTable({
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    Δ {delta >= 0 ? "+" : ""}{formatHours(delta)} from the uploaded timesheet.
+                  </p>
+                </div>
+              )}
+
+              {needsEditReason && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">
+                    Reason category <span className="text-destructive">*</span>
+                  </label>
+                  <Select value={editReasonCategory} onValueChange={setEditReasonCategory}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select a reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDIT_REASON_CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
               <Textarea
-                placeholder={hoursChangedFromImport ? "Optional — extra context for auditors" : "e.g. Special arrangement — agreed extra hours"}
+                placeholder="Optional — extra context for the accountant or auditors"
                 value={adjustmentNote}
                 onChange={(e) => setAdjustmentNote(e.target.value)}
                 className="min-h-[70px]"
               />
 
-              {hoursChangedFromImport && (
-                <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
-                  <Checkbox
-                    checked={overrideShowOnPdf}
-                    onCheckedChange={(v) => setOverrideShowOnPdf(v === true)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    Show this correction on the payroll PDF. When enabled, an entry is added to Period Notes so the reason is visible on the exported document.
-                  </span>
-                </label>
-              )}
+              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Checkbox
+                  checked={overrideShowOnPdf}
+                  onCheckedChange={(v) => setOverrideShowOnPdf(v === true)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-medium text-foreground">Show on payroll PDF.</span>{" "}
+                  When enabled, a note is added to Period Notes so the reason
+                  is visible on the exported document. Leave unchecked to keep
+                  the change internal only (default).
+                </span>
+              </label>
 
               <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={() => { setNoteDialogOpen(false); setPendingSave(null); setOverrideCategory(""); setOverrideShowOnPdf(false); }}>
+                <Button variant="outline" onClick={resetDialog}>
                   Cancel
                 </Button>
                 <Button
                   onClick={confirmAdjustmentNote}
-                  disabled={hoursChangedFromImport && !overrideCategory}
+                  disabled={
+                    (hoursChangedFromImport && !overrideCategory) ||
+                    (needsEditReason && !editReasonCategory)
+                  }
                 >
-                  {hoursChangedFromImport ? "Save correction" : "Save with Note"}
+                  Save changes
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         );
       })()}
+
 
       <AlertDialog open={!!removeEntryId} onOpenChange={(open) => !open && setRemoveEntryId(null)}>
         <AlertDialogContent>
