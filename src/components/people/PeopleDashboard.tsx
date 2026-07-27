@@ -27,6 +27,10 @@ import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import {
+  getPeopleDashboardCounts,
+  isFormerEmployee,
+} from "@/lib/employee-lifecycle-display";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
@@ -49,12 +53,19 @@ export function PeopleDashboard({ onViewDirectory }: { onViewDirectory: () => vo
     ).length;
   }, [holidayRequests, todayStr]);
 
+  const today = useMemo(() => new Date(), []);
+
+  const lifecycleCounts = useMemo(
+    () => getPeopleDashboardCounts(employees, today),
+    [employees, today],
+  );
+
   const counts = useMemo(() => ({
-    active: employees.filter(e => e.status === "active" && !e.archived_at).length,
-    starters: employees.filter(e => e.status === "starter" && !e.archived_at).length,
-    onboarding: employees.filter(e => (e.status as string) === "onboarding" && !e.archived_at).length,
+    active: lifecycleCounts.active,
+    starters: lifecycleCounts.starters,
+    onboarding: lifecycleCounts.onboarding,
     offToday,
-  }), [employees, offToday]);
+  }), [lifecycleCounts, offToday]);
 
   // Needs attention queries
   const { data: overdueTraining = [] } = useQuery({
@@ -91,10 +102,7 @@ export function PeopleDashboard({ onViewDirectory }: { onViewDirectory: () => vo
     [holidayRequests]
   );
 
-  const incompleteOnboarding = useMemo(() =>
-    employees.filter(e => (e.status as string) === "onboarding" || e.status === "starter").length,
-    [employees]
-  );
+  const incompleteOnboarding = lifecycleCounts.incompleteOnboarding;
 
   // Summary cards
   const summaryCards = [
@@ -138,9 +146,9 @@ export function PeopleDashboard({ onViewDirectory }: { onViewDirectory: () => vo
   // Employee preview — first 5 active
   const previewEmployees = useMemo(() =>
     employees
-      .filter(e => e.status === "active" && !e.archived_at)
+      .filter(e => !isFormerEmployee(e, today))
       .slice(0, 5),
-    [employees]
+    [employees, today]
   );
 
   return (
