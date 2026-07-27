@@ -279,6 +279,10 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       email: e.email,
       preferred_name: (e as any).preferred_name ?? null,
       import_aliases: (e as any).import_aliases ?? [],
+      start_date: (e as any).start_date ?? null,
+      end_date: (e as any).end_date ?? null,
+      branch_id: (e as any).branch_id ?? null,
+      archived_at: (e as any).archived_at ?? null,
     })),
   [employees]);
 
@@ -993,17 +997,24 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
                 <p className="font-medium text-warning flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
-                  {missingFromFile.length} active employee{missingFromFile.length !== 1 ? "s" : ""} not matched in uploaded file
+                  {missingFromFile.length} expected employee{missingFromFile.length !== 1 ? "s" : ""} not matched in uploaded file
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  These employees exist in the database but no row in the uploaded timesheet matched them. If they should have hours, the file may use a different name — use the "Match to employee" control on any unmatched row below to confirm and (optionally) remember the alias.
+                  These employees are expected in the selected payroll period but no row in the uploaded timesheet matched them. If they should have hours, the file may use a different name — use the "Match to employee" control on any unmatched row below to confirm and (optionally) remember the alias.
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {missingFromFile.slice(0, 20).map((m) => (
-                    <Badge key={m.employeeId} variant="outline" className="text-[10px]">
-                      {m.fullName}{m.status === "starter" ? " • Starter" : ""}
-                    </Badge>
-                  ))}
+                  {missingFromFile.slice(0, 20).map((m) => {
+                    const reasonLabel =
+                      m.reason === "current_starter" ? "Starter" :
+                      m.reason === "current_leaver" ? "Leaver (final pay)" :
+                      m.reason === "current_activity" ? "Current activity" :
+                      "Active in period";
+                    return (
+                      <Badge key={m.employeeId} variant="outline" className="text-[10px]">
+                        {m.fullName}{m.department ? ` • ${m.department}` : ""} • {reasonLabel}
+                      </Badge>
+                    );
+                  })}
                   {missingFromFile.length > 20 && (
                     <Badge variant="outline" className="text-[10px]">+{missingFromFile.length - 20} more</Badge>
                   )}
