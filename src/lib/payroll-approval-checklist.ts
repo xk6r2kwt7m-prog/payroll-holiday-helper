@@ -62,6 +62,13 @@ export interface ApprovalChecklistInput {
    * Never blocks approval — this is a manager-facing awareness surface.
    */
   comparisonSummary?: PayrollComparisonSummary | null;
+  /**
+   * Number of distinct employees whose *imported* timesheet hours were
+   * manually corrected after import (see `countImportedHoursOverrides`).
+   * Surfaces a non-blocking, ack-required warning.
+   */
+  importedHoursOverrideCount?: number;
+  importedHoursOverrideEmployeeIds?: string[];
 }
 
 export interface ApprovalChecklistResult {
