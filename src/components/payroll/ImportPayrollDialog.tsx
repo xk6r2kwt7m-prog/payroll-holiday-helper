@@ -733,8 +733,9 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
             service_charge: emp.serviceCharge,
             department: emp.department,
           });
-          const rate = _defaults.hourly_rate;
-          const sc = _defaults.service_charge;
+          const rate = _defaults.hourly_rate || 0;
+          const sc = _defaults.service_charge || 0;
+          const rateNote = rate === 0 ? " [⚠ rate missing — set before approval]" : "";
           const holidayAccrued = calculateAccrual(hours, 0.1207);
 
           const locNotes = emp.locations.length > 1
