@@ -109,6 +109,8 @@ interface PayrollEntry {
     bank_account_no: string | null;
     sort_code: string | null;
     ni_number: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
   } | null;
 }
 
