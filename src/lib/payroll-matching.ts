@@ -193,13 +193,15 @@ export function matchEmployee(
   csvName: string,
   employees: MatchableEmployee[]
 ): MatchResult {
-  const trimmed = csvName.trim();
+  const trimmed = normaliseWhitespace(csvName);
   const nameLower = trimmed.toLowerCase();
   const sorted = sortActiveFirst(employees);
 
-  // 1. Exact full-name match (prefer active/starter over leaver)
+  // 1. Exact full-name match (prefer active/starter over leaver).
+  //    Whitespace-normalise both sides so a stray double space in the DB
+  //    forename (e.g. "Carlos  David") still matches a single-space CSV name.
   const exact = sorted.find(
-    (e) => `${e.forename} ${e.surname}` === trimmed
+    (e) => normaliseWhitespace(`${e.forename} ${e.surname}`) === trimmed
   );
   if (exact) {
     // If matched a leaver, check if a non-leaver exists via alias/preferred/legacy
@@ -210,9 +212,9 @@ export function matchEmployee(
     return { employee: exact, method: "exact" };
   }
 
-  // 2. Case-insensitive full-name match
+  // 2. Case-insensitive full-name match (whitespace-normalised).
   const ci = sorted.find(
-    (e) => `${e.forename} ${e.surname}`.toLowerCase() === nameLower
+    (e) => normaliseWhitespace(`${e.forename} ${e.surname}`).toLowerCase() === nameLower
   );
   if (ci) {
     // If matched a leaver, check if a non-leaver exists via alias/preferred/legacy
