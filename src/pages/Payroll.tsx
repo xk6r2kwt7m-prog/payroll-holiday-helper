@@ -33,6 +33,7 @@ import { derivePayrollPageSeverity } from "@/lib/payroll-page-severity";
 
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
 import { buildApprovalChecklist, canApprove as canApproveChecklist } from "@/lib/payroll-approval-checklist";
+import { countImportedHoursOverrides } from "@/lib/payroll-hours-override";
 import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
 import { usePayrollApprovalGuardrails } from "@/hooks/usePayrollApprovalGuardrails";
 import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySection";
