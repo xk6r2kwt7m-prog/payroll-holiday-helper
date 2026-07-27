@@ -11,6 +11,7 @@ import { useCreatePayrollPeriod, useCopyPayrollPeriod, usePayrollPeriods } from 
 import { useEmployees } from "@/hooks/useEmployees";
 import { supabase } from "@/integrations/supabase/client";
 import { suggestNextPeriod, getLastThursday } from "@/lib/payroll-period-suggestion";
+import { isRelevantToPayrollPeriod } from "@/lib/employee-period-relevance";
 
 interface CreatePayrollDialogProps {
   onSuccess?: () => void;
@@ -85,8 +86,16 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           imported_by: user?.id,
         });
 
-        // Add entries for all active + starter employees (leavers excluded)
-        const eligibleEmployees = employees.filter(e => e.status === "active" || e.status === "starter");
+        // Include employees relevant to the selected period (period-aware):
+        // excludes former employees whose end_date is before the period start
+        // and who have no current-period activity.
+        const period = { start_date: startDate, end_date: endDate };
+        const eligibleEmployees = employees.filter(e =>
+          isRelevantToPayrollPeriod(e as any, period, {
+            entryEmployeeIds: new Set<string>(),
+            holidayPaymentEmployeeIds: new Set<string>(),
+          })
+        );
         if (eligibleEmployees.length > 0) {
           // Phase 2C — prefer active employment terms as of period start.
           const tenantIdForDefaults = (eligibleEmployees[0] as any).tenant_id as string | undefined;

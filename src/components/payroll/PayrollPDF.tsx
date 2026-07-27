@@ -469,12 +469,9 @@ export function PayrollPDF({
     day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  // Filter: only genuine starters (not in prior period) and leavers
-  const eligibleStarters = starters.filter(s => {
-    if (s.status === 'leaver') return true;
-    if (s.status === 'starter' && !priorPeriodEmployeeIds.has(s.id)) return true;
-    return false;
-  });
+  // Callers pre-filter to genuine period-starters and period-leavers via
+  // employee-period-relevance helpers. Trust the passed list.
+  const eligibleStarters = starters;
 
   const getRTWStatus = (starter: StarterEmployee) => {
     const hasNI = !!starter.ni_number;

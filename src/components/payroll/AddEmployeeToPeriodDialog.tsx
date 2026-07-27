@@ -20,13 +20,23 @@ import { toast } from "sonner";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useCreatePayrollEntry } from "@/hooks/usePayroll";
 import { useTenant } from "@/hooks/useTenant";
+import { isRelevantToPayrollPeriod, isStarterInPeriod } from "@/lib/employee-period-relevance";
 
 interface AddEmployeeToPeriodDialogProps {
   periodId: string;
   existingEmployeeIds: string[];
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  priorPeriodEmployeeIds?: Set<string>;
 }
 
-export function AddEmployeeToPeriodDialog({ periodId, existingEmployeeIds }: AddEmployeeToPeriodDialogProps) {
+export function AddEmployeeToPeriodDialog({
+  periodId,
+  existingEmployeeIds,
+  periodStart,
+  periodEnd,
+  priorPeriodEmployeeIds,
+}: AddEmployeeToPeriodDialogProps) {
   const [open, setOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
   
@@ -34,10 +44,16 @@ export function AddEmployeeToPeriodDialog({ periodId, existingEmployeeIds }: Add
   const createEntry = useCreatePayrollEntry();
   const { tenantId } = useTenant();
 
-  // Show active + starter employees not already in this period
-  const availableEmployees = employees.filter(
-    (emp) => (emp.status === "active" || emp.status === "starter") && !existingEmployeeIds.includes(emp.id)
-  );
+  // Show employees relevant to the selected period (excludes former
+  // employees whose end_date is before the period start, unless they have
+  // current-period activity). We don't have entries here, so we let the
+  // helper apply status + end_date rules.
+  const period = periodStart && periodEnd ? { start_date: periodStart, end_date: periodEnd } : null;
+  const availableEmployees = employees.filter((emp) => {
+    if (existingEmployeeIds.includes(emp.id)) return false;
+    if (!period) return emp.status === "active" || emp.status === "starter";
+    return isRelevantToPayrollPeriod(emp as any, period);
+  });
 
   const handleAdd = async () => {
     if (!selectedEmployeeId) {
@@ -124,12 +140,17 @@ export function AddEmployeeToPeriodDialog({ periodId, existingEmployeeIds }: Add
                 <SelectValue placeholder="Select an employee" />
               </SelectTrigger>
               <SelectContent>
-                {availableEmployees.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    {emp.forename} {emp.surname} — {emp.department}
-                    {emp.status === "starter" ? " (Starter)" : ""}
-                  </SelectItem>
-                ))}
+                {availableEmployees.map((emp) => {
+                  const starterHere = period
+                    ? isStarterInPeriod(emp as any, period, priorPeriodEmployeeIds)
+                    : false;
+                  return (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.forename} {emp.surname} — {emp.department}
+                      {starterHere ? " (Starter)" : ""}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             {availableEmployees.length === 0 && (

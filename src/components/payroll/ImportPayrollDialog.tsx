@@ -455,8 +455,9 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
     const matchedIds = aggregated
       .filter((e) => e.matchedId && e.resolution !== "excluded")
       .map((e) => e.matchedId as string);
-    return findMissingFromFile(matchableEmployees, matchedIds);
-  }, [aggregated, matchableEmployees]);
+    const periodCtx = startDate && endDate ? { start_date: startDate, end_date: endDate } : null;
+    return findMissingFromFile(matchableEmployees, matchedIds, [], periodCtx);
+  }, [aggregated, matchableEmployees, startDate, endDate]);
   const zeroHourMatched = aggregated.filter(
     (e) => !e.unmatched && e.resolution !== "excluded" && e.totalHours === 0,
   );

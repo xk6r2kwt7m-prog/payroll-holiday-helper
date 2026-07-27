@@ -51,6 +51,10 @@ import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
 import { PayrollMissingInfo } from "@/components/payroll/PayrollMissingInfo";
+import {
+  isStarterInPeriod,
+  isLeaverInPeriod,
+} from "@/lib/employee-period-relevance";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PayrollNavStrip } from "@/components/payroll/PayrollNavStrip";
 import { PayrollSourceInfo } from "@/components/payroll/PayrollSourceInfo";
@@ -556,9 +560,21 @@ const Payroll = () => {
         ];
         const rows = splitRows.map((sr) => {
           const emp = sr.entry.employees;
+          const starterHere = emp
+            ? isStarterInPeriod(emp as any, selectedPeriod as any, priorPeriodEmployeeIds)
+            : false;
+          const leaverHere = emp
+            ? isLeaverInPeriod(emp as any, selectedPeriod as any, {
+                holidayPaymentEmployeeIds: new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean)),
+                entryEmployeeIds: new Set(entries.map((e: any) => e.employee_id)),
+              })
+            : false;
+          const marker = leaverHere
+            ? '"Leaver / Final settlement"'
+            : starterHere ? '"Starter / First payroll"' : '""';
           return [
             `"${emp?.forename} ${emp?.surname}"`, `"${emp?.department || ""}"`,
-            `"${emp?.status || ""}"`, emp?.status === "starter" ? '"Starter / First payroll"' : '""',
+            `"${emp?.status || ""}"`, marker,
             `"${sr.locationName}"`, sr.locationHours, `"${sr.locationDepartment || ""}"`, sr.employeeTotalHours,
             `"${emp?.ni_number || ""}"`,
             ...(includeBankDetails ? [`"${(emp as any)?.sort_code || ""}"`, `"${(emp as any)?.bank_account_no || ""}"`] : []),
@@ -576,11 +592,25 @@ const Payroll = () => {
           "Hourly Rate", "Service Charge", "Hours", "Performance Bonus",
           "Special Bonus", "Holiday Accrued", "Total Pay",
         ];
+        const holidayIdsFlat = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+        const entryIdsFlat = new Set(entries.map((e: any) => e.employee_id));
         const rows = entries.map((entry: any) => {
           const emp = entry.employees;
+          const starterHere = emp
+            ? isStarterInPeriod(emp as any, selectedPeriod as any, priorPeriodEmployeeIds)
+            : false;
+          const leaverHere = emp
+            ? isLeaverInPeriod(emp as any, selectedPeriod as any, {
+                holidayPaymentEmployeeIds: holidayIdsFlat,
+                entryEmployeeIds: entryIdsFlat,
+              })
+            : false;
+          const marker = leaverHere
+            ? '"Leaver / Final settlement"'
+            : starterHere ? '"Starter / First payroll"' : '""';
           return [
             `"${emp?.forename} ${emp?.surname}"`, `"${emp?.department}"`, `"${emp?.status || ""}"`,
-            emp?.status === "starter" ? '"Starter / First payroll"' : '""',
+            marker,
             `"${emp?.ni_number || ""}"`,
             ...(includeBankDetails ? [`"${emp?.sort_code || ""}"`, `"${emp?.bank_account_no || ""}"`] : []),
             entry.hourly_rate, entry.service_charge || 0, entry.timesheet_hours,
@@ -611,15 +641,17 @@ const Payroll = () => {
     try {
       toast.info(t("payroll.generating_pdf"));
       const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+      const entryEmployeeIds = new Set(entries.map((e: any) => e.employee_id));
       const starterEmployees = allEmployees.filter(emp => {
-        const inEntries = entries.some((e: any) => e.employee_id === emp.id);
+        const inEntries = entryEmployeeIds.has(emp.id);
         const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
         if (!inEntries && !hasHolidayPayment) return false;
-        // Genuine starter: status is starter AND not in a prior payroll period
-        const isGenuineStarter = emp.status === 'starter' && !priorPeriodEmployeeIds.has(emp.id);
-        // Leaver: status is leaver OR has holiday settlement payment in this period
-        const isLeaver = emp.status === 'leaver' || hasHolidayPayment;
-        return isGenuineStarter || isLeaver;
+        const starterHere = isStarterInPeriod(emp as any, selectedPeriod as any, priorPeriodEmployeeIds);
+        const leaverHere = isLeaverInPeriod(emp as any, selectedPeriod as any, {
+          holidayPaymentEmployeeIds,
+          entryEmployeeIds,
+        });
+        return starterHere || leaverHere;
       });
 
       const logoUrl = `${window.location.origin}/logo.jpeg`;
@@ -878,6 +910,9 @@ const Payroll = () => {
           <PayrollMissingInfo
             entries={entries}
             periodName={selectedPeriod.period_name}
+            period={selectedPeriod as any}
+            priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+            holidayPaymentEmployeeIds={new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean))}
           />
         )}
 
@@ -916,6 +951,8 @@ const Payroll = () => {
             showBonusColumn={payrollPrefs?.showBonusColumn !== false}
             showServiceCharge={payrollPrefs?.showServiceCharge !== false}
             priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+            periodStart={(selectedPeriod as any).start_date ?? null}
+            periodEnd={(selectedPeriod as any).end_date ?? null}
             comparisonByEmployee={comparison?.changes}
             previousPeriodLabel={immediatePriorPeriod?.period_name ?? null}
             periodLabel={selectedPeriod?.period_name ?? null}
