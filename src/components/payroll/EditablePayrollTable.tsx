@@ -450,13 +450,15 @@ export function EditablePayrollTable({
       if (hoursChanged) changes.push(`Hours: ${formatHours(importedHours!)} → ${formatHours(hours)}`);
       if (rateChanged) changes.push(`Rate: ${formatCurrency(Number(emp!.hourly_rate))} → ${formatCurrency(hourlyRate)}`);
       if (serviceChanged) changes.push(`Service: ${formatCurrency(Number(emp!.service_charge || 0))} → ${formatCurrency(serviceCharge)}`);
-      
+
       setPendingSave({ entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus });
-      setAdjustmentNote(entry.adjustment_note || changes.join("; "));
+      setAdjustmentNote(entry.adjustment_note || (hoursChanged ? "" : changes.join("; ")));
+      setOverrideCategory("");
+      setOverrideShowOnPdf(false);
       setNoteDialogOpen(true);
     } else {
       // No change from master — clear any previous note if everything matches
-      await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, 
+      await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus,
         importedHours !== null && Math.abs(hours - importedHours) < 0.001 ? null as any : undefined);
     }
   };
