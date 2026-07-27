@@ -29,7 +29,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import {
   getPeopleDashboardCounts,
-  isRelevantForOnboardingAttention,
   isFormerEmployee,
 } from "@/lib/employee-lifecycle-display";
 
