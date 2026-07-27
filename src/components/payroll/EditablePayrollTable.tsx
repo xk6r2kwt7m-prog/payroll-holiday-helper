@@ -13,6 +13,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
 import { EmployeeChangeReviewDialog } from "./EmployeeChangeReviewDialog";
 import { useCreatePayrollAdjustment, usePayrollAdjustments, usePriorPeriodAdjustments } from "@/hooks/usePayrollAdjustments";
+import {
+  OVERRIDE_REASON_CATEGORIES,
+  formatOverrideNote,
+  validateOverride,
+  isDuplicateNote,
+  type OverrideReasonCategory,
+} from "@/lib/payroll-hours-override";
 import { useTenant } from "@/hooks/useTenant";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -167,6 +174,9 @@ export function EditablePayrollTable({
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<{ entry: PayrollEntry; hours: number; hourlyRate: number; serviceCharge: number; perfBonus: number; specBonus: number } | null>(null);
   const [adjustmentNote, setAdjustmentNote] = useState("");
+  // Imported-hours override extras (only used when entry.imported_hours != null AND hours changed)
+  const [overrideCategory, setOverrideCategory] = useState<string>("");
+  const [overrideShowOnPdf, setOverrideShowOnPdf] = useState(false);
   const [reviewEmployeeId, setReviewEmployeeId] = useState<string | null>(null);
 
 
@@ -440,13 +450,15 @@ export function EditablePayrollTable({
       if (hoursChanged) changes.push(`Hours: ${formatHours(importedHours!)} → ${formatHours(hours)}`);
       if (rateChanged) changes.push(`Rate: ${formatCurrency(Number(emp!.hourly_rate))} → ${formatCurrency(hourlyRate)}`);
       if (serviceChanged) changes.push(`Service: ${formatCurrency(Number(emp!.service_charge || 0))} → ${formatCurrency(serviceCharge)}`);
-      
+
       setPendingSave({ entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus });
-      setAdjustmentNote(entry.adjustment_note || changes.join("; "));
+      setAdjustmentNote(entry.adjustment_note || (hoursChanged ? "" : changes.join("; ")));
+      setOverrideCategory("");
+      setOverrideShowOnPdf(false);
       setNoteDialogOpen(true);
     } else {
       // No change from master — clear any previous note if everything matches
-      await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, 
+      await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus,
         importedHours !== null && Math.abs(hours - importedHours) < 0.001 ? null as any : undefined);
     }
   };
@@ -454,11 +466,34 @@ export function EditablePayrollTable({
   const confirmAdjustmentNote = async () => {
     if (!pendingSave) return;
     const { entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus } = pendingSave;
+    const importedHours = entry.imported_hours;
+    const hoursChanged = importedHours !== null && Math.abs(hours - importedHours) > 0.001;
+
+    // Imported-hours override → require reason category and build a
+    // deterministic composite note that captures the correction.
+    let finalNote = adjustmentNote;
+    if (hoursChanged) {
+      const err = validateOverride({
+        category: overrideCategory as OverrideReasonCategory,
+        imported: importedHours!,
+        corrected: hours,
+      });
+      if (err) {
+        toast.error(err);
+        return;
+      }
+      finalNote = formatOverrideNote({
+        imported: importedHours!,
+        corrected: hours,
+        category: overrideCategory as OverrideReasonCategory,
+        freeText: adjustmentNote,
+      });
+    }
 
     // G3 — non-empty note required when entry has 0 hours and a non-zero pay value
     const totalPayValue =
       hourlyRate * hours + serviceCharge * hours + perfBonus + specBonus;
-    if (hours === 0 && totalPayValue !== 0 && !adjustmentNote.trim()) {
+    if (hours === 0 && totalPayValue !== 0 && !finalNote.trim()) {
       toast.error(
         "A note is required when posting a non-zero amount to a zero-hour entry. Explain the reason (e.g. bonus, retro pay, correction).",
       );
@@ -478,9 +513,8 @@ export function EditablePayrollTable({
     }[] = [];
 
     const emp = entry.employees;
-    const importedHours = entry.imported_hours;
 
-    if (importedHours !== null && Math.abs(hours - importedHours) > 0.001) {
+    if (hoursChanged) {
       adjustmentRows.push({
         payroll_period_id: periodId,
         payroll_entry_id: entry.id,
@@ -488,7 +522,7 @@ export function EditablePayrollTable({
         field_name: "timesheet_hours",
         old_value: importedHours,
         new_value: hours,
-        note: adjustmentNote || "Manual adjustment",
+        note: finalNote || "Manual adjustment",
       });
     }
     if (emp && Math.abs(hourlyRate - Number(emp.hourly_rate)) > 0.001) {
@@ -536,6 +570,14 @@ export function EditablePayrollTable({
       });
     }
 
+    // Replace the free-text note on every adjustment row with `finalNote`,
+    // which already carries the deterministic override description when
+    // imported hours changed. Non-hours rows keep the manager's note.
+    for (const r of adjustmentRows) {
+      if (r.field_name === "timesheet_hours") continue;
+      r.note = adjustmentNote || finalNote || "Manual adjustment";
+    }
+
     if (adjustmentRows.length > 0) {
       try {
         await createAdjustment.mutateAsync(adjustmentRows);
@@ -545,9 +587,39 @@ export function EditablePayrollTable({
       }
     }
 
-    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, adjustmentNote || "Manual adjustment");
+    // Optionally publish the imported-hours correction as a period note
+    // that will render on the payroll PDF.
+    if (hoursChanged && overrideShowOnPdf && tenantId) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: existing } = await supabase
+          .from("payroll_period_notes")
+          .select("id, note")
+          .eq("tenant_id", tenantId)
+          .eq("payroll_period_id", periodId)
+          .eq("employee_id", entry.employee_id);
+        if (!isDuplicateNote(finalNote, (existing ?? []) as any)) {
+          await supabase.from("payroll_period_notes").insert({
+            tenant_id: tenantId,
+            payroll_period_id: periodId,
+            employee_id: entry.employee_id,
+            note: finalNote,
+            category: "timesheet",
+            show_on_pdf: true,
+            created_by: user?.id || null,
+          } as any);
+          queryClient.invalidateQueries({ queryKey: ["payroll_period_notes"] });
+        }
+      } catch (e) {
+        console.error("Failed to publish PDF note for hours override", e);
+      }
+    }
+
+    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, finalNote || "Manual adjustment");
     setPendingSave(null);
     setAdjustmentNote("");
+    setOverrideCategory("");
+    setOverrideShowOnPdf(false);
   };
 
   const handleBulkZeroHours = async () => {
@@ -1192,37 +1264,99 @@ export function EditablePayrollTable({
         </Table>
       </div>
 
-      {/* Adjustment Note Dialog — internal only, never exported */}
-      <Dialog open={noteDialogOpen} onOpenChange={(open) => {
-        if (!open) {
-          setNoteDialogOpen(false);
-          setPendingSave(null);
-        }
-      }}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle className="text-base">Payroll Adjustment</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Values have been changed from the original/master record.
-              Add an internal note — this will <strong>not</strong> appear in exports or PDFs.
-            </p>
-          </DialogHeader>
-          <Textarea
-            placeholder="e.g. Special arrangement — agreed extra hours"
-            value={adjustmentNote}
-            onChange={(e) => setAdjustmentNote(e.target.value)}
-            className="min-h-[80px]"
-          />
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setNoteDialogOpen(false); setPendingSave(null); }}>
-              Cancel
-            </Button>
-            <Button onClick={confirmAdjustmentNote}>
-              Save with Note
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Adjustment / Imported Hours Override Dialog */}
+      {(() => {
+        const pending = pendingSave;
+        const imported = pending?.entry.imported_hours ?? null;
+        const hoursChangedFromImport =
+          !!pending && imported !== null && Math.abs(pending.hours - imported) > 0.001;
+        const empName = pending
+          ? `${pending.entry.employees?.forename ?? ""} ${pending.entry.employees?.surname ?? ""}`.trim()
+          : "";
+        const delta = pending && imported !== null ? pending.hours - imported : 0;
+        return (
+          <Dialog open={noteDialogOpen} onOpenChange={(open) => {
+            if (!open) {
+              setNoteDialogOpen(false);
+              setPendingSave(null);
+              setOverrideCategory("");
+              setOverrideShowOnPdf(false);
+            }
+          }}>
+            <DialogContent className="sm:max-w-[480px]">
+              <DialogHeader>
+                <DialogTitle className="text-base">
+                  {hoursChangedFromImport ? "Correct imported timesheet hours" : "Payroll Adjustment"}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  {hoursChangedFromImport
+                    ? <>You are changing the hours that were imported from the uploaded timesheet file. This will be recorded in the audit trail with a mandatory reason.</>
+                    : <>Values have been changed from the original/master record. Add an internal note — this will <strong>not</strong> appear in exports or PDFs.</>}
+                </p>
+              </DialogHeader>
+
+              {hoursChangedFromImport && pending && (
+                <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs space-y-1">
+                  <div className="font-medium text-foreground">{empName || "Employee"}</div>
+                  <div className="grid grid-cols-3 gap-2 text-muted-foreground">
+                    <div><span className="block text-[10px] uppercase">Imported</span><span className="text-foreground font-mono">{formatHours(imported!)}</span></div>
+                    <div><span className="block text-[10px] uppercase">Corrected</span><span className="text-foreground font-mono">{formatHours(pending.hours)}</span></div>
+                    <div><span className="block text-[10px] uppercase">Δ</span><span className={cn("font-mono", delta >= 0 ? "text-success" : "text-destructive")}>{delta >= 0 ? "+" : ""}{formatHours(delta)}</span></div>
+                  </div>
+                </div>
+              )}
+
+              {hoursChangedFromImport && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-foreground">Reason category <span className="text-destructive">*</span></label>
+                  <Select value={overrideCategory} onValueChange={setOverrideCategory}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select a reason" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OVERRIDE_REASON_CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <Textarea
+                placeholder={hoursChangedFromImport ? "Optional — extra context for auditors" : "e.g. Special arrangement — agreed extra hours"}
+                value={adjustmentNote}
+                onChange={(e) => setAdjustmentNote(e.target.value)}
+                className="min-h-[70px]"
+              />
+
+              {hoursChangedFromImport && (
+                <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={overrideShowOnPdf}
+                    onCheckedChange={(v) => setOverrideShowOnPdf(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Show this correction on the payroll PDF. When enabled, an entry is added to Period Notes so the reason is visible on the exported document.
+                  </span>
+                </label>
+              )}
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => { setNoteDialogOpen(false); setPendingSave(null); setOverrideCategory(""); setOverrideShowOnPdf(false); }}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmAdjustmentNote}
+                  disabled={hoursChangedFromImport && !overrideCategory}
+                >
+                  {hoursChangedFromImport ? "Save correction" : "Save with Note"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
 
       <AlertDialog open={!!removeEntryId} onOpenChange={(open) => !open && setRemoveEntryId(null)}>
         <AlertDialogContent>

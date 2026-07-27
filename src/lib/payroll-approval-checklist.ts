@@ -62,6 +62,13 @@ export interface ApprovalChecklistInput {
    * Never blocks approval — this is a manager-facing awareness surface.
    */
   comparisonSummary?: PayrollComparisonSummary | null;
+  /**
+   * Number of distinct employees whose *imported* timesheet hours were
+   * manually corrected after import (see `countImportedHoursOverrides`).
+   * Surfaces a non-blocking, ack-required warning.
+   */
+  importedHoursOverrideCount?: number;
+  importedHoursOverrideEmployeeIds?: string[];
 }
 
 export interface ApprovalChecklistResult {
@@ -326,6 +333,22 @@ export function buildApprovalChecklist(
           "No hour or rate overrides recorded against this period.",
         ),
   );
+
+  // Imported-hours override warning — non-blocking, ack required.
+  const impCount = input.importedHoursOverrideCount ?? 0;
+  const impEmps = input.importedHoursOverrideEmployeeIds ?? [];
+  if (impCount > 0) {
+    items.push({
+      id: "imported_hours_overrides",
+      status: "warning",
+      blocking: false,
+      requires_ack: true,
+      title: "Imported timesheet hours were manually corrected",
+      detail: `${impCount} employee${impCount === 1 ? " has" : "s have"} had hours imported from the timesheet file manually adjusted. Review each correction and reason before approval.`,
+      count: impCount,
+      affected_employee_ids: impEmps,
+    });
+  }
 
   // --- month-on-month comparison summary (non-blocking) -------------------
   const cmp = input.comparisonSummary;
