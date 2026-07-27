@@ -147,9 +147,9 @@ export function PeopleDashboard({ onViewDirectory }: { onViewDirectory: () => vo
   // Employee preview — first 5 active
   const previewEmployees = useMemo(() =>
     employees
-      .filter(e => e.status === "active" && !e.archived_at)
+      .filter(e => !isFormerEmployee(e, today))
       .slice(0, 5),
-    [employees]
+    [employees, today]
   );
 
   return (
