@@ -23,6 +23,7 @@ import type {
 export type EntitlementBasis =
   | "current_period"
   | "current_year"
+  | "live_accrual"
   | "full_employment"
   | "manual";
 
