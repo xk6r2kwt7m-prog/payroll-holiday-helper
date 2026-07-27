@@ -29,6 +29,17 @@ import {
   isDuplicateNote,
   type OverrideReasonCategory,
 } from "@/lib/payroll-hours-override";
+import {
+  EDIT_REASON_CATEGORIES,
+  EDITABLE_FIELD_LABEL,
+  formatFieldChange,
+  formatEditReasonNote,
+  noteCategoryForField,
+  isValidEditReasonCategory,
+  type EditableField,
+  type EditReasonCategory,
+  type FieldChange,
+} from "@/lib/payroll-edit-reason";
 import { useTenant } from "@/hooks/useTenant";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
