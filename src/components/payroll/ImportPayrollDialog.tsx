@@ -21,6 +21,7 @@ import { matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMeth
 import { findMissingFromFile } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
+import { sanitisePayrollPeriodUpdate, normalisePayrollStatus } from "@/lib/payroll-status";
 import { CreateEmployeeFromImport } from "./CreateEmployeeFromImport";
 
 // ─── CSV section → location/department mappings ───
