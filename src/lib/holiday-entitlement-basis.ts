@@ -572,12 +572,15 @@ export interface MismatchReport {
  */
 function isTimingPair(a: SourceRow["source"], b: SourceRow["source"]): boolean {
   const s = new Set([a, b]);
+  // The manual_recalculation row reflects the basis chosen in the dialog,
+  // not an independent source of truth — its differences vs the underlying
+  // sources are informational, not data-integrity blockers.
+  if (s.has("manual_recalculation")) return true;
   if (!s.has("live_payroll_accrual")) return false;
   return (
     s.has("holiday_ledger") ||
     s.has("holiday_balances_snapshot") ||
-    s.has("holiday_tab_legacy") ||
-    s.has("manual_recalculation")
+    s.has("holiday_tab_legacy")
   );
 }
 
