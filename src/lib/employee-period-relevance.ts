@@ -88,14 +88,18 @@ export function isLeaverInPeriod(
   // End date falls inside the selected period.
   if (withinPeriod(employee.end_date, period)) return true;
 
-  const holidayIds = context.holidayPaymentEmployeeIds instanceof Set
-    ? context.holidayPaymentEmployeeIds
-    : new Set(context.holidayPaymentEmployeeIds ?? []);
-  if (holidayIds.has(employee.id)) return true;
-
   const entryIds = context.entryEmployeeIds instanceof Set
     ? context.entryEmployeeIds
     : new Set(context.entryEmployeeIds ?? []);
+
+  const holidayIds = context.holidayPaymentEmployeeIds instanceof Set
+    ? context.holidayPaymentEmployeeIds
+    : new Set(context.holidayPaymentEmployeeIds ?? []);
+
+  // A holiday payment on its own is NOT proof of leaving — normal
+  // mid-employment holiday pay lands in the same table. Only treat it as
+  // leaver evidence when the employee is persistently flagged as leaver.
+  if (employee.status === "leaver" && holidayIds.has(employee.id)) return true;
 
   // Persistently flagged leaver with actual current-period activity
   // (final correction or clean-up run). No activity => not shown as
