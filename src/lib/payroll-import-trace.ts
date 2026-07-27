@@ -280,25 +280,63 @@ export function linkMissingToUnresolvedRows(
     tokens: new Set(tokenise(raw)),
   }));
 
+  // How many employees own each token across the workforce. A token owned by
+  // exactly one employee is a strong, unambiguous signal; a token shared by
+  // many (a common surname like "Martins" / "Bezerra") is not.
+  const tokenOwners = new Map<string, Set<string>>();
+  for (const e of employees) {
+    const eTokens = new Set([
+      ...tokenise(e.forename),
+      ...tokenise(e.preferred_name ?? ""),
+      ...tokenise(e.surname),
+      ...(e.import_aliases ?? []).flatMap(tokenise),
+    ]);
+    for (const t of eTokens) {
+      if (!tokenOwners.has(t)) tokenOwners.set(t, new Set());
+      tokenOwners.get(t)!.add(e.id);
+    }
+  }
+
   return missing.map((m) => {
     const emp = empById.get(m.employeeId);
     if (!emp) return m;
-    const empTokens = new Set([
+    const forenameTokens = new Set([
       ...tokenise(emp.forename),
-      ...tokenise(emp.surname),
       ...tokenise(emp.preferred_name ?? ""),
       ...(emp.import_aliases ?? []).flatMap(tokenise),
     ]);
-    if (empTokens.size === 0) return m;
+    const surnameTokens = new Set(tokenise(emp.surname));
+    if (forenameTokens.size === 0 && surnameTokens.size === 0) return m;
 
     const hits: string[] = [];
     for (const u of unresolvedTokens) {
+      let forenameOverlap = 0;
+      let surnameOverlap = 0;
+      let uniqueOverlap = false;
       for (const t of u.tokens) {
-        if (empTokens.has(t)) {
-          hits.push(u.raw);
-          break;
+        const fore = forenameTokens.has(t);
+        const sur = surnameTokens.has(t);
+        if (fore) forenameOverlap++;
+        if (sur) surnameOverlap++;
+        // A shared token owned by exactly one employee across the workforce
+        // is unambiguous even if it happens to be a surname.
+        if ((fore || sur) && (tokenOwners.get(t)?.size ?? 0) === 1) {
+          uniqueOverlap = true;
         }
       }
+
+      // Safety rule: surname alone shared by more than one employee must NOT
+      // produce a hint. Otherwise two people sharing "Bezerra" would both be
+      // suggested for the same unresolved row.
+      const surnameSharedByMultiple = [...surnameTokens].some(
+        (t) => (tokenOwners.get(t)?.size ?? 0) > 1,
+      );
+      const safe =
+        uniqueOverlap ||
+        forenameOverlap >= 1 ||
+        (surnameOverlap >= 1 && !surnameSharedByMultiple);
+
+      if (safe) hits.push(u.raw);
     }
     return hits.length > 0 ? { ...m, likelyUnresolvedNames: hits } : m;
   });
