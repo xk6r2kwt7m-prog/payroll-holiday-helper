@@ -19,6 +19,7 @@ import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { usePayrollPeriodNotes } from "@/hooks/usePayrollPeriodNotes";
 import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
+import { buildPdfAdjustmentRows } from "@/lib/payroll-pdf-adjustments";
 
 interface PayrollReportBuilderProps {
   open: boolean;
