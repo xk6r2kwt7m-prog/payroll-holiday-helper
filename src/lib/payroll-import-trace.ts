@@ -133,12 +133,28 @@ export interface MissingFromFile {
   /** True when this employee already has a draft entry in the target period. */
   linkedToPeriod: boolean;
   /** Short reason this employee was expected in the selected period. */
-  reason: "active_in_period" | "current_starter" | "current_leaver" | "current_activity";
+  reason:
+    | "active_in_period"
+    | "current_starter"
+    | "current_onboarding"
+    | "current_leaver"
+    | "current_activity";
   department?: string;
   branchId?: string | null;
+  /**
+   * Unresolved CSV names from the same file that likely refer to this
+   * employee (based on forename token overlap). Populated by
+   * `linkMissingToUnresolvedRows` — never used to auto-match.
+   */
+  likelyUnresolvedNames?: string[];
 }
 
 export interface FindMissingOptions {
+  /**
+   * @deprecated The `employees` table has no `branch_id` column, so this
+   * filter is a no-op. Kept only to avoid breaking existing callers; will be
+   * removed once every caller is updated.
+   */
   branchId?: string | null;
   /** Employee ids with current-period activity (entries, holiday pay, adjustments). */
   activityEmployeeIds?: Iterable<string>;
