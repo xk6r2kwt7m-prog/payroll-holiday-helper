@@ -201,6 +201,44 @@ export function computeBasis(input: BasisInput): BasisResult {
     };
   }
 
+  if (basis === "live_accrual") {
+    // Uses payroll_entries.holiday_accrued_hours across ALL periods (draft +
+    // approved) in the leave year — matches the Leave dashboard so leavers
+    // whose accrual has not yet posted to the ledger (draft period) can be
+    // settled against the same visible balance.
+    const yearEntries = payrollEntries.filter(
+      (e) => new Date(e.period_start_date).getUTCFullYear() === leaveYear,
+    );
+    const accrued = yearEntries.reduce((s, e) => s + Number(e.holiday_accrued_hours || 0), 0);
+    const workedHours = yearEntries.reduce((s, e) => s + Number(e.timesheet_hours || 0), 0);
+    const yearPayments = payments.filter((p) => p.leave_year_start === ys);
+    const taken = yearPayments.reduce((s, p) => s + Math.abs(Number(p.hours || 0)), 0);
+    const paid = yearPayments.reduce((s, p) => s + Number(p.total || 0), 0);
+    const hasDraft = yearEntries.some(
+      (e) => !["approved", "finalised", "finalized"].includes(String(e.period_status || "").toLowerCase()),
+    );
+    notes.push(
+      "Scope: live payroll accrual for this leave year — includes draft and approved periods.",
+    );
+    if (hasDraft) {
+      notes.push(
+        "Some accrual in this basis comes from draft periods that have not yet posted to the ledger.",
+      );
+    }
+    return {
+      basis,
+      accrued,
+      carryOver: 0,
+      taken,
+      paid,
+      manualAdjustments: 0,
+      workedHours,
+      balance: accrued - taken,
+      balanceAmount: null,
+      notes,
+    };
+  }
+
   // full_employment
   //
   // CRITICAL: a naive sum of every ledger row double-counts when both
