@@ -13,6 +13,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
 import { EmployeeChangeReviewDialog } from "./EmployeeChangeReviewDialog";
 import { useCreatePayrollAdjustment, usePayrollAdjustments, usePriorPeriodAdjustments } from "@/hooks/usePayrollAdjustments";
+import {
+  OVERRIDE_REASON_CATEGORIES,
+  formatOverrideNote,
+  validateOverride,
+  isDuplicateNote,
+  type OverrideReasonCategory,
+} from "@/lib/payroll-hours-override";
 import { useTenant } from "@/hooks/useTenant";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
