@@ -77,6 +77,22 @@ export function normaliseAliasName(name: string): string {
     .trim();
 }
 
+/**
+ * Whitespace-only normalisation used before exact/case-insensitive comparison.
+ * - trims leading/trailing spaces
+ * - collapses runs of internal whitespace into a single space
+ * - does NOT lowercase or strip punctuation
+ *
+ * Never mutates the source employee record — the caller uses this only to
+ * compare a copy of the built full-name against a copy of the CSV name.
+ */
+export function normaliseWhitespace(name: string): string {
+  return (name ?? "").replace(/\s+/g, " ").trim();
+}
+
+/** Statuses treated as "currently employable" for matcher/alias-target purposes. */
+const EMPLOYABLE_STATUSES = new Set(["active", "starter", "onboarding"]);
+
 // Legacy hardcoded alias map — kept for backward compatibility.
 // New aliases should be stored on each employee record via import_aliases.
 const LEGACY_NAME_MAP: Record<string, { forename: string; surname: string }> = {
