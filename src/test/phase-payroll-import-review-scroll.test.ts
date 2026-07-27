@@ -65,7 +65,7 @@ describe("ImportPayrollDialog preview step — scrollable review", () => {
     // Business-critical: the button that links an unresolved CSV row to an
     // expected employee must still call handleManualMatch.
     expect(src).toMatch(
-      /Match &amp; apply "\{h\.raw\}"[\s\S]{0,200}onClick=\{\(\) => handleManualMatch\(h\.raw, m\.employeeId\)\}/,
+      /onClick=\{\(\) => handleManualMatch\(h\.raw, m\.employeeId\)\}[\s\S]{0,300}Match &amp; apply "\{h\.raw\}"/,
     );
   });
 });
