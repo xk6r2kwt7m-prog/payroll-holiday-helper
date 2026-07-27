@@ -18,7 +18,7 @@ import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateAccrual } from "@/hooks/useLeaveRules";
 import { useTenant } from "@/hooks/useTenant";
 import { matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMethod, type SavedAlias } from "@/lib/payroll-matching";
-import { findMissingFromFile } from "@/lib/payroll-import-trace";
+import { findMissingFromFile, linkMissingToUnresolvedRows } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
 import { sanitisePayrollPeriodUpdate, normalisePayrollStatus } from "@/lib/payroll-status";
@@ -54,6 +54,22 @@ interface ParsedRow {
   location: string;
 }
 
+export interface ParserSkippedSummary {
+  /** Rows that appeared before any recognised section header. */
+  beforeSection: number;
+  /** Rows whose section header was recognised but format could not be parsed. */
+  unknownFormat: number;
+  /** Rows explicitly skipped by hard-coded SKIP_NAMES (e.g. platform admins). */
+  skipNames: number;
+  /** Section headers with no configured location/department mapping. */
+  unmappedSections: string[];
+}
+
+export interface ParserResult {
+  rows: ParsedRow[];
+  skipped: ParserSkippedSummary;
+}
+
 export interface AggregatedEmployee {
   csvName: string;
   totalHours: number;
@@ -69,14 +85,24 @@ export interface AggregatedEmployee {
   resolution?: "matched" | "created" | "excluded";
   excludeReason?: string;
   isLeaver?: boolean;
+  isOnboarding?: boolean;
+  requiresReview?: boolean;
+  reviewReason?: string;
 }
 
 type Step = "period" | "upload" | "preview" | "done";
 
 // ─── CSV Parser ───
-function parseTimesheetCSV(csvText: string): ParsedRow[] {
+function parseTimesheetCSV(csvText: string): ParserResult {
   const lines = csvText.split("\n");
   const rows: ParsedRow[] = [];
+  const skipped: ParserSkippedSummary = {
+    beforeSection: 0,
+    unknownFormat: 0,
+    skipNames: 0,
+    unmappedSections: [],
+  };
+  const seenUnmapped = new Set<string>();
   let currentSection = "";
 
   // Detect Timesheet Hour column from header row
@@ -95,19 +121,35 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
     const sectionMatch = line.match(/^\s*"?\s*(\[.+?\].+?)"?\s*$/);
     if (sectionMatch) {
       currentSection = sectionMatch[1].trim();
+      if (!SECTION_LOCATION_MAP[currentSection] && !seenUnmapped.has(currentSection)) {
+        seenUnmapped.add(currentSection);
+        skipped.unmappedSections.push(currentSection);
+      }
       continue;
     }
 
     if (line.toLowerCase().includes("total for") || line.toLowerCase().includes("grand total") || line.toLowerCase().includes("unpaid leave")) continue;
 
     const cols = line.match(/("(?:[^"]|"")*"|[^,]*)/g);
-    if (!cols || cols.length < 3) continue;
+    if (!cols || cols.length < 3) {
+      skipped.unknownFormat++;
+      continue;
+    }
 
     const name = cols[0]?.replace(/"/g, "").trim();
     const timesheetHoursStr = cols[timesheetColIndex]?.replace(/"/g, "").replace(/,/g, "").trim();
 
-    if (!name || !currentSection) continue;
+    if (!name) continue;
     if (name.toLowerCase().startsWith("total for")) continue;
+
+    if (!currentSection) {
+      skipped.beforeSection++;
+      continue;
+    }
+    if (SKIP_NAMES.has(name.toLowerCase())) {
+      skipped.skipNames++;
+      continue;
+    }
 
     const hours = parseFloat(timesheetHoursStr) || 0;
     if (hours === 0 && timesheetHoursStr === "-") continue;
@@ -119,7 +161,7 @@ function parseTimesheetCSV(csvText: string): ParsedRow[] {
       location: SECTION_LOCATION_MAP[currentSection] || currentSection,
     });
   }
-  return rows;
+  return { rows, skipped };
 }
 
 function aggregateByEmployee(
@@ -131,16 +173,22 @@ function aggregateByEmployee(
 
   for (const row of rows) {
     const nameLower = row.csvName.toLowerCase().trim();
+    // SKIP_NAMES already filtered at parser stage; second guard for safety.
     if (SKIP_NAMES.has(nameLower)) continue;
 
     // Use the full priority matcher so saved aliases are honoured during
     // CSV parsing (previously only honoured post-import in the issues panel).
-    const { employee: matchedEmp, method } = matchEmployeeRow(
+    const matchRes = matchEmployeeRow(
       { name: row.csvName },
       employees,
       savedAliases,
     );
-    const matchKey = matchedEmp
+    const { employee: matchedEmp, method, requiresReview, reviewReason } = matchRes;
+    // Onboarding matches that require confirmation stay in the unresolved
+    // pool — the manager must select/confirm before they import.
+    const treatAsUnmatched = !matchedEmp || !!requiresReview;
+
+    const matchKey = matchedEmp && !treatAsUnmatched
       ? `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase()
       : nameLower;
 
@@ -153,16 +201,19 @@ function aggregateByEmployee(
         csvName: row.csvName,
         totalHours: row.hours,
         locations: [{ name: row.location, hours: row.hours }],
-        matchedForename: matchedEmp?.forename,
-        matchedSurname: matchedEmp?.surname,
-        matchedId: matchedEmp?.id,
+        matchedForename: treatAsUnmatched ? undefined : matchedEmp?.forename,
+        matchedSurname: treatAsUnmatched ? undefined : matchedEmp?.surname,
+        matchedId: treatAsUnmatched ? undefined : matchedEmp?.id,
         matchMethod: method,
-        department: matchedEmp?.department,
-        hourlyRate: matchedEmp?.hourly_rate,
-        serviceCharge: matchedEmp?.service_charge ?? 0,
-        unmatched: !matchedEmp,
-        resolution: matchedEmp ? "matched" : undefined,
+        department: treatAsUnmatched ? undefined : matchedEmp?.department,
+        hourlyRate: treatAsUnmatched ? undefined : matchedEmp?.hourly_rate,
+        serviceCharge: treatAsUnmatched ? undefined : matchedEmp?.service_charge ?? 0,
+        unmatched: treatAsUnmatched,
+        resolution: treatAsUnmatched ? undefined : "matched",
         isLeaver: matchedEmp?.status === "leaver",
+        isOnboarding: matchedEmp?.status === "onboarding",
+        requiresReview: !!requiresReview,
+        reviewReason,
       });
     }
   }
@@ -196,6 +247,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [creatingFor, setCreatingFor] = useState<string | null>(null);
   const [existingBonusWarning, setExistingBonusWarning] = useState<string | null>(null);
+  const [parserSkipped, setParserSkipped] = useState<ParserSkippedSummary | null>(null);
   const [bonusOverrideConfirmed, setBonusOverrideConfirmed] = useState(false);
 
   const queryClient = useQueryClient();
@@ -320,7 +372,8 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
     try {
       const text = await f.text();
-      const rows = parseTimesheetCSV(text);
+      const { rows, skipped } = parseTimesheetCSV(text);
+      setParserSkipped(skipped);
       const agg = aggregateByEmployee(rows, matchableEmployees, activeAliases);
 
       const errors: string[] = [];
@@ -461,7 +514,11 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       .filter((e) => e.matchedId && e.resolution !== "excluded")
       .map((e) => e.matchedId as string);
     const periodCtx = startDate && endDate ? { start_date: startDate, end_date: endDate } : null;
-    return findMissingFromFile(matchableEmployees, matchedIds, [], periodCtx);
+    const base = findMissingFromFile(matchableEmployees, matchedIds, [], periodCtx);
+    const unresolvedNames = aggregated
+      .filter((e) => e.unmatched && e.resolution !== "excluded")
+      .map((e) => e.csvName);
+    return linkMissingToUnresolvedRows(base, unresolvedNames, matchableEmployees);
   }, [aggregated, matchableEmployees, startDate, endDate]);
   const zeroHourMatched = aggregated.filter(
     (e) => !e.unmatched && e.resolution !== "excluded" && e.totalHours === 0,
@@ -1026,6 +1083,29 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               </div>
             )}
 
+            {parserSkipped && (parserSkipped.beforeSection > 0 || parserSkipped.unknownFormat > 0 || parserSkipped.skipNames > 0 || parserSkipped.unmappedSections.length > 0) && (
+              <div className="rounded-lg bg-muted/40 border border-border p-3 text-sm">
+                <p className="font-medium text-foreground flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                  Rows skipped while reading the file
+                </p>
+                <ul className="text-xs text-muted-foreground mt-1 list-disc pl-5 space-y-0.5">
+                  {parserSkipped.beforeSection > 0 && (
+                    <li>{parserSkipped.beforeSection} row(s) appeared before the first recognised section header — check the file starts with a <code>[SECTION]</code> row.</li>
+                  )}
+                  {parserSkipped.unknownFormat > 0 && (
+                    <li>{parserSkipped.unknownFormat} row(s) could not be parsed (unexpected column layout).</li>
+                  )}
+                  {parserSkipped.skipNames > 0 && (
+                    <li>{parserSkipped.skipNames} row(s) matched the built-in skip list (platform admins, etc.).</li>
+                  )}
+                  {parserSkipped.unmappedSections.length > 0 && (
+                    <li>Unmapped section header(s): {parserSkipped.unmappedSections.join(", ")} — rows in these sections are still imported but their location label falls back to the raw header.</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
             {missingFromFile.length > 0 && (
               <div className="rounded-lg bg-warning/10 border border-warning/20 p-3 text-sm">
                 <p className="font-medium text-warning flex items-center gap-2">
@@ -1039,12 +1119,16 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
                   {missingFromFile.slice(0, 20).map((m) => {
                     const reasonLabel =
                       m.reason === "current_starter" ? "Starter this period" :
+                      m.reason === "current_onboarding" ? "Onboarding (starts this period)" :
                       m.reason === "current_leaver" ? "Leaver (final pay)" :
                       m.reason === "current_activity" ? "Current-period activity" :
                       "Active in period";
+                    const hint = m.likelyUnresolvedNames && m.likelyUnresolvedNames.length > 0
+                      ? ` • Likely appears in file as: ${m.likelyUnresolvedNames.slice(0, 2).join(", ")}`
+                      : "";
                     return (
                       <Badge key={m.employeeId} variant="outline" className="text-[10px]">
-                        {m.fullName}{m.department ? ` • ${m.department}` : ""} • {reasonLabel}
+                        {m.fullName}{m.department ? ` • ${m.department}` : ""} • {reasonLabel}{hint}
                       </Badge>
                     );
                   })}

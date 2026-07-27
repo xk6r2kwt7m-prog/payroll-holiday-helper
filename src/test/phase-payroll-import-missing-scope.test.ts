@@ -36,10 +36,10 @@ describe("findMissingFromFile — period-aware scope", () => {
     expect(res.map((m) => m.employeeId)).not.toContain("arch");
   });
 
-  it("excludes employees from another branch when branchId is provided", () => {
+  it("deprecated branchId option is a no-op — employees are not silently excluded by branch (employees table has no branch_id column)", () => {
     const e = emp({ id: "b2", status: "active", start_date: "2024-01-01", branch_id: "brixton" });
     const res = findMissingFromFile([e], [], [], PERIOD, { branchId: "carnaby" });
-    expect(res.find((m) => m.employeeId === "b2")).toBeUndefined();
+    expect(res.find((m) => m.employeeId === "b2")).toBeDefined();
   });
 
   it("includes active employees within the period", () => {

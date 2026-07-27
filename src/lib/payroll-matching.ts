@@ -26,6 +26,12 @@ export interface MatchableEmployee {
   import_aliases?: string[] | null;
   start_date?: string | null;
   end_date?: string | null;
+  /**
+   * @deprecated Not used for matching or filtering — the `employees` table
+   * does not persist a branch_id column. Retained only for API compatibility
+   * and will be ignored by every matcher/import helper. Do NOT add new logic
+   * that reads this field.
+   */
   branch_id?: string | null;
   archived_at?: string | null;
 }
@@ -77,6 +83,22 @@ export function normaliseAliasName(name: string): string {
     .trim();
 }
 
+/**
+ * Whitespace-only normalisation used before exact/case-insensitive comparison.
+ * - trims leading/trailing spaces
+ * - collapses runs of internal whitespace into a single space
+ * - does NOT lowercase or strip punctuation
+ *
+ * Never mutates the source employee record — the caller uses this only to
+ * compare a copy of the built full-name against a copy of the CSV name.
+ */
+export function normaliseWhitespace(name: string): string {
+  return (name ?? "").replace(/\s+/g, " ").trim();
+}
+
+/** Statuses treated as "currently employable" for matcher/alias-target purposes. */
+const EMPLOYABLE_STATUSES = new Set(["active", "starter", "onboarding"]);
+
 // Legacy hardcoded alias map — kept for backward compatibility.
 // New aliases should be stored on each employee record via import_aliases.
 const LEGACY_NAME_MAP: Record<string, { forename: string; surname: string }> = {
@@ -124,7 +146,7 @@ const LEGACY_NAME_MAP: Record<string, { forename: string; surname: string }> = {
 function sortActiveFirst(employees: MatchableEmployee[]): MatchableEmployee[] {
   return [...employees].sort((a, b) => {
     const rankOf = (e: MatchableEmployee) => {
-      if (e.status === "active" || e.status === "starter") return 0;
+      if (EMPLOYABLE_STATUSES.has(e.status)) return 0;
       if (e.status === "leaver") return 1;
       return 2; // archived or other
     };
@@ -177,13 +199,15 @@ export function matchEmployee(
   csvName: string,
   employees: MatchableEmployee[]
 ): MatchResult {
-  const trimmed = csvName.trim();
+  const trimmed = normaliseWhitespace(csvName);
   const nameLower = trimmed.toLowerCase();
   const sorted = sortActiveFirst(employees);
 
-  // 1. Exact full-name match (prefer active/starter over leaver)
+  // 1. Exact full-name match (prefer active/starter over leaver).
+  //    Whitespace-normalise both sides so a stray double space in the DB
+  //    forename (e.g. "Carlos  David") still matches a single-space CSV name.
   const exact = sorted.find(
-    (e) => `${e.forename} ${e.surname}` === trimmed
+    (e) => normaliseWhitespace(`${e.forename} ${e.surname}`) === trimmed
   );
   if (exact) {
     // If matched a leaver, check if a non-leaver exists via alias/preferred/legacy
@@ -194,9 +218,9 @@ export function matchEmployee(
     return { employee: exact, method: "exact" };
   }
 
-  // 2. Case-insensitive full-name match
+  // 2. Case-insensitive full-name match (whitespace-normalised).
   const ci = sorted.find(
-    (e) => `${e.forename} ${e.surname}`.toLowerCase() === nameLower
+    (e) => normaliseWhitespace(`${e.forename} ${e.surname}`).toLowerCase() === nameLower
   );
   if (ci) {
     // If matched a leaver, check if a non-leaver exists via alias/preferred/legacy
@@ -309,7 +333,7 @@ export function matchEmployeeRow(
         reviewReason: "Saved alias points to an employee that no longer exists.",
       };
     }
-    if (target.status !== "active" && target.status !== "starter") {
+    if (!EMPLOYABLE_STATUSES.has(target.status)) {
       return {
         employee: target,
         method: "saved_alias",
@@ -317,11 +341,34 @@ export function matchEmployeeRow(
         reviewReason: `Saved alias points to an inactive employee (${target.status}).`,
       };
     }
+    // Onboarding requires explicit manager confirmation before import.
+    if (target.status === "onboarding") {
+      return {
+        employee: target,
+        method: "saved_alias",
+        requiresReview: true,
+        reviewReason: "Onboarding — confirm before import.",
+      };
+    }
     return { employee: target, method: "saved_alias" };
   }
 
   // 4-5. Fall back to name-based matcher.
-  return matchEmployee(row.name, employees);
+  const nameMatch = matchEmployee(row.name, employees);
+  // Onboarding employees must be confirmed unless the match is exact/case-insensitive.
+  if (
+    nameMatch.employee &&
+    nameMatch.employee.status === "onboarding" &&
+    nameMatch.method !== "exact" &&
+    nameMatch.method !== "case_insensitive"
+  ) {
+    return {
+      ...nameMatch,
+      requiresReview: true,
+      reviewReason: "Onboarding — confirm before import.",
+    };
+  }
+  return nameMatch;
 }
 
 /** Detect ambiguous mappings: same target employee selected for >1 different raw names. */
