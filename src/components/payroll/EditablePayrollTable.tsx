@@ -457,6 +457,42 @@ export function EditablePayrollTable({
     }
   };
 
+  /**
+   * Compute the list of field changes for a pending save. Compared against
+   * the master employee record for rate/service and the entry for bonuses.
+   * Hours are compared against imported_hours when present, otherwise the
+   * current entry.timesheet_hours (so any manual hours edit still triggers
+   * the reason prompt).
+   */
+  const computeFieldChanges = (
+    entry: PayrollEntry,
+    hours: number,
+    hourlyRate: number,
+    serviceCharge: number,
+    perfBonus: number,
+    specBonus: number,
+  ): FieldChange[] => {
+    const changes: FieldChange[] = [];
+    const emp = entry.employees;
+    const hoursBaseline = entry.imported_hours ?? entry.timesheet_hours;
+    if (Math.abs(hours - hoursBaseline) > 0.001) {
+      changes.push({ field: "timesheet_hours", previous: hoursBaseline, next: hours });
+    }
+    if (emp && Math.abs(hourlyRate - Number(emp.hourly_rate)) > 0.001) {
+      changes.push({ field: "hourly_rate", previous: Number(emp.hourly_rate), next: hourlyRate });
+    }
+    if (emp && Math.abs(serviceCharge - Number(emp.service_charge || 0)) > 0.001) {
+      changes.push({ field: "service_charge", previous: Number(emp.service_charge || 0), next: serviceCharge });
+    }
+    if (Math.abs(perfBonus - Number(entry.performance_bonus || 0)) > 0.001) {
+      changes.push({ field: "performance_bonus", previous: Number(entry.performance_bonus || 0), next: perfBonus });
+    }
+    if (Math.abs(specBonus - Number(entry.special_bonus || 0)) > 0.001) {
+      changes.push({ field: "special_bonus", previous: Number(entry.special_bonus || 0), next: specBonus });
+    }
+    return changes;
+  };
+
   const saveEditing = async (entry: PayrollEntry) => {
     const hours = parseFloat(editingData.timesheet_hours) || 0;
     const hourlyRate = parseFloat(editingData.hourly_rate) || 0;
@@ -464,28 +500,23 @@ export function EditablePayrollTable({
     const perfBonus = parseFloat(editingData.performance_bonus) || 0;
     const specBonus = parseFloat(editingData.special_bonus) || 0;
 
-    const importedHours = entry.imported_hours;
-    const hoursChanged = importedHours !== null && Math.abs(hours - importedHours) > 0.001;
-    const emp = entry.employees;
-    const rateChanged = emp && Math.abs(hourlyRate - Number(emp.hourly_rate)) > 0.001;
-    const serviceChanged = emp && Math.abs(serviceCharge - Number(emp.service_charge || 0)) > 0.001;
+    const changes = computeFieldChanges(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus);
 
-    if (hoursChanged || rateChanged || serviceChanged) {
-      // Build description of what changed
-      const changes: string[] = [];
-      if (hoursChanged) changes.push(`Hours: ${formatHours(importedHours!)} → ${formatHours(hours)}`);
-      if (rateChanged) changes.push(`Rate: ${formatCurrency(Number(emp!.hourly_rate))} → ${formatCurrency(hourlyRate)}`);
-      if (serviceChanged) changes.push(`Service: ${formatCurrency(Number(emp!.service_charge || 0))} → ${formatCurrency(serviceCharge)}`);
-
+    if (changes.length > 0) {
       setPendingSave({ entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus });
-      setAdjustmentNote(entry.adjustment_note || (hoursChanged ? "" : changes.join("; ")));
+      setPendingFieldChanges(changes);
+      setAdjustmentNote(entry.adjustment_note || "");
       setOverrideCategory("");
       setOverrideShowOnPdf(false);
+      setEditReasonCategory("");
       setNoteDialogOpen(true);
     } else {
       // No change from master — clear any previous note if everything matches
-      await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus,
-        importedHours !== null && Math.abs(hours - importedHours) < 0.001 ? null as any : undefined);
+      const importedHours = entry.imported_hours;
+      await doSave(
+        entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus,
+        importedHours !== null && Math.abs(hours - importedHours) < 0.001 ? (null as any) : undefined,
+      );
     }
   };
 
@@ -493,12 +524,14 @@ export function EditablePayrollTable({
     if (!pendingSave) return;
     const { entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus } = pendingSave;
     const importedHours = entry.imported_hours;
-    const hoursChanged = importedHours !== null && Math.abs(hours - importedHours) > 0.001;
+    const hoursChangedFromImport =
+      importedHours !== null && Math.abs(hours - importedHours) > 0.001;
 
-    // Imported-hours override → require reason category and build a
-    // deterministic composite note that captures the correction.
-    let finalNote = adjustmentNote;
-    if (hoursChanged) {
+    // Every save that lands here has ≥1 changed field. A reason is required.
+    // For imported-hours corrections we keep the existing OVERRIDE_REASON_CATEGORIES
+    // selector (unpaid break, timesheet file error, etc.). For any other field
+    // change we require a category from EDIT_REASON_CATEGORIES.
+    if (hoursChangedFromImport) {
       const err = validateOverride({
         category: overrideCategory as OverrideReasonCategory,
         imported: importedHours!,
@@ -508,6 +541,18 @@ export function EditablePayrollTable({
         toast.error(err);
         return;
       }
+    }
+    const nonHoursChange = pendingFieldChanges.some(
+      (c) => !(c.field === "timesheet_hours" && hoursChangedFromImport),
+    );
+    if (nonHoursChange && !isValidEditReasonCategory(editReasonCategory)) {
+      toast.error("Select a reason category before saving.");
+      return;
+    }
+
+    // Deterministic composite note for the imported-hours override path.
+    let finalNote = adjustmentNote;
+    if (hoursChangedFromImport) {
       finalNote = formatOverrideNote({
         imported: importedHours!,
         corrected: hours,
@@ -519,7 +564,7 @@ export function EditablePayrollTable({
     // G3 — non-empty note required when entry has 0 hours and a non-zero pay value
     const totalPayValue =
       hourlyRate * hours + serviceCharge * hours + perfBonus + specBonus;
-    if (hours === 0 && totalPayValue !== 0 && !finalNote.trim()) {
+    if (hours === 0 && totalPayValue !== 0 && !finalNote.trim() && !adjustmentNote.trim()) {
       toast.error(
         "A note is required when posting a non-zero amount to a zero-hour entry. Explain the reason (e.g. bonus, retro pay, correction).",
       );
@@ -527,7 +572,7 @@ export function EditablePayrollTable({
     }
     setNoteDialogOpen(false);
 
-    // Record structured adjustment audit entries
+    // Record structured adjustment audit entries (payroll_adjustments)
     const adjustmentRows: {
       payroll_period_id: string;
       payroll_entry_id: string;
@@ -538,70 +583,19 @@ export function EditablePayrollTable({
       note?: string;
     }[] = [];
 
-    const emp = entry.employees;
-
-    if (hoursChanged) {
+    for (const c of pendingFieldChanges) {
+      const isHoursOverride = c.field === "timesheet_hours" && hoursChangedFromImport;
       adjustmentRows.push({
         payroll_period_id: periodId,
         payroll_entry_id: entry.id,
         employee_id: entry.employee_id,
-        field_name: "timesheet_hours",
-        old_value: importedHours,
-        new_value: hours,
-        note: finalNote || "Manual adjustment",
+        field_name: c.field,
+        old_value: c.previous,
+        new_value: c.next,
+        note: isHoursOverride
+          ? finalNote || "Manual adjustment"
+          : adjustmentNote || `${formatFieldChange(c)}. Reason: ${editReasonCategory}`,
       });
-    }
-    if (emp && Math.abs(hourlyRate - Number(emp.hourly_rate)) > 0.001) {
-      adjustmentRows.push({
-        payroll_period_id: periodId,
-        payroll_entry_id: entry.id,
-        employee_id: entry.employee_id,
-        field_name: "hourly_rate",
-        old_value: Number(emp.hourly_rate),
-        new_value: hourlyRate,
-        note: adjustmentNote || "Manual adjustment",
-      });
-    }
-    if (emp && Math.abs(serviceCharge - Number(emp.service_charge || 0)) > 0.001) {
-      adjustmentRows.push({
-        payroll_period_id: periodId,
-        payroll_entry_id: entry.id,
-        employee_id: entry.employee_id,
-        field_name: "service_charge",
-        old_value: Number(emp.service_charge || 0),
-        new_value: serviceCharge,
-        note: adjustmentNote || "Manual adjustment",
-      });
-    }
-    if (Math.abs(perfBonus - Number(entry.performance_bonus || 0)) > 0.001) {
-      adjustmentRows.push({
-        payroll_period_id: periodId,
-        payroll_entry_id: entry.id,
-        employee_id: entry.employee_id,
-        field_name: "performance_bonus",
-        old_value: Number(entry.performance_bonus || 0),
-        new_value: perfBonus,
-        note: adjustmentNote || "Manual adjustment",
-      });
-    }
-    if (Math.abs(specBonus - Number(entry.special_bonus || 0)) > 0.001) {
-      adjustmentRows.push({
-        payroll_period_id: periodId,
-        payroll_entry_id: entry.id,
-        employee_id: entry.employee_id,
-        field_name: "special_bonus",
-        old_value: Number(entry.special_bonus || 0),
-        new_value: specBonus,
-        note: adjustmentNote || "Manual adjustment",
-      });
-    }
-
-    // Replace the free-text note on every adjustment row with `finalNote`,
-    // which already carries the deterministic override description when
-    // imported hours changed. Non-hours rows keep the manager's note.
-    for (const r of adjustmentRows) {
-      if (r.field_name === "timesheet_hours") continue;
-      r.note = adjustmentNote || finalNote || "Manual adjustment";
     }
 
     if (adjustmentRows.length > 0) {
@@ -613,40 +607,65 @@ export function EditablePayrollTable({
       }
     }
 
-    // Optionally publish the imported-hours correction as a period note
-    // that will render on the payroll PDF.
-    if (hoursChanged && overrideShowOnPdf && tenantId) {
+    // Persist manager notes per changed field. Reused pattern:
+    //   - one row per changed field, keyed to the correct category so the
+    //     PDF grouping stays stable
+    //   - show_on_pdf respects the manager's toggle (default false)
+    //   - duplicate guard via isDuplicateNote — never overwrite existing notes
+    if (tenantId && pendingFieldChanges.length > 0) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         const { data: existing } = await supabase
           .from("payroll_period_notes")
-          .select("id, note")
+          .select("id, note, category")
           .eq("tenant_id", tenantId)
           .eq("payroll_period_id", periodId)
           .eq("employee_id", entry.employee_id);
-        if (!isDuplicateNote(finalNote, (existing ?? []) as any)) {
-          await supabase.from("payroll_period_notes").insert({
+        const existingList = (existing ?? []) as { note: string; category: string | null }[];
+
+        const rowsToInsert: any[] = [];
+        for (const c of pendingFieldChanges) {
+          const isHoursOverride = c.field === "timesheet_hours" && hoursChangedFromImport;
+          const showOnPdf = isHoursOverride ? overrideShowOnPdf : overrideShowOnPdf;
+          // For non-hours changes we use `overrideShowOnPdf` too — the single
+          // "Show on payroll PDF" toggle in the modal governs every note
+          // produced by this save (default false).
+          const noteText = isHoursOverride
+            ? finalNote
+            : formatEditReasonNote({
+                changes: [c],
+                category: editReasonCategory as EditReasonCategory,
+                freeText: adjustmentNote,
+              });
+          if (isDuplicateNote(noteText, existingList as any)) continue;
+          rowsToInsert.push({
             tenant_id: tenantId,
             payroll_period_id: periodId,
             employee_id: entry.employee_id,
-            note: finalNote,
-            category: "timesheet",
-            show_on_pdf: true,
+            note: noteText,
+            category: noteCategoryForField(c.field as EditableField),
+            show_on_pdf: showOnPdf,
             created_by: user?.id || null,
-          } as any);
+          });
+        }
+        if (rowsToInsert.length > 0) {
+          await supabase.from("payroll_period_notes").insert(rowsToInsert as any);
           queryClient.invalidateQueries({ queryKey: ["payroll_period_notes"] });
         }
       } catch (e) {
-        console.error("Failed to publish PDF note for hours override", e);
+        console.error("Failed to persist payroll period notes", e);
       }
     }
 
-    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, finalNote || "Manual adjustment");
+    await doSave(entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus, finalNote || adjustmentNote || "Manual adjustment");
     setPendingSave(null);
+    setPendingFieldChanges([]);
     setAdjustmentNote("");
     setOverrideCategory("");
     setOverrideShowOnPdf(false);
+    setEditReasonCategory("");
   };
+
 
   const handleBulkZeroHours = async () => {
     if (selectedIds.size === 0) return;
