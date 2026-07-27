@@ -413,9 +413,27 @@ export function SettleLeaverDialog() {
     periodId &&
     holidayDate &&
     approved &&
+    !carryOverDuplicationDetected &&
     (!mismatch.hasMismatch || mismatchAck) &&
     (basis !== "manual" || manualReason.trim().length > 0) &&
     (isZeroBalance || (parseFloat(hours) > 0 && parseFloat(rate) > 0));
+
+  const disabledReason: string | null = (() => {
+    if (createPayment.isPending || manualAdjust.isPending) return null;
+    if (!periodId) return "Select a draft payroll period.";
+    if (!employeeId) return "Select an employee to settle.";
+    if (!holidayDate) return "Set the settlement date.";
+    if (carryOverDuplicationDetected)
+      return "Resolve carry-over duplication in the ledger before settling.";
+    if (basis === "manual" && manualReason.trim().length === 0)
+      return "Add a reason for the manual verified adjustment.";
+    if (!isZeroBalance && !(parseFloat(hours) > 0 && parseFloat(rate) > 0))
+      return "Enter valid hours and rate.";
+    if (mismatch.hasMismatch && !mismatchAck)
+      return "Tick the mismatch acknowledgement to proceed.";
+    if (!approved) return "Tick the approval confirmation to enable settlement.";
+    return null;
+  })();
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
