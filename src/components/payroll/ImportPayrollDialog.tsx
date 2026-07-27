@@ -1118,9 +1118,9 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
                   {missingFromFile.length} expected employee{missingFromFile.length !== 1 ? "s" : ""} missing from uploaded file
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  <strong>Review warning only — does not block import.</strong> These employees are expected in this payroll period (based on employment dates and current-period activity) but no row in the uploaded timesheet matched them. If they should have worked, the file may use a different name — scroll to any unmatched row below and use "Match to employee" to link it (optionally saving the alias for future imports). Otherwise they will simply have 0.00h for this period.
+                  <strong>Review warning only — does not block import.</strong> These employees are expected in this payroll period but no row in the uploaded timesheet matched them. If a likely uploaded row exists, use "Match &amp; apply hours" to link it — the alias is saved for future imports.
                 </p>
-                <div className="flex flex-wrap gap-1 mt-2">
+                <div className="mt-2 space-y-1.5">
                   {missingFromFile.slice(0, 20).map((m) => {
                     const reasonLabel =
                       m.reason === "current_starter" ? "Starter this period" :
@@ -1128,17 +1128,39 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
                       m.reason === "current_leaver" ? "Leaver (final pay)" :
                       m.reason === "current_activity" ? "Current-period activity" :
                       "Active in period";
-                    const hint = m.likelyUnresolvedNames && m.likelyUnresolvedNames.length > 0
-                      ? ` • Likely appears in file as: ${m.likelyUnresolvedNames.slice(0, 2).join(", ")}`
-                      : "";
+                    const hints = (m.likelyUnresolvedNames ?? []).map((raw) => {
+                      const agg = aggregated.find((a) => a.csvName === raw && a.unmatched && a.resolution !== "excluded");
+                      return agg ? { raw, hours: agg.totalHours } : null;
+                    }).filter(Boolean) as { raw: string; hours: number }[];
                     return (
-                      <Badge key={m.employeeId} variant="outline" className="text-[10px]">
-                        {m.fullName}{m.department ? ` • ${m.department}` : ""} • {reasonLabel}{hint}
-                      </Badge>
+                      <div key={m.employeeId} className="flex items-center gap-2 flex-wrap text-[11px] bg-background/50 rounded px-2 py-1.5 border border-warning/10">
+                        <span className="font-medium">{m.fullName}</span>
+                        {m.department && <Badge variant="outline" className="text-[9px] h-4 px-1">{m.department}</Badge>}
+                        <Badge variant="outline" className="text-[9px] h-4 px-1">{reasonLabel}</Badge>
+                        {hints.length > 0 ? (
+                          <>
+                            <span className="text-muted-foreground">Likely in file as</span>
+                            {hints.slice(0, 3).map((h) => (
+                              <Button
+                                key={h.raw}
+                                size="sm"
+                                variant="outline"
+                                className="h-6 text-[10px] gap-1"
+                                onClick={() => handleManualMatch(h.raw, m.employeeId)}
+                              >
+                                <Link2 className="h-3 w-3" />
+                                Match &amp; apply "{h.raw}" ({h.hours.toFixed(2)}h)
+                              </Button>
+                            ))}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground italic">No likely row in file</span>
+                        )}
+                      </div>
                     );
                   })}
                   {missingFromFile.length > 20 && (
-                    <Badge variant="outline" className="text-[10px]">+{missingFromFile.length - 20} more</Badge>
+                    <p className="text-[10px] text-muted-foreground">+{missingFromFile.length - 20} more…</p>
                   )}
                 </div>
               </div>
