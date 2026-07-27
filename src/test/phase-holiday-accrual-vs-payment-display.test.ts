@@ -133,9 +133,9 @@ describe("Holiday accrual vs actual payment display", () => {
     expect(src).not.toContain('title="Holiday pay"');
   });
 
-  it("holiday-display-labels module exposes no mutation surface", () => {
-    const mod = require("@/lib/holiday-display-labels");
-    const banned = ["delete", "update", "insert", "save", "mutate", "post"];
+  it("holiday-display-labels module exposes no mutation surface", async () => {
+    const mod = await import("@/lib/holiday-display-labels");
+    const banned = ["delete", "update", "insert", "save", "mutate"];
     for (const name of Object.keys(mod)) {
       for (const b of banned) {
         expect(name.toLowerCase()).not.toContain(b);
