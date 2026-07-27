@@ -36,25 +36,43 @@ export function HolidaySourceComparisonTable({ rows, mismatch, onInvestigate }: 
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.source} className={cn("border-b border-border last:border-0", r.missing && "opacity-60")}>
-                <td className="py-1.5 px-2 text-foreground">{r.label}{r.missing && " (no data)"}</td>
-                <td className="py-1.5 px-2 text-right font-mono">{formatHours(r.accrued)}</td>
-                <td className="py-1.5 px-2 text-right font-mono">{formatHours(r.carryOver)}</td>
-                <td className="py-1.5 px-2 text-right font-mono">{formatHours(r.taken)}</td>
-                <td className="py-1.5 px-2 text-right font-mono">{formatCurrency(r.paid)}</td>
-                <td
-                  className={cn(
-                    "py-1.5 px-2 text-right font-mono font-semibold",
-                    r.balance < 0 ? "text-destructive" : r.balance > 0 ? "text-warning" : "text-success"
-                  )}
-                >
-                  {formatHours(r.balance)}
-                </td>
-              </tr>
+              <>
+                <tr key={r.source} className={cn("border-b border-border last:border-0", r.missing && "opacity-60", r.info && "border-b-0")}>
+                  <td className="py-1.5 px-2 text-foreground">{r.label}{r.missing && " (no data)"}</td>
+                  <td className="py-1.5 px-2 text-right font-mono">{formatHours(r.accrued)}</td>
+                  <td className="py-1.5 px-2 text-right font-mono">{formatHours(r.carryOver)}</td>
+                  <td className="py-1.5 px-2 text-right font-mono">{formatHours(r.taken)}</td>
+                  <td className="py-1.5 px-2 text-right font-mono">{formatCurrency(r.paid)}</td>
+                  <td
+                    className={cn(
+                      "py-1.5 px-2 text-right font-mono font-semibold",
+                      r.balance < 0 ? "text-destructive" : r.balance > 0 ? "text-warning" : "text-success"
+                    )}
+                  >
+                    {formatHours(r.balance)}
+                  </td>
+                </tr>
+                {r.info && (
+                  <tr key={`${r.source}-info`} className="border-b border-border last:border-0">
+                    <td colSpan={6} className="px-2 pb-1.5 text-[10px] text-muted-foreground italic">
+                      {r.info}
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
           </tbody>
         </table>
       </div>
+      {mismatch.timingPairs && mismatch.timingPairs.length > 0 && !mismatch.hasMismatch && (
+        <div className="rounded-md bg-muted/40 border border-border p-2 text-[11px] text-muted-foreground flex items-start gap-1.5">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+          <div>
+            <p className="font-semibold text-foreground">Expected timing difference — not a data integrity issue.</p>
+            <p>Live payroll accrual includes draft periods that will post to the ledger once the payroll period is approved. Settlement is not blocked.</p>
+          </div>
+        </div>
+      )}
       {mismatch.hasMismatch && (
         <div className="rounded-md bg-warning/10 border border-warning/30 p-2 text-[11px] text-warning flex items-start gap-1.5">
           <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
