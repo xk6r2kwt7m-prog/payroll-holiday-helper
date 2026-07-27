@@ -1296,7 +1296,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
 
             {/* Warnings */}
             {unresolvedCount > 0 && (
