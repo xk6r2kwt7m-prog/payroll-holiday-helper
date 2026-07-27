@@ -791,11 +791,35 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entry_locations"] });
-      toast.success("Payroll imported!");
+      if (unmatchedNames.length > 0) {
+        toast.success(
+          `${entriesCreated} matched entries imported. ${unmatchedNames.length} unresolved row${unmatchedNames.length !== 1 ? "s" : ""} still require review before approval.`
+        );
+      } else {
+        toast.success(`${entriesCreated} matched entries imported into "${periodName}".`);
+      }
       onImportComplete?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Import error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to import payroll");
+      // Surface the real reason instead of a generic message.
+      const raw =
+        error?.message ||
+        error?.error_description ||
+        error?.hint ||
+        error?.details ||
+        (typeof error === "string" ? error : "");
+      const code = error?.code ? ` [${error.code}]` : "";
+      let friendly = raw || "Unknown error";
+      if (/permission|rls|not allowed|denied/i.test(raw)) {
+        friendly = `Permission denied — you may not have rights to update this period. ${raw}`;
+      } else if (/duplicate key|unique/i.test(raw)) {
+        friendly = `Duplicate employee mapping detected. ${raw}`;
+      } else if (/approved|locked/i.test(raw)) {
+        friendly = `This payroll period is approved and locked. ${raw}`;
+      } else if (/violates check|invalid input|numeric/i.test(raw)) {
+        friendly = `Invalid value rejected by database. ${raw}`;
+      }
+      toast.error(`Import failed${code}: ${friendly}`);
     } finally {
       setImporting(false);
     }
