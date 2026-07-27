@@ -28,6 +28,7 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { cn } from "@/lib/utils";
 import { InvestigateLedgerDialog } from "./InvestigateLedgerDialog";
+import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 interface AddHolidayPaymentDialogProps {
   defaultEmployeeId?: string;
   onSuccess?: () => void;
@@ -238,24 +239,36 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 <SelectValue placeholder="Select employee" />
               </SelectTrigger>
               <SelectContent>
-                {allEmployeesSorted.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    <div className="flex items-center gap-2">
-                      <span>{emp.forename} {emp.surname}</span>
-                      <span className="text-muted-foreground text-xs">({emp.department})</span>
-                      {emp.status === "leaver" && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-destructive/10 text-destructive border-destructive/20">
-                          Leaver
-                        </Badge>
-                      )}
-                      {emp.status === "starter" && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 bg-accent/10 text-accent border-accent/20">
-                          Starter
-                        </Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
+                {allEmployeesSorted.map((emp) => {
+                  const selectedPeriod = periods.find((p: any) => p.id === periodId) as any;
+                  const periodCtx = selectedPeriod?.start_date && selectedPeriod?.end_date
+                    ? { start_date: selectedPeriod.start_date, end_date: selectedPeriod.end_date }
+                    : null;
+                  const starterHere = periodCtx
+                    ? isStarterInPeriod(emp as any, periodCtx)
+                    : false;
+                  const leaverHere = periodCtx
+                    ? isLeaverInPeriod(emp as any, periodCtx)
+                    : emp.status === "leaver";
+                  return (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      <div className="flex items-center gap-2">
+                        <span>{emp.forename} {emp.surname}</span>
+                        <span className="text-muted-foreground text-xs">({emp.department})</span>
+                        {leaverHere && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 bg-destructive/10 text-destructive border-destructive/20">
+                            Leaver
+                          </Badge>
+                        )}
+                        {starterHere && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 bg-accent/10 text-accent border-accent/20">
+                            Starter
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

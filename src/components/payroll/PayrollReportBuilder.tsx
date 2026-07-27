@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { usePayrollPeriodNotes } from "@/hooks/usePayrollPeriodNotes";
 import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
+import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 
 interface PayrollReportBuilderProps {
   open: boolean;
@@ -181,12 +182,17 @@ export function PayrollReportBuilder({
     try {
       toast.info("Generating PDF...");
       const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+      const periodCtx = { start_date: (period as any).start_date, end_date: (period as any).end_date };
+      const entryEmployeeIds = new Set(filteredEntries.map((e: any) => e.employee_id));
       const starterEmployees = allEmployees.filter((emp: any) => {
-        const inEntries = filteredEntries.some((e: any) => e.employee_id === emp.id);
+        const inEntries = entryEmployeeIds.has(emp.id);
         const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
         if (!inEntries && !hasHolidayPayment) return false;
-        const isGenuineStarter = emp.status === "starter" && !priorPeriodEmployeeIds.has(emp.id);
-        const isLeaver = emp.status === "leaver" || hasHolidayPayment;
+        const isGenuineStarter = isStarterInPeriod(emp, periodCtx, priorPeriodEmployeeIds);
+        const isLeaver = isLeaverInPeriod(emp, periodCtx, {
+          holidayPaymentEmployeeIds,
+          entryEmployeeIds,
+        });
         return isGenuineStarter || isLeaver;
       });
       const logoUrl = config.showLogo ? `${window.location.origin}/logo.jpeg` : undefined;

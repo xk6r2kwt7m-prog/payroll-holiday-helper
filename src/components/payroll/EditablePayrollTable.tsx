@@ -8,6 +8,7 @@ import {
   type PayrollTableFilter,
 } from "@/lib/payroll-table-filters";
 import type { EmployeeChange } from "@/lib/payroll-change-review";
+import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AdjustmentHistoryDrawer } from "./AdjustmentHistoryDrawer";
 import { EmployeeChangeReviewDialog } from "./EmployeeChangeReviewDialog";
@@ -115,6 +116,9 @@ interface EditablePayrollTableProps {
   holidayPaidEmployeeIds?: Set<string>;
   /** NMW status per employee ID for row badges + Issues filter. */
   nmwStatusByEmployee?: Map<string, "compliant" | "at_risk" | "non_compliant">;
+  /** Selected period start/end for period-aware starter/leaver derivation. */
+  periodStart?: string | null;
+  periodEnd?: string | null;
 }
 
 interface EditingEntry {
@@ -139,6 +143,8 @@ export function EditablePayrollTable({
   periodLabel = null,
   holidayPaidEmployeeIds,
   nmwStatusByEmployee,
+  periodStart,
+  periodEnd,
 }: EditablePayrollTableProps) {
   const { tenantId } = useTenant();
   const { data: leaveRules } = useLeaveRules();
@@ -648,7 +654,13 @@ export function EditablePayrollTable({
         </div>
         <div className="flex flex-wrap gap-1.5 sm:gap-2">
           {canEdit && (
-            <AddEmployeeToPeriodDialog periodId={periodId} existingEmployeeIds={existingEmployeeIds} />
+            <AddEmployeeToPeriodDialog
+              periodId={periodId}
+              existingEmployeeIds={existingEmployeeIds}
+              periodStart={periodStart ?? null}
+              periodEnd={periodEnd ?? null}
+              priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+            />
           )}
           {canEdit && someSelected && (
             <DropdownMenu>
@@ -816,16 +828,34 @@ export function EditablePayrollTable({
                             ? `${emp?.surname}, ${emp?.forename}`
                             : `${emp?.forename} ${emp?.surname}`}
                         </span>
-                        {emp?.status === "starter" && !priorPeriodEmployeeIds?.has(entry.employee_id) && (
-                          <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
-                            Starter
-                          </Badge>
-                        )}
-                        {emp?.status === "leaver" && (
-                          <Badge variant="outline" className="ml-2 text-xs bg-destructive/10 text-destructive border-destructive/20">
-                            Leaver
-                          </Badge>
-                        )}
+                        {(() => {
+                          const periodCtx = periodStart && periodEnd
+                            ? { start_date: periodStart, end_date: periodEnd }
+                            : null;
+                          const starterHere = periodCtx
+                            ? isStarterInPeriod(emp as any, periodCtx, priorPeriodEmployeeIds)
+                            : (emp?.status === "starter" && !priorPeriodEmployeeIds?.has(entry.employee_id));
+                          const leaverHere = periodCtx
+                            ? isLeaverInPeriod(emp as any, periodCtx, {
+                                holidayPaymentEmployeeIds: holidayPaidEmployeeIds,
+                                entryEmployeeIds: new Set(entries.map(e => e.employee_id)),
+                              })
+                            : emp?.status === "leaver";
+                          return (
+                            <>
+                              {starterHere && (
+                                <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
+                                  Starter
+                                </Badge>
+                              )}
+                              {leaverHere && (
+                                <Badge variant="outline" className="ml-2 text-xs bg-destructive/10 text-destructive border-destructive/20">
+                                  Leaver
+                                </Badge>
+                              )}
+                            </>
+                          );
+                        })()}
                         <AdjustmentHistoryDrawer
                           periodId={periodId}
                           employeeId={entry.employee_id}
@@ -1230,8 +1260,21 @@ export function EditablePayrollTable({
               Number(entry.performance_bonus ?? 0) +
               Number(entry.special_bonus ?? 0),
             gross_pay: Number(entry.total_pay ?? 0),
-            is_new_starter: entry.employees?.status === "starter",
-            is_leaver: entry.employees?.status === "leaver",
+            is_new_starter: (() => {
+              const ctx = periodStart && periodEnd ? { start_date: periodStart, end_date: periodEnd } : null;
+              return ctx
+                ? isStarterInPeriod(entry.employees as any, ctx, priorPeriodEmployeeIds)
+                : entry.employees?.status === "starter";
+            })(),
+            is_leaver: (() => {
+              const ctx = periodStart && periodEnd ? { start_date: periodStart, end_date: periodEnd } : null;
+              return ctx
+                ? isLeaverInPeriod(entry.employees as any, ctx, {
+                    holidayPaymentEmployeeIds: holidayPaidEmployeeIds,
+                    entryEmployeeIds: new Set(entries.map(e => e.employee_id)),
+                  })
+                : entry.employees?.status === "leaver";
+            })(),
           });
         return (
           <EmployeeChangeReviewDialog

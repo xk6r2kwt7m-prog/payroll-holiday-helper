@@ -383,18 +383,28 @@ export function useCopyPayrollPeriod() {
 
       if (periodError) throw periodError;
 
-      // Get source entries with employee status
+      // Get source entries with employee status + end_date so we can
+      // exclude former employees whose employment ended before the NEW
+      // period start and who have no activity in it.
       const { data: sourceEntries, error: entriesError } = await supabase
         .from("payroll_entries")
-        .select("*, employees(id, status)")
+        .select("*, employees(id, status, end_date, start_date)")
         .eq("payroll_period_id", sourcePeriodId);
 
       if (entriesError) throw entriesError;
 
-      // Copy only active/starter employees — leavers are excluded by default
       if (sourceEntries && sourceEntries.length > 0) {
+        const newPeriodStart = new Date(startDate);
         const eligibleEntries = sourceEntries.filter((entry: any) => {
-          const empStatus = entry.employees?.status;
+          const emp = entry.employees;
+          const empStatus = emp?.status;
+          if (empStatus === "archived") return false;
+          if (empStatus === "leaver") return false;
+          // Exclude anyone whose end_date is strictly before the new period start.
+          if (emp?.end_date) {
+            const endDateVal = new Date(emp.end_date);
+            if (!Number.isNaN(endDateVal.getTime()) && endDateVal < newPeriodStart) return false;
+          }
           return empStatus === "active" || empStatus === "starter";
         });
 

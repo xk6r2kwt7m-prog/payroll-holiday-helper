@@ -4,6 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  isStarterInPeriod,
+  isRelevantToPayrollPeriod,
+  type RelevancePeriod,
+} from "@/lib/employee-period-relevance";
 
 interface MissingField {
   label: string;
@@ -14,11 +19,15 @@ interface EmployeeMissingInfo {
   id: string;
   name: string;
   missing: MissingField[];
+  isStarterHere: boolean;
 }
 
 interface PayrollMissingInfoProps {
   entries: any[];
   periodName?: string;
+  period?: RelevancePeriod | null;
+  priorPeriodEmployeeIds?: Set<string>;
+  holidayPaymentEmployeeIds?: Set<string>;
 }
 
 const FIELD_CATEGORIES = [
@@ -28,16 +37,36 @@ const FIELD_CATEGORIES = [
   { key: "rtw", label: "RTW", fields: ["Right to work details"] },
 ];
 
-export function PayrollMissingInfo({ entries, periodName }: PayrollMissingInfoProps) {
+export function PayrollMissingInfo({
+  entries,
+  periodName,
+  period,
+  priorPeriodEmployeeIds,
+  holidayPaymentEmployeeIds,
+}: PayrollMissingInfoProps) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   const employeesWithMissing: EmployeeMissingInfo[] = [];
+  const entryEmployeeIds = new Set(entries.map((e) => e.employees?.id).filter(Boolean));
 
   for (const entry of entries) {
     const emp = entry.employees;
     if (!emp) continue;
+
+    // Exclude former employees who aren't relevant to this period.
+    if (period) {
+      const relevant = isRelevantToPayrollPeriod(emp, period, {
+        entryEmployeeIds,
+        holidayPaymentEmployeeIds,
+      });
+      if (!relevant) continue;
+    }
+
+    const starterHere = period
+      ? isStarterInPeriod(emp, period, priorPeriodEmployeeIds)
+      : emp.status === "starter";
 
     const missing: MissingField[] = [];
 
@@ -46,8 +75,9 @@ export function PayrollMissingInfo({ entries, periodName }: PayrollMissingInfoPr
     if (!emp.ni_number) missing.push({ label: "National Insurance number", tab: "personal" });
     if (!(emp as any).date_of_birth) missing.push({ label: "Date of birth", tab: "personal" });
 
+    // RTW warning is only meaningful for a true current-period starter.
     if (
-      emp.status === "starter" &&
+      starterHere &&
       !(emp as any).passport_no &&
       !(emp as any).sharing_code &&
       !(emp as any).settlement_status &&
@@ -61,6 +91,7 @@ export function PayrollMissingInfo({ entries, periodName }: PayrollMissingInfoPr
         id: emp.id,
         name: `${emp.forename} ${emp.surname}`,
         missing,
+        isStarterHere: starterHere,
       });
     }
   }
@@ -159,7 +190,7 @@ export function PayrollMissingInfo({ entries, periodName }: PayrollMissingInfoPr
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-card-foreground">{emp.name}</p>
-                  {entryHasStarter(emp.id, entries) && (
+                  {emp.isStarterHere && (
                     <Badge variant="outline" className="mt-1 text-[10px] h-5">Starter · First payroll</Badge>
                   )}
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -192,6 +223,3 @@ export function PayrollMissingInfo({ entries, periodName }: PayrollMissingInfoPr
   );
 }
 
-function entryHasStarter(employeeId: string, entries: any[]) {
-  return entries.some((entry) => entry.employees?.id === employeeId && entry.employees?.status === "starter");
-}

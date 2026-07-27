@@ -20,6 +20,7 @@ import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "./PayrollPDF";
 import { useTenant } from "@/hooks/useTenant";
 import { defaultReportConfig, type PayrollReportConfig } from "./PayrollReportConfig";
+import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 
 interface SendPayrollEmailDialogProps {
   period: {
@@ -111,12 +112,14 @@ export function SendPayrollEmailDialog({
       toast.info("Generating payroll PDF…");
 
       const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
+      const entryEmployeeIds = new Set(entries.map((e: any) => e.employee_id));
+      const periodCtx = { start_date: period.start_date, end_date: period.end_date };
       const starterEmployees = allEmployees.filter((emp) => {
-        const inEntries = entries.some((e: any) => e.employee_id === emp.id);
+        const inEntries = entryEmployeeIds.has(emp.id);
         const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
         if (!inEntries && !hasHolidayPayment) return false;
-        const isLeaver = emp.status === "leaver" || hasHolidayPayment;
-        const isGenuineStarter = emp.status === "starter" && !priorPeriodEmployeeIds.has(emp.id);
+        const isGenuineStarter = isStarterInPeriod(emp as any, periodCtx, priorPeriodEmployeeIds);
+        const isLeaver = isLeaverInPeriod(emp as any, periodCtx, { holidayPaymentEmployeeIds, entryEmployeeIds });
         return isGenuineStarter || isLeaver;
       });
 
