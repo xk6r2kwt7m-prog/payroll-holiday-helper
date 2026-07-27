@@ -109,12 +109,39 @@ export function buildRowTrace(
  * "0.00 hours" is intentional (e.g. genuinely no shifts that period), and not
  * silently import zero hours for somebody who should have hours.
  */
+/**
+ * Employees who are genuinely EXPECTED to appear in the uploaded timesheet
+ * for the selected payroll period but did not match any row.
+ *
+ * Period-aware rules (no employee status is mutated):
+ * - archived employees are always excluded
+ * - employees whose end_date is before the period start are excluded
+ *   (former staff — they only reappear if they have current-period activity,
+ *    which the caller can express by pre-adding them to `matchedEmployeeIds`
+ *    or via the `activityEmployeeIds` set)
+ * - employees whose start_date is after the period end are excluded
+ *   (not yet started)
+ * - leaver / active / starter status alone does NOT qualify an employee —
+ *   the period window is authoritative
+ * - if `branchId` is provided, employees whose `branch_id` is set and
+ *   differs from the selected branch are excluded
+ */
 export interface MissingFromFile {
   employeeId: string;
   fullName: string;
   status: string;
   /** True when this employee already has a draft entry in the target period. */
   linkedToPeriod: boolean;
+  /** Short reason this employee was expected in the selected period. */
+  reason: "active_in_period" | "current_starter" | "current_leaver" | "current_activity";
+  department?: string;
+  branchId?: string | null;
+}
+
+export interface FindMissingOptions {
+  branchId?: string | null;
+  /** Employee ids with current-period activity (entries, holiday pay, adjustments). */
+  activityEmployeeIds?: Iterable<string>;
 }
 
 export function findMissingFromFile(
@@ -122,32 +149,73 @@ export function findMissingFromFile(
   matchedEmployeeIds: Iterable<string>,
   linkedToPeriodIds: Iterable<string> = [],
   period?: { start_date: string; end_date: string } | null,
+  options: FindMissingOptions = {},
 ): MissingFromFile[] {
   const matched = new Set(matchedEmployeeIds);
   const linked = new Set(linkedToPeriodIds);
-  return employees
-    .filter((e) => {
-      if (matched.has(e.id)) return false;
-      // Period-aware exclusion: former employees whose end_date is before the
-      // period start should not be flagged as "missing from file".
-      if (period && (e as any).end_date) {
-        const end = String((e as any).end_date);
-        if (end < period.start_date) return false;
+  const activity = new Set(options.activityEmployeeIds ?? []);
+  const branchId = options.branchId ?? null;
+  const periodStart = period?.start_date ?? null;
+  const periodEnd = period?.end_date ?? null;
+
+  const out: MissingFromFile[] = [];
+  for (const e of employees) {
+    if (matched.has(e.id)) continue;
+
+    const anyE = e as any;
+    if (anyE.archived_at) continue;
+    if (e.status === "archived") continue;
+
+    const startDate: string | null = anyE.start_date ?? null;
+    const endDate: string | null = anyE.end_date ?? null;
+    const empBranch: string | null = anyE.branch_id ?? null;
+
+    // Branch filter — only exclude when both sides known and different
+    if (branchId && empBranch && empBranch !== branchId) continue;
+
+    // Period-aware exclusions (only when we have a period window)
+    let reason: MissingFromFile["reason"] = "active_in_period";
+    if (periodStart && periodEnd) {
+      const hasActivity = activity.has(e.id);
+      const startsAfter = startDate && startDate > periodEnd;
+      const endedBefore = endDate && endDate < periodStart;
+      const startsInPeriod = startDate && startDate >= periodStart && startDate <= periodEnd;
+      const endsInPeriod = endDate && endDate >= periodStart && endDate <= periodEnd;
+
+      if (!hasActivity) {
+        if (startsAfter) continue;
+        if (endedBefore) continue;
+        // Leaver / status=leaver without current-period end and no activity => skip
+        if (e.status === "leaver" && !endsInPeriod) continue;
       }
-      if ((e as any).status === "archived" || (e as any).status === "leaver") {
-        // Leavers/archived only count as missing if they overlap the period.
-        if (period && (e as any).end_date && String((e as any).end_date) < period.start_date) {
-          return false;
-        }
+
+      if (hasActivity) reason = "current_activity";
+      else if (endsInPeriod) reason = "current_leaver";
+      else if (startsInPeriod || e.status === "starter") reason = "current_starter";
+      else reason = "active_in_period";
+    } else {
+      // No period context — legacy behaviour: only obvious lifecycle staff
+      if (e.status !== "active" && e.status !== "starter" && e.status !== "leaver") continue;
+    }
+
+    // Employees with no lifecycle signals at all: require active/starter status
+    if (periodStart && periodEnd && !startDate && !endDate) {
+      if (e.status !== "active" && e.status !== "starter") {
+        if (!activity.has(e.id)) continue;
       }
-      return (e.status === "active" || e.status === "starter" || e.status === "leaver");
-    })
-    .map((e) => ({
+    }
+
+    out.push({
       employeeId: e.id,
       fullName: `${e.forename} ${e.surname}`.trim(),
       status: e.status,
       linkedToPeriod: linked.has(e.id),
-    }));
+      reason,
+      department: e.department,
+      branchId: empBranch,
+    });
+  }
+  return out;
 }
 
 /** Rows where the file explicitly recorded 0.00 hours — shown for transparency. */
