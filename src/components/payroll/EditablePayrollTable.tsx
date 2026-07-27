@@ -167,6 +167,9 @@ export function EditablePayrollTable({
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<{ entry: PayrollEntry; hours: number; hourlyRate: number; serviceCharge: number; perfBonus: number; specBonus: number } | null>(null);
   const [adjustmentNote, setAdjustmentNote] = useState("");
+  // Imported-hours override extras (only used when entry.imported_hours != null AND hours changed)
+  const [overrideCategory, setOverrideCategory] = useState<string>("");
+  const [overrideShowOnPdf, setOverrideShowOnPdf] = useState(false);
   const [reviewEmployeeId, setReviewEmployeeId] = useState<string | null>(null);
 
 
