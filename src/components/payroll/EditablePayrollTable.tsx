@@ -466,11 +466,34 @@ export function EditablePayrollTable({
   const confirmAdjustmentNote = async () => {
     if (!pendingSave) return;
     const { entry, hours, hourlyRate, serviceCharge, perfBonus, specBonus } = pendingSave;
+    const importedHours = entry.imported_hours;
+    const hoursChanged = importedHours !== null && Math.abs(hours - importedHours) > 0.001;
+
+    // Imported-hours override → require reason category and build a
+    // deterministic composite note that captures the correction.
+    let finalNote = adjustmentNote;
+    if (hoursChanged) {
+      const err = validateOverride({
+        category: overrideCategory as OverrideReasonCategory,
+        imported: importedHours!,
+        corrected: hours,
+      });
+      if (err) {
+        toast.error(err);
+        return;
+      }
+      finalNote = formatOverrideNote({
+        imported: importedHours!,
+        corrected: hours,
+        category: overrideCategory as OverrideReasonCategory,
+        freeText: adjustmentNote,
+      });
+    }
 
     // G3 — non-empty note required when entry has 0 hours and a non-zero pay value
     const totalPayValue =
       hourlyRate * hours + serviceCharge * hours + perfBonus + specBonus;
-    if (hours === 0 && totalPayValue !== 0 && !adjustmentNote.trim()) {
+    if (hours === 0 && totalPayValue !== 0 && !finalNote.trim()) {
       toast.error(
         "A note is required when posting a non-zero amount to a zero-hour entry. Explain the reason (e.g. bonus, retro pay, correction).",
       );
