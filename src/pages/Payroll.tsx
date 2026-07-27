@@ -264,6 +264,18 @@ const Payroll = () => {
     everSeenEmployeeIds: priorPeriodEmployeeIds,
   });
 
+  const importedHoursOverrides = useMemo(() => {
+    const entryList = (entries as any[]).map((e) => ({
+      id: e.id,
+      employee_id: e.employee_id,
+      imported_hours: e.imported_hours ?? null,
+    }));
+    // Lazy import to keep this file's dep graph flat.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { countImportedHoursOverrides } = require("@/lib/payroll-hours-override");
+    return countImportedHoursOverrides(entryList, payrollAdjustments);
+  }, [entries, payrollAdjustments]);
+
   const phase5Checklist = useMemo(() => {
     if (!phase5Report || !selectedPeriod) return null;
     return buildApprovalChecklist({
@@ -274,6 +286,8 @@ const Payroll = () => {
       scIneligibleEntryIds: approvalGuardrails.scIneligibleEntryIds,
       scOverrideNoteEntryIds: approvalGuardrails.scOverrideNoteEntryIds,
       comparisonSummary: comparison?.summary ?? null,
+      importedHoursOverrideCount: importedHoursOverrides.count,
+      importedHoursOverrideEmployeeIds: importedHoursOverrides.employee_ids,
     });
   }, [
     phase5Report,
@@ -283,6 +297,7 @@ const Payroll = () => {
     approvalGuardrails.scIneligibleEntryIds,
     approvalGuardrails.scOverrideNoteEntryIds,
     comparison,
+    importedHoursOverrides,
   ]);
 
   const phase5ApprovalBlock = useMemo<string | null>(() => {
