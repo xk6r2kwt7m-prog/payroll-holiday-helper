@@ -279,6 +279,10 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       email: e.email,
       preferred_name: (e as any).preferred_name ?? null,
       import_aliases: (e as any).import_aliases ?? [],
+      start_date: (e as any).start_date ?? null,
+      end_date: (e as any).end_date ?? null,
+      branch_id: (e as any).branch_id ?? null,
+      archived_at: (e as any).archived_at ?? null,
     })),
   [employees]);
 
