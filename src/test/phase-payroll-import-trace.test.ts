@@ -248,7 +248,7 @@ describe("Phase: existing-draft import preservation invariants (regression lock)
   });
 
   it("new payroll periods created by import are always 'draft' (approved periods cannot be created here)", () => {
-    expect(source).toMatch(/status:\s*"draft"\s*as\s*const/);
+    expect(source).toMatch(/normalisePayrollStatus\("draft",\s*"draft"\)/);
   });
 
   it("preview surfaces a 'missing from uploaded file' warning section", () => {
