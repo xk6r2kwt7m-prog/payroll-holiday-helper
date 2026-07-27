@@ -31,6 +31,7 @@ import {
 } from "@/hooks/useHolidays";
 import { useEmployees } from "@/hooks/useEmployees";
 import { InvestigateLedgerDialog } from "@/components/holidays/InvestigateLedgerDialog";
+import { HOLIDAY_DISPLAY_LABELS } from "@/lib/holiday-display-labels";
 
 interface HolidayPaymentRow {
   id: string;
@@ -199,11 +200,13 @@ export function PayrollHolidaySection({
             <Palmtree className="h-4 w-4 text-warning" />
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold text-card-foreground text-sm">Holiday Pay</h3>
+            <h3 className="font-semibold text-card-foreground text-sm">
+              {HOLIDAY_DISPLAY_LABELS.actualHolidayPay}
+            </h3>
             <p className="text-xs text-muted-foreground truncate">
               {holidayPayments.length > 0
                 ? `${holidayPayments.length} payment${holidayPayments.length !== 1 ? "s" : ""} — ${formatCurrency(holidayTotal)}`
-                : "No holiday payments yet"}
+                : HOLIDAY_DISPLAY_LABELS.actualHolidayEmpty}
             </p>
           </div>
         </div>
@@ -213,6 +216,13 @@ export function PayrollHolidaySection({
             Add
           </Button>
         )}
+      </div>
+
+      <div
+        className="px-3 sm:px-4 py-2 border-b border-border bg-muted/30 text-[11px] leading-snug text-muted-foreground"
+        data-testid="holiday-pay-scope-note"
+      >
+        {HOLIDAY_DISPLAY_LABELS.actualHolidayPaySubtitle}
       </div>
 
       {/* Existing payments */}
