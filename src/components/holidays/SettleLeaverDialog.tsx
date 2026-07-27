@@ -241,6 +241,28 @@ export function SettleLeaverDialog() {
     }
   };
 
+  // Smart default basis: when live payroll accrual is pending ledger posting
+  // (draft period on the leave year), auto-select `live_accrual` so the
+  // manager settles against the same balance the Leave dashboard shows —
+  // instead of falling back to Manual verified adjustment.
+  const [autoBasisApplied, setAutoBasisApplied] = useState<string>("");
+  useEffect(() => {
+    if (!employeeId || !allPayrollEntries.length) return;
+    const key = `${employeeId}:${leaveYear}`;
+    if (autoBasisApplied === key) return;
+    const yearEntries = allPayrollEntries.filter(
+      (e) => new Date(e.period_start_date).getUTCFullYear() === leaveYear,
+    );
+    const liveAccrued = yearEntries.reduce((s, e) => s + Number(e.holiday_accrued_hours || 0), 0);
+    const hasDraft = yearEntries.some(
+      (e) => !["approved", "finalised", "finalized"].includes(String(e.period_status || "").toLowerCase()),
+    );
+    if (liveAccrued > 0.005 && hasDraft) {
+      setBasis("live_accrual");
+    }
+    setAutoBasisApplied(key);
+  }, [employeeId, leaveYear, allPayrollEntries, autoBasisApplied]);
+
   // Auto-fill hours from current basis result (except manual mode where user types)
   useEffect(() => {
     if (!basisResult || basis === "manual") return;
