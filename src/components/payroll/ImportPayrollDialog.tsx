@@ -1185,7 +1185,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               </div>
             )}
 
-            <ScrollArea className="flex-1 max-h-[380px] border rounded-lg">
+            <div className="border rounded-lg">
               <div className="divide-y divide-border">
 
                 {aggregated.map((emp, idx) => (
