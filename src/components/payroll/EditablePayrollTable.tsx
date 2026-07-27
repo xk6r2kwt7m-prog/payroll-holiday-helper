@@ -513,9 +513,8 @@ export function EditablePayrollTable({
     }[] = [];
 
     const emp = entry.employees;
-    const importedHours = entry.imported_hours;
 
-    if (importedHours !== null && Math.abs(hours - importedHours) > 0.001) {
+    if (hoursChanged) {
       adjustmentRows.push({
         payroll_period_id: periodId,
         payroll_entry_id: entry.id,
@@ -523,7 +522,7 @@ export function EditablePayrollTable({
         field_name: "timesheet_hours",
         old_value: importedHours,
         new_value: hours,
-        note: adjustmentNote || "Manual adjustment",
+        note: finalNote || "Manual adjustment",
       });
     }
     if (emp && Math.abs(hourlyRate - Number(emp.hourly_rate)) > 0.001) {
