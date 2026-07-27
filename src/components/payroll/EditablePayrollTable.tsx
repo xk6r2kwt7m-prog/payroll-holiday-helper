@@ -1271,7 +1271,7 @@ export function EditablePayrollTable({
         const hoursChangedFromImport =
           !!pending && imported !== null && Math.abs(pending.hours - imported) > 0.001;
         const empName = pending
-          ? `${pending.entry.employees?.first_name ?? ""} ${pending.entry.employees?.last_name ?? ""}`.trim()
+          ? `${pending.entry.employees?.forename ?? ""} ${pending.entry.employees?.surname ?? ""}`.trim()
           : "";
         const delta = pending && imported !== null ? pending.hours - imported : 0;
         return (
