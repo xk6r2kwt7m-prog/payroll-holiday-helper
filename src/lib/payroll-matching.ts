@@ -348,7 +348,21 @@ export function matchEmployeeRow(
   }
 
   // 4-5. Fall back to name-based matcher.
-  return matchEmployee(row.name, employees);
+  const nameMatch = matchEmployee(row.name, employees);
+  // Onboarding employees must be confirmed unless the match is exact/case-insensitive.
+  if (
+    nameMatch.employee &&
+    nameMatch.employee.status === "onboarding" &&
+    nameMatch.method !== "exact" &&
+    nameMatch.method !== "case_insensitive"
+  ) {
+    return {
+      ...nameMatch,
+      requiresReview: true,
+      reviewReason: "Onboarding — confirm before import.",
+    };
+  }
+  return nameMatch;
 }
 
 /** Detect ambiguous mappings: same target employee selected for >1 different raw names. */
