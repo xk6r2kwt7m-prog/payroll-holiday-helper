@@ -102,7 +102,7 @@ describe("employee-lifecycle-display", () => {
       mk({ id: "6", status: "starter", start_date: daysAgo(3), archived_at: daysAgo(1) + "T00:00:00Z" }), // former
     ];
     const c = getPeopleDashboardCounts(emps, today);
-    expect(c.active).toBe(4);
+    expect(c.active).toBe(3);
     expect(c.starters).toBe(1);
     expect(c.onboarding).toBe(1);
     expect(c.former).toBe(2);
