@@ -37,6 +37,7 @@ import { countImportedHoursOverrides } from "@/lib/payroll-hours-override";
 import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
 import { usePayrollApprovalGuardrails } from "@/hooks/usePayrollApprovalGuardrails";
 import { PayrollHolidaySection } from "@/components/payroll/PayrollHolidaySection";
+import { LeaverSettlementAlerts } from "@/components/payroll/LeaverSettlementAlerts";
 import { PayrollSalesInput } from "@/components/payroll/PayrollSalesInput";
 import { PayrollReminders } from "@/components/payroll/PayrollReminders";
 import { PayrollInlineAnalytics } from "@/components/payroll/PayrollInlineAnalytics";
@@ -1112,11 +1113,21 @@ const Payroll = () => {
           />
         )}
 
-        {/* Holiday Pay Section — collapsed by default (Phase B) */}
+        {/* Leaver settlement alerts — read-only nudge to Settle Leaver */}
+        {selectedPeriod && entries.length > 0 && (
+          <LeaverSettlementAlerts
+            periodId={selectedPeriod.id}
+            periodEndDate={selectedPeriod.end_date}
+            periodName={selectedPeriod.period_name}
+            entries={entries as any}
+          />
+        )}
+
+        {/* Actual holiday payments — collapsed by default (Phase B) */}
         {selectedPeriod && (
           <CollapsibleSection
-            title="Holiday pay"
-            summary="Holiday payments recorded against this payroll period."
+            title="Actual holiday payments"
+            summary="Real holiday paid, taken, or settled in this period. Accrued hours in the payroll table are separate and not yet paid."
             count={holidayPayments.length}
             badge={
               holidayTotal > 0

@@ -891,7 +891,29 @@ export function EditablePayrollTable({
               <TableHead className="text-right">Hours</TableHead>
               <TableHead className="text-right">Perf Bonus</TableHead>
               <TableHead className="text-right">Spec Bonus</TableHead>
-              <TableHead className="text-right">Holiday Accrued</TableHead>
+              <TableHead className="text-right">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="inline-flex items-center gap-1 cursor-help border-b border-dotted border-muted-foreground/40"
+                        data-testid="holiday-accrued-header"
+                      >
+                        Holiday Accrued
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[260px]">
+                      <p className="text-xs">
+                        Hours accrued during this payroll period.{" "}
+                        <strong>Not a holiday payment</strong> — this posts to
+                        the ledger only when the period is approved. Actual
+                        holiday paid appears in the Actual holiday payments
+                        section.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </TableHead>
               <TableHead className="text-right">Total Pay</TableHead>
               <TableHead className="w-[100px] text-right">Actions</TableHead>
             </TableRow>
