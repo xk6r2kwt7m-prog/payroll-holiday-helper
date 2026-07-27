@@ -641,17 +641,19 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       } else {
         const { data: period, error: periodError } = await supabase
           .from("payroll_periods")
-          .insert({
-            period_name: periodName,
-            start_date: startDate,
-            end_date: endDate,
-            pay_date: payDate || null,
-            period_weeks: periodWeeks,
-            status: "draft" as const,
-            imported_by: user?.id,
-            notes: periodNotes,
-            tenant_id: tenantId,
-          } as any)
+          .insert(
+            sanitisePayrollPeriodUpdate({
+              period_name: periodName,
+              start_date: startDate,
+              end_date: endDate,
+              pay_date: payDate || null,
+              period_weeks: periodWeeks,
+              status: normalisePayrollStatus("draft", "draft"),
+              imported_by: user?.id,
+              notes: periodNotes,
+              tenant_id: tenantId,
+            }) as any,
+          )
           .select()
           .single();
 
