@@ -13,7 +13,7 @@ const julyPeriod = { start_date: "2026-06-22", end_date: "2026-07-26" };
 
 describe("leaver misclassification — Daniela correction", () => {
   it("classifies as leaver when end_date falls in period", () => {
-    const emp = { id: "daniela", status: "leaver", end_date: "2026-07-27" };
+    const emp = { id: "daniela", status: "leaver", end_date: "2026-07-20" };
     expect(isLeaverInPeriod(emp, julyPeriod)).toBe(true);
   });
 
