@@ -676,7 +676,15 @@ export function SettleLeaverDialog() {
             </>
           )}
 
+          {disabledReason && (
+            <p className="text-[11px] text-warning bg-warning/10 border border-warning/30 rounded-md px-2 py-1.5 flex items-start gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>{disabledReason}</span>
+            </p>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
+
             <Button type="button" variant="outline" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
             <Button
               type="submit"
