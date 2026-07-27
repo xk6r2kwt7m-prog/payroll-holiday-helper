@@ -1,5 +1,14 @@
 import { useState, useMemo } from "react";
-import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare, Eye } from "lucide-react";
+import { Edit2, Save, X, Download, CopyCheck, ArrowDown, Loader2, UserMinus, UserPlus, FileText, AlertTriangle, ArrowUpDown, GitCompare, Eye, History } from "lucide-react";
+import {
+  isStarterCalendarMonth,
+  prioritizeRowBadges,
+  BADGE_PRIORITY,
+  BADGE_TONE_CLASSES,
+  type RowBadge,
+  type BadgeTone,
+} from "@/lib/payroll-row-badge-priority";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   filterEntries,
   computeRowBadges,
@@ -100,6 +109,8 @@ interface PayrollEntry {
     bank_account_no: string | null;
     sort_code: string | null;
     ni_number: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
   } | null;
 }
 
@@ -900,81 +911,42 @@ export function EditablePayrollTable({
                             ? `${emp?.surname}, ${emp?.forename}`
                             : `${emp?.forename} ${emp?.surname}`}
                         </span>
-                        {(() => {
-                          const periodCtx = periodStart && periodEnd
-                            ? { start_date: periodStart, end_date: periodEnd }
-                            : null;
-                          const starterHere = periodCtx
-                            ? isStarterInPeriod(emp as any, periodCtx, priorPeriodEmployeeIds)
-                            : (emp?.status === "starter" && !priorPeriodEmployeeIds?.has(entry.employee_id));
-                          const leaverHere = periodCtx
-                            ? isLeaverInPeriod(emp as any, periodCtx, {
-                                holidayPaymentEmployeeIds: holidayPaidEmployeeIds,
-                                entryEmployeeIds: new Set(entries.map(e => e.employee_id)),
-                              })
-                            : emp?.status === "leaver";
-                          return (
-                            <>
-                              {starterHere && (
-                                <Badge variant="outline" className="ml-2 text-xs bg-primary/10 text-primary border-primary/20">
-                                  Starter
-                                </Badge>
-                              )}
-                              {leaverHere && (
-                                <Badge variant="outline" className="ml-2 text-xs bg-destructive/10 text-destructive border-destructive/20">
-                                  Leaver
-                                </Badge>
-                              )}
-                            </>
-                          );
-                        })()}
-                        <AdjustmentHistoryDrawer
-                          periodId={periodId}
-                          employeeId={entry.employee_id}
-                          employeeName={`${emp?.forename} ${emp?.surname}`}
-                          hasAdjustments={adjustedEmployeeIds.has(entry.employee_id) || (entry.imported_hours !== null && Math.abs(entry.timesheet_hours - entry.imported_hours) > 0.001)}
-                        />
-                        <PriorAdjustmentReminder periodId={periodId} employeeId={entry.employee_id} />
                         <LocationSplitPopover
                           periodId={periodId}
                           employeeId={entry.employee_id}
                           employeeName={`${emp?.forename} ${emp?.surname}`}
                         />
                         {(() => {
+                          const periodCtx = periodStart && periodEnd
+                            ? { start_date: periodStart, end_date: periodEnd }
+                            : null;
+                          // Starter badge: calendar-month rule.
+                          // Show only while the payroll period's reference date
+                          // (its end date) falls in the same calendar month as
+                          // the employee's start_date.
+                          const starterHere =
+                            emp?.start_date
+                              ? isStarterCalendarMonth(emp.start_date, periodEnd ?? periodStart ?? null)
+                              : (periodCtx
+                                  ? isStarterInPeriod(emp as any, periodCtx, priorPeriodEmployeeIds)
+                                  : (emp?.status === "starter" && !priorPeriodEmployeeIds?.has(entry.employee_id)));
+                          const leaverHere = periodCtx
+                            ? isLeaverInPeriod(emp as any, periodCtx, {
+                                holidayPaymentEmployeeIds: holidayPaidEmployeeIds,
+                                entryEmployeeIds: new Set(entries.map(e => e.employee_id)),
+                              })
+                            : emp?.status === "leaver";
                           const cmp = comparisonByEmployee?.get(entry.employee_id);
-                          if (!cmp) return null;
-                          const hasSignal =
-                            cmp.overall_severity !== "none" ||
-                            cmp.is_new_starter ||
-                            cmp.is_leaver ||
-                            cmp.hours.zero_hours_but_had_hours ||
-                            cmp.hours.missing_from_timesheet;
-                          if (!hasSignal) return null;
-                          const tone =
-                            cmp.overall_severity === "red"
-                              ? "bg-destructive/10 text-destructive border-destructive/20"
-                              : cmp.overall_severity === "amber"
-                                ? "bg-warning/15 text-warning border-warning/30"
-                                : "bg-primary/10 text-primary border-primary/20";
-                          return (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setReviewEmployeeId(entry.employee_id);
-                              }}
-                              className={cn(
-                                "ml-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium hover:opacity-80",
-                                tone,
-                              )}
-                              title="Review month-on-month changes"
-                            >
-                              <GitCompare className="h-3 w-3" />
-                              Review changes
-                            </button>
-                          );
-                        })()}
-                        {(() => {
+                          const hasReviewSignal = cmp
+                            && (cmp.overall_severity !== "none"
+                              || cmp.is_new_starter
+                              || cmp.is_leaver
+                              || cmp.hours.zero_hours_but_had_hours
+                              || cmp.hours.missing_from_timesheet);
+                          const reviewTone: BadgeTone =
+                            cmp?.overall_severity === "red" ? "destructive"
+                            : cmp?.overall_severity === "amber" ? "warning"
+                            : "primary";
                           const badges = computeRowBadges(
                             {
                               id: entry.id,
@@ -986,40 +958,147 @@ export function EditablePayrollTable({
                             },
                             filterCtx,
                           );
-                          const chips: { key: string; label: string; tone: string; testId: string }[] = [];
+                          const hasImportedAdj = entry.imported_hours !== null
+                            && Math.abs(entry.timesheet_hours - entry.imported_hours) > 0.001;
+
+                          const chips: RowBadge[] = [];
                           if (badges.nmwFail)
-                            chips.push({ key: "nmw-fail", label: "NMW fail", tone: "bg-destructive/10 text-destructive border-destructive/30", testId: "row-badge-nmw-fail" });
+                            chips.push({ key: "nmw-fail", label: "NMW fail", tone: "destructive", priority: BADGE_PRIORITY.nmw_fail, testId: "row-badge-nmw-fail" });
                           if (badges.nmwAtRisk && !badges.nmwFail)
-                            chips.push({ key: "nmw-risk", label: "NMW at risk", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-nmw-risk" });
+                            chips.push({ key: "nmw-risk", label: "NMW at risk", tone: "warning", priority: BADGE_PRIORITY.nmw_risk, testId: "row-badge-nmw-risk" });
                           if (badges.missingTimesheet)
-                            chips.push({ key: "missing-ts", label: "Missing timesheet", tone: "bg-destructive/10 text-destructive border-destructive/30", testId: "row-badge-missing-timesheet" });
-                          if (badges.zeroHours)
-                            chips.push({ key: "zero", label: "Zero hours", tone: "bg-muted text-muted-foreground border-border", testId: "row-badge-zero-hours" });
-                          if (badges.rateChanged)
-                            chips.push({ key: "rate", label: "Rate changed", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-rate-changed" });
-                          if (badges.scChanged)
-                            chips.push({ key: "sc", label: "SC changed", tone: "bg-warning/15 text-warning border-warning/30", testId: "row-badge-sc-changed" });
-                          if (badges.manualAdjustment)
-                            chips.push({ key: "adj", label: "Manual adjustment", tone: "bg-primary/10 text-primary border-primary/20", testId: "row-badge-manual-adjustment" });
+                            chips.push({ key: "missing-ts", label: "Missing timesheet", tone: "destructive", priority: BADGE_PRIORITY.missing_timesheet, testId: "row-badge-missing-timesheet" });
+                          if (hasReviewSignal) {
+                            chips.push({
+                              key: "review-changes",
+                              label: "Review changes",
+                              tone: reviewTone,
+                              priority: BADGE_PRIORITY.review_changes,
+                              icon: "git-compare",
+                              onClick: () => setReviewEmployeeId(entry.employee_id),
+                              title: "Review month-on-month changes",
+                              testId: "row-badge-review-changes",
+                            });
+                          }
                           if (badges.holidayPay)
-                            chips.push({ key: "hol", label: "Holiday pay", tone: "bg-accent/15 text-accent-foreground border-border", testId: "row-badge-holiday-pay" });
+                            chips.push({ key: "hol", label: "Holiday pay", tone: "accent", priority: BADGE_PRIORITY.holiday_pay, testId: "row-badge-holiday-pay" });
+                          if (starterHere) {
+                            const startedLabel = emp?.start_date
+                              ? new Date(emp.start_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+                              : null;
+                            chips.push({
+                              key: "starter",
+                              label: "Starter",
+                              tone: "primary",
+                              priority: BADGE_PRIORITY.starter,
+                              title: startedLabel ? `Started on ${startedLabel}` : "New starter",
+                              testId: "row-badge-starter",
+                            });
+                          }
+                          if (leaverHere)
+                            chips.push({ key: "leaver", label: "Leaver", tone: "destructive", priority: BADGE_PRIORITY.leaver, testId: "row-badge-leaver" });
+                          if (badges.rateChanged)
+                            chips.push({ key: "rate", label: "Rate changed", tone: "warning", priority: BADGE_PRIORITY.rate_changed, testId: "row-badge-rate-changed" });
+                          if (badges.scChanged)
+                            chips.push({ key: "sc", label: "SC changed", tone: "warning", priority: BADGE_PRIORITY.sc_changed, testId: "row-badge-sc-changed" });
+                          if (badges.manualAdjustment)
+                            chips.push({ key: "adj", label: "Manual adjustment", tone: "primary", priority: BADGE_PRIORITY.manual_adjustment, testId: "row-badge-manual-adjustment" });
+                          if (hasImportedAdj)
+                            chips.push({ key: "imp-adj", label: "Hours adjusted", tone: "warning", priority: BADGE_PRIORITY.imported_hours_adjusted, icon: "history", testId: "row-badge-hours-adjusted" });
+                          if (badges.zeroHours)
+                            chips.push({ key: "zero", label: "Zero hours", tone: "muted", priority: BADGE_PRIORITY.zero_hours, testId: "row-badge-zero-hours" });
                           if (badges.internalNote)
-                            chips.push({ key: "note", label: "Internal note", tone: "bg-muted text-muted-foreground border-border", testId: "row-badge-internal-note" });
+                            chips.push({ key: "note", label: "Internal note", tone: "muted", priority: BADGE_PRIORITY.internal_note, testId: "row-badge-internal-note" });
+
                           if (chips.length === 0) return null;
+                          const { visible, overflow } = prioritizeRowBadges(chips);
+
+                          const renderChip = (b: RowBadge, extraClass?: string) => {
+                            const IconEl = b.icon === "git-compare" ? GitCompare
+                              : b.icon === "history" ? History
+                              : b.icon === "alert" ? AlertTriangle
+                              : null;
+                            const className = cn(
+                              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                              BADGE_TONE_CLASSES[b.tone],
+                              b.onClick && "hover:opacity-80 cursor-pointer",
+                              extraClass,
+                            );
+                            const content = (
+                              <>
+                                {IconEl && <IconEl className="h-3 w-3" />}
+                                {b.label}
+                              </>
+                            );
+                            if (b.onClick) {
+                              return (
+                                <button
+                                  key={b.key}
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); b.onClick?.(); }}
+                                  className={className}
+                                  title={b.title}
+                                  data-testid={b.testId}
+                                >
+                                  {content}
+                                </button>
+                              );
+                            }
+                            return (
+                              <span
+                                key={b.key}
+                                className={className}
+                                title={b.title}
+                                data-testid={b.testId}
+                              >
+                                {content}
+                              </span>
+                            );
+                          };
+
                           return (
                             <div className="flex flex-wrap gap-1 mt-1" data-testid={`row-badges-${entry.employee_id}`}>
-                              {chips.map((c) => (
-                                <span
-                                  key={c.key}
-                                  data-testid={c.testId}
-                                  className={cn(
-                                    "inline-flex items-center rounded-full border px-1.5 py-0 text-[10px] font-medium",
-                                    c.tone,
-                                  )}
-                                >
-                                  {c.label}
-                                </span>
-                              ))}
+                              {visible.map((b) => renderChip(b))}
+                              {overflow.length > 0 && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className={cn(
+                                        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                                        BADGE_TONE_CLASSES.muted,
+                                        "hover:opacity-80 cursor-pointer",
+                                      )}
+                                      data-testid="row-badge-overflow"
+                                      title={`${overflow.length} more indicator${overflow.length === 1 ? "" : "s"}`}
+                                    >
+                                      +{overflow.length} more
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    align="start"
+                                    className="w-auto max-w-[280px] p-2"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <p className="text-[10px] font-medium text-muted-foreground mb-1.5">
+                                      Additional payroll indicators
+                                    </p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {overflow.map((b) => renderChip(b))}
+                                    </div>
+                                    <div className="mt-2 pt-2 border-t border-border">
+                                      <AdjustmentHistoryDrawer
+                                        periodId={periodId}
+                                        employeeId={entry.employee_id}
+                                        employeeName={`${emp?.forename} ${emp?.surname}`}
+                                        hasAdjustments={adjustedEmployeeIds.has(entry.employee_id) || hasImportedAdj}
+                                      />
+                                      <PriorAdjustmentReminder periodId={periodId} employeeId={entry.employee_id} />
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              )}
                             </div>
                           );
                         })()}
