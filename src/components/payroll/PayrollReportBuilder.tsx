@@ -19,6 +19,7 @@ import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { usePayrollPeriodNotes } from "@/hooks/usePayrollPeriodNotes";
 import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
+import { buildPdfAdjustmentRows } from "@/lib/payroll-pdf-adjustments";
 
 interface PayrollReportBuilderProps {
   open: boolean;
@@ -104,7 +105,7 @@ export function PayrollReportBuilder({
 
   const adjustments = useMemo(() => {
     const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
-    return rawAdjustments.map((a) => {
+    const raw = rawAdjustments.map((a) => {
       const emp: any = empById.get(a.employee_id);
       return {
         id: a.id,
@@ -118,7 +119,32 @@ export function PayrollReportBuilder({
         created_at: a.created_at,
       };
     });
+    // Accountant PDF: only rate + service charge, one row per employee+field,
+    // scoped to this period (rawAdjustments is already period-filtered by hook).
+    const pdfRows = buildPdfAdjustmentRows(raw);
+    return pdfRows.map((r) => ({
+      id: r.id,
+      employee_id: r.employee_id,
+      employee_name: r.employee_name,
+      field_name: r.field_name,
+      old_value: r.from_value,
+      new_value: r.to_value,
+      delta:
+        r.from_value !== null && r.to_value !== null
+          ? Number(r.to_value) - Number(r.from_value)
+          : null,
+      note: r.reason,
+      created_at: r.created_at,
+    }));
   }, [rawAdjustments, allEmployees]);
+
+  const adjustmentsSummary = useMemo(
+    () => ({
+      pdf_rows: adjustments.length,
+      internal_hidden: Math.max(0, rawAdjustments.length - adjustments.length),
+    }),
+    [adjustments.length, rawAdjustments.length],
+  );
 
 
   const toggleSection = (key: string) => {
@@ -588,13 +614,27 @@ export function PayrollReportBuilder({
               const pdfCount = rawPeriodNotes.filter((n) => n.show_on_pdf).length;
               const internalCount = rawPeriodNotes.length - pdfCount;
               const willAppear = config.showNotes ? pdfCount : 0;
+              const adjOn =
+                config.columns.adjustments && config.financial.includeAdjustments;
+              const adjPdf = adjOn ? adjustmentsSummary.pdf_rows : 0;
+              const adjHidden = adjustmentsSummary.internal_hidden + (adjOn ? 0 : adjustmentsSummary.pdf_rows);
               return (
-                <div className="text-[11px]">
-                  Accountant will see <span className="font-medium text-foreground">{willAppear}</span> note{willAppear === 1 ? "" : "s"} on the PDF ·{" "}
-                  <span className="font-medium text-foreground">{internalCount + (config.showNotes ? 0 : pdfCount)}</span> kept internal
-                  {!config.showNotes && pdfCount > 0 && (
-                    <span className="ml-1 text-warning">(Period Notes toggle is off)</span>
-                  )}
+                <div className="text-[11px] space-y-0.5">
+                  <div>
+                    Accountant will see <span className="font-medium text-foreground">{adjPdf}</span>{" "}
+                    rate/service charge change{adjPdf === 1 ? "" : "s"} on this PDF ·{" "}
+                    <span className="font-medium text-foreground">{adjHidden}</span> internal note{adjHidden === 1 ? "" : "s"} hidden
+                    {!adjOn && adjustmentsSummary.pdf_rows > 0 && (
+                      <span className="ml-1 text-warning">(Adjustments toggle is off)</span>
+                    )}
+                  </div>
+                  <div>
+                    Period notes: <span className="font-medium text-foreground">{willAppear}</span> on PDF ·{" "}
+                    <span className="font-medium text-foreground">{internalCount + (config.showNotes ? 0 : pdfCount)}</span> kept internal
+                    {!config.showNotes && pdfCount > 0 && (
+                      <span className="ml-1 text-warning">(Period Notes toggle is off)</span>
+                    )}
+                  </div>
                 </div>
               );
             })()}
