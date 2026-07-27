@@ -334,6 +334,22 @@ export function buildApprovalChecklist(
         ),
   );
 
+  // Imported-hours override warning — non-blocking, ack required.
+  const impCount = input.importedHoursOverrideCount ?? 0;
+  const impEmps = input.importedHoursOverrideEmployeeIds ?? [];
+  if (impCount > 0) {
+    items.push({
+      id: "imported_hours_overrides",
+      status: "warning",
+      blocking: false,
+      requires_ack: true,
+      title: "Imported timesheet hours were manually corrected",
+      detail: `${impCount} employee${impCount === 1 ? " has" : "s have"} had hours imported from the timesheet file manually adjusted. Review each correction and reason before approval.`,
+      count: impCount,
+      affected_employee_ids: impEmps,
+    });
+  }
+
   // --- month-on-month comparison summary (non-blocking) -------------------
   const cmp = input.comparisonSummary;
   if (cmp && cmp.has_previous_period) {
