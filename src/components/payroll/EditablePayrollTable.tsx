@@ -199,6 +199,10 @@ export function EditablePayrollTable({
   // Imported-hours override extras (only used when entry.imported_hours != null AND hours changed)
   const [overrideCategory, setOverrideCategory] = useState<string>("");
   const [overrideShowOnPdf, setOverrideShowOnPdf] = useState(false);
+  // Reason category selected for non-hours edits (rate, service charge, bonuses, etc.)
+  const [editReasonCategory, setEditReasonCategory] = useState<string>("");
+  // Field changes for the current pending save (used to render per-field diffs in the modal)
+  const [pendingFieldChanges, setPendingFieldChanges] = useState<FieldChange[]>([]);
   const [reviewEmployeeId, setReviewEmployeeId] = useState<string | null>(null);
 
 
