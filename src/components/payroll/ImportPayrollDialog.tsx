@@ -761,7 +761,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
               special_bonus: 0,
               holiday_accrued_hours: holidayAccrued,
               total_pay: (hours * rate) + (hours * sc),
-              notes: `${locNotes}${matchNote}`,
+              notes: `${locNotes}${matchNote}${rateNote}`,
               tenant_id: tenantId,
             } as any)
             .select("id")
