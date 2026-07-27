@@ -394,6 +394,7 @@ function zero(basis: EntitlementBasis, notes: string[]): BasisResult {
 export interface SourceRow {
   source:
     | "holiday_tab_legacy"
+    | "live_payroll_accrual"
     | "holiday_ledger"
     | "holiday_balances_snapshot"
     | "manual_recalculation";
@@ -405,6 +406,11 @@ export interface SourceRow {
   balance: number;
   /** True if data was missing for this source (then values are still 0 but the row is informational only). */
   missing?: boolean;
+  /**
+   * Informational note explaining the source (e.g. "includes draft periods —
+   * pending ledger posting"). Rendered inline in the UI.
+   */
+  info?: string;
 }
 
 export interface ComparisonInput {
