@@ -26,6 +26,12 @@ export interface MatchableEmployee {
   import_aliases?: string[] | null;
   start_date?: string | null;
   end_date?: string | null;
+  /**
+   * @deprecated Not used for matching or filtering — the `employees` table
+   * does not persist a branch_id column. Retained only for API compatibility
+   * and will be ignored by every matcher/import helper. Do NOT add new logic
+   * that reads this field.
+   */
   branch_id?: string | null;
   archived_at?: string | null;
 }
