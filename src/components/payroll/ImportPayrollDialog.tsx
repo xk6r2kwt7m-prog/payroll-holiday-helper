@@ -173,16 +173,22 @@ function aggregateByEmployee(
 
   for (const row of rows) {
     const nameLower = row.csvName.toLowerCase().trim();
+    // SKIP_NAMES already filtered at parser stage; second guard for safety.
     if (SKIP_NAMES.has(nameLower)) continue;
 
     // Use the full priority matcher so saved aliases are honoured during
     // CSV parsing (previously only honoured post-import in the issues panel).
-    const { employee: matchedEmp, method } = matchEmployeeRow(
+    const matchRes = matchEmployeeRow(
       { name: row.csvName },
       employees,
       savedAliases,
     );
-    const matchKey = matchedEmp
+    const { employee: matchedEmp, method, requiresReview, reviewReason } = matchRes;
+    // Onboarding matches that require confirmation stay in the unresolved
+    // pool — the manager must select/confirm before they import.
+    const treatAsUnmatched = !matchedEmp || !!requiresReview;
+
+    const matchKey = matchedEmp && !treatAsUnmatched
       ? `${matchedEmp.forename} ${matchedEmp.surname}`.toLowerCase()
       : nameLower;
 
@@ -195,16 +201,19 @@ function aggregateByEmployee(
         csvName: row.csvName,
         totalHours: row.hours,
         locations: [{ name: row.location, hours: row.hours }],
-        matchedForename: matchedEmp?.forename,
-        matchedSurname: matchedEmp?.surname,
-        matchedId: matchedEmp?.id,
+        matchedForename: treatAsUnmatched ? undefined : matchedEmp?.forename,
+        matchedSurname: treatAsUnmatched ? undefined : matchedEmp?.surname,
+        matchedId: treatAsUnmatched ? undefined : matchedEmp?.id,
         matchMethod: method,
-        department: matchedEmp?.department,
-        hourlyRate: matchedEmp?.hourly_rate,
-        serviceCharge: matchedEmp?.service_charge ?? 0,
-        unmatched: !matchedEmp,
-        resolution: matchedEmp ? "matched" : undefined,
+        department: treatAsUnmatched ? undefined : matchedEmp?.department,
+        hourlyRate: treatAsUnmatched ? undefined : matchedEmp?.hourly_rate,
+        serviceCharge: treatAsUnmatched ? undefined : matchedEmp?.service_charge ?? 0,
+        unmatched: treatAsUnmatched,
+        resolution: treatAsUnmatched ? undefined : "matched",
         isLeaver: matchedEmp?.status === "leaver",
+        isOnboarding: matchedEmp?.status === "onboarding",
+        requiresReview: !!requiresReview,
+        reviewReason,
       });
     }
   }
