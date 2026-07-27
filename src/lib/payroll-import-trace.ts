@@ -194,8 +194,8 @@ export function findMissingFromFile(
       else if (startsInPeriod || e.status === "starter") reason = "current_starter";
       else reason = "active_in_period";
     } else {
-      // No period context — legacy behaviour: only obvious lifecycle staff
-      if (e.status !== "active" && e.status !== "starter" && e.status !== "leaver") continue;
+      // No period context — legacy behaviour: only active/starter qualify.
+      if (e.status !== "active" && e.status !== "starter") continue;
     }
 
     // Employees with no lifecycle signals at all: require active/starter status
