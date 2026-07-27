@@ -143,7 +143,7 @@ describe("holiday-entitlement-basis", () => {
         balanceSnapshot: KAZUMI_SNAPSHOT,
         manualRecalculation: basisResult,
       });
-      expect(rows).toHaveLength(4);
+      expect(rows).toHaveLength(5);
       const legacy = rows.find((r) => r.source === "holiday_tab_legacy")!;
       const ledger = rows.find((r) => r.source === "holiday_ledger")!;
       // Legacy now scopes to APPROVED periods only (3.45 + 0 + 6.00 = 9.45)

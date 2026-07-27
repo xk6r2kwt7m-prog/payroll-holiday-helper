@@ -23,6 +23,7 @@ import type {
 export type EntitlementBasis =
   | "current_period"
   | "current_year"
+  | "live_accrual"
   | "full_employment"
   | "manual";
 
@@ -200,6 +201,44 @@ export function computeBasis(input: BasisInput): BasisResult {
     };
   }
 
+  if (basis === "live_accrual") {
+    // Uses payroll_entries.holiday_accrued_hours across ALL periods (draft +
+    // approved) in the leave year — matches the Leave dashboard so leavers
+    // whose accrual has not yet posted to the ledger (draft period) can be
+    // settled against the same visible balance.
+    const yearEntries = payrollEntries.filter(
+      (e) => new Date(e.period_start_date).getUTCFullYear() === leaveYear,
+    );
+    const accrued = yearEntries.reduce((s, e) => s + Number(e.holiday_accrued_hours || 0), 0);
+    const workedHours = yearEntries.reduce((s, e) => s + Number(e.timesheet_hours || 0), 0);
+    const yearPayments = payments.filter((p) => p.leave_year_start === ys);
+    const taken = yearPayments.reduce((s, p) => s + Math.abs(Number(p.hours || 0)), 0);
+    const paid = yearPayments.reduce((s, p) => s + Number(p.total || 0), 0);
+    const hasDraft = yearEntries.some(
+      (e) => !["approved", "finalised", "finalized"].includes(String(e.period_status || "").toLowerCase()),
+    );
+    notes.push(
+      "Scope: live payroll accrual for this leave year — includes draft and approved periods.",
+    );
+    if (hasDraft) {
+      notes.push(
+        "Some accrual in this basis comes from draft periods that have not yet posted to the ledger.",
+      );
+    }
+    return {
+      basis,
+      accrued,
+      carryOver: 0,
+      taken,
+      paid,
+      manualAdjustments: 0,
+      workedHours,
+      balance: accrued - taken,
+      balanceAmount: null,
+      notes,
+    };
+  }
+
   // full_employment
   //
   // CRITICAL: a naive sum of every ledger row double-counts when both
@@ -355,6 +394,7 @@ function zero(basis: EntitlementBasis, notes: string[]): BasisResult {
 export interface SourceRow {
   source:
     | "holiday_tab_legacy"
+    | "live_payroll_accrual"
     | "holiday_ledger"
     | "holiday_balances_snapshot"
     | "manual_recalculation";
@@ -366,6 +406,11 @@ export interface SourceRow {
   balance: number;
   /** True if data was missing for this source (then values are still 0 but the row is informational only). */
   missing?: boolean;
+  /**
+   * Informational note explaining the source (e.g. "includes draft periods —
+   * pending ledger posting"). Rendered inline in the UI.
+   */
+  info?: string;
 }
 
 export interface ComparisonInput {
@@ -453,7 +498,40 @@ export function buildSourceComparison(input: ComparisonInput): SourceRow[] {
     balance: manualRecalculation.balance,
   };
 
-  return [legacy, ledgerRow, snapRow, manualRow];
+  // Live payroll accrual — sums ALL payroll_entries.holiday_accrued_hours for
+  // the year (draft + approved). This is the source used by the Leave
+  // dashboard. When it differs from the ledger it usually reflects draft
+  // accrual that has not yet posted on payroll approval — a timing
+  // difference, NOT a data integrity mismatch.
+  const yearEntries = payrollEntries.filter(
+    (e) => new Date(e.period_start_date).getUTCFullYear() === leaveYear,
+  );
+  const liveAccrued = yearEntries.reduce(
+    (s, e) => s + Number(e.holiday_accrued_hours || 0),
+    0,
+  );
+  const draftAccrued = yearEntries
+    .filter((e) => !APPROVED_STATUSES.has(String(e.period_status || "").toLowerCase()))
+    .reduce((s, e) => s + Number(e.holiday_accrued_hours || 0), 0);
+  const liveRow: SourceRow = {
+    source: "live_payroll_accrual",
+    label: "Live payroll accrual (leave dashboard)",
+    accrued: liveAccrued,
+    carryOver: 0,
+    taken: legacyTaken,
+    paid: legacyPaid,
+    balance: liveAccrued - legacyTaken,
+    info:
+      draftAccrued > 0.005
+        ? `Includes ${formatH(draftAccrued)}h from draft periods — pending ledger posting on approval.`
+        : undefined,
+  };
+
+  return [legacy, liveRow, ledgerRow, snapRow, manualRow];
+}
+
+function formatH(n: number): string {
+  return (Math.round(n * 100) / 100).toFixed(2);
 }
 
 const FIELDS_TO_COMPARE: (keyof SourceRow)[] = [
@@ -466,6 +544,10 @@ const FIELDS_TO_COMPARE: (keyof SourceRow)[] = [
 const TOLERANCE = 0.01;
 
 export interface MismatchReport {
+  /**
+   * True only when there is a real (blocking) data integrity mismatch.
+   * Draft-vs-ledger timing differences are excluded — see `timingPairs`.
+   */
   hasMismatch: boolean;
   pairs: Array<{
     a: SourceRow["source"];
@@ -473,22 +555,52 @@ export interface MismatchReport {
     field: keyof SourceRow;
     delta: number;
   }>;
+  /**
+   * Informational pairs: differences that are expected (e.g. live payroll
+   * accrual > ledger because of draft accrual that has not yet posted).
+   * These MUST NOT block settlement.
+   */
+  timingPairs: MismatchReport["pairs"];
+}
+
+/**
+ * A pair is a "timing" difference when it involves live_payroll_accrual and
+ * either holiday_ledger or holiday_balances_snapshot — these read from
+ * ledger-derived data that only updates when payroll periods are approved.
+ * Manual recalculation vs live is also timing (recalculation picks a basis
+ * that may exclude draft accrual on purpose).
+ */
+function isTimingPair(a: SourceRow["source"], b: SourceRow["source"]): boolean {
+  const s = new Set([a, b]);
+  // The manual_recalculation row reflects the basis chosen in the dialog,
+  // not an independent source of truth — its differences vs the underlying
+  // sources are informational, not data-integrity blockers.
+  if (s.has("manual_recalculation")) return true;
+  if (!s.has("live_payroll_accrual")) return false;
+  return (
+    s.has("holiday_ledger") ||
+    s.has("holiday_balances_snapshot") ||
+    s.has("holiday_tab_legacy")
+  );
 }
 
 export function detectMismatch(rows: SourceRow[]): MismatchReport {
   const present = rows.filter((r) => !r.missing);
   const pairs: MismatchReport["pairs"] = [];
+  const timingPairs: MismatchReport["pairs"] = [];
   for (let i = 0; i < present.length; i++) {
     for (let j = i + 1; j < present.length; j++) {
       for (const field of FIELDS_TO_COMPARE) {
         const delta = Math.abs(Number(present[i][field]) - Number(present[j][field]));
         if (delta > TOLERANCE) {
-          pairs.push({ a: present[i].source, b: present[j].source, field, delta });
+          const entry = { a: present[i].source, b: present[j].source, field, delta };
+          if (isTimingPair(entry.a, entry.b)) timingPairs.push(entry);
+          else pairs.push(entry);
         }
       }
     }
   }
-  return { hasMismatch: pairs.length > 0, pairs };
+  return { hasMismatch: pairs.length > 0, pairs, timingPairs };
 }
 
 /* ------------------------------------------------------------------ */

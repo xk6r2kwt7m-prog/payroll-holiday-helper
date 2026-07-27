@@ -20,8 +20,13 @@ const OPTIONS: { value: EntitlementBasis; title: string; description: string; ad
   },
   {
     value: "current_year",
-    title: "B. Current holiday year only",
-    description: "Uses all actual approved hours from the selected leave year, less holiday taken and already paid.",
+    title: "B. Current holiday year (ledger)",
+    description: "Uses ledger accrual for the leave year — only counts periods already approved.",
+  },
+  {
+    value: "live_accrual",
+    title: "B★. Live payroll accrual (recommended when draft accrual is pending)",
+    description: "Matches the Leave dashboard. Includes accrual from draft periods that will post to the ledger on approval, minus any holiday paid.",
   },
   {
     value: "full_employment",

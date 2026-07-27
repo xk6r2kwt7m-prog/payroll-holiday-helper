@@ -241,6 +241,28 @@ export function SettleLeaverDialog() {
     }
   };
 
+  // Smart default basis: when live payroll accrual is pending ledger posting
+  // (draft period on the leave year), auto-select `live_accrual` so the
+  // manager settles against the same balance the Leave dashboard shows —
+  // instead of falling back to Manual verified adjustment.
+  const [autoBasisApplied, setAutoBasisApplied] = useState<string>("");
+  useEffect(() => {
+    if (!employeeId || !allPayrollEntries.length) return;
+    const key = `${employeeId}:${leaveYear}`;
+    if (autoBasisApplied === key) return;
+    const yearEntries = allPayrollEntries.filter(
+      (e) => new Date(e.period_start_date).getUTCFullYear() === leaveYear,
+    );
+    const liveAccrued = yearEntries.reduce((s, e) => s + Number(e.holiday_accrued_hours || 0), 0);
+    const hasDraft = yearEntries.some(
+      (e) => !["approved", "finalised", "finalized"].includes(String(e.period_status || "").toLowerCase()),
+    );
+    if (liveAccrued > 0.005 && hasDraft) {
+      setBasis("live_accrual");
+    }
+    setAutoBasisApplied(key);
+  }, [employeeId, leaveYear, allPayrollEntries, autoBasisApplied]);
+
   // Auto-fill hours from current basis result (except manual mode where user types)
   useEffect(() => {
     if (!basisResult || basis === "manual") return;
@@ -391,9 +413,27 @@ export function SettleLeaverDialog() {
     periodId &&
     holidayDate &&
     approved &&
+    !carryOverDuplicationDetected &&
     (!mismatch.hasMismatch || mismatchAck) &&
     (basis !== "manual" || manualReason.trim().length > 0) &&
     (isZeroBalance || (parseFloat(hours) > 0 && parseFloat(rate) > 0));
+
+  const disabledReason: string | null = (() => {
+    if (createPayment.isPending || manualAdjust.isPending) return null;
+    if (!periodId) return "Select a draft payroll period.";
+    if (!employeeId) return "Select an employee to settle.";
+    if (!holidayDate) return "Set the settlement date.";
+    if (carryOverDuplicationDetected)
+      return "Resolve carry-over duplication in the ledger before settling.";
+    if (basis === "manual" && manualReason.trim().length === 0)
+      return "Add a reason for the manual verified adjustment.";
+    if (!isZeroBalance && !(parseFloat(hours) > 0 && parseFloat(rate) > 0))
+      return "Enter valid hours and rate.";
+    if (mismatch.hasMismatch && !mismatchAck)
+      return "Tick the mismatch acknowledgement to proceed.";
+    if (!approved) return "Tick the approval confirmation to enable settlement.";
+    return null;
+  })();
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
@@ -636,7 +676,15 @@ export function SettleLeaverDialog() {
             </>
           )}
 
+          {disabledReason && (
+            <p className="text-[11px] text-warning bg-warning/10 border border-warning/30 rounded-md px-2 py-1.5 flex items-start gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>{disabledReason}</span>
+            </p>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
+
             <Button type="button" variant="outline" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
             <Button
               type="submit"
