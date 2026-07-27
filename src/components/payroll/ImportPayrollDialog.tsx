@@ -1096,12 +1096,16 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
                   {missingFromFile.slice(0, 20).map((m) => {
                     const reasonLabel =
                       m.reason === "current_starter" ? "Starter this period" :
+                      m.reason === "current_onboarding" ? "Onboarding (starts this period)" :
                       m.reason === "current_leaver" ? "Leaver (final pay)" :
                       m.reason === "current_activity" ? "Current-period activity" :
                       "Active in period";
+                    const hint = m.likelyUnresolvedNames && m.likelyUnresolvedNames.length > 0
+                      ? ` • Likely appears in file as: ${m.likelyUnresolvedNames.slice(0, 2).join(", ")}`
+                      : "";
                     return (
                       <Badge key={m.employeeId} variant="outline" className="text-[10px]">
-                        {m.fullName}{m.department ? ` • ${m.department}` : ""} • {reasonLabel}
+                        {m.fullName}{m.department ? ` • ${m.department}` : ""} • {reasonLabel}{hint}
                       </Badge>
                     );
                   })}
