@@ -327,12 +327,21 @@ export function matchEmployeeRow(
         reviewReason: "Saved alias points to an employee that no longer exists.",
       };
     }
-    if (target.status !== "active" && target.status !== "starter") {
+    if (!EMPLOYABLE_STATUSES.has(target.status)) {
       return {
         employee: target,
         method: "saved_alias",
         requiresReview: true,
         reviewReason: `Saved alias points to an inactive employee (${target.status}).`,
+      };
+    }
+    // Onboarding requires explicit manager confirmation before import.
+    if (target.status === "onboarding") {
+      return {
+        employee: target,
+        method: "saved_alias",
+        requiresReview: true,
+        reviewReason: "Onboarding — confirm before import.",
       };
     }
     return { employee: target, method: "saved_alias" };
