@@ -104,7 +104,7 @@ export function PayrollReportBuilder({
 
   const adjustments = useMemo(() => {
     const empById = new Map(allEmployees.map((e: any) => [e.id, e]));
-    return rawAdjustments.map((a) => {
+    const raw = rawAdjustments.map((a) => {
       const emp: any = empById.get(a.employee_id);
       return {
         id: a.id,
@@ -118,7 +118,32 @@ export function PayrollReportBuilder({
         created_at: a.created_at,
       };
     });
+    // Accountant PDF: only rate + service charge, one row per employee+field,
+    // scoped to this period (rawAdjustments is already period-filtered by hook).
+    const pdfRows = buildPdfAdjustmentRows(raw);
+    return pdfRows.map((r) => ({
+      id: r.id,
+      employee_id: r.employee_id,
+      employee_name: r.employee_name,
+      field_name: r.field_name,
+      old_value: r.from_value,
+      new_value: r.to_value,
+      delta:
+        r.from_value !== null && r.to_value !== null
+          ? Number(r.to_value) - Number(r.from_value)
+          : null,
+      note: r.reason,
+      created_at: r.created_at,
+    }));
   }, [rawAdjustments, allEmployees]);
+
+  const adjustmentsSummary = useMemo(
+    () => ({
+      pdf_rows: adjustments.length,
+      internal_hidden: Math.max(0, rawAdjustments.length - adjustments.length),
+    }),
+    [adjustments.length, rawAdjustments.length],
+  );
 
 
   const toggleSection = (key: string) => {
