@@ -140,7 +140,7 @@ const LEGACY_NAME_MAP: Record<string, { forename: string; surname: string }> = {
 function sortActiveFirst(employees: MatchableEmployee[]): MatchableEmployee[] {
   return [...employees].sort((a, b) => {
     const rankOf = (e: MatchableEmployee) => {
-      if (e.status === "active" || e.status === "starter") return 0;
+      if (EMPLOYABLE_STATUSES.has(e.status)) return 0;
       if (e.status === "leaver") return 1;
       return 2; // archived or other
     };
