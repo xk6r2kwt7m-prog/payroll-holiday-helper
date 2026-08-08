@@ -9,6 +9,7 @@ import {
 } from "./contractClauses";
 import type { ContentBlock } from "./contractClauses";
 import type { ContractVariables, ContractType } from "./contractTemplates";
+import { resolveContractRoleLabel } from "./contractTemplates";
 import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
@@ -139,7 +140,7 @@ function ContractClausePreview({
   onClauseClick: (id: string | null) => void;
 }) {
   const isManagement = contractType === "management" || contractType === "supervisor";
-  const roleLabel = isManagement ? "Duty Manager" : "Team Member";
+  const roleLabel = resolveContractRoleLabel(variables.jobTitle, isManagement);
 
   return (
     <div className="space-y-3">
