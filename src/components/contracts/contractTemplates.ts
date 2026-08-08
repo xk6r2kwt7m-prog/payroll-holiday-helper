@@ -123,3 +123,18 @@ export function resolveContractPayFields(v: Partial<ContractVariables>) {
     serviceChargePolicyNote: (v.serviceChargePolicyNote || "").trim(),
   };
 }
+
+/**
+ * Party label used throughout the contract body ("hereinafter referred to as ...").
+ * Must reflect the employee's actual job title so a FOH Supervisor is never
+ * described as a "Duty Manager". Falls back to a generic label when the job
+ * title is missing.
+ */
+export function resolveContractRoleLabel(
+  jobTitle?: string | null,
+  isManagement = false,
+): string {
+  const title = (jobTitle || "").replace(/\s+/g, " ").trim();
+  if (title) return title;
+  return isManagement ? "Manager" : "Team Member";
+}

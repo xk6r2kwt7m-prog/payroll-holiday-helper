@@ -7,7 +7,7 @@ import {
 } from "@react-pdf/renderer";
 import type { ContractVariables } from "./contractTemplates";
 import type { ContractType } from "./contractTemplates";
-import { getEmploymentTypeLabel } from "./contractTemplates";
+import { getEmploymentTypeLabel, resolveContractRoleLabel } from "./contractTemplates";
 import {
   buildAppointmentReportingSentence,
   defaultFallbackReportingRole,
@@ -190,7 +190,7 @@ export function ContractPDF({
   companyAddress,
 }: ContractPDFProps) {
   const isManagement = contractType === "management" || contractType === "supervisor";
-  const roleLabel = isManagement ? "Duty Manager" : "Team Member";
+  const roleLabel = resolveContractRoleLabel(variables.jobTitle, isManagement);
   const reportingTo = isManagement ? "the Operations Manager" : "the Front of House Manager";
   const appointmentReportingSentence = buildAppointmentReportingSentence({
     managerName: variables.reportingManagerName,
