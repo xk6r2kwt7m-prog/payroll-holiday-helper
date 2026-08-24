@@ -105,13 +105,30 @@ export function SettleLeaverDialog() {
   const settledSet = useMemo(() => new Set(settledEmployeeIds), [settledEmployeeIds]);
   const periodEmpSet = useMemo(() => new Set(periodEmployeeIds), [periodEmployeeIds]);
 
+  const byName = (a: any, b: any) =>
+    `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`);
+
+  // Employees with a payroll entry in the selected period.
   const settleableEmployees = useMemo(() => {
-    if (!periodId || periodEmpSet.size === 0) return [];
+    if (!periodId) return [];
     return employees
       .filter((e) => periodEmpSet.has(e.id))
       .filter((e) => !settledSet.has(e.id))
-      .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`));
+      .sort(byName);
   }, [employees, periodEmpSet, settledSet, periodId]);
+
+  // Leavers who have no entry in this period (e.g. hours never imported, or
+  // archived after leaving) must still be settleable — they are listed
+  // separately so the period source stays visible.
+  const otherLeavers = useMemo(() => {
+    if (!periodId) return [];
+    return employees
+      .filter((e) => e.status === "leaver")
+      .filter((e) => !periodEmpSet.has(e.id))
+      .filter((e) => !settledSet.has(e.id))
+      .sort(byName);
+  }, [employees, periodEmpSet, settledSet, periodId]);
+
 
   const selectedEmployee = employees.find((e) => e.id === employeeId);
 
