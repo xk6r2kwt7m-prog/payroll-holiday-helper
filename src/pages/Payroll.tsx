@@ -30,6 +30,8 @@ import { PayrollReviewAcknowledge } from "@/components/payroll/PayrollReviewAckn
 import { CollapsibleSection } from "@/components/payroll/CollapsibleSection";
 import { derivePayrollPageSeverity } from "@/lib/payroll-page-severity";
 import { CloseDraftPanel } from "@/components/payroll/CloseDraftPanel";
+import { PayrollOverrideDialog } from "@/components/payroll/PayrollOverrideDialog";
+
 
 
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
