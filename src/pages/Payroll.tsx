@@ -788,6 +788,27 @@ const Payroll = () => {
           />
         )}
 
+        {/* One-stop "Close this payroll period" panel — gathers blockers,
+            acknowledgements and the submit/approve action in a single place.
+            Uses the same handlers and gates as the detailed sections below. */}
+        {selectedPeriod && entries.length > 0 && (
+          <CloseDraftPanel
+            periodStatus={selectedPeriod.status}
+            canAct={isAdmin}
+            blockers={pageSeverity.blockers}
+            ackItems={closeDraftAckItems}
+            acknowledged={checklistAcks}
+            onAcknowledgedChange={setChecklistAcks}
+            confirmed={checklistConfirmed}
+            onConfirmedChange={setChecklistConfirmed}
+            onSubmitForReview={handleSubmitForReview}
+            onApprove={handleApprove}
+            isSubmitting={submitForReview.isPending}
+            isApproving={approvePeriod.isPending}
+            blockedReason={phase5ApprovalBlock}
+          />
+        )}
+
         {/* Main Payroll Content */}
         <div className="space-y-4 sm:space-y-6">
             {/* Admin actions — gated by permission.
