@@ -46,6 +46,7 @@ export type MatchMethod =
   | "preferred_name"
   | "legacy_name_map"
   | "short_name"
+  | "near_spelling"
   | "manual"
   | "none";
 
@@ -451,6 +452,11 @@ export function matchEmployee(
 
   // 7. Short / partial name (deterministic token containment, unique candidate only)
   const shortMatch = matchShortName(trimmed, sorted);
+  if (shortMatch && shortMatch.employee) return shortMatch;
+
+  // 8. Near-spelling / truncated name (unique candidate only).
+  const nearMatch = matchNearSpelling(trimmed, sorted);
+  if (nearMatch) return nearMatch;
   if (shortMatch) return shortMatch;
 
   return { employee: undefined, method: "none" };

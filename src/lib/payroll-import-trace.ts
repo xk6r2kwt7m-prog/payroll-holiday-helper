@@ -31,6 +31,7 @@ export type TraceMatchSource =
   | "case_insensitive"
   | "likely_match"
   | "short_name"
+  | "near_spelling"
   | "manual"
   | "ambiguous"
   | "unmatched";
@@ -58,6 +59,7 @@ function classify(method: MatchMethod, hasEmployee: boolean): TraceMatchSource {
   if (STRONG_LIKELY.includes(method)) return "likely_match";
   if (method === "manual") return "manual";
   if (method === "short_name") return "short_name";
+  if (method === "near_spelling") return "near_spelling";
   return "ambiguous";
 }
 
