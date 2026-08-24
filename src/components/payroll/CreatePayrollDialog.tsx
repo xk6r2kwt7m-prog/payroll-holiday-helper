@@ -269,7 +269,24 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label>Cycle Length</Label>
+              <Select value={cycleWeeks} onValueChange={handleCycleWeeksChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">4 weeks (standard)</SelectItem>
+                  <SelectItem value="5">5 weeks (occasional)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Cutoff always lands on a Sunday. Pay date defaults to the last Thursday of the cutoff month.
+              </p>
+            </div>
           </TabsContent>
+
 
           <TabsContent value="new" className="space-y-4 mt-4">
             <div className="rounded-lg bg-accent/5 border border-accent/20 p-3">
