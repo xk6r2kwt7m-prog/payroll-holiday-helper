@@ -356,7 +356,14 @@ export function EmployeeHolidayDetailSheet({
                   <div className="space-y-2">
                     {periodBreakdown.map((period, i) => (
                       <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
-                        <span className="text-muted-foreground">{period.periodName}</span>
+                        <span className="text-muted-foreground flex items-center gap-2">
+                          {period.periodName}
+                          {period.isOpenPeriod && (
+                            <Badge variant="outline" className="h-4 px-1 text-[9px] bg-warning/10 text-warning border-warning/20">
+                              Open period
+                            </Badge>
+                          )}
+                        </span>
                         <div className="flex items-center gap-3 text-xs">
                           <span className="text-success font-medium">+{formatHours(period.accrued)} hrs</span>
                           {period.taken > 0 && (
@@ -364,6 +371,7 @@ export function EmployeeHolidayDetailSheet({
                           )}
                         </div>
                       </div>
+
                     ))}
                   </div>
                 </div>
