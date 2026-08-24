@@ -29,6 +29,7 @@ import { PayrollActionRequired } from "@/components/payroll/PayrollActionRequire
 import { PayrollReviewAcknowledge } from "@/components/payroll/PayrollReviewAcknowledge";
 import { CollapsibleSection } from "@/components/payroll/CollapsibleSection";
 import { derivePayrollPageSeverity } from "@/lib/payroll-page-severity";
+import { CloseDraftPanel } from "@/components/payroll/CloseDraftPanel";
 
 
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
@@ -330,6 +331,17 @@ const Payroll = () => {
       }),
     [phase5Checklist, unresolvedIssues, reviewedIssueNames, nmw?.summary?.non_compliant],
   );
+
+  // Items the admin must tick before approval — surfaced inside the
+  // "Close this payroll period" panel so approval isn't hidden further down.
+  const closeDraftAckItems = useMemo(() => {
+    if (!phase5Checklist) return [];
+    const ackIds = new Set(phase5Checklist.ack_required_ids);
+    return phase5Checklist.items
+      .filter((i) => ackIds.has(i.id))
+      .map((i) => ({ id: i.id, title: i.title, detail: i.detail, count: i.count }));
+  }, [phase5Checklist]);
+
 
 
   const handleMarkReviewed = (csvName: string) => {
@@ -785,6 +797,27 @@ const Payroll = () => {
             warningCount={pageSeverity.warningCount}
             ready={pageSeverity.ready && !phase5ApprovalBlock}
             readyDetail={phase5ApprovalBlock}
+          />
+        )}
+
+        {/* One-stop "Close this payroll period" panel — gathers blockers,
+            acknowledgements and the submit/approve action in a single place.
+            Uses the same handlers and gates as the detailed sections below. */}
+        {selectedPeriod && entries.length > 0 && (
+          <CloseDraftPanel
+            periodStatus={selectedPeriod.status}
+            canAct={isAdmin}
+            blockers={pageSeverity.blockers}
+            ackItems={closeDraftAckItems}
+            acknowledged={checklistAcks}
+            onAcknowledgedChange={setChecklistAcks}
+            confirmed={checklistConfirmed}
+            onConfirmedChange={setChecklistConfirmed}
+            onSubmitForReview={handleSubmitForReview}
+            onApprove={handleApprove}
+            isSubmitting={submitForReview.isPending}
+            isApproving={approvePeriod.isPending}
+            blockedReason={phase5ApprovalBlock}
           />
         )}
 
