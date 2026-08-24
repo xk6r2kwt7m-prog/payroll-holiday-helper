@@ -100,6 +100,92 @@ export function normaliseWhitespace(name: string): string {
 /** Statuses treated as "currently employable" for matcher/alias-target purposes. */
 const EMPLOYABLE_STATUSES = new Set(["active", "starter", "onboarding"]);
 
+/** Optional payroll-period window used to decide whether a leaver is still payable. */
+export interface MatchPeriod {
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
+/**
+ * A leaver is still PAYABLE in a period when their leaving date is on/after the
+ * period start (they worked part or all of it). Leavers with no recorded leaving
+ * date stay ambiguous and require manager confirmation.
+ */
+export function leaverPayableInPeriod(
+  employee: Pick<MatchableEmployee, "end_date">,
+  period?: MatchPeriod | null,
+): boolean {
+  if (!period?.start_date || !employee?.end_date) return false;
+  const end = new Date(employee.end_date);
+  const start = new Date(period.start_date);
+  if (Number.isNaN(end.getTime()) || Number.isNaN(start.getTime())) return false;
+  return end >= start;
+}
+
+/** Deterministic token list for short-name comparison. */
+function nameTokens(value?: string | null): string[] {
+  return normaliseAliasName(value ?? "").split(" ").filter(Boolean);
+}
+
+/**
+ * Short-name / partial-name candidates.
+ *
+ * Deterministic rules (no fuzzy scoring, no guessing):
+ *  - the FIRST token of the file name must equal the FIRST token of the
+ *    employee forename ("Cleo" -> "Cleo Howard", "Sonny" -> "Sonny James Chin")
+ *  - every remaining file token must appear somewhere in the employee's
+ *    remaining forename tokens or surname tokens
+ *    ("Daniela Almeida" -> "Daniela Patricia Da Costa Almeida")
+ */
+export function findShortNameCandidates(
+  csvName: string,
+  employees: MatchableEmployee[],
+): MatchableEmployee[] {
+  const csvTokens = nameTokens(csvName);
+  if (csvTokens.length === 0) return [];
+
+  return employees.filter((e) => {
+    const fore = nameTokens(e.forename);
+    if (fore.length === 0 || fore[0] !== csvTokens[0]) return false;
+    if (csvTokens.length === 1) return true;
+    const pool = [...fore.slice(1), ...nameTokens(e.surname)];
+    return csvTokens.slice(1).every((t) => pool.includes(t));
+  });
+}
+
+/**
+ * Resolve a short/partial file name to a single employee.
+ * Prefers currently employable staff; falls back to a unique leaver.
+ * Returns requiresReview when more than one candidate remains.
+ */
+export function matchShortName(
+  csvName: string,
+  employees: MatchableEmployee[],
+): MatchResult | null {
+  const candidates = findShortNameCandidates(csvName, employees).filter(
+    (e) => !e.archived_at,
+  );
+  if (candidates.length === 0) return null;
+
+  const employable = candidates.filter((e) => EMPLOYABLE_STATUSES.has(e.status));
+  if (employable.length === 1) {
+    return { employee: employable[0], method: "short_name" };
+  }
+  if (employable.length === 0 && candidates.length === 1) {
+    return { employee: candidates[0], method: "short_name" };
+  }
+
+  const pool = employable.length > 1 ? employable : candidates;
+  return {
+    employee: undefined,
+    method: "none",
+    requiresReview: true,
+    reviewReason: `"${csvName}" could be ${pool
+      .map((e) => `${e.forename} ${e.surname}`)
+      .join(" or ")} — confirm which employee.`,
+  };
+}
+
 // Legacy hardcoded alias map — kept for backward compatibility.
 // New aliases should be stored on each employee record via import_aliases.
 const LEGACY_NAME_MAP: Record<string, { forename: string; surname: string }> = {
