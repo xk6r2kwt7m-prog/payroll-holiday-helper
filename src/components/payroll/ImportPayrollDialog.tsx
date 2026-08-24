@@ -69,6 +69,7 @@ function aggregateByEmployee(
   rows: ParsedRow[],
   employees: MatchableEmployee[],
   savedAliases: SavedAlias[] = [],
+  period?: { start_date?: string | null; end_date?: string | null } | null,
 ): AggregatedEmployee[] {
   const empMap = new Map<string, AggregatedEmployee>();
 
@@ -83,6 +84,7 @@ function aggregateByEmployee(
       { name: row.csvName },
       employees,
       savedAliases,
+      period,
     );
     const { employee: matchedEmp, method, requiresReview, reviewReason } = matchRes;
     // Onboarding matches that require confirmation stay in the unresolved
