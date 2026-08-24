@@ -26,6 +26,8 @@ export const SECTION_DEPT_MAP: Record<string, string> = {
   "[RTD]KITCHEN": "BOH",
   "[E98]FOH": "FOH",
   "[YT5]30 Rathbone Place Ugly Dumpling WT 1JG,uk": "CPU",
+  "[YT5]Production": "CPU",
+
   "[KVQ]BOH": "BOH",
   "[UGL]FOH": "FOH",
 };
