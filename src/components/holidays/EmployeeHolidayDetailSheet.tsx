@@ -43,13 +43,16 @@ interface EmployeeHolidayDetailSheetProps {
   employeeName: string;
   department: string;
   hoursAccrued: number;
+  /** Portion of hoursAccrued still in open (not yet approved) payroll periods. */
+  pendingAccrued?: number;
   hoursTaken: number;
   totalPaid: number;
   balance: number;
   carryOver?: number;
   year?: number;
   payments: HolidayPaymentRecord[];
-  periodBreakdown?: { periodName: string; accrued: number; taken: number; paid: number }[];
+  periodBreakdown?: { periodName: string; accrued: number; taken: number; paid: number; isOpenPeriod?: boolean }[];
+
   allYearSummaries?: Record<string, YearSummary>;
 }
 
