@@ -1193,7 +1193,7 @@ const Payroll = () => {
             // TODO: replace isAdmin with payroll-authorised permission when role model supports it.
             canApproveRole={isAdmin}
             isApproving={approvePeriod.isPending}
-            onApproveRequested={handleApprove}
+            onApproveRequested={() => handleApprove()}
             acknowledged={checklistAcks}
             onAcknowledgedChange={setChecklistAcks}
             confirmed={checklistConfirmed}
@@ -1222,8 +1222,8 @@ const Payroll = () => {
           <PayrollApprovalWorkflow
             period={selectedPeriod}
             isAdmin={isAdmin}
-            onSubmitForReview={handleSubmitForReview}
-            onApprove={handleApprove}
+            onSubmitForReview={() => handleSubmitForReview()}
+            onApprove={() => handleApprove()}
             onReopen={handleReopen}
             onDelete={selectedPeriod.status === "draft" ? handleDeletePeriod : undefined}
             isSubmitting={submitForReview.isPending}
