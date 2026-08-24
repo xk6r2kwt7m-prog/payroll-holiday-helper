@@ -47,6 +47,10 @@ import {
   type BalanceSnapshotRow,
 } from "@/lib/holiday-entitlement-basis";
 import type { PaymentRow, LedgerRow } from "@/lib/holiday-ledger-integrity";
+import {
+  findBlockingSettlement,
+  describeBlockingSettlement,
+} from "@/lib/leaver-settlement-guard";
 
 export function SettleLeaverDialog() {
   const [open, setOpen] = useState(false);
@@ -476,7 +480,7 @@ export function SettleLeaverDialog() {
     if (!employeeId) return "Select an employee to settle.";
     if (!holidayDate) return "Set the settlement date.";
     if (alreadySettled)
-      return `Already settled — ${Number(existingSettlement?.hours ?? 0).toFixed(2)} h recorded on ${existingSettlement?.holiday_taken_date ?? "an earlier date"}. Reverse that settlement before recording a new one.`;
+      return describeBlockingSettlement(existingSettlement!, existingSettlementPeriodName);
     if (carryOverDuplicationDetected)
       return "Resolve carry-over duplication in the ledger before settling.";
     if (basis === "manual" && manualReason.trim().length === 0)
