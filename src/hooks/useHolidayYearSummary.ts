@@ -68,8 +68,9 @@ export function useHolidayYearSummary(
       const { data, error } = await supabase
         .from("payroll_entries")
         .select(
-          "holiday_accrued_hours, payroll_periods!inner(status, start_date, end_date)"
+          "holiday_accrued_hours, payroll_periods!inner(period_name, status, start_date, end_date)"
         )
+
         .eq("employee_id", employeeId!)
         .eq("tenant_id", tenantId!)
         .gte("payroll_periods.start_date", leaveYearStart)
