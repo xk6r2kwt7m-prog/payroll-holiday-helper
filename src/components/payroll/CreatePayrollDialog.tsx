@@ -26,7 +26,9 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
   const [endDate, setEndDate] = useState("");
   const [payDate, setPayDate] = useState("");
   const [periodWeeks, setPeriodWeeks] = useState("4");
+  const [cycleWeeks, setCycleWeeks] = useState("4");
   const [salesTotal, setSalesTotal] = useState("");
+
 
   const { data: periods = [] } = usePayrollPeriods();
   const { data: employees = [] } = useEmployees();
