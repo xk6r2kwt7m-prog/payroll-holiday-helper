@@ -180,7 +180,40 @@ export function HolidayLedgerTab({ employeeId, year = new Date().getFullYear() }
                   </td>
                 </tr>
               ))}
+              {pendingRows.map((p, i) => {
+                const provisional = totalBalance + pendingRows.slice(0, i + 1).reduce((s, x) => s + x.hours, 0);
+                return (
+                  <tr key={`pending-${p.periodName}-${i}`} className="border-b border-dashed border-border last:border-0 bg-warning/5">
+                    <td className="py-2 px-3 text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(p.entryDate).toLocaleDateString("en-GB", {
+                        day: "numeric", month: "short", year: "2-digit",
+                      })}
+                    </td>
+                    <td className="py-2 px-3">
+                      <Badge variant="outline" className="text-[10px] font-normal bg-warning/10 text-warning border-warning/20">
+                        Pending Accrual
+                      </Badge>
+                    </td>
+                    <td className="py-2 px-3 text-right font-medium whitespace-nowrap text-warning">
+                      <span className="inline-flex items-center gap-0.5">
+                        <Clock className="h-3 w-3" />
+                        +{formatHours(p.hours)}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-right font-semibold text-xs text-muted-foreground italic">
+                      ({formatHours(provisional)})
+                    </td>
+                    <td
+                      className="py-2 px-3 text-xs text-muted-foreground max-w-[140px] truncate"
+                      title={`${p.periodName} — ${p.periodStatus}${p.timesheetHours !== null ? ` · ${formatHours(p.timesheetHours)} h worked` : ""}`}
+                    >
+                      {p.periodName} ({p.periodStatus})
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
+
           </table>
         </div>
       )}
