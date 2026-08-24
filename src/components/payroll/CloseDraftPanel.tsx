@@ -291,19 +291,20 @@ export function CloseDraftPanel({
             <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
           </Button>
         )}
-        {canAct && onOverride && (isPending ? !!blockedReason : !blockersClear) && (
+        {canAct && onOverride && (
           <Button
             size="sm"
             variant="outline"
             className="h-8 border-destructive/40 text-destructive hover:bg-destructive/10"
-            onClick={() => onOverride(isPending ? "approve" : "submit")}
+            onClick={() => onOverride("approve")}
             disabled={isApproving || isSubmitting}
             data-testid="close-draft-override"
           >
             <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
-            {isPending ? "Override & approve" : "Override & submit"}
+            Override & approve
           </Button>
         )}
+
         {blockedReason && (
           <p className="text-xs text-muted-foreground" data-testid="close-draft-blocked-reason">
             {blockedReason}
