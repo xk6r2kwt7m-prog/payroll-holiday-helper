@@ -43,6 +43,8 @@ import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isCommittedPayrollStatus } from "@/lib/payroll-status";
+
 
 const HOLIDAY_DISPLAY_DEFAULTS = {
   showBalanceSummary: true,
