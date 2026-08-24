@@ -495,21 +495,69 @@ export function useDeletePayrollPeriod() {
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Collect dependent record ids BEFORE deleting anything so no holiday
-      // ledger row is ever left orphaned (which would corrupt balances).
+      // Collect dependent records BEFORE deleting anything so no holiday
+      // ledger row is ever left orphaned (which would corrupt balances) and so
+      // the deletion can be reversed within the two-hour window.
       const { data: entryRows, error: entryReadError } = await supabase
         .from("payroll_entries")
-        .select("id")
+        .select("*")
         .eq("payroll_period_id", id);
       if (entryReadError) throw entryReadError;
       const entryIds = (entryRows || []).map((e) => e.id);
 
       const { data: paymentRows, error: paymentReadError } = await supabase
         .from("holiday_payments")
-        .select("id")
+        .select("*")
         .eq("payroll_period_id", id);
       if (paymentReadError) throw paymentReadError;
       const paymentIds = (paymentRows || []).map((p) => p.id);
+
+      const { data: periodFull } = await supabase
+        .from("payroll_periods")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      let entryLocations: any[] = [];
+      if (entryIds.length > 0) {
+        const { data } = await supabase
+          .from("payroll_entry_locations")
+          .select("*")
+          .in("payroll_entry_id", entryIds);
+        entryLocations = data || [];
+      }
+
+      let ledgerRows: any[] = [];
+      if (paymentIds.length > 0) {
+        const { data } = await supabase
+          .from("holiday_ledger")
+          .select("*")
+          .eq("source_table", "holiday_payments")
+          .in("source_id", paymentIds);
+        ledgerRows = ledgerRows.concat(data || []);
+      }
+      if (entryIds.length > 0) {
+        const { data } = await supabase
+          .from("holiday_ledger")
+          .select("*")
+          .eq("source_table", "payroll_entries")
+          .in("source_id", entryIds);
+        ledgerRows = ledgerRows.concat(data || []);
+      }
+
+      const { data: noteRows } = await supabase
+        .from("payroll_period_notes")
+        .select("*")
+        .eq("payroll_period_id", id);
+
+      const snapshot: PeriodSnapshot = {
+        period: (periodFull || {}) as any,
+        entries: (entryRows || []) as any[],
+        entryLocations,
+        holidayPayments: (paymentRows || []) as any[],
+        holidayLedger: ledgerRows,
+        notes: (noteRows || []) as any[],
+      };
 
       // 1. Remove holiday ledger rows derived from this period (accruals from
       //    payroll entries, and "holiday taken" rows from holiday payments).
@@ -560,15 +608,17 @@ export function useDeletePayrollPeriod() {
         throw error;
       }
 
-      // Audit log — permanent record of the deletion and its blast radius
+      // Audit log — permanent record of the deletion, its blast radius, and the
+      // snapshot used to reverse it inside the two-hour window.
       await supabase.from("audit_log").insert({
         user_id: user?.id || null,
         action: "delete" as const,
         table_name: "payroll_periods",
         record_id: id,
         tenant_id: tenantId,
+        old_data: snapshot as any,
         new_data: {
-          operation: "delete_draft_period",
+          operation: DELETE_OPERATION,
           period_name: period?.period_name ?? null,
           reason,
           deleted_entry_count: entryIds.length,
@@ -577,10 +627,12 @@ export function useDeletePayrollPeriod() {
             payroll_entries: entryIds.length,
             holiday_payments: paymentIds.length,
           },
+          restorable_until: new Date(Date.now() + RESTORE_WINDOW_MS).toISOString(),
           impact,
         },
       });
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
