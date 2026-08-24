@@ -37,7 +37,10 @@ export interface CloseDraftPanelProps {
   isSubmitting?: boolean;
   isApproving?: boolean;
   blockedReason?: string | null;
+  /** Admin override — opens the audited bypass dialog. */
+  onOverride?: (mode: "submit" | "approve") => void;
 }
+
 
 function StepRow({
   index,
