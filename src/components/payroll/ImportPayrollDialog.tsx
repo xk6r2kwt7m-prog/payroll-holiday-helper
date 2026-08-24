@@ -69,6 +69,7 @@ function aggregateByEmployee(
   rows: ParsedRow[],
   employees: MatchableEmployee[],
   savedAliases: SavedAlias[] = [],
+  period?: { start_date?: string | null; end_date?: string | null } | null,
 ): AggregatedEmployee[] {
   const empMap = new Map<string, AggregatedEmployee>();
 
@@ -83,6 +84,7 @@ function aggregateByEmployee(
       { name: row.csvName },
       employees,
       savedAliases,
+      period,
     );
     const { employee: matchedEmp, method, requiresReview, reviewReason } = matchRes;
     // Onboarding matches that require confirmation stay in the unresolved
@@ -111,8 +113,8 @@ function aggregateByEmployee(
         serviceCharge: treatAsUnmatched ? undefined : matchedEmp?.service_charge ?? 0,
         unmatched: treatAsUnmatched,
         resolution: treatAsUnmatched ? undefined : "matched",
-        isLeaver: matchedEmp?.status === "leaver",
-        isOnboarding: matchedEmp?.status === "onboarding",
+        isLeaver: !treatAsUnmatched && matchedEmp?.status === "leaver",
+        isOnboarding: !treatAsUnmatched && matchedEmp?.status === "onboarding",
         requiresReview: !!requiresReview,
         reviewReason,
       });
@@ -241,6 +243,11 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
     })),
   [employees]);
 
+  const periodCtx = useMemo(
+    () => ({ start_date: startDate || null, end_date: endDate || null }),
+    [startDate, endDate],
+  );
+
   // Re-evaluate unmatched entries when employee list changes (e.g. starter created outside dialog)
   useEffect(() => {
     if (aggregated.length === 0) return;
@@ -249,8 +256,13 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
     setAggregated(prev => prev.map(emp => {
       if (!emp.unmatched || emp.resolution) return emp;
-      const { employee: matched, method } = matchEmployeeRow({ name: emp.csvName }, matchableEmployees, activeAliases);
-      if (!matched) return emp;
+      const { employee: matched, method, requiresReview } = matchEmployeeRow(
+        { name: emp.csvName },
+        matchableEmployees,
+        activeAliases,
+        periodCtx,
+      );
+      if (!matched || requiresReview) return emp;
       return {
         ...emp,
         matchedId: matched.id,
@@ -265,7 +277,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
         isLeaver: matched.status === "leaver",
       };
     }));
-  }, [matchableEmployees, activeAliases]);
+  }, [matchableEmployees, activeAliases, periodCtx]);
 
   const handleFileChange = useCallback(async (f: File | null) => {
     setFile(f);
@@ -276,7 +288,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       const text = await f.text();
       const { rows, skipped } = parseTimesheetCSV(text);
       setParserSkipped(skipped);
-      const agg = aggregateByEmployee(rows, matchableEmployees, activeAliases);
+      const agg = aggregateByEmployee(rows, matchableEmployees, activeAliases, periodCtx);
 
       const errors: string[] = [];
       for (const emp of agg) {
@@ -298,7 +310,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       toast.error("Failed to parse CSV file");
       console.error(err);
     }
-  }, [matchableEmployees]);
+  }, [matchableEmployees, activeAliases, periodCtx]);
 
   // Manual match handler
   const handleManualMatch = async (csvName: string, employeeId: string) => {
@@ -450,7 +462,11 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
       const unmatchedNames = aggregated.filter(e => e.unmatched && e.resolution !== "excluded").map(e => e.csvName);
       const excludedNames = aggregated.filter(e => e.resolution === "excluded").map(e => e.csvName);
-      const leaverNames = aggregated.filter(e => e.isLeaver && e.resolution !== "excluded").map(e => `${e.matchedForename} ${e.matchedSurname}`);
+      const leaverNames = aggregated
+        .filter(e => e.isLeaver && e.resolution !== "excluded")
+        .map(e => (e.matchedForename && e.matchedSurname
+          ? `${e.matchedForename} ${e.matchedSurname}`
+          : e.csvName));
 
       let periodNotes: string | null = null;
       if (unmatchedNames.length > 0) {

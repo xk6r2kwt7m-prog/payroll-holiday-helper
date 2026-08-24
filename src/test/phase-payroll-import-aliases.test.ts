@@ -53,11 +53,11 @@ describe("Phase: timesheet import aliases — matching priority", () => {
     expect(r.requiresReview).toBeFalsy();
   });
 
-  it("similar/partial name does NOT auto-match without saved alias", () => {
+  it("short/partial name resolves deterministically to the unique candidate", () => {
     const r = matchEmployeeRow({ name: "Maria Yordanova" }, [MARIA, JOHN], []);
-    // No exact / case-insensitive / alias path → matcher falls back to none
-    expect(r.method).toBe("none");
-    expect(r.employee).toBeUndefined();
+    // Forename first token + surname token containment → unique candidate
+    expect(r.method).toBe("short_name");
+    expect(r.employee?.id).toBe(MARIA.id);
   });
 
   it("saved alias auto-matches a previously-unclear name", () => {
@@ -104,7 +104,8 @@ describe("Phase: timesheet import aliases — matching priority", () => {
       is_active: false,
     };
     const r = matchEmployeeRow({ name: "Maria Yordanova" }, [MARIA, JOHN], [alias]);
-    expect(r.method).toBe("none");
+    // Alias is not applied; resolution falls through to deterministic name rules
+    expect(r.method).not.toBe("saved_alias");
   });
 
   it("employee ID column overrides saved alias", () => {

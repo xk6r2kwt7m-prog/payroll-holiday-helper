@@ -45,6 +45,7 @@ export type MatchMethod =
   | "import_alias"
   | "preferred_name"
   | "legacy_name_map"
+  | "short_name"
   | "manual"
   | "none";
 
@@ -98,6 +99,92 @@ export function normaliseWhitespace(name: string): string {
 
 /** Statuses treated as "currently employable" for matcher/alias-target purposes. */
 const EMPLOYABLE_STATUSES = new Set(["active", "starter", "onboarding"]);
+
+/** Optional payroll-period window used to decide whether a leaver is still payable. */
+export interface MatchPeriod {
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
+/**
+ * A leaver is still PAYABLE in a period when their leaving date is on/after the
+ * period start (they worked part or all of it). Leavers with no recorded leaving
+ * date stay ambiguous and require manager confirmation.
+ */
+export function leaverPayableInPeriod(
+  employee: Pick<MatchableEmployee, "end_date">,
+  period?: MatchPeriod | null,
+): boolean {
+  if (!period?.start_date || !employee?.end_date) return false;
+  const end = new Date(employee.end_date);
+  const start = new Date(period.start_date);
+  if (Number.isNaN(end.getTime()) || Number.isNaN(start.getTime())) return false;
+  return end >= start;
+}
+
+/** Deterministic token list for short-name comparison. */
+function nameTokens(value?: string | null): string[] {
+  return normaliseAliasName(value ?? "").split(" ").filter(Boolean);
+}
+
+/**
+ * Short-name / partial-name candidates.
+ *
+ * Deterministic rules (no fuzzy scoring, no guessing):
+ *  - the FIRST token of the file name must equal the FIRST token of the
+ *    employee forename ("Cleo" -> "Cleo Howard", "Sonny" -> "Sonny James Chin")
+ *  - every remaining file token must appear somewhere in the employee's
+ *    remaining forename tokens or surname tokens
+ *    ("Daniela Almeida" -> "Daniela Patricia Da Costa Almeida")
+ */
+export function findShortNameCandidates(
+  csvName: string,
+  employees: MatchableEmployee[],
+): MatchableEmployee[] {
+  const csvTokens = nameTokens(csvName);
+  if (csvTokens.length === 0) return [];
+
+  return employees.filter((e) => {
+    const fore = nameTokens(e.forename);
+    if (fore.length === 0 || fore[0] !== csvTokens[0]) return false;
+    if (csvTokens.length === 1) return true;
+    const pool = [...fore.slice(1), ...nameTokens(e.surname)];
+    return csvTokens.slice(1).every((t) => pool.includes(t));
+  });
+}
+
+/**
+ * Resolve a short/partial file name to a single employee.
+ * Prefers currently employable staff; falls back to a unique leaver.
+ * Returns requiresReview when more than one candidate remains.
+ */
+export function matchShortName(
+  csvName: string,
+  employees: MatchableEmployee[],
+): MatchResult | null {
+  const candidates = findShortNameCandidates(csvName, employees).filter(
+    (e) => !e.archived_at,
+  );
+  if (candidates.length === 0) return null;
+
+  const employable = candidates.filter((e) => EMPLOYABLE_STATUSES.has(e.status));
+  if (employable.length === 1) {
+    return { employee: employable[0], method: "short_name" };
+  }
+  if (employable.length === 0 && candidates.length === 1) {
+    return { employee: candidates[0], method: "short_name" };
+  }
+
+  const pool = employable.length > 1 ? employable : candidates;
+  return {
+    employee: undefined,
+    method: "none",
+    requiresReview: true,
+    reviewReason: `"${csvName}" could be ${pool
+      .map((e) => `${e.forename} ${e.surname}`)
+      .join(" or ")} — confirm which employee.`,
+  };
+}
 
 // Legacy hardcoded alias map — kept for backward compatibility.
 // New aliases should be stored on each employee record via import_aliases.
@@ -267,6 +354,10 @@ export function matchEmployee(
     if (mapMatch) return { employee: mapMatch, method: "legacy_name_map" };
   }
 
+  // 7. Short / partial name (deterministic token containment, unique candidate only)
+  const shortMatch = matchShortName(trimmed, sorted);
+  if (shortMatch) return shortMatch;
+
   return { employee: undefined, method: "none" };
 }
 
@@ -284,13 +375,16 @@ export function matchEmployee(
  * Conflict rules:
  *   - If ID and email are both present and resolve to different employees -> requiresReview.
  *   - If a saved alias points to a different employee than ID/email in the same row -> alias ignored, requiresReview.
- *   - If saved-alias target is inactive (leaver / archived) -> requiresReview, no auto-apply.
+ *   - If saved-alias target is inactive (leaver / archived) -> requiresReview, UNLESS
+ *     the leaver's leaving date falls on/after the period start, in which case they
+ *     genuinely worked in this period and are matched normally (still badged Leaver).
  *   - If saved alias is_active = false -> ignored.
  */
 export function matchEmployeeRow(
   row: ImportRow,
   employees: MatchableEmployee[],
-  savedAliases: SavedAlias[] = []
+  savedAliases: SavedAlias[] = [],
+  period?: MatchPeriod | null,
 ): MatchResult {
   const byId = row.employeeId
     ? employees.find((e) => e.id === row.employeeId)
@@ -334,6 +428,11 @@ export function matchEmployeeRow(
       };
     }
     if (!EMPLOYABLE_STATUSES.has(target.status)) {
+      // A leaver who left during (or after the start of) this payroll period
+      // still worked those hours and must be paid — match without review.
+      if (target.status === "leaver" && leaverPayableInPeriod(target, period)) {
+        return { employee: target, method: "saved_alias" };
+      }
       return {
         employee: target,
         method: "saved_alias",
