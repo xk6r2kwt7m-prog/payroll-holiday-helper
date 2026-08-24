@@ -222,6 +222,8 @@ const Holidays = () => {
           employeeName: payment.employee_name || `${emp.forename} ${emp.surname}`,
           department: emp.department,
           hoursAccrued: 0,
+          pendingAccrued: 0,
+
           hoursTaken: 0,
           hoursCarriedOver: 0,
           totalPaid: 0,
