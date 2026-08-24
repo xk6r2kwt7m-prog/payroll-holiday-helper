@@ -114,6 +114,7 @@ describe("ImportPayrollDialog — approved period protection (unchanged)", () =>
   });
 
   it("new payroll periods created by import are inserted as draft", () => {
-    expect(dialogSource).toMatch(/status: "draft" as const,/);
+    expect(dialogSource).toMatch(/normalisePayrollStatus\("draft", "draft"\)/);
   });
+
 });
