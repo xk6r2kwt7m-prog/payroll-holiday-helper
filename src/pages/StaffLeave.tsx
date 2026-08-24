@@ -116,6 +116,12 @@ export default function StaffLeave() {
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground text-center mt-1.5">Hours · {currentYear} leave year</p>
+          {pendingAccrued > 0.005 && (
+            <p className="text-[10px] text-muted-foreground text-center mt-0.5">
+              Includes {pendingAccrued.toFixed(1)} h accrued in payroll periods not yet closed.
+            </p>
+          )}
+
         </motion.div>
 
         {/* Tab Switcher */}
