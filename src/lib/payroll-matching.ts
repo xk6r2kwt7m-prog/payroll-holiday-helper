@@ -45,6 +45,7 @@ export type MatchMethod =
   | "import_alias"
   | "preferred_name"
   | "legacy_name_map"
+  | "short_name"
   | "manual"
   | "none";
 
