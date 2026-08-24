@@ -79,24 +79,52 @@ export function HolidayLedgerTab({ employeeId, year = new Date().getFullYear() }
       </div>
 
       {/* Balance summary */}
-      <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">Ledger Balance (SUM of hours)</span>
-        <span className={cn(
-          "text-lg font-bold",
-          totalBalance >= 0 ? "text-success" : "text-destructive"
-        )}>
-          {formatHours(totalBalance)} hrs
-        </span>
+      <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">Posted to ledger (approved periods)</span>
+          <span className={cn(
+            "text-lg font-bold",
+            totalBalance >= 0 ? "text-success" : "text-destructive"
+          )}>
+            {formatHours(totalBalance)} hrs
+          </span>
+        </div>
+        {pendingTotal !== 0 && (
+          <>
+            <div className="flex items-center justify-between border-t border-border pt-2">
+              <span className="text-xs font-medium text-muted-foreground inline-flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                In open payroll periods (not yet posted)
+              </span>
+              <span className="text-sm font-semibold text-warning">
+                +{formatHours(pendingTotal)} hrs
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-t border-border pt-2">
+              <span className="text-xs font-semibold">Total including open periods</span>
+              <span className="text-sm font-bold">{formatHours(totalBalance + pendingTotal)} hrs</span>
+            </div>
+          </>
+        )}
       </div>
+
+      {pendingTotal !== 0 && (
+        <p className="text-[11px] text-muted-foreground">
+          Accrual only posts to the ledger when a payroll period is approved. The rows marked
+          “Pending” below come from payroll entries in draft / pending periods — they are shown for
+          visibility and nothing has been written to the ledger.
+        </p>
+      )}
 
       {/* Ledger table */}
       {isLoading ? (
         <div className="text-center text-sm text-muted-foreground py-8">Loading ledger…</div>
-      ) : rows.length === 0 ? (
+      ) : rows.length === 0 && pendingRows.length === 0 ? (
         <div className="text-center text-sm text-muted-foreground py-8">
           No ledger entries for {selectedYear}. Run backfill to populate.
         </div>
       ) : (
+
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead>
