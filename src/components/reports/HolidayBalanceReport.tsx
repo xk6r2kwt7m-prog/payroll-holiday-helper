@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ReportFilters } from "./ReportFilters";
 import { ReportSummaryBar } from "./ReportSummaryBar";
-import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
+import { useHolidayLedgerBalancesByYear } from "@/hooks/useHolidayLedger";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useManagerScope } from "@/hooks/useManagerScope";
 import { exportToCsv } from "@/lib/csv-export";
@@ -17,7 +17,7 @@ export function HolidayBalanceReport() {
   const [dept, setDept] = useState("all");
   const [empId, setEmpId] = useState("all");
 
-  const { data: balances = [], isLoading } = useHolidayBalancesByYear(year);
+  const { data: balances = [], isLoading } = useHolidayLedgerBalancesByYear(year);
   const { data: employees = [] } = useEmployees();
   const { filterByScope, filterEmployees } = useManagerScope();
 
