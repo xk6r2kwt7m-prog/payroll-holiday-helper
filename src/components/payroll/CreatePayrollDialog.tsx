@@ -26,7 +26,9 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
   const [endDate, setEndDate] = useState("");
   const [payDate, setPayDate] = useState("");
   const [periodWeeks, setPeriodWeeks] = useState("4");
+  const [cycleWeeks, setCycleWeeks] = useState("4");
   const [salesTotal, setSalesTotal] = useState("");
+
 
   const { data: periods = [] } = usePayrollPeriods();
   const { data: employees = [] } = useEmployees();
@@ -181,25 +183,42 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     setEndDate("");
     setPayDate("");
     setPeriodWeeks("4");
+    setCycleWeeks("4");
     setSalesTotal("");
     setSelectedSourcePeriod("");
     setMode("copy");
+
   };
 
   const isLoading = createPeriod.isPending || copyPeriod.isPending;
 
+  const applySuggestion = (periodId: string, weeks: string) => {
+    const source = periods.find(p => p.id === periodId);
+    if (!source) return;
+    const suggestion = suggestNextPeriod(source.end_date, parseInt(weeks, 10));
+    setStartDate(suggestion.startDate);
+    setEndDate(suggestion.endDate);
+    setPeriodName(suggestion.periodName);
+    setPayDate(suggestion.payDate);
+    setPeriodWeeks(suggestion.periodWeeks.toString());
+  };
+
   const handleSourceChange = (periodId: string) => {
     setSelectedSourcePeriod(periodId);
-    const source = periods.find(p => p.id === periodId);
-    if (source) {
-      const suggestion = suggestNextPeriod(source.end_date);
-      setStartDate(suggestion.startDate);
-      setEndDate(suggestion.endDate);
-      setPeriodName(suggestion.periodName);
-      setPayDate(suggestion.payDate);
-      setPeriodWeeks(suggestion.periodWeeks.toString());
-    }
+    applySuggestion(periodId, cycleWeeks);
   };
+
+  const handleCycleWeeksChange = (weeks: string) => {
+    setCycleWeeks(weeks);
+    if (selectedSourcePeriod) applySuggestion(selectedSourcePeriod, weeks);
+  };
+
+  const endDateIsSunday = (() => {
+    if (!endDate) return true;
+    const d = new Date(endDate);
+    return Number.isNaN(d.getTime()) ? true : d.getUTCDay() === 0;
+  })();
+
 
 
   return (
@@ -252,7 +271,24 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label>Cycle Length</Label>
+              <Select value={cycleWeeks} onValueChange={handleCycleWeeksChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">4 weeks (standard)</SelectItem>
+                  <SelectItem value="5">5 weeks (occasional)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Cutoff always lands on a Sunday. Pay date defaults to the last Thursday of the cutoff month.
+              </p>
+            </div>
           </TabsContent>
+
 
           <TabsContent value="new" className="space-y-4 mt-4">
             <div className="rounded-lg bg-accent/5 border border-accent/20 p-3">
@@ -300,6 +336,16 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
               </p>
             </div>
           )}
+
+          {endDate && !endDateIsSunday && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
+              <span className="text-amber-600 font-bold text-lg leading-none">⚠</span>
+              <p className="text-sm text-amber-700 font-medium">
+                The period cutoff should be a Sunday. Please check the end date.
+              </p>
+            </div>
+          )}
+
 
           <div className="space-y-2">
             <Label>Pay Date</Label>
