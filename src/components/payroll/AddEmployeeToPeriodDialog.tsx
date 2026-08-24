@@ -23,7 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useCreatePayrollEntry } from "@/hooks/usePayroll";
 import { useTenant } from "@/hooks/useTenant";
-import { calculateAccrual } from "@/hooks/useLeaveRules";
+import { calculateAccrual, useLeaveRules } from "@/hooks/useLeaveRules";
 import { isRelevantToPayrollPeriod, isStarterInPeriod } from "@/lib/employee-period-relevance";
 import { getEntryDefaultsFromTerms } from "@/lib/payroll-rate-source";
 import { departmentForLocation } from "@/lib/payroll-timesheet-csv";
@@ -67,6 +67,7 @@ export function AddEmployeeToPeriodDialog({
   const { data: allEmployees = [] } = useEmployees(true);
   const createEntry = useCreatePayrollEntry();
   const { tenantId } = useTenant();
+  const { data: leaveRules } = useLeaveRules();
   const queryClient = useQueryClient();
   const { activeAliases } = usePayrollImportAliases();
   const { data: timesheetSource, isLoading: loadingTimesheet } = usePeriodTimesheetSource(
@@ -124,7 +125,7 @@ export function AddEmployeeToPeriodDialog({
           rateSource: defaults.source,
           department: defaults.department,
           timesheet,
-          holidayAccrued: timesheet ? calculateAccrual(timesheet.hours, 0.1207) : 0,
+          holidayAccrued: timesheet ? calculateAccrual(timesheet.hours, leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision) : 0,
         });
       } catch (err: any) {
         if (!cancelled) {

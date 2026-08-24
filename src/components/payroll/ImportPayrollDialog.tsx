@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
-import { calculateAccrual } from "@/hooks/useLeaveRules";
+import { calculateAccrual, useLeaveRules } from "@/hooks/useLeaveRules";
 import { useTenant } from "@/hooks/useTenant";
 import { matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMethod, type SavedAlias } from "@/lib/payroll-matching";
 import { findMissingFromFile, linkMissingToUnresolvedRows } from "@/lib/payroll-import-trace";
@@ -134,6 +134,7 @@ interface ImportDialogProps {
 
 export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incomingPeriod }: ImportDialogProps) {
   const [open, setOpen] = useState(false);
+  const { data: leaveRules } = useLeaveRules();
   const [file, setFile] = useState<File | null>(null);
   const [periodName, setPeriodName] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -511,7 +512,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
           if (!emp.matchedId) continue;
 
           const hours = emp.totalHours;
-          const holidayAccrued = calculateAccrual(hours, 0.1207);
+          const holidayAccrued = calculateAccrual(hours, leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision);
 
           const locNotes = emp.locations.length > 1
             ? `Hours by location: ${emp.locations.map(l => `${l.name}: ${l.hours.toFixed(2)}h`).join(" | ")}`
@@ -637,7 +638,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
           const rate = _defaults.hourly_rate || 0;
           const sc = _defaults.service_charge || 0;
           const rateNote = rate === 0 ? " [⚠ rate missing — set before approval]" : "";
-          const holidayAccrued = calculateAccrual(hours, 0.1207);
+          const holidayAccrued = calculateAccrual(hours, leaveRules?.accrualRate ?? 0.1207, leaveRules?.roundingPrecision);
 
           const locNotes = emp.locations.length > 1
             ? `Hours by location: ${emp.locations.map(l => `${l.name}: ${l.hours.toFixed(2)}h`).join(" | ")}`
