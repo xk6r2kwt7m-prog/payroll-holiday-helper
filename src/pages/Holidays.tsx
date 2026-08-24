@@ -61,12 +61,15 @@ interface EmployeeSummary {
   employeeName: string;
   department: string;
   hoursAccrued: number;
+  /** Portion of hoursAccrued that sits in OPEN (not yet approved) payroll periods. */
+  pendingAccrued: number;
   hoursTaken: number;
   hoursCarriedOver: number;
   totalPaid: number;
   balance: number;
-  periodBreakdown: { periodId: string; periodName: string; accrued: number; taken: number; paid: number }[];
+  periodBreakdown: { periodId: string; periodName: string; accrued: number; taken: number; paid: number; isOpenPeriod?: boolean }[];
 }
+
 
 const Holidays = () => {
   const { t } = useI18n();
