@@ -335,6 +335,16 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
             </div>
           )}
 
+          {endDate && !endDateIsSunday && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 flex items-start gap-2">
+              <span className="text-amber-600 font-bold text-lg leading-none">⚠</span>
+              <p className="text-sm text-amber-700 font-medium">
+                The period cutoff should be a Sunday. Please check the end date.
+              </p>
+            </div>
+          )}
+
+
           <div className="space-y-2">
             <Label>Pay Date</Label>
             <Input
