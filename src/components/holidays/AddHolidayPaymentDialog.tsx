@@ -311,11 +311,15 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                   <span className="font-medium text-success">{formatHours(employeeSummary.totalAccrued)} hrs</span>
                 </div>
                 {employeeSummary.pendingAccrued > 0.005 && (
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>of which in open payroll periods</span>
+                  <div className="col-span-2 flex justify-between text-[11px] text-muted-foreground">
+                    <span>
+                      {formatHours(employeeSummary.totalAccrued - employeeSummary.pendingAccrued)} hrs posted to ledger ·
+                      of which in open payroll periods
+                    </span>
                     <span>{formatHours(employeeSummary.pendingAccrued)} hrs</span>
                   </div>
                 )}
+
 
                 {employeeSummary.carryOver > 0 && (
                   <div className="flex justify-between">
