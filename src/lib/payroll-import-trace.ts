@@ -57,6 +57,7 @@ function classify(method: MatchMethod, hasEmployee: boolean): TraceMatchSource {
   if (method === "case_insensitive") return "case_insensitive";
   if (STRONG_LIKELY.includes(method)) return "likely_match";
   if (method === "manual") return "manual";
+  if (method === "short_name") return "short_name";
   return "ambiguous";
 }
 
