@@ -25,6 +25,8 @@ import { PayrollApprovalChecklist } from "@/components/payroll/PayrollApprovalCh
 import { PayrollApprovalEvidence } from "@/components/payroll/PayrollApprovalEvidence";
 import { buildPayrollApprovalEvidence } from "@/lib/payroll-approval-evidence";
 import { PayrollStatusBar } from "@/components/payroll/PayrollStatusBar";
+import { RestoreDeletedPeriodBanner } from "@/components/payroll/RestoreDeletedPeriodBanner";
+
 import { PayrollActionRequired } from "@/components/payroll/PayrollActionRequired";
 import { PayrollReviewAcknowledge } from "@/components/payroll/PayrollReviewAcknowledge";
 import { CollapsibleSection } from "@/components/payroll/CollapsibleSection";
@@ -854,6 +856,10 @@ const Payroll = () => {
         </div>
 
         <PayrollNavStrip />
+
+        {/* Two-hour reversal window for recently deleted draft periods */}
+        <RestoreDeletedPeriodBanner onRestored={(periodId) => setSelectedPeriodId(periodId)} />
+
 
         {/* Phase B — compact top payroll status bar */}
         {selectedPeriod && (
