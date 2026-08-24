@@ -7,6 +7,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { PayrollImportIssue } from "@/hooks/usePayrollImportStatus";
+import { DeletePeriodDialog } from "@/components/payroll/DeletePeriodDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +40,7 @@ interface PayrollApprovalWorkflowProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReopen: () => void;
-  onDelete?: () => void;
+  onDelete?: (args: { reason: string; impact: Record<string, any> | null }) => void;
   isSubmitting: boolean;
   isApproving: boolean;
   isReopening: boolean;

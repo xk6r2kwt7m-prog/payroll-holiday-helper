@@ -603,7 +603,7 @@ const Payroll = () => {
     }
   };
 
-  const handleDeletePeriod = async () => {
+  const handleDeletePeriod = async (args?: { reason?: string; impact?: Record<string, any> | null }) => {
     if (!selectedPeriod) return;
     if (selectedPeriod.status !== "draft") {
       toast.error(t("payroll.only_draft_delete"));
@@ -611,7 +611,7 @@ const Payroll = () => {
     }
     try {
       const deletedId = selectedPeriod.id;
-      await deletePeriod.mutateAsync(deletedId);
+      await deletePeriod.mutateAsync({ id: deletedId, reason: args?.reason, impact: args?.impact ?? null });
       const remaining = periods.filter(p => p.id !== deletedId);
       setSelectedPeriodId(remaining.length > 0 ? remaining[0].id : null);
       toast.success(t("payroll.deleted_period", { name: selectedPeriod.period_name }));
@@ -1225,7 +1225,7 @@ const Payroll = () => {
             onSubmitForReview={() => handleSubmitForReview()}
             onApprove={() => handleApprove()}
             onReopen={handleReopen}
-            onDelete={selectedPeriod.status === "draft" ? handleDeletePeriod : undefined}
+            onDelete={selectedPeriod.status === "draft" ? (args) => handleDeletePeriod(args) : undefined}
             isSubmitting={submitForReview.isPending}
             isApproving={approvePeriod.isPending}
             isReopening={reopenPeriod.isPending}
