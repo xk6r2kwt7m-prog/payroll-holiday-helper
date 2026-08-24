@@ -375,13 +375,16 @@ export function matchEmployee(
  * Conflict rules:
  *   - If ID and email are both present and resolve to different employees -> requiresReview.
  *   - If a saved alias points to a different employee than ID/email in the same row -> alias ignored, requiresReview.
- *   - If saved-alias target is inactive (leaver / archived) -> requiresReview, no auto-apply.
+ *   - If saved-alias target is inactive (leaver / archived) -> requiresReview, UNLESS
+ *     the leaver's leaving date falls on/after the period start, in which case they
+ *     genuinely worked in this period and are matched normally (still badged Leaver).
  *   - If saved alias is_active = false -> ignored.
  */
 export function matchEmployeeRow(
   row: ImportRow,
   employees: MatchableEmployee[],
-  savedAliases: SavedAlias[] = []
+  savedAliases: SavedAlias[] = [],
+  period?: MatchPeriod | null,
 ): MatchResult {
   const byId = row.employeeId
     ? employees.find((e) => e.id === row.employeeId)
