@@ -29,6 +29,7 @@ import { PayrollActionRequired } from "@/components/payroll/PayrollActionRequire
 import { PayrollReviewAcknowledge } from "@/components/payroll/PayrollReviewAcknowledge";
 import { CollapsibleSection } from "@/components/payroll/CollapsibleSection";
 import { derivePayrollPageSeverity } from "@/lib/payroll-page-severity";
+import { CloseDraftPanel } from "@/components/payroll/CloseDraftPanel";
 
 
 import { buildPayrollPeriodReport } from "@/lib/labour-reporting";
