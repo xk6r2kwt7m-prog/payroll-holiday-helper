@@ -443,19 +443,64 @@ const Payroll = () => {
     .reduce((sum: number, e: any) => sum + Number(e.total_pay), 0);
   const holidayTotal = holidayPayments.reduce((s: number, p: any) => s + Number(p.total), 0);
 
-  const handleSubmitForReview = async () => {
-    if (!selectedPeriod) return;
+  // ---- Admin override (audited bypass) -----------------------------------
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideMode, setOverrideMode] = useState<"submit" | "approve">("approve");
+
+  const overrideOutstanding = useMemo(() => {
+    const out: string[] = [];
+    if (phase5ApprovalBlock) out.push(phase5ApprovalBlock);
+    for (const b of pageSeverity.blockers) {
+      out.push(`${b.title}${typeof b.count === "number" && b.count > 0 ? ` (${b.count})` : ""}`);
+    }
     if (blockingIssues.length > 0) {
+      out.push(`${blockingIssues.length} unresolved import issue(s)`);
+    }
+    if (nmw?.summary?.hasBlockers) {
+      out.push(`${nmw.summary.non_compliant} employee(s) below UK minimum wage`);
+    }
+    return Array.from(new Set(out));
+  }, [phase5ApprovalBlock, pageSeverity.blockers, blockingIssues.length, nmw?.summary]);
+
+  const recordOverrideAudit = async (
+    periodId: string,
+    mode: "submit" | "approve",
+    reason: string,
+  ) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("audit_log").insert({
+      user_id: user?.id || null,
+      action: "update" as const,
+      table_name: "payroll_periods",
+      record_id: periodId,
+      tenant_id: tenantId,
+      new_data: {
+        operation: mode === "approve" ? "approval_override" : "submit_override",
+        reason,
+        bypassed_items: overrideOutstanding,
+        bypassed_count: overrideOutstanding.length,
+        period_name: selectedPeriod?.period_name ?? null,
+      },
+    });
+    if (error) throw error;
+  };
+
+  const handleSubmitForReview = async (override?: { reason: string }) => {
+    if (!selectedPeriod) return;
+    if (!override && blockingIssues.length > 0) {
       toast.error("Cannot submit: unresolved blocking issues must be resolved first");
       return;
     }
-    if (nmw.summary.hasBlockers) {
+    if (!override && nmw.summary.hasBlockers) {
       toast.error(
         `Cannot submit: ${nmw.summary.non_compliant} employee(s) below UK minimum wage. Correct with a top-up payment before submitting.`,
       );
       return;
     }
     try {
+      if (override) {
+        await recordOverrideAudit(selectedPeriod.id, "submit", override.reason);
+      }
       await submitForReview.mutateAsync(selectedPeriod.id);
       toast.success(t("payroll.submitted_review"));
       const adminEmail = companySettings?.company_email;
@@ -465,7 +510,9 @@ const Payroll = () => {
           subject: `Payroll Submitted: ${selectedPeriod.period_name}`,
           type: "payroll_reminder",
           data: {
-            message: `Payroll "${selectedPeriod.period_name}" has been submitted for review.`,
+            message: `Payroll "${selectedPeriod.period_name}" has been submitted for review.${
+              override ? ` Submitted with admin override. Reason: ${override.reason}` : ""
+            }`,
             period_name: selectedPeriod.period_name,
             pay_date: selectedPeriod.pay_date || "Not set",
           },
@@ -476,19 +523,22 @@ const Payroll = () => {
     }
   };
 
-  const handleApprove = async () => {
+  const handleApprove = async (override?: { reason: string }) => {
     if (!selectedPeriod) return;
-    if (blockingIssues.length > 0) {
+    if (!override && blockingIssues.length > 0) {
       toast.error("Cannot approve: unresolved blocking issues must be resolved first");
       return;
     }
-    if (nmw.summary.hasBlockers) {
+    if (!override && nmw.summary.hasBlockers) {
       toast.error(
         `Cannot approve: ${nmw.summary.non_compliant} employee(s) below UK minimum wage. Correct with a top-up payment before approval.`,
       );
       return;
     }
     try {
+      if (override) {
+        await recordOverrideAudit(selectedPeriod.id, "approve", override.reason);
+      }
       await approvePeriod.mutateAsync(selectedPeriod.id);
       // Snapshot the compliance results to the audit table on approval (non-blocking).
       if (nmw.canCheck) {
@@ -496,7 +546,9 @@ const Payroll = () => {
           .mutateAsync({ payrollPeriodId: selectedPeriod.id, results: nmw.results })
           .catch((err) => console.error("Failed to record NMW audit", err));
       }
-      toast.success(t("payroll.approved_locked"));
+      toast.success(
+        override ? "Period approved and locked with admin override" : t("payroll.approved_locked"),
+      );
       const adminEmail = companySettings?.company_email;
       if (adminEmail) {
         sendNotification({
@@ -504,7 +556,9 @@ const Payroll = () => {
           subject: `Payroll Approved: ${selectedPeriod.period_name}`,
           type: "payroll_reminder",
           data: {
-            message: `Payroll "${selectedPeriod.period_name}" has been approved and locked.`,
+            message: `Payroll "${selectedPeriod.period_name}" has been approved and locked.${
+              override ? ` Approved with admin override. Reason: ${override.reason}` : ""
+            }`,
             period_name: selectedPeriod.period_name,
             pay_date: selectedPeriod.pay_date || "Not set",
           },
@@ -514,6 +568,21 @@ const Payroll = () => {
       toast.error(t("payroll.failed_approve"));
     }
   };
+
+  const handleOverrideConfirm = async (reason: string) => {
+    if (overrideMode === "approve") {
+      // A draft period must first move to pending review before it can be locked.
+      if (selectedPeriod?.status === "draft") {
+        await handleSubmitForReview({ reason });
+      }
+      await handleApprove({ reason });
+    } else {
+      await handleSubmitForReview({ reason });
+    }
+    setOverrideOpen(false);
+  };
+
+
 
 
   const handleReopen = async () => {
