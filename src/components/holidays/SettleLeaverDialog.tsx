@@ -105,13 +105,30 @@ export function SettleLeaverDialog() {
   const settledSet = useMemo(() => new Set(settledEmployeeIds), [settledEmployeeIds]);
   const periodEmpSet = useMemo(() => new Set(periodEmployeeIds), [periodEmployeeIds]);
 
+  const byName = (a: any, b: any) =>
+    `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`);
+
+  // Employees with a payroll entry in the selected period.
   const settleableEmployees = useMemo(() => {
-    if (!periodId || periodEmpSet.size === 0) return [];
+    if (!periodId) return [];
     return employees
       .filter((e) => periodEmpSet.has(e.id))
       .filter((e) => !settledSet.has(e.id))
-      .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`));
+      .sort(byName);
   }, [employees, periodEmpSet, settledSet, periodId]);
+
+  // Leavers who have no entry in this period (e.g. hours never imported, or
+  // archived after leaving) must still be settleable — they are listed
+  // separately so the period source stays visible.
+  const otherLeavers = useMemo(() => {
+    if (!periodId) return [];
+    return employees
+      .filter((e) => e.status === "leaver")
+      .filter((e) => !periodEmpSet.has(e.id))
+      .filter((e) => !settledSet.has(e.id))
+      .sort(byName);
+  }, [employees, periodEmpSet, settledSet, periodId]);
+
 
   const selectedEmployee = employees.find((e) => e.id === employeeId);
 
@@ -505,11 +522,16 @@ export function SettleLeaverDialog() {
             <Select value={employeeId} onValueChange={handleEmployeeChange}>
               <SelectTrigger><SelectValue placeholder="Select employee to settle" /></SelectTrigger>
               <SelectContent>
-                {periodId && settleableEmployees.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">No unsettled employees in this period</div>
+                {periodId && settleableEmployees.length === 0 && otherLeavers.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">No unsettled employees available</div>
                 )}
                 {!periodId && (
                   <div className="px-3 py-2 text-sm text-muted-foreground">Select a payroll period first</div>
+                )}
+                {settleableEmployees.length > 0 && (
+                  <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    In this payroll period
+                  </div>
                 )}
                 {settleableEmployees.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id}>
@@ -522,6 +544,22 @@ export function SettleLeaverDialog() {
                     </div>
                   </SelectItem>
                 ))}
+                {otherLeavers.length > 0 && (
+                  <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Other unsettled leavers
+                  </div>
+                )}
+                {otherLeavers.map((emp) => (
+                  <SelectItem key={emp.id} value={emp.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{emp.forename} {emp.surname}</span>
+                      <span className="text-muted-foreground">({emp.department})</span>
+                      <Badge variant="outline" className="text-[9px] h-4 bg-destructive/10 text-destructive border-destructive/20">Leaver</Badge>
+                      <Badge variant="outline" className="text-[9px] h-4">Not in period</Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+
               </SelectContent>
             </Select>
           </div>
