@@ -46,6 +46,7 @@ export type MatchMethod =
   | "preferred_name"
   | "legacy_name_map"
   | "short_name"
+  | "near_spelling"
   | "manual"
   | "none";
 
@@ -162,10 +163,13 @@ export function matchShortName(
   csvName: string,
   employees: MatchableEmployee[],
 ): MatchResult | null {
-  const candidates = findShortNameCandidates(csvName, employees).filter(
-    (e) => !e.archived_at,
-  );
-  if (candidates.length === 0) return null;
+  const all = findShortNameCandidates(csvName, employees);
+  if (all.length === 0) return null;
+  // Prefer non-archived records; fall back to a unique archived record so a
+  // timesheet row is never dropped just because the person was archived.
+  const candidates = all.filter((e) => !e.archived_at).length > 0
+    ? all.filter((e) => !e.archived_at)
+    : all;
 
   const employable = candidates.filter((e) => EMPLOYABLE_STATUSES.has(e.status));
   if (employable.length === 1) {
@@ -185,6 +189,98 @@ export function matchShortName(
       .join(" or ")} — confirm which employee.`,
   };
 }
+
+/** Bounded Levenshtein distance (deterministic, no scoring heuristics). */
+export function editDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  const m = a.length;
+  const n = b.length;
+  if (Math.abs(m - n) > 2) return 3;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      cur[j] = Math.min(
+        prev[j] + 1,
+        cur[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+
+/** Allowed edit distance for a token: 1 typo for >=5 chars, exact below that. */
+function tokenNear(fileToken: string, empToken: string): boolean {
+  if (fileToken === empToken) return true;
+  // Truncated / prefix form ("Rafa" -> "Rafaela", "Nairobis de los sant" -> ...)
+  if (fileToken.length >= 3 && empToken.startsWith(fileToken)) return true;
+  if (Math.min(fileToken.length, empToken.length) < 5) return false;
+  return editDistance(fileToken, empToken) <= 1;
+}
+
+/**
+ * Near-spelling candidates — the last deterministic tier.
+ *
+ * Rules (still no fuzzy scoring):
+ *  - the FIRST file token must be near the FIRST forename token
+ *    (exact, prefix of >=3 chars, or a single typo on tokens of >=5 chars)
+ *  - every remaining file token must be near one of the employee's remaining
+ *    forename tokens or surname tokens ("Akhil Vudukula" -> "Akhil Vidukula")
+ */
+export function findNearSpellingCandidates(
+  csvName: string,
+  employees: MatchableEmployee[],
+): MatchableEmployee[] {
+  const csvTokens = nameTokens(csvName);
+  if (csvTokens.length === 0) return [];
+
+  return employees.filter((e) => {
+    const fore = nameTokens(e.forename);
+    if (fore.length === 0 || !tokenNear(csvTokens[0], fore[0])) return false;
+    if (csvTokens.length === 1) return true;
+    const pool = [...fore.slice(1), ...nameTokens(e.surname)];
+    return csvTokens
+      .slice(1)
+      .every((t) => pool.some((p) => tokenNear(t, p)));
+  });
+}
+
+/**
+ * Resolve a misspelled / truncated file name to a single employee.
+ * Only ever returns a match when exactly one candidate remains, otherwise
+ * the row is sent to manager review with the candidate names.
+ */
+export function matchNearSpelling(
+  csvName: string,
+  employees: MatchableEmployee[],
+): MatchResult | null {
+  const all = findNearSpellingCandidates(csvName, employees);
+  if (all.length === 0) return null;
+  const candidates = all.filter((e) => !e.archived_at).length > 0
+    ? all.filter((e) => !e.archived_at)
+    : all;
+
+  const employable = candidates.filter((e) => EMPLOYABLE_STATUSES.has(e.status));
+  if (employable.length === 1) {
+    return { employee: employable[0], method: "near_spelling" };
+  }
+  if (employable.length === 0 && candidates.length === 1) {
+    return { employee: candidates[0], method: "near_spelling" };
+  }
+
+  const pool = employable.length > 1 ? employable : candidates;
+  return {
+    employee: undefined,
+    method: "none",
+    requiresReview: true,
+    reviewReason: `"${csvName}" could be ${pool
+      .map((e) => `${e.forename} ${e.surname}`)
+      .join(" or ")} — confirm which employee.`,
+  };
+}
+
 
 // Legacy hardcoded alias map — kept for backward compatibility.
 // New aliases should be stored on each employee record via import_aliases.
@@ -356,6 +452,11 @@ export function matchEmployee(
 
   // 7. Short / partial name (deterministic token containment, unique candidate only)
   const shortMatch = matchShortName(trimmed, sorted);
+  if (shortMatch && shortMatch.employee) return shortMatch;
+
+  // 8. Near-spelling / truncated name (unique candidate only).
+  const nearMatch = matchNearSpelling(trimmed, sorted);
+  if (nearMatch) return nearMatch;
   if (shortMatch) return shortMatch;
 
   return { employee: undefined, method: "none" };

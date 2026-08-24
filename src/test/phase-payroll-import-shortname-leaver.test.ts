@@ -108,11 +108,16 @@ describe("short-name matching", () => {
     expect(r.reviewReason).toContain("Lorenzo");
   });
 
-  it("ignores archived records as short-name candidates", () => {
+  it("deprioritises archived records but still resolves a unique one", () => {
     const archived = { ...CLEO, archived_at: "2026-08-01" };
     expect(findShortNameCandidates("Cleo", [archived])).toHaveLength(1);
-    expect(matchEmployee("Cleo", [archived]).employee).toBeUndefined();
+    // Archived people who appear on a timesheet still worked those hours.
+    expect(matchEmployee("Cleo", [archived]).employee?.id).toBe(archived.id);
+    // A non-archived namesake always wins.
+    const active = { ...CLEO, id: "cleo-live", surname: "Winter", status: "active", archived_at: null };
+    expect(matchEmployee("Cleo", [archived, active]).employee?.id).toBe("cleo-live");
   });
+
 
   it("prefers an employable candidate over a leaver with the same first name", () => {
     const activeCleo = { ...CLEO, id: "cleo-active", surname: "Winter", status: "active" };
