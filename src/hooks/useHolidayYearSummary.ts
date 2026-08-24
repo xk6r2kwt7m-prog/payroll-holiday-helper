@@ -152,7 +152,3 @@ export function useHolidayYearSummary(
     isLoading: ledgerLoading || paymentsLoading || pendingLoading,
   };
 }
-
-
-  return { summary, isLoading: ledgerLoading || paymentsLoading };
-}
