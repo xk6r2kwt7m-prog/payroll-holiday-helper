@@ -52,7 +52,7 @@ const JOHN = emp({ id: "emp-john", forename: "John", surname: "Smith" });
 const employees = [PAIGE, ZHENG, LORENZO, JOHN];
 
 describe("Phase: payroll import trace — Paige / Zheng / Lorenzo regression", () => {
-  it("single-token names (Paige / Zheng / Lorenzo) do NOT silently auto-match — they appear as unmatched in the trace", () => {
+  it("single-token names resolve to a unique employee via deterministic short-name rules", () => {
     const trace = buildRowTrace(
       [
         { csvName: "Paige", hours: 12.5 },
@@ -62,11 +62,14 @@ describe("Phase: payroll import trace — Paige / Zheng / Lorenzo regression", (
       employees,
       [],
     );
+    expect(trace.map((r) => r.matchedEmployeeId)).toEqual([
+      PAIGE.id,
+      ZHENG.id,
+      LORENZO.id,
+    ]);
     for (const row of trace) {
-      expect(row.matchSource).toBe("unmatched");
-      expect(row.matchedEmployeeId).toBeUndefined();
-      expect(row.requiresReview).toBe(true);
-      expect(row.reasonNotImported).toBeTruthy();
+      expect(row.matchSource).toBe("short_name");
+      expect(row.requiresReview).toBe(false);
     }
   });
 
@@ -125,10 +128,10 @@ describe("Phase: payroll import trace — Paige / Zheng / Lorenzo regression", (
     const missing = findMissingFromFile(employees, matchedIds);
     const missingIds = missing.map((m) => m.employeeId);
 
-    // John matched → not missing. Paige, Zheng, Lorenzo all missing.
+    // John and Lorenzo matched → not missing. Paige and Zheng absent from file.
     expect(missingIds).toContain(PAIGE.id);
     expect(missingIds).toContain(ZHENG.id);
-    expect(missingIds).toContain(LORENZO.id);
+    expect(missingIds).not.toContain(LORENZO.id);
     expect(missingIds).not.toContain(JOHN.id);
   });
 
