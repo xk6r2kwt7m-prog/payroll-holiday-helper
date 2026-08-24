@@ -93,8 +93,9 @@ export function CloseDraftPanel({
   isSubmitting,
   isApproving,
   blockedReason,
+  onOverride,
 }: CloseDraftPanelProps) {
-  if (periodStatus === "approved") {
+
     return (
       <div
         className="rounded-xl border border-success/30 bg-success/5 p-3 sm:p-4"
