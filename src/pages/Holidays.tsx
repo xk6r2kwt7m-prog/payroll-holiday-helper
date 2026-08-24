@@ -1054,7 +1054,9 @@ const Holidays = () => {
             accrued: p.accrued,
             taken: p.taken,
             paid: p.paid,
+            isOpenPeriod: p.isOpenPeriod,
           }))}
+
           allYearSummaries={
             Object.entries(allYearSummaries).reduce((acc, [year, summaries]) => {
               const empSummary = summaries.find(s => s.employeeId === selectedEmployee.employeeId);
