@@ -47,11 +47,15 @@ export default function StaffLeave() {
     );
   }
 
-  // Use shared single-source-of-truth hook
-  const accrued = yearSummary?.accruedHours ?? 0;
+  // Use shared single-source-of-truth hook. Accrual from payroll periods that
+  // are still in draft is included so the balance is not understated while a
+  // period is open — the pending portion is called out below the totals.
+  const pendingAccrued = yearSummary?.pendingAccruedHours ?? 0;
+  const accrued = yearSummary?.accruedIncludingPendingHours ?? 0;
   const carried = yearSummary?.carryOverHours ?? 0;
   const taken = yearSummary?.takenHours ?? 0;
-  const remaining = yearSummary?.availableHours ?? 0;
+  const remaining = yearSummary?.availableIncludingPendingHours ?? 0;
+
 
   const pendingRequests = myRequests.filter(r => r.status === "pending");
   const approvedRequests = myRequests.filter(r => r.status === "approved");
@@ -112,6 +116,12 @@ export default function StaffLeave() {
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground text-center mt-1.5">Hours · {currentYear} leave year</p>
+          {pendingAccrued > 0.005 && (
+            <p className="text-[10px] text-muted-foreground text-center mt-0.5">
+              Includes {pendingAccrued.toFixed(1)} h accrued in payroll periods not yet closed.
+            </p>
+          )}
+
         </motion.div>
 
         {/* Tab Switcher */}

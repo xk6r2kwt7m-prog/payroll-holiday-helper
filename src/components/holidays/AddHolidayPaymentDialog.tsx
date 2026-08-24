@@ -62,14 +62,18 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const employeeSummary = useMemo(() => {
     if (!employeeSummaryRaw) return null;
     return {
-      totalAccrued: employeeSummaryRaw.accruedHours,
+      // Accrual from open (draft) payroll periods is included so the balance
+      // is not understated before a period is approved.
+      totalAccrued: employeeSummaryRaw.accruedIncludingPendingHours,
+      pendingAccrued: employeeSummaryRaw.pendingAccruedHours,
       totalTaken: employeeSummaryRaw.takenHours,
       totalPaid: employeeSummaryRaw.paidAmount,
       carryOver: employeeSummaryRaw.carryOverHours,
-      balance: employeeSummaryRaw.availableHours,
+      balance: employeeSummaryRaw.availableIncludingPendingHours,
       leaveYear: employeeSummaryRaw.leaveYear,
     };
   }, [employeeSummaryRaw]);
+
 
   const allEmployeesSorted = useMemo(() => {
     return [...employees].sort((a, b) => {
@@ -306,6 +310,13 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                   <span className="text-muted-foreground">Accrued:</span>
                   <span className="font-medium text-success">{formatHours(employeeSummary.totalAccrued)} hrs</span>
                 </div>
+                {employeeSummary.pendingAccrued > 0.005 && (
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>of which in open payroll periods</span>
+                    <span>{formatHours(employeeSummary.pendingAccrued)} hrs</span>
+                  </div>
+                )}
+
                 {employeeSummary.carryOver > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Carry over:</span>
