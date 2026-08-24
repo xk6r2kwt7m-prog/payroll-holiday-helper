@@ -14,6 +14,8 @@ export const SECTION_LOCATION_MAP: Record<string, string> = {
   "[RTD]KITCHEN": "CPU Kitchen",
   "[E98]FOH": "Fitzrovia (FOH)",
   "[YT5]30 Rathbone Place Ugly Dumpling WT 1JG,uk": "Fitzrovia (CPU)",
+  "[YT5]Production": "Fitzrovia (CPU)",
+
   "[KVQ]BOH": "Carnaby (BOH)",
   "[UGL]FOH": "Carnaby (FOH)",
 };
