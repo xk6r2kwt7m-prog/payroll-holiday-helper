@@ -38,6 +38,7 @@ export function HolidayLedgerTab({ employeeId, year = new Date().getFullYear() }
   const [selectedYear, setSelectedYear] = useState(String(year));
   const leaveYearStart = `${selectedYear}-01-01`;
   const { data: entries, isLoading } = useHolidayLedger(employeeId, leaveYearStart);
+  const { data: pending } = usePendingLedgerAccruals(employeeId, Number(selectedYear));
 
   const years = Array.from({ length: 6 }, (_, i) => String(2021 + i));
 
@@ -49,6 +50,10 @@ export function HolidayLedgerTab({ employeeId, year = new Date().getFullYear() }
   });
 
   const totalBalance = runningBalance;
+
+  const pendingRows = pending || [];
+  const pendingTotal = pendingRows.reduce((sum, p) => sum + p.hours, 0);
+
 
   return (
     <div className="space-y-4">
