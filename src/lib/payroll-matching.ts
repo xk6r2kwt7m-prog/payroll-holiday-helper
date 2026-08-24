@@ -354,6 +354,10 @@ export function matchEmployee(
     if (mapMatch) return { employee: mapMatch, method: "legacy_name_map" };
   }
 
+  // 7. Short / partial name (deterministic token containment, unique candidate only)
+  const shortMatch = matchShortName(trimmed, sorted);
+  if (shortMatch) return shortMatch;
+
   return { employee: undefined, method: "none" };
 }
 
