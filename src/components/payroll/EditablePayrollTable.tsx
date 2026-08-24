@@ -329,6 +329,7 @@ export function EditablePayrollTable({
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
       invalidateHolidayDerivedQueries(queryClient);
+      invalidateHolidayDerivedQueries(queryClient);
       toast.success(`${removeEmployeeName} removed from this payroll period`);
     } catch {
       toast.error("Failed to remove employee");
