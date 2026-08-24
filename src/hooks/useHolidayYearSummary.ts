@@ -3,6 +3,7 @@ import { useHolidayLedger } from "@/hooks/useHolidayLedger";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import { isCommittedPayrollStatus } from "@/lib/payroll-status";
 
 export interface HolidayYearSummary {
   accruedHours: number;
