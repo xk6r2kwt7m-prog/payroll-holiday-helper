@@ -98,6 +98,8 @@ export function SettleLeaverDialog() {
       return (data ?? []).map((r) => r.employee_id).filter(Boolean) as string[];
     },
     enabled: !!periodId,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const settledSet = useMemo(() => new Set(settledEmployeeIds), [settledEmployeeIds]);
@@ -295,6 +297,19 @@ export function SettleLeaverDialog() {
     basis === "full_employment" &&
     basisResult?.carryOverDuplicationDetected === true;
 
+  // Duplicate-settlement guard: a leaver may only hold one unreversed settlement
+  // per leave year. Recording a second one double-counts holiday taken in the
+  // ledger (and shows the employee twice on the Holiday Payments report).
+  const existingSettlement = useMemo(() => {
+    const yearStart = `${leaveYear}-01-01`;
+    return (allPayments || []).find(
+      (p) =>
+        (p.leave_year_start === yearStart || p.payroll_period_id === periodId) &&
+        /settlement/i.test(p.notes || ""),
+    );
+  }, [allPayments, leaveYear, periodId]);
+  const alreadySettled = !!existingSettlement;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!employeeId || !periodId || !holidayDate) {
@@ -303,6 +318,12 @@ export function SettleLeaverDialog() {
     }
     if (!approved) {
       toast.error("Please approve the settlement before recording");
+      return;
+    }
+    if (alreadySettled) {
+      toast.error(
+        "This employee already has a recorded leaver settlement for this leave year. Reverse the existing settlement before recording a new one.",
+      );
       return;
     }
     if (carryOverDuplicationDetected) {
@@ -375,6 +396,8 @@ export function SettleLeaverDialog() {
         }
       }
 
+      queryClient.invalidateQueries({ queryKey: ["settled-employees"] });
+      queryClient.invalidateQueries({ queryKey: ["settle-leaver-payments"] });
       toast.success(parseFloat(hours) > 0 ? `Leaver settlement of ${formatCurrency(total)} recorded` : "Leaver marked — no holiday balance to pay out");
       setOpen(false);
       resetForm();
@@ -416,6 +439,7 @@ export function SettleLeaverDialog() {
     holidayDate &&
     approved &&
     !carryOverDuplicationDetected &&
+    !alreadySettled &&
     (!mismatch.hasMismatch || mismatchAck) &&
     (basis !== "manual" || manualReason.trim().length > 0) &&
     (isZeroBalance || (parseFloat(hours) > 0 && parseFloat(rate) > 0));
@@ -425,6 +449,8 @@ export function SettleLeaverDialog() {
     if (!periodId) return "Select a draft payroll period.";
     if (!employeeId) return "Select an employee to settle.";
     if (!holidayDate) return "Set the settlement date.";
+    if (alreadySettled)
+      return `Already settled — ${Number(existingSettlement?.hours ?? 0).toFixed(2)} h recorded on ${existingSettlement?.holiday_taken_date ?? "an earlier date"}. Reverse that settlement before recording a new one.`;
     if (carryOverDuplicationDetected)
       return "Resolve carry-over duplication in the ledger before settling.";
     if (basis === "manual" && manualReason.trim().length === 0)
