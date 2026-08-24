@@ -33,7 +33,7 @@ export function usePayrollPeriodDeleteImpact(periodId?: string, enabled = true) 
 
       const { data: payments, error: paymentsError } = await supabase
         .from("holiday_payments")
-        .select("id, hours_paid")
+        .select("id, hours")
         .eq("payroll_period_id", periodId);
       if (paymentsError) throw paymentsError;
       const paymentIds = (payments || []).map((p) => p.id);
@@ -84,7 +84,7 @@ export function usePayrollPeriodDeleteImpact(periodId?: string, enabled = true) 
         entryCount: entryIds.length,
         holidayPaymentCount: paymentIds.length,
         holidayPaymentHours: (payments || []).reduce(
-          (sum, p) => sum + Math.abs(Number(p.hours_paid) || 0),
+          (sum, p) => sum + Math.abs(Number(p.hours) || 0),
           0,
         ),
         ledgerFromPaymentsCount: ledgerFromPayments.length,
