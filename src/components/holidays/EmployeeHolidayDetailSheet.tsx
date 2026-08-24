@@ -63,6 +63,8 @@ export function EmployeeHolidayDetailSheet({
   employeeName,
   department,
   hoursAccrued,
+  pendingAccrued = 0,
+
   hoursTaken,
   totalPaid,
   balance,
