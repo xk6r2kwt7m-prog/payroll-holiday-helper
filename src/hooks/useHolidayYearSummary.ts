@@ -128,6 +128,12 @@ export function useHolidayYearSummary(
 
     const availableHours = accrued + carryOver - taken;
 
+    const pendingAccrued = (pendingRows || []).reduce((sum: number, r: any) => {
+      const status = String(r.payroll_periods?.status ?? "").toLowerCase();
+      if (["approved", "finalised", "finalized"].includes(status)) return sum;
+      return sum + (Number(r.holiday_accrued_hours) || 0);
+    }, 0);
+
     return {
       accruedHours: accrued,
       carryOverHours: carryOver,
@@ -135,8 +141,18 @@ export function useHolidayYearSummary(
       paidAmount,
       availableHours,
       leaveYear: year,
+      pendingAccruedHours: pendingAccrued,
+      accruedIncludingPendingHours: accrued + pendingAccrued,
+      availableIncludingPendingHours: availableHours + pendingAccrued,
     };
-  }, [employeeId, ledgerEntries, payments, year]);
+  }, [employeeId, ledgerEntries, payments, pendingRows, year]);
+
+  return {
+    summary,
+    isLoading: ledgerLoading || paymentsLoading || pendingLoading,
+  };
+}
+
 
   return { summary, isLoading: ledgerLoading || paymentsLoading };
 }
