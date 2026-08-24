@@ -145,7 +145,14 @@ export function EmployeeHolidayDetailSheet({
                   <p className="text-2xl font-bold text-success">{formatHours(hoursAccrued)}</p>
                   <p className="text-[10px] text-muted-foreground/70">{hoursToDays(hoursAccrued)} days</p>
                   <p className="text-xs text-muted-foreground">Hours Accrued</p>
+                  {pendingAccrued > 0.005 && (
+                    <p data-testid="accrual-source-split" className="mt-1 text-[10px] leading-tight text-muted-foreground">
+                      {formatHours(hoursAccrued - pendingAccrued)} posted to ledger ·{" "}
+                      {formatHours(pendingAccrued)} in open payroll periods
+                    </p>
+                  )}
                 </div>
+
                 <div className="rounded-xl bg-primary/5 border border-primary/10 p-4 text-center">
                   <Calendar className="h-5 w-5 text-primary mx-auto mb-1" />
                   <p className="text-2xl font-bold text-primary">{formatHours(hoursTaken)}</p>
