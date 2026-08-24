@@ -50,7 +50,13 @@ export function usePayrollImportAliases(sourceSystem: string = "uploaded_timeshe
       return (data ?? []) as unknown as PayrollImportAlias[];
     },
     enabled: !!tenantId,
+    // Aliases must never be served stale to an import run — a name linked in
+    // another tab/session has to be honoured by the next upload.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
+
 
   const activeAliases: SavedAlias[] = useMemo(
     () =>
