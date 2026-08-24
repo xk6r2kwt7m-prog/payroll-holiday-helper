@@ -30,6 +30,7 @@ export type TraceMatchSource =
   | "exact"
   | "case_insensitive"
   | "likely_match"
+  | "short_name"
   | "manual"
   | "ambiguous"
   | "unmatched";
