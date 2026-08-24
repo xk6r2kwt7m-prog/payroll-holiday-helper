@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { BookOpen, ArrowUpRight, ArrowDownRight, RefreshCw, ExternalLink } from "lucide-react";
+import { BookOpen, ArrowUpRight, ArrowDownRight, RefreshCw, ExternalLink, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useHolidayLedger, type HolidayLedgerEntry } from "@/hooks/useHolidayLedger";
+import { useHolidayLedger, usePendingLedgerAccruals, type HolidayLedgerEntry } from "@/hooks/useHolidayLedger";
 import { formatHours } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
+
 
 interface HolidayLedgerTabProps {
   employeeId: string;
