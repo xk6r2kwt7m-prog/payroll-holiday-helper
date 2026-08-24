@@ -1,9 +1,13 @@
 /**
- * Auto-suggest next payroll period dates based on hospitality cutoff rules:
- * - pay date  = last Thursday of the payroll month
- * - cutoff    = last Sunday ON OR BEFORE that pay date
- * - start     = previous cutoff + 1 day
- * - weeks     = inclusive day count / 7
+ * Auto-suggest next payroll period dates.
+ *
+ * Rules confirmed by the Admin:
+ * - The period cutoff is ALWAYS a Sunday.
+ * - A period is normally 4 weeks, occasionally 5 weeks (explicit choice).
+ * - The pay date is normally the last Thursday of the cutoff month.
+ *
+ * The cycle length is never inferred silently: the caller passes 4 or 5 and
+ * the suggestion is derived deterministically from the previous cutoff.
  */
 
 function getLastDayOfWeek(year: number, month: number, dayOfWeek: number): Date {
@@ -17,23 +21,27 @@ export function getLastThursday(year: number, month: number): Date {
   return getLastDayOfWeek(year, month, 4);
 }
 
-/**
- * Returns the last Sunday on or before the given date.
- */
+/** Returns the Sunday on or after the given date. */
+function getSundayOnOrAfter(date: Date): Date {
+  const d = new Date(date);
+  const diff = (7 - d.getDay()) % 7; // 0=Sun
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+/** Returns the last Sunday on or before the given date. */
 function getLastSundayOnOrBefore(date: Date): Date {
   const d = new Date(date);
-  const dayOfWeek = d.getDay(); // 0=Sun … 6=Sat
-  d.setDate(d.getDate() - dayOfWeek);
+  d.setDate(d.getDate() - d.getDay());
   return d;
 }
 
 /**
- * Cutoff = last Sunday on or before last Thursday of the month.
- * This guarantees the cutoff never falls after the pay date.
+ * Legacy helper retained for compatibility: the last Sunday on or before the
+ * last Thursday of the month.
  */
 export function getCutoffSunday(year: number, month: number): Date {
-  const payDate = getLastThursday(year, month);
-  return getLastSundayOnOrBefore(payDate);
+  return getLastSundayOnOrBefore(getLastThursday(year, month));
 }
 
 function toDateStr(d: Date): string {
@@ -53,36 +61,34 @@ export interface SuggestedPeriod {
   periodWeeks: number;
 }
 
+/** Default cycle length in weeks. 5 is used occasionally, by explicit choice. */
+export const DEFAULT_PERIOD_WEEKS = 4;
+
 export function suggestNextPeriod(
-  latestEndDate?: string | null
+  latestEndDate?: string | null,
+  weeks: number = DEFAULT_PERIOD_WEEKS,
 ): SuggestedPeriod {
+  const cycleWeeks = weeks === 5 ? 5 : 4;
+
   let startDate: Date;
 
   if (latestEndDate) {
-    // Next period starts the day after the previous cutoff
+    // Next period starts the day after the previous cutoff.
     startDate = new Date(latestEndDate);
     startDate.setDate(startDate.getDate() + 1);
   } else {
-    // No previous period — start from beginning of current month
+    // No previous period — start from the beginning of the current month.
     const now = new Date();
     startDate = new Date(now.getFullYear(), now.getMonth(), 1);
   }
 
-  // Target month is the month the start date falls into
-  let targetMonth = startDate.getMonth();
-  let targetYear = startDate.getFullYear();
+  // Cutoff is always a Sunday: whole weeks from the start date, and if the
+  // start date is not a Monday we still land the cutoff on a Sunday.
+  let endDate = new Date(startDate);
+  endDate.setDate(endDate.getDate() + cycleWeeks * 7 - 1);
+  endDate = getSundayOnOrAfter(endDate);
 
-  // End date = cutoff Sunday (last Sunday on or before last Thursday)
-  let endDate = getCutoffSunday(targetYear, targetMonth);
-
-  // If cutoff is before startDate, move to next month
-  if (endDate <= startDate) {
-    const nextMonth = targetMonth + 1;
-    targetYear = nextMonth > 11 ? targetYear + 1 : targetYear;
-    targetMonth = nextMonth % 12;
-    endDate = getCutoffSunday(targetYear, targetMonth);
-  }
-
+  // Pay date = last Thursday of the cutoff month.
   const payDate = getLastThursday(endDate.getFullYear(), endDate.getMonth());
 
   // Inclusive day count
@@ -100,3 +106,4 @@ export function suggestNextPeriod(
     periodWeeks,
   };
 }
+
