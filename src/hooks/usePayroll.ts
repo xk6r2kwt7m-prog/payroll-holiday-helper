@@ -471,25 +471,66 @@ export function useCopyPayrollPeriod() {
 export function useDeletePayrollPeriod() {
   const queryClient = useQueryClient();
   const { tenantId } = useTenant();
-  
+
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (
+      input: string | { id: string; reason?: string; impact?: Record<string, any> | null },
+    ) => {
+      const id = typeof input === "string" ? input : input.id;
+      const reason = typeof input === "string" ? null : input.reason?.trim() || null;
+      const impact = typeof input === "string" ? null : input.impact ?? null;
+
       await assertPermission("view_pay_data", tenantId!);
-      
+
       // Check period status before attempting delete
       const { data: period } = await supabase
         .from("payroll_periods")
-        .select("status")
+        .select("status, period_name")
         .eq("id", id)
         .maybeSingle();
-      
+
       if (period?.status === "approved") {
         throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
       }
 
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Delete entries first (foreign key constraint)
+      // Collect dependent record ids BEFORE deleting anything so no holiday
+      // ledger row is ever left orphaned (which would corrupt balances).
+      const { data: entryRows, error: entryReadError } = await supabase
+        .from("payroll_entries")
+        .select("id")
+        .eq("payroll_period_id", id);
+      if (entryReadError) throw entryReadError;
+      const entryIds = (entryRows || []).map((e) => e.id);
+
+      const { data: paymentRows, error: paymentReadError } = await supabase
+        .from("holiday_payments")
+        .select("id")
+        .eq("payroll_period_id", id);
+      if (paymentReadError) throw paymentReadError;
+      const paymentIds = (paymentRows || []).map((p) => p.id);
+
+      // 1. Remove holiday ledger rows derived from this period (accruals from
+      //    payroll entries, and "holiday taken" rows from holiday payments).
+      if (paymentIds.length > 0) {
+        const { error } = await supabase
+          .from("holiday_ledger")
+          .delete()
+          .eq("source_table", "holiday_payments")
+          .in("source_id", paymentIds);
+        if (error) throw error;
+      }
+      if (entryIds.length > 0) {
+        const { error } = await supabase
+          .from("holiday_ledger")
+          .delete()
+          .eq("source_table", "payroll_entries")
+          .in("source_id", entryIds);
+        if (error) throw error;
+      }
+
+      // 2. Delete entries (foreign key constraint)
       const { error: entriesError } = await supabase
         .from("payroll_entries")
         .delete()
@@ -499,7 +540,7 @@ export function useDeletePayrollPeriod() {
         throw entriesError;
       }
 
-      // Delete holiday payments linked to this period
+      // 3. Delete holiday payments linked to this period
       const { error: holError } = await supabase
         .from("holiday_payments")
         .delete()
@@ -509,7 +550,7 @@ export function useDeletePayrollPeriod() {
         throw holError;
       }
 
-      // Delete the period itself
+      // 4. Delete the period itself
       const { error } = await supabase
         .from("payroll_periods")
         .delete()
@@ -519,14 +560,25 @@ export function useDeletePayrollPeriod() {
         throw error;
       }
 
-      // Audit log
+      // Audit log — permanent record of the deletion and its blast radius
       await supabase.from("audit_log").insert({
         user_id: user?.id || null,
         action: "delete" as const,
         table_name: "payroll_periods",
         record_id: id,
         tenant_id: tenantId,
-        new_data: { operation: "delete_draft_period" },
+        new_data: {
+          operation: "delete_draft_period",
+          period_name: period?.period_name ?? null,
+          reason,
+          deleted_entry_count: entryIds.length,
+          deleted_holiday_payment_count: paymentIds.length,
+          reversed_ledger_sources: {
+            payroll_entries: entryIds.length,
+            holiday_payments: paymentIds.length,
+          },
+          impact,
+        },
       });
     },
     onSuccess: () => {
@@ -534,9 +586,11 @@ export function useDeletePayrollPeriod() {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
       invalidateHolidayDerivedQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_period_delete_impact", tenantId] });
     },
   });
 }
+
 
 export function useMarkBankDetailsExported() {
   const queryClient = useQueryClient();
