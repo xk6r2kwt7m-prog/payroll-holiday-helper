@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { BookOpen, ArrowUpRight, ArrowDownRight, RefreshCw, ExternalLink } from "lucide-react";
+import { BookOpen, ArrowUpRight, ArrowDownRight, RefreshCw, ExternalLink, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useHolidayLedger, type HolidayLedgerEntry } from "@/hooks/useHolidayLedger";
+import { useHolidayLedger, usePendingLedgerAccruals, type HolidayLedgerEntry } from "@/hooks/useHolidayLedger";
 import { formatHours } from "@/hooks/useHolidays";
 import { cn } from "@/lib/utils";
+
 
 interface HolidayLedgerTabProps {
   employeeId: string;
@@ -37,6 +38,7 @@ export function HolidayLedgerTab({ employeeId, year = new Date().getFullYear() }
   const [selectedYear, setSelectedYear] = useState(String(year));
   const leaveYearStart = `${selectedYear}-01-01`;
   const { data: entries, isLoading } = useHolidayLedger(employeeId, leaveYearStart);
+  const { data: pending } = usePendingLedgerAccruals(employeeId, Number(selectedYear));
 
   const years = Array.from({ length: 6 }, (_, i) => String(2021 + i));
 
@@ -48,6 +50,10 @@ export function HolidayLedgerTab({ employeeId, year = new Date().getFullYear() }
   });
 
   const totalBalance = runningBalance;
+
+  const pendingRows = pending || [];
+  const pendingTotal = pendingRows.reduce((sum, p) => sum + p.hours, 0);
+
 
   return (
     <div className="space-y-4">
@@ -73,24 +79,52 @@ export function HolidayLedgerTab({ employeeId, year = new Date().getFullYear() }
       </div>
 
       {/* Balance summary */}
-      <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">Ledger Balance (SUM of hours)</span>
-        <span className={cn(
-          "text-lg font-bold",
-          totalBalance >= 0 ? "text-success" : "text-destructive"
-        )}>
-          {formatHours(totalBalance)} hrs
-        </span>
+      <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">Posted to ledger (approved periods)</span>
+          <span className={cn(
+            "text-lg font-bold",
+            totalBalance >= 0 ? "text-success" : "text-destructive"
+          )}>
+            {formatHours(totalBalance)} hrs
+          </span>
+        </div>
+        {pendingTotal !== 0 && (
+          <>
+            <div className="flex items-center justify-between border-t border-border pt-2">
+              <span className="text-xs font-medium text-muted-foreground inline-flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                In open payroll periods (not yet posted)
+              </span>
+              <span className="text-sm font-semibold text-warning">
+                +{formatHours(pendingTotal)} hrs
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-t border-border pt-2">
+              <span className="text-xs font-semibold">Total including open periods</span>
+              <span className="text-sm font-bold">{formatHours(totalBalance + pendingTotal)} hrs</span>
+            </div>
+          </>
+        )}
       </div>
+
+      {pendingTotal !== 0 && (
+        <p className="text-[11px] text-muted-foreground">
+          Accrual only posts to the ledger when a payroll period is approved. The rows marked
+          “Pending” below come from payroll entries in draft / pending periods — they are shown for
+          visibility and nothing has been written to the ledger.
+        </p>
+      )}
 
       {/* Ledger table */}
       {isLoading ? (
         <div className="text-center text-sm text-muted-foreground py-8">Loading ledger…</div>
-      ) : rows.length === 0 ? (
+      ) : rows.length === 0 && pendingRows.length === 0 ? (
         <div className="text-center text-sm text-muted-foreground py-8">
           No ledger entries for {selectedYear}. Run backfill to populate.
         </div>
       ) : (
+
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead>
@@ -146,7 +180,40 @@ export function HolidayLedgerTab({ employeeId, year = new Date().getFullYear() }
                   </td>
                 </tr>
               ))}
+              {pendingRows.map((p, i) => {
+                const provisional = totalBalance + pendingRows.slice(0, i + 1).reduce((s, x) => s + x.hours, 0);
+                return (
+                  <tr key={`pending-${p.periodName}-${i}`} className="border-b border-dashed border-border last:border-0 bg-warning/5">
+                    <td className="py-2 px-3 text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(p.entryDate).toLocaleDateString("en-GB", {
+                        day: "numeric", month: "short", year: "2-digit",
+                      })}
+                    </td>
+                    <td className="py-2 px-3">
+                      <Badge variant="outline" className="text-[10px] font-normal bg-warning/10 text-warning border-warning/20">
+                        Pending Accrual
+                      </Badge>
+                    </td>
+                    <td className="py-2 px-3 text-right font-medium whitespace-nowrap text-warning">
+                      <span className="inline-flex items-center gap-0.5">
+                        <Clock className="h-3 w-3" />
+                        +{formatHours(p.hours)}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-right font-semibold text-xs text-muted-foreground italic">
+                      ({formatHours(provisional)})
+                    </td>
+                    <td
+                      className="py-2 px-3 text-xs text-muted-foreground max-w-[140px] truncate"
+                      title={`${p.periodName} — ${p.periodStatus}${p.timesheetHours !== null ? ` · ${formatHours(p.timesheetHours)} h worked` : ""}`}
+                    >
+                      {p.periodName} ({p.periodStatus})
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
+
           </table>
         </div>
       )}

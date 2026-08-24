@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import { isCommittedPayrollStatus } from "@/lib/payroll-status";
+
 
 export interface HolidayLedgerEntry {
   id: string;
@@ -134,6 +136,67 @@ export function useHolidayLedgerBalancesByYear(year: number) {
       }));
 
       return list.sort((a, b) => b.hours_accrued - a.hours_accrued);
+    },
+  });
+}
+
+export interface PendingLedgerAccrual {
+  periodName: string;
+  periodStatus: string;
+  entryDate: string;
+  hours: number;
+  timesheetHours: number | null;
+}
+
+/**
+ * Accrual that exists on payroll entries in OPEN (draft / pending / rejected)
+ * periods. It has not been posted to the holiday ledger yet, so the ledger view
+ * shows it as informational "pending" rows. Read-only — nothing is written.
+ */
+export function usePendingLedgerAccruals(employeeId?: string, year?: number) {
+  const { tenantId } = useTenant();
+  return useQuery({
+    queryKey: ["holiday_pending_accrual", tenantId, employeeId, year, "ledger_rows"],
+    enabled: !!employeeId && !!tenantId && !!year,
+    queryFn: async (): Promise<PendingLedgerAccrual[]> => {
+      const { data, error } = await supabase
+        .from("payroll_entries")
+        .select(
+          "holiday_accrued_hours, timesheet_hours, payroll_periods!inner(period_name, status, start_date, end_date)",
+        )
+        .eq("employee_id", employeeId!)
+        .eq("tenant_id", tenantId!)
+        .gte("payroll_periods.start_date", `${year}-01-01`)
+        .lte("payroll_periods.start_date", `${year}-12-31`);
+      if (error) throw error;
+
+      const rows = (data || []) as any[];
+      // Periods superseded by a "[Corrected]" rebuild must not be double counted.
+      const correctedBases = new Set(
+        rows
+          .map((r) => String(r.payroll_periods?.period_name ?? ""))
+          .filter((n) => n.includes("[Corrected]"))
+          .map((n) => n.replace(" [Corrected]", "").trim()),
+      );
+
+      return rows
+        .filter((r) => {
+          const name = String(r.payroll_periods?.period_name ?? "").trim();
+          if (!name.includes("[Corrected]") && correctedBases.has(name)) return false;
+          if (isCommittedPayrollStatus(r.payroll_periods?.status)) return false;
+          return Number(r.holiday_accrued_hours || 0) !== 0;
+        })
+        .map((r) => ({
+          periodName: String(r.payroll_periods?.period_name ?? "Payroll period"),
+          periodStatus: String(r.payroll_periods?.status ?? "draft"),
+          entryDate: String(r.payroll_periods?.end_date ?? r.payroll_periods?.start_date),
+          hours: Number(r.holiday_accrued_hours || 0),
+          timesheetHours:
+            r.timesheet_hours === null || r.timesheet_hours === undefined
+              ? null
+              : Number(r.timesheet_hours),
+        }))
+        .sort((a, b) => a.entryDate.localeCompare(b.entryDate));
     },
   });
 }
