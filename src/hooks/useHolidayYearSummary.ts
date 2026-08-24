@@ -129,11 +129,22 @@ export function useHolidayYearSummary(
 
     const availableHours = accrued + carryOver - taken;
 
+    // Periods superseded by a "[Corrected]" rebuild must not be double counted —
+    // same rule the Holidays page applies.
+    const correctedBases = new Set(
+      (pendingRows || [])
+        .map((r: any) => String(r.payroll_periods?.period_name ?? ""))
+        .filter((n: string) => n.includes("[Corrected]"))
+        .map((n: string) => n.replace(" [Corrected]", "").trim())
+    );
+
     const pendingAccrued = (pendingRows || []).reduce((sum: number, r: any) => {
-      const status = String(r.payroll_periods?.status ?? "").toLowerCase();
-      if (["approved", "finalised", "finalized"].includes(status)) return sum;
+      const name = String(r.payroll_periods?.period_name ?? "").trim();
+      if (!name.includes("[Corrected]") && correctedBases.has(name)) return sum;
+      if (isCommittedPayrollStatus(r.payroll_periods?.status)) return sum;
       return sum + (Number(r.holiday_accrued_hours) || 0);
     }, 0);
+
 
     return {
       accruedHours: accrued,
