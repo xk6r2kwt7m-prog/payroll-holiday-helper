@@ -183,9 +183,11 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     setEndDate("");
     setPayDate("");
     setPeriodWeeks("4");
+    setCycleWeeks("4");
     setSalesTotal("");
     setSelectedSourcePeriod("");
     setMode("copy");
+
   };
 
   const isLoading = createPeriod.isPending || copyPeriod.isPending;
