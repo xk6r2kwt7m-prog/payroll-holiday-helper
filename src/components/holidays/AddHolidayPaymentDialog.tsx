@@ -62,14 +62,18 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const employeeSummary = useMemo(() => {
     if (!employeeSummaryRaw) return null;
     return {
-      totalAccrued: employeeSummaryRaw.accruedHours,
+      // Accrual from open (draft) payroll periods is included so the balance
+      // is not understated before a period is approved.
+      totalAccrued: employeeSummaryRaw.accruedIncludingPendingHours,
+      pendingAccrued: employeeSummaryRaw.pendingAccruedHours,
       totalTaken: employeeSummaryRaw.takenHours,
       totalPaid: employeeSummaryRaw.paidAmount,
       carryOver: employeeSummaryRaw.carryOverHours,
-      balance: employeeSummaryRaw.availableHours,
+      balance: employeeSummaryRaw.availableIncludingPendingHours,
       leaveYear: employeeSummaryRaw.leaveYear,
     };
   }, [employeeSummaryRaw]);
+
 
   const allEmployeesSorted = useMemo(() => {
     return [...employees].sort((a, b) => {
