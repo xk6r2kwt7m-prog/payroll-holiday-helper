@@ -884,13 +884,34 @@ const Payroll = () => {
             onAcknowledgedChange={setChecklistAcks}
             confirmed={checklistConfirmed}
             onConfirmedChange={setChecklistConfirmed}
-            onSubmitForReview={handleSubmitForReview}
-            onApprove={handleApprove}
+            onSubmitForReview={() => handleSubmitForReview()}
+            onApprove={() => handleApprove()}
             isSubmitting={submitForReview.isPending}
             isApproving={approvePeriod.isPending}
             blockedReason={phase5ApprovalBlock}
+            onOverride={
+              isAdmin
+                ? (mode) => {
+                    setOverrideMode(mode);
+                    setOverrideOpen(true);
+                  }
+                : undefined
+            }
           />
         )}
+
+        {selectedPeriod && (
+          <PayrollOverrideDialog
+            open={overrideOpen}
+            onOpenChange={setOverrideOpen}
+            mode={overrideMode}
+            periodName={selectedPeriod.period_name}
+            outstanding={overrideOutstanding}
+            isBusy={approvePeriod.isPending || submitForReview.isPending}
+            onConfirm={handleOverrideConfirm}
+          />
+        )}
+
 
         {/* Main Payroll Content */}
         <div className="space-y-4 sm:space-y-6">
