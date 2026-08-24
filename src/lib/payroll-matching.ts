@@ -428,6 +428,11 @@ export function matchEmployeeRow(
       };
     }
     if (!EMPLOYABLE_STATUSES.has(target.status)) {
+      // A leaver who left during (or after the start of) this payroll period
+      // still worked those hours and must be paid — match without review.
+      if (target.status === "leaver" && leaverPayableInPeriod(target, period)) {
+        return { employee: target, method: "saved_alias" };
+      }
       return {
         employee: target,
         method: "saved_alias",
