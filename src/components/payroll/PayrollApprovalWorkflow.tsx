@@ -375,29 +375,14 @@ export function PayrollApprovalWorkflow({
           </div>
           <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-2 sm:mt-0">
             {onDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={isDeleting} className="text-destructive border-destructive/30 hover:bg-destructive/10 w-full sm:w-auto min-h-[44px]">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="mx-4 max-w-[calc(100vw-2rem)]">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete "{period.period_name}"?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete this draft payroll period and all its entries. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Delete Period
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <DeletePeriodDialog
+                periodId={period.id}
+                periodName={period.period_name}
+                isDeleting={isDeleting}
+                onConfirm={({ reason, impact }) => onDelete({ reason, impact })}
+              />
             )}
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button size="sm" disabled={isSubmitting || entryCount === 0 || !canSubmitOrApprove} className="w-full sm:w-auto min-h-[44px]">
