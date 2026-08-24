@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
+import { invalidateHolidayDerivedQueries } from "@/lib/holiday-cache";
 import { assertPermission } from "@/lib/permission-guard";
 
 export type PayrollPeriod = Tables<"payroll_periods">;
@@ -273,6 +274,7 @@ export function useCreatePayrollEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      invalidateHolidayDerivedQueries(queryClient);
     },
   });
 }
@@ -302,6 +304,7 @@ export function useUpdatePayrollEntry() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      invalidateHolidayDerivedQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
@@ -334,6 +337,7 @@ export function useBulkUpdatePayrollEntries() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      invalidateHolidayDerivedQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
     },
   });
@@ -459,6 +463,7 @@ export function useCopyPayrollPeriod() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      invalidateHolidayDerivedQueries(queryClient);
     },
   });
 }
@@ -527,6 +532,7 @@ export function useDeletePayrollPeriod() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      invalidateHolidayDerivedQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
     },
   });
@@ -548,6 +554,7 @@ export function useMarkBankDetailsExported() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
+      invalidateHolidayDerivedQueries(queryClient);
     },
   });
 }

@@ -214,15 +214,17 @@ export function SettleLeaverDialog() {
 
   const mismatch = useMemo(() => detectMismatch(sourceRows), [sourceRows]);
 
-  // Headline summary (year-scoped ledger)
+  // Headline summary (year-scoped). Includes accrual sitting in payroll periods
+  // that are not yet approved, so entitlement is shown in full regardless of
+  // period status — matching the Leave dashboard.
   const summary = useMemo(() => {
     if (!employeeSummaryRaw) return null;
     return {
-      totalAccrued: employeeSummaryRaw.accruedHours,
+      totalAccrued: employeeSummaryRaw.accruedIncludingPendingHours,
       totalTaken: employeeSummaryRaw.takenHours,
       totalPaid: employeeSummaryRaw.paidAmount,
       carryOver: employeeSummaryRaw.carryOverHours,
-      balance: employeeSummaryRaw.availableHours,
+      balance: employeeSummaryRaw.availableIncludingPendingHours,
     };
   }, [employeeSummaryRaw]);
 

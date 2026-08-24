@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { invalidateHolidayDerivedQueries } from "@/lib/holiday-cache";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEmployees } from "@/hooks/useEmployees";
@@ -762,6 +763,7 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
       queryClient.invalidateQueries({ queryKey: ["payroll_periods"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entry_locations"] });
+      invalidateHolidayDerivedQueries(queryClient);
       if (unmatchedNames.length > 0) {
         toast.success(
           `${entriesCreated} matched entries imported. ${unmatchedNames.length} unresolved row${unmatchedNames.length !== 1 ? "s" : ""} still require review before approval.`

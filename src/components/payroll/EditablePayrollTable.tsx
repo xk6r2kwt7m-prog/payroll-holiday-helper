@@ -82,6 +82,7 @@ import { formatCurrency, formatHours } from "@/hooks/useHolidays";
 import { useLeaveRules, calculateAccrual } from "@/hooks/useLeaveRules";
 import { cn } from "@/lib/utils";
 import { AddEmployeeToPeriodDialog } from "./AddEmployeeToPeriodDialog";
+import { invalidateHolidayDerivedQueries } from "@/lib/holiday-cache";
 import { supabase } from "@/integrations/supabase/client";
 import { LocationSplitPopover } from "./LocationSplitPopover";
 import {
@@ -327,6 +328,8 @@ export function EditablePayrollTable({
         .eq("id", removeEntryId);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      invalidateHolidayDerivedQueries(queryClient);
+      invalidateHolidayDerivedQueries(queryClient);
       toast.success(`${removeEmployeeName} removed from this payroll period`);
     } catch {
       toast.error("Failed to remove employee");
