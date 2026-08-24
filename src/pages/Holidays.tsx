@@ -178,6 +178,7 @@ const Holidays = () => {
           employeeName: empName,
           department: dept,
           hoursAccrued: 0,
+          pendingAccrued: 0,
           hoursTaken: 0,
           hoursCarriedOver: 0,
           totalPaid: 0,
@@ -188,7 +189,9 @@ const Holidays = () => {
 
       const summary = summaryMap.get(empId)!;
       const accrued = Number(entry.holiday_accrued_hours) || 0;
+      const isOpenPeriod = !isCommittedPayrollStatus(entry.payroll_periods.status);
       summary.hoursAccrued += accrued;
+      if (isOpenPeriod) summary.pendingAccrued += accrued;
 
       const existingPeriod = summary.periodBreakdown.find(p => p.periodId === entry.payroll_period_id);
       if (existingPeriod) {
@@ -200,9 +203,11 @@ const Holidays = () => {
           accrued,
           taken: 0,
           paid: 0,
+          isOpenPeriod,
         });
       }
     });
+
 
     // Add holiday payments (hours taken + paid) — filtered by leave_year_start
     payments.forEach((payment: any) => {
