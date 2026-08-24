@@ -855,6 +855,10 @@ const Payroll = () => {
 
         <PayrollNavStrip />
 
+        {/* Two-hour reversal window for recently deleted draft periods */}
+        <RestoreDeletedPeriodBanner onRestored={(periodId) => setSelectedPeriodId(periodId)} />
+
+
         {/* Phase B — compact top payroll status bar */}
         {selectedPeriod && (
           <PayrollStatusBar
