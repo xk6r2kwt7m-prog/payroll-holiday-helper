@@ -113,8 +113,8 @@ function aggregateByEmployee(
         serviceCharge: treatAsUnmatched ? undefined : matchedEmp?.service_charge ?? 0,
         unmatched: treatAsUnmatched,
         resolution: treatAsUnmatched ? undefined : "matched",
-        isLeaver: matchedEmp?.status === "leaver",
-        isOnboarding: matchedEmp?.status === "onboarding",
+        isLeaver: !treatAsUnmatched && matchedEmp?.status === "leaver",
+        isOnboarding: !treatAsUnmatched && matchedEmp?.status === "onboarding",
         requiresReview: !!requiresReview,
         reviewReason,
       });
