@@ -14,8 +14,9 @@ const base = {
   service_charge: 0,
   email: null,
   preferred_name: null,
-  import_aliases: [],
-} as const;
+  import_aliases: [] as string[],
+  status: "active" as const,
+};
 
 const CLEO: MatchableEmployee = {
   ...base,
