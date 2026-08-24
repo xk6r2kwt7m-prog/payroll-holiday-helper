@@ -95,6 +95,8 @@ export function CloseDraftPanel({
   blockedReason,
   onOverride,
 }: CloseDraftPanelProps) {
+  if (periodStatus === "approved") {
+
 
     return (
       <div
