@@ -37,7 +37,10 @@ export interface CloseDraftPanelProps {
   isSubmitting?: boolean;
   isApproving?: boolean;
   blockedReason?: string | null;
+  /** Admin override — opens the audited bypass dialog. */
+  onOverride?: (mode: "submit" | "approve") => void;
 }
+
 
 function StepRow({
   index,
@@ -90,8 +93,11 @@ export function CloseDraftPanel({
   isSubmitting,
   isApproving,
   blockedReason,
+  onOverride,
 }: CloseDraftPanelProps) {
   if (periodStatus === "approved") {
+
+
     return (
       <div
         className="rounded-xl border border-success/30 bg-success/5 p-3 sm:p-4"
@@ -285,11 +291,31 @@ export function CloseDraftPanel({
             <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
           </Button>
         )}
+        {canAct && onOverride && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 border-destructive/40 text-destructive hover:bg-destructive/10"
+            onClick={() => onOverride("approve")}
+            disabled={isApproving || isSubmitting}
+            data-testid="close-draft-override"
+          >
+            <ShieldAlert className="mr-1.5 h-3.5 w-3.5" />
+            Override & approve
+          </Button>
+        )}
+
         {blockedReason && (
           <p className="text-xs text-muted-foreground" data-testid="close-draft-blocked-reason">
             {blockedReason}
           </p>
         )}
+        {canAct && onOverride && (
+          <p className="w-full text-[11px] text-muted-foreground">
+            Overrides require a written reason and are recorded in the payroll audit trail.
+          </p>
+        )}
+
       </div>
     </div>
   );
