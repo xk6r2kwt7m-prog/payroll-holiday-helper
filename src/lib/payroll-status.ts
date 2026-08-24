@@ -61,3 +61,13 @@ export function sanitisePayrollPeriodUpdate<T extends Record<string, any>>(
   }
   return out as Partial<T>;
 }
+
+/**
+ * True when a payroll period is committed (approved / finalised), meaning its
+ * holiday accrual has been posted to the holiday ledger. Anything else (draft,
+ * pending, rejected) is an OPEN period whose accrual is still provisional.
+ */
+export function isCommittedPayrollStatus(value: unknown): boolean {
+  const s = String(value ?? "").trim().toLowerCase();
+  return s === "approved" || s === "finalised" || s === "finalized";
+}

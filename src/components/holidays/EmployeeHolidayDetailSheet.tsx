@@ -43,13 +43,16 @@ interface EmployeeHolidayDetailSheetProps {
   employeeName: string;
   department: string;
   hoursAccrued: number;
+  /** Portion of hoursAccrued still in open (not yet approved) payroll periods. */
+  pendingAccrued?: number;
   hoursTaken: number;
   totalPaid: number;
   balance: number;
   carryOver?: number;
   year?: number;
   payments: HolidayPaymentRecord[];
-  periodBreakdown?: { periodName: string; accrued: number; taken: number; paid: number }[];
+  periodBreakdown?: { periodName: string; accrued: number; taken: number; paid: number; isOpenPeriod?: boolean }[];
+
   allYearSummaries?: Record<string, YearSummary>;
 }
 
@@ -60,6 +63,8 @@ export function EmployeeHolidayDetailSheet({
   employeeName,
   department,
   hoursAccrued,
+  pendingAccrued = 0,
+
   hoursTaken,
   totalPaid,
   balance,
@@ -140,7 +145,14 @@ export function EmployeeHolidayDetailSheet({
                   <p className="text-2xl font-bold text-success">{formatHours(hoursAccrued)}</p>
                   <p className="text-[10px] text-muted-foreground/70">{hoursToDays(hoursAccrued)} days</p>
                   <p className="text-xs text-muted-foreground">Hours Accrued</p>
+                  {pendingAccrued > 0.005 && (
+                    <p data-testid="accrual-source-split" className="mt-1 text-[10px] leading-tight text-muted-foreground">
+                      {formatHours(hoursAccrued - pendingAccrued)} posted to ledger ·{" "}
+                      {formatHours(pendingAccrued)} in open payroll periods
+                    </p>
+                  )}
                 </div>
+
                 <div className="rounded-xl bg-primary/5 border border-primary/10 p-4 text-center">
                   <Calendar className="h-5 w-5 text-primary mx-auto mb-1" />
                   <p className="text-2xl font-bold text-primary">{formatHours(hoursTaken)}</p>
@@ -344,7 +356,14 @@ export function EmployeeHolidayDetailSheet({
                   <div className="space-y-2">
                     {periodBreakdown.map((period, i) => (
                       <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
-                        <span className="text-muted-foreground">{period.periodName}</span>
+                        <span className="text-muted-foreground flex items-center gap-2">
+                          {period.periodName}
+                          {period.isOpenPeriod && (
+                            <Badge variant="outline" className="h-4 px-1 text-[9px] bg-warning/10 text-warning border-warning/20">
+                              Open period
+                            </Badge>
+                          )}
+                        </span>
                         <div className="flex items-center gap-3 text-xs">
                           <span className="text-success font-medium">+{formatHours(period.accrued)} hrs</span>
                           {period.taken > 0 && (
@@ -352,6 +371,7 @@ export function EmployeeHolidayDetailSheet({
                           )}
                         </div>
                       </div>
+
                     ))}
                   </div>
                 </div>

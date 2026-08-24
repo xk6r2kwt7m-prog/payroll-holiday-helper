@@ -3,6 +3,7 @@ import { useHolidayLedger } from "@/hooks/useHolidayLedger";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
+import { isCommittedPayrollStatus } from "@/lib/payroll-status";
 
 export interface HolidayYearSummary {
   accruedHours: number;
@@ -68,8 +69,9 @@ export function useHolidayYearSummary(
       const { data, error } = await supabase
         .from("payroll_entries")
         .select(
-          "holiday_accrued_hours, payroll_periods!inner(status, start_date, end_date)"
+          "holiday_accrued_hours, payroll_periods!inner(period_name, status, start_date, end_date)"
         )
+
         .eq("employee_id", employeeId!)
         .eq("tenant_id", tenantId!)
         .gte("payroll_periods.start_date", leaveYearStart)
@@ -128,11 +130,22 @@ export function useHolidayYearSummary(
 
     const availableHours = accrued + carryOver - taken;
 
+    // Periods superseded by a "[Corrected]" rebuild must not be double counted —
+    // same rule the Holidays page applies.
+    const correctedBases = new Set(
+      (pendingRows || [])
+        .map((r: any) => String(r.payroll_periods?.period_name ?? ""))
+        .filter((n: string) => n.includes("[Corrected]"))
+        .map((n: string) => n.replace(" [Corrected]", "").trim())
+    );
+
     const pendingAccrued = (pendingRows || []).reduce((sum: number, r: any) => {
-      const status = String(r.payroll_periods?.status ?? "").toLowerCase();
-      if (["approved", "finalised", "finalized"].includes(status)) return sum;
+      const name = String(r.payroll_periods?.period_name ?? "").trim();
+      if (!name.includes("[Corrected]") && correctedBases.has(name)) return sum;
+      if (isCommittedPayrollStatus(r.payroll_periods?.status)) return sum;
       return sum + (Number(r.holiday_accrued_hours) || 0);
     }, 0);
+
 
     return {
       accruedHours: accrued,
