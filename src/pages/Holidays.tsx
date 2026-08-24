@@ -1041,6 +1041,8 @@ const Holidays = () => {
           employeeName={selectedEmployee.employeeName}
           department={selectedEmployee.department}
           hoursAccrued={selectedEmployee.hoursAccrued}
+          pendingAccrued={selectedEmployee.pendingAccrued}
+
           hoursTaken={selectedEmployee.hoursTaken}
           totalPaid={selectedEmployee.totalPaid}
           balance={selectedEmployee.balance}
