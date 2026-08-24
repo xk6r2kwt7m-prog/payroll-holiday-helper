@@ -332,6 +332,17 @@ const Payroll = () => {
     [phase5Checklist, unresolvedIssues, reviewedIssueNames, nmw?.summary?.non_compliant],
   );
 
+  // Items the admin must tick before approval — surfaced inside the
+  // "Close this payroll period" panel so approval isn't hidden further down.
+  const closeDraftAckItems = useMemo(() => {
+    if (!phase5Checklist) return [];
+    const ackIds = new Set(phase5Checklist.ack_required_ids);
+    return phase5Checklist.items
+      .filter((i) => ackIds.has(i.id))
+      .map((i) => ({ id: i.id, title: i.title, detail: i.detail, count: i.count }));
+  }, [phase5Checklist]);
+
+
 
   const handleMarkReviewed = (csvName: string) => {
     setReviewedIssueNames(prev => new Set([...prev, csvName]));
