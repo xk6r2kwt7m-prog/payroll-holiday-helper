@@ -522,11 +522,16 @@ export function SettleLeaverDialog() {
             <Select value={employeeId} onValueChange={handleEmployeeChange}>
               <SelectTrigger><SelectValue placeholder="Select employee to settle" /></SelectTrigger>
               <SelectContent>
-                {periodId && settleableEmployees.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">No unsettled employees in this period</div>
+                {periodId && settleableEmployees.length === 0 && otherLeavers.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">No unsettled employees available</div>
                 )}
                 {!periodId && (
                   <div className="px-3 py-2 text-sm text-muted-foreground">Select a payroll period first</div>
+                )}
+                {settleableEmployees.length > 0 && (
+                  <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    In this payroll period
+                  </div>
                 )}
                 {settleableEmployees.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id}>
@@ -539,6 +544,22 @@ export function SettleLeaverDialog() {
                     </div>
                   </SelectItem>
                 ))}
+                {otherLeavers.length > 0 && (
+                  <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Other unsettled leavers
+                  </div>
+                )}
+                {otherLeavers.map((emp) => (
+                  <SelectItem key={emp.id} value={emp.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{emp.forename} {emp.surname}</span>
+                      <span className="text-muted-foreground">({emp.department})</span>
+                      <Badge variant="outline" className="text-[9px] h-4 bg-destructive/10 text-destructive border-destructive/20">Leaver</Badge>
+                      <Badge variant="outline" className="text-[9px] h-4">Not in period</Badge>
+                    </div>
+                  </SelectItem>
+                ))}
+
               </SelectContent>
             </Select>
           </div>
