@@ -188,18 +188,33 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
 
   const isLoading = createPeriod.isPending || copyPeriod.isPending;
 
+  const applySuggestion = (periodId: string, weeks: string) => {
+    const source = periods.find(p => p.id === periodId);
+    if (!source) return;
+    const suggestion = suggestNextPeriod(source.end_date, parseInt(weeks, 10));
+    setStartDate(suggestion.startDate);
+    setEndDate(suggestion.endDate);
+    setPeriodName(suggestion.periodName);
+    setPayDate(suggestion.payDate);
+    setPeriodWeeks(suggestion.periodWeeks.toString());
+  };
+
   const handleSourceChange = (periodId: string) => {
     setSelectedSourcePeriod(periodId);
-    const source = periods.find(p => p.id === periodId);
-    if (source) {
-      const suggestion = suggestNextPeriod(source.end_date);
-      setStartDate(suggestion.startDate);
-      setEndDate(suggestion.endDate);
-      setPeriodName(suggestion.periodName);
-      setPayDate(suggestion.payDate);
-      setPeriodWeeks(suggestion.periodWeeks.toString());
-    }
+    applySuggestion(periodId, cycleWeeks);
   };
+
+  const handleCycleWeeksChange = (weeks: string) => {
+    setCycleWeeks(weeks);
+    if (selectedSourcePeriod) applySuggestion(selectedSourcePeriod, weeks);
+  };
+
+  const endDateIsSunday = (() => {
+    if (!endDate) return true;
+    const d = new Date(endDate);
+    return Number.isNaN(d.getTime()) ? true : d.getUTCDay() === 0;
+  })();
+
 
 
   return (
