@@ -47,6 +47,10 @@ import {
   type BalanceSnapshotRow,
 } from "@/lib/holiday-entitlement-basis";
 import type { PaymentRow, LedgerRow } from "@/lib/holiday-ledger-integrity";
+import {
+  findBlockingSettlement,
+  describeBlockingSettlement,
+} from "@/lib/leaver-settlement-guard";
 
 export function SettleLeaverDialog() {
   const [open, setOpen] = useState(false);
@@ -314,18 +318,27 @@ export function SettleLeaverDialog() {
     basis === "full_employment" &&
     basisResult?.carryOverDuplicationDetected === true;
 
-  // Duplicate-settlement guard: a leaver may only hold one unreversed settlement
-  // per leave year. Recording a second one double-counts holiday taken in the
-  // ledger (and shows the employee twice on the Holiday Payments report).
-  const existingSettlement = useMemo(() => {
-    const yearStart = `${leaveYear}-01-01`;
-    return (allPayments || []).find(
-      (p) =>
-        (p.leave_year_start === yearStart || p.payroll_period_id === periodId) &&
-        /settlement/i.test(p.notes || ""),
-    );
-  }, [allPayments, leaveYear, periodId]);
+  // Duplicate-settlement guard: a leaver may only hold one *live* settlement
+  // per leave year. Settlements that were reversed — or removed with a deleted
+  // draft payroll period — no longer block a new one.
+  const existingSettlement = useMemo(
+    () =>
+      findBlockingSettlement({
+        payments: allPayments,
+        ledger: fullLedger as any,
+        leaveYearStart: `${leaveYear}-01-01`,
+        periodId,
+      }),
+    [allPayments, fullLedger, leaveYear, periodId],
+  );
+  const existingSettlementPeriodName = useMemo(
+    () =>
+      periods.find((p: any) => p.id === existingSettlement?.payroll_period_id)
+        ?.period_name ?? null,
+    [periods, existingSettlement],
+  );
   const alreadySettled = !!existingSettlement;
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -467,7 +480,7 @@ export function SettleLeaverDialog() {
     if (!employeeId) return "Select an employee to settle.";
     if (!holidayDate) return "Set the settlement date.";
     if (alreadySettled)
-      return `Already settled — ${Number(existingSettlement?.hours ?? 0).toFixed(2)} h recorded on ${existingSettlement?.holiday_taken_date ?? "an earlier date"}. Reverse that settlement before recording a new one.`;
+      return describeBlockingSettlement(existingSettlement!, existingSettlementPeriodName);
     if (carryOverDuplicationDetected)
       return "Resolve carry-over duplication in the ledger before settling.";
     if (basis === "manual" && manualReason.trim().length === 0)
