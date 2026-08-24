@@ -462,7 +462,11 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
 
       const unmatchedNames = aggregated.filter(e => e.unmatched && e.resolution !== "excluded").map(e => e.csvName);
       const excludedNames = aggregated.filter(e => e.resolution === "excluded").map(e => e.csvName);
-      const leaverNames = aggregated.filter(e => e.isLeaver && e.resolution !== "excluded").map(e => `${e.matchedForename} ${e.matchedSurname}`);
+      const leaverNames = aggregated
+        .filter(e => e.isLeaver && e.resolution !== "excluded")
+        .map(e => (e.matchedForename && e.matchedSurname
+          ? `${e.matchedForename} ${e.matchedSurname}`
+          : e.csvName));
 
       let periodNotes: string | null = null;
       if (unmatchedNames.length > 0) {
