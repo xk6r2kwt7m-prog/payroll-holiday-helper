@@ -4,6 +4,12 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase
 import { useTenant } from "@/hooks/useTenant";
 import { invalidateHolidayDerivedQueries } from "@/lib/holiday-cache";
 import { assertPermission } from "@/lib/permission-guard";
+import {
+  DELETE_OPERATION,
+  RESTORE_WINDOW_MS,
+  type PeriodSnapshot,
+} from "@/lib/payroll-period-restore";
+
 
 export type PayrollPeriod = Tables<"payroll_periods">;
 export type PayrollPeriodInsert = TablesInsert<"payroll_periods">;
