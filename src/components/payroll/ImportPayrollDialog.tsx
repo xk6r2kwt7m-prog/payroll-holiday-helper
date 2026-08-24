@@ -134,6 +134,7 @@ interface ImportDialogProps {
 
 export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incomingPeriod }: ImportDialogProps) {
   const [open, setOpen] = useState(false);
+  const { data: leaveRules } = useLeaveRules();
   const [file, setFile] = useState<File | null>(null);
   const [periodName, setPeriodName] = useState("");
   const [startDate, setStartDate] = useState("");

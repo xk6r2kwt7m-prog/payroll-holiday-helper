@@ -67,6 +67,7 @@ export function AddEmployeeToPeriodDialog({
   const { data: allEmployees = [] } = useEmployees(true);
   const createEntry = useCreatePayrollEntry();
   const { tenantId } = useTenant();
+  const { data: leaveRules } = useLeaveRules();
   const queryClient = useQueryClient();
   const { activeAliases } = usePayrollImportAliases();
   const { data: timesheetSource, isLoading: loadingTimesheet } = usePeriodTimesheetSource(
