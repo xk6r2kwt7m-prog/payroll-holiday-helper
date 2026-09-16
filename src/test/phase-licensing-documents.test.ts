@@ -58,8 +58,10 @@ describe("generated documents", () => {
       [{ name: "Aderito Barros", job_title: "Operations Manager" }],
       "2026-09-16"
     );
-    const holder = doc.facts.find((f) => /holder/i.test(f.label));
-    expect(holder?.value).toBe("UD Restaurants Limited");
+    const signedOnBehalf = doc.signature_block.find((f) => /on behalf of/i.test(f.label));
+    expect(signedOnBehalf?.value).toBe("UD Restaurants Limited");
+    expect(doc.paragraphs.join(" ")).toContain("premises licence holder for");
+    expect(doc.paragraphs.join(" ")).toContain("is UD Restaurants Limited");
     expect(JSON.stringify(doc)).not.toMatch(/Philipp Chaykin[^"]*is the premises licence holder/i);
     expect(doc.nominated?.[0].name).toBe("Aderito Barros");
   });
