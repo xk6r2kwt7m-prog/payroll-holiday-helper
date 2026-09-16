@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.licence-signature-portal]
 verify_jwt = false
+
+[functions.check-induction-reminders]
+verify_jwt = false
