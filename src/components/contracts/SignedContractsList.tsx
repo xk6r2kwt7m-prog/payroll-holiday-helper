@@ -51,12 +51,16 @@ interface ContractRow {
   superseded_by?: string | null;
   amendment_type?: string | null;
   amendment_summary?: string | null;
+  requires_details_first?: boolean | null;
+  details_submitted_at?: string | null;
+  review_accepted_at?: string | null;
   employees?: {
     id: string;
     forename: string;
     surname: string;
     department: string;
     email: string;
+    updated_at?: string | null;
   };
 }
 
@@ -80,6 +84,12 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
   const [amendmentTarget, setAmendmentTarget] = useState<ContractRow | null>(null);
   const [terminateTarget, setTerminateTarget] = useState<ContractRow | null>(null);
   const [openChainIds, setOpenChainIds] = useState<Set<string>>(new Set());
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
+  const [savingEmailId, setSavingEmailId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<ContractRow | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   const { data: contracts, isLoading } = useQuery({
     queryKey: ["all_contracts", tenantId],
@@ -152,6 +162,90 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
       else next.add(rootId);
       return next;
     });
+  };
+
+  /**
+   * Inline email edit — saves to the employee record only on an explicit save,
+   * never silently. Nothing here touches payroll or holiday data.
+   */
+  const saveEmail = async (row: ContractRow) => {
+    const employeeId = row.employees?.id;
+    const email = (emailDraft[row.id] || "").trim();
+    if (!employeeId) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "Check the email", description: "Enter a valid email address.", variant: "destructive" });
+      return;
+    }
+    setSavingEmailId(row.id);
+    const { error } = await supabase.from("employees").update({ email }).eq("id", employeeId);
+    setSavingEmailId(null);
+    if (error) {
+      toast({ title: "Could not save email", description: error.message, variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
+    queryClient.invalidateQueries({ queryKey: ["all_contracts"] });
+    setEditingEmailId(null);
+    toast({ title: "Email saved", description: `${email} saved to their record.` });
+  };
+
+  /**
+   * Reject a staff-signed contract with a reason. Signatures and the stored
+   * document are preserved — the contract simply returns for correction and the
+   * reason is written to the immutable document audit trail.
+   */
+  const submitRejection = async () => {
+    const row = rejectTarget;
+    const reason = rejectReason.trim();
+    if (!row || !tenantId) return;
+    if (reason.length < 5) {
+      toast({ title: "Reason required", description: "Tell them what needs correcting.", variant: "destructive" });
+      return;
+    }
+    setRejecting(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("employee_documents")
+        .update({ contract_state: "rejected" })
+        .eq("id", row.id);
+      if (error) throw error;
+
+      await supabase.from("document_audit_log").insert({
+        document_id: row.id,
+        employee_id: row.employees?.id as string,
+        tenant_id: tenantId,
+        action: "contract_rejected",
+        performed_by: auth?.user?.id ?? null,
+        metadata: { reason, previous_state: row.contract_state ?? null },
+      });
+
+      // Let the staff member know, if they have an app account.
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("user_id")
+        .eq("id", row.employees?.id as string)
+        .maybeSingle();
+      if (emp?.user_id) {
+        await supabase.from("notifications").insert({
+          tenant_id: tenantId,
+          user_id: emp.user_id,
+          event_type: "contract_rejected",
+          title: "Your contract needs correcting",
+          body: reason,
+          link: "/staff/documents",
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["all_contracts"] });
+      setRejectTarget(null);
+      setRejectReason("");
+      toast({ title: "Returned for correction", description: "The reason was recorded and the staff member notified." });
+    } catch (err) {
+      toast({ title: "Could not reject", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setRejecting(false);
+    }
   };
 
   const activeEmployees = employees?.filter((e) => e.status === "active") || [];
