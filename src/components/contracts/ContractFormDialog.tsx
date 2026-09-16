@@ -61,6 +61,7 @@ import { evaluateWageCompliance } from "@/lib/uk-minimum-wage";
 import { useMyOnboardingData } from "@/hooks/useEmployeeOnboarding";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenantBranches } from "@/hooks/useBranches";
 import { getActiveEmploymentTerms } from "@/lib/employment-terms";
 import { mapEmployeeToContractDefaults } from "@/lib/contract-employee-defaults";
 import {
