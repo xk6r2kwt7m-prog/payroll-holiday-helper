@@ -43,6 +43,10 @@ export default function SignContract() {
   const [signedAt, setSignedAt] = useState<string | null>(null);
   const [fullySigned, setFullySigned] = useState(false);
   const [signingField, setSigningField] = useState<string | null>(null);
+  const [uploadingScan, setUploadingScan] = useState(false);
+  const [scanUploaded, setScanUploaded] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+
 
   const isEmployer = contractInfo?.signer_type === "employer";
   const isEmployee = contractInfo?.signer_type === "employee";
@@ -151,6 +155,52 @@ export default function SignContract() {
     }
   };
 
+  const handleScanUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanError(null);
+
+    if (file.size > 15 * 1024 * 1024) {
+      setScanError("That file is larger than 15MB. Please upload a smaller file.");
+      return;
+    }
+
+    setUploadingScan(true);
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("read_failed"));
+        reader.readAsDataURL(file);
+      });
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "upload_scan",
+            file_data: dataUrl,
+            file_name: file.name,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        setScanError(result.error || "Upload failed. Please try again.");
+        return;
+      }
+      setScanUploaded(true);
+    } catch {
+      setScanError("Upload failed. Please try again.");
+    } finally {
+      setUploadingScan(false);
+    }
+  };
+
+
+
   // ══════════ Success state ══════════
   if (signed) {
     const fieldLabel = signingField === "employer_block" ? "Employer" : "Team Member";
@@ -185,10 +235,43 @@ export default function SignContract() {
               })}
             </p>
           )}
+          {/* Optional extra: upload a scan/photo of the signed contract */}
+          <div className="rounded-lg border border-border p-4 space-y-2 text-left">
+            <p className="text-sm font-semibold text-foreground">
+              Optional: upload a signed copy
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Your electronic signature above is already complete. If you also have a printed copy you signed by hand, you can add a photo or PDF of it here.
+            </p>
+            {scanUploaded ? (
+              <p className="text-xs text-primary">✓ Copy received. Thank you.</p>
+            ) : (
+              <>
+                <input
+                  type="file"
+                  accept="application/pdf,image/png,image/jpeg,image/webp"
+                  onChange={handleScanUpload}
+                  disabled={uploadingScan}
+                  className="block w-full text-xs file:mr-2 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:text-primary"
+                />
+                {uploadingScan && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Uploading...
+                  </p>
+                )}
+                {scanError && <p className="text-xs text-destructive">{scanError}</p>}
+                <p className="text-[10px] text-muted-foreground">
+                  PDF or photo, up to 15MB. This is optional.
+                </p>
+              </>
+            )}
+          </div>
+
           <div className="rounded-lg bg-muted/50 border border-border p-3 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 inline mr-1" />
             This electronic signature is legally binding under the UK Electronic Communications Act 2000.
           </div>
+
         </div>
       </div>
     );

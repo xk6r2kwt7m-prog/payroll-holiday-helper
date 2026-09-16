@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { evaluateContractSend, normaliseSendMode, type ContractSendMode } from "@/lib/contract-send-rules";
 import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -61,6 +64,7 @@ export function ContractSigningActions({
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const { tenantId } = useTenant();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [signerType, setSignerType] = useState<"employee" | "employer">("employee");
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -72,7 +76,16 @@ export function ContractSigningActions({
   const [overrideEmail, setOverrideEmail] = useState("");
   const [defaultName, setDefaultName] = useState("");
   const [defaultEmail, setDefaultEmail] = useState("");
+  const [defaultTitle, setDefaultTitle] = useState("");
   const [signatoryLoaded, setSignatoryLoaded] = useState(false);
+  const [sendMode, setSendMode] = useState<ContractSendMode>("manual");
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+  const [scheduledSendAt, setScheduledSendAt] = useState<string | null>(null);
+  const [scheduleInput, setScheduleInput] = useState("");
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [confirmSignOpen, setConfirmSignOpen] = useState(false);
+  const [signingAsEmployer, setSigningAsEmployer] = useState(false);
+
 
   useEffect(() => {
     if (!tenantId) return;
@@ -80,12 +93,14 @@ export function ContractSigningActions({
       const [{ data: settings }, { data: docRecord }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("default_signatory_name, default_signatory_email")
+          .select(
+            "default_signatory_name, default_signatory_email, default_signatory_title, contract_send_mode, default_signature_data"
+          )
           .eq("tenant_id", tenantId)
           .maybeSingle(),
         supabase
           .from("employee_documents")
-          .select("employer_signatory_name, employer_signatory_email")
+          .select("employer_signatory_name, employer_signatory_email, contract_scheduled_send_at")
           .eq("id", documentId)
           .maybeSingle(),
       ]);
@@ -93,11 +108,106 @@ export function ContractSigningActions({
       const defEmail = (settings as any)?.default_signatory_email || "";
       setDefaultName(defName);
       setDefaultEmail(defEmail);
+      setDefaultTitle((settings as any)?.default_signatory_title || "");
+      setSendMode(normaliseSendMode((settings as any)?.contract_send_mode));
+      setSavedSignature((settings as any)?.default_signature_data || null);
       setOverrideName((docRecord as any)?.employer_signatory_name || defName);
       setOverrideEmail((docRecord as any)?.employer_signatory_email || defEmail);
+      const sched = (docRecord as any)?.contract_scheduled_send_at as string | null;
+      setScheduledSendAt(sched || null);
+      setScheduleInput(sched ? new Date(sched).toISOString().slice(0, 16) : "");
       setSignatoryLoaded(true);
     })();
   }, [tenantId, documentId]);
+
+  /** Save (or clear) the per-contract "send on" date. */
+  const handleSaveSchedule = async () => {
+    setSavingSchedule(true);
+    const value = scheduleInput ? new Date(scheduleInput).toISOString() : null;
+    const { error } = await supabase
+      .from("employee_documents")
+      .update({ contract_scheduled_send_at: value } as any)
+      .eq("id", documentId);
+    setSavingSchedule(false);
+    if (error) {
+      toast({ title: "Could not save", description: error.message, variant: "destructive" });
+      return;
+    }
+    setScheduledSendAt(value);
+    toast({
+      title: value ? "Send date saved" : "Send date cleared",
+      description: value
+        ? "This contract will be held until that date."
+        : "This contract can be sent whenever you choose.",
+    });
+  };
+
+  /** Apply the admin's saved signature to the employer block, after confirmation. */
+  const handleSignWithSavedSignature = async () => {
+    if (!savedSignature || !overrideName.trim()) return;
+    setSigningAsEmployer(true);
+    try {
+      await supabase
+        .from("employee_documents")
+        .update({
+          employer_signatory_name: overrideName.trim() || null,
+          employer_signatory_email: overrideEmail.trim() || null,
+          employer_signatory_source:
+            overrideName.trim() !== defaultName || overrideEmail.trim() !== defaultEmail
+              ? "override"
+              : "default",
+        } as any)
+        .eq("id", documentId);
+
+      const tokenResult = await generateLink.mutateAsync({
+        employeeDocumentId: documentId,
+        employeeId,
+        signerType: "employer",
+      });
+
+      const consentText =
+        "I confirm that: I have reviewed this contract and confirm it is ready for execution; I am authorised to sign this document on behalf of the employer; I agree to sign this document electronically; This electronic signature represents my legal signature.";
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${tokenResult.token}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            typed_name: overrideName.trim(),
+            consent_given: true,
+            consent_text: consentText,
+            signature_data: savedSignature,
+            signature_type: "saved_drawn",
+            signatory_title: defaultTitle || null,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not apply signature");
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["contract_signatures", documentId] }),
+        queryClient.invalidateQueries({ queryKey: ["signing_tokens", documentId] }),
+        queryClient.invalidateQueries({ queryKey: ["employee_documents"] }),
+      ]);
+
+      setConfirmSignOpen(false);
+      toast({
+        title: "Contract signed",
+        description: "Your signature has been applied to the employer section.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Could not sign",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSigningAsEmployer(false);
+    }
+  };
+
 
   const generateLink = useGenerateSigningLink();
   const { sendContractEmail } = useSendContractEmail();
