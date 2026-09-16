@@ -126,6 +126,21 @@ export function useReplaceComplianceDocument() {
   });
 }
 
+/** Brings an archived document back into the active library (history preserved). */
+export function useRestoreComplianceDocument() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("compliance_documents")
+        .update({ status: "active", archived_at: null, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance_documents"] }),
+  });
+}
+
 export function useArchiveComplianceDocument() {
   const qc = useQueryClient();
   return useMutation({
