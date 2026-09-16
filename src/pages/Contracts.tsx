@@ -51,13 +51,29 @@ export default function Contracts() {
           </Button>
         </div>
 
-        <Tabs defaultValue="signed" className="space-y-4">
+        <Tabs defaultValue={reviewCount ? "review" : "signed"} className="space-y-4">
           <TabsList>
+            <TabsTrigger value="review" className="flex items-center gap-2">
+              <ClipboardCheck className="h-4 w-4" />
+              Awaiting your review
+              {!!reviewCount && (
+                <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+                  {reviewCount}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="signed" className="flex items-center gap-2">
               <FileCheck className="h-4 w-4" />
               {t("contracts.signed_contracts")}
             </TabsTrigger>
           </TabsList>
+          <TabsContent value="review">
+            <SignedContractsList
+              onlyStates={["employee_signed"]}
+              emptyTitle="Nothing waiting for you"
+              emptyDescription="Contracts signed by staff appear here for you to review, sign and send back."
+            />
+          </TabsContent>
           <TabsContent value="signed">
             <SignedContractsList />
           </TabsContent>
