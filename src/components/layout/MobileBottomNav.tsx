@@ -132,6 +132,7 @@ const adminMoreGroups: MoreGroup[] = [
     items: [
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
       { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
+      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents" },
       { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
       { icon: Settings, label: "Admin Centre", path: "/settings", minRole: "admin" },
     ],
