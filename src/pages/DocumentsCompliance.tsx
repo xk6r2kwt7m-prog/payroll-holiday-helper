@@ -66,6 +66,12 @@ export default function DocumentsCompliance() {
               </p>
               <AlcoholAuthorisationsPanel />
             </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                Reminders &amp; new versions
+              </p>
+              <TrainingAutomationPanel />
+            </div>
           </TabsContent>
 
           <TabsContent value="library">
