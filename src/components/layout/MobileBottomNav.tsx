@@ -82,6 +82,7 @@ const managerMoreGroups: MoreGroup[] = [
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
       { icon: Sparkles, label: "Talent Pool", path: TALENT_POOL_ROUTE, minRole: "staff" },
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
+      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents" },
     ],
   },
   {
