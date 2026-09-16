@@ -1,38 +1,44 @@
-## Imported Hours Override — Reason Required & Change Record
+# Guided contract flow, staff details first, and a review step
 
-Most of the plumbing already exists (`payroll_entries.imported_hours`, `adjustment_note`, `payroll_adjustments` audit table with `field_name/old/new/note/changed_by`, adjustment-history drawer, existing note dialog on edit, DB trigger `trg_protect_approved_payroll_entries`). This work sharpens the flow specifically for imported-hours changes, adds a required reason category, and surfaces the change in the approval checklist and (optionally) the PDF.
+## 1. Step-by-step contract builder
 
-### Changes
+Replace the single long contract form with a guided wizard that asks one thing at a time and remembers what it already knows:
 
-1. **New helper `src/lib/payroll-hours-override.ts`**
-   - `OVERRIDE_REASON_CATEGORIES` constant list (timesheet_file_error, clock_in_out_issue, agreed_correction, duplicate_or_missing_shift, unpaid_break, manager_adjustment, other).
-   - `formatOverrideNote({ imported, corrected, category, freeText })` → deterministic string, e.g. `"Timesheet hours manually changed from 32.50 to 30.00 after import. Reason: Unpaid break correction — <freeText>"`.
-   - `countImportedHoursOverrides(entries, adjustments)` used by checklist.
+1. **Who is it for** — pick the staff member (search by name).
+2. **Where they work** — pick the location/branch (pre-selected if they already have one).
+3. **Hours** — Full time or Part time (then weekly hours if part time).
+4. **Who they report to** — a short picker of managers, with Aderito Barros (Operations Manager) at the top as a one-tap choice.
+5. **Their email** — always shown. If missing, you type it in; if wrong, you edit it. Saved to their record.
+6. **Review and send** — a plain summary of the above plus pay details, then "Send for signing".
 
-2. **`src/components/payroll/EditablePayrollTable.tsx`**
-   - When `hoursChanged && entry.imported_hours != null`: open a dedicated **"Imported Hours Override"** dialog (replace the generic one for this path). Shows employee name, imported hours, new hours, delta, source ("Uploaded timesheet"). Requires a **reason category** (Select) plus optional free-text; Save disabled until category picked. Add a "Show this note on payroll PDF" toggle → when on, insert a row into `payroll_period_notes` (`show_on_pdf=true`, category='timesheet'), reusing the existing table and duplicate-guard by comparing normalised text against latest note for that period+employee.
-   - The composite note is written to `payroll_entries.adjustment_note` and to the `payroll_adjustments` audit row (already recorded) via the existing save path.
-   - Row-level display: keep the existing "Adjusted from X hrs" tooltip; the details drawer already renders reason/changed_by/changed_at.
-   - Non-imported-hours changes (rate/service/bonus only) keep the current generic dialog.
+Anything already on file is filled in for you, so most steps are a single tap. Existing pay/terms fields stay available in the review step so nothing is lost.
 
-3. **`src/lib/payroll-approval-checklist.ts`** — add `imported_hours_overrides` warning
-   - Input gains `importedHoursOverrideCount?: number` and `importedHoursOverrideEmployeeIds?: string[]`.
-   - When > 0: warning item, `requires_ack: true`, non-blocking, message "N employees have manually adjusted imported hours. Review before approval."
-   - Wired from the existing adjustments query in the approval workflow container.
+## 2. Ask staff for their details before the contract appears
 
-4. **PDF visibility** — no PDF changes needed: PDF already reads `payroll_period_notes` where `show_on_pdf=true`, and the "Manual Adjustments" table (added previously) already prints from `payroll_adjustments`.
+Staff already have a details form (address, full name, date of birth, right to work). New behaviour:
 
-5. **Approved-period protection** — no change; DB trigger blocks edits, UI already renders read-only for approved periods.
+- You choose per contract: "Ask for details first" (default) or "Send straight away".
+- If details are requested, the staff member gets a link to complete their information. The contract stays hidden until they submit it.
+- Once submitted, their details flow into the contract automatically and the contract becomes visible for them to sign and send back.
+- You can see who is still outstanding and chase them.
 
-### Tests — `src/test/phase-imported-hours-override.test.ts`
+## 3. Review and accept the signed contract
 
-- `formatOverrideNote` includes imported, new, category label, free text.
-- Category required: `undefined` category returns error / disables save (pure guard function).
-- `countImportedHoursOverrides` counts distinct employees with a `timesheet_hours` adjustment row whose linked entry has `imported_hours != null`.
-- Checklist emits `imported_hours_overrides` warning with correct count, `requires_ack=true`, `blocking=false`.
-- Checklist omits the item when count is 0.
-- Duplicate-note guard: same normalised composite note not inserted twice into `payroll_period_notes`.
-- NMW / SC / holiday / approval-write logic unchanged (snapshot equivalence of comparison + checklist blocking_count vs baseline with/without imported-hours overrides).
+A new **Awaiting your review** area for contracts staff have signed:
 
-### Out of scope (unchanged)
-Pay-rate logic, NMW formula, service-charge allocation, holiday calc, bonus logic, approval write path, importer matching logic. No schema migration — reuses `payroll_adjustments`, `payroll_entries.adjustment_note`, `payroll_period_notes`.
+- Open and read the signed document with both signature blocks visible.
+- **Accept and countersign** — completes it, stores it safely in the employee's documents, and keeps the full audit trail.
+- **Reject / ask again** — with a reason, sending it back for correction.
+- After accepting, one button sends the finished copy to the staff member (and you can resend later).
+
+## 4. Email editing everywhere
+
+The staff email is visible on the contract row and in the send box, with an inline edit that saves back to the employee record. Works whether an email exists or not.
+
+## Technical notes
+
+- New `src/components/contracts/ContractWizard.tsx` driving steps over the existing `ContractFormDialog` logic; step state kept in one object, validation per step in a pure helper `src/lib/contract-wizard-steps.ts` with unit tests.
+- Reporting-manager picker sources managers from `tenant_members`/`employees` and uses `buildAppointmentReportingSentence` (already exists) for wording.
+- Details-first gating: new columns on `employee_documents` (`requires_onboarding_first boolean`, `visible_to_employee_at timestamptz`), additive migration with grants; `SignContract.tsx` shows the details form instead of the contract until `employee_onboarding_data` is submitted, then reveals it.
+- Review step: new `ContractReviewPanel` listing documents in `employee_signed` state; accept path reuses the existing employer countersign call, reject writes an audit entry and returns the contract to `sent`.
+- No changes to payroll or holiday logic; all contract state transitions stay audit-logged.
