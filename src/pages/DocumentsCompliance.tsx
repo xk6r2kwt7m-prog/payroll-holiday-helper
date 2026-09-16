@@ -15,6 +15,7 @@ import { CertificatesSection } from "@/components/compliance/CertificatesSection
 import { InspectionFileSection } from "@/components/compliance/InspectionFileSection";
 import { AlcoholAuthorisationsPanel } from "@/components/compliance/AlcoholAuthorisationsPanel";
 import { SiteEmergencyDetailsCard } from "@/components/compliance/SiteEmergencyDetailsCard";
+import { IncidentBookSection } from "@/components/compliance/IncidentBookSection";
 import {
   useComplianceBranches, useConfirmBranchLocation, type ComplianceBranchOption,
 } from "@/hooks/useComplianceBranches";
@@ -53,6 +54,7 @@ export default function DocumentsCompliance() {
             <TabsTrigger value="branch">Branch compliance</TabsTrigger>
             <TabsTrigger value="certificates">Certificates &amp; expiry</TabsTrigger>
             <TabsTrigger value="inspection">Inspection file</TabsTrigger>
+            <TabsTrigger value="incidents">Incident book</TabsTrigger>
           </TabsList>
 
           <TabsContent value="induction" className="space-y-6">
@@ -83,6 +85,11 @@ export default function DocumentsCompliance() {
           <TabsContent value="inspection" className="space-y-4">
             <BranchPicker options={options} value={branch} onChange={setBranch} />
             {branch && <InspectionFileSection branch={branch} />}
+          </TabsContent>
+
+          <TabsContent value="incidents" className="space-y-4">
+            <BranchPicker options={options} value={branch} onChange={setBranch} allowAll />
+            <IncidentBookSection branch={branch || undefined} />
           </TabsContent>
         </Tabs>
       </div>

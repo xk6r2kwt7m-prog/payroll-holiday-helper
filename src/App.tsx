@@ -41,6 +41,7 @@ import CompanyOnboarding from "./pages/CompanyOnboarding";
 import SignContract from "./pages/SignContract";
 import DocumentView from "./pages/DocumentView";
 import DocumentsCompliance from "./pages/DocumentsCompliance";
+import ReportIncident from "./pages/ReportIncident";
 import InductionPortal from "./pages/InductionPortal";
 import StaffDetailsPortal from "./pages/StaffDetailsPortal";
 import PlatformAdmin from "./pages/PlatformAdmin";
@@ -148,6 +149,9 @@ const App = () => (
 
             {/* Training — permission-gated */}
             <Route path="/training" element={<ProtectedRoute requiredRole="staff" requiredModule="training" moduleName="Training" requiredPermission="view_training"><TrainingRecords /></ProtectedRoute>} />
+
+            {/* Report an incident — staff+ */}
+            <Route path="/report-incident" element={<ProtectedRoute requiredRole="staff"><ReportIncident /></ProtectedRoute>} />
 
             {/* Announcements — staff+ */}
             <Route path="/announcements" element={<ProtectedRoute requiredRole="staff"><Announcements /></ProtectedRoute>} />

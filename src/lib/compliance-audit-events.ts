@@ -17,7 +17,22 @@ export type ComplianceAuditEvent =
   | "branch_assignment_changed"
   | "role_assignment_changed"
   | "expiry_or_review_date_changed"
-  | "branch_confirmed";
+  | "branch_confirmed"
+  | "incident_created"
+  | "incident_submitted"
+  | "incident_viewed"
+  | "incident_amended"
+  | "incident_status_changed"
+  | "incident_assigned"
+  | "incident_closed"
+  | "incident_evidence_added"
+  | "incident_confidentiality_changed"
+  | "licence_recorded"
+  | "licence_edited"
+  | "licence_condition_created"
+  | "licence_condition_edited"
+  | "licence_condition_checked"
+  | "training_reissued";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   document_created: "Document created",
@@ -32,13 +47,31 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   role_assignment_changed: "Role assignment changed",
   expiry_or_review_date_changed: "Expiry or review date changed",
   branch_confirmed: "Branch confirmed",
+  incident_created: "Incident report started",
+  incident_submitted: "Incident submitted",
+  incident_viewed: "Incident opened",
+  incident_amended: "Incident amended",
+  incident_status_changed: "Incident status changed",
+  incident_assigned: "Incident assigned",
+  incident_closed: "Incident closed",
+  incident_evidence_added: "Evidence added",
+  incident_confidentiality_changed: "Confidentiality changed",
+  licence_recorded: "Premises licence recorded",
+  licence_edited: "Premises licence edited",
+  licence_condition_created: "Licence condition added",
+  licence_condition_edited: "Licence condition edited",
+  licence_condition_checked: "Licence condition checked",
+  training_reissued: "Training re-issued",
 };
 
 /** Audit actions supported by the shared audit log. */
 export type AuditAction = "create" | "update" | "delete" | "approve" | "reject" | "import";
 
 export function auditActionForEvent(event: ComplianceAuditEvent): AuditAction {
-  if (event === "document_created") return "create";
+  if (
+    event === "document_created" || event === "incident_created" ||
+    event === "licence_recorded" || event === "licence_condition_created"
+  ) return "create";
   if (event === "document_approved" || event === "branch_confirmed") return "approve";
   if (event === "document_rejected") return "reject";
   return "update";
@@ -79,6 +112,40 @@ export const FIELD_LABELS: Record<string, string> = {
   issuing_authority: "Issuing authority",
   reference_number: "Reference number",
   requirement_classification: "Requirement classification",
+  incident_date: "Date of the incident",
+  incident_time: "Time of the incident",
+  location_detail: "Where it happened",
+  people_involved: "People involved",
+  immediate_action: "Immediate action taken",
+  manager_notified: "Manager notified",
+  manager_notified_name: "Manager notified",
+  evidence_available: "Evidence available",
+  confidentiality: "Confidentiality",
+  findings: "Findings",
+  root_cause: "Root cause",
+  immediate_controls: "Immediate controls",
+  riddor_flagged: "RIDDOR review flagged",
+  riddor_assessment: "RIDDOR assessment",
+  insurance_notified: "Insurer notified",
+  authority_notified: "Authority notified",
+  authority_reference: "Authority reference",
+  training_required: "Training required",
+  outcome: "Final outcome",
+  responsible_job_title: "Responsible job title",
+  responsible_person: "Responsible person",
+  action_deadline: "Completion deadline",
+  review_notes: "Initial review",
+  licence_number: "Premises licence number",
+  licence_holder: "Licence holder",
+  dps_name: "Designated premises supervisor",
+  dps_licence_number: "DPS personal licence number",
+  condition_number: "Condition number",
+  legal_wording: "Original legal wording",
+  staff_instruction: "Plain-English staff instruction",
+  frequency: "How often",
+  evidence_required: "Evidence required",
+  last_check: "Last check",
+  next_check: "Next check",
 };
 
 function present(value: unknown): string {
