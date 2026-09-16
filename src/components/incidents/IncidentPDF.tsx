@@ -11,7 +11,6 @@ const RULE = "#d1d5db";
 const s = StyleSheet.create({
   page: { padding: 36, fontSize: 9, fontFamily: "Helvetica", color: "#333", lineHeight: 1.5 },
   title: { fontSize: 15, color: DARK, fontFamily: "Helvetica-Bold" },
-  meta: { fontSize 8: 8 } as any,
 });
 
 export interface IncidentPDFProps {
