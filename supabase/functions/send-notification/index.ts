@@ -25,7 +25,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "induction_pack" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "induction_pack" | "inspection_pack" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -334,6 +334,15 @@ function buildHtml(type: string, data: Record<string, string>): string {
         </p>
         <p>Everything is in one place and can be completed on your phone in a few minutes. You do not need to create an account.</p>
         <p style="color:#666;">This link is personal to you. Please do not forward it.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
+    case "inspection_pack": {
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Inspection file — ${data.branch || ""}</h2>
+        <p>${data.intro || "Please find the current inspection file summary below."}</p>
+        <div style="font-size:14px;">${data.summary_html || ""}</div>
+        <p style="color:#666;margin-top:16px;">Documents themselves are held securely in UglyOps HR and can be opened from the Documents &amp; Compliance section.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
