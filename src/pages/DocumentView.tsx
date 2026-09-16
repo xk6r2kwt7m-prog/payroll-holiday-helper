@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { FileText, Loader2, AlertTriangle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getFreshAccessToken } from "@/lib/authenticated-function";
 
 export default function DocumentView() {
   const [searchParams] = useSearchParams();
@@ -29,11 +30,7 @@ export default function DocumentView() {
 
         // If accessing by document ID (authenticated), include auth token
         if (documentId && !token) {
-          const { supabase } = await import("@/integrations/supabase/client");
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) {
-            headers["Authorization"] = `Bearer ${session.access_token}`;
-          }
+          headers["Authorization"] = `Bearer ${await getFreshAccessToken()}`;
         }
 
         const res = await fetch(

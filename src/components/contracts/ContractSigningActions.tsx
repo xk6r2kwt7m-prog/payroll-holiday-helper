@@ -40,6 +40,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveTestSend } from "@/lib/contract-test-mode";
+import { invokeAuthenticatedFunction } from "@/lib/authenticated-function";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -358,22 +359,21 @@ export function ContractSigningActions({
   const handleSendSignedContract = async (toEmail?: string, isTest = false) => {
     setSendingSigned(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-signed-contract", {
-        body: {
+      const { data } = await invokeAuthenticatedFunction<{ success: boolean; recipient: string }>(
+        "send-signed-contract",
+        {
           document_id: documentId,
           recipient_email: toEmail || emailOnFile || undefined,
           test_send: isTest,
         },
-      });
+      );
 
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
       if (!isTest) setSignedContractSent(true);
       toast({
         title: isTest ? "Test copy sent to you" : "Signed contract sent",
         description: isTest
-          ? `The completed contract was emailed to ${(data as any)?.recipient || toEmail}. ${employeeName} received nothing.`
-          : `The completed contract was emailed to ${(data as any)?.recipient || employeeEmail}.`,
+          ? `The completed contract was emailed to ${data.recipient || toEmail}. ${employeeName} received nothing.`
+          : `The completed contract was emailed to ${data.recipient || employeeEmail}.`,
       });
     } catch (err: any) {
       toast({

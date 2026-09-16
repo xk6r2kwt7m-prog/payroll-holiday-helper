@@ -59,12 +59,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: doc } = await admin
+    const { data: doc, error: docError } = await admin
       .from("employee_documents")
       .select("id, tenant_id, employee_id, document_name, final_signed_pdf_url, employees ( forename, surname, email )")
       .eq("id", documentId)
       .maybeSingle();
 
+    if (docError) {
+      console.error("send-signed-contract: contract lookup failed", docError.message);
+      return new Response(JSON.stringify({ error: "The contract record could not be checked. Please try again." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (!doc) {
       return new Response(JSON.stringify({ error: "Contract not found" }), {
         status: 404,
@@ -73,7 +80,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Authorise: caller must be an active admin/manager of this tenant ──
-    const { data: membership } = await admin
+    const { data: membership, error: membershipError } = await admin
       .from("tenant_members")
       .select("role")
       .eq("tenant_id", doc.tenant_id)
@@ -81,6 +88,13 @@ Deno.serve(async (req) => {
       .eq("is_active", true)
       .maybeSingle();
 
+    if (membershipError) {
+      console.error("send-signed-contract: membership lookup failed", membershipError.message);
+      return new Response(JSON.stringify({ error: "Your access could not be checked. Please try again." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (!membership || !["company_admin", "manager"].includes(membership.role)) {
       return new Response(JSON.stringify({ error: "Not permitted" }), {
         status: 403,
@@ -89,11 +103,19 @@ Deno.serve(async (req) => {
     }
 
     // ── Must be fully signed ──
-    const { data: sigs } = await admin
+    const { data: sigs, error: signaturesError } = await admin
       .from("contract_signatures")
       .select("signer_type")
-      .eq("employee_document_id", documentId);
+      .eq("employee_document_id", documentId)
+      .is("invalidated_at", null);
 
+    if (signaturesError) {
+      console.error("send-signed-contract: signature lookup failed", signaturesError.message);
+      return new Response(JSON.stringify({ error: "The signatures could not be checked. Please try again." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const hasEmployee = sigs?.some((s: any) => s.signer_type === "employee");
     const hasEmployer = sigs?.some((s: any) => s.signer_type === "employer");
     if (!hasEmployee || !hasEmployer) {
@@ -103,10 +125,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!doc.final_signed_pdf_url) {
+      return new Response(JSON.stringify({ error: "The completed signed contract file is not ready yet." }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const employee = (doc as any).employees;
     const recipient = body?.recipient_email || employee?.email;
     if (!recipient) {
       return new Response(JSON.stringify({ error: "No email address on file for this employee." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (typeof recipient !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.trim())) {
+      return new Response(JSON.stringify({ error: "Please confirm a valid recipient email address." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -132,6 +167,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (tokenError || !token) {
+      console.error("send-signed-contract: download token creation failed", tokenError?.message);
       return new Response(JSON.stringify({ error: "Could not create the download link." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -144,7 +180,7 @@ Deno.serve(async (req) => {
 
     const { error: sendError } = await admin.functions.invoke("send-notification", {
       body: {
-        to: recipient,
+        to: recipient.trim(),
         subject: isTestSend ? "[TEST] Your signed contract" : "Your signed contract",
         type: "contract_fully_signed",
         data: {
@@ -168,7 +204,7 @@ Deno.serve(async (req) => {
         status: sendError ? "failed" : "sent",
         test_send: isTestSend,
         email_type: "contract_fully_signed",
-        recipient_email: recipient,
+        recipient_email: recipient.trim(),
         employee_name: employeeName,
         trigger: "manual_admin",
       },
@@ -182,7 +218,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, recipient }), {
+    return new Response(JSON.stringify({ success: true, recipient: recipient.trim() }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
