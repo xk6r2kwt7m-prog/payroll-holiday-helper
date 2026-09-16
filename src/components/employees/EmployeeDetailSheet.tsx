@@ -13,6 +13,7 @@ import { OnboardingChecklist } from "./OnboardingChecklist";
 import { AccountLinkagePanel } from "./AccountLinkagePanel";
 import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateReferenceLetterDialog";
 import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocumentRequestDialog";
+import { RequestStaffDetailsDialog } from "./RequestStaffDetailsDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
@@ -343,7 +344,18 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
           {/* Documents */}
           <Section title="Documents" icon={FolderOpen}>
             {isAdmin && (
-              <div className="mb-3">
+              <div className="mb-3 space-y-2">
+                <RequestStaffDetailsDialog
+                  employeeId={employee.id}
+                  employeeName={`${employee.forename} ${employee.surname}`}
+                  employeeEmail={employee.email}
+                  trigger={
+                    <Button size="sm" variant="outline" className="gap-2 w-full">
+                      <Mail className="h-4 w-4" />
+                      Ask staff to complete their details
+                    </Button>
+                  }
+                />
                 <CreateDocumentRequestDialog
                   preselectedEmployeeId={employee.id}
                   preselectedEmployeeName={`${employee.forename} ${employee.surname}`}

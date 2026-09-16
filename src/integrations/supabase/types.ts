@@ -2111,6 +2111,84 @@ export type Database = {
           },
         ]
       }
+      employee_info_requests: {
+        Row: {
+          created_at: string
+          employee_id: string
+          id: string
+          opened_at: string | null
+          recipient_email: string | null
+          reminder_sent_at: string | null
+          requested_by: string | null
+          requested_by_name: string | null
+          requested_fields: string[]
+          rtw_uploaded_count: number
+          sent_at: string
+          status: string
+          submitted_at: string | null
+          submitted_data: Json
+          tenant_id: string
+          token: string
+          token_expires_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          id?: string
+          opened_at?: string | null
+          recipient_email?: string | null
+          reminder_sent_at?: string | null
+          requested_by?: string | null
+          requested_by_name?: string | null
+          requested_fields?: string[]
+          rtw_uploaded_count?: number
+          sent_at?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_data?: Json
+          tenant_id: string
+          token: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          id?: string
+          opened_at?: string | null
+          recipient_email?: string | null
+          reminder_sent_at?: string | null
+          requested_by?: string | null
+          requested_by_name?: string | null
+          requested_fields?: string[]
+          rtw_uploaded_count?: number
+          sent_at?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_data?: Json
+          tenant_id?: string
+          token?: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_info_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_info_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_onboarding_data: {
         Row: {
           bank_details: Json | null

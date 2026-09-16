@@ -224,6 +224,21 @@ function buildHtml(type: string, data: Record<string, string>): string {
     case "document_expiry":
       body = `<h2>Document Expiry Warning ⚠️</h2><p>A document for <strong>${data.employee_name}</strong> is expiring soon.</p><p><strong>Document:</strong> ${data.document_name}</p><p><strong>Expires:</strong> ${data.expiry_date}</p>`;
       break;
+    case "info_request": {
+      const infoFirst = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Please complete your details</h2>
+        <p>Hi ${infoFirst},</p>
+        <p>We need a few details from you before your first shift. It takes about 5 minutes on your phone and you do not need an account.</p>
+        ${data.section_list ? `<p><strong>You will be asked for:</strong><br/>${data.section_list}</p>` : ""}
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.details_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Complete my details</a>
+        </p>
+        <p>If you are asked for your right to work document, you can take a photo of it with your phone camera.</p>
+        <p style="color:#666;">This link is personal to you and expires on ${data.expires_on || "the date shown in the app"}. Please do not forward it.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
     case "employee_invitation": {
       const firstName = (data.employee_name || "").split(" ")[0] || "there";
       body = `

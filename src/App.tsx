@@ -42,6 +42,7 @@ import SignContract from "./pages/SignContract";
 import DocumentView from "./pages/DocumentView";
 import DocumentsCompliance from "./pages/DocumentsCompliance";
 import InductionPortal from "./pages/InductionPortal";
+import StaffDetailsPortal from "./pages/StaffDetailsPortal";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
@@ -98,6 +99,7 @@ const App = () => (
             <Route path="/sign/:token" element={<SignContract />} />
             <Route path="/document/view" element={<DocumentView />} />
             <Route path="/induction/:token" element={<InductionPortal />} />
+            <Route path="/my-details/:token" element={<StaffDetailsPortal />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
             {/* Dashboard — all authenticated users */}
