@@ -87,6 +87,8 @@ export function ContractSigningActions({
   const [signingAsEmployer, setSigningAsEmployer] = useState(false);
   const [signedScanPath, setSignedScanPath] = useState<string | null>(null);
   const [signedScanAt, setSignedScanAt] = useState<string | null>(null);
+  const [sendingSigned, setSendingSigned] = useState(false);
+  const [signedContractSent, setSignedContractSent] = useState(false);
 
 
   useEffect(() => {
