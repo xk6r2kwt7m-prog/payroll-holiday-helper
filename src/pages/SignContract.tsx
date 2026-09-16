@@ -19,12 +19,24 @@ interface ContractInfo {
   company_name: string | null;
   employer_signatory_name: string | null;
   employer_signatory_title: string | null;
+  details_required?: boolean;
+  prefill?: Record<string, string>;
   signature_details?: Array<{
     signer_type: string;
     signer_name: string;
     signed_at: string;
   }>;
 }
+
+const DETAIL_FIELDS = [
+  { key: "full_name", label: "Full legal name", required: true, placeholder: "e.g. John Smith" },
+  { key: "date_of_birth", label: "Date of birth", required: true, type: "date" },
+  { key: "address", label: "Home address", required: true, placeholder: "House, street, town, postcode" },
+  { key: "phone", label: "Mobile number", required: true, placeholder: "e.g. 07700 900123" },
+  { key: "national_insurance", label: "National Insurance number", required: false, placeholder: "e.g. QQ123456C" },
+  { key: "emergency_contact_name", label: "Emergency contact name", required: false },
+  { key: "emergency_contact_phone", label: "Emergency contact number", required: false },
+] as const;
 
 type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "missing_signature" | "internal_error" | "missing_token" | string;
 
