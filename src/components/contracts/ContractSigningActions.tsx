@@ -1081,12 +1081,12 @@ export function ContractSigningActions({
               Sign this contract?
             </DialogTitle>
             <DialogDescription>
-              Your saved signature will be applied to {employeeName}'s contract as the employer signature. This is recorded and cannot be undone.
+              This signature will be applied to {employeeName}'s contract as the employer signature. This is recorded and cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          {savedSignature && (
+          {pendingSignature && (
             <div className="rounded-md border border-border bg-white p-2">
-              <img src={savedSignature} alt="Your saved signature" className="h-14 w-auto object-contain" />
+              <img src={pendingSignature} alt="Your signature" className="h-14 w-auto object-contain" />
             </div>
           )}
           <div className="text-xs text-muted-foreground">
@@ -1097,7 +1097,7 @@ export function ContractSigningActions({
             <Button variant="outline" size="sm" onClick={() => setConfirmSignOpen(false)} disabled={signingAsEmployer}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleSignWithSavedSignature} disabled={signingAsEmployer}>
+            <Button size="sm" onClick={handleSignAsEmployer} disabled={signingAsEmployer || !pendingSignature}>
               {signingAsEmployer ? <Loader2 className="h-3 w-3 animate-spin" /> : <PenLine className="h-3 w-3" />}
               Confirm and sign
             </Button>
