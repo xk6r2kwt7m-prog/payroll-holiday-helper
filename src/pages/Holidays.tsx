@@ -143,7 +143,15 @@ const Holidays = () => {
   //   paid    → holiday_payments.total filtered by leave_year_start year
   //   carry   → holiday_balances.hours_carried_over filtered by leave_year_start year (where available)
   //   balance → accrued + carry + adjustments - taken (computed live, never from stored totals)
-  const buildSummaries = (year: number, payments: any[], balances: any[]): EmployeeSummary[] => {
+  //   ledger-only taken → holiday_ledger holiday_taken / payout rows with no live
+  //                        holiday_payments row (backfilled or deleted payment),
+  //                        added so the dashboard matches the ledger (source of truth)
+  const buildSummaries = (
+    year: number,
+    payments: any[],
+    balances: any[],
+    ledgerRows: any[] = [],
+  ): EmployeeSummary[] => {
     const summaryMap = new Map<string, EmployeeSummary>();
 
     // Build a set of corrected period base names to exclude originals

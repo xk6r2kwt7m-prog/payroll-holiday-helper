@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { isCommittedPayrollStatus } from "@/lib/payroll-status";
+import type { ReconLedgerRow } from "@/lib/holiday-taken-reconciliation";
 
 
 export interface HolidayLedgerEntry {
