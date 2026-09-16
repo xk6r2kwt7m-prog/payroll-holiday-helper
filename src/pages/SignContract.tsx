@@ -61,6 +61,9 @@ export default function SignContract() {
   const [details, setDetails] = useState<Record<string, string>>({});
   const [savingDetails, setSavingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [readConfirmed, setReadConfirmed] = useState(false);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [needsHelp, setNeedsHelp] = useState(false);
 
   const detailsRequired = contractInfo?.details_required === true;
 
