@@ -262,7 +262,13 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
     }
   };
 
-  const activeEmployees = employees?.filter((e) => e.status === "active") || [];
+  // Contract work happens for anyone currently on the team: new starters and
+  // people still onboarding need contracts just as much as fully active staff.
+  const activeEmployees = (employees || [])
+    .filter((e) => ["active", "starter", "onboarding"].includes(e.status))
+    .sort((a, b) =>
+      `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`),
+    );
   const selectedEmployee = activeEmployees.find((e) => e.id === selectedEmployeeId);
 
   return (
