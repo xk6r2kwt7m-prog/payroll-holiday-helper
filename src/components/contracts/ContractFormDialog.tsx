@@ -597,13 +597,13 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                 <FileText className="h-4 w-4 text-primary" />
               )}
             </div>
-            {step === "fill" && "New Employment Contract"}
+            {step === "fill" && FILL_STAGE_COPY[fillStage].title}
             {step === "confirm" && "Confirm Details"}
             {step === "issue" && "Issue Contract"}
             {step === "sign" && "Send for Signing"}
           </DialogTitle>
           <DialogDescription>
-            {step === "fill" && "Fill in the employment details below to generate a UK-compliant contract."}
+            {step === "fill" && FILL_STAGE_COPY[fillStage].description}
             {step === "confirm" && "Review the contract details before generating."}
             {step === "issue" && "Contract generated and saved as draft. Confirm to issue it to the employee."}
             {step === "sign" && "Generate signing links for the employee and yourself."}
