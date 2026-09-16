@@ -721,23 +721,20 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
               {fillStage === "location" && (
                 <div className="space-y-2">
-                  {(tenantBranches || []).map((b) => {
-                    const label = b.display_name || b.branch;
-                    return (
-                      <button
-                        key={b.branch}
-                        type="button"
-                        onClick={() => setVariables({ ...variables, workLocation: label })}
-                        className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                          variables.workLocation === label
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:bg-muted/50"
-                        }`}
-                      >
-                        <p className="text-sm font-medium">{label}</p>
-                      </button>
-                    );
-                  })}
+                  {(tenantBranches || []).map((branch) => (
+                    <button
+                      key={branch}
+                      type="button"
+                      onClick={() => setVariables({ ...variables, workLocation: branch })}
+                      className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                        variables.workLocation === branch
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <p className="text-sm font-medium">{branch}</p>
+                    </button>
+                  ))}
                   <div>
                     <Label className="text-xs">Or type a place of work</Label>
                     <Input
