@@ -3,6 +3,7 @@ import { useTenant } from "@/hooks/useTenant";
 import { useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEmailPolicy } from "@/hooks/useEmailPolicy";
+import { applyTestSubject } from "@/lib/contract-test-mode";
 
 interface SendContractEmailParams {
   recipientEmail: string;
