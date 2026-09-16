@@ -554,12 +554,13 @@ export function ContractSigningActions({
         }
         break;
       case "send_signed_copy":
-        handleSendSignedContract();
+        startSend("signed_copy");
         break;
       case "remind":
       case "send":
-        openDialogFor("employee");
+        startSend("signing");
         break;
+
       default:
         openDialogFor(employeeSigned && !employerSigned ? "employer" : "employee");
     }
