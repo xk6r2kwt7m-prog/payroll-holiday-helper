@@ -391,6 +391,12 @@ export function StaffInductionSection() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <InductionReviewDialog
+        packId={reviewPack?.id ?? null}
+        employeeName={reviewPack?.name ?? ""}
+        onClose={() => setReviewPack(null)}
+      />
     </div>
   );
 }
