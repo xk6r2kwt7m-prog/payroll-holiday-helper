@@ -201,9 +201,10 @@ function QuickActionGrid() {
     { icon: Sun, label: "Time Off", path: "/holidays", color: "text-accent", bg: "bg-accent/10" },
     { icon: FileText, label: "My Records", path: "/staff", color: "text-foreground", bg: "bg-secondary" },
     { icon: Megaphone, label: "Updates", path: "/announcements", color: "text-warning", bg: "bg-warning/10" },
+    { icon: AlertTriangle, label: "Report", path: "/report-incident", color: "text-destructive", bg: "bg-destructive/10" },
   ];
   return (
-    <div className="grid grid-cols-4 gap-2">
+    <div className="grid grid-cols-5 gap-1.5">
       {actions.map((a) => (
         <Link
           key={a.label}
