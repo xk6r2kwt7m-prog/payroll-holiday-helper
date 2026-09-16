@@ -4,6 +4,7 @@ import {
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin, Building2,
   UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone, Sparkles,
   ClipboardList, CheckCircle2, User, Shield, FileText, CalendarDays, Sun,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TALENT_POOL_ROUTE } from "@/lib/routes";
