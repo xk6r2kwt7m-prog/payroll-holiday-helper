@@ -1,4 +1,16 @@
 import { useState, useMemo } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { resolveContractTrackerStatus } from "@/lib/contract-status-tracker";
+import { detectStaleContractDraft } from "@/lib/contract-staleness";
+import { Mail } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useDeleteDocument } from "@/hooks/useEmployeeDocuments";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,12 +63,16 @@ interface ContractRow {
   superseded_by?: string | null;
   amendment_type?: string | null;
   amendment_summary?: string | null;
+  requires_details_first?: boolean | null;
+  details_submitted_at?: string | null;
+  review_accepted_at?: string | null;
   employees?: {
     id: string;
     forename: string;
     surname: string;
     department: string;
     email: string;
+    updated_at?: string | null;
   };
 }
 
@@ -80,6 +96,12 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
   const [amendmentTarget, setAmendmentTarget] = useState<ContractRow | null>(null);
   const [terminateTarget, setTerminateTarget] = useState<ContractRow | null>(null);
   const [openChainIds, setOpenChainIds] = useState<Set<string>>(new Set());
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState<Record<string, string>>({});
+  const [savingEmailId, setSavingEmailId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<ContractRow | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   const { data: contracts, isLoading } = useQuery({
     queryKey: ["all_contracts", tenantId],
@@ -87,7 +109,7 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
       if (!tenantId) return [];
       const { data, error } = await supabase
         .from("employee_documents")
-        .select(`*, employees ( id, forename, surname, department, email )`)
+        .select(`*, employees ( id, forename, surname, department, email, updated_at )`)
         .eq("tenant_id", tenantId)
         .eq("document_type", "contract")
         .order("version_number", { ascending: false })
@@ -154,6 +176,90 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
     });
   };
 
+  /**
+   * Inline email edit — saves to the employee record only on an explicit save,
+   * never silently. Nothing here touches payroll or holiday data.
+   */
+  const saveEmail = async (row: ContractRow) => {
+    const employeeId = row.employees?.id;
+    const email = (emailDraft[row.id] || "").trim();
+    if (!employeeId) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: "Check the email", description: "Enter a valid email address.", variant: "destructive" });
+      return;
+    }
+    setSavingEmailId(row.id);
+    const { error } = await supabase.from("employees").update({ email }).eq("id", employeeId);
+    setSavingEmailId(null);
+    if (error) {
+      toast({ title: "Could not save email", description: error.message, variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
+    queryClient.invalidateQueries({ queryKey: ["all_contracts"] });
+    setEditingEmailId(null);
+    toast({ title: "Email saved", description: `${email} saved to their record.` });
+  };
+
+  /**
+   * Reject a staff-signed contract with a reason. Signatures and the stored
+   * document are preserved — the contract simply returns for correction and the
+   * reason is written to the immutable document audit trail.
+   */
+  const submitRejection = async () => {
+    const row = rejectTarget;
+    const reason = rejectReason.trim();
+    if (!row || !tenantId) return;
+    if (reason.length < 5) {
+      toast({ title: "Reason required", description: "Tell them what needs correcting.", variant: "destructive" });
+      return;
+    }
+    setRejecting(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("employee_documents")
+        .update({ contract_state: "rejected" })
+        .eq("id", row.id);
+      if (error) throw error;
+
+      await supabase.from("document_audit_log").insert({
+        document_id: row.id,
+        employee_id: row.employees?.id as string,
+        tenant_id: tenantId,
+        action: "contract_rejected",
+        performed_by: auth?.user?.id ?? null,
+        metadata: { reason, previous_state: row.contract_state ?? null },
+      });
+
+      // Let the staff member know, if they have an app account.
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("user_id")
+        .eq("id", row.employees?.id as string)
+        .maybeSingle();
+      if (emp?.user_id) {
+        await supabase.from("notifications").insert({
+          tenant_id: tenantId,
+          user_id: emp.user_id,
+          event_type: "contract_rejected",
+          title: "Your contract needs correcting",
+          body: reason,
+          link: "/staff/documents",
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["all_contracts"] });
+      setRejectTarget(null);
+      setRejectReason("");
+      toast({ title: "Returned for correction", description: "The reason was recorded and the staff member notified." });
+    } catch (err) {
+      toast({ title: "Could not reject", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setRejecting(false);
+    }
+  };
+
   const activeEmployees = employees?.filter((e) => e.status === "active") || [];
   const selectedEmployee = activeEmployees.find((e) => e.id === selectedEmployeeId);
 
@@ -217,6 +323,19 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
             const state = current.contract_state || "draft";
             const isLocked = ["signed", "superseded", "terminated"].includes(state);
             const isSigned = state === "signed";
+            const tracker = resolveContractTrackerStatus({
+              contractState: state,
+              requiresDetailsFirst: current.requires_details_first,
+              detailsSubmittedAt: current.details_submitted_at,
+              contractSendStatus: current.contract_send_status,
+              reviewAcceptedAt: current.review_accepted_at,
+            });
+            const staleness = detectStaleContractDraft({
+              generatedAt: current.created_at,
+              employeeUpdatedAt: current.employees?.updated_at,
+              detailsSubmittedAt: current.details_submitted_at,
+              contractState: state,
+            });
 
             return (
               <div
@@ -246,6 +365,9 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                         {current.employees?.department}
                       </Badge>
                       <ContractStateBadge state={state} />
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {tracker.label}
+                      </Badge>
                       {(current.version_number ?? 1) > 1 && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                           v{current.version_number}
@@ -305,6 +427,56 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                   </div>
                 </div>
 
+                {/* Staff email — visible on the row, editable on request */}
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                  {editingEmailId === current.id ? (
+                    <>
+                      <Input
+                        value={emailDraft[current.id] ?? current.employees?.email ?? ""}
+                        onChange={(e) => setEmailDraft((p) => ({ ...p, [current.id]: e.target.value }))}
+                        placeholder="name@example.com"
+                        className="h-8 w-56 text-xs"
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8"
+                        disabled={savingEmailId === current.id}
+                        onClick={() => saveEmail(current)}
+                      >
+                        Save
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditingEmailId(null)}>
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className={current.employees?.email ? "text-muted-foreground" : "text-amber-600"}>
+                        {current.employees?.email || "No email on record"}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => {
+                          setEmailDraft((p) => ({ ...p, [current.id]: current.employees?.email || "" }));
+                          setEditingEmailId(current.id);
+                        }}
+                      >
+                        {current.employees?.email ? "Edit" : "Add email"}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {/* Details changed after generation — never silently reused */}
+                {staleness.isStale && (
+                  <p className="mt-2 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-2 text-xs text-amber-800">
+                    {staleness.warning}
+                  </p>
+                )}
+
                 {/* Next step for this contract */}
                 <div className="mt-3">
                   <ContractSigningActions
@@ -322,6 +494,31 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                     contractState={state}
                   />
                 </div>
+
+                {/* Awaiting company review — open, accept (countersign) or return */}
+                {state === "employee_signed" && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8"
+                      onClick={() => handleDownload(current.id, "original")}
+                    >
+                      Open signed document
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setRejectReason("");
+                        setRejectTarget(current);
+                      }}
+                    >
+                      Reject / ask again
+                    </Button>
+                  </div>
+                )}
 
 
                 {/* Action row for signed contracts */}
@@ -393,6 +590,32 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
           employeeName={`${terminateTarget.employees?.forename || ""} ${terminateTarget.employees?.surname || ""}`}
         />
       )}
+
+      <Dialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ask for a correction</DialogTitle>
+            <DialogDescription>
+              {rejectTarget?.employees?.forename} will be told what needs fixing. The signed copy and audit
+              history are kept.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="e.g. The signature is unclear — please sign again."
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRejectTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" disabled={rejecting} onClick={submitRejection}>
+              Return for correction
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,4 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
+import {
+  evaluateCriticalContractDetails,
+  type ContractDetailsMode,
+} from "@/lib/contract-critical-fields";
 import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useTenant } from "@/hooks/useTenant";
@@ -124,6 +128,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const [step, setStep] = useState<Step>("fill");
   const [fillStage, setFillStage] = useState<FillStage>("employee");
   const [emailDraft, setEmailDraft] = useState("");
+  /** Details-first is the safe default; send-straight-away is opt-in. */
+  const [detailsMode, setDetailsMode] = useState<ContractDetailsMode>("details_first");
   const [savingEmail, setSavingEmail] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [contractType, setContractType] = useState<ContractType>("foh");
@@ -436,6 +442,16 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
       setSavedDocumentId(result.id);
 
+      // Record how this contract reaches the staff member. Details-first keeps
+      // the contract hidden until they submit their own details.
+      const { error: modeError } = await supabase
+        .from("employee_documents")
+        .update({ requires_details_first: detailsMode === "details_first" })
+        .eq("id", result.id);
+      if (modeError) {
+        console.error("Failed to save contract sending mode:", modeError);
+      }
+
       // Phase 3 — write immutable NMW override audit row if applicable.
       if (nmwOverride?.acknowledged && nmwOverride.reason.trim()) {
         try {
@@ -506,6 +522,33 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
   const selectedEmployee = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
   const employeeEmail = selectedEmployee?.email;
+
+  /**
+   * Critical-detail gate: "Send straight away" is only offered when nothing a
+   * contract needs is missing. Display/gating only — no payroll, holiday, NMW
+   * or service-charge logic is involved.
+   */
+  const criticalDetails = useMemo(
+    () =>
+      evaluateCriticalContractDetails({
+        fullLegalName: variables.employeeName,
+        email: emailDraft || employeeEmail,
+        homeAddress: variables.homeAddress,
+        jobTitle: variables.jobTitle,
+        workLocation: variables.workLocation,
+        startDate: variables.effectiveDate,
+        employmentType: variables.employmentType,
+        weeklyHours: variables.weeklyHours,
+        baseHourlyRate: variables.baseHourlyRate,
+        reportingManagerName: variables.reportingManagerName,
+      }),
+    [variables, emailDraft, employeeEmail]
+  );
+
+  useEffect(() => {
+    // Never leave an unsendable contract on "send straight away".
+    if (!criticalDetails.canSendStraightAway) setDetailsMode("details_first");
+  }, [criticalDetails.canSendStraightAway]);
 
   const handleSendContractEmail = async () => {
     if (!employeeSignLink || !employeeEmail || !savedDocumentId || !employeeSignTokenId) return;
@@ -1109,6 +1152,43 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           {/* STEP 2: Confirm Details */}
           {step === "confirm" && (
             <div className="space-y-4">
+              {/* How this contract reaches the staff member */}
+              <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                <p className="text-sm font-semibold">How should this reach {variables.employeeName || "them"}?</p>
+                {([
+                  {
+                    value: "details_first" as ContractDetailsMode,
+                    title: "Ask for their details first (recommended)",
+                    note: "They complete name, address and contact details before the contract is shown.",
+                    disabled: false,
+                  },
+                  {
+                    value: "send_now" as ContractDetailsMode,
+                    title: "Send straight away",
+                    note: criticalDetails.canSendStraightAway
+                      ? "Everything needed is already on record."
+                      : `Missing: ${criticalDetails.missing.join(", ")}.`,
+                    disabled: !criticalDetails.canSendStraightAway,
+                  },
+                ]).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={opt.disabled}
+                    onClick={() => setDetailsMode(opt.value)}
+                    className={`w-full rounded-lg border p-3 text-left transition-colors disabled:opacity-50 ${
+                      detailsMode === opt.value ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{opt.title}</p>
+                    <p className="text-xs text-muted-foreground">{opt.note}</p>
+                  </button>
+                ))}
+                {!criticalDetails.canSendStraightAway && (
+                  <p className="text-xs text-amber-600">{criticalDetails.message}</p>
+                )}
+              </div>
+
               {/* Phase 5F — Concise review summary */}
               <div
                 data-testid="confirm-review-summary"
