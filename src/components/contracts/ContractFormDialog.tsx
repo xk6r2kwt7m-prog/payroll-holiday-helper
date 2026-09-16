@@ -748,35 +748,31 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
               {fillStage === "hours" && (
                 <div className="space-y-2">
-                  {[
-                    { label: "Full time", hours: "40", note: "40 hours a week" },
-                    { label: "Part time", hours: "20", note: "Set the weekly hours below" },
-                    { label: "Variable hours", hours: "", note: "Hours vary week to week" },
-                  ].map((opt) => {
-                    const active =
-                      opt.label === "Variable hours"
-                        ? variables.employmentType === "variable_hours"
-                        : variables.employmentType !== "variable_hours" && variables.weeklyHours === opt.hours;
-                    return (
-                      <button
-                        key={opt.label}
-                        type="button"
-                        onClick={() =>
-                          setVariables({
-                            ...variables,
-                            employmentType: opt.label === "Variable hours" ? "variable_hours" : "fixed_hours",
-                            weeklyHours: opt.hours || variables.weeklyHours,
-                          })
-                        }
-                        className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                          active ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
-                        }`}
-                      >
-                        <p className="text-sm font-medium">{opt.label}</p>
-                        <p className="text-xs text-muted-foreground">{opt.note}</p>
-                      </button>
-                    );
-                  })}
+                  {([
+                    { value: "full_time", label: "Full time", hours: "40", note: "40 hours a week" },
+                    { value: "part_time", label: "Part time", hours: "20", note: "Set the weekly hours below" },
+                    { value: "variable_hours", label: "Variable hours", hours: "", note: "Hours vary week to week" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() =>
+                        setVariables({
+                          ...variables,
+                          employmentType: opt.value,
+                          weeklyHours: opt.hours || variables.weeklyHours,
+                        })
+                      }
+                      className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                        variables.employmentType === opt.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <p className="text-sm font-medium">{opt.label}</p>
+                      <p className="text-xs text-muted-foreground">{opt.note}</p>
+                    </button>
+                  ))}
                   {variables.employmentType !== "variable_hours" && (
                     <div>
                       <Label className="text-xs">Weekly hours</Label>
