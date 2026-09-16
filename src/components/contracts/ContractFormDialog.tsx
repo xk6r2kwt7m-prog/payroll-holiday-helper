@@ -756,6 +756,18 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
             <span>Issue</span>
             <span>Sign</span>
           </div>
+          {step === "fill" && restoredDraftAt && (
+            <p className="mt-3 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              We brought back the details you were typing for this person on{" "}
+              {new Date(restoredDraftAt).toLocaleString("en-GB", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              . Check them before you continue.
+            </p>
+          )}
         </DialogHeader>
 
 
