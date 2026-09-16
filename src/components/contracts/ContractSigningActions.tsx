@@ -507,15 +507,36 @@ export function ContractSigningActions({
                 )}
               </div>
 
-              {/* Show signing details if signatures exist */}
+              {/* Show captured signatures if they exist */}
               {signatures && signatures.length > 0 && (
-                <div className="pt-2 mt-2 border-t border-border space-y-1">
+                <div className="pt-2 mt-2 border-t border-border space-y-2">
                   {signatures.map((sig, i) => (
-                    <div key={i} className="text-[10px] text-muted-foreground">
-                      <span className="capitalize font-medium">{sig.signer_type}</span>: {sig.signer_name} —{" "}
-                      {new Date(sig.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    <div key={i} className="space-y-1">
+                      <div className="text-[10px] text-muted-foreground">
+                        <span className="capitalize font-medium">{sig.signer_type}</span>: {sig.signer_name} —{" "}
+                        {new Date(sig.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                      {sig.signature_data ? (
+                        <div className="rounded-md border border-border bg-white p-2">
+                          <img
+                            src={sig.signature_data}
+                            alt={`${sig.signer_type} signature`}
+                            className="h-12 w-auto object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground italic">
+                          Typed signature: {sig.typed_name}
+                        </p>
+                      )}
                     </div>
                   ))}
+                  {!bothSigned && (
+                    <p className="text-[10px] text-muted-foreground">
+                      The contract PDF stays unsigned until both parties have signed — the completed copy with both
+                      signatures is created then.
+                    </p>
+                  )}
                 </div>
               )}
 
