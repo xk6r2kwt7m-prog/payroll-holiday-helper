@@ -101,6 +101,7 @@ const App = () => (
             <Route path="/document/view" element={<DocumentView />} />
             <Route path="/induction/:token" element={<InductionPortal />} />
             <Route path="/my-details/:token" element={<StaffDetailsPortal />} />
+            <Route path="/sign-licence/:token" element={<SignLicensingDocument />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
             {/* Dashboard — all authenticated users */}
