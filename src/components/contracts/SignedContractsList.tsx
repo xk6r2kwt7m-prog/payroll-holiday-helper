@@ -116,6 +116,7 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
   }, [contracts]);
 
   const filtered = chains.filter(({ current }) => {
+    if (onlyStates && !onlyStates.includes(current.contract_state || "draft")) return false;
     const empName = `${current.employees?.forename} ${current.employees?.surname}`.toLowerCase();
     const docName = current.document_name.toLowerCase();
     return empName.includes(search.toLowerCase()) || docName.includes(search.toLowerCase());
