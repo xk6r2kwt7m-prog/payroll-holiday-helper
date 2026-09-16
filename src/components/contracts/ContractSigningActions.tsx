@@ -103,6 +103,19 @@ export function ContractSigningActions({
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [pendingSource, setPendingSource] = useState<"saved" | "drawn">("saved");
   const pendingSignature = pendingSource === "drawn" ? drawnSignature : savedSignature;
+  // Recipient confirmation before any contract email leaves the system.
+  const [emailOnFile, setEmailOnFile] = useState<string>(employeeEmail || "");
+  const [recipientOpen, setRecipientOpen] = useState(false);
+  const [recipientPurpose, setRecipientPurpose] = useState<"signing" | "signed_copy">("signing");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [savingRecipient, setSavingRecipient] = useState(false);
+
+  useEffect(() => {
+    setEmailOnFile(employeeEmail || "");
+  }, [employeeEmail]);
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim());
+
 
 
   useEffect(() => {
