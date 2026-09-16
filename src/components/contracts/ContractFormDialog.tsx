@@ -584,6 +584,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       }
     }
 
+    if (fillStage === "employee" && !emailDraft) setEmailDraft(selectedEmployee?.email || "");
+
     setFillStage(FILL_STAGES[Math.min(index + 1, FILL_STAGES.length - 1)]);
   };
 
