@@ -689,6 +689,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       setSelectedEmployeeId("");
       setUserEdited(new Set());
       setContractTypeEdited(false);
+      setRestoredDraftAt(null);
       setVariables({
         employeeName: "",
         homeAddress: "",
