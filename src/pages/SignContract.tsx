@@ -654,6 +654,20 @@ export default function SignContract() {
           </div>
         )}
 
+        {isEmployee && (
+          <Button
+            variant="outline"
+            className="w-full h-11"
+            onClick={() => {
+              setReviewConfirmed(false);
+              setNeedsHelp(false);
+            }}
+          >
+            <FileText className="h-4 w-4" />
+            Back to reading the contract
+          </Button>
+        )}
+
         {/* ══════════ SIGNING FORM ══════════ */}
         <div className="rounded-xl border border-border bg-card p-4 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">
