@@ -60,7 +60,15 @@ interface ContractRow {
   };
 }
 
-export function SignedContractsList() {
+interface SignedContractsListProps {
+  /** Restrict the list to contracts in these states (e.g. the review queue). */
+  onlyStates?: string[];
+  /** Empty-state copy override. */
+  emptyTitle?: string;
+  emptyDescription?: string;
+}
+
+export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }: SignedContractsListProps = {}) {
   const { toast } = useToast();
   const { tenantId } = useTenant();
   const { data: employees } = useEmployees();
