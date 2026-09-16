@@ -450,20 +450,23 @@ export function ContractSigningActions({
           </>
         )}
         {signingStage === "employee_signed" && (
-          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
-            <Clock className="h-3 w-3" />
-            {employerTokenAutoSent
-              ? "Employer link sent — awaiting signature"
-              : "Employee signed — awaiting employer"}
-          </Badge>
+          <button type="button" onClick={() => { setOpen(true); setSignerType("employer"); }}>
+            <Badge
+              variant="outline"
+              className="text-[10px] gap-1 text-amber-600 border-amber-200 whitespace-nowrap cursor-pointer"
+              title="Employee signed — review and countersign"
+            >
+              <Clock className="h-3 w-3" /> Sign now
+            </Badge>
+          </button>
         )}
         {signingStage === "employer_signed" && (
-          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
-            <Clock className="h-3 w-3" /> Employer signed — awaiting employee
+          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200 whitespace-nowrap">
+            <Clock className="h-3 w-3" /> Awaiting staff
           </Badge>
         )}
         {signingStage === "sent" && (
-          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
+          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200 whitespace-nowrap">
             <Mail className="h-3 w-3" /> Sent
           </Badge>
         )}
