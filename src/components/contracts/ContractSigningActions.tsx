@@ -742,32 +742,89 @@ export function ContractSigningActions({
               </div>
             )}
 
-            {/* Sign now with my saved signature */}
+            {/* Sign here — saved signature or draw it now */}
             {!employerSigned && signatoryLoaded && (
-              <div className="rounded-lg border border-border p-3 space-y-2">
-                <p className="text-xs font-semibold text-foreground">My Signature</p>
-                {savedSignature ? (
+              <div className="rounded-lg border border-border p-3 space-y-3">
+                <p className="text-xs font-semibold text-foreground">Your signature</p>
+
+                {savedSignature && !drawMode && (
                   <>
                     <div className="rounded-md border border-border bg-white p-2">
                       <img src={savedSignature} alt="Your saved signature" className="h-12 w-auto object-contain" />
                     </div>
                     <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setConfirmSignOpen(true)}
+                      className="w-full gradient-primary"
+                      onClick={() => {
+                        setPendingSource("saved");
+                        setConfirmSignOpen(true);
+                      }}
                       disabled={signingAsEmployer || !overrideName.trim()}
                     >
                       {signingAsEmployer ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
                       Sign this contract now
                     </Button>
+                    <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setDrawMode(true)}>
+                      Sign by hand instead
+                    </Button>
                     <p className="text-[10px] text-muted-foreground">
-                      Applies your saved signature to the employer section, with a full audit record.
+                      Applies your signature to the employer section, with a full audit record.
                     </p>
                   </>
-                ) : (
-                  <p className="text-[10px] text-muted-foreground">
-                    No saved signature yet. Add one in Settings → Contracts to sign contracts yourself in one click.
-                  </p>
+                )}
+
+                {(!savedSignature || drawMode) && (
+                  <>
+                    <p className="text-[10px] text-muted-foreground">
+                      Sign in the box below to complete {employeeName}'s contract.
+                    </p>
+                    <SignaturePad onSignatureChange={setDrawnSignature} />
+
+                    {!overrideName.trim() && (
+                      <div className="space-y-1">
+                        <Label className="text-[10px]">Your full name</Label>
+                        <Input
+                          value={overrideName}
+                          onChange={(e) => setOverrideName(e.target.value)}
+                          placeholder="Full name"
+                          className="h-9"
+                        />
+                      </div>
+                    )}
+
+                    <label className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <Checkbox
+                        checked={saveAsDefault}
+                        onCheckedChange={(v) => setSaveAsDefault(!!v)}
+                      />
+                      Save this as my signature for future contracts
+                    </label>
+
+                    <Button
+                      className="w-full gradient-primary"
+                      onClick={() => {
+                        setPendingSource("drawn");
+                        setConfirmSignOpen(true);
+                      }}
+                      disabled={signingAsEmployer || !drawnSignature || !overrideName.trim()}
+                    >
+                      {signingAsEmployer ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
+                      Sign and complete contract
+                    </Button>
+
+                    {savedSignature && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs"
+                        onClick={() => {
+                          setDrawMode(false);
+                          setDrawnSignature(null);
+                        }}
+                      >
+                        Use my saved signature instead
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             )}
