@@ -80,7 +80,7 @@ export default function ReportIncident() {
                 existing={editing}
                 reporterName={reporterName}
                 reporterEmployeeId={employee?.id ?? null}
-                defaultBranch={employee?.branch ?? null}
+                defaultBranch={null}
                 onDone={() => setOpen(false)}
               />
             )}
