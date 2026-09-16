@@ -355,19 +355,25 @@ export function ContractSigningActions({
   };
 
   /** Manually email the completed (both-signed) contract to the employee. */
-  const handleSendSignedContract = async (toEmail?: string) => {
+  const handleSendSignedContract = async (toEmail?: string, isTest = false) => {
     setSendingSigned(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-signed-contract", {
-        body: { document_id: documentId, recipient_email: toEmail || emailOnFile || undefined },
+        body: {
+          document_id: documentId,
+          recipient_email: toEmail || emailOnFile || undefined,
+          test_send: isTest,
+        },
       });
 
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      setSignedContractSent(true);
+      if (!isTest) setSignedContractSent(true);
       toast({
-        title: "Signed contract sent",
-        description: `The completed contract was emailed to ${(data as any)?.recipient || employeeEmail}.`,
+        title: isTest ? "Test copy sent to you" : "Signed contract sent",
+        description: isTest
+          ? `The completed contract was emailed to ${(data as any)?.recipient || toEmail}. ${employeeName} received nothing.`
+          : `The completed contract was emailed to ${(data as any)?.recipient || employeeEmail}.`,
       });
     } catch (err: any) {
       toast({
