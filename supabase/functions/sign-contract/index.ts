@@ -562,7 +562,9 @@ Deno.serve(async (req) => {
             id,
             document_name,
             document_type,
-            file_path
+            file_path,
+            requires_details_first,
+            details_submitted_at
           ),
           employees (
             id,
