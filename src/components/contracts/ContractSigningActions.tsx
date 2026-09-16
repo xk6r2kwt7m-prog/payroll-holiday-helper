@@ -478,7 +478,14 @@ export function ContractSigningActions({
   const runNextStep = () => {
     switch (nextStep.action) {
       case "countersign":
-        setConfirmSignOpen(true);
+        if (savedSignature) {
+          setPendingSource("saved");
+          setConfirmSignOpen(true);
+        } else {
+          // No saved signature — open the panel so the signature can be drawn here.
+          setDrawMode(true);
+          openDialogFor("employer");
+        }
         break;
       case "send_signed_copy":
         handleSendSignedContract();
