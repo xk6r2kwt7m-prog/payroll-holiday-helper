@@ -85,6 +85,8 @@ export function ContractSigningActions({
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [confirmSignOpen, setConfirmSignOpen] = useState(false);
   const [signingAsEmployer, setSigningAsEmployer] = useState(false);
+  const [signedScanPath, setSignedScanPath] = useState<string | null>(null);
+  const [signedScanAt, setSignedScanAt] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -100,7 +102,9 @@ export function ContractSigningActions({
           .maybeSingle(),
         supabase
           .from("employee_documents")
-          .select("employer_signatory_name, employer_signatory_email, contract_scheduled_send_at")
+          .select(
+            "employer_signatory_name, employer_signatory_email, contract_scheduled_send_at, signed_scan_file_path, signed_scan_uploaded_at"
+          )
           .eq("id", documentId)
           .maybeSingle(),
       ]);
@@ -116,9 +120,24 @@ export function ContractSigningActions({
       const sched = (docRecord as any)?.contract_scheduled_send_at as string | null;
       setScheduledSendAt(sched || null);
       setScheduleInput(sched ? new Date(sched).toISOString().slice(0, 16) : "");
+      setSignedScanPath((docRecord as any)?.signed_scan_file_path || null);
+      setSignedScanAt((docRecord as any)?.signed_scan_uploaded_at || null);
       setSignatoryLoaded(true);
     })();
   }, [tenantId, documentId]);
+
+  /** Open the scanned copy the signer uploaded (supporting evidence only). */
+  const handleViewSignedScan = async () => {
+    if (!signedScanPath) return;
+    const { data, error } = await supabase.storage
+      .from("employee-documents")
+      .createSignedUrl(signedScanPath, 300);
+    if (error || !data?.signedUrl) {
+      toast({ title: "Could not open file", description: "Please try again.", variant: "destructive" });
+      return;
+    }
+    window.open(data.signedUrl, "_blank");
+  };
 
   /** Save (or clear) the per-contract "send on" date. */
   const handleSaveSchedule = async () => {
@@ -520,6 +539,25 @@ export function ContractSigningActions({
                 </div>
               )}
             </div>
+
+            {/* Signed copy uploaded by the signer */}
+            {signedScanPath && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <p className="text-xs font-semibold text-foreground">Signed copy uploaded</p>
+                {signedScanAt && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Uploaded {new Date(signedScanAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                )}
+                <Button variant="outline" size="sm" className="w-full" onClick={handleViewSignedScan}>
+                  <FileDown className="h-3.5 w-3.5" />
+                  View uploaded signed copy
+                </Button>
+                <p className="text-[10px] text-muted-foreground">
+                  Supporting evidence only — the electronic signature remains the record of signing.
+                </p>
+              </div>
+            )}
 
             {/* Sign now with my saved signature */}
             {!employerSigned && signatoryLoaded && (
