@@ -73,6 +73,7 @@ interface ContractRow {
     department: string;
     email: string;
     updated_at?: string | null;
+    is_test_record?: boolean | null;
   };
 }
 
@@ -109,7 +110,7 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
       if (!tenantId) return [];
       const { data, error } = await supabase
         .from("employee_documents")
-        .select(`*, employees ( id, forename, surname, department, email, updated_at )`)
+        .select(`*, employees ( id, forename, surname, department, email, updated_at, is_test_record )`)
         .eq("tenant_id", tenantId)
         .eq("document_type", "contract")
         .order("version_number", { ascending: false })
@@ -364,6 +365,11 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                       >
                         {current.employees?.department}
                       </Badge>
+                      {isTestEmployee(current.employees) && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-dashed">
+                          Test
+                        </Badge>
+                      )}
                       <ContractStateBadge state={state} />
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                         {tracker.label}
