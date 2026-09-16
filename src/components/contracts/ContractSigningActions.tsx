@@ -585,7 +585,13 @@ export function ContractSigningActions({
           <Send className="h-4 w-4" />
         </Button>
       </div>
+      {renderDialogs()}
+    </>
+  );
 
+  function renderDialogs() {
+    return (
+      <>
       {/* Dialog for generating links & sending */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
