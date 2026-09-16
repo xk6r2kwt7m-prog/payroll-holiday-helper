@@ -362,6 +362,73 @@ export default function SignContract() {
 
   if (!contractInfo) return null;
 
+  // ══════════ Details first: contract stays hidden until submitted ══════════
+  if (detailsRequired) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-card">
+          <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <User className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">Your details</h1>
+              <p className="text-xs text-muted-foreground">
+                Step 1 of 2 — your contract appears once these are saved
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+          <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Hello {contractInfo.employee_name}. Before you read and sign your contract, please
+              confirm the details below. They are used on the contract itself.
+            </p>
+
+            {DETAIL_FIELDS.map((field) => (
+              <div key={field.key}>
+                <label className="text-xs text-muted-foreground mb-1.5 block">
+                  {field.label} {field.required && "*"}
+                </label>
+                <Input
+                  type={"type" in field ? field.type : "text"}
+                  value={details[field.key] || ""}
+                  onChange={(e) => setDetails((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                  placeholder={"placeholder" in field ? field.placeholder : undefined}
+                  className="text-base"
+                />
+              </div>
+            ))}
+
+            {detailsError && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <p className="text-sm text-destructive">{detailsError}</p>
+              </div>
+            )}
+
+            <Button
+              onClick={submitDetails}
+              disabled={savingDetails}
+              className="w-full gradient-primary h-12 text-base"
+            >
+              {savingDetails ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {savingDetails ? "Saving…" : "Save and show my contract"}
+            </Button>
+          </div>
+
+          <div className="rounded-lg bg-muted/50 border border-border p-3 text-xs text-muted-foreground">
+            <ShieldCheck className="h-4 w-4 inline mr-1" />
+            Your details are stored securely and only visible to your employer.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
   const canSubmit = typedName.trim().length > 0 && consentGiven && !!signatureData && !submitting;
   const companyName = contractInfo.company_name || "the employer";
 
