@@ -640,6 +640,7 @@ export type Database = {
           due_date: string | null
           evidence_file_path: string | null
           id: string
+          incident_id: string | null
           notes: string | null
           source: string
           status: string
@@ -658,6 +659,7 @@ export type Database = {
           due_date?: string | null
           evidence_file_path?: string | null
           id?: string
+          incident_id?: string | null
           notes?: string | null
           source?: string
           status?: string
@@ -676,6 +678,7 @@ export type Database = {
           due_date?: string | null
           evidence_file_path?: string | null
           id?: string
+          incident_id?: string | null
           notes?: string | null
           source?: string
           status?: string
@@ -689,6 +692,13 @@ export type Database = {
             columns: ["branch_location_id"]
             isOneToOne: false
             referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_actions_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incident_reports"
             referencedColumns: ["id"]
           },
         ]
@@ -3288,6 +3298,337 @@ export type Database = {
             columns: ["sandbox_tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_access_grants: {
+        Row: {
+          can_view_medical: boolean
+          can_view_senior: boolean
+          granted_at: string
+          granted_by: string | null
+          id: string
+          note: string | null
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          can_view_medical?: boolean
+          can_view_senior?: boolean
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          can_view_medical?: boolean
+          can_view_senior?: boolean
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      incident_amendments: {
+        Row: {
+          amended_by: string | null
+          amended_by_name: string | null
+          changes: Json
+          created_at: string
+          id: string
+          incident_id: string
+          reason: string
+          tenant_id: string
+        }
+        Insert: {
+          amended_by?: string | null
+          amended_by_name?: string | null
+          changes?: Json
+          created_at?: string
+          id?: string
+          incident_id: string
+          reason: string
+          tenant_id: string
+        }
+        Update: {
+          amended_by?: string | null
+          amended_by_name?: string | null
+          changes?: Json
+          created_at?: string
+          id?: string
+          incident_id?: string
+          reason?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_amendments_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incident_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_evidence: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          file_path: string | null
+          id: string
+          incident_id: string
+          kind: string
+          label: string | null
+          tenant_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          incident_id: string
+          kind?: string
+          label?: string | null
+          tenant_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          incident_id?: string
+          kind?: string
+          label?: string | null
+          tenant_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_evidence_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incident_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_reports: {
+        Row: {
+          action_deadline: string | null
+          authority_notified: boolean
+          authority_reference: string | null
+          branch: string | null
+          branch_location_id: string | null
+          category: string
+          closed_at: string | null
+          closed_by: string | null
+          confidentiality: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          details: Json
+          due_at: string | null
+          evidence_available: boolean
+          findings: string | null
+          id: string
+          immediate_action: string | null
+          immediate_controls: string | null
+          incident_date: string | null
+          incident_time: string | null
+          insurance_notified: boolean
+          licence_condition_28: boolean
+          location_detail: string | null
+          manager_notified: boolean
+          manager_notified_name: string | null
+          manager_signature: string | null
+          outcome: string | null
+          people_involved: string | null
+          report_number: string | null
+          reported_by_employee_id: string | null
+          reported_by_name: string | null
+          responsible_job_title: string | null
+          responsible_person: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          riddor_assessment: string | null
+          riddor_flagged: boolean
+          root_cause: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          tenant_id: string
+          training_required: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_deadline?: string | null
+          authority_notified?: boolean
+          authority_reference?: string | null
+          branch?: string | null
+          branch_location_id?: string | null
+          category: string
+          closed_at?: string | null
+          closed_by?: string | null
+          confidentiality?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          details?: Json
+          due_at?: string | null
+          evidence_available?: boolean
+          findings?: string | null
+          id?: string
+          immediate_action?: string | null
+          immediate_controls?: string | null
+          incident_date?: string | null
+          incident_time?: string | null
+          insurance_notified?: boolean
+          licence_condition_28?: boolean
+          location_detail?: string | null
+          manager_notified?: boolean
+          manager_notified_name?: string | null
+          manager_signature?: string | null
+          outcome?: string | null
+          people_involved?: string | null
+          report_number?: string | null
+          reported_by_employee_id?: string | null
+          reported_by_name?: string | null
+          responsible_job_title?: string | null
+          responsible_person?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          riddor_assessment?: string | null
+          riddor_flagged?: boolean
+          root_cause?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          tenant_id: string
+          training_required?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_deadline?: string | null
+          authority_notified?: boolean
+          authority_reference?: string | null
+          branch?: string | null
+          branch_location_id?: string | null
+          category?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          confidentiality?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          details?: Json
+          due_at?: string | null
+          evidence_available?: boolean
+          findings?: string | null
+          id?: string
+          immediate_action?: string | null
+          immediate_controls?: string | null
+          incident_date?: string | null
+          incident_time?: string | null
+          insurance_notified?: boolean
+          licence_condition_28?: boolean
+          location_detail?: string | null
+          manager_notified?: boolean
+          manager_notified_name?: string | null
+          manager_signature?: string | null
+          outcome?: string | null
+          people_involved?: string | null
+          report_number?: string | null
+          reported_by_employee_id?: string | null
+          reported_by_name?: string | null
+          responsible_job_title?: string | null
+          responsible_person?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          riddor_assessment?: string | null
+          riddor_flagged?: boolean
+          root_cause?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          tenant_id?: string
+          training_required?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_reports_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_reports_reported_by_employee_id_fkey"
+            columns: ["reported_by_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_reports_reported_by_employee_id_fkey"
+            columns: ["reported_by_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_witness_statements: {
+        Row: {
+          file_path: string | null
+          id: string
+          incident_id: string
+          statement: string | null
+          taken_at: string
+          taken_by: string | null
+          tenant_id: string
+          witness_name: string
+          witness_role: string | null
+        }
+        Insert: {
+          file_path?: string | null
+          id?: string
+          incident_id: string
+          statement?: string | null
+          taken_at?: string
+          taken_by?: string | null
+          tenant_id: string
+          witness_name: string
+          witness_role?: string | null
+        }
+        Update: {
+          file_path?: string | null
+          id?: string
+          incident_id?: string
+          statement?: string | null
+          taken_at?: string
+          taken_by?: string | null
+          tenant_id?: string
+          witness_name?: string
+          witness_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_witness_statements_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incident_reports"
             referencedColumns: ["id"]
           },
         ]
@@ -8563,6 +8904,10 @@ export type Database = {
       calculate_holiday_accrual: {
         Args: { hours_worked: number }
         Returns: number
+      }
+      can_view_incident: {
+        Args: { _confidentiality: string; _tenant_id: string }
+        Returns: boolean
       }
       ensure_accrual_ledger_for_entry: {
         Args: { _entry_id: string }
