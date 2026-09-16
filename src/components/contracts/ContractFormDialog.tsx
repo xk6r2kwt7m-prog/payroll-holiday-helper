@@ -111,6 +111,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const { data: employees } = useEmployees();
   const { data: tenantBranches } = useTenantBranches();
   const { data: companySettings } = useCompanySettings();
+  const queryClient = useQueryClient();
   const { tenantName } = useTenant();
   const uploadDocument = useUploadDocument();
   const generateSigningLink = useGenerateSigningLink();
