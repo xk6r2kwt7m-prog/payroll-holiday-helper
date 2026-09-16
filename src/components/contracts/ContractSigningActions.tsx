@@ -1095,7 +1095,7 @@ export function ContractSigningActions({
                     </div>
 
                     {/* Primary: Send by email (employee only) */}
-                    {signerType === "employee" && employeeEmail && !emailSent && (
+                    {signerType === "employee" && (
                       <>
                         {!sendEval.canSend && (
                           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
@@ -1103,24 +1103,25 @@ export function ContractSigningActions({
                           </div>
                         )}
                         <Button
-                          onClick={handleSendEmail}
+                          onClick={() => startSend("signing")}
                           disabled={sendingEmail || !sendEval.canSend}
                           className="w-full gradient-primary"
                         >
                           {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                          {sendingEmail ? "Sending..." : "Send contract"}
+                          {sendingEmail
+                            ? "Sending..."
+                            : emailSent
+                              ? "Resend contract by email"
+                              : "Send contract by email"}
                         </Button>
+                        <p className="text-[10px] text-muted-foreground text-center">
+                          {emailOnFile
+                            ? `You'll confirm ${emailOnFile} before it is sent.`
+                            : "No email on file yet — you can add one on the next step."}
+                        </p>
                       </>
                     )}
 
-
-                    {signerType === "employee" && !employeeEmail && (
-                      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center">
-                        <p className="text-xs text-muted-foreground">
-                          No email on file — copy the link to send manually
-                        </p>
-                      </div>
-                    )}
 
                     {/* Fallback: Copy link */}
                     <Button onClick={copyLink} className="w-full" variant="outline">
