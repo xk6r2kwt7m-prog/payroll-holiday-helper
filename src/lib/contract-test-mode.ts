@@ -87,6 +87,8 @@ export function buildTestEmployeeInsert(params: { tenantId: string; email: strin
     email: params.email,
     status: "starter" as const,
     job_title: "Test Record",
+    department: "Testing",
+    hourly_rate: 0,
     is_test_record: true,
     start_date: new Date().toISOString().slice(0, 10),
     branch_id: params.branchId || null,
