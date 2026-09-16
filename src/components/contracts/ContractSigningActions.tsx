@@ -37,6 +37,9 @@ import { useTenant } from "@/hooks/useTenant";
 import { resolveContractNextStep } from "@/lib/contract-next-step";
 import { SignaturePad } from "@/components/letters/SignaturePad";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/useAuth";
+import { resolveTestSend } from "@/lib/contract-test-mode";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -109,6 +112,10 @@ export function ContractSigningActions({
   const [recipientPurpose, setRecipientPurpose] = useState<"signing" | "signed_copy">("signing");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [savingRecipient, setSavingRecipient] = useState(false);
+  // Rehearsal send: delivers to my own inbox and never touches the staff record.
+  const [testMode, setTestMode] = useState(false);
+  const { user } = useAuth();
+  const myEmail = user?.email || "";
 
   useEffect(() => {
     setEmailOnFile(employeeEmail || "");
