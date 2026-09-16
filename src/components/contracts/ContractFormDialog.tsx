@@ -1497,10 +1497,39 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         </div>
 
         <DialogFooter className="px-5 pb-5 sm:px-6 sm:pb-6 gap-2 flex-col sm:flex-row">
-          {step === "fill" && (
+          {step === "fill" && fillStage !== "details" && (
             <>
-              <Button variant="outline" onClick={handleClose} className="w-full sm:w-auto order-2 sm:order-1">
-                Cancel
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const i = FILL_STAGES.indexOf(fillStage);
+                  if (i === 0) handleClose();
+                  else setFillStage(FILL_STAGES[i - 1]);
+                }}
+                className="w-full sm:w-auto order-2 sm:order-1"
+              >
+                {fillStage === "employee" ? "Cancel" : <><ArrowLeft className="h-4 w-4" /> Back</>}
+              </Button>
+              <Button
+                onClick={advanceFillStage}
+                disabled={savingEmail}
+                className="gradient-primary w-full sm:w-auto order-1 sm:order-2"
+              >
+                {savingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+
+          {step === "fill" && fillStage === "details" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setFillStage("email")}
+                className="w-full sm:w-auto order-2 sm:order-1"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
               </Button>
               <Button
                 onClick={() => { if (validateStep1()) setStep("confirm"); }}
