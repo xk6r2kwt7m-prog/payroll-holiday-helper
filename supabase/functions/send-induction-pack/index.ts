@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
     const results: { employee_id: string; sent: boolean; recipient?: string; error?: string }[] = [];
 
     for (const emp of employees ?? []) {
-      const recipient = recipientOverride || emp.email;
+      const recipient = recipientOverride || (testSend ? userData.user.email : emp.email);
       if (!recipient) {
         results.push({ employee_id: emp.id, sent: false, error: "No email address on record" });
         continue;
