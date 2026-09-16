@@ -630,8 +630,193 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
 
         <div className="px-5 py-4 sm:px-6 space-y-5">
-          {/* STEP 1: Fill Details */}
-          {step === "fill" && (
+          {/* STEP 1a: Guided questions, one at a time */}
+          {step === "fill" && fillStage !== "details" && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-1.5">
+                {FILL_STAGES.map((s, i) => (
+                  <div
+                    key={s}
+                    className={`h-1 flex-1 rounded-full ${
+                      i <= FILL_STAGES.indexOf(fillStage) ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {fillStage === "employee" && (
+                <div className="space-y-2">
+                  {(employees || [])
+                    .filter((e) => e.status === "active" || e.status === "starter" || e.status === "onboarding")
+                    .map((emp) => (
+                      <button
+                        key={emp.id}
+                        type="button"
+                        onClick={() => {
+                          handleEmployeeSelect(emp.id);
+                          setEmailDraft(emp.email || "");
+                        }}
+                        className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                          selectedEmployeeId === emp.id
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <p className="text-sm font-medium">
+                          {emp.forename} {emp.surname}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {emp.department || "No department"}
+                          {emp.email ? ` · ${emp.email}` : " · no email yet"}
+                        </p>
+                      </button>
+                    ))}
+                </div>
+              )}
+
+              {fillStage === "location" && (
+                <div className="space-y-2">
+                  {(branches || []).map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setVariables({ ...variables, workLocation: b.name })}
+                      className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                        variables.workLocation === b.name
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <p className="text-sm font-medium">{b.name}</p>
+                      {b.address && <p className="text-xs text-muted-foreground">{b.address}</p>}
+                    </button>
+                  ))}
+                  <div>
+                    <Label className="text-xs">Or type a place of work</Label>
+                    <Input
+                      value={variables.workLocation}
+                      onChange={(e) => setVariables({ ...variables, workLocation: e.target.value })}
+                      placeholder="e.g. Central London site"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {fillStage === "hours" && (
+                <div className="space-y-2">
+                  {[
+                    { label: "Full time", hours: "40", note: "40 hours a week" },
+                    { label: "Part time", hours: "20", note: "Set the weekly hours below" },
+                    { label: "Variable hours", hours: "", note: "Hours vary week to week" },
+                  ].map((opt) => {
+                    const active =
+                      opt.label === "Variable hours"
+                        ? variables.employmentType === "variable_hours"
+                        : variables.employmentType !== "variable_hours" && variables.weeklyHours === opt.hours;
+                    return (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() =>
+                          setVariables({
+                            ...variables,
+                            employmentType: opt.label === "Variable hours" ? "variable_hours" : "fixed_hours",
+                            weeklyHours: opt.hours || variables.weeklyHours,
+                          })
+                        }
+                        className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                          active ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                        }`}
+                      >
+                        <p className="text-sm font-medium">{opt.label}</p>
+                        <p className="text-xs text-muted-foreground">{opt.note}</p>
+                      </button>
+                    );
+                  })}
+                  {variables.employmentType !== "variable_hours" && (
+                    <div>
+                      <Label className="text-xs">Weekly hours</Label>
+                      <Input
+                        type="number"
+                        value={variables.weeklyHours}
+                        onChange={(e) => setVariables({ ...variables, weeklyHours: e.target.value })}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {fillStage === "manager" && (
+                <div className="space-y-2">
+                  {companySettings?.default_signatory_name && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVariables({
+                          ...variables,
+                          reportingManagerName: companySettings.default_signatory_name || "",
+                          reportingManagerTitle: companySettings.default_signatory_title || "",
+                        })
+                      }
+                      className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                        variables.reportingManagerName === companySettings.default_signatory_name
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <p className="text-sm font-medium">{companySettings.default_signatory_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {companySettings.default_signatory_title || "Signatory"}
+                      </p>
+                    </button>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Manager name</Label>
+                      <Input
+                        value={variables.reportingManagerName}
+                        onChange={(e) => setVariables({ ...variables, reportingManagerName: e.target.value })}
+                        placeholder="e.g. Aderito Barros"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Job title</Label>
+                      <Input
+                        value={variables.reportingManagerTitle}
+                        onChange={(e) => setVariables({ ...variables, reportingManagerTitle: e.target.value })}
+                        placeholder="e.g. Operations Manager"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank to use a generic reporting line in the contract.
+                  </p>
+                </div>
+              )}
+
+              {fillStage === "email" && (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs">Staff email address</Label>
+                    <Input
+                      type="email"
+                      value={emailDraft}
+                      onChange={(e) => setEmailDraft(e.target.value)}
+                      placeholder="name@example.com"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedEmployee?.email
+                      ? "Editing this updates the email on their record."
+                      : "No email on record yet — adding one here saves it to their record."}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 1b: Full details form */}
+          {step === "fill" && fillStage === "details" && (
             <>
               {/* Phase 5J — Readiness banner */}
               {selectedEmployeeId && (
