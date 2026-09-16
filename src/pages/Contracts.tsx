@@ -23,6 +23,23 @@ export default function Contracts() {
     setGenerateOpen(false);
   }, []);
   const { tenantReady } = useTenantGuard(resetPageState);
+  const { tenantId } = useTenant();
+
+  // Read-only count of contracts signed by staff and waiting on the admin.
+  const { data: reviewCount = 0 } = useQuery({
+    queryKey: ["contracts_awaiting_review", tenantId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("employee_documents")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenantId!)
+        .eq("document_type", "contract")
+        .eq("contract_state", "employee_signed");
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!tenantId,
+  });
 
   if (!tenantReady) {
     return (
