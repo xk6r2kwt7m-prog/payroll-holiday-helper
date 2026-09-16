@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 const REMINDER_DAYS = [90, 60, 30, 0];
+const APP_URL = "https://udp.lovable.app";
 
 function daysUntil(dateStr: string): number {
   const target = new Date(`${dateStr}T00:00:00Z`);
@@ -15,8 +16,27 @@ function daysUntil(dateStr: string): number {
 }
 
 /**
- * Certificate / licence expiry reminders at 90, 60, 30 days and on the day.
- * Branch managers are notified for their own branch only; admins see all.
+ * A reminder is due 90, 60 and 30 days before expiry, on the expiry date,
+ * then weekly (and the day after) for as long as it stays overdue.
+ */
+function reminderDue(days: number): boolean {
+  if (REMINDER_DAYS.includes(days)) return true;
+  if (days >= 0) return false;
+  const overdue = -days;
+  return overdue === 1 || overdue % 7 === 0;
+}
+
+function statusLine(days: number): string {
+  if (days > 0) return `Expires in ${days} day${days === 1 ? "" : "s"}`;
+  if (days === 0) return "Expires today";
+  const overdue = -days;
+  return `Overdue by ${overdue} day${overdue === 1 ? "" : "s"}`;
+}
+
+/**
+ * Certificate / licence expiry reminders — in the app and by email.
+ * Branch managers hear about their own branch; company admins (Operations
+ * Manager) hear about everything and are escalated to once an item is overdue.
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -29,12 +49,12 @@ Deno.serve(async (req) => {
 
     const { data: certs, error } = await admin
       .from("compliance_certificates")
-      .select("id, tenant_id, branch, certificate_type, certificate_number, expiry_date, renewal_status")
+      .select("id, tenant_id, branch, certificate_type, certificate_number, holder_name, expiry_date, renewal_status")
       .not("expiry_date", "is", null)
       .neq("renewal_status", "renewed");
     if (error) throw error;
 
-    const due = (certs ?? []).filter((c: any) => REMINDER_DAYS.includes(daysUntil(c.expiry_date)));
+    const due = (certs ?? []).filter((c: any) => reminderDue(daysUntil(c.expiry_date)));
     if (due.length === 0) {
       return new Response(JSON.stringify({ message: "No reminders due", notified: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -73,22 +93,41 @@ Deno.serve(async (req) => {
       branchesByUser.get(uid)!.add(row.branch);
     });
 
+    // Email addresses for the people we notify.
+    const recipientIds = [...new Set((members ?? []).map((m: any) => m.user_id))];
+    const emailByUser = new Map<string, string>();
+    const nameByUser = new Map<string, string>();
+    if (recipientIds.length > 0) {
+      const { data: profiles } = await admin
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", recipientIds);
+      (profiles ?? []).forEach((p: any) => {
+        if (p.email) emailByUser.set(p.id, p.email);
+        if (p.full_name) nameByUser.set(p.id, p.full_name);
+      });
+    }
+
     const notifications: any[] = [];
+    const emails: any[] = [];
+
     for (const cert of due as any[]) {
       if (seen.has(cert.id)) continue;
       const days = daysUntil(cert.expiry_date);
-      const label =
-        days === 0
-          ? "expires today"
-          : `expires in ${days} days`;
-      const title = days === 0 ? "Certificate expires today" : "Certificate expiring";
+      const overdue = days < 0;
+      const title = overdue
+        ? "Certificate overdue"
+        : days === 0
+          ? "Certificate expires today"
+          : "Certificate expiring";
       const bodyText = `${cert.certificate_type} at ${cert.branch}${
         cert.certificate_number ? ` (${cert.certificate_number})` : ""
-      } ${label}.`;
+      } — ${statusLine(days).toLowerCase()}.`;
 
       for (const m of members ?? []) {
         if (m.tenant_id !== cert.tenant_id) continue;
         if (m.role === "manager") {
+          // Overdue items escalate to company admins as well as the branch manager.
           const mine = branchesByUser.get(m.user_id);
           if (!mine || !mine.has(cert.branch)) continue;
         }
@@ -99,8 +138,33 @@ Deno.serve(async (req) => {
           title,
           body: bodyText,
           link: "/compliance",
-          metadata: { certificate_id: cert.id, branch: cert.branch, days_until: days },
+          metadata: {
+            certificate_id: cert.id, branch: cert.branch, days_until: days, overdue,
+          },
         });
+
+        const email = emailByUser.get(m.user_id);
+        if (email) {
+          emails.push({
+            to: email,
+            subject: overdue
+              ? `Overdue: ${cert.certificate_type} at ${cert.branch}`
+              : `${cert.certificate_type} at ${cert.branch} — ${statusLine(days).toLowerCase()}`,
+            type: "compliance_certificate_expiry",
+            tenant_id: cert.tenant_id,
+            data: {
+              recipient_name: nameByUser.get(m.user_id) || "",
+              headline: overdue ? "This certificate is overdue" : title,
+              certificate_type: cert.certificate_type || "Certificate",
+              certificate_number: cert.certificate_number || "",
+              holder_name: cert.holder_name || "",
+              branch: cert.branch || "",
+              expiry_date: cert.expiry_date,
+              status_line: statusLine(days),
+              link_url: `${APP_URL}/compliance`,
+            },
+          });
+        }
       }
     }
 
@@ -112,8 +176,20 @@ Deno.serve(async (req) => {
       else inserted += batch.length;
     }
 
+    let emailed = 0;
+    for (const payload of emails) {
+      const { error: mailErr } = await admin.functions.invoke("send-notification", { body: payload });
+      if (mailErr) console.error("Email error:", mailErr.message);
+      else emailed += 1;
+    }
+
     return new Response(
-      JSON.stringify({ message: "Compliance expiry check complete", certificates_due: due.length, notifications_sent: inserted }),
+      JSON.stringify({
+        message: "Compliance expiry check complete",
+        certificates_due: due.length,
+        notifications_sent: inserted,
+        emails_sent: emailed,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

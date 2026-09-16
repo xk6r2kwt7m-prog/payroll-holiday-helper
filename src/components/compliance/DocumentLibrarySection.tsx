@@ -18,16 +18,21 @@ import {
 import { toast } from "sonner";
 import {
   FileText, Plus, Search, Upload, Archive, RefreshCw, ExternalLink,
-  ChevronRight, ChevronDown, PenLine, Undo2, X,
+  ChevronRight, ChevronDown, PenLine, Undo2, X, Check, History,
 } from "lucide-react";
 import { COMPLIANCE_CATEGORIES, STAFF_ROLES } from "@/lib/compliance-taxonomy";
 import { expiryLabel, expiryTone, resolveExpiryBand } from "@/lib/compliance-expiry";
 import {
   useComplianceDocuments, useSaveComplianceDocument, useArchiveComplianceDocument,
-  useRestoreComplianceDocument, useReplaceComplianceDocument,
-  uploadComplianceFile, complianceFileUrl,
+  useRestoreComplianceDocument, useReplaceComplianceDocument, useSetDocumentApproval,
+  useComplianceAuditTrail, uploadComplianceFile, complianceFileUrl,
 } from "@/hooks/useCompliance";
-import { useTenantBranches } from "@/hooks/useBranches";
+import {
+  REQUIREMENT_CLASSIFICATIONS, requirementLabel, approvalLabel, approvalTone,
+  needsApprovalDecision, isAvailableToStaff,
+} from "@/lib/compliance-document-fields";
+import { useComplianceBranches } from "@/hooks/useComplianceBranches";
+import { FIELD_LABELS } from "@/lib/compliance-audit-events";
 import { useTenant } from "@/hooks/useTenant";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +58,13 @@ interface FormState {
   inspection_required: boolean;
   alcohol_related: boolean;
   expires_at: string;
+  issue_date: string;
+  review_date: string;
+  owner_name: string;
+  owner_job_title: string;
+  issuing_authority: string;
+  reference_number: string;
+  requirement_classification: string;
 }
 
 const emptyForm: FormState = {
@@ -62,17 +74,22 @@ const emptyForm: FormState = {
   requires_signature: true, include_in_induction: true,
   must_display: false, inspection_required: false, alcohol_related: false,
   expires_at: "",
+  issue_date: "", review_date: "", owner_name: "", owner_job_title: "",
+  issuing_authority: "", reference_number: "", requirement_classification: "",
 };
 
 export function DocumentLibrarySection() {
   const { tenantId } = useTenant();
-  const { data: branches = [] } = useTenantBranches();
+  const { data: branchData } = useComplianceBranches();
+  const branches = branchData?.selectable ?? [];
   const [showArchived, setShowArchived] = useState(false);
   const { data: documents = [], isLoading } = useComplianceDocuments(true);
   const saveDoc = useSaveComplianceDocument();
   const archiveDoc = useArchiveComplianceDocument();
   const restoreDoc = useRestoreComplianceDocument();
   const replaceDoc = useReplaceComplianceDocument();
+  const setApproval = useSetDocumentApproval();
+  const [historyFor, setHistoryFor] = useState<any | null>(null);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -138,6 +155,11 @@ export function DocumentLibrarySection() {
       requires_signature: doc.requires_signature, include_in_induction: doc.include_in_induction,
       must_display: doc.must_display, inspection_required: doc.inspection_required,
       alcohol_related: doc.alcohol_related, expires_at: doc.expires_at || "",
+      issue_date: doc.issue_date || "", review_date: doc.review_date || "",
+      owner_name: doc.owner_name || "", owner_job_title: doc.owner_job_title || "",
+      issuing_authority: doc.issuing_authority || "",
+      reference_number: doc.reference_number || "",
+      requirement_classification: doc.requirement_classification || "",
     });
     setFile(null); setReplacingFor(null); setSelected(null); setOpen(true);
   };
@@ -147,9 +169,16 @@ export function DocumentLibrarySection() {
     setFile(null); setReplacingFor(doc); setSelected(null); setOpen(true);
   };
 
+  const branchIdsFor = (names: string[]) =>
+    branches.filter(b => names.includes(b.branch)).map(b => b.id);
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Give the document a name"); return; }
     if (replacingFor && !file) { toast.error("Choose the new version of the file"); return; }
+    if (!form.applies_to_all_branches && form.branches.length === 0 && !replacingFor) {
+      toast.error("Choose which branches this applies to");
+      return;
+    }
     setSaving(true);
     try {
       let filePath: string | undefined;
@@ -158,18 +187,37 @@ export function DocumentLibrarySection() {
       if (replacingFor) {
         await replaceDoc.mutateAsync({
           previous: replacingFor,
-          changes: { file_path: filePath, expires_at: form.expires_at || null },
+          changes: {
+            file_path: filePath,
+            expires_at: form.expires_at || null,
+            issue_date: form.issue_date || null,
+            review_date: form.review_date || null,
+            reference_number: form.reference_number || null,
+          },
         });
-        toast.success("New version saved — the previous version is archived and still available");
+        toast.success("New version saved — the previous version is archived and waiting for your approval");
       } else {
+        const branchNames = form.applies_to_all_branches ? [] : form.branches;
         await saveDoc.mutateAsync({
           ...form,
           expires_at: form.expires_at || null,
-          branches: form.applies_to_all_branches ? [] : form.branches,
+          issue_date: form.issue_date || null,
+          review_date: form.review_date || null,
+          owner_name: form.owner_name || null,
+          owner_job_title: form.owner_job_title || null,
+          issuing_authority: form.issuing_authority || null,
+          reference_number: form.reference_number || null,
+          requirement_classification: form.requirement_classification || null,
+          branches: branchNames,
+          branch_ids: branchIdsFor(branchNames),
           roles: form.applies_to_all_roles ? [] : form.roles,
           ...(filePath ? { file_path: filePath } : {}),
         });
-        toast.success(form.id ? "Document updated" : "Document added");
+        toast.success(
+          form.id
+            ? "Document updated"
+            : "Saved as a draft — approve it before staff receive it"
+        );
       }
       setOpen(false);
     } catch (e) {
@@ -357,18 +405,70 @@ export function DocumentLibrarySection() {
                 <dl className="grid grid-cols-2 gap-3 text-xs">
                   <Fact label="Branches" value={selected.applies_to_all_branches ? "All branches" : (selected.branches || []).join(", ") || "—"} />
                   <Fact label="Who gets it" value={selected.applies_to_all_roles ? "All staff" : (selected.roles || []).join(", ") || "—"} />
+                  <Fact label="Issued" value={selected.issue_date ? new Date(selected.issue_date).toLocaleDateString("en-GB") : "—"} />
                   <Fact label="Expiry" value={selected.expires_at ? expiryLabel(selected.expires_at) : "No expiry"} />
+                  <Fact label="Next review" value={selected.review_date ? new Date(selected.review_date).toLocaleDateString("en-GB") : "—"} />
                   <Fact label="Signature" value={selected.requires_signature ? "Required" : "Not needed"} />
+                  <Fact label="Responsible" value={[selected.owner_name, selected.owner_job_title].filter(Boolean).join(" · ") || "—"} />
+                  <Fact label="Issued by" value={selected.issuing_authority || "—"} />
+                  <Fact label="Reference" value={selected.reference_number || "—"} />
+                  <Fact label="Why we hold it" value={requirementLabel(selected.requirement_classification)} />
                 </dl>
 
                 <div className="flex flex-wrap gap-1.5">
+                  <Badge variant="outline" className={cn("text-[10px]", toneClass[approvalTone(selected.approval_status)])}>
+                    {approvalLabel(selected.approval_status)}
+                  </Badge>
                   {selected.include_in_induction && <Badge variant="outline" className="text-[10px]">In induction</Badge>}
                   {selected.must_display && <Badge variant="outline" className="text-[10px]">Displayed at site</Badge>}
                   {selected.inspection_required && <Badge variant="outline" className="text-[10px]">Inspection</Badge>}
                   {selected.alcohol_related && <Badge variant="outline" className="text-[10px]">Alcohol</Badge>}
                 </div>
 
+                {!isAvailableToStaff(selected) && selected.status !== "archived" && (
+                  <p className="rounded-lg bg-warning/10 text-warning text-xs p-2.5">
+                    Staff do not receive this document yet. Approve it to make it part of induction and
+                    the inspection file.
+                  </p>
+                )}
+
+                {needsApprovalDecision(selected) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={async () => {
+                        await setApproval.mutateAsync({ id: selected.id, approval_status: "approved" });
+                        setSelected(null);
+                        toast.success("Approved — staff can now receive it");
+                      }}
+                    >
+                      <Check className="h-4 w-4 mr-1.5" /> Approve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        const note = window.prompt("Why are you rejecting this document?") || "";
+                        if (!note.trim()) return;
+                        await setApproval.mutateAsync({
+                          id: selected.id, approval_status: "rejected", note: note.trim(),
+                        });
+                        setSelected(null);
+                        toast.success("Rejected — the reason is saved in the history");
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-1.5" /> Reject
+                    </Button>
+                  </div>
+                )}
+
+                {selected.approval_note && (
+                  <p className="text-xs text-muted-foreground">Note: {selected.approval_note}</p>
+                )}
+
                 <div className="space-y-2 pt-1">
+                  <Button variant="outline" className="w-full" onClick={() => setHistoryFor(selected)}>
+                    <History className="h-4 w-4 mr-1.5" /> View history
+                  </Button>
+
                   <Button className="w-full" onClick={() => openFile(selected.file_path)}>
                     <ExternalLink className="h-4 w-4 mr-1.5" /> Open document
                   </Button>
@@ -410,6 +510,10 @@ export function DocumentLibrarySection() {
           )}
         </SheetContent>
       </Sheet>
+
+      <DocumentHistorySheet doc={historyFor} onClose={() => setHistoryFor(null)} />
+
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -454,13 +558,13 @@ export function DocumentLibrarySection() {
                   </div>
                   {!form.applies_to_all_branches && (
                     <div className="grid grid-cols-2 gap-2">
-                      {branches.map((b: string) => (
-                        <label key={b} className="flex items-center gap-2 text-sm">
+                      {branches.map((b) => (
+                        <label key={b.id} className="flex items-center gap-2 text-sm">
                           <Checkbox
-                            checked={form.branches.includes(b)}
-                            onCheckedChange={() => setForm(f => ({ ...f, branches: toggleInList(f.branches, b) }))}
+                            checked={form.branches.includes(b.branch)}
+                            onCheckedChange={() => setForm(f => ({ ...f, branches: toggleInList(f.branches, b.branch) }))}
                           />
-                          {b}
+                          {b.display_name || b.branch}
                         </label>
                       ))}
                     </div>
@@ -510,14 +614,87 @@ export function DocumentLibrarySection() {
               </>
             )}
 
-            <div className="space-y-1.5">
-              <Label>Expiry date (if applicable)</Label>
-              <Input
-                type="date"
-                value={form.expires_at}
-                onChange={(e) => setForm(f => ({ ...f, expires_at: e.target.value }))}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Issue date</Label>
+                <Input
+                  type="date"
+                  value={form.issue_date}
+                  onChange={(e) => setForm(f => ({ ...f, issue_date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Expiry date</Label>
+                <Input
+                  type="date"
+                  value={form.expires_at}
+                  onChange={(e) => setForm(f => ({ ...f, expires_at: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Next review date</Label>
+                <Input
+                  type="date"
+                  value={form.review_date}
+                  onChange={(e) => setForm(f => ({ ...f, review_date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Reference or licence number</Label>
+                <Input
+                  value={form.reference_number}
+                  onChange={(e) => setForm(f => ({ ...f, reference_number: e.target.value }))}
+                />
+              </div>
             </div>
+
+            {!replacingFor && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Responsible person</Label>
+                    <Input
+                      placeholder="Name"
+                      value={form.owner_name}
+                      onChange={(e) => setForm(f => ({ ...f, owner_name: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Their job title</Label>
+                    <Input
+                      placeholder="e.g. General Manager"
+                      value={form.owner_job_title}
+                      onChange={(e) => setForm(f => ({ ...f, owner_job_title: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Issued by</Label>
+                  <Input
+                    placeholder="e.g. City of Westminster Council"
+                    value={form.issuing_authority}
+                    onChange={(e) => setForm(f => ({ ...f, issuing_authority: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Why we hold this</Label>
+                  <Select
+                    value={form.requirement_classification}
+                    onValueChange={(v) => setForm(f => ({ ...f, requirement_classification: v }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Choose one" /></SelectTrigger>
+                    <SelectContent>
+                      {REQUIREMENT_CLASSIFICATIONS.map(r => (
+                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
 
             <div className="space-y-1.5">
               <Label>{replacingFor ? "New file" : "File (optional)"}</Label>
@@ -568,5 +745,56 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dt className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</dt>
       <dd className="text-foreground mt-0.5">{value}</dd>
     </div>
+  );
+}
+
+/** Every change to a document, oldest at the bottom. Entries can never be edited. */
+function DocumentHistorySheet({ doc, onClose }: { doc: any | null; onClose: () => void }) {
+  const { data: entries = [], isLoading } = useComplianceAuditTrail("compliance_documents", doc?.id);
+  return (
+    <Sheet open={!!doc} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
+        <SheetHeader className="text-left">
+          <SheetTitle className="text-base leading-snug pr-6">History</SheetTitle>
+        </SheetHeader>
+        <p className="text-xs text-muted-foreground mt-1">{doc?.name}</p>
+        <div className="mt-4 space-y-3">
+          {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+          {!isLoading && entries.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No changes recorded yet. Everything from now on is kept here.
+            </p>
+          )}
+          {entries.map((e: any) => {
+            const previous = (e.old_data as any)?.previous ?? {};
+            const next = (e.new_data as any)?.next ?? {};
+            const label = (e.new_data as any)?.label ?? (e.old_data as any)?.label ?? e.action;
+            const note = (e.new_data as any)?.note;
+            const keys = Object.keys(next);
+            return (
+              <div key={e.id} className="rounded-lg border border-border bg-card p-3 space-y-1.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-sm font-medium">{label}</p>
+                  <p className="text-[11px] text-muted-foreground shrink-0">
+                    {new Date(e.created_at).toLocaleString("en-GB")}
+                  </p>
+                </div>
+                {note && <p className="text-xs text-muted-foreground">{note}</p>}
+                {keys.length > 0 && (
+                  <ul className="space-y-0.5">
+                    {keys.map((k) => (
+                      <li key={k} className="text-xs text-muted-foreground">
+                        <span className="text-foreground">{FIELD_LABELS[k] ?? k.replace(/_/g, " ")}</span>
+                        : {String(previous?.[k] ?? "—")} → {String(next[k] ?? "—")}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

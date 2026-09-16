@@ -408,6 +408,7 @@ export type Database = {
       branch_compliance_items: {
         Row: {
           branch: string
+          branch_location_id: string | null
           category: string
           created_at: string
           created_by: string | null
@@ -428,6 +429,7 @@ export type Database = {
         }
         Insert: {
           branch: string
+          branch_location_id?: string | null
           category: string
           created_at?: string
           created_by?: string | null
@@ -448,6 +450,7 @@ export type Database = {
         }
         Update: {
           branch?: string
+          branch_location_id?: string | null
           category?: string
           created_at?: string
           created_by?: string | null
@@ -468,6 +471,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "branch_compliance_items_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "branch_compliance_items_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
@@ -486,6 +496,10 @@ export type Database = {
           id: string
           latitude: number
           longitude: number
+          needs_review: boolean
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           tenant_id: string
           updated_at: string
         }
@@ -498,6 +512,10 @@ export type Database = {
           id?: string
           latitude: number
           longitude: number
+          needs_review?: boolean
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -510,6 +528,10 @@ export type Database = {
           id?: string
           latitude?: number
           longitude?: number
+          needs_review?: boolean
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -609,6 +631,7 @@ export type Database = {
       compliance_actions: {
         Row: {
           branch: string
+          branch_location_id: string | null
           completed_at: string | null
           completed_by: string | null
           created_at: string
@@ -626,6 +649,7 @@ export type Database = {
         }
         Insert: {
           branch: string
+          branch_location_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -643,6 +667,7 @@ export type Database = {
         }
         Update: {
           branch?: string
+          branch_location_id?: string | null
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
@@ -658,11 +683,20 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "compliance_actions_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       compliance_certificates: {
         Row: {
           branch: string
+          branch_location_id: string | null
           certificate_number: string | null
           certificate_type: string
           created_at: string
@@ -680,6 +714,7 @@ export type Database = {
         }
         Insert: {
           branch: string
+          branch_location_id?: string | null
           certificate_number?: string | null
           certificate_type: string
           created_at?: string
@@ -697,6 +732,7 @@ export type Database = {
         }
         Update: {
           branch?: string
+          branch_location_id?: string | null
           certificate_number?: string | null
           certificate_type?: string
           created_at?: string
@@ -712,14 +748,27 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "compliance_certificates_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       compliance_documents: {
         Row: {
           alcohol_related: boolean
           applies_to_all_branches: boolean
           applies_to_all_roles: boolean
+          approval_note: string | null
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           archived_at: string | null
+          branch_ids: string[]
           branches: string[]
           category: string
           created_at: string
@@ -730,9 +779,16 @@ export type Database = {
           id: string
           include_in_induction: boolean
           inspection_required: boolean
+          issue_date: string | null
+          issuing_authority: string | null
           must_display: boolean
           name: string
+          owner_job_title: string | null
+          owner_name: string | null
+          reference_number: string | null
+          requirement_classification: string | null
           requires_signature: boolean
+          review_date: string | null
           roles: string[]
           status: string
           supersedes_document_id: string | null
@@ -744,7 +800,12 @@ export type Database = {
           alcohol_related?: boolean
           applies_to_all_branches?: boolean
           applies_to_all_roles?: boolean
+          approval_note?: string | null
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           archived_at?: string | null
+          branch_ids?: string[]
           branches?: string[]
           category: string
           created_at?: string
@@ -755,9 +816,16 @@ export type Database = {
           id?: string
           include_in_induction?: boolean
           inspection_required?: boolean
+          issue_date?: string | null
+          issuing_authority?: string | null
           must_display?: boolean
           name: string
+          owner_job_title?: string | null
+          owner_name?: string | null
+          reference_number?: string | null
+          requirement_classification?: string | null
           requires_signature?: boolean
+          review_date?: string | null
           roles?: string[]
           status?: string
           supersedes_document_id?: string | null
@@ -769,7 +837,12 @@ export type Database = {
           alcohol_related?: boolean
           applies_to_all_branches?: boolean
           applies_to_all_roles?: boolean
+          approval_note?: string | null
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           archived_at?: string | null
+          branch_ids?: string[]
           branches?: string[]
           category?: string
           created_at?: string
@@ -780,9 +853,16 @@ export type Database = {
           id?: string
           include_in_induction?: boolean
           inspection_required?: boolean
+          issue_date?: string | null
+          issuing_authority?: string | null
           must_display?: boolean
           name?: string
+          owner_job_title?: string | null
+          owner_name?: string | null
+          reference_number?: string | null
+          requirement_classification?: string | null
           requires_signature?: boolean
+          review_date?: string | null
           roles?: string[]
           status?: string
           supersedes_document_id?: string | null
@@ -3577,6 +3657,7 @@ export type Database = {
       inspection_checklist_items: {
         Row: {
           branch: string
+          branch_location_id: string | null
           created_at: string
           detail: string | null
           displayed: boolean
@@ -3593,6 +3674,7 @@ export type Database = {
         }
         Insert: {
           branch: string
+          branch_location_id?: string | null
           created_at?: string
           detail?: string | null
           displayed?: boolean
@@ -3609,6 +3691,7 @@ export type Database = {
         }
         Update: {
           branch?: string
+          branch_location_id?: string | null
           created_at?: string
           detail?: string | null
           displayed?: boolean
@@ -3623,7 +3706,15 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inspection_checklist_items_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       location_settings: {
         Row: {
