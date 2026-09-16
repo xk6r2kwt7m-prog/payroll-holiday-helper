@@ -140,6 +140,30 @@ export function useHolidayLedgerBalancesByYear(year: number) {
   });
 }
 
+/**
+ * Raw ledger rows for a leave year (all employees) used for read-only
+ * reconciliation of holiday taken against holiday_payments.
+ */
+export function useLedgerTakenRowsByYear(year: number) {
+  const { tenantId } = useTenant();
+  const leaveYearStart = `${year}-01-01`;
+
+  return useQuery({
+    queryKey: ["holiday_ledger", tenantId, "taken_recon_rows", year],
+    enabled: !!tenantId,
+    queryFn: async (): Promise<ReconLedgerRow[]> => {
+      const { data, error } = await supabase
+        .from("holiday_ledger")
+        .select("id, employee_id, entry_type, hours, source_table, source_id")
+        .eq("tenant_id", tenantId!)
+        .eq("leave_year_start", leaveYearStart)
+        .in("entry_type", ["holiday_taken", "payout_on_termination", "correction"]);
+      if (error) throw error;
+      return (data || []) as ReconLedgerRow[];
+    },
+  });
+}
+
 export interface PendingLedgerAccrual {
   periodName: string;
   periodStatus: string;
