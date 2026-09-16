@@ -58,6 +58,49 @@ export default function SignContract() {
   const [uploadingScan, setUploadingScan] = useState(false);
   const [scanUploaded, setScanUploaded] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [details, setDetails] = useState<Record<string, string>>({});
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+
+  const detailsRequired = contractInfo?.details_required === true;
+
+  useEffect(() => {
+    if (contractInfo?.prefill) {
+      setDetails((prev) => ({ ...contractInfo.prefill, ...prev }));
+    }
+  }, [contractInfo]);
+
+  const submitDetails = async () => {
+    setDetailsError(null);
+    const missing = DETAIL_FIELDS.filter((f) => f.required && !String(details[f.key] || "").trim());
+    if (missing.length) {
+      setDetailsError(`Please complete: ${missing.map((f) => f.label).join(", ")}.`);
+      return;
+    }
+    setSavingDetails(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "submit_details", details }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        setDetailsError(result.error || "Could not save your details. Please try again.");
+        return;
+      }
+      setLoading(true);
+      await fetchContractInfo();
+    } catch {
+      setDetailsError("Could not save your details. Please try again.");
+    } finally {
+      setSavingDetails(false);
+    }
+  };
+
 
 
   const isEmployer = contractInfo?.signer_type === "employer";
