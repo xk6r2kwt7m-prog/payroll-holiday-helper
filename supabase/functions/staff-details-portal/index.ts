@@ -162,6 +162,7 @@ Deno.serve(async (req) => {
       if (sections.includes("personal")) {
         if (str(personal.date_of_birth, 10)) empUpdates.date_of_birth = str(personal.date_of_birth, 10);
         if (str(personal.preferred_name, 80)) empUpdates.preferred_name = str(personal.preferred_name, 80);
+        if (str(personal.ni_number, 20)) empUpdates.ni_number = str(personal.ni_number, 20);
       }
       if (sections.includes("bank")) {
         if (str(bank.account_number, 20)) empUpdates.bank_account_no = str(bank.account_number, 20);
@@ -186,6 +187,12 @@ Deno.serve(async (req) => {
         .eq("employee_id", request.employee_id)
         .maybeSingle();
 
+      const line1 = str(personal.address_line1, 120);
+      const line2 = str(personal.address_line2, 120);
+      const city = str(personal.city, 80);
+      const postcode = str(personal.postcode, 12);
+      const composedAddress = [line1, line2, city, postcode].filter(Boolean).join(", ") || null;
+
       const personalInfo = {
         ...((existingOnb?.personal_info as Record<string, unknown>) ?? {}),
         ...(sections.includes("personal")
@@ -195,22 +202,29 @@ Deno.serve(async (req) => {
               preferred_name: str(personal.preferred_name, 80),
               date_of_birth: str(personal.date_of_birth, 10),
               phone: str(personal.phone, 30),
-              address_line1: str(personal.address_line1, 120),
-              address_line2: str(personal.address_line2, 120),
-              city: str(personal.city, 80),
-              postcode: str(personal.postcode, 12),
+              ni_number: str(personal.ni_number, 20),
+              // Contract generation reads these keys — write all supported shapes
+              // so the address never has to be asked for twice.
+              address: composedAddress,
+              address_line_1: line1,
+              address_line_2: line2,
+              address_line1: line1,
+              address_line2: line2,
+              city,
+              postcode,
             }
           : {}),
         ...(sections.includes("rtw")
           ? {
               nationality: str(rtw.nationality, 80),
-              ni_number: str(rtw.ni_number, 20),
               passport_no: str(rtw.passport_no, 40),
               sharing_code: str(rtw.sharing_code, 40),
               settlement_status: str(rtw.settlement_status, 60),
+              ...(str(rtw.ni_number, 20) ? { ni_number: str(rtw.ni_number, 20) } : {}),
             }
           : {}),
       };
+
 
       const emergencyContact = sections.includes("emergency")
         ? {
