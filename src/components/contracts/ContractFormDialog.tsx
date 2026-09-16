@@ -549,10 +549,49 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     toast({ title: "Copied!", description: "Link copied to clipboard" });
   };
 
+  /**
+   * Guided flow: validate the current question, then move to the next one.
+   * The email step also saves a corrected/added address to the employee record.
+   */
+  const advanceFillStage = async () => {
+    const index = FILL_STAGES.indexOf(fillStage);
+
+    if (fillStage === "employee" && !selectedEmployeeId) {
+      toast({ title: "Pick a team member", description: "Select who this contract is for.", variant: "destructive" });
+      return;
+    }
+    if (fillStage === "location" && !variables.workLocation.trim()) {
+      toast({ title: "Place of work needed", description: "Choose or type where they work.", variant: "destructive" });
+      return;
+    }
+    if (fillStage === "email") {
+      const email = emailDraft.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        toast({ title: "Email needed", description: "Enter a valid email address for this person.", variant: "destructive" });
+        return;
+      }
+      if (email !== (selectedEmployee?.email || "")) {
+        setSavingEmail(true);
+        const { error } = await supabase.from("employees").update({ email }).eq("id", selectedEmployeeId);
+        setSavingEmail(false);
+        if (error) {
+          toast({ title: "Could not save email", description: error.message, variant: "destructive" });
+          return;
+        }
+        queryClient.invalidateQueries({ queryKey: ["employees"] });
+        toast({ title: "Email saved", description: `${email} saved to their record.` });
+      }
+    }
+
+    setFillStage(FILL_STAGES[Math.min(index + 1, FILL_STAGES.length - 1)]);
+  };
+
   const handleClose = () => {
     onOpenChange(false);
     setTimeout(() => {
       setStep("fill");
+      setFillStage("employee");
+      setEmailDraft("");
       setSavedDocumentId(null);
       setEmployeeSignLink(null);
       setEmployerSignLink(null);
