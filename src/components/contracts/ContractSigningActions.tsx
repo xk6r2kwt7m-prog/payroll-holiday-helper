@@ -30,7 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { SigningCertificatePDF } from "./SigningCertificatePDF";
 import type { SignatureRecord } from "./SigningCertificatePDF";
-import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award, RefreshCw, FileSignature } from "lucide-react";
+import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award, RefreshCw, FileSignature, PenLine, CalendarClock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenant } from "@/hooks/useTenant";
@@ -776,6 +776,39 @@ export function ContractSigningActions({
                 )}
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm applying my saved signature */}
+      <Dialog open={confirmSignOpen} onOpenChange={setConfirmSignOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PenLine className="h-5 w-5 text-primary" />
+              Sign this contract?
+            </DialogTitle>
+            <DialogDescription>
+              Your saved signature will be applied to {employeeName}'s contract as the employer signature. This is recorded and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {savedSignature && (
+            <div className="rounded-md border border-border bg-white p-2">
+              <img src={savedSignature} alt="Your saved signature" className="h-14 w-auto object-contain" />
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground">
+            Signing as <span className="font-medium text-foreground">{overrideName}</span>
+            {defaultTitle ? `, ${defaultTitle}` : ""}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setConfirmSignOpen(false)} disabled={signingAsEmployer}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSignWithSavedSignature} disabled={signingAsEmployer}>
+              {signingAsEmployer ? <Loader2 className="h-3 w-3 animate-spin" /> : <PenLine className="h-3 w-3" />}
+              Confirm and sign
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
