@@ -136,10 +136,12 @@ Deno.serve(async (req) => {
 
     const finalContractUrl = `${CANONICAL_APP_URL}/document/view?token=${token.token}&variant=final`;
 
+    const isTestSend = body?.test_send === true;
+
     const { error: sendError } = await admin.functions.invoke("send-notification", {
       body: {
         to: recipient,
-        subject: "Your signed contract",
+        subject: isTestSend ? "[TEST] Your signed contract" : "Your signed contract",
         type: "contract_fully_signed",
         data: {
           employee_name: employeeName,
@@ -158,8 +160,9 @@ Deno.serve(async (req) => {
       tenant_id: doc.tenant_id,
       user_id: user.id,
       new_data: {
-        event: "completed_contract_sent_to_employee",
+        event: isTestSend ? "completed_contract_test_send" : "completed_contract_sent_to_employee",
         status: sendError ? "failed" : "sent",
+        test_send: isTestSend,
         email_type: "contract_fully_signed",
         recipient_email: recipient,
         employee_name: employeeName,
