@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  AlertTriangle, Download, FileSignature, Pencil, Plus, ScrollText, Send, ShieldCheck, Trash2,
+  AlertTriangle, Download, FileSignature, Pencil, Plus, ScrollText, Send, Trash2,
 } from "lucide-react";
 import {
   awaitingConfirmation, buildDpsAuthorisation, buildSection57,
@@ -190,6 +190,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
         recipient_role: sendOpen === "dps_authorisation" ? "Designated Premises Supervisor" : "Premises licence holder",
         nominated: nominated.filter((n) => n.name.trim() && n.job_title.trim()),
         part_a_location: partA,
+        test_send: testSend,
       });
       if (res.failed?.length) toast.error(res.failed.join("; "));
       else toast.success(testSend ? "Test copy sent to you" : "Sent for signature");
