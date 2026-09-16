@@ -71,7 +71,8 @@ export function useInductionProgress(packId?: string) {
 /** Manager confirms a practical item was demonstrated on site. */
 export function useVerifyPracticalItem() {
   const queryClient = useQueryClient();
-  const { user, profile } = useAuth() as any;
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata as any)?.full_name ?? user?.email ?? null;
 
   return useMutation({
     mutationFn: async ({
@@ -82,7 +83,7 @@ export function useVerifyPracticalItem() {
         .update({
           verified_at: verified ? new Date().toISOString() : null,
           verified_by: verified ? user?.id ?? null : null,
-          verified_by_name: verified ? profile?.full_name ?? user?.email ?? null : null,
+          verified_by_name: verified ? actorName : null,
           notes: notes ?? null,
         })
         .eq("id", id);
@@ -98,7 +99,8 @@ export function useVerifyPracticalItem() {
 /** Manager records that a health declaration has been reviewed. */
 export function useReviewDeclaration() {
   const queryClient = useQueryClient();
-  const { user, profile } = useAuth() as any;
+  const { user } = useAuth();
+  const actorName = (user?.user_metadata as any)?.full_name ?? user?.email ?? null;
 
   return useMutation({
     mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
@@ -107,7 +109,7 @@ export function useReviewDeclaration() {
         .update({
           manager_review_notes: notes,
           reviewed_by: user?.id ?? null,
-          reviewed_by_name: profile?.full_name ?? user?.email ?? null,
+          reviewed_by_name: actorName,
           reviewed_at: new Date().toISOString(),
         })
         .eq("id", id);
