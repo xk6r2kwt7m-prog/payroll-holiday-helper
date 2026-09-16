@@ -149,6 +149,9 @@ const App = () => (
             {/* Training — permission-gated */}
             <Route path="/training" element={<ProtectedRoute requiredRole="staff" requiredModule="training" moduleName="Training" requiredPermission="view_training"><TrainingRecords /></ProtectedRoute>} />
 
+            {/* Report an incident — staff+ */}
+            <Route path="/report-incident" element={<ProtectedRoute requiredRole="staff"><ReportIncident /></ProtectedRoute>} />
+
             {/* Announcements — staff+ */}
             <Route path="/announcements" element={<ProtectedRoute requiredRole="staff"><Announcements /></ProtectedRoute>} />
 
