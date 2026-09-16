@@ -501,17 +501,33 @@ export function ContractSigningActions({
   /** Step 1 of any send: confirm (or add/correct) the recipient address. */
   const startSend = (purpose: "signing" | "signed_copy") => {
     setRecipientPurpose(purpose);
+    setTestMode(false);
     setRecipientEmail(emailOnFile || contractSentTo || "");
     setRecipientOpen(true);
+  };
+
+  /** Turning the test switch on/off swaps the address between me and the staff member. */
+  const toggleTestMode = (on: boolean) => {
+    setTestMode(on);
+    setRecipientEmail(on ? myEmail : emailOnFile || contractSentTo || "");
   };
 
   /** Step 2: optionally save a corrected address on the employee record, then send. */
   const confirmRecipientAndSend = async () => {
     const clean = recipientEmail.trim();
     if (!emailValid) return;
+    const resolution = resolveTestSend({
+      testMode,
+      staffEmail: emailOnFile,
+      adminEmail: myEmail,
+      overrideEmail: clean,
+    });
     setSavingRecipient(true);
     try {
-      if (clean.toLowerCase() !== (emailOnFile || "").toLowerCase()) {
+      if (
+        resolution.shouldSaveEmailToEmployee &&
+        clean.toLowerCase() !== (emailOnFile || "").toLowerCase()
+      ) {
         const { error } = await supabase.from("employees").update({ email: clean }).eq("id", employeeId);
         if (error) throw error;
         setEmailOnFile(clean);
@@ -521,9 +537,9 @@ export function ContractSigningActions({
       }
       setRecipientOpen(false);
       if (recipientPurpose === "signing") {
-        await sendSigningEmail(clean);
+        await sendSigningEmail(resolution.recipient, resolution.isTest);
       } else {
-        await handleSendSignedContract(clean);
+        await handleSendSignedContract(resolution.recipient, resolution.isTest);
       }
     } catch (err: any) {
       toast({
