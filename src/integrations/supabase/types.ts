@@ -3134,6 +3134,159 @@ export type Database = {
           },
         ]
       }
+      induction_assessments: {
+        Row: {
+          answers: Json
+          attempt_number: number
+          created_at: string
+          employee_id: string | null
+          id: string
+          pack_id: string
+          passed: boolean
+          score: number
+          submitted_at: string
+          tenant_id: string
+          total: number
+        }
+        Insert: {
+          answers?: Json
+          attempt_number?: number
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          pack_id: string
+          passed?: boolean
+          score?: number
+          submitted_at?: string
+          tenant_id: string
+          total?: number
+        }
+        Update: {
+          answers?: Json
+          attempt_number?: number
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          pack_id?: string
+          passed?: boolean
+          score?: number
+          submitted_at?: string
+          tenant_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "induction_assessments_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "induction_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      induction_declarations: {
+        Row: {
+          answers: Json
+          created_at: string
+          employee_id: string | null
+          has_yes_answer: boolean
+          id: string
+          manager_review_notes: string | null
+          pack_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewed_by_name: string | null
+          signature_data: string | null
+          signed_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          employee_id?: string | null
+          has_yes_answer?: boolean
+          id?: string
+          manager_review_notes?: string | null
+          pack_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          employee_id?: string | null
+          has_yes_answer?: boolean
+          id?: string
+          manager_review_notes?: string | null
+          pack_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          signature_data?: string | null
+          signed_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "induction_declarations_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: true
+            referencedRelation: "induction_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      induction_modules: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          id: string
+          module_key: string
+          pack_id: string
+          read_at: string | null
+          sort_order: number
+          tenant_id: string
+          title: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          module_key: string
+          pack_id: string
+          read_at?: string | null
+          sort_order?: number
+          tenant_id: string
+          title: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          id?: string
+          module_key?: string
+          pack_id?: string
+          read_at?: string | null
+          sort_order?: number
+          tenant_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "induction_modules_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "induction_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       induction_pack_items: {
         Row: {
           acknowledged_at: string | null
@@ -3284,6 +3437,65 @@ export type Database = {
           },
         ]
       }
+      induction_practical_items: {
+        Row: {
+          applicable: boolean
+          created_at: string
+          employee_id: string | null
+          group_key: string
+          id: string
+          label: string
+          notes: string | null
+          pack_id: string
+          sort_order: number
+          tenant_id: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+          verified_by_name: string | null
+        }
+        Insert: {
+          applicable?: boolean
+          created_at?: string
+          employee_id?: string | null
+          group_key: string
+          id?: string
+          label: string
+          notes?: string | null
+          pack_id: string
+          sort_order?: number
+          tenant_id: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          verified_by_name?: string | null
+        }
+        Update: {
+          applicable?: boolean
+          created_at?: string
+          employee_id?: string | null
+          group_key?: string
+          id?: string
+          label?: string
+          notes?: string | null
+          pack_id?: string
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          verified_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "induction_practical_items_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "induction_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_checklist_items: {
         Row: {
           branch: string
@@ -3337,6 +3549,7 @@ export type Database = {
       }
       location_settings: {
         Row: {
+          accident_book_location: string | null
           address: string | null
           allow_mobile_clock_in: boolean
           allow_open_shifts: boolean
@@ -3349,6 +3562,12 @@ export type Database = {
           default_break_minutes: number
           display_name: string
           enforce_break_after_hours: number
+          evacuation_report_to: string | null
+          fire_alarm_call_points: string | null
+          fire_assembly_point: string | null
+          fire_exit_routes: string | null
+          fire_hazard_reporting_route: string | null
+          first_aid_kit_location: string | null
           geofence_radius_meters: number
           id: string
           minimum_shift_length_minutes: number
@@ -3356,11 +3575,13 @@ export type Database = {
           require_geofence: boolean
           require_gps_on_clock_in: boolean
           scheduling_suggestion_order: string
+          temperature_check_times: string | null
           tenant_id: string
           timezone: string
           updated_at: string
         }
         Insert: {
+          accident_book_location?: string | null
           address?: string | null
           allow_mobile_clock_in?: boolean
           allow_open_shifts?: boolean
@@ -3373,6 +3594,12 @@ export type Database = {
           default_break_minutes?: number
           display_name: string
           enforce_break_after_hours?: number
+          evacuation_report_to?: string | null
+          fire_alarm_call_points?: string | null
+          fire_assembly_point?: string | null
+          fire_exit_routes?: string | null
+          fire_hazard_reporting_route?: string | null
+          first_aid_kit_location?: string | null
           geofence_radius_meters?: number
           id?: string
           minimum_shift_length_minutes?: number
@@ -3380,11 +3607,13 @@ export type Database = {
           require_geofence?: boolean
           require_gps_on_clock_in?: boolean
           scheduling_suggestion_order?: string
+          temperature_check_times?: string | null
           tenant_id: string
           timezone?: string
           updated_at?: string
         }
         Update: {
+          accident_book_location?: string | null
           address?: string | null
           allow_mobile_clock_in?: boolean
           allow_open_shifts?: boolean
@@ -3397,6 +3626,12 @@ export type Database = {
           default_break_minutes?: number
           display_name?: string
           enforce_break_after_hours?: number
+          evacuation_report_to?: string | null
+          fire_alarm_call_points?: string | null
+          fire_assembly_point?: string | null
+          fire_exit_routes?: string | null
+          fire_hazard_reporting_route?: string | null
+          first_aid_kit_location?: string | null
           geofence_radius_meters?: number
           id?: string
           minimum_shift_length_minutes?: number
@@ -3404,6 +3639,7 @@ export type Database = {
           require_geofence?: boolean
           require_gps_on_clock_in?: boolean
           scheduling_suggestion_order?: string
+          temperature_check_times?: string | null
           tenant_id?: string
           timezone?: string
           updated_at?: string
