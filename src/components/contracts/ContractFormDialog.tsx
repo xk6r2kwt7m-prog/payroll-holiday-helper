@@ -442,6 +442,16 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
       setSavedDocumentId(result.id);
 
+      // Record how this contract reaches the staff member. Details-first keeps
+      // the contract hidden until they submit their own details.
+      const { error: modeError } = await supabase
+        .from("employee_documents")
+        .update({ requires_details_first: detailsMode === "details_first" })
+        .eq("id", result.id);
+      if (modeError) {
+        console.error("Failed to save contract sending mode:", modeError);
+      }
+
       // Phase 3 — write immutable NMW override audit row if applicable.
       if (nmwOverride?.acknowledged && nmwOverride.reason.trim()) {
         try {
