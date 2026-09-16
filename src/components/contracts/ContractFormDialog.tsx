@@ -1109,6 +1109,43 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
           {/* STEP 2: Confirm Details */}
           {step === "confirm" && (
             <div className="space-y-4">
+              {/* How this contract reaches the staff member */}
+              <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+                <p className="text-sm font-semibold">How should this reach {variables.employeeName || "them"}?</p>
+                {([
+                  {
+                    value: "details_first" as ContractDetailsMode,
+                    title: "Ask for their details first (recommended)",
+                    note: "They complete name, address and contact details before the contract is shown.",
+                    disabled: false,
+                  },
+                  {
+                    value: "send_now" as ContractDetailsMode,
+                    title: "Send straight away",
+                    note: criticalDetails.canSendStraightAway
+                      ? "Everything needed is already on record."
+                      : `Missing: ${criticalDetails.missing.join(", ")}.`,
+                    disabled: !criticalDetails.canSendStraightAway,
+                  },
+                ]).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={opt.disabled}
+                    onClick={() => setDetailsMode(opt.value)}
+                    className={`w-full rounded-lg border p-3 text-left transition-colors disabled:opacity-50 ${
+                      detailsMode === opt.value ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{opt.title}</p>
+                    <p className="text-xs text-muted-foreground">{opt.note}</p>
+                  </button>
+                ))}
+                {!criticalDetails.canSendStraightAway && (
+                  <p className="text-xs text-amber-600">{criticalDetails.message}</p>
+                )}
+              </div>
+
               {/* Phase 5F — Concise review summary */}
               <div
                 data-testid="confirm-review-summary"
