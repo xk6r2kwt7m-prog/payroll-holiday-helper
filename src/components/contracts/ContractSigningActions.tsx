@@ -218,6 +218,13 @@ export function ContractSigningActions({
   const employerSigned = signatures?.some((s) => s.signer_type === "employer");
   const bothSigned = employeeSigned && employerSigned;
 
+  const sendEval = evaluateContractSend({
+    mode: sendMode,
+    employerSigned: !!employerSigned,
+    scheduledSendAt,
+  });
+
+
   // Check if an employer token was auto-generated (exists but not yet used)
   const employerTokenAutoSent = tokens?.some(
     (t) => t.signer_type === "employer" && !t.used_at && new Date(t.expires_at) > new Date()
