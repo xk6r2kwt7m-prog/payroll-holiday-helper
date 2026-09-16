@@ -87,6 +87,8 @@ export function ContractSigningActions({
   const [signingAsEmployer, setSigningAsEmployer] = useState(false);
   const [signedScanPath, setSignedScanPath] = useState<string | null>(null);
   const [signedScanAt, setSignedScanAt] = useState<string | null>(null);
+  const [sendingSigned, setSendingSigned] = useState(false);
+  const [signedContractSent, setSignedContractSent] = useState(false);
 
 
   useEffect(() => {
@@ -302,6 +304,31 @@ export function ContractSigningActions({
     window.open(`/document/view?id=${documentId}&variant=${variant}`, "_blank");
   };
 
+  /** Manually email the completed (both-signed) contract to the employee. */
+  const handleSendSignedContract = async () => {
+    setSendingSigned(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-signed-contract", {
+        body: { document_id: documentId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setSignedContractSent(true);
+      toast({
+        title: "Signed contract sent",
+        description: `The completed contract was emailed to ${(data as any)?.recipient || employeeEmail}.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Could not send",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingSigned(false);
+    }
+  };
+
   const handleDownloadOriginalPdf = async () => {
     window.open(`/document/view?id=${documentId}&variant=original`, "_blank");
   };
@@ -423,20 +450,23 @@ export function ContractSigningActions({
           </>
         )}
         {signingStage === "employee_signed" && (
-          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
-            <Clock className="h-3 w-3" />
-            {employerTokenAutoSent
-              ? "Employer link sent — awaiting signature"
-              : "Employee signed — awaiting employer"}
-          </Badge>
+          <button type="button" onClick={() => { setOpen(true); setSignerType("employer"); }}>
+            <Badge
+              variant="outline"
+              className="text-[10px] gap-1 text-amber-600 border-amber-200 whitespace-nowrap cursor-pointer"
+              title="Employee signed — review and countersign"
+            >
+              <Clock className="h-3 w-3" /> Sign now
+            </Badge>
+          </button>
         )}
         {signingStage === "employer_signed" && (
-          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
-            <Clock className="h-3 w-3" /> Employer signed — awaiting employee
+          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200 whitespace-nowrap">
+            <Clock className="h-3 w-3" /> Awaiting staff
           </Badge>
         )}
         {signingStage === "sent" && (
-          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200">
+          <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-200 whitespace-nowrap">
             <Mail className="h-3 w-3" /> Sent
           </Badge>
         )}
@@ -507,15 +537,36 @@ export function ContractSigningActions({
                 )}
               </div>
 
-              {/* Show signing details if signatures exist */}
+              {/* Show captured signatures if they exist */}
               {signatures && signatures.length > 0 && (
-                <div className="pt-2 mt-2 border-t border-border space-y-1">
+                <div className="pt-2 mt-2 border-t border-border space-y-2">
                   {signatures.map((sig, i) => (
-                    <div key={i} className="text-[10px] text-muted-foreground">
-                      <span className="capitalize font-medium">{sig.signer_type}</span>: {sig.signer_name} —{" "}
-                      {new Date(sig.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    <div key={i} className="space-y-1">
+                      <div className="text-[10px] text-muted-foreground">
+                        <span className="capitalize font-medium">{sig.signer_type}</span>: {sig.signer_name} —{" "}
+                        {new Date(sig.signed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                      {sig.signature_data ? (
+                        <div className="rounded-md border border-border bg-white p-2">
+                          <img
+                            src={sig.signature_data}
+                            alt={`${sig.signer_type} signature`}
+                            className="h-12 w-auto object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground italic">
+                          Typed signature: {sig.typed_name}
+                        </p>
+                      )}
                     </div>
                   ))}
+                  {!bothSigned && (
+                    <p className="text-[10px] text-muted-foreground">
+                      The contract PDF stays unsigned until both parties have signed — the completed copy with both
+                      signatures is created then.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -640,6 +691,20 @@ export function ContractSigningActions({
                   {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                   Download Final Completed Contract
                 </Button>
+                <Button
+                  onClick={handleSendSignedContract}
+                  disabled={sendingSigned || !employeeEmail}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {sendingSigned ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {signedContractSent ? "Send signed contract again" : "Send signed contract to staff"}
+                </Button>
+                {!employeeEmail && (
+                  <p className="text-[10px] text-muted-foreground">
+                    No email on file for {employeeName} — add one to send the signed copy.
+                  </p>
+                )}
                 {filePath && (
                   <Button
                     onClick={handleDownloadOriginalPdf}
