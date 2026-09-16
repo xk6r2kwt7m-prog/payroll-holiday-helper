@@ -8,7 +8,7 @@ const corsHeaders = {
 const APP_URL = "https://udp.lovable.app";
 
 const SECTION_LABELS: Record<string, string> = {
-  personal: "Your contact details (full name, date of birth, phone, home address)",
+  personal: "Your personal details (full name, date of birth, phone, home address, National Insurance number)",
   emergency: "An emergency contact",
   bank: "Your bank details for pay",
   rtw: "Your right to work document (photo or file)",

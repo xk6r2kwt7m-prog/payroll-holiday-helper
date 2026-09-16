@@ -18,7 +18,7 @@ const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 type SectionKey = "personal" | "emergency" | "bank" | "rtw";
 
 const SECTION_META: Record<SectionKey, { title: string; blurb: string; icon: typeof User }> = {
-  personal: { title: "Your contact details", blurb: "So we can reach you and keep your record correct.", icon: User },
+  personal: { title: "Your personal details", blurb: "Name, date of birth, phone, home address and National Insurance number.", icon: User },
   emergency: { title: "Emergency contact", blurb: "Someone we can call if something happens at work.", icon: HeartPulse },
   bank: { title: "Bank details for pay", blurb: "Where your wages are paid. Stored securely.", icon: Landmark },
   rtw: { title: "Right to work", blurb: "Required by law before you can start work in the UK.", icon: ShieldCheck },
@@ -267,6 +267,7 @@ export default function StaffDetailsPortal() {
               <Field label="Name you prefer to be called (optional)" value={answers.personal?.preferred_name} onChange={(v) => set("personal", "preferred_name", v)} />
               <Field label="Date of birth" type="date" value={answers.personal?.date_of_birth} onChange={(v) => set("personal", "date_of_birth", v)} />
               <Field label="Mobile number" type="tel" value={answers.personal?.phone} onChange={(v) => set("personal", "phone", v)} />
+              <Field label="National Insurance number (leave blank if you do not have one yet)" placeholder="QQ123456C" value={answers.personal?.ni_number} onChange={(v) => set("personal", "ni_number", v)} />
               <Field label="Address" value={answers.personal?.address_line1} onChange={(v) => set("personal", "address_line1", v)} />
               <Field label="Address line 2 (optional)" value={answers.personal?.address_line2} onChange={(v) => set("personal", "address_line2", v)} />
               <Field label="Town or city" value={answers.personal?.city} onChange={(v) => set("personal", "city", v)} />
@@ -297,7 +298,7 @@ export default function StaffDetailsPortal() {
           {current === "rtw" && (
             <>
               <Field label="Nationality" value={answers.rtw?.nationality} onChange={(v) => set("rtw", "nationality", v)} />
-              <Field label="National Insurance number (if you have one)" value={answers.rtw?.ni_number} onChange={(v) => set("rtw", "ni_number", v)} />
+              
               <Field label="Passport number (optional)" value={answers.rtw?.passport_no} onChange={(v) => set("rtw", "passport_no", v)} />
               <Field label="Share code (if you have one)" value={answers.rtw?.sharing_code} onChange={(v) => set("rtw", "sharing_code", v)} />
               <Field label="Immigration status (optional)" placeholder="e.g. British citizen, settled status" value={answers.rtw?.settlement_status} onChange={(v) => set("rtw", "settlement_status", v)} />
