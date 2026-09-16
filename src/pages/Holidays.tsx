@@ -263,6 +263,18 @@ const Holidays = () => {
       }
     });
 
+    // Add holiday taken that lives ONLY in the ledger (no live holiday_payments
+    // row behind it) so this dashboard matches the ledger — the source of truth.
+    const livePaymentIds = new Set<string>(
+      payments.map((p: any) => String(p.id)).filter(Boolean)
+    );
+    const ledgerOnlyTaken = ledgerOnlyTakenByEmployee(ledgerRows as any, livePaymentIds);
+    ledgerOnlyTaken.forEach((hours, empId) => {
+      const summary = summaryMap.get(empId);
+      if (!summary) return;
+      summary.hoursTaken += hours;
+    });
+
     // Merge carry-over from holiday_balances (where available)
     const balanceMap = new Map<string, number>();
     balances.forEach((bal: any) => {
