@@ -97,7 +97,7 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
       if (!tenantId) return [];
       const { data, error } = await supabase
         .from("employee_documents")
-        .select(`*, employees ( id, forename, surname, department, email )`)
+        .select(`*, employees ( id, forename, surname, department, email, updated_at )`)
         .eq("tenant_id", tenantId)
         .eq("document_type", "contract")
         .order("version_number", { ascending: false })
@@ -399,6 +399,56 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                   </div>
                 </div>
 
+                {/* Staff email — visible on the row, editable on request */}
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                  {editingEmailId === current.id ? (
+                    <>
+                      <Input
+                        value={emailDraft[current.id] ?? current.employees?.email ?? ""}
+                        onChange={(e) => setEmailDraft((p) => ({ ...p, [current.id]: e.target.value }))}
+                        placeholder="name@example.com"
+                        className="h-8 w-56 text-xs"
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8"
+                        disabled={savingEmailId === current.id}
+                        onClick={() => saveEmail(current)}
+                      >
+                        Save
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditingEmailId(null)}>
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span className={current.employees?.email ? "text-muted-foreground" : "text-amber-600"}>
+                        {current.employees?.email || "No email on record"}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => {
+                          setEmailDraft((p) => ({ ...p, [current.id]: current.employees?.email || "" }));
+                          setEditingEmailId(current.id);
+                        }}
+                      >
+                        {current.employees?.email ? "Edit" : "Add email"}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {/* Details changed after generation — never silently reused */}
+                {staleness.isStale && (
+                  <p className="mt-2 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-2 text-xs text-amber-800">
+                    {staleness.warning}
+                  </p>
+                )}
+
                 {/* Next step for this contract */}
                 <div className="mt-3">
                   <ContractSigningActions
@@ -416,6 +466,31 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                     contractState={state}
                   />
                 </div>
+
+                {/* Awaiting company review — open, accept (countersign) or return */}
+                {state === "employee_signed" && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8"
+                      onClick={() => handleDownload(current.id, "original")}
+                    >
+                      Open signed document
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-destructive hover:text-destructive"
+                      onClick={() => {
+                        setRejectReason("");
+                        setRejectTarget(current);
+                      }}
+                    >
+                      Reject / ask again
+                    </Button>
+                  </div>
+                )}
 
 
                 {/* Action row for signed contracts */}
