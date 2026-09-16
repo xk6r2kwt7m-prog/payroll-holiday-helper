@@ -194,12 +194,28 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     }
   }, [open, preselectedEmployeeId, contractEligibleEmployees]);
 
+  const [restoredDraftAt, setRestoredDraftAt] = useState<string | null>(null);
+
   const handleEmployeeSelect = (employeeId: string) => {
     if (employeeId !== selectedEmployeeId) {
       // New employee picked — clear per-employee manual-edit tracking so the
       // freshly fetched profile/onboarding data can populate the form.
       setUserEdited(new Set());
       setContractTypeEdited(false);
+      setRestoredDraftAt(null);
+
+      // Bring back any details typed earlier for this person but never issued.
+      const saved = loadContractDraft<ContractVariables>(employeeId);
+      if (draftHasContent(saved as any) && saved) {
+        setVariables((prev) => ({ ...prev, ...saved.variables }));
+        if (saved.emailDraft) setEmailDraft(saved.emailDraft);
+        if (saved.contractType) {
+          setContractType(saved.contractType as ContractType);
+          setContractTypeEdited(true);
+        }
+        setUserEdited(new Set(saved.editedFields as (keyof ContractVariables)[]));
+        setRestoredDraftAt(saved.savedAt);
+      }
     }
     setSelectedEmployeeId(employeeId);
   };
