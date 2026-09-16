@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { FileText, Plus, Search, Upload, Archive, RefreshCw, ExternalLink } from "lucide-react";
 import { COMPLIANCE_CATEGORIES, STAFF_ROLES } from "@/lib/compliance-taxonomy";
-import { expiryLabel, expiryTone } from "@/lib/compliance-expiry";
+import { expiryLabel, expiryTone, resolveExpiryBand } from "@/lib/compliance-expiry";
 import {
   useComplianceDocuments, useSaveComplianceDocument, useArchiveComplianceDocument,
   useReplaceComplianceDocument, uploadComplianceFile, complianceFileUrl,
@@ -188,7 +188,7 @@ export function DocumentLibrarySection() {
       ) : (
         <div className="rounded-xl border border-border divide-y divide-border bg-card">
           {filtered.map((doc: any) => {
-            const tone = expiryTone(doc.expires_at, doc.status);
+            const tone = doc.status === "archived" ? "grey" : expiryTone(resolveExpiryBand(doc.expires_at));
             return (
               <div key={doc.id} className="p-4 space-y-2">
                 <div className="flex items-start justify-between gap-3">

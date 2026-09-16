@@ -181,7 +181,7 @@ export function InspectionFileSection({ branch }: { branch: string }) {
                   <p className="text-sm font-medium">{item.label}</p>
                   {item.detail && <p className="text-xs text-muted-foreground mt-0.5">{item.detail}</p>}
                 </div>
-                <Badge className={cn("text-[10px] shrink-0", toneClass[checklistTone(item.status)])}>
+                <Badge className={cn("text-[10px] shrink-0", toneClass[checklistTone(item)])}>
                   {String(item.status).replace(/_/g, " ")}
                 </Badge>
               </div>

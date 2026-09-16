@@ -14,7 +14,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Upload, ExternalLink, Building2, Link2 } from "lucide-react";
 import { COMPLIANCE_CATEGORIES } from "@/lib/compliance-taxonomy";
-import { expiryLabel, expiryTone } from "@/lib/compliance-expiry";
+import { expiryLabel, expiryTone, resolveExpiryBand } from "@/lib/compliance-expiry";
 import {
   useBranchComplianceItems, useSaveBranchComplianceItem, useComplianceDocuments,
   uploadComplianceFile, complianceFileUrl,
@@ -37,7 +37,7 @@ export function BranchComplianceSection({ branch }: { branch: string }) {
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState(COMPLIANCE_CATEGORIES[0]);
+  const [category, setCategory] = useState<string>(COMPLIANCE_CATEGORIES[0]);
   const [expiry, setExpiry] = useState("");
   const [notes, setNotes] = useState("");
   const [inspection, setInspection] = useState(true);
@@ -134,7 +134,7 @@ export function BranchComplianceSection({ branch }: { branch: string }) {
               </div>
               <div className="divide-y divide-border">
                 {list.map((item: any) => {
-                  const tone = expiryTone(item.expiry_date, item.status);
+                  const tone = item.status === "archived" ? "grey" : expiryTone(resolveExpiryBand(item.expiry_date));
                   return (
                     <div key={item.id} className="px-4 py-3 space-y-2">
                       <div className="flex items-start justify-between gap-3">

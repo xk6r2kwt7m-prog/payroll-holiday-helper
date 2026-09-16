@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Upload, ExternalLink, CalendarClock } from "lucide-react";
-import { expiryLabel, expiryTone } from "@/lib/compliance-expiry";
+import { expiryLabel, expiryTone, resolveExpiryBand } from "@/lib/compliance-expiry";
 import {
   useComplianceCertificates, useSaveComplianceCertificate,
   uploadComplianceFile, complianceFileUrl,
@@ -109,7 +109,7 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
       ) : (
         <div className="rounded-xl border border-border bg-card divide-y divide-border">
           {certs.map((c: any) => {
-            const tone = expiryTone(c.expiry_date);
+            const tone = expiryTone(resolveExpiryBand(c.expiry_date));
             return (
               <div key={c.id} className="px-4 py-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
