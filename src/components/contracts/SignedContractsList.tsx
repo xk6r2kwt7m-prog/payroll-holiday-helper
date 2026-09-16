@@ -36,6 +36,7 @@ import { DocumentUploadDialog } from "@/components/employees/DocumentUploadDialo
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ContractSigningActions } from "./ContractSigningActions";
 import { ContractStateBadge } from "./ContractStateBadge";
+import { isTestEmployee } from "@/lib/contract-test-mode";
 import { ContractVersionTimeline } from "./ContractVersionTimeline";
 import { CreateAmendmentDialog } from "./CreateAmendmentDialog";
 import { TerminateContractDialog } from "./TerminateContractDialog";
