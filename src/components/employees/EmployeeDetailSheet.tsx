@@ -1,4 +1,4 @@
-import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake, UserPlus, Shield } from "lucide-react";
+import { User, Building, CreditCard, FileText, Calendar, Globe, Edit2, FolderOpen, StickyNote, FilePlus, ClipboardCheck, Mail, Cake, UserPlus, Shield, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
+import { EmployeeComplianceRecords } from "@/components/compliance/EmployeeComplianceRecords";
 import { EmployeeDocumentList } from "./EmployeeDocumentList";
 import { EmployeeNotesSection } from "./EmployeeNotesSection";
 import { OnboardingChecklist } from "./OnboardingChecklist";
@@ -333,6 +334,11 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
               <OnboardingChecklist employeeId={employee.id} employee={employee} />
             </Section>
           )}
+
+          {/* Training & Compliance */}
+          <Section title="Training & Compliance" icon={ShieldCheck}>
+            <EmployeeComplianceRecords employeeId={employee.id} />
+          </Section>
 
           {/* Documents */}
           <Section title="Documents" icon={FolderOpen}>
