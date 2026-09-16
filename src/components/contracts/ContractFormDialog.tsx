@@ -59,7 +59,8 @@ import { PayStructureFields, type NmwOverrideState } from "./PayStructureFields"
 import { useCreateNmwOverride } from "@/hooks/useNmwOverride";
 import { evaluateWageCompliance } from "@/lib/uk-minimum-wage";
 import { useMyOnboardingData } from "@/hooks/useEmployeeOnboarding";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { getActiveEmploymentTerms } from "@/lib/employment-terms";
 import { mapEmployeeToContractDefaults } from "@/lib/contract-employee-defaults";
 import {
