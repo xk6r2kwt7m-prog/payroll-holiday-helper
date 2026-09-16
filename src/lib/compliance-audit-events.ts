@@ -47,6 +47,21 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   role_assignment_changed: "Role assignment changed",
   expiry_or_review_date_changed: "Expiry or review date changed",
   branch_confirmed: "Branch confirmed",
+  incident_created: "Incident report started",
+  incident_submitted: "Incident submitted",
+  incident_viewed: "Incident opened",
+  incident_amended: "Incident amended",
+  incident_status_changed: "Incident status changed",
+  incident_assigned: "Incident assigned",
+  incident_closed: "Incident closed",
+  incident_evidence_added: "Evidence added",
+  incident_confidentiality_changed: "Confidentiality changed",
+  licence_recorded: "Premises licence recorded",
+  licence_edited: "Premises licence edited",
+  licence_condition_created: "Licence condition added",
+  licence_condition_edited: "Licence condition edited",
+  licence_condition_checked: "Licence condition checked",
+  training_reissued: "Training re-issued",
 };
 
 /** Audit actions supported by the shared audit log. */
