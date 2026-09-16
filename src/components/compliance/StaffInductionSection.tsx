@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTenantBranches } from "@/hooks/useBranches";
 import { useComplianceDocuments, useInductionPacks, useSendInduction } from "@/hooks/useCompliance";
+import { isAvailableToStaff } from "@/lib/compliance-document-fields";
 import { STAFF_ROLES, suggestStaffRole, roleMaySellAlcohol } from "@/lib/compliance-taxonomy";
 import { selectInductionDocuments, summariseSelection } from "@/lib/induction-pack-selection";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,12 @@ const STEPS: Step[] = ["who", "branch", "role", "email", "review"];
 export function StaffInductionSection() {
   const { data: employees = [] } = useEmployees();
   const { data: branches = [] } = useTenantBranches();
-  const { data: documents = [] } = useComplianceDocuments();
+  const { data: allDocuments = [] } = useComplianceDocuments();
+  /** Drafts and rejected documents are never sent to staff. */
+  const documents = useMemo(
+    () => (allDocuments as any[]).filter(isAvailableToStaff),
+    [allDocuments]
+  );
   const { data: packs = [] } = useInductionPacks();
   const sendInduction = useSendInduction();
 

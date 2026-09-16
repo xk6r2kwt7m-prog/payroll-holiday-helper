@@ -2,6 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { DEFAULT_INSPECTION_CHECKLIST } from "@/lib/inspection-readiness";
+import {
+  COMPLIANCE_AUDIT_LABELS, auditActionForEvent, derivedEvents, diffFields,
+  type ComplianceAuditEvent,
+} from "@/lib/compliance-audit-events";
 
 const BUCKET = "employee-documents";
 const PREFIX = "compliance";
@@ -25,6 +29,86 @@ export async function complianceFileUrl(path: string, seconds = 300): Promise<st
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, seconds);
   if (error) return null;
   return data?.signedUrl ?? null;
+}
+
+/* ─────────────── Compliance audit trail ─────────────── */
+
+/**
+ * Writes one entry per compliance event into the shared audit log.
+ * Entries are insert-only: the log cannot be edited or deleted, so history is
+ * never silently overwritten.
+ */
+export async function logComplianceAudit(opts: {
+  tenantId: string;
+  table: string;
+  recordId: string;
+  event: ComplianceAuditEvent;
+  previous?: Record<string, any> | null;
+  next?: Record<string, any> | null;
+  branch?: string | null;
+  note?: string | null;
+}) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const changes = opts.next ? diffFields(opts.previous, opts.next) : [];
+    const events: ComplianceAuditEvent[] = [opts.event, ...derivedEvents(changes)];
+    const rows = events.map((event) => ({
+      tenant_id: opts.tenantId,
+      user_id: user?.id ?? null,
+      action: auditActionForEvent(event),
+      table_name: opts.table,
+      record_id: opts.recordId,
+      old_data: {
+        event,
+        event_label: COMPLIANCE_AUDIT_LABELS[event],
+        branch: opts.branch ?? null,
+        previous: changes.reduce<Record<string, string>>((acc, c) => {
+          acc[c.label] = c.previous;
+          return acc;
+        }, {}),
+      },
+      new_data: {
+        event,
+        event_label: COMPLIANCE_AUDIT_LABELS[event],
+        note: opts.note ?? null,
+        branch: opts.branch ?? null,
+        changes,
+        next: changes.reduce<Record<string, string>>((acc, c) => {
+          acc[c.label] = c.next;
+          return acc;
+        }, {}),
+      },
+    }));
+    const { error } = await supabase.from("audit_log").insert(rows as any);
+    if (error) console.error("Compliance audit log failed:", error);
+  } catch (e) {
+    console.error("Compliance audit log failed:", e);
+  }
+}
+
+/** Full history for one compliance record, newest first. */
+export function useComplianceAuditTrail(table: string, recordId?: string) {
+  const { tenantId } = useTenant();
+  return useQuery({
+    queryKey: ["compliance_audit", table, recordId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_log")
+        .select("id, action, old_data, new_data, created_at, user_id")
+        .eq("tenant_id", tenantId!)
+        .eq("table_name", table)
+        .eq("record_id", recordId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!tenantId && !!recordId,
+  });
+}
+
+async function fetchDocument(id: string) {
+  const { data } = await supabase.from("compliance_documents").select("*").eq("id", id).single();
+  return data ?? null;
 }
 
 /* ─────────────── Document library ─────────────── */
@@ -56,6 +140,7 @@ export function useSaveComplianceDocument() {
     mutationFn: async (payload: Record<string, any> & { id?: string }) => {
       const { id, ...rest } = payload;
       if (id) {
+        const previous = await fetchDocument(id);
         const { data, error } = await supabase
           .from("compliance_documents")
           .update({ ...rest, updated_at: new Date().toISOString() })
@@ -63,6 +148,18 @@ export function useSaveComplianceDocument() {
           .select()
           .single();
         if (error) throw error;
+        if (tenantId) {
+          await logComplianceAudit({
+            tenantId,
+            table: "compliance_documents",
+            recordId: id,
+            event: rest.file_path && rest.file_path !== previous?.file_path
+              ? "file_replaced"
+              : "document_edited",
+            previous,
+            next: rest,
+          });
+        }
         return data;
       }
       const { data: { user } } = await supabase.auth.getUser();
@@ -72,7 +169,53 @@ export function useSaveComplianceDocument() {
         .select()
         .single();
       if (error) throw error;
+      if (tenantId) {
+        await logComplianceAudit({
+          tenantId,
+          table: "compliance_documents",
+          recordId: data.id,
+          event: "document_created",
+          previous: null,
+          next: rest,
+        });
+      }
       return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance_documents"] }),
+  });
+}
+
+/** Approves or rejects a document. Only approved documents reach staff. */
+export function useSetDocumentApproval() {
+  const qc = useQueryClient();
+  const { tenantId } = useTenant();
+  return useMutation({
+    mutationFn: async ({
+      id, approval_status, note,
+    }: { id: string; approval_status: "draft" | "awaiting_approval" | "approved" | "rejected"; note?: string }) => {
+      const previous = await fetchDocument(id);
+      const { data: { user } } = await supabase.auth.getUser();
+      const updates = {
+        approval_status,
+        approval_note: note?.trim() || null,
+        approved_by: approval_status === "approved" ? user?.id ?? null : null,
+        approved_at: approval_status === "approved" ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from("compliance_documents").update(updates).eq("id", id);
+      if (error) throw error;
+      if (tenantId) {
+        await logComplianceAudit({
+          tenantId,
+          table: "compliance_documents",
+          recordId: id,
+          event: approval_status === "approved" ? "document_approved"
+            : approval_status === "rejected" ? "document_rejected" : "document_edited",
+          previous,
+          next: { approval_status, approval_note: updates.approval_note },
+          note: note?.trim() || null,
+        });
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance_documents"] }),
   });
@@ -97,6 +240,7 @@ export function useReplaceComplianceDocument() {
           description: previous.description,
           applies_to_all_branches: previous.applies_to_all_branches,
           branches: previous.branches,
+          branch_ids: previous.branch_ids ?? [],
           applies_to_all_roles: previous.applies_to_all_roles,
           roles: previous.roles,
           requires_signature: previous.requires_signature,
@@ -104,9 +248,17 @@ export function useReplaceComplianceDocument() {
           must_display: previous.must_display,
           inspection_required: previous.inspection_required,
           alcohol_related: previous.alcohol_related,
+          issue_date: previous.issue_date,
+          review_date: previous.review_date,
+          owner_name: previous.owner_name,
+          owner_job_title: previous.owner_job_title,
+          issuing_authority: previous.issuing_authority,
+          reference_number: previous.reference_number,
+          requirement_classification: previous.requirement_classification,
           ...changes,
           version: (previous.version ?? 1) + 1,
           status: "active",
+          approval_status: "awaiting_approval",
           supersedes_document_id: previous.id,
           created_by: user?.id,
         } as any)
@@ -120,6 +272,26 @@ export function useReplaceComplianceDocument() {
         .eq("id", previous.id);
       if (archiveError) throw archiveError;
 
+      if (tenantId) {
+        await logComplianceAudit({
+          tenantId,
+          table: "compliance_documents",
+          recordId: created.id,
+          event: "version_issued",
+          previous,
+          next: { version: created.version, file_path: created.file_path, approval_status: "awaiting_approval" },
+        });
+        await logComplianceAudit({
+          tenantId,
+          table: "compliance_documents",
+          recordId: previous.id,
+          event: "document_archived",
+          previous: { status: previous.status },
+          next: { status: "archived" },
+          note: `Superseded by version ${created.version}`,
+        });
+      }
+
       return created;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance_documents"] }),
@@ -129,13 +301,25 @@ export function useReplaceComplianceDocument() {
 /** Brings an archived document back into the active library (history preserved). */
 export function useRestoreComplianceDocument() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (id: string) => {
+      const previous = await fetchDocument(id);
       const { error } = await supabase
         .from("compliance_documents")
         .update({ status: "active", archived_at: null, updated_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      if (tenantId) {
+        await logComplianceAudit({
+          tenantId,
+          table: "compliance_documents",
+          recordId: id,
+          event: "document_restored",
+          previous: { status: previous?.status },
+          next: { status: "active" },
+        });
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance_documents"] }),
   });
@@ -143,13 +327,25 @@ export function useRestoreComplianceDocument() {
 
 export function useArchiveComplianceDocument() {
   const qc = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (id: string) => {
+      const previous = await fetchDocument(id);
       const { error } = await supabase
         .from("compliance_documents")
         .update({ status: "archived", archived_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
+      if (tenantId) {
+        await logComplianceAudit({
+          tenantId,
+          table: "compliance_documents",
+          recordId: id,
+          event: "document_archived",
+          previous: { status: previous?.status },
+          next: { status: "archived" },
+        });
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance_documents"] }),
   });
@@ -278,25 +474,74 @@ export function useBranchComplianceItems(branch?: string) {
   });
 }
 
+/**
+ * Resolves the confirmed location id for a branch name. Every new compliance
+ * record stores this id, so records can no longer drift onto a mistyped branch.
+ */
+export async function resolveBranchLocationId(
+  tenantId: string,
+  branch?: string | null
+): Promise<string | null> {
+  if (!branch) return null;
+  const { data } = await supabase
+    .from("branch_locations")
+    .select("id, branch, needs_review")
+    .eq("tenant_id", tenantId);
+  const match = (data ?? []).find(
+    (b: any) => String(b.branch).trim().toLowerCase() === branch.trim().toLowerCase()
+  );
+  if (!match) {
+    throw new Error(
+      `"${branch}" is not one of your confirmed locations. Choose a branch from the list.`
+    );
+  }
+  if (match.needs_review) {
+    throw new Error(
+      `"${branch}" still needs to be confirmed by an administrator before compliance records can be filed against it.`
+    );
+  }
+  return match.id;
+}
+
 export function useSaveBranchComplianceItem() {
   const qc = useQueryClient();
   const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (payload: Record<string, any> & { id?: string }) => {
       const { id, ...rest } = payload;
+      if (rest.branch && tenantId) {
+        rest.branch_location_id = await resolveBranchLocationId(tenantId, rest.branch);
+      }
       if (id) {
+        const { data: previous } = await supabase
+          .from("branch_compliance_items").select("*").eq("id", id).single();
         const { error } = await supabase
           .from("branch_compliance_items")
           .update({ ...rest, updated_at: new Date().toISOString() })
           .eq("id", id);
         if (error) throw error;
+        if (tenantId) {
+          await logComplianceAudit({
+            tenantId, table: "branch_compliance_items", recordId: id,
+            event: "document_edited", previous, next: rest,
+            branch: previous?.branch ?? rest.branch ?? null,
+          });
+        }
         return;
       }
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase
+      const { data: created, error } = await supabase
         .from("branch_compliance_items")
-        .insert({ ...rest, tenant_id: tenantId!, created_by: user?.id } as any);
+        .insert({ ...rest, tenant_id: tenantId!, created_by: user?.id } as any)
+        .select("id")
+        .single();
       if (error) throw error;
+      if (tenantId && created) {
+        await logComplianceAudit({
+          tenantId, table: "branch_compliance_items", recordId: created.id,
+          event: "document_created", previous: null, next: rest, branch: rest.branch ?? null,
+        });
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["branch_compliance_items"] }),
   });
@@ -329,19 +574,39 @@ export function useSaveComplianceCertificate() {
   return useMutation({
     mutationFn: async (payload: Record<string, any> & { id?: string }) => {
       const { id, ...rest } = payload;
+      if (rest.branch && tenantId) {
+        rest.branch_location_id = await resolveBranchLocationId(tenantId, rest.branch);
+      }
       if (id) {
+        const { data: previous } = await supabase
+          .from("compliance_certificates").select("*").eq("id", id).single();
         const { error } = await supabase
           .from("compliance_certificates")
           .update({ ...rest, updated_at: new Date().toISOString() })
           .eq("id", id);
         if (error) throw error;
+        if (tenantId) {
+          await logComplianceAudit({
+            tenantId, table: "compliance_certificates", recordId: id,
+            event: "document_edited", previous, next: rest,
+            branch: previous?.branch ?? rest.branch ?? null,
+          });
+        }
         return;
       }
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase
+      const { data: created, error } = await supabase
         .from("compliance_certificates")
-        .insert({ ...rest, tenant_id: tenantId!, created_by: user?.id } as any);
+        .insert({ ...rest, tenant_id: tenantId!, created_by: user?.id } as any)
+        .select("id")
+        .single();
       if (error) throw error;
+      if (tenantId && created) {
+        await logComplianceAudit({
+          tenantId, table: "compliance_certificates", recordId: created.id,
+          event: "document_created", previous: null, next: rest, branch: rest.branch ?? null,
+        });
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance_certificates"] }),
   });
@@ -374,9 +639,11 @@ export function useSeedInspectionChecklist() {
   const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (branch: string) => {
+      const branchLocationId = await resolveBranchLocationId(tenantId!, branch);
       const rows = DEFAULT_INSPECTION_CHECKLIST.map((c) => ({
         tenant_id: tenantId!,
         branch,
+        branch_location_id: branchLocationId,
         label: c.label,
         detail: c.detail,
         sort_order: c.sort_order,
@@ -428,6 +695,9 @@ export function useSaveComplianceAction() {
   return useMutation({
     mutationFn: async (payload: Record<string, any> & { id?: string }) => {
       const { id, ...rest } = payload;
+      if (rest.branch && tenantId) {
+        rest.branch_location_id = await resolveBranchLocationId(tenantId, rest.branch);
+      }
       if (id) {
         const { error } = await supabase
           .from("compliance_actions")

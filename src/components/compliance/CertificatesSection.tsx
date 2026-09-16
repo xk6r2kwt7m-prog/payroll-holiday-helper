@@ -17,7 +17,7 @@ import {
   useComplianceCertificates, useSaveComplianceCertificate,
   uploadComplianceFile, complianceFileUrl,
 } from "@/hooks/useCompliance";
-import { useTenantBranches } from "@/hooks/useBranches";
+import { useComplianceBranches } from "@/hooks/useComplianceBranches";
 import { useTenant } from "@/hooks/useTenant";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +32,8 @@ const RENEWAL_STATUSES = ["current", "renewal_started", "renewed", "lapsed"] as 
 
 export function CertificatesSection({ branchFilter }: { branchFilter?: string }) {
   const { tenantId } = useTenant();
-  const { data: branches = [] } = useTenantBranches();
+  const { data: branchData } = useComplianceBranches();
+  const branches = branchData?.selectable ?? [];
   const { data: certs = [], isLoading } = useComplianceCertificates(branchFilter);
   const save = useSaveComplianceCertificate();
 
@@ -70,6 +71,7 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
         receipt_path: receiptPath,
       });
       toast.success("Certificate saved — reminders start 90 days before expiry");
+      setForm(f => ({ ...f, certificate_type: "", certificate_number: "", holder_name: "", notes: "" }));
       setOpen(false);
       setFile(null); setReceipt(null);
     } catch (e) {
@@ -91,7 +93,10 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Certificates and expiry</h2>
-          <p className="text-xs text-muted-foreground">Reminders at 90, 60 and 30 days, and on the expiry date.</p>
+          <p className="text-xs text-muted-foreground">
+            Reminders at 90, 60 and 30 days, on the expiry date, then weekly while overdue — in the app
+            and by email to the branch managers.
+          </p>
         </div>
         <Button size="sm" onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1.5" /> Add</Button>
       </div>
@@ -150,7 +155,9 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
               <Select value={form.branch} onValueChange={(v) => setForm(f => ({ ...f, branch: v }))}>
                 <SelectTrigger><SelectValue placeholder="Choose branch" /></SelectTrigger>
                 <SelectContent>
-                  {branches.map((b: string) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                  {branches.map((b) => (
+                    <SelectItem key={b.id} value={b.branch}>{b.display_name || b.branch}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -4,7 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { ShieldCheck, AlertTriangle } from "lucide-react";
 import { ComplianceAttentionPanel } from "@/components/compliance/ComplianceAttentionPanel";
 import { StaffInductionSection } from "@/components/compliance/StaffInductionSection";
 import { DocumentLibrarySection } from "@/components/compliance/DocumentLibrarySection";
@@ -13,15 +15,19 @@ import { CertificatesSection } from "@/components/compliance/CertificatesSection
 import { InspectionFileSection } from "@/components/compliance/InspectionFileSection";
 import { AlcoholAuthorisationsPanel } from "@/components/compliance/AlcoholAuthorisationsPanel";
 import { SiteEmergencyDetailsCard } from "@/components/compliance/SiteEmergencyDetailsCard";
-import { useTenantBranches } from "@/hooks/useBranches";
+import {
+  useComplianceBranches, useConfirmBranchLocation, type ComplianceBranchOption,
+} from "@/hooks/useComplianceBranches";
 
 export default function DocumentsCompliance() {
-  const { data: branches = [] } = useTenantBranches();
+  const { data: branchData } = useComplianceBranches();
+  const options = branchData?.selectable ?? [];
+  const needsReview = branchData?.needsReview ?? [];
   const [branch, setBranch] = useState<string>("");
 
   useEffect(() => {
-    if (!branch && branches.length > 0) setBranch(branches[0]);
-  }, [branches, branch]);
+    if (!branch && options.length > 0) setBranch(options[0].branch);
+  }, [options, branch]);
 
   return (
     <AppLayout>
@@ -37,6 +43,8 @@ export default function DocumentsCompliance() {
         </header>
 
         <ComplianceAttentionPanel />
+
+        {needsReview.length > 0 && <BranchReviewNotice items={needsReview} />}
 
         <Tabs defaultValue="induction" className="space-y-4">
           <TabsList className="flex-wrap h-auto">
@@ -62,18 +70,18 @@ export default function DocumentsCompliance() {
           </TabsContent>
 
           <TabsContent value="branch" className="space-y-4">
-            <BranchPicker branches={branches} value={branch} onChange={setBranch} />
+            <BranchPicker options={options} value={branch} onChange={setBranch} />
             {branch && <SiteEmergencyDetailsCard branch={branch} />}
             {branch && <BranchComplianceSection branch={branch} />}
           </TabsContent>
 
           <TabsContent value="certificates" className="space-y-4">
-            <BranchPicker branches={branches} value={branch} onChange={setBranch} allowAll />
+            <BranchPicker options={options} value={branch} onChange={setBranch} allowAll />
             <CertificatesSection branchFilter={branch || undefined} />
           </TabsContent>
 
           <TabsContent value="inspection" className="space-y-4">
-            <BranchPicker branches={branches} value={branch} onChange={setBranch} />
+            <BranchPicker options={options} value={branch} onChange={setBranch} />
             {branch && <InspectionFileSection branch={branch} />}
           </TabsContent>
         </Tabs>
@@ -82,15 +90,54 @@ export default function DocumentsCompliance() {
   );
 }
 
+/** Locations that look like leftovers are held back until someone confirms them. */
+function BranchReviewNotice({ items }: { items: ComplianceBranchOption[] }) {
+  const confirm = useConfirmBranchLocation();
+  return (
+    <div className="rounded-xl border border-warning/40 bg-warning/5 p-4 space-y-3">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+        <div>
+          <p className="text-sm font-medium">Locations needing review</p>
+          <p className="text-xs text-muted-foreground">
+            These locations are not offered when filing compliance records. Nothing has been deleted —
+            confirm one to start using it again.
+          </p>
+        </div>
+      </div>
+      <div className="space-y-2">
+        {items.map((b) => (
+          <div key={b.id} className="flex items-center justify-between gap-3 rounded-lg bg-card border border-border px-3 py-2">
+            <div className="min-w-0">
+              <p className="text-sm truncate">{b.display_name || b.branch}</p>
+              {b.review_note && <p className="text-xs text-muted-foreground">{b.review_note}</p>}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                await confirm.mutateAsync(b.id);
+                toast.success("Location confirmed — it can now be used for compliance records");
+              }}
+            >
+              Confirm
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BranchPicker({
-  branches, value, onChange, allowAll,
+  options, value, onChange, allowAll,
 }: {
-  branches: string[];
+  options: ComplianceBranchOption[];
   value: string;
   onChange: (v: string) => void;
   allowAll?: boolean;
 }) {
-  if (branches.length === 0) {
+  if (options.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
         Add your restaurant locations in Settings to use branch compliance files.
@@ -102,7 +149,9 @@ function BranchPicker({
       <SelectTrigger className="w-[240px]"><SelectValue placeholder="Choose branch" /></SelectTrigger>
       <SelectContent>
         {allowAll && <SelectItem value="__all">All branches</SelectItem>}
-        {branches.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+        {options.map((b) => (
+          <SelectItem key={b.id} value={b.branch}>{b.display_name || b.branch}</SelectItem>
+        ))}
       </SelectContent>
     </Select>
   );

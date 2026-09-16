@@ -25,7 +25,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "induction_pack" | "inspection_pack" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "induction_pack" | "inspection_pack" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -223,6 +223,17 @@ function buildHtml(type: string, data: Record<string, string>): string {
     }
     case "document_expiry":
       body = `<h2>Document Expiry Warning ⚠️</h2><p>A document for <strong>${data.employee_name}</strong> is expiring soon.</p><p><strong>Document:</strong> ${data.document_name}</p><p><strong>Expires:</strong> ${data.expiry_date}</p>`;
+      break;
+    case "compliance_certificate_expiry":
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">${data.headline || "Certificate expiry reminder"}</h2>
+        <p><strong>${data.certificate_type}</strong>${data.certificate_number ? ` (${data.certificate_number})` : ""} at <strong>${data.branch}</strong></p>
+        <p><strong>Expiry date:</strong> ${data.expiry_date}<br/><strong>Status:</strong> ${data.status_line}</p>
+        ${data.holder_name ? `<p><strong>Held by:</strong> ${data.holder_name}</p>` : ""}
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.link_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Open the compliance file</a>
+        </p>
+        <p style="color:#666;">Reminders are sent 90, 60 and 30 days before expiry, on the expiry date, and weekly while a certificate remains overdue.</p>`;
       break;
     case "info_request": {
       const infoFirst = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
