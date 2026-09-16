@@ -81,6 +81,12 @@ import {
   payDetailsStatusLabel,
   reportingManagerStatusLabel,
 } from "@/lib/contract-draft-evidence";
+import {
+  saveContractDraft,
+  loadContractDraft,
+  clearContractDraft,
+  draftHasContent,
+} from "@/lib/contract-draft-autosave";
 import { getContractGenerationGate } from "@/lib/contract-generation-gate";
 import {
   buildContractIssueSummary,
@@ -194,12 +200,28 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     }
   }, [open, preselectedEmployeeId, contractEligibleEmployees]);
 
+  const [restoredDraftAt, setRestoredDraftAt] = useState<string | null>(null);
+
   const handleEmployeeSelect = (employeeId: string) => {
     if (employeeId !== selectedEmployeeId) {
       // New employee picked — clear per-employee manual-edit tracking so the
       // freshly fetched profile/onboarding data can populate the form.
       setUserEdited(new Set());
       setContractTypeEdited(false);
+      setRestoredDraftAt(null);
+
+      // Bring back any details typed earlier for this person but never issued.
+      const saved = loadContractDraft<ContractVariables>(employeeId);
+      if (draftHasContent(saved as any) && saved) {
+        setVariables((prev) => ({ ...prev, ...saved.variables }));
+        if (saved.emailDraft) setEmailDraft(saved.emailDraft);
+        if (saved.contractType) {
+          setContractType(saved.contractType as ContractType);
+          setContractTypeEdited(true);
+        }
+        setUserEdited(new Set(saved.editedFields as (keyof ContractVariables)[]));
+        setRestoredDraftAt(saved.savedAt);
+      }
     }
     setSelectedEmployeeId(employeeId);
   };
@@ -550,6 +572,26 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     if (!criticalDetails.canSendStraightAway) setDetailsMode("details_first");
   }, [criticalDetails.canSendStraightAway]);
 
+  // Keep whatever has been typed for this person, so a refresh or accidental
+  // close never loses it. Local convenience cache only — nothing is written to
+  // the employee record here.
+  useEffect(() => {
+    if (!open || !selectedEmployeeId || step !== "fill") return;
+    saveContractDraft<ContractVariables>(selectedEmployeeId, {
+      variables,
+      emailDraft,
+      contractType,
+      editedFields: Array.from(userEdited) as string[],
+    });
+  }, [open, selectedEmployeeId, step, variables, emailDraft, contractType, userEdited]);
+
+  // Once the contract exists as a draft document, the typed cache is redundant.
+  useEffect(() => {
+    if (savedDocumentId && selectedEmployeeId) clearContractDraft(selectedEmployeeId);
+  }, [savedDocumentId, selectedEmployeeId]);
+
+
+
   const handleSendContractEmail = async () => {
     if (!employeeSignLink || !employeeEmail || !savedDocumentId || !employeeSignTokenId) return;
 
@@ -647,6 +689,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       setSelectedEmployeeId("");
       setUserEdited(new Set());
       setContractTypeEdited(false);
+      setRestoredDraftAt(null);
       setVariables({
         employeeName: "",
         homeAddress: "",
@@ -713,6 +756,18 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
             <span>Issue</span>
             <span>Sign</span>
           </div>
+          {step === "fill" && restoredDraftAt && (
+            <p className="mt-3 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              We brought back the details you were typing for this person on{" "}
+              {new Date(restoredDraftAt).toLocaleString("en-GB", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              . Check them before you continue.
+            </p>
+          )}
         </DialogHeader>
 
 
