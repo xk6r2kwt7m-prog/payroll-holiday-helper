@@ -429,6 +429,130 @@ export default function SignContract() {
   }
 
 
+  // ══════════ Read-the-contract step (team member only) ══════════
+  if (isEmployee && !reviewConfirmed) {
+    const expiryLabel = contractInfo.expires_at
+      ? new Date(contractInfo.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+      : null;
+
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="border-b border-border bg-card">
+          <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">Read your contract</h1>
+              <p className="text-xs text-muted-foreground">
+                Take your time — you only sign when you are ready
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Name</span>
+                <span className="font-medium text-foreground">{contractInfo.employee_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Document</span>
+                <span className="font-medium text-foreground truncate max-w-[200px]">{contractInfo.document_name}</span>
+              </div>
+              {contractInfo.company_name && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Employer</span>
+                  <span className="font-medium text-foreground">{contractInfo.company_name}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {contractInfo.document_url ? (
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <iframe
+                src={contractInfo.document_url}
+                title="Your contract"
+                className="w-full h-[60vh] bg-muted"
+              />
+              <div className="border-t border-border p-3">
+                <a
+                  href={contractInfo.document_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Download className="h-4 w-4" />
+                  Open or download the full contract
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive">
+                The contract file is not available yet. Please contact your manager before signing.
+              </p>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-border bg-card p-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="read-confirm"
+                checked={readConfirmed}
+                onCheckedChange={(checked) => setReadConfirmed(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="read-confirm" className="text-sm text-foreground cursor-pointer leading-snug">
+                I have read the whole contract and I understand it
+              </label>
+            </div>
+
+            <Button
+              onClick={() => setReviewConfirmed(true)}
+              disabled={!readConfirmed || !contractInfo.document_url}
+              className="w-full gradient-primary h-12 text-base"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              I have read it — continue to sign
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setNeedsHelp((v) => !v)}
+              className="w-full h-11"
+            >
+              <Clock className="h-4 w-4" />
+              I am not ready to sign yet
+            </Button>
+
+            {needsHelp && (
+              <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">That is completely fine.</p>
+                <p>
+                  Nothing has been signed. You can close this page and come back to the same link at any time to keep
+                  reading{expiryLabel ? `, up to ${expiryLabel}` : ""}.
+                </p>
+                <p>
+                  If anything is unclear, speak to your manager{contractInfo.company_name ? ` at ${contractInfo.company_name}` : ""} first.
+                  They can talk you through the contract, or send you an updated version if something needs changing.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <p className="text-[10px] text-muted-foreground text-center px-4">
+            You are never signed up to anything until you complete the signature step yourself.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const canSubmit = typedName.trim().length > 0 && consentGiven && !!signatureData && !submitting;
   const companyName = contractInfo.company_name || "the employer";
 
