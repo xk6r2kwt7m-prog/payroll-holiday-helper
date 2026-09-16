@@ -4,6 +4,7 @@ import {
   CalendarClock, ClipboardCheck, Settings, LogOut, BarChart3, MapPin, Building2,
   UserX, UserPlus, GraduationCap, ShieldAlert, Megaphone, Sparkles,
   ClipboardList, CheckCircle2, User, Shield, FileText, CalendarDays, Sun,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TALENT_POOL_ROUTE } from "@/lib/routes";
@@ -81,6 +82,7 @@ const managerMoreGroups: MoreGroup[] = [
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
       { icon: Sparkles, label: "Talent Pool", path: TALENT_POOL_ROUTE, minRole: "staff" },
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
+      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents" },
     ],
   },
   {
@@ -130,6 +132,7 @@ const adminMoreGroups: MoreGroup[] = [
     items: [
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
       { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
+      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents" },
       { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
       { icon: Settings, label: "Admin Centre", path: "/settings", minRole: "admin" },
     ],
