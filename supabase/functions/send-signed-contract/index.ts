@@ -19,27 +19,31 @@ Deno.serve(async (req) => {
     });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("send-signed-contract: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    return new Response(JSON.stringify({ error: "Email service is not configured." }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const admin = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    // ── Authenticate the caller ──
+    // ── Authenticate the caller (verified with the service-role client) ──
     const authHeader = req.headers.get("Authorization") || "";
-    const jwt = authHeader.replace("Bearer ", "");
+    const jwt = authHeader.replace("Bearer ", "").trim();
     if (!jwt) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userResult } = await userClient.auth.getUser();
+    const { data: userResult, error: authError } = await admin.auth.getUser(jwt);
     const user = userResult?.user;
-    if (!user) {
+    if (authError || !user) {
+      console.error("send-signed-contract: auth failed", authError?.message);
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
