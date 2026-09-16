@@ -17,7 +17,22 @@ export type ComplianceAuditEvent =
   | "branch_assignment_changed"
   | "role_assignment_changed"
   | "expiry_or_review_date_changed"
-  | "branch_confirmed";
+  | "branch_confirmed"
+  | "incident_created"
+  | "incident_submitted"
+  | "incident_viewed"
+  | "incident_amended"
+  | "incident_status_changed"
+  | "incident_assigned"
+  | "incident_closed"
+  | "incident_evidence_added"
+  | "incident_confidentiality_changed"
+  | "licence_recorded"
+  | "licence_edited"
+  | "licence_condition_created"
+  | "licence_condition_edited"
+  | "licence_condition_checked"
+  | "training_reissued";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   document_created: "Document created",
