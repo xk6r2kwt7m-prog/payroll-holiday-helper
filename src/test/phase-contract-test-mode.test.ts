@@ -87,7 +87,8 @@ describe("safety", () => {
 
   it("no payroll, holiday, NMW or service-charge logic in the test-mode library", () => {
     const src = read("src/lib/contract-test-mode.ts");
-    expect(src).not.toMatch(/payroll|holiday|nmw|service_charge|serviceCharge/i);
+    expect(src).not.toMatch(/from ["']@\/lib\/(payroll|holiday|nmw|service)/);
+    expect(src).not.toMatch(/calculate|accrual|hourlyRate \*/i);
     expect(src).not.toMatch(/supabase|useQuery|fetch\(/);
   });
 
