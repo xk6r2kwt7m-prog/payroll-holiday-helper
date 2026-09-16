@@ -12,6 +12,7 @@ import { BranchComplianceSection } from "@/components/compliance/BranchComplianc
 import { CertificatesSection } from "@/components/compliance/CertificatesSection";
 import { InspectionFileSection } from "@/components/compliance/InspectionFileSection";
 import { AlcoholAuthorisationsPanel } from "@/components/compliance/AlcoholAuthorisationsPanel";
+import { SiteEmergencyDetailsCard } from "@/components/compliance/SiteEmergencyDetailsCard";
 import { useTenantBranches } from "@/hooks/useBranches";
 
 export default function DocumentsCompliance() {
@@ -62,6 +63,7 @@ export default function DocumentsCompliance() {
 
           <TabsContent value="branch" className="space-y-4">
             <BranchPicker branches={branches} value={branch} onChange={setBranch} />
+            {branch && <SiteEmergencyDetailsCard branch={branch} />}
             {branch && <BranchComplianceSection branch={branch} />}
           </TabsContent>
 

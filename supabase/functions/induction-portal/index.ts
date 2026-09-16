@@ -1,4 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  ASSESSMENT_KEY,
+  ASSESSMENT_PASS_MARK,
+  ASSESSMENT_TOTAL,
+  DECLARATION_KEYS,
+  INDUCTION_MODULE_SEED,
+  PRACTICAL_SEED,
+  SITE_FIELDS,
+} from "../_shared/induction-content.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,8 +25,9 @@ function json(body: unknown, status = 200) {
 
 /**
  * Public induction portal — no sign-in required.
- * GET  ?token=...          → pack, documents and signed view links
- * POST { action: ... }     → acknowledge_item | complete | acknowledge_alcohol
+ * GET  ?token=...          → pack, modules, declaration, assessment, documents, site details
+ * POST { action: ... }     → read_module | acknowledge_module | submit_declaration |
+ *                            submit_assessment | acknowledge_item | acknowledge_alcohol | complete
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -56,6 +66,48 @@ Deno.serve(async (req) => {
       return data ?? [];
     };
 
+    const loadModules = async () => {
+      const { data } = await admin
+        .from("induction_modules")
+        .select("*")
+        .eq("pack_id", pack.id)
+        .order("sort_order");
+      return data ?? [];
+    };
+
+    /** Creates module and practical rows the first time the pack is opened. */
+    const ensureSeeded = async () => {
+      const existing = await loadModules();
+      if (existing.length === 0) {
+        await admin.from("induction_modules").insert(
+          INDUCTION_MODULE_SEED.map((m, i) => ({
+            pack_id: pack.id,
+            module_key: m.key,
+            title: m.title,
+            sort_order: i,
+          })),
+        );
+      }
+      const { count } = await admin
+        .from("induction_practical_items")
+        .select("id", { count: "exact", head: true })
+        .eq("pack_id", pack.id);
+      if (!count) {
+        const role = pack.staff_role as string | null;
+        const tasks = PRACTICAL_SEED.filter((t) => !t.roles || !role || t.roles.includes(role));
+        await admin.from("induction_practical_items").insert(
+          tasks.map((t, i) => ({
+            pack_id: pack.id,
+            employee_id: pack.employee_id,
+            group_key: t.group,
+            label: t.label,
+            sort_order: i,
+            applicable: true,
+          })),
+        );
+      }
+    };
+
     if (req.method === "GET") {
       if (!pack.opened_at) {
         await admin
@@ -63,6 +115,8 @@ Deno.serve(async (req) => {
           .update({ opened_at: new Date().toISOString(), status: pack.status === "sent" ? "opened" : pack.status })
           .eq("id", pack.id);
       }
+
+      await ensureSeeded();
 
       const items = await loadItems();
       const withUrls = await Promise.all(
@@ -73,8 +127,39 @@ Deno.serve(async (req) => {
             view_url = data?.signedUrl ?? null;
           }
           return { ...item, view_url };
-        })
+        }),
       );
+
+      const modules = await loadModules();
+
+      const { data: declaration } = await admin
+        .from("induction_declarations")
+        .select("*")
+        .eq("pack_id", pack.id)
+        .maybeSingle();
+
+      const { data: assessments } = await admin
+        .from("induction_assessments")
+        .select("*")
+        .eq("pack_id", pack.id)
+        .order("attempt_number", { ascending: false });
+
+      const { data: practical } = await admin
+        .from("induction_practical_items")
+        .select("*")
+        .eq("pack_id", pack.id)
+        .order("sort_order");
+
+      let site: Record<string, string | null> = {};
+      if (pack.branch) {
+        const { data: settings } = await admin
+          .from("location_settings")
+          .select(SITE_FIELDS.join(","))
+          .eq("tenant_id", pack.tenant_id)
+          .eq("branch", pack.branch)
+          .maybeSingle();
+        if (settings) site = settings as any;
+      }
 
       let alcohol: any = null;
       if (pack.includes_alcohol) {
@@ -101,6 +186,12 @@ Deno.serve(async (req) => {
           issued_by_name: pack.issued_by_name,
         },
         employee: { name: emp ? `${emp.forename} ${emp.surname}` : "", first_name: emp?.forename ?? "" },
+        modules,
+        declaration: declaration ?? null,
+        assessment: assessments?.[0] ?? null,
+        attempts: assessments?.length ?? 0,
+        practical: practical ?? [],
+        site,
         items: withUrls,
         alcohol,
       });
@@ -108,6 +199,112 @@ Deno.serve(async (req) => {
 
     // ── POST actions ──
     const action = body?.action;
+
+    if (action === "read_module" || action === "acknowledge_module") {
+      const key = body?.module_key;
+      if (!key) return json({ error: "Missing section" }, 400);
+      const modules = await loadModules();
+      const mod = modules.find((m: any) => m.module_key === key);
+      if (!mod) return json({ error: "Section not found" }, 404);
+      const now = new Date().toISOString();
+      await admin
+        .from("induction_modules")
+        .update({
+          read_at: mod.read_at ?? now,
+          acknowledged_at: action === "acknowledge_module" ? (mod.acknowledged_at ?? now) : mod.acknowledged_at,
+        })
+        .eq("id", mod.id);
+      return json({ success: true });
+    }
+
+    if (action === "submit_declaration") {
+      const answers = body?.answers;
+      if (!answers || typeof answers !== "object") return json({ error: "Missing answers" }, 400);
+      const missing = DECLARATION_KEYS.filter((k) => answers[k] !== true && answers[k] !== false);
+      if (missing.length > 0) {
+        return json({ error: `Please answer every question (${missing.length} remaining).` }, 400);
+      }
+      if (!body?.signature_data) return json({ error: "A signature is required" }, 400);
+      const hasYes = DECLARATION_KEYS.some((k) => answers[k] === true);
+      const clean = Object.fromEntries(DECLARATION_KEYS.map((k) => [k, answers[k] === true]));
+
+      const { data: existing } = await admin
+        .from("induction_declarations")
+        .select("id")
+        .eq("pack_id", pack.id)
+        .maybeSingle();
+      if (existing) {
+        await admin
+          .from("induction_declarations")
+          .update({
+            answers: clean,
+            has_yes_answer: hasYes,
+            signature_data: body.signature_data,
+            signed_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } else {
+        await admin.from("induction_declarations").insert({
+          pack_id: pack.id,
+          employee_id: pack.employee_id,
+          answers: clean,
+          has_yes_answer: hasYes,
+          signature_data: body.signature_data,
+          signed_at: new Date().toISOString(),
+        });
+      }
+
+      // A declared symptom needs a manager to see it straight away.
+      if (hasYes && pack.issued_by) {
+        const emp: any = pack.employees;
+        await admin.from("notifications").insert({
+          tenant_id: pack.tenant_id,
+          user_id: pack.issued_by,
+          event_type: "induction_health_declaration",
+          title: "Health declaration needs review",
+          body: `${emp ? `${emp.forename} ${emp.surname}` : "A staff member"} answered yes to a fitness-to-work question. Review before they handle food.`,
+          link: "/compliance",
+          metadata: { pack_id: pack.id, employee_id: pack.employee_id },
+        });
+      }
+      return json({ success: true, has_yes_answer: hasYes });
+    }
+
+    if (action === "submit_assessment") {
+      const answers = body?.answers;
+      if (!answers || typeof answers !== "object") return json({ error: "Missing answers" }, 400);
+      const keys = Object.keys(ASSESSMENT_KEY);
+      const unanswered = keys.filter((k) => typeof answers[k] !== "number");
+      if (unanswered.length > 0) {
+        return json({ error: `Please answer every question (${unanswered.length} remaining).` }, 400);
+      }
+      let score = 0;
+      for (const k of keys) if (answers[k] === ASSESSMENT_KEY[k]) score += 1;
+      const passed = score >= ASSESSMENT_PASS_MARK;
+
+      const { count } = await admin
+        .from("induction_assessments")
+        .select("id", { count: "exact", head: true })
+        .eq("pack_id", pack.id);
+
+      await admin.from("induction_assessments").insert({
+        pack_id: pack.id,
+        employee_id: pack.employee_id,
+        answers,
+        score,
+        total: ASSESSMENT_TOTAL,
+        passed,
+        attempt_number: (count ?? 0) + 1,
+      });
+
+      return json({
+        success: true,
+        score,
+        total: ASSESSMENT_TOTAL,
+        passed,
+        wrong: keys.filter((k) => answers[k] !== ASSESSMENT_KEY[k]),
+      });
+    }
 
     if (action === "acknowledge_item") {
       const itemId = body?.item_id;
@@ -164,6 +361,29 @@ Deno.serve(async (req) => {
       if (outstanding.length > 0) {
         return json({ error: `Please confirm all documents first (${outstanding.length} remaining).` }, 400);
       }
+
+      const modules = await loadModules();
+      const unreadModules = modules.filter((m: any) => !m.acknowledged_at);
+      if (unreadModules.length > 0) {
+        return json({ error: `Please confirm every section first (${unreadModules.length} remaining).` }, 400);
+      }
+
+      const { data: declaration } = await admin
+        .from("induction_declarations")
+        .select("id")
+        .eq("pack_id", pack.id)
+        .maybeSingle();
+      if (!declaration) return json({ error: "Please complete the health declaration first." }, 400);
+
+      const { data: passedAttempt } = await admin
+        .from("induction_assessments")
+        .select("id")
+        .eq("pack_id", pack.id)
+        .eq("passed", true)
+        .limit(1)
+        .maybeSingle();
+      if (!passedAttempt) return json({ error: "Please pass the knowledge check first." }, 400);
+
       await admin
         .from("induction_packs")
         .update({
@@ -182,6 +402,7 @@ Deno.serve(async (req) => {
         new_data: {
           employee_id: pack.employee_id,
           documents: items.map((i: any) => ({ name: i.document_name, version: i.document_version })),
+          modules: modules.map((m: any) => ({ key: m.module_key, acknowledged_at: m.acknowledged_at })),
           completed_at: new Date().toISOString(),
         },
       });
@@ -193,8 +414,8 @@ Deno.serve(async (req) => {
           tenant_id: pack.tenant_id,
           user_id: pack.issued_by,
           event_type: "induction_completed",
-          title: "Induction completed",
-          body: `${emp ? `${emp.forename} ${emp.surname}` : "A staff member"} has completed their induction documents.`,
+          title: "Induction completed — practical items to verify",
+          body: `${emp ? `${emp.forename} ${emp.surname}` : "A staff member"} has completed their induction. Verify the practical items on site.`,
           link: "/compliance",
           metadata: { pack_id: pack.id, employee_id: pack.employee_id },
         });
