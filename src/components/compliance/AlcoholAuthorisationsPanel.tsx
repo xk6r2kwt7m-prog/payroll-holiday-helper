@@ -39,6 +39,7 @@ export function AlcoholAuthorisationsPanel({ employeeId }: { employeeId?: string
   const [revoking, setRevoking] = useState<any | null>(null);
   const [revokeReason, setRevokeReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
 
   const mayApprove = canApproveAuthorisation(role ?? undefined, authoriserRole as any);
 
