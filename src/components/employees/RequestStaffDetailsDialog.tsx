@@ -10,7 +10,7 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { useInfoRequests, useSendInfoRequest, type InfoSection } from "@/hooks/useInfoRequests";
 
 const SECTIONS: { key: InfoSection; label: string; hint: string }[] = [
-  { key: "personal", label: "Contact details", hint: "Full name, date of birth, phone, home address" },
+  { key: "personal", label: "Personal details", hint: "Full name, date of birth, phone, home address, National Insurance number" },
   { key: "emergency", label: "Emergency contact", hint: "Name, relationship, phone" },
   { key: "bank", label: "Bank details for pay", hint: "Account holder, sort code, account number" },
   { key: "rtw", label: "Right to work", hint: "Nationality, share code and a photo of their document" },

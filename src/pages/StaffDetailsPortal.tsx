@@ -267,7 +267,7 @@ export default function StaffDetailsPortal() {
               <Field label="Name you prefer to be called (optional)" value={answers.personal?.preferred_name} onChange={(v) => set("personal", "preferred_name", v)} />
               <Field label="Date of birth" type="date" value={answers.personal?.date_of_birth} onChange={(v) => set("personal", "date_of_birth", v)} />
               <Field label="Mobile number" type="tel" value={answers.personal?.phone} onChange={(v) => set("personal", "phone", v)} />
-              <Field label="National Insurance number" placeholder="QQ123456C" value={answers.personal?.ni_number} onChange={(v) => set("personal", "ni_number", v)} />
+              <Field label="National Insurance number (leave blank if you do not have one yet)" placeholder="QQ123456C" value={answers.personal?.ni_number} onChange={(v) => set("personal", "ni_number", v)} />
               <Field label="Address" value={answers.personal?.address_line1} onChange={(v) => set("personal", "address_line1", v)} />
               <Field label="Address line 2 (optional)" value={answers.personal?.address_line2} onChange={(v) => set("personal", "address_line2", v)} />
               <Field label="Town or city" value={answers.personal?.city} onChange={(v) => set("personal", "city", v)} />
