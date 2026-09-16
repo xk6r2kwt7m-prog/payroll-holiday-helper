@@ -132,21 +132,83 @@ Deno.serve(async (req) => {
         });
         if (applicable.length === 0) continue;
 
-        const { error } = await supabase.functions.invoke("send-induction-pack", {
-          body: {
+        const docIds = applicable.map((d: any) => d.id);
+        const { data: docRows } = await supabase
+          .from("compliance_documents")
+          .select("id, name, version, category, file_path, requires_signature")
+          .in("id", docIds);
+
+        const token = [...crypto.getRandomValues(new Uint8Array(32))]
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+
+        const { data: pack, error: packErr } = await supabase
+          .from("induction_packs")
+          .insert({
             tenant_id: row.tenant_id,
-            employeeIds: [emp.id],
+            employee_id: emp.id,
             branch: emp.branch,
-            staffRole: null,
-            documentIds: applicable.map((d: any) => d.id),
-            includesAlcohol: false,
-            autoAssigned: true,
-          },
-        });
-        if (error) {
-          notes.push(`${emp.forename} ${emp.surname}: ${error.message}`);
+            token,
+            issued_by_name: "Automatic assignment",
+            status: "sent",
+            includes_alcohol: false,
+            recipient_email: emp.email,
+            sent_at: now.toISOString(),
+            auto_assigned: true,
+          })
+          .select()
+          .single();
+        if (packErr || !pack) {
+          notes.push(`${emp.forename} ${emp.surname}: ${packErr?.message ?? "could not create induction"}`);
           continue;
         }
+
+        await supabase.from("induction_pack_items").insert(
+          (docRows ?? []).map((d: any, i: number) => ({
+            tenant_id: row.tenant_id,
+            pack_id: pack.id,
+            document_id: d.id,
+            document_name: d.name,
+            document_version: d.version,
+            document_category: d.category,
+            file_path: d.file_path,
+            requires_signature: d.requires_signature,
+            sort_order: i,
+          }))
+        );
+
+        await supabase.functions.invoke("send-notification", {
+          body: {
+            to: emp.email,
+            subject: "Your induction documents",
+            type: "induction_pack",
+            tenant_id: row.tenant_id,
+            data: {
+              employee_name: `${emp.forename} ${emp.surname}`,
+              first_name: emp.forename,
+              induction_url: `${APP_URL}/induction/${token}`,
+              document_count: String(docRows?.length ?? 0),
+              branch: emp.branch ?? "",
+              staff_role: "",
+            },
+          },
+        });
+
+        await supabase.from("audit_log").insert({
+          tenant_id: row.tenant_id,
+          action: "create",
+          table_name: "induction_pack_sent",
+          record_id: pack.id,
+          new_data: {
+            employee_id: emp.id,
+            recipient: emp.email,
+            branch: emp.branch,
+            auto_assigned: true,
+            documents: (docRows ?? []).map((d: any) => ({ name: d.name, version: d.version })),
+          },
+        });
+
+        hasPack.add(emp.id);
         autoSent++;
       }
     }
