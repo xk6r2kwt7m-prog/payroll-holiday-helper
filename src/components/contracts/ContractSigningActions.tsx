@@ -34,6 +34,7 @@ import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, Fil
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenant } from "@/hooks/useTenant";
+import { resolveContractNextStep } from "@/lib/contract-next-step";
 
 interface ContractSigningActionsProps {
   documentId: string;
