@@ -65,6 +65,8 @@ export function ContractSigningActions({
   filePath,
   documentName = "Employment Contract",
   companyName = "Ugly Dumpling",
+  contractState,
+  nextStepMode = false,
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const { tenantId } = useTenant();
