@@ -1224,6 +1224,20 @@ export function ContractSigningActions({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
+            {/* Rehearsal switch — nothing reaches the staff member */}
+            <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2">
+              <div>
+                <Label htmlFor="test-send" className="text-xs font-medium">
+                  Send to me instead (test run)
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {testMode
+                    ? `Goes to your inbox marked [TEST]. ${employeeName} receives nothing and their record is untouched.`
+                    : "Use this to try the whole process yourself first."}
+                </p>
+              </div>
+              <Switch id="test-send" checked={testMode} onCheckedChange={toggleTestMode} />
+            </div>
             <Label htmlFor="recipient-email" className="text-xs">
               Email address
             </Label>
@@ -1236,12 +1250,12 @@ export function ContractSigningActions({
               value={recipientEmail}
               onChange={(e) => setRecipientEmail(e.target.value)}
             />
-            {!emailOnFile && (
+            {!testMode && !emailOnFile && (
               <p className="text-[11px] text-muted-foreground">
                 No email is on file for {employeeName}. The address you enter here will be saved to their record.
               </p>
             )}
-            {emailOnFile && recipientEmail.trim().toLowerCase() !== emailOnFile.toLowerCase() && (
+            {!testMode && emailOnFile && recipientEmail.trim().toLowerCase() !== emailOnFile.toLowerCase() && (
               <p className="text-[11px] text-amber-700">
                 This will also update {employeeName}'s email on file (currently {emailOnFile}).
               </p>
