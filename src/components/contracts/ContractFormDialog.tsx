@@ -104,6 +104,9 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const workLocations = locationSettings.map(l => l.address ? `${l.display_name} — ${l.address}` : l.display_name);
 
   const [step, setStep] = useState<Step>("fill");
+  const [fillStage, setFillStage] = useState<FillStage>("employee");
+  const [emailDraft, setEmailDraft] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [contractType, setContractType] = useState<ContractType>("foh");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
