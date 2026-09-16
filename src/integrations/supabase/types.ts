@@ -1546,6 +1546,7 @@ export type Database = {
           contract_sent_to: string | null
           contract_state: string | null
           created_at: string
+          details_submitted_at: string | null
           document_name: string
           document_status: string
           document_type: Database["public"]["Enums"]["document_type"]
@@ -1568,6 +1569,9 @@ export type Database = {
           notes: string | null
           parent_contract_id: string | null
           rejected_reason: string | null
+          requires_details_first: boolean
+          review_accepted_at: string | null
+          review_accepted_by: string | null
           root_contract_id: string | null
           signed_scan_file_path: string | null
           signed_scan_uploaded_at: string | null
@@ -1597,6 +1601,7 @@ export type Database = {
           contract_sent_to?: string | null
           contract_state?: string | null
           created_at?: string
+          details_submitted_at?: string | null
           document_name: string
           document_status?: string
           document_type: Database["public"]["Enums"]["document_type"]
@@ -1619,6 +1624,9 @@ export type Database = {
           notes?: string | null
           parent_contract_id?: string | null
           rejected_reason?: string | null
+          requires_details_first?: boolean
+          review_accepted_at?: string | null
+          review_accepted_by?: string | null
           root_contract_id?: string | null
           signed_scan_file_path?: string | null
           signed_scan_uploaded_at?: string | null
@@ -1648,6 +1656,7 @@ export type Database = {
           contract_sent_to?: string | null
           contract_state?: string | null
           created_at?: string
+          details_submitted_at?: string | null
           document_name?: string
           document_status?: string
           document_type?: Database["public"]["Enums"]["document_type"]
@@ -1670,6 +1679,9 @@ export type Database = {
           notes?: string | null
           parent_contract_id?: string | null
           rejected_reason?: string | null
+          requires_details_first?: boolean
+          review_accepted_at?: string | null
+          review_accepted_by?: string | null
           root_contract_id?: string | null
           signed_scan_file_path?: string | null
           signed_scan_uploaded_at?: string | null
