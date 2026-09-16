@@ -27,6 +27,8 @@ export interface InspectionDocumentItem {
   physical_copy_held: boolean;
   inspection_required: boolean;
   status: string;
+  /** True when a file is attached or a paper copy is held. */
+  has_copy?: boolean;
   last_reviewed_at?: string | null;
 }
 
@@ -47,19 +49,12 @@ export function checklistTone(item: InspectionChecklistItem): ComplianceTone {
 
 export function documentTone(item: InspectionDocumentItem, today = new Date()): ComplianceTone {
   if (item.status === "archived") return "grey";
+  const hasCopy = item.has_copy ?? item.physical_copy_held;
+  if (!hasCopy) return "red";
   const band = resolveExpiryBand(item.expiry_date, today);
   if (band === "expired") return "red";
-  if (!item.file_path_present && !item.physical_copy_held) {
-    // handled by callers that pass presence; default to amber when unknown
-  }
   if (band === "30_days" || band === "60_days" || band === "90_days") return "amber";
   return "green";
-}
-
-// Structural widening so callers may pass file presence without breaking types.
-declare module "./inspection-readiness" {}
-export interface InspectionDocumentItemWithFile extends InspectionDocumentItem {
-  file_path_present?: boolean;
 }
 
 export interface InspectionReadiness {
@@ -78,9 +73,10 @@ export function summariseInspectionReadiness(
   documents: InspectionDocumentItem[] = [],
   today = new Date()
 ): InspectionReadiness {
+  const relevantDocs = documents.filter((d) => d.inspection_required);
   const tones: ComplianceTone[] = [
     ...checklist.map(checklistTone),
-    ...documents.filter((d) => d.inspection_required).map((d) => documentTone(d, today)),
+    ...relevantDocs.map((d) => documentTone(d, today)),
   ];
 
   const counts = { green: 0, amber: 0, red: 0, grey: 0 };
@@ -89,10 +85,8 @@ export function summariseInspectionReadiness(
   });
 
   const outstanding = [
-    ...checklist.filter((c) => checklistTone(c) === "red" || checklistTone(c) === "amber").map((c) => c.label),
-    ...documents
-      .filter((d) => d.inspection_required && documentTone(d, today) !== "green")
-      .map((d) => d.name),
+    ...checklist.filter((c) => ["red", "amber"].includes(checklistTone(c))).map((c) => c.label),
+    ...relevantDocs.filter((d) => ["red", "amber"].includes(documentTone(d, today))).map((d) => d.name),
   ];
 
   const tone: ComplianceTone =
