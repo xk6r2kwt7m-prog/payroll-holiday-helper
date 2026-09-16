@@ -521,6 +521,76 @@ export function ContractSigningActions({
               )}
             </div>
 
+            {/* Sign now with my saved signature */}
+            {!employerSigned && signatoryLoaded && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <p className="text-xs font-semibold text-foreground">My Signature</p>
+                {savedSignature ? (
+                  <>
+                    <div className="rounded-md border border-border bg-white p-2">
+                      <img src={savedSignature} alt="Your saved signature" className="h-12 w-auto object-contain" />
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setConfirmSignOpen(true)}
+                      disabled={signingAsEmployer || !overrideName.trim()}
+                    >
+                      {signingAsEmployer ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
+                      Sign this contract now
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground">
+                      Applies your saved signature to the employer section, with a full audit record.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">
+                    No saved signature yet. Add one in Settings → Contracts to sign contracts yourself in one click.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Per-contract send date */}
+            {!employeeSigned && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-3.5 w-3.5 text-primary" />
+                  <p className="text-xs font-semibold text-foreground">Send this contract on</p>
+                </div>
+                <Input
+                  type="datetime-local"
+                  value={scheduleInput}
+                  onChange={(e) => setScheduleInput(e.target.value)}
+                  className="h-9"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={handleSaveSchedule} disabled={savingSchedule}>
+                    {savingSchedule ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                    Save date
+                  </Button>
+                  {scheduledSendAt && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setScheduleInput("");
+                        handleSaveSchedule();
+                      }}
+                      disabled={savingSchedule}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Leave empty to send whenever you choose. With a date set, sending stays locked until then.
+                </p>
+              </div>
+            )}
+
+
+
             {/* Download signed contract (fully signed) */}
             {bothSigned && (
               <div className="space-y-2">
