@@ -90,6 +90,20 @@ interface ContractFormDialogProps {
 
 type Step = "fill" | "confirm" | "issue" | "sign";
 
+/** Guided one-question-at-a-time stages inside the "fill" step. */
+type FillStage = "employee" | "location" | "hours" | "manager" | "email" | "details";
+
+const FILL_STAGES: FillStage[] = ["employee", "location", "hours", "manager", "email", "details"];
+
+const FILL_STAGE_COPY: Record<FillStage, { title: string; description: string }> = {
+  employee: { title: "Who is this contract for?", description: "Pick the team member." },
+  location: { title: "Where will they work?", description: "Choose their main place of work." },
+  hours: { title: "Full time or part time?", description: "This sets their weekly hours." },
+  manager: { title: "Who do they report to?", description: "Pick a manager or type a name." },
+  email: { title: "Where should we send it?", description: "Check, correct or add their email." },
+  details: { title: "Pay and remaining details", description: "Everything else, pre-filled where we know it." },
+};
+
 export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }: ContractFormDialogProps) {
   const { toast } = useToast();
   const { data: employees } = useEmployees();
