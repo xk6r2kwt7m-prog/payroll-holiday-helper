@@ -67,6 +67,12 @@ const staffMoreGroups: MoreGroup[] = [
 
 const managerMoreGroups: MoreGroup[] = [
   {
+    title: "Documents",
+    items: [
+      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents" },
+    ],
+  },
+  {
     title: "Schedule",
     items: [
       { icon: ClipboardCheck, label: "Timesheets", path: "/timesheets", minRole: "supervisor" },
@@ -82,7 +88,6 @@ const managerMoreGroups: MoreGroup[] = [
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff" },
       { icon: Sparkles, label: "Talent Pool", path: TALENT_POOL_ROUTE, minRole: "staff" },
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
-      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents" },
     ],
   },
   {
@@ -94,6 +99,12 @@ const managerMoreGroups: MoreGroup[] = [
 ];
 
 const adminMoreGroups: MoreGroup[] = [
+  {
+    title: "Documents",
+    items: [
+      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents" },
+    ],
+  },
   {
     title: "Schedule",
     items: [
@@ -132,7 +143,6 @@ const adminMoreGroups: MoreGroup[] = [
     items: [
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
       { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin" },
-      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents" },
       { icon: MapPin, label: "Locations", path: "/locations", minRole: "admin" },
       { icon: Settings, label: "Admin Centre", path: "/settings", minRole: "admin" },
     ],
