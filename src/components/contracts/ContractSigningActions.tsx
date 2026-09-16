@@ -445,7 +445,7 @@ export function ContractSigningActions({
   };
 
   /** Email the signing link. Generates a fresh link when needed (also used for resends). */
-  const sendSigningEmail = async (toEmail: string) => {
+  const sendSigningEmail = async (toEmail: string, isTest = false) => {
     setSendingEmail(true);
     try {
       let link = generatedLink;
@@ -469,11 +469,17 @@ export function ContractSigningActions({
         signingTokenId: tokenId!,
         employeeId,
         employeeDocumentId: documentId,
+        testMode: isTest,
       });
 
       if (result.success) {
-        setEmailSent(true);
-        toast({ title: "Contract sent", description: `Contract sent to ${toEmail}` });
+        if (!isTest) setEmailSent(true);
+        toast({
+          title: isTest ? "Test contract sent to you" : "Contract sent",
+          description: isTest
+            ? `Sent to ${toEmail}. ${employeeName}'s record was not changed.`
+            : `Contract sent to ${toEmail}`,
+        });
       } else {
         toast({
           title: "Email failed",
