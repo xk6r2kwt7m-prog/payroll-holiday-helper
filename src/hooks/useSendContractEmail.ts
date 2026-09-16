@@ -80,7 +80,7 @@ export function useSendContractEmail() {
         const { data, error } = await supabase.functions.invoke("send-notification", {
           body: {
             to: recipientEmail,
-            subject: "Your contract is ready to sign",
+            subject: applyTestSubject("Your contract is ready to sign", isTest),
             type: "contract_signing",
             data: {
               employee_name: employeeName,
@@ -92,50 +92,57 @@ export function useSendContractEmail() {
 
         if (error) {
           console.error("[CONTRACT_EMAIL] Edge function error", error.message);
-          // Persist failure
-          await supabase
-            .from("employee_documents")
-            .update({
-              contract_send_status: "failed",
-              contract_send_error: error.message,
-            } as any)
-            .eq("id", employeeDocumentId);
+          // Persist failure (never on a test run — the staff record stays untouched)
+          if (!isTest) {
+            await supabase
+              .from("employee_documents")
+              .update({
+                contract_send_status: "failed",
+                contract_send_error: error.message,
+              } as any)
+              .eq("id", employeeDocumentId);
+          }
           return { success: false, error: error.message };
         }
 
         if (data?.error) {
           console.error("[CONTRACT_EMAIL] Provider error", data.error);
-          await supabase
-            .from("employee_documents")
-            .update({
-              contract_send_status: "failed",
-              contract_send_error: data.error,
-            } as any)
-            .eq("id", employeeDocumentId);
+          if (!isTest) {
+            await supabase
+              .from("employee_documents")
+              .update({
+                contract_send_status: "failed",
+                contract_send_error: data.error,
+              } as any)
+              .eq("id", employeeDocumentId);
+          }
           return { success: false, error: data.error };
         }
 
-        // Persist sent status on the document record
-        await supabase
-          .from("employee_documents")
-          .update({
-            contract_sent_at: new Date().toISOString(),
-            contract_sent_to: recipientEmail,
-            contract_send_status: "sent",
-            contract_send_error: null,
-            contract_last_token_id: signingTokenId,
-          } as any)
-          .eq("id", employeeDocumentId);
+        // Persist sent status on the document record (real sends only)
+        if (!isTest) {
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_sent_at: new Date().toISOString(),
+              contract_sent_to: recipientEmail,
+              contract_send_status: "sent",
+              contract_send_error: null,
+              contract_last_token_id: signingTokenId,
+            } as any)
+            .eq("id", employeeDocumentId);
+        }
 
         // Log to audit
         try {
           await supabase.from("audit_log").insert({
             action: "create" as const,
-            table_name: "contract_email_sent",
+            table_name: isTest ? "contract_email_test_send" : "contract_email_sent",
             record_id: signingTokenId,
             tenant_id: tenantId,
             new_data: {
-              event: "contract_email_sent",
+              event: isTest ? "contract_email_test_send" : "contract_email_sent",
+              test_send: isTest,
               employee_id: employeeId,
               employee_document_id: employeeDocumentId,
               signing_token_id: signingTokenId,
