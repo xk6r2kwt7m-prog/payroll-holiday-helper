@@ -20,6 +20,8 @@ export interface PeriodRelevanceEmployee {
   status?: string | null;
   start_date?: string | null;
   end_date?: string | null;
+  /** Rehearsal/test record — never relevant to any payroll period. */
+  is_test_record?: boolean | null;
 }
 
 export interface RelevancePeriod {
@@ -146,6 +148,9 @@ export function isRelevantToPayrollPeriod(
   context: RelevanceContext = {},
 ): boolean {
   if (!employee?.id) return false;
+  // Rehearsal records are excluded from payroll entirely (and therefore from
+  // holiday accrual, NMW and service-charge figures derived from payroll).
+  if (employee.is_test_record) return false;
   if (employee.status === "archived") {
     // Archived employees only remain relevant if they still have activity
     // in this specific period (e.g. a late correction).
