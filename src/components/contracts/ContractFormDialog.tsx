@@ -507,6 +507,33 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const selectedEmployee = contractEligibleEmployees.find((e) => e.id === selectedEmployeeId);
   const employeeEmail = selectedEmployee?.email;
 
+  /**
+   * Critical-detail gate: "Send straight away" is only offered when nothing a
+   * contract needs is missing. Display/gating only — no payroll, holiday, NMW
+   * or service-charge logic is involved.
+   */
+  const criticalDetails = useMemo(
+    () =>
+      evaluateCriticalContractDetails({
+        fullLegalName: variables.employeeName,
+        email: emailDraft || employeeEmail,
+        homeAddress: variables.homeAddress,
+        jobTitle: variables.jobTitle,
+        workLocation: variables.workLocation,
+        startDate: variables.effectiveDate,
+        employmentType: variables.employmentType,
+        weeklyHours: variables.weeklyHours,
+        baseHourlyRate: variables.baseHourlyRate,
+        reportingManagerName: variables.signatoryName,
+      }),
+    [variables, emailDraft, employeeEmail]
+  );
+
+  useEffect(() => {
+    // Never leave an unsendable contract on "send straight away".
+    if (!criticalDetails.canSendStraightAway) setDetailsMode("details_first");
+  }, [criticalDetails.canSendStraightAway]);
+
   const handleSendContractEmail = async () => {
     if (!employeeSignLink || !employeeEmail || !savedDocumentId || !employeeSignTokenId) return;
 
