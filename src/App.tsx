@@ -41,6 +41,7 @@ import CompanyOnboarding from "./pages/CompanyOnboarding";
 import SignContract from "./pages/SignContract";
 import DocumentView from "./pages/DocumentView";
 import DocumentsCompliance from "./pages/DocumentsCompliance";
+import ReportIncident from "./pages/ReportIncident";
 import InductionPortal from "./pages/InductionPortal";
 import StaffDetailsPortal from "./pages/StaffDetailsPortal";
 import PlatformAdmin from "./pages/PlatformAdmin";
