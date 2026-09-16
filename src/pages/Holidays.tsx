@@ -44,6 +44,8 @@ import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isCommittedPayrollStatus } from "@/lib/payroll-status";
+import { useLedgerTakenRowsByYear } from "@/hooks/useHolidayLedger";
+import { ledgerOnlyTakenByEmployee } from "@/lib/holiday-taken-reconciliation";
 
 
 const HOLIDAY_DISPLAY_DEFAULTS = {
@@ -130,6 +132,13 @@ const Holidays = () => {
   const { data: balances2025 = [] } = useHolidayBalancesByYear(2025);
   const { data: balances2026 = [] } = useHolidayBalancesByYear(2026);
 
+  // Ledger taken/correction rows per year (reconciliation against holiday_payments)
+  const { data: ledgerRows2022 = [] } = useLedgerTakenRowsByYear(2022);
+  const { data: ledgerRows2023 = [] } = useLedgerTakenRowsByYear(2023);
+  const { data: ledgerRows2024 = [] } = useLedgerTakenRowsByYear(2024);
+  const { data: ledgerRows2025 = [] } = useLedgerTakenRowsByYear(2025);
+  const { data: ledgerRows2026 = [] } = useLedgerTakenRowsByYear(2026);
+
   // All payroll entries for accrual calculation
   const { data: payrollEntries = [], isLoading: entriesLoading } = useAllPayrollEntriesWithHoliday();
 
@@ -143,7 +152,15 @@ const Holidays = () => {
   //   paid    → holiday_payments.total filtered by leave_year_start year
   //   carry   → holiday_balances.hours_carried_over filtered by leave_year_start year (where available)
   //   balance → accrued + carry + adjustments - taken (computed live, never from stored totals)
-  const buildSummaries = (year: number, payments: any[], balances: any[]): EmployeeSummary[] => {
+  //   ledger-only taken → holiday_ledger holiday_taken / payout rows with no live
+  //                        holiday_payments row (backfilled or deleted payment),
+  //                        added so the dashboard matches the ledger (source of truth)
+  const buildSummaries = (
+    year: number,
+    payments: any[],
+    balances: any[],
+    ledgerRows: any[] = [],
+  ): EmployeeSummary[] => {
     const summaryMap = new Map<string, EmployeeSummary>();
 
     // Build a set of corrected period base names to exclude originals
@@ -255,6 +272,18 @@ const Holidays = () => {
       }
     });
 
+    // Add holiday taken that lives ONLY in the ledger (no live holiday_payments
+    // row behind it) so this dashboard matches the ledger — the source of truth.
+    const livePaymentIds = new Set<string>(
+      payments.map((p: any) => String(p.id)).filter(Boolean)
+    );
+    const ledgerOnlyTaken = ledgerOnlyTakenByEmployee(ledgerRows as any, livePaymentIds);
+    ledgerOnlyTaken.forEach((hours, empId) => {
+      const summary = summaryMap.get(empId);
+      if (!summary) return;
+      summary.hoursTaken += hours;
+    });
+
     // Merge carry-over from holiday_balances (where available)
     const balanceMap = new Map<string, number>();
     balances.forEach((bal: any) => {
@@ -290,7 +319,7 @@ const Holidays = () => {
   };
 
   // 2022: no prior year carry-over possible, use holiday_balances carry-over only
-  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022, balances2022), [payrollEntries, payments2022, balances2022, adjustments]);
+  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022, balances2022, ledgerRows2022), [payrollEntries, payments2022, balances2022, ledgerRows2022, adjustments]);
 
   // Helper: add computed carry-over from prior year for employees NOT already having carry-over from holiday_balances
   const addComputedCarryOver = (base: EmployeeSummary[], prevSummaries: EmployeeSummary[], balances: any[]): EmployeeSummary[] => {
@@ -311,24 +340,24 @@ const Holidays = () => {
   };
 
   const summaries2023 = useMemo(() => {
-    const base = buildSummaries(2023, payments2023, balances2023);
+    const base = buildSummaries(2023, payments2023, balances2023, ledgerRows2023);
     return addComputedCarryOver(base, summaries2022, balances2023);
-  }, [payrollEntries, payments2023, balances2023, summaries2022, adjustments]);
+  }, [payrollEntries, payments2023, balances2023, ledgerRows2023, summaries2022, adjustments]);
 
   const summaries2024 = useMemo(() => {
-    const base = buildSummaries(2024, payments2024, balances2024);
+    const base = buildSummaries(2024, payments2024, balances2024, ledgerRows2024);
     return addComputedCarryOver(base, summaries2023, balances2024);
-  }, [payrollEntries, payments2024, balances2024, summaries2023, adjustments]);
+  }, [payrollEntries, payments2024, balances2024, ledgerRows2024, summaries2023, adjustments]);
 
   const summaries2025 = useMemo(() => {
-    const base = buildSummaries(2025, payments2025, balances2025);
+    const base = buildSummaries(2025, payments2025, balances2025, ledgerRows2025);
     return addComputedCarryOver(base, summaries2024, balances2025);
-  }, [payrollEntries, payments2025, balances2025, summaries2024, adjustments]);
+  }, [payrollEntries, payments2025, balances2025, ledgerRows2025, summaries2024, adjustments]);
 
   const summaries2026 = useMemo(() => {
-    const base = buildSummaries(2026, payments2026, balances2026);
+    const base = buildSummaries(2026, payments2026, balances2026, ledgerRows2026);
     return addComputedCarryOver(base, summaries2025, balances2026);
-  }, [payrollEntries, payments2026, balances2026, summaries2025, adjustments]);
+  }, [payrollEntries, payments2026, balances2026, ledgerRows2026, summaries2025, adjustments]);
 
   const allYearSummaries = { "2022": summaries2022, "2023": summaries2023, "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
   const currentSummaries = allYearSummaries[selectedYear] || [];
