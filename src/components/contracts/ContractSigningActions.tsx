@@ -103,6 +103,19 @@ export function ContractSigningActions({
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [pendingSource, setPendingSource] = useState<"saved" | "drawn">("saved");
   const pendingSignature = pendingSource === "drawn" ? drawnSignature : savedSignature;
+  // Recipient confirmation before any contract email leaves the system.
+  const [emailOnFile, setEmailOnFile] = useState<string>(employeeEmail || "");
+  const [recipientOpen, setRecipientOpen] = useState(false);
+  const [recipientPurpose, setRecipientPurpose] = useState<"signing" | "signed_copy">("signing");
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [savingRecipient, setSavingRecipient] = useState(false);
+
+  useEffect(() => {
+    setEmailOnFile(employeeEmail || "");
+  }, [employeeEmail]);
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim());
+
 
 
   useEffect(() => {
@@ -335,12 +348,13 @@ export function ContractSigningActions({
   };
 
   /** Manually email the completed (both-signed) contract to the employee. */
-  const handleSendSignedContract = async () => {
+  const handleSendSignedContract = async (toEmail?: string) => {
     setSendingSigned(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-signed-contract", {
-        body: { document_id: documentId },
+        body: { document_id: documentId, recipient_email: toEmail || emailOnFile || undefined },
       });
+
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       setSignedContractSent(true);
@@ -423,40 +437,92 @@ export function ContractSigningActions({
     }
   };
 
-  const handleSendEmail = async () => {
-    if (!generatedLink || !employeeEmail || !generatedTokenId) return;
-
+  /** Email the signing link. Generates a fresh link when needed (also used for resends). */
+  const sendSigningEmail = async (toEmail: string) => {
     setSendingEmail(true);
     try {
+      let link = generatedLink;
+      let tokenId = generatedTokenId;
+      if (!link || !tokenId || signerType !== "employee") {
+        const result = await generateLink.mutateAsync({
+          employeeDocumentId: documentId,
+          employeeId,
+          signerType: "employee",
+        });
+        link = `${getCanonicalOrigin()}/sign/${result.token}`;
+        tokenId = result.id;
+        setGeneratedLink(link);
+        setGeneratedTokenId(tokenId);
+      }
+
       const result = await sendContractEmail({
-        recipientEmail: employeeEmail,
+        recipientEmail: toEmail,
         employeeName,
-        signingUrl: generatedLink,
-        signingTokenId: generatedTokenId,
+        signingUrl: link!,
+        signingTokenId: tokenId!,
         employeeId,
         employeeDocumentId: documentId,
       });
 
       if (result.success) {
         setEmailSent(true);
-        toast({ title: "Contract sent", description: `Contract sent to ${employeeEmail}` });
+        toast({ title: "Contract sent", description: `Contract sent to ${toEmail}` });
       } else {
         toast({
           title: "Email failed",
-          description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+          description: result.error || "The email failed to send. You can still copy the link and share it manually.",
           variant: "destructive",
         });
       }
     } catch {
       toast({
         title: "Email failed",
-        description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+        description: "The email failed to send. You can still copy the link and share it manually.",
         variant: "destructive",
       });
     } finally {
       setSendingEmail(false);
     }
   };
+
+  /** Step 1 of any send: confirm (or add/correct) the recipient address. */
+  const startSend = (purpose: "signing" | "signed_copy") => {
+    setRecipientPurpose(purpose);
+    setRecipientEmail(emailOnFile || contractSentTo || "");
+    setRecipientOpen(true);
+  };
+
+  /** Step 2: optionally save a corrected address on the employee record, then send. */
+  const confirmRecipientAndSend = async () => {
+    const clean = recipientEmail.trim();
+    if (!emailValid) return;
+    setSavingRecipient(true);
+    try {
+      if (clean.toLowerCase() !== (emailOnFile || "").toLowerCase()) {
+        const { error } = await supabase.from("employees").update({ email: clean }).eq("id", employeeId);
+        if (error) throw error;
+        setEmailOnFile(clean);
+        queryClient.invalidateQueries({ queryKey: ["employees"] });
+        queryClient.invalidateQueries({ queryKey: ["all_contracts"] });
+        toast({ title: "Email updated", description: `${employeeName}'s email is now ${clean}.` });
+      }
+      setRecipientOpen(false);
+      if (recipientPurpose === "signing") {
+        await sendSigningEmail(clean);
+      } else {
+        await handleSendSignedContract(clean);
+      }
+    } catch (err: any) {
+      toast({
+        title: "Could not save the email",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingRecipient(false);
+    }
+  };
+
 
   const nextStep = resolveContractNextStep({
     employeeSigned,
@@ -488,12 +554,13 @@ export function ContractSigningActions({
         }
         break;
       case "send_signed_copy":
-        handleSendSignedContract();
+        startSend("signed_copy");
         break;
       case "remind":
       case "send":
-        openDialogFor("employee");
+        startSend("signing");
         break;
+
       default:
         openDialogFor(employeeSigned && !employerSigned ? "employer" : "employee");
     }
@@ -881,14 +948,15 @@ export function ContractSigningActions({
                   Download Final Completed Contract
                 </Button>
                 <Button
-                  onClick={handleSendSignedContract}
-                  disabled={sendingSigned || !employeeEmail}
+                  onClick={() => startSend("signed_copy")}
+                  disabled={sendingSigned}
                   variant="outline"
                   className="w-full"
                 >
                   {sendingSigned ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                   {signedContractSent ? "Send signed contract again" : "Send signed contract to staff"}
                 </Button>
+
                 {!employeeEmail && (
                   <p className="text-[10px] text-muted-foreground">
                     No email on file for {employeeName} — add one to send the signed copy.
@@ -1029,7 +1097,7 @@ export function ContractSigningActions({
                     </div>
 
                     {/* Primary: Send by email (employee only) */}
-                    {signerType === "employee" && employeeEmail && !emailSent && (
+                    {signerType === "employee" && (
                       <>
                         {!sendEval.canSend && (
                           <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
@@ -1037,24 +1105,25 @@ export function ContractSigningActions({
                           </div>
                         )}
                         <Button
-                          onClick={handleSendEmail}
+                          onClick={() => startSend("signing")}
                           disabled={sendingEmail || !sendEval.canSend}
                           className="w-full gradient-primary"
                         >
                           {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                          {sendingEmail ? "Sending..." : "Send contract"}
+                          {sendingEmail
+                            ? "Sending..."
+                            : emailSent
+                              ? "Resend contract by email"
+                              : "Send contract by email"}
                         </Button>
+                        <p className="text-[10px] text-muted-foreground text-center">
+                          {emailOnFile
+                            ? `You'll confirm ${emailOnFile} before it is sent.`
+                            : "No email on file yet — you can add one on the next step."}
+                        </p>
                       </>
                     )}
 
-
-                    {signerType === "employee" && !employeeEmail && (
-                      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center">
-                        <p className="text-xs text-muted-foreground">
-                          No email on file — copy the link to send manually
-                        </p>
-                      </div>
-                    )}
 
                     {/* Fallback: Copy link */}
                     <Button onClick={copyLink} className="w-full" variant="outline">
@@ -1104,7 +1173,70 @@ export function ContractSigningActions({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm the recipient address before anything is emailed */}
+      <Dialog open={recipientOpen} onOpenChange={setRecipientOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Check the email address
+            </DialogTitle>
+            <DialogDescription>
+              {recipientPurpose === "signing"
+                ? `The contract for ${employeeName} will be emailed to this address.`
+                : `The completed signed contract will be emailed to this address.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="recipient-email" className="text-xs">
+              Email address
+            </Label>
+            <Input
+              id="recipient-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="name@example.com"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+            />
+            {!emailOnFile && (
+              <p className="text-[11px] text-muted-foreground">
+                No email is on file for {employeeName}. The address you enter here will be saved to their record.
+              </p>
+            )}
+            {emailOnFile && recipientEmail.trim().toLowerCase() !== emailOnFile.toLowerCase() && (
+              <p className="text-[11px] text-amber-700">
+                This will also update {employeeName}'s email on file (currently {emailOnFile}).
+              </p>
+            )}
+            {recipientEmail.trim() && !emailValid && (
+              <p className="text-[11px] text-destructive">That does not look like a valid email address.</p>
+            )}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRecipientOpen(false)}
+              disabled={savingRecipient}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={confirmRecipientAndSend}
+              disabled={savingRecipient || !emailValid}
+            >
+              {savingRecipient ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+              Confirm and send
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       </>
+
     );
   }
 }
