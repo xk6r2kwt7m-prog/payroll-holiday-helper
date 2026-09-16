@@ -237,7 +237,7 @@ export default function InductionPortal() {
                 {!isDone && item.requires_signature && (
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Sign below</p>
-                    <SignaturePad onSignatureChange={(sig) => setItemSignatures(s => ({ ...s, [item.id]: sig }))} />
+                    <SignaturePad onSignatureChange={(sig) => setItemSignatures(s => ({ ...s, [item.id]: sig ?? "" }))} />
                   </div>
                 )}
 
@@ -273,7 +273,7 @@ export default function InductionPortal() {
               </div>
             ) : (
               <>
-                <SignaturePad onSignatureChange={setAlcoholSignature} />
+                <SignaturePad onSignatureChange={(sig) => setAlcoholSignature(sig ?? "")} />
                 <Button
                   size="sm"
                   className="w-full min-h-[44px]"
@@ -293,7 +293,7 @@ export default function InductionPortal() {
             <Checkbox checked={finalAgreed} onCheckedChange={(v) => setFinalAgreed(v === true)} className="mt-0.5" />
             <span>{data.pack.final_statement_text}</span>
           </label>
-          <SignaturePad onSignatureChange={setFinalSignature} />
+          <SignaturePad onSignatureChange={(sig) => setFinalSignature(sig ?? "")} />
           <Button
             className="w-full min-h-[48px]"
             disabled={!allDone || !alcoholSigned || !finalAgreed || !finalSignature || submitting}
