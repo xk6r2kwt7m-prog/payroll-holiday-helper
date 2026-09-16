@@ -18,6 +18,12 @@ export interface CompanySettings {
   payroll_reminders: boolean | null;
   two_factor_auth: boolean | null;
   session_timeout: boolean | null;
+  default_signatory_name: string | null;
+  default_signatory_title: string | null;
+  default_signatory_email: string | null;
+  default_signature_data: string | null;
+  default_signature_updated_at: string | null;
+  contract_send_mode: string | null;
   created_at: string;
   updated_at: string;
 }
