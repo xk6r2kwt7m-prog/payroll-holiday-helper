@@ -42,6 +42,7 @@ import SignContract from "./pages/SignContract";
 import DocumentView from "./pages/DocumentView";
 import DocumentsCompliance from "./pages/DocumentsCompliance";
 import InductionPortal from "./pages/InductionPortal";
+import StaffDetailsPortal from "./pages/StaffDetailsPortal";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";

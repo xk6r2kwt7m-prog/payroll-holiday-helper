@@ -13,6 +13,7 @@ import { OnboardingChecklist } from "./OnboardingChecklist";
 import { AccountLinkagePanel } from "./AccountLinkagePanel";
 import { GenerateReferenceLetterDialog } from "@/components/letters/GenerateReferenceLetterDialog";
 import { CreateDocumentRequestDialog } from "@/components/documents/CreateDocumentRequestDialog";
+import { RequestStaffDetailsDialog } from "./RequestStaffDetailsDialog";
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
