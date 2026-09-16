@@ -68,6 +68,7 @@ export function useSendContractEmail() {
         employeeId,
         employeeDocumentId,
       } = params;
+      const isTest = !!params.testMode;
 
       console.log("[CONTRACT_EMAIL] Sending contract to", recipientEmail, {
         employee: employeeName,
