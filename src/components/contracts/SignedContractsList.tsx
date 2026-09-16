@@ -311,6 +311,19 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
             const state = current.contract_state || "draft";
             const isLocked = ["signed", "superseded", "terminated"].includes(state);
             const isSigned = state === "signed";
+            const tracker = resolveContractTrackerStatus({
+              contractState: state,
+              requiresDetailsFirst: current.requires_details_first,
+              detailsSubmittedAt: current.details_submitted_at,
+              contractSendStatus: current.contract_send_status,
+              reviewAcceptedAt: current.review_accepted_at,
+            });
+            const staleness = detectStaleContractDraft({
+              generatedAt: current.created_at,
+              employeeUpdatedAt: current.employees?.updated_at,
+              detailsSubmittedAt: current.details_submitted_at,
+              contractState: state,
+            });
 
             return (
               <div
@@ -340,6 +353,9 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                         {current.employees?.department}
                       </Badge>
                       <ContractStateBadge state={state} />
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {tracker.label}
+                      </Badge>
                       {(current.version_number ?? 1) > 1 && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                           v{current.version_number}
