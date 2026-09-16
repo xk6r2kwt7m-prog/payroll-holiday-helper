@@ -40,6 +40,8 @@ import Landing from "./pages/Landing";
 import CompanyOnboarding from "./pages/CompanyOnboarding";
 import SignContract from "./pages/SignContract";
 import DocumentView from "./pages/DocumentView";
+import DocumentsCompliance from "./pages/DocumentsCompliance";
+import InductionPortal from "./pages/InductionPortal";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
@@ -95,6 +97,7 @@ const App = () => (
             <Route path="/select-workspace" element={<SelectWorkspace />} />
             <Route path="/sign/:token" element={<SignContract />} />
             <Route path="/document/view" element={<DocumentView />} />
+            <Route path="/induction/:token" element={<InductionPortal />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 
             {/* Dashboard — all authenticated users */}
@@ -153,6 +156,7 @@ const App = () => (
 
             {/* Admin-only sections — permission-gated */}
             <Route path="/disciplinary" element={<ProtectedRoute requiredRole="admin" requiredPermission="manage_lifecycle"><Disciplinary /></ProtectedRoute>} />
+            <Route path="/compliance" element={<ProtectedRoute requiredRole="manager" requiredModule="documents" moduleName="Documents" requiredPermission="manage_documents"><DocumentsCompliance /></ProtectedRoute>} />
             <Route path="/contracts" element={<ProtectedRoute requiredRole="admin" requiredModule="documents" moduleName="Documents" requiredPermission="manage_documents"><Contracts /></ProtectedRoute>} />
             <Route path="/locations" element={<ProtectedRoute requiredRole="admin"><Locations /></ProtectedRoute>} />
             <Route path="/locations/:branch" element={<ProtectedRoute requiredRole="admin"><LocationDashboard /></ProtectedRoute>} />

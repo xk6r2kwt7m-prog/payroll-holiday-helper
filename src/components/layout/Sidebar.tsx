@@ -81,6 +81,7 @@ const navGroups: NavGroup[] = [
     title: "Documents & Training",
     items: [
       { icon: GraduationCap, label: "Training", path: "/training", minRole: "staff", module: "training", permissionKey: "view_training" },
+      { icon: ShieldCheck, label: "Documents & Compliance", path: "/compliance", minRole: "manager", module: "documents", permissionKey: "manage_documents" },
       { icon: FileText, label: "Contracts", path: "/contracts", minRole: "admin", module: "documents", permissionKey: "manage_documents" },
       { icon: Megaphone, label: "Announcements", path: "/announcements", minRole: "staff" },
     ],
