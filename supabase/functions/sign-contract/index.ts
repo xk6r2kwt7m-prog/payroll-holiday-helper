@@ -626,6 +626,46 @@ Deno.serve(async (req) => {
         });
       }
 
+      // ════════════════════════════════════════════
+      // Details-first gate: for the employee signer, the contract stays
+      // hidden until they have submitted their basic personal details.
+      // Read-only check — nothing is modified here.
+      // ════════════════════════════════════════════
+      if (signingToken.signer_type === "employee" && signingToken.employee_documents.requires_details_first) {
+        const { data: onboarding } = await supabase
+          .from("employee_onboarding_data")
+          .select("personal_info, submitted_at")
+          .eq("employee_id", signingToken.employee_id)
+          .maybeSingle();
+
+        const detailsDone =
+          !!signingToken.employee_documents.details_submitted_at || !!onboarding?.submitted_at;
+
+        if (!detailsDone) {
+          return new Response(JSON.stringify({
+            signer_type: signingToken.signer_type,
+            details_required: true,
+            employee_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
+            employee_email: signingToken.employees.email || null,
+            document_name: signingToken.employee_documents.document_name,
+            document_url: null,
+            document_hash: null,
+            expires_at: signingToken.expires_at,
+            existing_signatures: existingSignerTypes,
+            company_name: null,
+            employer_signatory_name: null,
+            employer_signatory_title: null,
+            prefill: {
+              full_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
+              ...(onboarding?.personal_info as Record<string, unknown> | null ?? {}),
+            },
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+
+
       const { data: originalDocumentFile, error: originalDocumentError } = await supabase.storage
         .from("employee-documents")
         .download(signingToken.employee_documents.file_path);
