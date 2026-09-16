@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
 
     const { data: employees, error: empErr } = await admin
       .from("employees")
-      .select("id, forename, surname, email, department, job_title")
+      .select("id, forename, surname, email, department")
       .eq("tenant_id", tenantId)
       .in("id", employeeIds);
     if (empErr) throw empErr;
@@ -186,14 +186,18 @@ Deno.serve(async (req) => {
         sendError = (e as Error).message;
       }
 
-      await admin.from("document_audit_log").insert({
+      await admin.from("audit_log").insert({
         tenant_id: tenantId,
-        employee_id: emp.id,
-        action: sent ? "induction_pack_sent" : "induction_pack_send_failed",
-        performed_by: callerId,
-        metadata: {
-          pack_id: pack.id,
+        user_id: callerId,
+        action: "create",
+        table_name: sent ? "induction_pack_sent" : "induction_pack_send_failed",
+        record_id: pack.id,
+        new_data: {
+          employee_id: emp.id,
           recipient,
+          branch,
+          staff_role: staffRole,
+          issued_by_name: issuerName,
           documents: items.map((i) => ({ name: i.document_name, version: i.document_version })),
           test_send: testSend,
           error: sendError ?? null,
