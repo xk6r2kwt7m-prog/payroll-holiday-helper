@@ -60,7 +60,15 @@ interface ContractRow {
   };
 }
 
-export function SignedContractsList() {
+interface SignedContractsListProps {
+  /** Restrict the list to contracts in these states (e.g. the review queue). */
+  onlyStates?: string[];
+  /** Empty-state copy override. */
+  emptyTitle?: string;
+  emptyDescription?: string;
+}
+
+export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }: SignedContractsListProps = {}) {
   const { toast } = useToast();
   const { tenantId } = useTenant();
   const { data: employees } = useEmployees();
@@ -108,6 +116,7 @@ export function SignedContractsList() {
   }, [contracts]);
 
   const filtered = chains.filter(({ current }) => {
+    if (onlyStates && !onlyStates.includes(current.contract_state || "draft")) return false;
     const empName = `${current.employees?.forename} ${current.employees?.surname}`.toLowerCase();
     const docName = current.document_name.toLowerCase();
     return empName.includes(search.toLowerCase()) || docName.includes(search.toLowerCase());
@@ -195,9 +204,9 @@ export function SignedContractsList() {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
             <Upload className="h-7 w-7 text-primary" />
           </div>
-          <h3 className="text-base font-semibold mb-1">No contracts yet</h3>
+          <h3 className="text-base font-semibold mb-1">{emptyTitle || "No contracts yet"}</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            Generate a contract, get it signed, then upload it here for safekeeping.
+            {emptyDescription || "Generate a contract, get it signed, then upload it here for safekeeping."}
           </p>
         </div>
       ) : (

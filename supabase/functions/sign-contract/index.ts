@@ -562,7 +562,9 @@ Deno.serve(async (req) => {
             id,
             document_name,
             document_type,
-            file_path
+            file_path,
+            requires_details_first,
+            details_submitted_at
           ),
           employees (
             id,
@@ -623,6 +625,46 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      // ════════════════════════════════════════════
+      // Details-first gate: for the employee signer, the contract stays
+      // hidden until they have submitted their basic personal details.
+      // Read-only check — nothing is modified here.
+      // ════════════════════════════════════════════
+      if (signingToken.signer_type === "employee" && signingToken.employee_documents.requires_details_first) {
+        const { data: onboarding } = await supabase
+          .from("employee_onboarding_data")
+          .select("personal_info, submitted_at")
+          .eq("employee_id", signingToken.employee_id)
+          .maybeSingle();
+
+        const detailsDone =
+          !!signingToken.employee_documents.details_submitted_at || !!onboarding?.submitted_at;
+
+        if (!detailsDone) {
+          return new Response(JSON.stringify({
+            signer_type: signingToken.signer_type,
+            details_required: true,
+            employee_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
+            employee_email: signingToken.employees.email || null,
+            document_name: signingToken.employee_documents.document_name,
+            document_url: null,
+            document_hash: null,
+            expires_at: signingToken.expires_at,
+            existing_signatures: existingSignerTypes,
+            company_name: null,
+            employer_signatory_name: null,
+            employer_signatory_title: null,
+            prefill: {
+              full_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
+              ...(onboarding?.personal_info as Record<string, unknown> | null ?? {}),
+            },
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+
 
       const { data: originalDocumentFile, error: originalDocumentError } = await supabase.storage
         .from("employee-documents")
@@ -786,6 +828,90 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      // ════════════════════════════════════════════
+      // Staff submit their basic details before the contract is revealed.
+      // Stored as onboarding personal info; the original contract document
+      // is never modified.
+      // ════════════════════════════════════════════
+      if (body?.action === "submit_details") {
+        const details = (body.details ?? {}) as Record<string, string>;
+        const required = ["full_name", "address", "date_of_birth", "phone"];
+        const missing = required.filter((k) => !String(details[k] || "").trim());
+        if (missing.length) {
+          return new Response(JSON.stringify({ error: "Please complete all required fields.", error_code: "missing_details", missing }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: detailsToken } = await supabase
+          .from("signing_tokens")
+          .select("id, employee_document_id, employee_id, signer_type, expires_at, used_at, tenant_id")
+          .eq("token", token)
+          .maybeSingle();
+
+        if (!detailsToken || detailsToken.signer_type !== "employee") {
+          return new Response(JSON.stringify({ error: "This link is not valid.", error_code: "invalid_token" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (new Date(detailsToken.expires_at) < new Date()) {
+          return new Response(JSON.stringify({ error: "This link has expired. Please ask your employer for a new one.", error_code: "expired" }), {
+            status: 410,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: existingOnboarding } = await supabase
+          .from("employee_onboarding_data")
+          .select("id, personal_info")
+          .eq("employee_id", detailsToken.employee_id)
+          .maybeSingle();
+
+        const personalInfo = {
+          ...((existingOnboarding?.personal_info as Record<string, unknown> | null) ?? {}),
+          ...details,
+          submitted_via: "contract_signing_link",
+        };
+
+        const nowIso = new Date().toISOString();
+
+        if (existingOnboarding?.id) {
+          await supabase
+            .from("employee_onboarding_data")
+            .update({ personal_info: personalInfo, submitted_at: nowIso })
+            .eq("id", existingOnboarding.id);
+        } else {
+          await supabase.from("employee_onboarding_data").insert({
+            employee_id: detailsToken.employee_id,
+            tenant_id: detailsToken.tenant_id,
+            personal_info: personalInfo,
+            submitted_at: nowIso,
+          } as any);
+        }
+
+        await supabase
+          .from("employee_documents")
+          .update({ details_submitted_at: nowIso })
+          .eq("id", detailsToken.employee_document_id);
+
+        await supabase.from("document_audit_log").insert({
+          tenant_id: detailsToken.tenant_id,
+          document_id: detailsToken.employee_document_id,
+          employee_id: detailsToken.employee_id,
+          action: "employee_details_submitted",
+          metadata: { fields: Object.keys(details) },
+        } as any);
+
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
 
       const {
         typed_name,
