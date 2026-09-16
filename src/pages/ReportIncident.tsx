@@ -11,7 +11,7 @@ import { categoryLabel, statusLabel, isLocked } from "@/lib/incident-categories"
 
 /** Staff-facing incident reporting. Staff only ever see their own reports. */
 export default function ReportIncident() {
-  const { data: employee } = useCurrentEmployee();
+  const { employee } = useCurrentEmployee();
   const { data: mine = [], isLoading } = useMyIncidents();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
