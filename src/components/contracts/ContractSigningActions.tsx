@@ -1173,7 +1173,70 @@ export function ContractSigningActions({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm the recipient address before anything is emailed */}
+      <Dialog open={recipientOpen} onOpenChange={setRecipientOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              Check the email address
+            </DialogTitle>
+            <DialogDescription>
+              {recipientPurpose === "signing"
+                ? `The contract for ${employeeName} will be emailed to this address.`
+                : `The completed signed contract will be emailed to this address.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="recipient-email" className="text-xs">
+              Email address
+            </Label>
+            <Input
+              id="recipient-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="name@example.com"
+              value={recipientEmail}
+              onChange={(e) => setRecipientEmail(e.target.value)}
+            />
+            {!emailOnFile && (
+              <p className="text-[11px] text-muted-foreground">
+                No email is on file for {employeeName}. The address you enter here will be saved to their record.
+              </p>
+            )}
+            {emailOnFile && recipientEmail.trim().toLowerCase() !== emailOnFile.toLowerCase() && (
+              <p className="text-[11px] text-amber-700">
+                This will also update {employeeName}'s email on file (currently {emailOnFile}).
+              </p>
+            )}
+            {recipientEmail.trim() && !emailValid && (
+              <p className="text-[11px] text-destructive">That does not look like a valid email address.</p>
+            )}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRecipientOpen(false)}
+              disabled={savingRecipient}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={confirmRecipientAndSend}
+              disabled={savingRecipient || !emailValid}
+            >
+              {savingRecipient ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+              Confirm and send
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       </>
+
     );
   }
 }
