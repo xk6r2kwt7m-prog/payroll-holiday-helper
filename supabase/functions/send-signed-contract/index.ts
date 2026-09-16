@@ -92,13 +92,21 @@ Deno.serve(async (req) => {
     const { data: sigs } = await admin
       .from("contract_signatures")
       .select("signer_type")
-      .eq("employee_document_id", documentId);
+      .eq("employee_document_id", documentId)
+      .is("invalidated_at", null);
 
     const hasEmployee = sigs?.some((s: any) => s.signer_type === "employee");
     const hasEmployer = sigs?.some((s: any) => s.signer_type === "employer");
     if (!hasEmployee || !hasEmployer) {
       return new Response(JSON.stringify({ error: "This contract is not fully signed yet." }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!doc.final_signed_pdf_url) {
+      return new Response(JSON.stringify({ error: "The completed signed contract file is not ready yet." }), {
+        status: 409,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

@@ -29,7 +29,9 @@ describe("completed contract delivery auth invariants", () => {
     expect(fn).toMatch(/\["company_admin", "manager"\]\.includes\(membership\.role\)/);
     expect(fn).toMatch(/signer_type === "employee"/);
     expect(fn).toMatch(/signer_type === "employer"/);
+    expect(fn).toMatch(/\.is\("invalidated_at", null\)/);
     expect(fn).toContain("This contract is not fully signed yet.");
+    expect(fn).toContain("The completed signed contract file is not ready yet.");
   });
 
   it("keeps recipient downloads token-based and login-free", () => {
