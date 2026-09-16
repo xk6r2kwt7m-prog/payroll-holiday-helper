@@ -85,6 +85,11 @@ export default function DocumentsCompliance() {
             <BranchPicker options={options} value={branch} onChange={setBranch} />
             {branch && <InspectionFileSection branch={branch} />}
           </TabsContent>
+
+          <TabsContent value="incidents" className="space-y-4">
+            <BranchPicker options={options} value={branch} onChange={setBranch} allowAll />
+            <IncidentBookSection branch={branch || undefined} />
+          </TabsContent>
         </Tabs>
       </div>
     </AppLayout>
