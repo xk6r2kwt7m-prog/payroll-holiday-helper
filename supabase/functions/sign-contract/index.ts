@@ -1164,7 +1164,7 @@ Deno.serve(async (req) => {
           event_type: "contract_signed",
           title: `Contract fully signed — ${employeeName}`,
           body: `${employeeName}'s contract is now signed by both parties (${formattedDate}).`,
-          link: `/employees/${signingToken.employee_id}?tab=documents`,
+          link: "/contracts",
           metadata: {
             employee_id: signingToken.employee_id,
             employee_document_id: signingToken.employee_document_id,
@@ -1365,7 +1365,7 @@ Deno.serve(async (req) => {
           event_type: "contract_signed",
           title: `${employeeName} signed their contract`,
           body: `Signed ${formattedDate}. Your countersignature is required to complete it.`,
-          link: `/employees/${signingToken.employee_id}?tab=documents`,
+          link: "/contracts",
           metadata: {
             employee_id: signingToken.employee_id,
             employee_document_id: signingToken.employee_document_id,
