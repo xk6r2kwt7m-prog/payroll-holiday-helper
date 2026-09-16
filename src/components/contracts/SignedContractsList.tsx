@@ -296,6 +296,25 @@ export function SignedContractsList() {
                   </div>
                 </div>
 
+                {/* Next step for this contract */}
+                <div className="mt-3">
+                  <ContractSigningActions
+                    nextStepMode
+                    documentId={current.id}
+                    employeeId={current.employees?.id || ""}
+                    employeeName={`${current.employees?.forename} ${current.employees?.surname}`}
+                    employeeEmail={current.employees?.email}
+                    contractSendStatus={current.contract_send_status as never}
+                    contractSentAt={current.contract_sent_at as never}
+                    contractSentTo={current.contract_sent_to as never}
+                    finalSignedFilePath={current.final_signed_pdf_url as never}
+                    filePath={current.file_path}
+                    documentName={current.document_name}
+                    contractState={state}
+                  />
+                </div>
+
+
                 {/* Action row for signed contracts */}
                 {isSigned && (
                   <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border">

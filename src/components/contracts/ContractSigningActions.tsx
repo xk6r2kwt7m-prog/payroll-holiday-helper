@@ -34,6 +34,7 @@ import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, Fil
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenant } from "@/hooks/useTenant";
+import { resolveContractNextStep } from "@/lib/contract-next-step";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -47,6 +48,10 @@ interface ContractSigningActionsProps {
   filePath?: string | null;
   documentName?: string;
   companyName?: string;
+  /** Contract lifecycle state, used for the next-step bar. */
+  contractState?: string | null;
+  /** Render a full-width "next step" bar instead of the inline icon actions. */
+  nextStepMode?: boolean;
 }
 
 export function ContractSigningActions({
@@ -61,6 +66,8 @@ export function ContractSigningActions({
   filePath,
   documentName = "Employment Contract",
   companyName = "Ugly Dumpling",
+  contractState,
+  nextStepMode = false,
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const { tenantId } = useTenant();
@@ -428,6 +435,95 @@ export function ContractSigningActions({
     }
   };
 
+  const nextStep = resolveContractNextStep({
+    employeeSigned,
+    employerSigned,
+    sent: emailSent || contractSendStatus === "sent",
+    scheduledSendAt,
+    contractState,
+    signedCopySent: signedContractSent,
+    employeeName: employeeName?.split(" ")[0] || employeeName,
+  });
+
+  const openDialogFor = (signer: "employee" | "employer") => {
+    setOpen(true);
+    setGeneratedLink(null);
+    setGeneratedTokenId(null);
+    setSignerType(signer);
+  };
+
+  const runNextStep = () => {
+    switch (nextStep.action) {
+      case "countersign":
+        setConfirmSignOpen(true);
+        break;
+      case "send_signed_copy":
+        handleSendSignedContract();
+        break;
+      case "remind":
+      case "send":
+        openDialogFor("employee");
+        break;
+      default:
+        openDialogFor(employeeSigned && !employerSigned ? "employer" : "employee");
+    }
+  };
+
+  const toneStyles: Record<typeof nextStep.tone, string> = {
+    action: "bg-amber-50 border-amber-200 text-amber-800",
+    waiting: "bg-muted/40 border-border text-muted-foreground",
+    done: "bg-primary/5 border-primary/20 text-primary",
+  };
+
+  if (nextStepMode) {
+    return (
+      <>
+        <div
+          className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 ${toneStyles[nextStep.tone]}`}
+        >
+          <div className="flex items-start gap-2 min-w-0">
+            {nextStep.tone === "action" ? (
+              <PenLine className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            ) : nextStep.tone === "waiting" ? (
+              <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wide opacity-70">Next step</p>
+              <p className="text-xs font-medium leading-snug">{nextStep.label}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {nextStep.actionLabel && (
+              <Button
+                size="sm"
+                variant={nextStep.tone === "action" ? "default" : "outline"}
+                className="h-7 text-xs"
+                onClick={runNextStep}
+                disabled={sendingSigned || signingAsEmployer}
+              >
+                {sendingSigned || signingAsEmployer ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : null}
+                {nextStep.actionLabel}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => openDialogFor(employeeSigned && !employerSigned ? "employer" : "employee")}
+            >
+              Details
+            </Button>
+          </div>
+        </div>
+        {renderDialogs()}
+      </>
+    );
+  }
+
   return (
     <>
       {/* Inline status badges */}
@@ -490,7 +586,13 @@ export function ContractSigningActions({
           <Send className="h-4 w-4" />
         </Button>
       </div>
+      {renderDialogs()}
+    </>
+  );
 
+  function renderDialogs() {
+    return (
+      <>
       {/* Dialog for generating links & sending */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
@@ -915,6 +1017,7 @@ export function ContractSigningActions({
           </div>
         </DialogContent>
       </Dialog>
-    </>
-  );
+      </>
+    );
+  }
 }
