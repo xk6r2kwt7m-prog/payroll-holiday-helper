@@ -572,6 +572,26 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     if (!criticalDetails.canSendStraightAway) setDetailsMode("details_first");
   }, [criticalDetails.canSendStraightAway]);
 
+  // Keep whatever has been typed for this person, so a refresh or accidental
+  // close never loses it. Local convenience cache only — nothing is written to
+  // the employee record here.
+  useEffect(() => {
+    if (!open || !selectedEmployeeId || step !== "fill") return;
+    saveContractDraft<ContractVariables>(selectedEmployeeId, {
+      variables,
+      emailDraft,
+      contractType,
+      editedFields: Array.from(userEdited) as string[],
+    });
+  }, [open, selectedEmployeeId, step, variables, emailDraft, contractType, userEdited]);
+
+  // Once the contract exists as a draft document, the typed cache is redundant.
+  useEffect(() => {
+    if (savedDocumentId && selectedEmployeeId) clearContractDraft(selectedEmployeeId);
+  }, [savedDocumentId, selectedEmployeeId]);
+
+
+
   const handleSendContractEmail = async () => {
     if (!employeeSignLink || !employeeEmail || !savedDocumentId || !employeeSignTokenId) return;
 
