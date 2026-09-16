@@ -91,8 +91,8 @@ describe("certificate reminders", () => {
   };
 
   it("fires only at 90, 60, 30 days and on the day", () => {
-    [90, 60, 30, 0].forEach(d => expect(reminderDueToday(plus(d), today)).toBe(true));
-    [89, 61, 45, 31, 7, 1].forEach(d => expect(reminderDueToday(plus(d), today)).toBe(false));
+    [90, 60, 30, 0].forEach(d => expect(reminderDueToday(plus(d), today)).toBeTruthy());
+    [89, 61, 45, 31, 7, 1].forEach(d => expect(reminderDueToday(plus(d), today)).toBeFalsy());
   });
 
   it("marks a past date as expired", () => {
