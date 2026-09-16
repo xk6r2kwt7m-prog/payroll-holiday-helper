@@ -348,12 +348,13 @@ export function ContractSigningActions({
   };
 
   /** Manually email the completed (both-signed) contract to the employee. */
-  const handleSendSignedContract = async () => {
+  const handleSendSignedContract = async (toEmail?: string) => {
     setSendingSigned(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-signed-contract", {
-        body: { document_id: documentId },
+        body: { document_id: documentId, recipient_email: toEmail || emailOnFile || undefined },
       });
+
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       setSignedContractSent(true);
