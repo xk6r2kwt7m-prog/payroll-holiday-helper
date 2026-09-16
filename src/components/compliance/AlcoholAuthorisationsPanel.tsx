@@ -11,13 +11,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Wine, ShieldCheck, ShieldOff } from "lucide-react";
+import { Wine, ShieldCheck, ShieldOff, Send } from "lucide-react";
 import { useAlcoholAuthorisations, useUpdateAlcoholAuthorisation } from "@/hooks/useCompliance";
 import {
   resolveAuthorisationStatus, authorisationLabel, authorisationTone,
   canApproveAuthorisation, APPROVER_ROLES,
 } from "@/lib/alcohol-authorisation-status";
 import { useAuth } from "@/hooks/useAuth";
+import { SendStaffAlcoholDialog } from "@/components/compliance/SendStaffAlcoholDialog";
 import { cn } from "@/lib/utils";
 
 const toneClass: Record<string, string> = {

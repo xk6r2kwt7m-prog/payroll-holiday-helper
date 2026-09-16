@@ -1689,6 +1689,87 @@ export type Database = {
           },
         ]
       }
+      document_version_reissues: {
+        Row: {
+          actioned_employee_ids: string[]
+          affected_count: number
+          affected_employee_ids: string[]
+          change_significance: string
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decided_by_name: string | null
+          decision: string
+          decision_note: string | null
+          document_id: string
+          document_name: string
+          from_version: number | null
+          id: string
+          previous_document_id: string | null
+          tenant_id: string
+          to_version: number | null
+          updated_at: string
+        }
+        Insert: {
+          actioned_employee_ids?: string[]
+          affected_count?: number
+          affected_employee_ids?: string[]
+          change_significance?: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_by_name?: string | null
+          decision?: string
+          decision_note?: string | null
+          document_id: string
+          document_name: string
+          from_version?: number | null
+          id?: string
+          previous_document_id?: string | null
+          tenant_id: string
+          to_version?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actioned_employee_ids?: string[]
+          affected_count?: number
+          affected_employee_ids?: string[]
+          change_significance?: string
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_by_name?: string | null
+          decision?: string
+          decision_note?: string | null
+          document_id?: string
+          document_name?: string
+          from_version?: number | null
+          id?: string
+          previous_document_id?: string | null
+          tenant_id?: string
+          to_version?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_version_reissues_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_version_reissues_previous_document_id_fkey"
+            columns: ["previous_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_availability: {
         Row: {
           available_from: string | null
@@ -3874,6 +3955,7 @@ export type Database = {
       }
       induction_packs: {
         Row: {
+          auto_assigned: boolean
           branch: string | null
           completed_at: string | null
           created_at: string
@@ -3887,6 +3969,8 @@ export type Database = {
           issued_by_name: string | null
           opened_at: string | null
           recipient_email: string | null
+          reminder_count: number
+          reminder_sent_at: string | null
           sent_at: string
           staff_role: string | null
           status: string
@@ -3896,6 +3980,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_assigned?: boolean
           branch?: string | null
           completed_at?: string | null
           created_at?: string
@@ -3909,6 +3994,8 @@ export type Database = {
           issued_by_name?: string | null
           opened_at?: string | null
           recipient_email?: string | null
+          reminder_count?: number
+          reminder_sent_at?: string | null
           sent_at?: string
           staff_role?: string | null
           status?: string
@@ -3918,6 +4005,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_assigned?: boolean
           branch?: string | null
           completed_at?: string | null
           created_at?: string
@@ -3931,6 +4019,8 @@ export type Database = {
           issued_by_name?: string | null
           opened_at?: string | null
           recipient_email?: string | null
+          reminder_count?: number
+          reminder_sent_at?: string | null
           sent_at?: string
           staff_role?: string | null
           status?: string

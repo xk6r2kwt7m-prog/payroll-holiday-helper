@@ -14,6 +14,7 @@ import { BranchComplianceSection } from "@/components/compliance/BranchComplianc
 import { CertificatesSection } from "@/components/compliance/CertificatesSection";
 import { InspectionFileSection } from "@/components/compliance/InspectionFileSection";
 import { AlcoholAuthorisationsPanel } from "@/components/compliance/AlcoholAuthorisationsPanel";
+import { TrainingAutomationPanel } from "@/components/compliance/TrainingAutomationPanel";
 import { PremisesLicencePanel } from "@/components/compliance/PremisesLicencePanel";
 import { SiteEmergencyDetailsCard } from "@/components/compliance/SiteEmergencyDetailsCard";
 import { IncidentBookSection } from "@/components/compliance/IncidentBookSection";
@@ -65,6 +66,12 @@ export default function DocumentsCompliance() {
                 Alcohol sales authorisations
               </p>
               <AlcoholAuthorisationsPanel />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                Reminders &amp; new versions
+              </p>
+              <TrainingAutomationPanel />
             </div>
           </TabsContent>
 

@@ -292,6 +292,38 @@ export function useReplaceComplianceDocument() {
         });
       }
 
+      // Who completed the previous version? Recorded for a manager decision.
+      // Nothing is resent automatically and no completed record is changed.
+      if (tenantId) {
+        const { data: items } = await supabase
+          .from("induction_pack_items")
+          .select("document_version, acknowledged_at, pack:induction_packs(employee_id, completed_at, is_test_send)")
+          .eq("tenant_id", tenantId)
+          .eq("document_id", previous.id);
+
+        const affected = [...new Set(
+          (items ?? [])
+            .filter((i: any) =>
+              i.acknowledged_at && i.pack?.completed_at && !i.pack?.is_test_send && i.pack?.employee_id)
+            .map((i: any) => i.pack.employee_id as string)
+        )];
+
+        const fileReplaced = !!changes.file_path && changes.file_path !== previous.file_path;
+        await supabase.from("document_version_reissues").insert({
+          tenant_id: tenantId,
+          document_id: created.id,
+          document_name: created.name,
+          previous_document_id: previous.id,
+          from_version: previous.version ?? 1,
+          to_version: created.version,
+          change_significance: fileReplaced ? "significant" : "minor",
+          decision: "pending",
+          affected_employee_ids: affected,
+          affected_count: affected.length,
+          created_by: user?.id ?? null,
+        });
+      }
+
       return created;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["compliance_documents"] }),

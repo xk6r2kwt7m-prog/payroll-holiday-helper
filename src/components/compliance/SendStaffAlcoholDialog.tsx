@@ -76,11 +76,12 @@ export function SendStaffAlcoholDialog({
         test_send: testSend,
       });
       if (res.failed?.length) toast.error(res.failed.join("; "));
-      if (res.sent?.length) {
+      const count = res.sent ?? 0;
+      if (count > 0) {
         toast.success(
           testSend
-            ? `Test copy sent to you for ${res.sent.length} ${res.sent.length === 1 ? "person" : "people"}`
-            : `Sent to ${res.sent.length} ${res.sent.length === 1 ? "person" : "people"}`
+            ? `Test copy sent to you for ${count} ${count === 1 ? "person" : "people"}`
+            : `Sent to ${count} ${count === 1 ? "person" : "people"}`
         );
         onOpenChange(false);
         setSelected([]);

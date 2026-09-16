@@ -25,7 +25,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "induction_pack" | "inspection_pack" | "licence_signature" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "induction_pack" | "induction_reminder" | "inspection_pack" | "licence_signature" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -359,6 +359,21 @@ function buildHtml(type: string, data: Record<string, string>): string {
           <a href="${data.induction_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Open my induction</a>
         </p>
         <p>Everything is in one place and can be completed on your phone in a few minutes. You do not need to create an account.</p>
+        <p style="color:#666;">This link is personal to you. Please do not forward it.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
+    case "induction_reminder": {
+      const remFirst = data.first_name || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your induction is still waiting</h2>
+        <p>Hi ${remFirst},</p>
+        <p>You started ${data.days_outstanding || "a few"} days ago and your induction is not finished yet. It only takes a few minutes on your phone.</p>
+        <p><strong>${data.document_count || ""} document(s)</strong>${data.branch ? ` for ${data.branch}` : ""}.</p>
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.induction_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Finish my induction</a>
+        </p>
+        <p>If anything is unclear, please speak to your manager before signing.</p>
         <p style="color:#666;">This link is personal to you. Please do not forward it.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;

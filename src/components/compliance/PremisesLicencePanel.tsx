@@ -193,7 +193,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
         test_send: testSend,
       });
       if (res.failed?.length) toast.error(res.failed.join("; "));
-      else toast.success(testSend ? "Test copy sent to you" : "Sent for signature");
+      if ((res.sent ?? 0) > 0) toast.success(testSend ? "Test copy sent to you" : "Sent for signature");
       setSendOpen(null);
     } catch (e) {
       toast.error((e as Error).message);
