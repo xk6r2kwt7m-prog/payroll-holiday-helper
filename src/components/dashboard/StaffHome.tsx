@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Clock, MapPin, Calendar, ChevronRight, Megaphone, Sun, FileText,
   Coffee, CheckCircle2, AlertCircle, ArrowRight, Pause, Play, Navigation,
-  ClipboardList,
+  ClipboardList, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
