@@ -20,6 +20,7 @@ import { useComplianceDocuments, useInductionPacks, useSendInduction } from "@/h
 import { STAFF_ROLES, suggestStaffRole, roleMaySellAlcohol } from "@/lib/compliance-taxonomy";
 import { selectInductionDocuments, summariseSelection } from "@/lib/induction-pack-selection";
 import { cn } from "@/lib/utils";
+import { InductionReviewDialog } from "./InductionReviewDialog";
 
 type Step = "who" | "branch" | "role" | "email" | "review";
 const STEPS: Step[] = ["who", "branch", "role", "email", "review"];
@@ -42,6 +43,7 @@ export function StaffInductionSection() {
   const [includeAlcohol, setIncludeAlcohol] = useState(false);
   const [testSend, setTestSend] = useState(false);
   const [sending, setSending] = useState(false);
+  const [reviewPack, setReviewPack] = useState<{ id: string; name: string } | null>(null);
 
   const active = useMemo(
     () => employees.filter((e: any) => !e.archived_at && e.status !== "leaver"),
@@ -163,10 +165,22 @@ export function StaffInductionSection() {
                 {p.employees ? `${p.employees.forename} ${p.employees.surname}` : "Staff member"}
                 {p.branch ? ` · ${p.branch}` : ""}
               </span>
-              <Badge className="text-[10px] bg-warning/10 text-warning">
-                <Clock className="h-3 w-3 mr-1" />
-                {p.opened_at ? "Opened, not completed" : "Sent, not opened"}
-              </Badge>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge className="text-[10px] bg-warning/10 text-warning">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {p.opened_at ? "Opened, not completed" : "Sent, not opened"}
+                </Badge>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setReviewPack({
+                    id: p.id,
+                    name: p.employees ? `${p.employees.forename} ${p.employees.surname}` : "Staff member",
+                  })}
+                >
+                  Progress
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -192,7 +206,19 @@ export function StaffInductionSection() {
                     {new Date(p.completed_at).toLocaleDateString("en-GB")}
                   </p>
                 </div>
-                <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                <div className="flex items-center gap-2 shrink-0">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setReviewPack({
+                      id: p.id,
+                      name: p.employees ? `${p.employees.forename} ${p.employees.surname}` : "Staff member",
+                    })}
+                  >
+                    Review &amp; verify
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
