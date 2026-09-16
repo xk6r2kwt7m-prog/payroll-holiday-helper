@@ -47,6 +47,10 @@ interface ContractSigningActionsProps {
   filePath?: string | null;
   documentName?: string;
   companyName?: string;
+  /** Contract lifecycle state, used for the next-step bar. */
+  contractState?: string | null;
+  /** Render a full-width "next step" bar instead of the inline icon actions. */
+  nextStepMode?: boolean;
 }
 
 export function ContractSigningActions({
