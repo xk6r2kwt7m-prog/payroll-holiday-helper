@@ -493,6 +493,43 @@ async function resolveManagerRecipients(supabase: any, tenantId: string, documen
   return { recipients: managers, source: managers.length > 0 ? "manager" : "none" };
 }
 
+// In-app notification for admins/managers. Always runs, regardless of email
+// automation policy (this is an internal alert, not an outbound email).
+async function notifyAdminsInApp(
+  supabase: any,
+  tenantId: string,
+  payload: { event_type: string; title: string; body: string; link?: string | null; metadata?: Record<string, unknown> },
+) {
+  try {
+    const { data: admins } = await supabase
+      .from("tenant_members")
+      .select("user_id, role")
+      .eq("tenant_id", tenantId)
+      .in("role", ["company_admin", "manager"])
+      .eq("is_active", true);
+
+    if (!admins?.length) return;
+
+    const targets = admins.some((a: any) => a.role === "company_admin")
+      ? admins.filter((a: any) => a.role === "company_admin")
+      : admins;
+
+    await supabase.from("notifications").insert(
+      targets.map((a: any) => ({
+        tenant_id: tenantId,
+        user_id: a.user_id,
+        event_type: payload.event_type,
+        title: payload.title,
+        body: payload.body,
+        link: payload.link ?? null,
+        metadata: payload.metadata ?? {},
+      })),
+    );
+  } catch (err) {
+    console.error("In-app admin notification failed (non-critical):", err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -1123,6 +1160,17 @@ Deno.serve(async (req) => {
 
       if (fullySignedNow) {
         // ── FULLY SIGNED ──
+        await notifyAdminsInApp(supabase, signingToken.tenant_id, {
+          event_type: "contract_signed",
+          title: `Contract fully signed — ${employeeName}`,
+          body: `${employeeName}'s contract is now signed by both parties (${formattedDate}).`,
+          link: "/contracts",
+          metadata: {
+            employee_id: signingToken.employee_id,
+            employee_document_id: signingToken.employee_document_id,
+            stage: "fully_signed",
+          },
+        });
         const { data: docRecord2 } = await supabase
           .from("employee_documents")
           .select("final_signed_pdf_url")
@@ -1312,7 +1360,20 @@ Deno.serve(async (req) => {
           },
         });
       } else if (currentSignerType === "employee") {
-        // ── EMPLOYEE SIGNED ── Check email automation policy before sending
+        // ── EMPLOYEE SIGNED ── Always raise an in-app alert for the admin
+        await notifyAdminsInApp(supabase, signingToken.tenant_id, {
+          event_type: "contract_signed",
+          title: `${employeeName} signed their contract`,
+          body: `Signed ${formattedDate}. Your countersignature is required to complete it.`,
+          link: "/contracts",
+          metadata: {
+            employee_id: signingToken.employee_id,
+            employee_document_id: signingToken.employee_document_id,
+            stage: "awaiting_employer",
+          },
+        });
+
+        // Check email automation policy before sending
         const { data: emailPolicyRow } = await supabase
           .from("tenant_preferences")
           .select("preferences")
