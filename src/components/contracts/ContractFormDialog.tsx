@@ -108,6 +108,7 @@ const FILL_STAGE_COPY: Record<FillStage, { title: string; description: string }>
 export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }: ContractFormDialogProps) {
   const { toast } = useToast();
   const { data: employees } = useEmployees();
+  const { data: tenantBranches } = useTenantBranches();
   const { data: companySettings } = useCompanySettings();
   const { tenantName } = useTenant();
   const uploadDocument = useUploadDocument();
