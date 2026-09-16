@@ -437,40 +437,92 @@ export function ContractSigningActions({
     }
   };
 
-  const handleSendEmail = async () => {
-    if (!generatedLink || !employeeEmail || !generatedTokenId) return;
-
+  /** Email the signing link. Generates a fresh link when needed (also used for resends). */
+  const sendSigningEmail = async (toEmail: string) => {
     setSendingEmail(true);
     try {
+      let link = generatedLink;
+      let tokenId = generatedTokenId;
+      if (!link || !tokenId || signerType !== "employee") {
+        const result = await generateLink.mutateAsync({
+          employeeDocumentId: documentId,
+          employeeId,
+          signerType: "employee",
+        });
+        link = `${getCanonicalOrigin()}/sign/${result.token}`;
+        tokenId = result.id;
+        setGeneratedLink(link);
+        setGeneratedTokenId(tokenId);
+      }
+
       const result = await sendContractEmail({
-        recipientEmail: employeeEmail,
+        recipientEmail: toEmail,
         employeeName,
-        signingUrl: generatedLink,
-        signingTokenId: generatedTokenId,
+        signingUrl: link!,
+        signingTokenId: tokenId!,
         employeeId,
         employeeDocumentId: documentId,
       });
 
       if (result.success) {
         setEmailSent(true);
-        toast({ title: "Contract sent", description: `Contract sent to ${employeeEmail}` });
+        toast({ title: "Contract sent", description: `Contract sent to ${toEmail}` });
       } else {
         toast({
           title: "Email failed",
-          description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+          description: result.error || "The email failed to send. You can still copy the link and share it manually.",
           variant: "destructive",
         });
       }
     } catch {
       toast({
         title: "Email failed",
-        description: "Contract link was generated, but the email failed to send. You can still copy the link manually.",
+        description: "The email failed to send. You can still copy the link and share it manually.",
         variant: "destructive",
       });
     } finally {
       setSendingEmail(false);
     }
   };
+
+  /** Step 1 of any send: confirm (or add/correct) the recipient address. */
+  const startSend = (purpose: "signing" | "signed_copy") => {
+    setRecipientPurpose(purpose);
+    setRecipientEmail(emailOnFile || contractSentTo || "");
+    setRecipientOpen(true);
+  };
+
+  /** Step 2: optionally save a corrected address on the employee record, then send. */
+  const confirmRecipientAndSend = async () => {
+    const clean = recipientEmail.trim();
+    if (!emailValid) return;
+    setSavingRecipient(true);
+    try {
+      if (clean.toLowerCase() !== (emailOnFile || "").toLowerCase()) {
+        const { error } = await supabase.from("employees").update({ email: clean }).eq("id", employeeId);
+        if (error) throw error;
+        setEmailOnFile(clean);
+        queryClient.invalidateQueries({ queryKey: ["employees"] });
+        queryClient.invalidateQueries({ queryKey: ["all_contracts"] });
+        toast({ title: "Email updated", description: `${employeeName}'s email is now ${clean}.` });
+      }
+      setRecipientOpen(false);
+      if (recipientPurpose === "signing") {
+        await sendSigningEmail(clean);
+      } else {
+        await handleSendSignedContract(clean);
+      }
+    } catch (err: any) {
+      toast({
+        title: "Could not save the email",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingRecipient(false);
+    }
+  };
+
 
   const nextStep = resolveContractNextStep({
     employeeSigned,
