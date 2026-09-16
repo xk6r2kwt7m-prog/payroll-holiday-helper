@@ -44,6 +44,7 @@ import DocumentsCompliance from "./pages/DocumentsCompliance";
 import ReportIncident from "./pages/ReportIncident";
 import InductionPortal from "./pages/InductionPortal";
 import StaffDetailsPortal from "./pages/StaffDetailsPortal";
+import SignLicensingDocument from "./pages/SignLicensingDocument";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import LocationDashboard from "./pages/LocationDashboard";
 import SelectWorkspace from "./pages/SelectWorkspace";
