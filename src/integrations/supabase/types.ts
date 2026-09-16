@@ -160,8 +160,10 @@ export type Database = {
           employee_signature: string | null
           employee_signed_at: string | null
           id: string
+          licence_id: string | null
           notes: string | null
           pack_id: string | null
+          request_id: string | null
           revoked_at: string | null
           revoked_reason: string | null
           status: string
@@ -181,8 +183,10 @@ export type Database = {
           employee_signature?: string | null
           employee_signed_at?: string | null
           id?: string
+          licence_id?: string | null
           notes?: string | null
           pack_id?: string | null
+          request_id?: string | null
           revoked_at?: string | null
           revoked_reason?: string | null
           status?: string
@@ -202,8 +206,10 @@ export type Database = {
           employee_signature?: string | null
           employee_signed_at?: string | null
           id?: string
+          licence_id?: string | null
           notes?: string | null
           pack_id?: string | null
+          request_id?: string | null
           revoked_at?: string | null
           revoked_reason?: string | null
           status?: string
@@ -240,10 +246,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "alcohol_authorisations_licence_id_fkey"
+            columns: ["licence_id"]
+            isOneToOne: false
+            referencedRelation: "premises_licences"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "alcohol_authorisations_pack_id_fkey"
             columns: ["pack_id"]
             isOneToOne: false
             referencedRelation: "induction_packs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_authorisations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "licence_signature_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -4057,6 +4077,141 @@ export type Database = {
           },
         ]
       }
+      licence_signature_requests: {
+        Row: {
+          authorisation_id: string | null
+          branch: string | null
+          branch_location_id: string | null
+          created_at: string
+          declined_note: string | null
+          document_body: Json
+          document_title: string
+          employee_id: string | null
+          expires_at: string
+          id: string
+          is_test_record: boolean
+          licence_id: string | null
+          personal_licence_number: string | null
+          read_at: string | null
+          recipient_email: string
+          recipient_name: string
+          recipient_role: string | null
+          sent_by: string | null
+          sent_by_name: string | null
+          signature: string | null
+          signed_at: string | null
+          signed_document_path: string | null
+          signer_ip: string | null
+          signer_name: string | null
+          signer_user_agent: string | null
+          status: string
+          subject_type: string
+          tenant_id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          authorisation_id?: string | null
+          branch?: string | null
+          branch_location_id?: string | null
+          created_at?: string
+          declined_note?: string | null
+          document_body?: Json
+          document_title: string
+          employee_id?: string | null
+          expires_at?: string
+          id?: string
+          is_test_record?: boolean
+          licence_id?: string | null
+          personal_licence_number?: string | null
+          read_at?: string | null
+          recipient_email: string
+          recipient_name: string
+          recipient_role?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          signature?: string | null
+          signed_at?: string | null
+          signed_document_path?: string | null
+          signer_ip?: string | null
+          signer_name?: string | null
+          signer_user_agent?: string | null
+          status?: string
+          subject_type: string
+          tenant_id: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          authorisation_id?: string | null
+          branch?: string | null
+          branch_location_id?: string | null
+          created_at?: string
+          declined_note?: string | null
+          document_body?: Json
+          document_title?: string
+          employee_id?: string | null
+          expires_at?: string
+          id?: string
+          is_test_record?: boolean
+          licence_id?: string | null
+          personal_licence_number?: string | null
+          read_at?: string | null
+          recipient_email?: string
+          recipient_name?: string
+          recipient_role?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          signature?: string | null
+          signed_at?: string | null
+          signed_document_path?: string | null
+          signer_ip?: string | null
+          signer_name?: string | null
+          signer_user_agent?: string | null
+          status?: string
+          subject_type?: string
+          tenant_id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licence_signature_requests_authorisation_id_fkey"
+            columns: ["authorisation_id"]
+            isOneToOne: false
+            referencedRelation: "alcohol_authorisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licence_signature_requests_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licence_signature_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licence_signature_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licence_signature_requests_licence_id_fkey"
+            columns: ["licence_id"]
+            isOneToOne: false
+            referencedRelation: "premises_licences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       location_settings: {
         Row: {
           accident_book_location: string | null
@@ -5184,6 +5339,292 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      premises_licence_conditions: {
+        Row: {
+          branch_location_id: string | null
+          condition_number: string | null
+          corrective_action_id: string | null
+          created_at: string
+          created_by: string | null
+          evidence_required: string | null
+          frequency: string | null
+          id: string
+          last_check: string | null
+          legal_wording: string
+          licence_id: string
+          next_check: string | null
+          related_document_id: string | null
+          related_training_id: string | null
+          requirement_category: string | null
+          responsible_job_title: string | null
+          responsible_person: string | null
+          sort_order: number
+          staff_instruction: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          branch_location_id?: string | null
+          condition_number?: string | null
+          corrective_action_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          evidence_required?: string | null
+          frequency?: string | null
+          id?: string
+          last_check?: string | null
+          legal_wording: string
+          licence_id: string
+          next_check?: string | null
+          related_document_id?: string | null
+          related_training_id?: string | null
+          requirement_category?: string | null
+          responsible_job_title?: string | null
+          responsible_person?: string | null
+          sort_order?: number
+          staff_instruction?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          branch_location_id?: string | null
+          condition_number?: string | null
+          corrective_action_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          evidence_required?: string | null
+          frequency?: string | null
+          id?: string
+          last_check?: string | null
+          legal_wording?: string
+          licence_id?: string
+          next_check?: string | null
+          related_document_id?: string | null
+          related_training_id?: string | null
+          requirement_category?: string | null
+          responsible_job_title?: string | null
+          responsible_person?: string | null
+          sort_order?: number
+          staff_instruction?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premises_licence_conditions_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licence_conditions_corrective_action_id_fkey"
+            columns: ["corrective_action_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licence_conditions_licence_id_fkey"
+            columns: ["licence_id"]
+            isOneToOne: false
+            referencedRelation: "premises_licences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licence_conditions_related_document_id_fkey"
+            columns: ["related_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premises_licences: {
+        Row: {
+          alcohol_hours: string | null
+          branch: string
+          branch_location_id: string | null
+          challenge_25_document_id: string | null
+          confirmation_note: string | null
+          created_at: string
+          created_by: string | null
+          display_location: string | null
+          display_photo_path: string | null
+          display_required: boolean
+          dps_authorisation_document_id: string | null
+          dps_name: string | null
+          dps_personal_licence_number: string | null
+          id: string
+          issue_date: string | null
+          issuing_authority: string | null
+          last_physical_check: string | null
+          last_verified_date: string | null
+          late_night_refreshment_hours: string | null
+          latest_variation_date: string | null
+          latest_version_printed: boolean
+          licence_document_id: string | null
+          licence_holder: string | null
+          licence_number: string | null
+          licence_status: string
+          licence_summary_document_id: string | null
+          licensable_activities: string[]
+          licensed_plan_document_id: string | null
+          needs_confirmation: boolean
+          notes: string | null
+          off_sales: boolean
+          on_sales: boolean
+          opening_hours: string | null
+          physical_check_by: string | null
+          premises_address: string | null
+          premises_name: string | null
+          replacement_needed: boolean
+          section_57_document_id: string | null
+          tenant_id: string
+          updated_at: string
+          verified_by: string | null
+        }
+        Insert: {
+          alcohol_hours?: string | null
+          branch: string
+          branch_location_id?: string | null
+          challenge_25_document_id?: string | null
+          confirmation_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_location?: string | null
+          display_photo_path?: string | null
+          display_required?: boolean
+          dps_authorisation_document_id?: string | null
+          dps_name?: string | null
+          dps_personal_licence_number?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_authority?: string | null
+          last_physical_check?: string | null
+          last_verified_date?: string | null
+          late_night_refreshment_hours?: string | null
+          latest_variation_date?: string | null
+          latest_version_printed?: boolean
+          licence_document_id?: string | null
+          licence_holder?: string | null
+          licence_number?: string | null
+          licence_status?: string
+          licence_summary_document_id?: string | null
+          licensable_activities?: string[]
+          licensed_plan_document_id?: string | null
+          needs_confirmation?: boolean
+          notes?: string | null
+          off_sales?: boolean
+          on_sales?: boolean
+          opening_hours?: string | null
+          physical_check_by?: string | null
+          premises_address?: string | null
+          premises_name?: string | null
+          replacement_needed?: boolean
+          section_57_document_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          verified_by?: string | null
+        }
+        Update: {
+          alcohol_hours?: string | null
+          branch?: string
+          branch_location_id?: string | null
+          challenge_25_document_id?: string | null
+          confirmation_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_location?: string | null
+          display_photo_path?: string | null
+          display_required?: boolean
+          dps_authorisation_document_id?: string | null
+          dps_name?: string | null
+          dps_personal_licence_number?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_authority?: string | null
+          last_physical_check?: string | null
+          last_verified_date?: string | null
+          late_night_refreshment_hours?: string | null
+          latest_variation_date?: string | null
+          latest_version_printed?: boolean
+          licence_document_id?: string | null
+          licence_holder?: string | null
+          licence_number?: string | null
+          licence_status?: string
+          licence_summary_document_id?: string | null
+          licensable_activities?: string[]
+          licensed_plan_document_id?: string | null
+          needs_confirmation?: boolean
+          notes?: string | null
+          off_sales?: boolean
+          on_sales?: boolean
+          opening_hours?: string | null
+          physical_check_by?: string | null
+          premises_address?: string | null
+          premises_name?: string | null
+          replacement_needed?: boolean
+          section_57_document_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premises_licences_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licences_challenge_25_document_id_fkey"
+            columns: ["challenge_25_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licences_dps_authorisation_document_id_fkey"
+            columns: ["dps_authorisation_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licences_licence_document_id_fkey"
+            columns: ["licence_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licences_licence_summary_document_id_fkey"
+            columns: ["licence_summary_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licences_licensed_plan_document_id_fkey"
+            columns: ["licensed_plan_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "premises_licences_section_57_document_id_fkey"
+            columns: ["section_57_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
