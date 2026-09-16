@@ -668,11 +668,23 @@ export function ContractSigningActions({
 
                     {/* Primary: Send by email (employee only) */}
                     {signerType === "employee" && employeeEmail && !emailSent && (
-                      <Button onClick={handleSendEmail} disabled={sendingEmail} className="w-full gradient-primary">
-                        {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                        {sendingEmail ? "Sending..." : "Send contract"}
-                      </Button>
+                      <>
+                        {!sendEval.canSend && (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                            <p className="text-xs text-amber-700">{sendEval.message}</p>
+                          </div>
+                        )}
+                        <Button
+                          onClick={handleSendEmail}
+                          disabled={sendingEmail || !sendEval.canSend}
+                          className="w-full gradient-primary"
+                        >
+                          {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                          {sendingEmail ? "Sending..." : "Send contract"}
+                        </Button>
+                      </>
                     )}
+
 
                     {signerType === "employee" && !employeeEmail && (
                       <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center">
