@@ -32,6 +32,9 @@ export type ComplianceAuditEvent =
   | "licence_condition_created"
   | "licence_condition_edited"
   | "licence_condition_checked"
+  | "signature_requested"
+  | "signature_recorded"
+  | "signature_declined"
   | "training_reissued";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
@@ -61,6 +64,9 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   licence_condition_created: "Licence condition added",
   licence_condition_edited: "Licence condition edited",
   licence_condition_checked: "Licence condition checked",
+  signature_requested: "Sent for signature",
+  signature_recorded: "Signature recorded",
+  signature_declined: "Reader not ready to sign yet",
   training_reissued: "Training re-issued",
 };
 

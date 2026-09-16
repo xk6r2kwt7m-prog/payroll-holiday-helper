@@ -39,6 +39,7 @@ export function AlcoholAuthorisationsPanel({ employeeId }: { employeeId?: string
   const [revoking, setRevoking] = useState<any | null>(null);
   const [revokeReason, setRevokeReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
 
   const mayApprove = canApproveAuthorisation(role ?? undefined, authoriserRole as any);
 
@@ -88,18 +89,31 @@ export function AlcoholAuthorisationsPanel({ employeeId }: { employeeId?: string
 
   if (records.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border p-6 text-center">
-        <Wine className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
-        <p className="text-sm font-medium">No alcohol-sales authorisations yet</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          Include alcohol sales in an induction and the authorisation record is created automatically.
-        </p>
-      </div>
+      <>
+        <div className="rounded-xl border border-dashed border-border p-6 text-center">
+          <Wine className="h-7 w-7 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm font-medium">No alcohol-sales authorisations yet</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Send the authorisation to staff below, or include alcohol sales in an induction and the record is
+            created automatically.
+          </p>
+          <Button size="sm" className="mt-3" onClick={() => setSendOpen(true)}>
+            <Send className="h-3.5 w-3.5 mr-1.5" /> Send to staff
+          </Button>
+        </div>
+        <SendStaffAlcoholDialog open={sendOpen} onOpenChange={setSendOpen} />
+      </>
     );
   }
 
   return (
     <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={() => setSendOpen(true)}>
+          <Send className="h-3.5 w-3.5 mr-1.5" /> Send to staff
+        </Button>
+      </div>
+      <SendStaffAlcoholDialog open={sendOpen} onOpenChange={setSendOpen} />
       <div className="rounded-xl border border-border bg-card divide-y divide-border">
         {(records as any[]).map(r => {
           const emp = r.employees;
