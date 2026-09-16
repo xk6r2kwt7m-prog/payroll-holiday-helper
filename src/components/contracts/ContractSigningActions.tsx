@@ -462,7 +462,7 @@ export function ContractSigningActions({
         break;
       case "remind":
       case "send":
-        openDialogFor(nextStep.action === "countersign" ? "employer" : "employee");
+        openDialogFor("employee");
         break;
       default:
         openDialogFor(employeeSigned && !employerSigned ? "employer" : "employee");
