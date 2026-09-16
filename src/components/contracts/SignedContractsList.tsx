@@ -1,4 +1,16 @@
 import { useState, useMemo } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { resolveContractTrackerStatus } from "@/lib/contract-status-tracker";
+import { detectStaleContractDraft } from "@/lib/contract-staleness";
+import { Mail } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useDeleteDocument } from "@/hooks/useEmployeeDocuments";
 import { supabase } from "@/integrations/supabase/client";
@@ -578,6 +590,32 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
           employeeName={`${terminateTarget.employees?.forename || ""} ${terminateTarget.employees?.surname || ""}`}
         />
       )}
+
+      <Dialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ask for a correction</DialogTitle>
+            <DialogDescription>
+              {rejectTarget?.employees?.forename} will be told what needs fixing. The signed copy and audit
+              history are kept.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="e.g. The signature is unclear — please sign again."
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRejectTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" disabled={rejecting} onClick={submitRejection}>
+              Return for correction
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
