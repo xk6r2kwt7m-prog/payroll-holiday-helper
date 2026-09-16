@@ -11,6 +11,11 @@ interface SendContractEmailParams {
   signingTokenId: string;
   employeeId: string;
   employeeDocumentId: string;
+  /**
+   * Rehearsal send to the admin's own inbox. The staff member's record is
+   * never marked as sent; the send is audit logged as a test.
+   */
+  testMode?: boolean;
 }
 
 interface SendContractEmailResult {
