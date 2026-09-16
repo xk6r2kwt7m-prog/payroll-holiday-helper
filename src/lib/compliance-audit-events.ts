@@ -68,7 +68,10 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
 export type AuditAction = "create" | "update" | "delete" | "approve" | "reject" | "import";
 
 export function auditActionForEvent(event: ComplianceAuditEvent): AuditAction {
-  if (event === "document_created") return "create";
+  if (
+    event === "document_created" || event === "incident_created" ||
+    event === "licence_recorded" || event === "licence_condition_created"
+  ) return "create";
   if (event === "document_approved" || event === "branch_confirmed") return "approve";
   if (event === "document_rejected") return "reject";
   return "update";
