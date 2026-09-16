@@ -372,6 +372,24 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
+    case "licence_signature": {
+      const sigFirst = (data.recipient_name || "").split(" ")[0] || "there";
+      const staffLine = data.is_staff === "yes"
+        ? "<p>This confirms what you are authorised to do when selling alcohol, and the age-verification and refusal procedures you must follow.</p>"
+        : "<p>Please read the document in full before signing. It is a licensing record and is kept as part of the premises file.</p>";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">${data.document_title || "Document for signature"}</h2>
+        <p>Hi ${sigFirst},</p>
+        <p>${data.sender_name || "Your manager"} has sent you a licensing document to read and sign for <strong>${data.branch || ""}</strong>.</p>
+        ${staffLine}
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.signing_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Read and sign</a>
+        </p>
+        <p>You can read it now and sign later — the link stays open for ${data.expiry_days || "30"} days. No login is needed.</p>
+        <p style="color:#666;">This link is personal to you. Please do not forward it.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
     case "test":
       body = `<h2>UglyOps HR Platform</h2><p>This confirms that the email notification system is working.</p><p><strong>Sent at:</strong> ${new Date().toISOString()}</p>`;
       break;
