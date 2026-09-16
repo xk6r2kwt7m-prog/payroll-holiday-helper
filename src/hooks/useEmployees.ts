@@ -21,15 +21,15 @@ export function useEmployees(includeArchived = false) {
     queryFn: async () => {
       if (!tenantId) return [] as Employee[];
       
-      // Auto-archive leavers older than 7 days
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Anyone marked as a leaver is moved to the archive so they no longer
+      // appear in the working team list. Their records are kept in full.
       await supabase
         .from("employees")
         .update({ archived_at: new Date().toISOString() })
         .eq("tenant_id", tenantId)
         .eq("status", "leaver")
-        .is("archived_at", null)
-        .lte("updated_at", sevenDaysAgo);
+        .is("archived_at", null);
+
 
       let query = supabase
         .from("employees")
@@ -95,9 +95,17 @@ export function useUpdateEmployee() {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: EmployeeUpdate }) => {
+      // Marking someone a leaver removes them from the working team list
+      // straight away. Their records stay intact in the archive so payroll,
+      // holiday and settle-leaver work is unaffected.
+      const payload: EmployeeUpdate =
+        updates.status === "leaver" && !updates.archived_at
+          ? { ...updates, archived_at: new Date().toISOString() }
+          : updates;
+
       const { data, error } = await supabase
         .from("employees")
-        .update(updates)
+        .update(payload)
         .eq("id", id)
         .select()
         .single();
@@ -105,6 +113,7 @@ export function useUpdateEmployee() {
       if (error) throw error;
       return data;
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
