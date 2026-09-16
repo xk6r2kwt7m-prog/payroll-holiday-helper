@@ -688,6 +688,20 @@ export function ContractSigningActions({
                   {downloadingCert ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
                   Download Final Completed Contract
                 </Button>
+                <Button
+                  onClick={handleSendSignedContract}
+                  disabled={sendingSigned || !employeeEmail}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {sendingSigned ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {signedContractSent ? "Send signed contract again" : "Send signed contract to staff"}
+                </Button>
+                {!employeeEmail && (
+                  <p className="text-[10px] text-muted-foreground">
+                    No email on file for {employeeName} — add one to send the signed copy.
+                  </p>
+                )}
                 {filePath && (
                   <Button
                     onClick={handleDownloadOriginalPdf}
