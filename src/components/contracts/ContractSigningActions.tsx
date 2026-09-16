@@ -35,6 +35,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenant } from "@/hooks/useTenant";
 import { resolveContractNextStep } from "@/lib/contract-next-step";
+import { SignaturePad } from "@/components/letters/SignaturePad";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -96,6 +98,11 @@ export function ContractSigningActions({
   const [signedScanAt, setSignedScanAt] = useState<string | null>(null);
   const [sendingSigned, setSendingSigned] = useState(false);
   const [signedContractSent, setSignedContractSent] = useState(false);
+  const [drawMode, setDrawMode] = useState(false);
+  const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
+  const [saveAsDefault, setSaveAsDefault] = useState(true);
+  const [pendingSource, setPendingSource] = useState<"saved" | "drawn">("saved");
+  const pendingSignature = pendingSource === "drawn" ? drawnSignature : savedSignature;
 
 
   useEffect(() => {
@@ -170,9 +177,10 @@ export function ContractSigningActions({
     });
   };
 
-  /** Apply the admin's saved signature to the employer block, after confirmation. */
-  const handleSignWithSavedSignature = async () => {
-    if (!savedSignature || !overrideName.trim()) return;
+  /** Apply an employer signature (saved or drawn in the app) after confirmation. */
+  const handleSignAsEmployer = async () => {
+    const signatureData = pendingSignature;
+    if (!signatureData || !overrideName.trim()) return;
     setSigningAsEmployer(true);
     try {
       await supabase
@@ -205,8 +213,8 @@ export function ContractSigningActions({
             typed_name: overrideName.trim(),
             consent_given: true,
             consent_text: consentText,
-            signature_data: savedSignature,
-            signature_type: "saved_drawn",
+            signature_data: signatureData,
+            signature_type: pendingSource === "drawn" ? "drawn" : "saved_drawn",
             signatory_title: defaultTitle || null,
           }),
         }
@@ -214,13 +222,28 @@ export function ContractSigningActions({
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not apply signature");
 
+      // Optionally keep this drawn signature as the default for next time.
+      if (pendingSource === "drawn" && saveAsDefault && tenantId) {
+        await supabase
+          .from("company_settings")
+          .update({
+            default_signature_data: signatureData,
+            default_signature_updated_at: new Date().toISOString(),
+          } as any)
+          .eq("tenant_id", tenantId);
+        setSavedSignature(signatureData);
+      }
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["contract_signatures", documentId] }),
         queryClient.invalidateQueries({ queryKey: ["signing_tokens", documentId] }),
         queryClient.invalidateQueries({ queryKey: ["employee_documents"] }),
+        queryClient.invalidateQueries({ queryKey: ["all_contracts"] }),
       ]);
 
       setConfirmSignOpen(false);
+      setDrawnSignature(null);
+      setDrawMode(false);
       toast({
         title: "Contract signed",
         description: "Your signature has been applied to the employer section.",
