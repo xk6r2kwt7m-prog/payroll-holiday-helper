@@ -53,6 +53,7 @@ export default function DocumentsCompliance() {
             <TabsTrigger value="branch">Branch compliance</TabsTrigger>
             <TabsTrigger value="certificates">Certificates &amp; expiry</TabsTrigger>
             <TabsTrigger value="inspection">Inspection file</TabsTrigger>
+            <TabsTrigger value="incidents">Incident book</TabsTrigger>
           </TabsList>
 
           <TabsContent value="induction" className="space-y-6">
