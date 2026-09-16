@@ -32,6 +32,9 @@ export type ComplianceAuditEvent =
   | "licence_condition_created"
   | "licence_condition_edited"
   | "licence_condition_checked"
+  | "signature_requested"
+  | "signature_recorded"
+  | "signature_declined"
   | "training_reissued";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
