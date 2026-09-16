@@ -175,6 +175,7 @@ Deno.serve(async (req) => {
     });
 
     if (sendError) {
+      console.error("send-signed-contract: send-notification failed", sendError.message);
       return new Response(JSON.stringify({ error: "The email could not be sent. Please try again." }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
