@@ -25,7 +25,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "induction_pack" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -319,6 +319,21 @@ function buildHtml(type: string, data: Record<string, string>): string {
         ${mgrContractLink}
         <p><strong>Completed on:</strong> ${data.signed_at || new Date().toISOString()}</p>
         <p>The signed contract has been stored securely in the system.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
+    case "induction_pack": {
+      const indFirst = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your induction documents</h2>
+        <p>Hi ${indFirst},</p>
+        <p>Welcome to the team. Please read and confirm the documents below before your first shift.</p>
+        <p><strong>${data.document_count || ""} document(s)</strong>${data.branch ? ` for ${data.branch}` : ""}${data.staff_role ? ` (${data.staff_role})` : ""}.</p>
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.induction_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Open my induction</a>
+        </p>
+        <p>Everything is in one place and can be completed on your phone in a few minutes. You do not need to create an account.</p>
+        <p style="color:#666;">This link is personal to you. Please do not forward it.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }

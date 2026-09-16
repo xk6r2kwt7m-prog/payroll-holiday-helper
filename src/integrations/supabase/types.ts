@@ -146,6 +146,108 @@ export type Database = {
           },
         ]
       }
+      alcohol_authorisations: {
+        Row: {
+          authorised_at: string | null
+          authoriser_confirmed_at: string | null
+          authoriser_employee_id: string | null
+          authoriser_licence_number: string | null
+          authoriser_name: string | null
+          authoriser_role: string | null
+          branch: string | null
+          created_at: string
+          employee_id: string
+          employee_signature: string | null
+          employee_signed_at: string | null
+          id: string
+          notes: string | null
+          pack_id: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          authorised_at?: string | null
+          authoriser_confirmed_at?: string | null
+          authoriser_employee_id?: string | null
+          authoriser_licence_number?: string | null
+          authoriser_name?: string | null
+          authoriser_role?: string | null
+          branch?: string | null
+          created_at?: string
+          employee_id: string
+          employee_signature?: string | null
+          employee_signed_at?: string | null
+          id?: string
+          notes?: string | null
+          pack_id?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          authorised_at?: string | null
+          authoriser_confirmed_at?: string | null
+          authoriser_employee_id?: string | null
+          authoriser_licence_number?: string | null
+          authoriser_name?: string | null
+          authoriser_role?: string | null
+          branch?: string | null
+          created_at?: string
+          employee_id?: string
+          employee_signature?: string | null
+          employee_signed_at?: string | null
+          id?: string
+          notes?: string | null
+          pack_id?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alcohol_authorisations_authoriser_employee_id_fkey"
+            columns: ["authoriser_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_authorisations_authoriser_employee_id_fkey"
+            columns: ["authoriser_employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_authorisations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_authorisations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_authorisations_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "induction_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcement_read_receipts: {
         Row: {
           announcement_id: string
@@ -303,6 +405,77 @@ export type Database = {
           },
         ]
       }
+      branch_compliance_items: {
+        Row: {
+          branch: string
+          category: string
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          expiry_date: string | null
+          file_path: string | null
+          id: string
+          inspection_required: boolean
+          is_displayed: boolean
+          last_reviewed_at: string | null
+          name: string
+          notes: string | null
+          physical_copy_held: boolean
+          sort_order: number
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          branch: string
+          category: string
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          expiry_date?: string | null
+          file_path?: string | null
+          id?: string
+          inspection_required?: boolean
+          is_displayed?: boolean
+          last_reviewed_at?: string | null
+          name: string
+          notes?: string | null
+          physical_copy_held?: boolean
+          sort_order?: number
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          branch?: string
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          expiry_date?: string | null
+          file_path?: string | null
+          id?: string
+          inspection_required?: boolean
+          is_displayed?: boolean
+          last_reviewed_at?: string | null
+          name?: string
+          notes?: string | null
+          physical_copy_held?: boolean
+          sort_order?: number
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_compliance_items_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_locations: {
         Row: {
           address: string | null
@@ -429,6 +602,200 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: true
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_actions: {
+        Row: {
+          branch: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string | null
+          detail: string | null
+          due_date: string | null
+          evidence_file_path: string | null
+          id: string
+          notes: string | null
+          source: string
+          status: string
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          branch: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: string | null
+          due_date?: string | null
+          evidence_file_path?: string | null
+          id?: string
+          notes?: string | null
+          source?: string
+          status?: string
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          branch?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          detail?: string | null
+          due_date?: string | null
+          evidence_file_path?: string | null
+          id?: string
+          notes?: string | null
+          source?: string
+          status?: string
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      compliance_certificates: {
+        Row: {
+          branch: string
+          certificate_number: string | null
+          certificate_type: string
+          created_at: string
+          created_by: string | null
+          expiry_date: string | null
+          file_path: string | null
+          holder_name: string | null
+          id: string
+          issue_date: string | null
+          notes: string | null
+          receipt_path: string | null
+          renewal_status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          branch: string
+          certificate_number?: string | null
+          certificate_type: string
+          created_at?: string
+          created_by?: string | null
+          expiry_date?: string | null
+          file_path?: string | null
+          holder_name?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          receipt_path?: string | null
+          renewal_status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          branch?: string
+          certificate_number?: string | null
+          certificate_type?: string
+          created_at?: string
+          created_by?: string | null
+          expiry_date?: string | null
+          file_path?: string | null
+          holder_name?: string | null
+          id?: string
+          issue_date?: string | null
+          notes?: string | null
+          receipt_path?: string | null
+          renewal_status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      compliance_documents: {
+        Row: {
+          alcohol_related: boolean
+          applies_to_all_branches: boolean
+          applies_to_all_roles: boolean
+          archived_at: string | null
+          branches: string[]
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          expires_at: string | null
+          file_path: string | null
+          id: string
+          include_in_induction: boolean
+          inspection_required: boolean
+          must_display: boolean
+          name: string
+          requires_signature: boolean
+          roles: string[]
+          status: string
+          supersedes_document_id: string | null
+          tenant_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          alcohol_related?: boolean
+          applies_to_all_branches?: boolean
+          applies_to_all_roles?: boolean
+          archived_at?: string | null
+          branches?: string[]
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          file_path?: string | null
+          id?: string
+          include_in_induction?: boolean
+          inspection_required?: boolean
+          must_display?: boolean
+          name: string
+          requires_signature?: boolean
+          roles?: string[]
+          status?: string
+          supersedes_document_id?: string | null
+          tenant_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          alcohol_related?: boolean
+          applies_to_all_branches?: boolean
+          applies_to_all_roles?: boolean
+          archived_at?: string | null
+          branches?: string[]
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          expires_at?: string | null
+          file_path?: string | null
+          id?: string
+          include_in_induction?: boolean
+          inspection_required?: boolean
+          must_display?: boolean
+          name?: string
+          requires_signature?: boolean
+          roles?: string[]
+          status?: string
+          supersedes_document_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_documents_supersedes_document_id_fkey"
+            columns: ["supersedes_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -2766,6 +3133,207 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      induction_pack_items: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          document_category: string | null
+          document_id: string | null
+          document_name: string
+          document_version: number
+          file_path: string | null
+          id: string
+          pack_id: string
+          requires_signature: boolean
+          signature_data: string | null
+          sort_order: number
+          tenant_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          document_category?: string | null
+          document_id?: string | null
+          document_name: string
+          document_version?: number
+          file_path?: string | null
+          id?: string
+          pack_id: string
+          requires_signature?: boolean
+          signature_data?: string | null
+          sort_order?: number
+          tenant_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          document_category?: string | null
+          document_id?: string | null
+          document_name?: string
+          document_version?: number
+          file_path?: string | null
+          id?: string
+          pack_id?: string
+          requires_signature?: boolean
+          signature_data?: string | null
+          sort_order?: number
+          tenant_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "induction_pack_items_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "induction_pack_items_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "induction_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      induction_packs: {
+        Row: {
+          branch: string | null
+          completed_at: string | null
+          created_at: string
+          employee_id: string
+          final_signature_data: string | null
+          final_statement_text: string | null
+          id: string
+          includes_alcohol: boolean
+          is_test_send: boolean
+          issued_by: string | null
+          issued_by_name: string | null
+          opened_at: string | null
+          recipient_email: string | null
+          sent_at: string
+          staff_role: string | null
+          status: string
+          tenant_id: string
+          token: string
+          token_expires_at: string
+          updated_at: string
+        }
+        Insert: {
+          branch?: string | null
+          completed_at?: string | null
+          created_at?: string
+          employee_id: string
+          final_signature_data?: string | null
+          final_statement_text?: string | null
+          id?: string
+          includes_alcohol?: boolean
+          is_test_send?: boolean
+          issued_by?: string | null
+          issued_by_name?: string | null
+          opened_at?: string | null
+          recipient_email?: string | null
+          sent_at?: string
+          staff_role?: string | null
+          status?: string
+          tenant_id: string
+          token: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Update: {
+          branch?: string | null
+          completed_at?: string | null
+          created_at?: string
+          employee_id?: string
+          final_signature_data?: string | null
+          final_statement_text?: string | null
+          id?: string
+          includes_alcohol?: boolean
+          is_test_send?: boolean
+          issued_by?: string | null
+          issued_by_name?: string | null
+          opened_at?: string | null
+          recipient_email?: string | null
+          sent_at?: string
+          staff_role?: string | null
+          status?: string
+          tenant_id?: string
+          token?: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "induction_packs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "induction_packs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_checklist_items: {
+        Row: {
+          branch: string
+          created_at: string
+          detail: string | null
+          displayed: boolean
+          id: string
+          label: string
+          last_reviewed_at: string | null
+          notes: string | null
+          physical_copy_held: boolean
+          required: boolean
+          sort_order: number
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          branch: string
+          created_at?: string
+          detail?: string | null
+          displayed?: boolean
+          id?: string
+          label: string
+          last_reviewed_at?: string | null
+          notes?: string | null
+          physical_copy_held?: boolean
+          required?: boolean
+          sort_order?: number
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          branch?: string
+          created_at?: string
+          detail?: string | null
+          displayed?: boolean
+          id?: string
+          label?: string
+          last_reviewed_at?: string | null
+          notes?: string | null
+          physical_copy_held?: boolean
+          required?: boolean
+          sort_order?: number
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       location_settings: {
         Row: {
