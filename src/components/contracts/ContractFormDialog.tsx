@@ -646,31 +646,32 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
               {fillStage === "employee" && (
                 <div className="space-y-2">
-                  {(employees || [])
-                    .filter((e) => e.status === "active" || e.status === "starter" || e.status === "onboarding")
-                    .map((emp) => (
-                      <button
-                        key={emp.id}
-                        type="button"
-                        onClick={() => {
-                          handleEmployeeSelect(emp.id);
-                          setEmailDraft(emp.email || "");
-                        }}
-                        className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                          selectedEmployeeId === emp.id
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:bg-muted/50"
-                        }`}
-                      >
-                        <p className="text-sm font-medium">
-                          {emp.forename} {emp.surname}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {emp.department || "No department"}
-                          {emp.email ? ` · ${emp.email}` : " · no email yet"}
-                        </p>
-                      </button>
-                    ))}
+                  {contractEligibleEmployees.map((emp) => (
+                    <button
+                      key={emp.id}
+                      type="button"
+                      onClick={() => {
+                        handleEmployeeSelect(emp.id);
+                        setEmailDraft(emp.email || "");
+                      }}
+                      className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                        selectedEmployeeId === emp.id
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <p className="text-sm font-medium">
+                        {emp.forename} {emp.surname}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {emp.department || "No department"}
+                        {emp.email ? ` · ${emp.email}` : " · no email yet"}
+                      </p>
+                    </button>
+                  ))}
+                  {contractEligibleEmployees.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No employees available for a contract yet.</p>
+                  )}
                 </div>
               )}
 
