@@ -32,6 +32,7 @@ describe("completed contract delivery auth invariants", () => {
     expect(fn).toMatch(/\.is\("invalidated_at", null\)/);
     expect(fn).toContain("This contract is not fully signed yet.");
     expect(fn).toContain("The completed signed contract file is not ready yet.");
+    expect(fn).toContain("Please confirm a valid recipient email address.");
   });
 
   it("keeps recipient downloads token-based and login-free", () => {
@@ -40,5 +41,7 @@ describe("completed contract delivery auth invariants", () => {
     expect(send).toMatch(/\/document\/view\?token=\$\{token\.token\}&variant=final/);
     expect(serve).toMatch(/if \(signingToken\)/);
     expect(serve).toMatch(/\.eq\("token", signingToken\)/);
+    expect(serve).toContain("The completed signed contract file is not ready yet.");
+    expect(serve).not.toMatch(/variant === "final" && doc\.final_signed_pdf_url\s*\?\s*doc\.final_signed_pdf_url\s*:\s*doc\.file_path/);
   });
 });

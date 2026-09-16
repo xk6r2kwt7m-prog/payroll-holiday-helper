@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     if (signingToken) {
       // Access via signing token — used on the signing page
-      const { data: tokenData } = await supabase
+      const { data: tokenData, error: tokenError } = await supabase
         .from("signing_tokens")
         .select(`
           id,
@@ -56,6 +56,13 @@ Deno.serve(async (req) => {
         .eq("token", signingToken)
         .maybeSingle();
 
+      if (tokenError) {
+        console.error("serve-document: token lookup failed", tokenError.message);
+        return new Response(JSON.stringify({ error: "The document link could not be checked. Please try again." }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       if (!tokenData) {
         return new Response(JSON.stringify({ error: "Invalid or expired link" }), {
           status: 404,
@@ -78,9 +85,13 @@ Deno.serve(async (req) => {
         });
       }
 
-      filePath = variant === "final" && doc.final_signed_pdf_url
-        ? doc.final_signed_pdf_url
-        : doc.file_path;
+      if (variant === "final" && !doc.final_signed_pdf_url) {
+        return new Response(JSON.stringify({ error: "The completed signed contract file is not ready yet." }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      filePath = variant === "final" ? doc.final_signed_pdf_url : doc.file_path;
       documentName = doc.document_name || "contract.pdf";
 
     } else if (documentId) {
@@ -103,12 +114,19 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { data: doc } = await supabase
+      const { data: doc, error: docError } = await supabase
         .from("employee_documents")
         .select("id, document_name, file_path, final_signed_pdf_url, tenant_id")
         .eq("id", documentId)
         .maybeSingle();
 
+      if (docError) {
+        console.error("serve-document: document lookup failed", docError.message);
+        return new Response(JSON.stringify({ error: "The document record could not be checked. Please try again." }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       if (!doc) {
         return new Response(JSON.stringify({ error: "Document not found" }), {
           status: 404,
@@ -132,9 +150,13 @@ Deno.serve(async (req) => {
         });
       }
 
-      filePath = variant === "final" && doc.final_signed_pdf_url
-        ? doc.final_signed_pdf_url
-        : doc.file_path;
+      if (variant === "final" && !doc.final_signed_pdf_url) {
+        return new Response(JSON.stringify({ error: "The completed signed contract file is not ready yet." }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      filePath = variant === "final" ? doc.final_signed_pdf_url : doc.file_path;
       documentName = doc.document_name || "contract.pdf";
     }
 
