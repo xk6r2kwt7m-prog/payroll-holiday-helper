@@ -650,6 +650,106 @@ Deno.serve(async (req) => {
     // ════════════════════════════════════════════
     if (req.method === "POST") {
       const body = await req.json();
+
+      // ════════════════════════════════════════════
+      // Optional extra: signer uploads a scan/photo of the signed contract.
+      // Supporting evidence only — it never replaces the electronic signature
+      // and never modifies the original contract document.
+      // ════════════════════════════════════════════
+      if (body?.action === "upload_scan") {
+        const { file_data, file_name } = body as { file_data?: string; file_name?: string };
+        const decoded = decodeDataUrl(file_data);
+
+        if (!decoded) {
+          return new Response(JSON.stringify({ error: "No file received", error_code: "missing_file" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const ALLOWED = ["application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp"];
+        if (!ALLOWED.includes(decoded.mime)) {
+          return new Response(JSON.stringify({ error: "Please upload a PDF or a photo (PNG/JPG).", error_code: "invalid_file_type" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (decoded.bytes.byteLength > 15 * 1024 * 1024) {
+          return new Response(JSON.stringify({ error: "File is too large (15MB maximum).", error_code: "file_too_large" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: uploadToken } = await supabase
+          .from("signing_tokens")
+          .select("id, employee_document_id, employee_id, signer_type, expires_at, used_at, tenant_id")
+          .eq("token", token)
+          .maybeSingle();
+
+        if (!uploadToken) {
+          return new Response(JSON.stringify({ error: "This link is not valid.", error_code: "invalid_token" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // A used token stays valid for uploads for 30 days after signing,
+        // so the signer can send their scan shortly after signing.
+        const uploadDeadline = new Date(uploadToken.used_at ?? uploadToken.expires_at);
+        uploadDeadline.setDate(uploadDeadline.getDate() + 30);
+        if (uploadDeadline < new Date()) {
+          return new Response(JSON.stringify({ error: "This upload link has expired. Please ask your employer for a new one.", error_code: "expired" }), {
+            status: 410,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const ext = decoded.mime === "application/pdf" ? "pdf" : decoded.mime.split("/")[1].replace("jpeg", "jpg");
+        const storagePath = `${uploadToken.employee_id}/signed-scan-${uploadToken.employee_document_id}-${Date.now()}.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("employee-documents")
+          .upload(storagePath, decoded.bytes, { contentType: decoded.mime, upsert: false });
+
+        if (uploadError) {
+          console.error("Signed scan upload failed:", uploadError);
+          return new Response(JSON.stringify({ error: "Upload failed. Please try again.", error_code: "upload_failed" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        await supabase
+          .from("employee_documents")
+          .update({
+            signed_scan_file_path: storagePath,
+            signed_scan_uploaded_at: new Date().toISOString(),
+            signed_scan_uploaded_by_signer: uploadToken.signer_type,
+          })
+          .eq("id", uploadToken.employee_document_id);
+
+        await supabase.from("document_audit_log").insert({
+          tenant_id: uploadToken.tenant_id,
+          document_id: uploadToken.employee_document_id,
+          employee_id: uploadToken.employee_id,
+          action: "signed_scan_uploaded",
+          metadata: {
+            signer_type: uploadToken.signer_type,
+            file_name: file_name || null,
+            storage_path: storagePath,
+            mime_type: decoded.mime,
+            size_bytes: decoded.bytes.byteLength,
+          },
+        } as any);
+
+        return new Response(JSON.stringify({ success: true, storage_path: storagePath }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const {
         typed_name,
         consent_given,
@@ -659,6 +759,7 @@ Deno.serve(async (req) => {
         document_hash,
         signatory_title,
       } = body;
+
 
       if (!typed_name?.trim()) {
         return new Response(JSON.stringify({ error: "Please type your full legal name", error_code: "missing_name" }), {

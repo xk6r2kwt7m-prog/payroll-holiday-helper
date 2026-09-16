@@ -357,11 +357,14 @@ export type Database = {
           company_email: string | null
           company_logo_url: string | null
           company_name: string
+          contract_send_mode: string
           created_at: string
           default_pay_day: string | null
           default_signatory_email: string | null
           default_signatory_name: string | null
           default_signatory_title: string | null
+          default_signature_data: string | null
+          default_signature_updated_at: string | null
           email_notifications: boolean | null
           holiday_request_alerts: boolean | null
           id: string
@@ -378,11 +381,14 @@ export type Database = {
           company_email?: string | null
           company_logo_url?: string | null
           company_name?: string
+          contract_send_mode?: string
           created_at?: string
           default_pay_day?: string | null
           default_signatory_email?: string | null
           default_signatory_name?: string | null
           default_signatory_title?: string | null
+          default_signature_data?: string | null
+          default_signature_updated_at?: string | null
           email_notifications?: boolean | null
           holiday_request_alerts?: boolean | null
           id?: string
@@ -399,11 +405,14 @@ export type Database = {
           company_email?: string | null
           company_logo_url?: string | null
           company_name?: string
+          contract_send_mode?: string
           created_at?: string
           default_pay_day?: string | null
           default_signatory_email?: string | null
           default_signatory_name?: string | null
           default_signatory_title?: string | null
+          default_signature_data?: string | null
+          default_signature_updated_at?: string | null
           email_notifications?: boolean | null
           holiday_request_alerts?: boolean | null
           id?: string
@@ -1530,6 +1539,7 @@ export type Database = {
           amendment_summary: string | null
           amendment_type: string | null
           contract_last_token_id: string | null
+          contract_scheduled_send_at: string | null
           contract_send_error: string | null
           contract_send_status: string | null
           contract_sent_at: string | null
@@ -1559,6 +1569,9 @@ export type Database = {
           parent_contract_id: string | null
           rejected_reason: string | null
           root_contract_id: string | null
+          signed_scan_file_path: string | null
+          signed_scan_uploaded_at: string | null
+          signed_scan_uploaded_by_signer: string | null
           superseded_at: string | null
           superseded_by: string | null
           tenant_id: string
@@ -1577,6 +1590,7 @@ export type Database = {
           amendment_summary?: string | null
           amendment_type?: string | null
           contract_last_token_id?: string | null
+          contract_scheduled_send_at?: string | null
           contract_send_error?: string | null
           contract_send_status?: string | null
           contract_sent_at?: string | null
@@ -1606,6 +1620,9 @@ export type Database = {
           parent_contract_id?: string | null
           rejected_reason?: string | null
           root_contract_id?: string | null
+          signed_scan_file_path?: string | null
+          signed_scan_uploaded_at?: string | null
+          signed_scan_uploaded_by_signer?: string | null
           superseded_at?: string | null
           superseded_by?: string | null
           tenant_id: string
@@ -1624,6 +1641,7 @@ export type Database = {
           amendment_summary?: string | null
           amendment_type?: string | null
           contract_last_token_id?: string | null
+          contract_scheduled_send_at?: string | null
           contract_send_error?: string | null
           contract_send_status?: string | null
           contract_sent_at?: string | null
@@ -1653,6 +1671,9 @@ export type Database = {
           parent_contract_id?: string | null
           rejected_reason?: string | null
           root_contract_id?: string | null
+          signed_scan_file_path?: string | null
+          signed_scan_uploaded_at?: string | null
+          signed_scan_uploaded_by_signer?: string | null
           superseded_at?: string | null
           superseded_by?: string | null
           tenant_id?: string

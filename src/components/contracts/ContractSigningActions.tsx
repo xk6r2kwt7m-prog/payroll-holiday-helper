@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { evaluateContractSend, normaliseSendMode, type ContractSendMode } from "@/lib/contract-send-rules";
 import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,7 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { pdf } from "@react-pdf/renderer";
 import { SigningCertificatePDF } from "./SigningCertificatePDF";
 import type { SignatureRecord } from "./SigningCertificatePDF";
-import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award, RefreshCw, FileSignature } from "lucide-react";
+import { Link2, CheckCircle2, Clock, Copy, Send, ShieldCheck, Loader2, Mail, FileDown, Award, RefreshCw, FileSignature, PenLine, CalendarClock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenant } from "@/hooks/useTenant";
@@ -61,6 +64,7 @@ export function ContractSigningActions({
 }: ContractSigningActionsProps) {
   const { toast } = useToast();
   const { tenantId } = useTenant();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [signerType, setSignerType] = useState<"employee" | "employer">("employee");
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -72,7 +76,18 @@ export function ContractSigningActions({
   const [overrideEmail, setOverrideEmail] = useState("");
   const [defaultName, setDefaultName] = useState("");
   const [defaultEmail, setDefaultEmail] = useState("");
+  const [defaultTitle, setDefaultTitle] = useState("");
   const [signatoryLoaded, setSignatoryLoaded] = useState(false);
+  const [sendMode, setSendMode] = useState<ContractSendMode>("manual");
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+  const [scheduledSendAt, setScheduledSendAt] = useState<string | null>(null);
+  const [scheduleInput, setScheduleInput] = useState("");
+  const [savingSchedule, setSavingSchedule] = useState(false);
+  const [confirmSignOpen, setConfirmSignOpen] = useState(false);
+  const [signingAsEmployer, setSigningAsEmployer] = useState(false);
+  const [signedScanPath, setSignedScanPath] = useState<string | null>(null);
+  const [signedScanAt, setSignedScanAt] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (!tenantId) return;
@@ -80,12 +95,16 @@ export function ContractSigningActions({
       const [{ data: settings }, { data: docRecord }] = await Promise.all([
         supabase
           .from("company_settings")
-          .select("default_signatory_name, default_signatory_email")
+          .select(
+            "default_signatory_name, default_signatory_email, default_signatory_title, contract_send_mode, default_signature_data"
+          )
           .eq("tenant_id", tenantId)
           .maybeSingle(),
         supabase
           .from("employee_documents")
-          .select("employer_signatory_name, employer_signatory_email")
+          .select(
+            "employer_signatory_name, employer_signatory_email, contract_scheduled_send_at, signed_scan_file_path, signed_scan_uploaded_at"
+          )
           .eq("id", documentId)
           .maybeSingle(),
       ]);
@@ -93,11 +112,121 @@ export function ContractSigningActions({
       const defEmail = (settings as any)?.default_signatory_email || "";
       setDefaultName(defName);
       setDefaultEmail(defEmail);
+      setDefaultTitle((settings as any)?.default_signatory_title || "");
+      setSendMode(normaliseSendMode((settings as any)?.contract_send_mode));
+      setSavedSignature((settings as any)?.default_signature_data || null);
       setOverrideName((docRecord as any)?.employer_signatory_name || defName);
       setOverrideEmail((docRecord as any)?.employer_signatory_email || defEmail);
+      const sched = (docRecord as any)?.contract_scheduled_send_at as string | null;
+      setScheduledSendAt(sched || null);
+      setScheduleInput(sched ? new Date(sched).toISOString().slice(0, 16) : "");
+      setSignedScanPath((docRecord as any)?.signed_scan_file_path || null);
+      setSignedScanAt((docRecord as any)?.signed_scan_uploaded_at || null);
       setSignatoryLoaded(true);
     })();
   }, [tenantId, documentId]);
+
+  /** Open the scanned copy the signer uploaded (supporting evidence only). */
+  const handleViewSignedScan = async () => {
+    if (!signedScanPath) return;
+    const { data, error } = await supabase.storage
+      .from("employee-documents")
+      .createSignedUrl(signedScanPath, 300);
+    if (error || !data?.signedUrl) {
+      toast({ title: "Could not open file", description: "Please try again.", variant: "destructive" });
+      return;
+    }
+    window.open(data.signedUrl, "_blank");
+  };
+
+  /** Save (or clear) the per-contract "send on" date. */
+  const handleSaveSchedule = async () => {
+    setSavingSchedule(true);
+    const value = scheduleInput ? new Date(scheduleInput).toISOString() : null;
+    const { error } = await supabase
+      .from("employee_documents")
+      .update({ contract_scheduled_send_at: value } as any)
+      .eq("id", documentId);
+    setSavingSchedule(false);
+    if (error) {
+      toast({ title: "Could not save", description: error.message, variant: "destructive" });
+      return;
+    }
+    setScheduledSendAt(value);
+    toast({
+      title: value ? "Send date saved" : "Send date cleared",
+      description: value
+        ? "This contract will be held until that date."
+        : "This contract can be sent whenever you choose.",
+    });
+  };
+
+  /** Apply the admin's saved signature to the employer block, after confirmation. */
+  const handleSignWithSavedSignature = async () => {
+    if (!savedSignature || !overrideName.trim()) return;
+    setSigningAsEmployer(true);
+    try {
+      await supabase
+        .from("employee_documents")
+        .update({
+          employer_signatory_name: overrideName.trim() || null,
+          employer_signatory_email: overrideEmail.trim() || null,
+          employer_signatory_source:
+            overrideName.trim() !== defaultName || overrideEmail.trim() !== defaultEmail
+              ? "override"
+              : "default",
+        } as any)
+        .eq("id", documentId);
+
+      const tokenResult = await generateLink.mutateAsync({
+        employeeDocumentId: documentId,
+        employeeId,
+        signerType: "employer",
+      });
+
+      const consentText =
+        "I confirm that: I have reviewed this contract and confirm it is ready for execution; I am authorised to sign this document on behalf of the employer; I agree to sign this document electronically; This electronic signature represents my legal signature.";
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${tokenResult.token}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            typed_name: overrideName.trim(),
+            consent_given: true,
+            consent_text: consentText,
+            signature_data: savedSignature,
+            signature_type: "saved_drawn",
+            signatory_title: defaultTitle || null,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not apply signature");
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["contract_signatures", documentId] }),
+        queryClient.invalidateQueries({ queryKey: ["signing_tokens", documentId] }),
+        queryClient.invalidateQueries({ queryKey: ["employee_documents"] }),
+      ]);
+
+      setConfirmSignOpen(false);
+      toast({
+        title: "Contract signed",
+        description: "Your signature has been applied to the employer section.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Could not sign",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSigningAsEmployer(false);
+    }
+  };
+
 
   const generateLink = useGenerateSigningLink();
   const { sendContractEmail } = useSendContractEmail();
@@ -107,6 +236,13 @@ export function ContractSigningActions({
   const employeeSigned = signatures?.some((s) => s.signer_type === "employee");
   const employerSigned = signatures?.some((s) => s.signer_type === "employer");
   const bothSigned = employeeSigned && employerSigned;
+
+  const sendEval = evaluateContractSend({
+    mode: sendMode,
+    employerSigned: !!employerSigned,
+    scheduledSendAt,
+  });
+
 
   // Check if an employer token was auto-generated (exists but not yet used)
   const employerTokenAutoSent = tokens?.some(
@@ -404,6 +540,95 @@ export function ContractSigningActions({
               )}
             </div>
 
+            {/* Signed copy uploaded by the signer */}
+            {signedScanPath && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <p className="text-xs font-semibold text-foreground">Signed copy uploaded</p>
+                {signedScanAt && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Uploaded {new Date(signedScanAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                )}
+                <Button variant="outline" size="sm" className="w-full" onClick={handleViewSignedScan}>
+                  <FileDown className="h-3.5 w-3.5" />
+                  View uploaded signed copy
+                </Button>
+                <p className="text-[10px] text-muted-foreground">
+                  Supporting evidence only — the electronic signature remains the record of signing.
+                </p>
+              </div>
+            )}
+
+            {/* Sign now with my saved signature */}
+            {!employerSigned && signatoryLoaded && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <p className="text-xs font-semibold text-foreground">My Signature</p>
+                {savedSignature ? (
+                  <>
+                    <div className="rounded-md border border-border bg-white p-2">
+                      <img src={savedSignature} alt="Your saved signature" className="h-12 w-auto object-contain" />
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setConfirmSignOpen(true)}
+                      disabled={signingAsEmployer || !overrideName.trim()}
+                    >
+                      {signingAsEmployer ? <Loader2 className="h-4 w-4 animate-spin" /> : <PenLine className="h-4 w-4" />}
+                      Sign this contract now
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground">
+                      Applies your saved signature to the employer section, with a full audit record.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">
+                    No saved signature yet. Add one in Settings → Contracts to sign contracts yourself in one click.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Per-contract send date */}
+            {!employeeSigned && (
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-3.5 w-3.5 text-primary" />
+                  <p className="text-xs font-semibold text-foreground">Send this contract on</p>
+                </div>
+                <Input
+                  type="datetime-local"
+                  value={scheduleInput}
+                  onChange={(e) => setScheduleInput(e.target.value)}
+                  className="h-9"
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={handleSaveSchedule} disabled={savingSchedule}>
+                    {savingSchedule ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                    Save date
+                  </Button>
+                  {scheduledSendAt && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setScheduleInput("");
+                        handleSaveSchedule();
+                      }}
+                      disabled={savingSchedule}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Leave empty to send whenever you choose. With a date set, sending stays locked until then.
+                </p>
+              </div>
+            )}
+
+
+
             {/* Download signed contract (fully signed) */}
             {bothSigned && (
               <div className="space-y-2">
@@ -551,11 +776,23 @@ export function ContractSigningActions({
 
                     {/* Primary: Send by email (employee only) */}
                     {signerType === "employee" && employeeEmail && !emailSent && (
-                      <Button onClick={handleSendEmail} disabled={sendingEmail} className="w-full gradient-primary">
-                        {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                        {sendingEmail ? "Sending..." : "Send contract"}
-                      </Button>
+                      <>
+                        {!sendEval.canSend && (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                            <p className="text-xs text-amber-700">{sendEval.message}</p>
+                          </div>
+                        )}
+                        <Button
+                          onClick={handleSendEmail}
+                          disabled={sendingEmail || !sendEval.canSend}
+                          className="w-full gradient-primary"
+                        >
+                          {sendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                          {sendingEmail ? "Sending..." : "Send contract"}
+                        </Button>
+                      </>
                     )}
+
 
                     {signerType === "employee" && !employeeEmail && (
                       <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-center">
@@ -577,6 +814,39 @@ export function ContractSigningActions({
                 )}
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm applying my saved signature */}
+      <Dialog open={confirmSignOpen} onOpenChange={setConfirmSignOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PenLine className="h-5 w-5 text-primary" />
+              Sign this contract?
+            </DialogTitle>
+            <DialogDescription>
+              Your saved signature will be applied to {employeeName}'s contract as the employer signature. This is recorded and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {savedSignature && (
+            <div className="rounded-md border border-border bg-white p-2">
+              <img src={savedSignature} alt="Your saved signature" className="h-14 w-auto object-contain" />
+            </div>
+          )}
+          <div className="text-xs text-muted-foreground">
+            Signing as <span className="font-medium text-foreground">{overrideName}</span>
+            {defaultTitle ? `, ${defaultTitle}` : ""}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setConfirmSignOpen(false)} disabled={signingAsEmployer}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSignWithSavedSignature} disabled={signingAsEmployer}>
+              {signingAsEmployer ? <Loader2 className="h-3 w-3 animate-spin" /> : <PenLine className="h-3 w-3" />}
+              Confirm and sign
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
