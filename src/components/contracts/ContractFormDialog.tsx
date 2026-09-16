@@ -81,6 +81,12 @@ import {
   payDetailsStatusLabel,
   reportingManagerStatusLabel,
 } from "@/lib/contract-draft-evidence";
+import {
+  saveContractDraft,
+  loadContractDraft,
+  clearContractDraft,
+  draftHasContent,
+} from "@/lib/contract-draft-autosave";
 import { getContractGenerationGate } from "@/lib/contract-generation-gate";
 import {
   buildContractIssueSummary,
