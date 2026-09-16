@@ -15,6 +15,7 @@ import { CertificatesSection } from "@/components/compliance/CertificatesSection
 import { InspectionFileSection } from "@/components/compliance/InspectionFileSection";
 import { AlcoholAuthorisationsPanel } from "@/components/compliance/AlcoholAuthorisationsPanel";
 import { SiteEmergencyDetailsCard } from "@/components/compliance/SiteEmergencyDetailsCard";
+import { IncidentBookSection } from "@/components/compliance/IncidentBookSection";
 import {
   useComplianceBranches, useConfirmBranchLocation, type ComplianceBranchOption,
 } from "@/hooks/useComplianceBranches";
