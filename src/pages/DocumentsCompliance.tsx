@@ -73,6 +73,7 @@ export default function DocumentsCompliance() {
 
           <TabsContent value="branch" className="space-y-4">
             <BranchPicker options={options} value={branch} onChange={setBranch} />
+            {branch && <PremisesLicencePanel branch={branch} />}
             {branch && <SiteEmergencyDetailsCard branch={branch} />}
             {branch && <BranchComplianceSection branch={branch} />}
           </TabsContent>
