@@ -1,4 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
+import {
+  evaluateCriticalContractDetails,
+  type ContractDetailsMode,
+} from "@/lib/contract-critical-fields";
 import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useTenant } from "@/hooks/useTenant";
@@ -124,6 +128,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const [step, setStep] = useState<Step>("fill");
   const [fillStage, setFillStage] = useState<FillStage>("employee");
   const [emailDraft, setEmailDraft] = useState("");
+  /** Details-first is the safe default; send-straight-away is opt-in. */
+  const [detailsMode, setDetailsMode] = useState<ContractDetailsMode>("details_first");
   const [savingEmail, setSavingEmail] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [contractType, setContractType] = useState<ContractType>("foh");
@@ -524,7 +530,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
         employmentType: variables.employmentType,
         weeklyHours: variables.weeklyHours,
         baseHourlyRate: variables.baseHourlyRate,
-        reportingManagerName: variables.signatoryName,
+        reportingManagerName: variables.reportingManagerName,
       }),
     [variables, emailDraft, employeeEmail]
   );
