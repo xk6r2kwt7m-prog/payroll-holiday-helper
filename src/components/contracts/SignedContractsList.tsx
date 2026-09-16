@@ -204,9 +204,9 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
             <Upload className="h-7 w-7 text-primary" />
           </div>
-          <h3 className="text-base font-semibold mb-1">No contracts yet</h3>
+          <h3 className="text-base font-semibold mb-1">{emptyTitle || "No contracts yet"}</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            Generate a contract, get it signed, then upload it here for safekeeping.
+            {emptyDescription || "Generate a contract, get it signed, then upload it here for safekeeping."}
           </p>
         </div>
       ) : (
