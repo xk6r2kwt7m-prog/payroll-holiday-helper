@@ -302,6 +302,31 @@ export function ContractSigningActions({
     window.open(`/document/view?id=${documentId}&variant=${variant}`, "_blank");
   };
 
+  /** Manually email the completed (both-signed) contract to the employee. */
+  const handleSendSignedContract = async () => {
+    setSendingSigned(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-signed-contract", {
+        body: { document_id: documentId },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      setSignedContractSent(true);
+      toast({
+        title: "Signed contract sent",
+        description: `The completed contract was emailed to ${(data as any)?.recipient || employeeEmail}.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Could not send",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingSigned(false);
+    }
+  };
+
   const handleDownloadOriginalPdf = async () => {
     window.open(`/document/view?id=${documentId}&variant=original`, "_blank");
   };
