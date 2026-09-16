@@ -37,6 +37,9 @@ import { useTenant } from "@/hooks/useTenant";
 import { resolveContractNextStep } from "@/lib/contract-next-step";
 import { SignaturePad } from "@/components/letters/SignaturePad";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/useAuth";
+import { resolveTestSend } from "@/lib/contract-test-mode";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -109,6 +112,10 @@ export function ContractSigningActions({
   const [recipientPurpose, setRecipientPurpose] = useState<"signing" | "signed_copy">("signing");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [savingRecipient, setSavingRecipient] = useState(false);
+  // Rehearsal send: delivers to my own inbox and never touches the staff record.
+  const [testMode, setTestMode] = useState(false);
+  const { user } = useAuth();
+  const myEmail = user?.email || "";
 
   useEffect(() => {
     setEmailOnFile(employeeEmail || "");
@@ -348,19 +355,25 @@ export function ContractSigningActions({
   };
 
   /** Manually email the completed (both-signed) contract to the employee. */
-  const handleSendSignedContract = async (toEmail?: string) => {
+  const handleSendSignedContract = async (toEmail?: string, isTest = false) => {
     setSendingSigned(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-signed-contract", {
-        body: { document_id: documentId, recipient_email: toEmail || emailOnFile || undefined },
+        body: {
+          document_id: documentId,
+          recipient_email: toEmail || emailOnFile || undefined,
+          test_send: isTest,
+        },
       });
 
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      setSignedContractSent(true);
+      if (!isTest) setSignedContractSent(true);
       toast({
-        title: "Signed contract sent",
-        description: `The completed contract was emailed to ${(data as any)?.recipient || employeeEmail}.`,
+        title: isTest ? "Test copy sent to you" : "Signed contract sent",
+        description: isTest
+          ? `The completed contract was emailed to ${(data as any)?.recipient || toEmail}. ${employeeName} received nothing.`
+          : `The completed contract was emailed to ${(data as any)?.recipient || employeeEmail}.`,
       });
     } catch (err: any) {
       toast({
@@ -438,7 +451,7 @@ export function ContractSigningActions({
   };
 
   /** Email the signing link. Generates a fresh link when needed (also used for resends). */
-  const sendSigningEmail = async (toEmail: string) => {
+  const sendSigningEmail = async (toEmail: string, isTest = false) => {
     setSendingEmail(true);
     try {
       let link = generatedLink;
@@ -462,11 +475,17 @@ export function ContractSigningActions({
         signingTokenId: tokenId!,
         employeeId,
         employeeDocumentId: documentId,
+        testMode: isTest,
       });
 
       if (result.success) {
-        setEmailSent(true);
-        toast({ title: "Contract sent", description: `Contract sent to ${toEmail}` });
+        if (!isTest) setEmailSent(true);
+        toast({
+          title: isTest ? "Test contract sent to you" : "Contract sent",
+          description: isTest
+            ? `Sent to ${toEmail}. ${employeeName}'s record was not changed.`
+            : `Contract sent to ${toEmail}`,
+        });
       } else {
         toast({
           title: "Email failed",
@@ -488,17 +507,33 @@ export function ContractSigningActions({
   /** Step 1 of any send: confirm (or add/correct) the recipient address. */
   const startSend = (purpose: "signing" | "signed_copy") => {
     setRecipientPurpose(purpose);
+    setTestMode(false);
     setRecipientEmail(emailOnFile || contractSentTo || "");
     setRecipientOpen(true);
+  };
+
+  /** Turning the test switch on/off swaps the address between me and the staff member. */
+  const toggleTestMode = (on: boolean) => {
+    setTestMode(on);
+    setRecipientEmail(on ? myEmail : emailOnFile || contractSentTo || "");
   };
 
   /** Step 2: optionally save a corrected address on the employee record, then send. */
   const confirmRecipientAndSend = async () => {
     const clean = recipientEmail.trim();
     if (!emailValid) return;
+    const resolution = resolveTestSend({
+      testMode,
+      staffEmail: emailOnFile,
+      adminEmail: myEmail,
+      overrideEmail: clean,
+    });
     setSavingRecipient(true);
     try {
-      if (clean.toLowerCase() !== (emailOnFile || "").toLowerCase()) {
+      if (
+        resolution.shouldSaveEmailToEmployee &&
+        clean.toLowerCase() !== (emailOnFile || "").toLowerCase()
+      ) {
         const { error } = await supabase.from("employees").update({ email: clean }).eq("id", employeeId);
         if (error) throw error;
         setEmailOnFile(clean);
@@ -508,9 +543,9 @@ export function ContractSigningActions({
       }
       setRecipientOpen(false);
       if (recipientPurpose === "signing") {
-        await sendSigningEmail(clean);
+        await sendSigningEmail(resolution.recipient, resolution.isTest);
       } else {
-        await handleSendSignedContract(clean);
+        await handleSendSignedContract(resolution.recipient, resolution.isTest);
       }
     } catch (err: any) {
       toast({
@@ -1189,6 +1224,20 @@ export function ContractSigningActions({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
+            {/* Rehearsal switch — nothing reaches the staff member */}
+            <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2">
+              <div>
+                <Label htmlFor="test-send" className="text-xs font-medium">
+                  Send to me instead (test run)
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {testMode
+                    ? `Goes to your inbox marked [TEST]. ${employeeName} receives nothing and their record is untouched.`
+                    : "Use this to try the whole process yourself first."}
+                </p>
+              </div>
+              <Switch id="test-send" checked={testMode} onCheckedChange={toggleTestMode} />
+            </div>
             <Label htmlFor="recipient-email" className="text-xs">
               Email address
             </Label>
@@ -1201,12 +1250,12 @@ export function ContractSigningActions({
               value={recipientEmail}
               onChange={(e) => setRecipientEmail(e.target.value)}
             />
-            {!emailOnFile && (
+            {!testMode && !emailOnFile && (
               <p className="text-[11px] text-muted-foreground">
                 No email is on file for {employeeName}. The address you enter here will be saved to their record.
               </p>
             )}
-            {emailOnFile && recipientEmail.trim().toLowerCase() !== emailOnFile.toLowerCase() && (
+            {!testMode && emailOnFile && recipientEmail.trim().toLowerCase() !== emailOnFile.toLowerCase() && (
               <p className="text-[11px] text-amber-700">
                 This will also update {employeeName}'s email on file (currently {emailOnFile}).
               </p>

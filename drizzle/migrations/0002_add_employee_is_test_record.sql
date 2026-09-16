@@ -1,0 +1,2 @@
+ALTER TABLE public.employees ADD COLUMN IF NOT EXISTS is_test_record BOOLEAN NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS employees_is_test_record_idx ON public.employees (tenant_id, is_test_record);

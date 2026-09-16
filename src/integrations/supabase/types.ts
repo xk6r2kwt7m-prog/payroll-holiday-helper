@@ -1958,6 +1958,7 @@ export type Database = {
           hourly_rate: number
           id: string
           import_aliases: string[] | null
+          is_test_record: boolean
           nationality: string | null
           ni_number: string | null
           notes: string | null
@@ -2000,6 +2001,7 @@ export type Database = {
           hourly_rate: number
           id?: string
           import_aliases?: string[] | null
+          is_test_record?: boolean
           nationality?: string | null
           ni_number?: string | null
           notes?: string | null
@@ -2042,6 +2044,7 @@ export type Database = {
           hourly_rate?: number
           id?: string
           import_aliases?: string[] | null
+          is_test_record?: boolean
           nationality?: string | null
           ni_number?: string | null
           notes?: string | null

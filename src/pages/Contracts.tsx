@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FilePlus, FileCheck, FileText, ClipboardCheck } from "lucide-react";
 import { ContractFormDialog } from "@/components/contracts/ContractFormDialog";
 import { SignedContractsList } from "@/components/contracts/SignedContractsList";
+import { TestStaffCard } from "@/components/contracts/TestStaffCard";
 import { useI18n } from "@/hooks/useI18n";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { useTenant } from "@/hooks/useTenant";
@@ -70,6 +71,8 @@ export default function Contracts() {
             {t("contracts.new_contract")}
           </Button>
         </div>
+
+        <TestStaffCard />
 
         <Tabs defaultValue={reviewCount ? "review" : "signed"} className="space-y-4">
           <TabsList>
