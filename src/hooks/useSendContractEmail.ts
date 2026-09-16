@@ -177,16 +177,18 @@ export function useSendContractEmail() {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error("[CONTRACT_EMAIL] Exception", msg);
-        // Persist failure
-        try {
-          await supabase
-            .from("employee_documents")
-            .update({
-              contract_send_status: "failed",
-              contract_send_error: msg,
-            } as any)
-            .eq("id", employeeDocumentId);
-        } catch { /* non-critical */ }
+        // Persist failure (real sends only)
+        if (!isTest) {
+          try {
+            await supabase
+              .from("employee_documents")
+              .update({
+                contract_send_status: "failed",
+                contract_send_error: msg,
+              } as any)
+              .eq("id", employeeDocumentId);
+          } catch { /* non-critical */ }
+        }
         return { success: false, error: msg };
       }
     },
