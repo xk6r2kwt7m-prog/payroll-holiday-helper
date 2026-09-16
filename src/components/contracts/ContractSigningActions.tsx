@@ -1016,6 +1016,7 @@ export function ContractSigningActions({
           </div>
         </DialogContent>
       </Dialog>
-    </>
-  );
+      </>
+    );
+  }
 }
