@@ -253,12 +253,13 @@ Deno.serve(async (req) => {
       tenant_id: invite.tenant_id,
       user_id: userId,
       action: "create",
-      table_name: "tenant_invitation_accepted",
+      table_name: wantsAccount ? "tenant_invitation_accepted" : "invitation_details_started",
       record_id: invite.id,
       new_data: {
         email: invite.email,
         role: invite.role,
         employee_id: employee?.id ?? null,
+        account_created: wantsAccount,
         existing_account: existingAccount,
         details_form_opened: !!detailsToken,
       },
@@ -266,11 +267,13 @@ Deno.serve(async (req) => {
 
     return json({
       success: true,
+      account_created: wantsAccount,
       existing_account: existingAccount,
       email: invite.email,
       company_name: companyName,
       details_token: detailsToken,
     });
+
   } catch (err) {
     console.error("accept-invitation failed:", (err as Error).message);
     return json({ error: "failed", message: "Something went wrong setting up your access. Ask your manager for help." }, 500);
