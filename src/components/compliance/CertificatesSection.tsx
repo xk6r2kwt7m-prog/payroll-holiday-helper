@@ -172,17 +172,31 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Add certificate or licence</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Branch</Label>
-              <Select value={form.branch} onValueChange={(v) => setForm(f => ({ ...f, branch: v }))}>
-                <SelectTrigger><SelectValue placeholder="Choose branch" /></SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.branch}>{b.display_name || b.branch}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
+              <div>
+                <Label className="text-sm">Belongs to a person, not one site</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Staff training like Level 2 Food Safety stays visible at every site.
+                </p>
+              </div>
+              <Switch
+                checked={form.applies_to_all_branches}
+                onCheckedChange={(v) => setForm(f => ({ ...f, applies_to_all_branches: v }))}
+              />
             </div>
+            {!form.applies_to_all_branches && (
+              <div className="space-y-1.5">
+                <Label>Site</Label>
+                <Select value={form.branch} onValueChange={(v) => setForm(f => ({ ...f, branch: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Choose site" /></SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.branch}>{b.display_name || b.branch}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>What is it?</Label>
               <Input
