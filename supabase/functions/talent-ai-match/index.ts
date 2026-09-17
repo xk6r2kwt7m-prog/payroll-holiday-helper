@@ -19,6 +19,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    const guard = await guardRequest(req, { tenantId: tenant_id, cors: corsHeaders });
+    if (!guard.ok) return guard.response;
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
