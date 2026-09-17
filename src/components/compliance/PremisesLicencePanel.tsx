@@ -647,11 +647,6 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
         auditLine={auditLineFor(signedRequestFor("dps_authorisation"))}
       />
 
-            );
-          })}
-        </div>
-      </div>
-
       {/* Conditions */}
       <div className="rounded-xl border border-border bg-card">
         <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
