@@ -40,7 +40,7 @@ export function AccountLinkagePanel({ employee, isAdmin, onEditEmployee }: Accou
       .insert({
         tenant_id: employee.tenant_id,
         email: employee.email.toLowerCase(),
-        role: "staff" as any,
+        role: "employee" as any,
         invited_by: currentUser?.id,
       })
       .select("token")

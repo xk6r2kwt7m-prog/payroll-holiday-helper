@@ -108,7 +108,7 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
         .insert({
           tenant_id: tenantId,
           email: email.trim().toLowerCase(),
-          role: "staff" as any,
+          role: "employee" as any,
           invited_by: (await supabase.auth.getUser()).data.user?.id,
         })
         .select("token")
