@@ -162,23 +162,32 @@ Deno.serve(async (req) => {
       const bank = answers.bank ?? {};
       const rtw = answers.rtw ?? {};
 
-      const empUpdates: Record<string, unknown> = {};
+      // Everything the staff member supplied, keyed by the employee column it
+      // belongs to. The allocation rules then decide what can be written now
+      // and what needs the admin to confirm (never a silent overwrite).
+      const candidates: Record<string, unknown> = {};
       if (sections.includes("personal")) {
-        if (str(personal.date_of_birth, 10)) empUpdates.date_of_birth = str(personal.date_of_birth, 10);
-        if (str(personal.preferred_name, 80)) empUpdates.preferred_name = str(personal.preferred_name, 80);
-        if (str(personal.ni_number, 20)) empUpdates.ni_number = str(personal.ni_number, 20);
+        candidates.forename = str(personal.forename, 80);
+        candidates.surname = str(personal.surname, 80);
+        candidates.preferred_name = str(personal.preferred_name, 80);
+        candidates.email = str(personal.email, 160);
+        candidates.date_of_birth = str(personal.date_of_birth, 10);
+        candidates.ni_number = str(personal.ni_number, 20);
       }
       if (sections.includes("bank")) {
-        if (str(bank.account_number, 20)) empUpdates.bank_account_no = str(bank.account_number, 20);
-        if (str(bank.sort_code, 12)) empUpdates.sort_code = str(bank.sort_code, 12);
+        candidates.bank_account_no = str(bank.account_number, 20);
+        candidates.sort_code = str(bank.sort_code, 12);
       }
       if (sections.includes("rtw")) {
-        if (str(rtw.nationality, 80)) empUpdates.nationality = str(rtw.nationality, 80);
-        if (str(rtw.ni_number, 20)) empUpdates.ni_number = str(rtw.ni_number, 20);
-        if (str(rtw.passport_no, 40)) empUpdates.passport_no = str(rtw.passport_no, 40);
-        if (str(rtw.sharing_code, 40)) empUpdates.sharing_code = str(rtw.sharing_code, 40);
-        if (str(rtw.settlement_status, 60)) empUpdates.settlement_status = str(rtw.settlement_status, 60);
+        candidates.nationality = str(rtw.nationality, 80);
+        candidates.passport_no = str(rtw.passport_no, 40);
+        candidates.sharing_code = str(rtw.sharing_code, 40);
+        candidates.settlement_status = str(rtw.settlement_status, 60);
+        if (!candidates.ni_number) candidates.ni_number = str(rtw.ni_number, 20);
       }
+
+      const allocation = allocateStaffDetails(candidates, emp ?? {});
+      const empUpdates: Record<string, unknown> = { ...allocation.updates };
       if (Object.keys(empUpdates).length > 0) {
         const { error } = await admin.from("employees").update(empUpdates).eq("id", request.employee_id);
         if (error) throw error;
