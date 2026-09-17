@@ -215,6 +215,14 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
                 <Input value={form.holder_name} onChange={(e) => setForm(f => ({ ...f, holder_name: e.target.value }))} />
               </div>
               <div className="space-y-1.5">
+                <Label>Holder's job or role</Label>
+                <Input
+                  placeholder="e.g. Kitchen (BOH)"
+                  value={form.holder_job_title}
+                  onChange={(e) => setForm(f => ({ ...f, holder_job_title: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
                 <Label>Issue date</Label>
                 <Input type="date" value={form.issue_date} onChange={(e) => setForm(f => ({ ...f, issue_date: e.target.value }))} />
               </div>
