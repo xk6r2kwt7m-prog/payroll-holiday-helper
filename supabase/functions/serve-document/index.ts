@@ -26,7 +26,9 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const documentId = url.searchParams.get("id");
     const signingToken = url.searchParams.get("token");
-    const variant = url.searchParams.get("variant") || "original"; // "original" | "final"
+    // Anything other than an explicit "final" means the original document, so a
+    // caller that forgets the parameter can never be told the signed copy is missing.
+    const variant = url.searchParams.get("variant") === "final" ? "final" : "original";
 
     if (!documentId && !signingToken) {
       return new Response(JSON.stringify({ error: "Missing document ID or signing token" }), {
@@ -86,7 +88,7 @@ Deno.serve(async (req) => {
       }
 
       if (variant === "final" && !doc.final_signed_pdf_url) {
-        return new Response(JSON.stringify({ error: "The completed signed contract file is not ready yet." }), {
+        return new Response(JSON.stringify({ error: "The completed signed contract file is not ready yet.", error_code: "final_not_ready", fallback: "original" }), {
           status: 409,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -151,7 +153,7 @@ Deno.serve(async (req) => {
       }
 
       if (variant === "final" && !doc.final_signed_pdf_url) {
-        return new Response(JSON.stringify({ error: "The completed signed contract file is not ready yet." }), {
+        return new Response(JSON.stringify({ error: "The completed signed contract file is not ready yet.", error_code: "final_not_ready", fallback: "original" }), {
           status: 409,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

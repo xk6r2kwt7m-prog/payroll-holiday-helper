@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SignaturePad } from "@/components/letters/SignaturePad";
 import { FileText, CheckCircle2, AlertTriangle, Loader2, Download, ShieldCheck, Clock, XCircle, Building2, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { PdfReader, fetchPdf } from "@/components/documents/PdfReader";
 
 interface ContractInfo {
   signer_type: string;
@@ -66,6 +67,14 @@ export default function SignContract() {
   const [needsHelp, setNeedsHelp] = useState(false);
 
   const detailsRequired = contractInfo?.details_required === true;
+
+  // Reads the original contract for the on-screen reader (never the signed copy).
+  const loadContractPdf = useCallback(async () => {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    return await fetchPdf(
+      `https://${projectId}.supabase.co/functions/v1/serve-document?token=${token}&variant=original`,
+    );
+  }, [token]);
 
   useEffect(() => {
     if (contractInfo?.prefill) {
@@ -509,22 +518,7 @@ export default function SignContract() {
 
           {contractInfo.document_url ? (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <iframe
-                src={contractInfo.document_url}
-                title="Your contract"
-                className="w-full h-[60vh] bg-muted"
-              />
-              <div className="border-t border-border p-3">
-                <a
-                  href={contractInfo.document_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-primary hover:underline"
-                >
-                  <Download className="h-4 w-4" />
-                  Open or download the full contract
-                </a>
-              </div>
+              <PdfReader load={loadContractPdf} fileName={contractInfo.document_name || "contract.pdf"} />
             </div>
           ) : (
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
