@@ -19,6 +19,7 @@ import type { Employee } from "@/hooks/useEmployees";
 import { cn } from "@/lib/utils";
 import { checkPayRisk, type PayRiskResult } from "@/lib/age-band";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
+import { SubmittedDetailsReview } from "./SubmittedDetailsReview";
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
@@ -212,6 +213,9 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
         </SheetHeader>
 
         <div className="space-y-6 pb-6">
+          {/* Details the staff member sent that differ from our record */}
+          {isAdmin && <SubmittedDetailsReview employeeId={employee.id} />}
+
           {/* Personal Information */}
           <Section title="Personal Information" icon={User}>
             <div className="space-y-1">
