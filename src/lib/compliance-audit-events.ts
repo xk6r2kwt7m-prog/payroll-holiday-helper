@@ -35,7 +35,14 @@ export type ComplianceAuditEvent =
   | "signature_requested"
   | "signature_recorded"
   | "signature_declined"
-  | "training_reissued";
+  | "training_reissued"
+  | "reader_version_built"
+  | "reader_question_added"
+  | "reader_question_edited"
+  | "reader_question_approved"
+  | "reader_question_rejected"
+  | "reader_enabled"
+  | "reader_disabled";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   document_created: "Document created",
@@ -68,6 +75,13 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   signature_recorded: "Signature recorded",
   signature_declined: "Reader not ready to sign yet",
   training_reissued: "Training re-issued",
+  reader_version_built: "On-screen reading version prepared",
+  reader_question_added: "Question added",
+  reader_question_edited: "Question edited",
+  reader_question_approved: "Question approved for staff",
+  reader_question_rejected: "Question rejected",
+  reader_enabled: "On-screen version turned on for staff",
+  reader_disabled: "On-screen version turned off for staff",
 };
 
 /** Audit actions supported by the shared audit log. */
