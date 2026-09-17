@@ -175,6 +175,27 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
         <Label htmlFor="sc-eligible" className="text-xs">Service charge eligible</Label>
       </div>
 
+      {duplicateWarning && (
+        <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+          <p className="text-xs text-warning font-medium">{duplicateWarning}</p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-xs h-7"
+              onClick={() => { setDuplicateWarning(null); setDuplicateOverridden(true); }}
+            >
+              Continue anyway
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="text-xs h-7" onClick={() => setDuplicateWarning(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+
       <div className="flex justify-end gap-2 pt-1">
         <Button variant="outline" size="sm" onClick={onCancel} className="text-xs h-7">
           Cancel
