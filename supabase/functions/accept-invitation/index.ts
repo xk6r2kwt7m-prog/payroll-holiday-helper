@@ -51,6 +51,27 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     let body: any = {};
     let token = url.searchParams.get("token") || "";
+
+    // "Is there an invitation waiting for me?" — the caller proves ownership of the
+    // email with their own session, so no invitation can be discovered by guessing.
+    if (url.searchParams.get("mine") === "1") {
+      const jwt = (req.headers.get("Authorization") || "").replace("Bearer ", "");
+      const { data: userData } = jwt ? await admin.auth.getUser(jwt) : { data: null as any };
+      const email = userData?.user?.email;
+      if (!email) return json({ pending: false });
+      const { data: mine } = await admin
+        .from("tenant_invitations")
+        .select("token, expires_at, tenants(company_name)")
+        .ilike("email", email)
+        .is("accepted_at", null)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!mine) return json({ pending: false });
+      if (mine.expires_at && new Date(mine.expires_at).getTime() < Date.now()) return json({ pending: false });
+      return json({ pending: true, token: mine.token, company_name: (mine as any).tenants?.company_name ?? null });
+    }
     if (req.method === "POST") {
       body = await req.json().catch(() => ({}));
       token = body?.token || token;
