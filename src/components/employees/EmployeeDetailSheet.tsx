@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { checkPayRisk, type PayRiskResult } from "@/lib/age-band";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { SubmittedDetailsReview } from "./SubmittedDetailsReview";
+import { EmployeePrivacyLog } from "./EmployeePrivacyLog";
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
@@ -384,7 +385,15 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             <p>Created: {new Date(employee.created_at).toLocaleString()}</p>
             <p>Last updated: {new Date(employee.updated_at).toLocaleString()}</p>
           </div>
+
+          {isAdmin && (
+            <EmployeePrivacyLog
+              employeeId={employee.id}
+              employeeName={`${employee.forename} ${employee.surname}`}
+            />
+          )}
         </div>
+
 
         {/* Actions */}
         {isAdmin && (

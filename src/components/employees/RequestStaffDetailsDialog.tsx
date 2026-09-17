@@ -7,7 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Send, MailCheck, Clock, CheckCircle2 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
-import { useInfoRequests, useSendInfoRequest, type InfoSection } from "@/hooks/useInfoRequests";
+import {
+  useInfoRequests,
+  useSendInfoRequest,
+  useRevokeInfoRequest,
+  type InfoSection,
+} from "@/hooks/useInfoRequests";
 
 const SECTIONS: { key: InfoSection; label: string; hint: string }[] = [
   { key: "personal", label: "Personal details", hint: "Full name, date of birth, phone, home address, National Insurance number" },
@@ -26,10 +31,11 @@ interface Props {
 export function RequestStaffDetailsDialog({ employeeId, employeeName, employeeEmail, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState(employeeEmail ?? "");
-  const [expiryDays, setExpiryDays] = useState("14");
+  const [expiryDays, setExpiryDays] = useState("7");
   const [selected, setSelected] = useState<InfoSection[]>(["personal", "emergency", "bank", "rtw"]);
   const { data: history = [] } = useInfoRequests(employeeId);
   const send = useSendInfoRequest();
+  const revoke = useRevokeInfoRequest();
 
   const toggle = (key: InfoSection) =>
     setSelected((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s, key]));
@@ -40,7 +46,7 @@ export function RequestStaffDetailsDialog({ employeeId, employeeName, employeeEm
         employeeIds: [employeeId],
         sections: selected,
         recipientOverride: email.trim() || null,
-        expiryDays: Number(expiryDays) || 14,
+        expiryDays: Number(expiryDays) || 7,
       },
       { onSuccess: () => setOpen(false) },
     );
@@ -90,7 +96,10 @@ export function RequestStaffDetailsDialog({ employeeId, employeeName, employeeEm
 
           <div className="space-y-1">
             <Label>Link expires after (days)</Label>
-            <Input type="number" min={1} max={60} value={expiryDays} onChange={(e) => setExpiryDays(e.target.value)} />
+            <Input type="number" min={1} max={30} value={expiryDays} onChange={(e) => setExpiryDays(e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              The link also closes as soon as they finish, so it can't be reopened later.
+            </p>
           </div>
 
           {latest && (
@@ -113,6 +122,19 @@ export function RequestStaffDetailsDialog({ employeeId, employeeName, employeeEm
                   </Badge>
                 )}
               </p>
+              {!latest.submitted_at && latest.status !== "revoked" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-1 h-7 text-xs"
+                  disabled={revoke.isPending}
+                  onClick={() => revoke.mutate(latest.id)}
+                >
+                  Cancel this link
+                </Button>
+              )}
+              {latest.status === "revoked" && <p>This link was cancelled.</p>}
             </div>
           )}
 

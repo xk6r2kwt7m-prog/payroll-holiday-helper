@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { guardRequest } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,8 +15,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { tenant_id, dry_run = false } = await req.json();
-    if (!tenant_id) throw new Error("tenant_id required");
+    const { tenant_id: requestedTenant, dry_run = false } = await req.json();
+    if (!requestedTenant) throw new Error("tenant_id required");
+
+    const guard = await guardRequest(req, { tenantId: requestedTenant, adminOnly: true, cors: corsHeaders });
+    if (!guard.ok) return guard.response;
+    const tenant_id = guard.internal ? requestedTenant : guard.tenantId!;
 
     const entries: any[] = [];
     const skipped: any[] = [];
