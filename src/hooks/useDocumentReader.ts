@@ -106,7 +106,10 @@ export function useSaveReaderQuestion() {
         patch.approval_status = "rejected";
       }
 
-      const { error } = await supabase.from("document_reader_questions").update(patch).eq("id", id);
+      const { error } = await supabase
+        .from("document_reader_questions")
+        .update(patch as any)
+        .eq("id", id);
       if (error) throw error;
 
       if (tenantId) {
