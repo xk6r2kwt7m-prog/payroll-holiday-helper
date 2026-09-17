@@ -458,7 +458,9 @@ export function useAlcoholAuthorisations(employeeId?: string) {
     queryFn: async () => {
       let q = supabase
         .from("alcohol_authorisations")
-        .select("*, employees!alcohol_authorisations_employee_id_fkey(forename, surname, job_title, status, archived_at)")
+        // Roles live in `department` — there is no job_title column on employees.
+        .select("*, employees!alcohol_authorisations_employee_id_fkey(forename, surname, department, status, archived_at, is_test_record)")
+
         .eq("tenant_id", tenantId!)
         .order("created_at", { ascending: false });
       if (employeeId) q = q.eq("employee_id", employeeId);
