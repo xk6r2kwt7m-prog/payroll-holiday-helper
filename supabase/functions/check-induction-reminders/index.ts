@@ -45,13 +45,23 @@ Deno.serve(async (req) => {
   const notes: string[] = [];
 
   try {
-    // ── 1. Chase unfinished inductions ──────────────────────────────────────
+    // Preferences first: automatic emails are opt-in per tenant. Nothing is
+    // sent unless the tenant has explicitly switched the feature on.
+    const { data: prefRows } = await supabase
+      .from("tenant_preferences")
+      .select("tenant_id, preferences")
+      .eq("category", "training_docs");
+    const prefsByTenant = new Map<string, any>();
+    for (const row of prefRows ?? []) prefsByTenant.set(row.tenant_id, row.preferences ?? {});
+
+    // ── 1. Chase unfinished inductions (only when the tenant opted in) ──────
     const { data: packs } = await supabase
       .from("induction_packs")
       .select("id, tenant_id, employee_id, token, sent_at, completed_at, reminder_sent_at, reminder_count, token_expires_at, is_test_send, recipient_email, branch, staff_role, employees(forename, surname, email, status, archived_at)")
       .is("completed_at", null);
 
     for (const pack of packs ?? []) {
+      if (prefsByTenant.get(pack.tenant_id)?.induction_reminders_enabled !== true) continue;
       if (!reminderDue(pack, now)) continue;
       const emp: any = (pack as any).employees;
       if (emp?.archived_at || emp?.status === "leaver") continue;
@@ -91,11 +101,6 @@ Deno.serve(async (req) => {
     }
 
     // ── 2. Optional automatic induction for new starters ────────────────────
-    const { data: prefRows } = await supabase
-      .from("tenant_preferences")
-      .select("tenant_id, preferences")
-      .eq("category", "training_docs");
-
     for (const row of prefRows ?? []) {
       const prefs: any = row.preferences ?? {};
       if (prefs.auto_assign_induction !== true) continue;
