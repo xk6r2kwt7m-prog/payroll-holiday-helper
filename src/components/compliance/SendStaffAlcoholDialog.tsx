@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Wine } from "lucide-react";
-import { useEmployees } from "@/hooks/useEmployees";
+import { useEmployeesWithBranches } from "@/hooks/useDpsRegister";
 import { useComplianceBranches } from "@/hooks/useComplianceBranches";
 import { usePremisesLicence, useSendLicenceSignature, useLicenceSignatureRequests } from "@/hooks/usePremisesLicences";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
@@ -39,7 +39,8 @@ export function SendStaffAlcoholDialog({
   const [showEveryone, setShowEveryone] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const { data: employees = [] } = useEmployees();
+  // Sites come from employee_branches — there is no branch column on employees.
+  const employees = useEmployeesWithBranches();
   const { data: licence } = usePremisesLicence(branch || undefined);
   const { data: requests = [] } = useLicenceSignatureRequests({ subjectType: "staff_alcohol" });
   const { data: authorisations = [] } = useAlcoholAuthorisations();
@@ -61,9 +62,10 @@ export function SendStaffAlcoholDialog({
   const staff = useMemo(
     () => (employees as any[])
       .filter((e) => !e.archived_at && e.status !== "leaver" && !e.is_test_record)
-      .filter((e) => !branch || e.branch === branch)
+      .filter((e) => !branch || (e.branches ?? []).some(
+        (b: string) => (b ?? "").trim().toLowerCase() === branch.trim().toLowerCase()))
       .filter((e) => !!e.email)
-      .filter((e) => showEveryone || isFrontOfHouse(e.job_title, e.department))
+      .filter((e) => showEveryone || isFrontOfHouse(null, e.department))
       .map((e) => ({
         ...e,
         state: alcoholAskState(e.id, requests as any[], authorisations as any[]),
@@ -186,7 +188,7 @@ export function SendStaffAlcoholDialog({
                       <span className="text-sm min-w-0">
                         <span className="block truncate">
                           {e.forename} {e.surname}
-                          {e.job_title ? <span className="text-muted-foreground"> · {e.job_title}</span> : null}
+                          {e.department ? <span className="text-muted-foreground"> · {e.department}</span> : null}
                         </span>
                         <span className="block text-xs text-muted-foreground truncate">
                           {alcoholAskStateLabel(e.state)}

@@ -28,7 +28,7 @@ export interface BoardRecord {
   employees?: {
     forename?: string | null;
     surname?: string | null;
-    job_title?: string | null;
+    department?: string | null;
     status?: string | null;
     archived_at?: string | null;
   } | null;
@@ -77,7 +77,7 @@ export function toEntry(r: BoardRecord): BoardEntry {
   return {
     id: r.id,
     name: fullName(r),
-    jobTitle: r.employees?.job_title ?? null,
+    jobTitle: r.employees?.department ?? null,
     branch: (r.branch || "").trim() || "No site recorded",
     effective,
     signedAt: r.employee_signed_at ?? null,

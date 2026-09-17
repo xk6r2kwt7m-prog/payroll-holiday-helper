@@ -1,0 +1,310 @@
+/**
+ * The site alcohol register that the DPS written authorisation prints.
+ *
+ * Pure functions — no database access, no side effects, nothing inferred.
+ *
+ * Rules that must not be broken:
+ *  - Nobody is authorised by this file. A person's status comes only from their
+ *    own signature and the licence holder's approval, resolved by
+ *    alcohol-authorisation-status.ts.
+ *  - A person with no record is "not authorised" — never assumed authorised.
+ *  - Test records never appear on a licensing document.
+ */
+
+import { isFrontOfHouse } from "@/lib/alcohol-automation";
+import {
+  latestAuthorisation,
+  resolveAuthorisationStatus,
+  type AuthorisationRecord,
+} from "@/lib/alcohol-authorisation-status";
+
+export type RegisterStatus =
+  | "authorised"
+  | "awaiting_approval"
+  | "awaiting_signature"
+  | "not_authorised";
+
+export interface RegisterEmployee {
+  id: string;
+  forename?: string | null;
+  surname?: string | null;
+  department?: string | null;
+  job_title?: string | null;
+  status?: string | null;
+  archived_at?: string | null;
+  is_test_record?: boolean | null;
+  /** Sites the person is assigned to (from employee_branches). */
+  branches?: string[] | null;
+}
+
+export interface RegisterAuthorisation extends AuthorisationRecord {
+  employee_signature?: string | null;
+  authoriser_name?: string | null;
+  authoriser_licence_number?: string | null;
+  revoked_reason?: string | null;
+  is_test_record?: boolean | null;
+}
+
+export interface RegisterRow {
+  employee_id: string;
+  name: string;
+  role: string | null;
+  status: RegisterStatus;
+  status_label: string;
+  signature: string | null;
+  signed_at: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  approver_licence: string | null;
+  revoked_reason: string | null;
+  /** Why the person is on the register. */
+  listed_because: "front_of_house" | "authorisation_on_record";
+  /** True when the person has left or been archived but a record still exists. */
+  no_longer_employed: boolean;
+}
+
+export interface RegisterSummary {
+  listed: number;
+  authorised: number;
+  awaitingSignature: number;
+  awaitingApproval: number;
+  notAuthorised: number;
+  nobodyAuthorised: boolean;
+}
+
+const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
+
+export const REGISTER_STATUS_LABELS: Record<RegisterStatus, string> = {
+  authorised: "Authorised",
+  awaiting_approval: "Signed — awaiting licence holder",
+  awaiting_signature: "Awaiting signature",
+  not_authorised: "Not authorised",
+};
+
+function personName(e: RegisterEmployee): string {
+  const name = `${e.forename ?? ""} ${e.surname ?? ""}`.trim();
+  return name || "Staff member";
+}
+
+function worksAtSite(e: RegisterEmployee, branch: string): boolean {
+  const wanted = norm(branch);
+  if (!wanted) return true;
+  return (e.branches ?? []).some((b) => norm(b) === wanted);
+}
+
+function stillEmployed(e: RegisterEmployee): boolean {
+  return !e.archived_at && norm(e.status) !== "leaver";
+}
+
+/** Status of one person, from their own records only. */
+export function registerStatusFor(
+  employee: RegisterEmployee,
+  records: RegisterAuthorisation[],
+): { status: RegisterStatus; record: RegisterAuthorisation | null } {
+  const record = latestAuthorisation(records) as RegisterAuthorisation | null;
+  if (!record) return { status: "not_authorised", record: null };
+  const effective = resolveAuthorisationStatus(record, {
+    status: employee.status ?? null,
+    archived_at: employee.archived_at ?? null,
+  });
+  if (effective === "active") return { status: "authorised", record };
+  if (effective === "pending") {
+    return {
+      status: record.employee_signed_at ? "awaiting_approval" : "awaiting_signature",
+      record,
+    };
+  }
+  return { status: "not_authorised", record };
+}
+
+const ORDER: RegisterStatus[] = [
+  "authorised",
+  "awaiting_approval",
+  "awaiting_signature",
+  "not_authorised",
+];
+
+/**
+ * Builds the register for one site: everyone front of house there, plus anyone
+ * else at that site who already holds an authorisation record.
+ */
+export function buildDpsRegister(opts: {
+  branch: string;
+  employees: RegisterEmployee[];
+  authorisations: RegisterAuthorisation[];
+}): RegisterRow[] {
+  const { branch, employees, authorisations } = opts;
+  const wanted = norm(branch);
+
+  const siteAuths = authorisations.filter(
+    (a) => !a.is_test_record && (!wanted || norm(a.branch) === wanted),
+  );
+  const byEmployee = new Map<string, RegisterAuthorisation[]>();
+  for (const a of siteAuths) {
+    const list = byEmployee.get(a.employee_id) ?? [];
+    list.push(a);
+    byEmployee.set(a.employee_id, list);
+  }
+
+  const rows: RegisterRow[] = [];
+
+  for (const e of employees) {
+    if (e.is_test_record) continue;
+    const records = byEmployee.get(e.id) ?? [];
+    const hasRecord = records.length > 0;
+    const foh =
+      worksAtSite(e, branch) &&
+      stillEmployed(e) &&
+      isFrontOfHouse(e.job_title ?? null, e.department ?? null);
+
+    if (!foh && !hasRecord) continue;
+    // Someone who has left only appears while a record still exists, so the
+    // document shows the officer that their authorisation has ended.
+    if (!stillEmployed(e) && !hasRecord) continue;
+
+    const { status, record } = registerStatusFor(e, records);
+    rows.push({
+      employee_id: e.id,
+      name: personName(e),
+      role: (e.job_title || e.department || "").trim() || null,
+      status,
+      status_label: REGISTER_STATUS_LABELS[status],
+      signature: record?.employee_signature ?? null,
+      signed_at: record?.employee_signed_at ?? null,
+      approved_at: record?.authoriser_confirmed_at ?? record?.authorised_at ?? null,
+      approved_by: record?.authoriser_name ?? null,
+      approver_licence: record?.authoriser_licence_number ?? null,
+      revoked_reason: record?.revoked_reason ?? null,
+      listed_because: foh ? "front_of_house" : "authorisation_on_record",
+      no_longer_employed: !stillEmployed(e),
+    });
+  }
+
+  return rows.sort((a, b) => {
+    const r = ORDER.indexOf(a.status) - ORDER.indexOf(b.status);
+    if (r !== 0) return r;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+export function registerSummary(rows: RegisterRow[]): RegisterSummary {
+  const count = (s: RegisterStatus) => rows.filter((r) => r.status === s).length;
+  const authorised = count("authorised");
+  return {
+    listed: rows.length,
+    authorised,
+    awaitingSignature: count("awaiting_signature"),
+    awaitingApproval: count("awaiting_approval"),
+    notAuthorised: count("not_authorised"),
+    nobodyAuthorised: authorised === 0,
+  };
+}
+
+export function registerSummaryLine(rows: RegisterRow[], branch: string): string {
+  const s = registerSummary(rows);
+  if (s.listed === 0) {
+    return `No front-of-house staff are recorded for ${branch}. Nobody may sell alcohol here.`;
+  }
+  if (s.nobodyAuthorised) {
+    return `Nobody at ${branch} is currently authorised to sell alcohol. Alcohol must not be sold until the licence holder has authorised at least one person.`;
+  }
+  return `${s.authorised} of ${s.listed} people listed are currently authorised to sell alcohol at ${branch}.`;
+}
+
+function gbDate(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-GB");
+}
+
+/** Register as CSV — suitable to hand to a licensing officer. */
+export function registerCsv(rows: RegisterRow[], branch: string): string {
+  const out: string[][] = [[
+    "Site", "Name", "Role", "Status", "Signed", "Authorised", "Authorised by",
+    "Personal licence number", "Listed because", "Still employed",
+  ]];
+  for (const r of rows) {
+    out.push([
+      branch,
+      r.name,
+      r.role ?? "",
+      r.status_label,
+      gbDate(r.signed_at),
+      gbDate(r.approved_at),
+      r.approved_by ?? "",
+      r.approver_licence ?? "",
+      r.listed_because === "front_of_house" ? "Front of house" : "Authorisation on record",
+      r.no_longer_employed ? "No" : "Yes",
+    ]);
+  }
+  return out
+    .map((line) => line.map((c) => (/[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(","))
+    .join("\n");
+}
+
+/** Rows in the shape the licensing PDF prints. */
+export function registerPdfRows(rows: RegisterRow[]) {
+  return rows.map((r) => ({
+    name: r.name + (r.no_longer_employed ? " (no longer employed)" : ""),
+    job_title: r.role,
+    status_label: r.status_label,
+    signature: r.status === "authorised" || r.status === "awaiting_approval" ? r.signature : null,
+    signed_at: r.signed_at,
+  }));
+}
+
+/* ─────────────── Issued copies ─────────────── */
+
+export type DeliveryMethod = "download" | "email_attachment" | "email_link" | "email_both";
+
+export const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
+  download: "Downloaded",
+  email_attachment: "Emailed — PDF attached",
+  email_link: "Emailed — secure link",
+  email_both: "Emailed — PDF and secure link",
+};
+
+export const LINK_EXPIRY_DAYS_DEFAULT = 14;
+
+export function clampLinkExpiryDays(days: unknown): number {
+  const n = Number(days);
+  if (!Number.isFinite(n)) return LINK_EXPIRY_DAYS_DEFAULT;
+  return Math.min(90, Math.max(1, Math.round(n)));
+}
+
+export function deliveryMethodFor(attachPdf: boolean, includeLink: boolean): DeliveryMethod {
+  if (attachPdf && includeLink) return "email_both";
+  if (includeLink) return "email_link";
+  return "email_attachment";
+}
+
+export interface IssuedCopy {
+  access_token?: string | null;
+  token_expires_at?: string | null;
+  revoked_at?: string | null;
+}
+
+export type LinkState = "no_link" | "live" | "expired" | "revoked";
+
+export function linkState(issue: IssuedCopy, now: Date = new Date()): LinkState {
+  if (!issue.access_token) return "no_link";
+  if (issue.revoked_at) return "revoked";
+  if (issue.token_expires_at && new Date(issue.token_expires_at).getTime() < now.getTime()) {
+    return "expired";
+  }
+  return "live";
+}
+
+export function linkStateLabel(state: LinkState): string {
+  switch (state) {
+    case "live": return "Link live";
+    case "expired": return "Link expired";
+    case "revoked": return "Link revoked";
+    default: return "No link";
+  }
+}
+
+/** A link only opens while it is live. */
+export function canOpenLink(issue: IssuedCopy, now: Date = new Date()): boolean {
+  return linkState(issue, now) === "live";
+}

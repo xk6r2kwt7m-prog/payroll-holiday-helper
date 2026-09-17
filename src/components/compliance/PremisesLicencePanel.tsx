@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  AlertTriangle, Download, FileSignature, Pencil, Plus, ScrollText, Send, Trash2,
+  AlertTriangle, Download, FileSignature, Mail, Pencil, Plus, ScrollText, Send, Trash2, Users, XCircle,
 } from "lucide-react";
 import {
   awaitingConfirmation, buildDpsAuthorisation, buildSection57,
@@ -28,6 +28,15 @@ import {
   usePremisesLicence, useSaveLicenceCondition, useSavePremisesLicence, useSendLicenceSignature,
 } from "@/hooks/usePremisesLicences";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
+import {
+  useDpsRegister, useLicenceDocumentIssues, useRecordLicenceDocumentIssue,
+  useRevokeLicenceDocumentLink,
+} from "@/hooks/useDpsRegister";
+import {
+  registerPdfRows, registerCsv, DELIVERY_LABELS, linkState, linkStateLabel,
+  type DeliveryMethod,
+} from "@/lib/dps-register";
+import { EmailLicensingDocumentDialog } from "@/components/compliance/EmailLicensingDocumentDialog";
 import { cn } from "@/lib/utils";
 
 const toneClass: Record<string, string> = {
@@ -57,6 +66,9 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
   const saveCondition = useSaveLicenceCondition();
   const sendSignature = useSendLicenceSignature();
   const cancelRequest = useCancelLicenceSignature();
+  const recordIssue = useRecordLicenceDocumentIssue();
+  const { data: issues = [] } = useLicenceDocumentIssues(branch);
+  const revokeLink = useRevokeLicenceDocumentLink();
 
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState<Record<string, any>>({});
@@ -68,6 +80,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
   const [partA, setPartA] = useState("the office folder of the restaurant");
   const [nominated, setNominated] = useState<NominatedPerson[]>([{ name: "", job_title: "" }]);
   const [testSend, setTestSend] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const site: LicenceSite = useMemo(() => ({
@@ -83,16 +96,13 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
 
   const missing = useMemo(() => awaitingConfirmation(site), [site]);
 
-  const signedStaff = useMemo(
-    () => (authorisations as any[])
-      .filter((a) => a.branch === branch && a.employee_signed_at)
-      .map((a) => ({
-        name: a.employees ? `${a.employees.forename} ${a.employees.surname}` : "Staff member",
-        signature: a.employee_signature,
-        signed_at: a.employee_signed_at,
-      })),
-    [authorisations, branch]
-  );
+  // The register: everyone front of house at this site, plus anyone here who
+  // already holds an authorisation record. Status comes from their own records.
+  const { rows: registerRows, summary: registerTotals, summaryLine } = useDpsRegister(branch);
+  const warningLine = registerTotals.nobodyAuthorised
+    ? `Nobody at ${branch} is currently authorised to sell alcohol. Alcohol must not be sold until the licence holder has authorised at least one person.`
+    : null;
+
 
   const openEdit = () => {
     setForm({
@@ -202,11 +212,8 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
     }
   };
 
-  const downloadPdf = async (subject: LicenceSubjectType) => {
-    const signedRequest = (requests as any[]).find(
-      (r) => r.subject_type === subject && r.signed_at
-    );
-    const doc = subject === "dps_authorisation"
+  const buildDoc = (subject: LicenceSubjectType, signedRequest: any) =>
+    subject === "dps_authorisation"
       ? buildDpsAuthorisation(site, licence?.issue_date ?? null)
       : subject === "section_57"
         ? buildSection57(
@@ -216,15 +223,28 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
             partA
           )
         : buildStaffAlcoholAuthorisation(site, "", null);
+
+  const auditLineFor = (signedRequest: any) =>
+    signedRequest
+      ? `Signed electronically by ${signedRequest.signer_name} on ${new Date(signedRequest.signed_at).toLocaleString("en-GB")}. Recorded in UglyOps HR.`
+      : "Not yet signed — this is a draft copy.";
+
+  const signedRequestFor = (subject: LicenceSubjectType) =>
+    (requests as any[]).find((r) => r.subject_type === subject && r.signed_at);
+
+  const downloadPdf = async (subject: LicenceSubjectType) => {
+    const signedRequest = signedRequestFor(subject);
+    const doc = buildDoc(subject, signedRequest);
+    const isDps = subject === "dps_authorisation";
     const blob = await pdf(
       <LicensingDocumentPDF
         doc={doc}
-        staff={subject === "dps_authorisation" ? signedStaff : []}
+        staff={isDps ? registerPdfRows(registerRows) : []}
+        summaryLine={isDps ? summaryLine : null}
+        warningLine={isDps ? warningLine : null}
         authoriserSignature={signedRequest?.signature ?? null}
         authoriserSignedAt={signedRequest?.signed_at ?? null}
-        auditLine={signedRequest
-          ? `Signed electronically by ${signedRequest.signer_name} on ${new Date(signedRequest.signed_at).toLocaleString("en-GB")}. Recorded in UglyOps HR.`
-          : "Not yet signed — this is a draft copy."}
+        auditLine={auditLineFor(signedRequest)}
       />
     ).toBlob();
     const url = URL.createObjectURL(blob);
@@ -233,7 +253,19 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
     a.download = `${branch}-${subject}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+    if (isDps) {
+      // Recorded so the audit trail shows which copy left the building.
+      recordIssue.mutate({
+        branch,
+        licence_id: licence?.id ?? null,
+        subject_type: subject,
+        snapshot: { document: doc, rows: registerRows, summary_line: summaryLine },
+        authorised_count: registerTotals.authorised,
+        listed_count: registerTotals.listed,
+      });
+    }
   };
+
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground py-6 text-center">Loading...</p>;
@@ -473,6 +505,29 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                     </Badge>
                   )}
                 </div>
+                {subject === "dps_authorisation" && (
+                  <div className="rounded-md border border-border bg-muted/30 p-2.5 space-y-1.5">
+                    <p className="text-xs flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-medium">{summaryLine}</span>
+                    </p>
+                    {warningLine && <p className="text-xs text-destructive">{warningLine}</p>}
+                    {registerRows.length > 0 && (
+                      <div className="space-y-0.5">
+                        {registerRows.slice(0, 6).map((r) => (
+                          <p key={r.employee_id} className="text-[11px] text-muted-foreground">
+                            {r.name}{r.role ? ` · ${r.role}` : ""} — {r.status_label}
+                          </p>
+                        ))}
+                        {registerRows.length > 6 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            and {registerRows.length - 6} more on the document
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {!ready && (
                   <p className="text-xs text-warning">
                     Confirm the licence details above before sending this for signature.
@@ -484,8 +539,30 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(subject)}>
                     <Download className="h-3.5 w-3.5 mr-1.5" />
-                    {subject === "dps_authorisation" ? "Signing sheet PDF" : "PDF"}
+                    {subject === "dps_authorisation" ? "Download document" : "PDF"}
                   </Button>
+                  {subject === "dps_authorisation" && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setEmailOpen(true)}>
+                        <Mail className="h-3.5 w-3.5 mr-1.5" /> Email a copy
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const csv = registerCsv(registerRows, branch);
+                          const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `${branch}-alcohol-register.csv`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        Register CSV
+                      </Button>
+                    </>
+                  )}
                   {latest && !latest.signed_at && (
                     <Button
                       size="sm"
@@ -509,6 +586,66 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
           })}
         </div>
       </div>
+
+      {/* Issued copies */}
+      {issues.length > 0 && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-4 py-2.5 bg-muted/40 border-b border-border">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              Copies issued
+            </p>
+          </div>
+          <div className="divide-y divide-border">
+            {(issues as any[]).map((issue) => {
+              const state = linkState(issue);
+              return (
+                <div key={issue.id} className="px-4 py-2.5 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm truncate">
+                      {issue.recipient_email || "Downloaded copy"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(issue.created_at).toLocaleString("en-GB")} ·{" "}
+                      {DELIVERY_LABELS[issue.delivery_method as DeliveryMethod] ?? issue.delivery_method} ·{" "}
+                      {issue.authorised_count} of {issue.listed_count} authorised
+                      {issue.open_count ? ` · opened ${issue.open_count}×` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Badge variant="outline" className="text-[10px]">{linkStateLabel(state)}</Badge>
+                    {state === "live" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          await revokeLink.mutateAsync(issue.id);
+                          toast.success("Link withdrawn");
+                        }}
+                      >
+                        <XCircle className="h-3.5 w-3.5 mr-1" /> Withdraw
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <EmailLicensingDocumentDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        branch={branch}
+        licenceId={licence?.id ?? null}
+        doc={buildDoc("dps_authorisation", signedRequestFor("dps_authorisation"))}
+        rows={registerRows}
+        summaryLine={summaryLine}
+        warningLine={warningLine}
+        authoriserSignature={signedRequestFor("dps_authorisation")?.signature ?? null}
+        authoriserSignedAt={signedRequestFor("dps_authorisation")?.signed_at ?? null}
+        auditLine={auditLineFor(signedRequestFor("dps_authorisation"))}
+      />
 
       {/* Conditions */}
       <div className="rounded-xl border border-border bg-card">

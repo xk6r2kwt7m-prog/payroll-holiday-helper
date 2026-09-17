@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
       if (employeeIds.length === 0) return json({ error: "Select at least one staff member" }, 400);
       const { data: staff, error: staffErr } = await admin
         .from("employees")
-        .select("id, forename, surname, email, job_title, status, archived_at")
+        .select("id, forename, surname, email, department, status, archived_at")
         .eq("tenant_id", tenantId)
         .in("id", employeeIds);
       if (staffErr) return json({ error: staffErr.message }, 500);
@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
           name,
           email,
           employeeId: s.id,
-          role: s.job_title ?? null,
+          role: s.department ?? null,
           document: buildStaffAlcoholAuthorisation(site, name, today),
         });
       }
