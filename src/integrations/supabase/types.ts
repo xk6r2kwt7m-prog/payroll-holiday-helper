@@ -9636,6 +9636,7 @@ export type Database = {
         Args: { hours_worked: number }
         Returns: number
       }
+      can_read_storage_object: { Args: { _name: string }; Returns: boolean }
       can_view_incident: {
         Args: { _confidentiality: string; _tenant_id: string }
         Returns: boolean
@@ -9756,8 +9757,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: { Args: never; Returns: boolean }
-      is_manager_or_above: { Args: never; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_supervisor_only: { Args: never; Returns: boolean }
       is_supervisor_or_above: { Args: never; Returns: boolean }
@@ -9789,6 +9788,7 @@ export type Database = {
         Args: { _tenant_id: string }
         Returns: undefined
       }
+      storage_path_tenant_allowed: { Args: { _name: string }; Returns: boolean }
       unlock_talent_contact: {
         Args: { _intro_message?: string; _talent_profile_id: string }
         Returns: Json
