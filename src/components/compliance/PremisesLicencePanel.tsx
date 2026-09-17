@@ -83,16 +83,13 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
 
   const missing = useMemo(() => awaitingConfirmation(site), [site]);
 
-  const signedStaff = useMemo(
-    () => (authorisations as any[])
-      .filter((a) => a.branch === branch && a.employee_signed_at)
-      .map((a) => ({
-        name: a.employees ? `${a.employees.forename} ${a.employees.surname}` : "Staff member",
-        signature: a.employee_signature,
-        signed_at: a.employee_signed_at,
-      })),
-    [authorisations, branch]
-  );
+  // The register: everyone front of house at this site, plus anyone here who
+  // already holds an authorisation record. Status comes from their own records.
+  const { rows: registerRows, summary: registerTotals, summaryLine } = useDpsRegister(branch);
+  const warningLine = registerTotals.nobodyAuthorised
+    ? `Nobody at ${branch} is currently authorised to sell alcohol. Alcohol must not be sold until the licence holder has authorised at least one person.`
+    : null;
+
 
   const openEdit = () => {
     setForm({
