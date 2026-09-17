@@ -101,11 +101,6 @@ Deno.serve(async (req) => {
     }
 
     // ── 2. Optional automatic induction for new starters ────────────────────
-    const { data: prefRows } = await supabase
-      .from("tenant_preferences")
-      .select("tenant_id, preferences")
-      .eq("category", "training_docs");
-
     for (const row of prefRows ?? []) {
       const prefs: any = row.preferences ?? {};
       if (prefs.auto_assign_induction !== true) continue;
