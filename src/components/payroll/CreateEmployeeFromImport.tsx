@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
+import { findPossibleDuplicates, duplicateWarningMessage } from "@/lib/duplicate-check";
 
 interface CreateEmployeeFromImportProps {
   csvName: string;
@@ -33,6 +34,8 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
   const [email, setEmail] = useState("");
   const [scEligible, setScEligible] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [duplicateOverridden, setDuplicateOverridden] = useState(false);
 
   const handleCreate = async () => {
     if (!forename.trim() || !surname.trim()) {
@@ -40,6 +43,25 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
       return;
     }
     if (!tenantId) return;
+
+    // Possible duplicate check — warns once, then allows a deliberate save.
+    if (!duplicateOverridden) {
+      const { data: existing } = await supabase
+        .from("employees")
+        .select("id, forename, surname, preferred_name, email, ni_number, user_id, status, archived_at")
+        .eq("tenant_id", tenantId);
+
+      const warning = duplicateWarningMessage(
+        findPossibleDuplicates(
+          { forename, surname, email },
+          (existing ?? []) as any,
+        ),
+      );
+      if (warning) {
+        setDuplicateWarning(warning);
+        return;
+      }
+    }
 
     setCreating(true);
     try {
@@ -152,6 +174,27 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
         <Switch checked={scEligible} onCheckedChange={setScEligible} id="sc-eligible" />
         <Label htmlFor="sc-eligible" className="text-xs">Service charge eligible</Label>
       </div>
+
+      {duplicateWarning && (
+        <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+          <p className="text-xs text-warning font-medium">{duplicateWarning}</p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="text-xs h-7"
+              onClick={() => { setDuplicateWarning(null); setDuplicateOverridden(true); }}
+            >
+              Continue anyway
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="text-xs h-7" onClick={() => setDuplicateWarning(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
 
       <div className="flex justify-end gap-2 pt-1">
         <Button variant="outline" size="sm" onClick={onCancel} className="text-xs h-7">

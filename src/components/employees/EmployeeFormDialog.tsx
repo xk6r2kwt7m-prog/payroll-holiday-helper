@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, useEmployees, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
+import { findPossibleDuplicates, duplicateWarningMessage } from "@/lib/duplicate-check";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
 import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
 import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRules } from "@/hooks/useCountryRules";
@@ -278,22 +279,28 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       return;
     }
 
-    // Duplicate email check for new employees
-    if (isNewEmployee && formData.email.trim() && !duplicateEmailOverridden) {
-      const normalised = formData.email.trim().toLowerCase();
+    // Possible duplicate check for new employees — warn only, never blocks.
+    // Looks at email, full name and National Insurance number, including
+    // archived / leaver records, which are the usual source of double entries.
+    if (isNewEmployee && !duplicateEmailOverridden) {
       const { data: existing } = await supabase
         .from("employees")
-        .select("id, forename, surname, user_id, status")
-        .eq("tenant_id", tenantId)
-        .ilike("email", normalised);
+        .select("id, forename, surname, preferred_name, email, ni_number, user_id, status, archived_at")
+        .eq("tenant_id", tenantId);
 
-      if (existing && existing.length > 0) {
-        const linked = existing.filter(e => e.user_id);
-        if (linked.length > 0) {
-          setDuplicateEmailWarning(`⚠️ This email is already linked to an auth account (${linked[0].forename} ${linked[0].surname}). Creating another record will cause linkage conflicts.`);
-          return;
-        }
-        setDuplicateEmailWarning(`An employee record already exists for this email (${existing[0].forename} ${existing[0].surname}, ${existing[0].status}). Continue anyway?`);
+      const matches = findPossibleDuplicates(
+        {
+          forename: formData.forename,
+          surname: formData.surname,
+          email: formData.email,
+          ni_number: formData.ni_number,
+        },
+        (existing ?? []) as any,
+      );
+
+      const warning = duplicateWarningMessage(matches);
+      if (warning) {
+        setDuplicateEmailWarning(warning);
         return;
       }
     }
