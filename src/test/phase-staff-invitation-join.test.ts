@@ -9,6 +9,8 @@ const page = read("src/pages/JoinTeam.tsx");
 const app = read("src/App.tsx");
 const inviteEmail = read("src/hooks/useInviteEmail.ts");
 const wizard = read("src/pages/CompanyOnboarding.tsx");
+const invitations = read("src/hooks/useInvitations.ts");
+const accountPanel = read("src/components/employees/AccountLinkagePanel.tsx");
 
 describe("invited staff join with a personal link", () => {
   it("exposes a public /join/:token route", () => {
@@ -31,6 +33,21 @@ describe("invited staff join with a personal link", () => {
     expect(fn).toContain('.from("tenant_invitations")');
     expect(fn).toContain('status: "accepted"');
     expect(fn).toContain("accepted_at: new Date().toISOString()");
+  });
+
+  it("rotates pending invitation links instead of emailing the stored token", () => {
+    expect(invitations).toContain('rpc("rotate_pending_invitation"');
+    expect(invitations).not.toContain("inviteToken: inviteToken ?? null");
+  });
+
+  it("offers password recovery without claiming the recipient chose a password", () => {
+    expect(fn).not.toContain("password you chose");
+    expect(page).toContain("Send password recovery");
+    expect(accountPanel).toContain("Send password recovery");
+  });
+
+  it("upserts membership to make repeated acceptance safe", () => {
+    expect(fn).toContain('{ onConflict: "tenant_id,user_id" }');
   });
 
   it("grants access only to the inviting company", () => {

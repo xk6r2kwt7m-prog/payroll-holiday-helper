@@ -21,6 +21,7 @@ export interface AccountLinkageResult {
   duplicateCount?: number;
   inviteCreatedAt?: string;
   inviteAcceptedAt?: string | null;
+  invitationId?: string;
 }
 
 /**
@@ -105,6 +106,7 @@ export function useAccountLinkage(employee: Employee | null | undefined) {
             hasRisk: true,
             riskDetails: risks.join(". "),
             duplicateCount: dupCount || 0,
+            invitationId: invite?.id,
           };
         }
 
@@ -113,6 +115,7 @@ export function useAccountLinkage(employee: Employee | null | undefined) {
           label: "Account linked",
           description: "Employee has a linked login account and can access the app.",
           hasRisk: false,
+          invitationId: invite?.id,
         };
       }
 
@@ -137,6 +140,7 @@ export function useAccountLinkage(employee: Employee | null | undefined) {
           hasRisk: false,
           inviteCreatedAt: invite.created_at,
           inviteAcceptedAt: invite.accepted_at,
+          invitationId: invite.id,
         };
       }
 
@@ -148,6 +152,7 @@ export function useAccountLinkage(employee: Employee | null | undefined) {
           description: "An invitation was sent but has not been accepted yet.",
           hasRisk: false,
           inviteCreatedAt: invite.created_at,
+          invitationId: invite.id,
         };
       }
 

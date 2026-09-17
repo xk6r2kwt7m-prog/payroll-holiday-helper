@@ -1,11 +1,13 @@
-import { AlertTriangle, Link2, Mail, Send, Unlink, Shield, ExternalLink } from "lucide-react";
+import { AlertTriangle, Mail, Send, Unlink, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AccountAccessBadge } from "./AccountAccessBadge";
 import { useAccountLinkage } from "@/hooks/useAccountLinkage";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
+import { useResendInvitation } from "@/hooks/useInvitations";
 import { useUpdateEmployee } from "@/hooks/useEmployees";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@/hooks/useEmployees";
@@ -20,6 +22,7 @@ interface AccountLinkagePanelProps {
 export function AccountLinkagePanel({ employee, isAdmin, onEditEmployee }: AccountLinkagePanelProps) {
   const { data: linkage, isLoading } = useAccountLinkage(employee);
   const { sendInviteEmail } = useInviteEmail();
+  const resendInvitation = useResendInvitation();
   const updateEmployee = useUpdateEmployee();
   const queryClient = useQueryClient();
 
@@ -31,26 +34,27 @@ export function AccountLinkagePanel({ employee, isAdmin, onEditEmployee }: Accou
       return;
     }
 
-    // Create/update invitation DB record
-    try {
-      const currentUser = (await supabase.auth.getUser()).data.user;
-      await supabase.from("tenant_invitations").upsert(
-        {
-          tenant_id: employee.tenant_id,
-          email: employee.email.toLowerCase(),
-          role: "staff" as any,
-          invited_by: currentUser?.id,
-        },
-        { onConflict: "tenant_id,email" }
-      );
-    } catch {
-      // Non-blocking — invitation record is supplementary
+    const currentUser = (await supabase.auth.getUser()).data.user;
+    const { data: invitation, error: invitationError } = await supabase
+      .from("tenant_invitations")
+      .insert({
+        tenant_id: employee.tenant_id,
+        email: employee.email.toLowerCase(),
+        role: "staff" as any,
+        invited_by: currentUser?.id,
+      })
+      .select("token")
+      .single();
+    if (invitationError) {
+      toast.error("A joining link could not be created.");
+      return;
     }
 
     const result = await sendInviteEmail({
       recipientEmail: employee.email,
       employeeName: `${employee.forename} ${employee.surname}`,
       tenantId: employee.tenant_id,
+      inviteToken: invitation.token,
     });
     if (result.success) {
       toast.success(`Invite sent to ${employee.email}`);
@@ -59,6 +63,26 @@ export function AccountLinkagePanel({ employee, isAdmin, onEditEmployee }: Accou
     } else {
       toast.error(`Invite email failed: ${result.error || "Unknown error"}`);
     }
+  };
+
+  const handleResendInvite = async () => {
+    if (!employee.email || !linkage.invitationId) return;
+    await resendInvitation.mutateAsync({
+      email: employee.email,
+      invitationId: linkage.invitationId,
+    });
+  };
+
+  const handlePasswordRecovery = async () => {
+    if (!employee.email) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(employee.email, {
+      redirectTo: `${getCanonicalOrigin()}/reset-password`,
+    });
+    if (error) {
+      toast.error(error.message || "Password recovery email could not be sent");
+      return;
+    }
+    toast.success(`Password recovery sent to ${employee.email}`);
   };
 
   const handleUnlink = async () => {
@@ -127,9 +151,16 @@ export function AccountLinkagePanel({ employee, isAdmin, onEditEmployee }: Accou
 
           {/* Invite sent → Resend */}
           {linkage.state === "invite_sent" && (
-            <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={handleSendInvite}>
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={handleResendInvite} disabled={resendInvitation.isPending}>
               <Send className="h-3.5 w-3.5" />
-              Resend invite
+              Send new link
+            </Button>
+          )}
+
+          {(linkage.state === "invite_accepted" || linkage.state === "linked") && (
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={handlePasswordRecovery}>
+              <KeyRound className="h-3.5 w-3.5" />
+              Send password recovery
             </Button>
           )}
 

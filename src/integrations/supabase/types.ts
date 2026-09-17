@@ -9807,6 +9807,15 @@ export type Database = {
         Args: { _block_reason?: string; _response: string; _unlock_id: string }
         Returns: Json
       }
+      rotate_pending_invitation: {
+        Args: { _invitation_id: string }
+        Returns: {
+          email: string
+          expires_at: string
+          invitation_id: string
+          token: string
+        }[]
+      }
       seed_default_departments: {
         Args: { _tenant_id: string }
         Returns: undefined
