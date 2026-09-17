@@ -41,6 +41,25 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
     }
     if (!tenantId) return;
 
+    // Possible duplicate check — warns once, then allows a deliberate save.
+    if (!duplicateOverridden) {
+      const { data: existing } = await supabase
+        .from("employees")
+        .select("id, forename, surname, preferred_name, email, ni_number, user_id, status, archived_at")
+        .eq("tenant_id", tenantId);
+
+      const warning = duplicateWarningMessage(
+        findPossibleDuplicates(
+          { forename, surname, email },
+          (existing ?? []) as any,
+        ),
+      );
+      if (warning) {
+        setDuplicateWarning(warning);
+        return;
+      }
+    }
+
     setCreating(true);
     try {
       const rate = parseFloat(hourlyRate) || 0;
