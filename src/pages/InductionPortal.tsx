@@ -23,6 +23,11 @@ import {
   type InductionBlock,
   type SiteFieldKey,
 } from "@/data/induction/ud-induction-2026";
+import {
+  InductionDocumentReader,
+  type ReaderPayload,
+} from "@/components/induction/InductionDocumentReader";
+import { canConfirmDocument } from "@/lib/document-reader";
 
 interface PackItem {
   id: string;
@@ -32,6 +37,8 @@ interface PackItem {
   requires_signature: boolean;
   acknowledged_at: string | null;
   view_url: string | null;
+  /** On-screen reading version, when a manager has prepared one. */
+  reader?: ReaderPayload | null;
 }
 
 interface ModuleRow {
