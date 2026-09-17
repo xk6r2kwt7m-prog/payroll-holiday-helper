@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { guardRequest } from "../_shared/auth-guard.ts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -439,6 +440,11 @@ const handler = async (req: Request): Promise<Response> => {
     log.recipient = to;
     log.template = type;
     log.tenant_id = tenant_id || "unknown";
+
+    // Only signed-in members of the named company (or trusted internal
+    // callers) may send mail from the company's account.
+    const guard = await guardRequest(req, { tenantId: tenant_id ?? null, cors: corsHeaders });
+    if (!guard.ok) return guard.response;
 
     if (!to || !subject || !type) {
       throw new Error("Missing required fields: to, subject, type");
