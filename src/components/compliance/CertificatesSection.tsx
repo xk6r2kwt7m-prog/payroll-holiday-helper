@@ -140,11 +140,17 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
                       <Badge className={cn("text-[10px]", toneClass[tone])}>{expiryLabel(c.expiry_date)}</Badge>
                     )}
                     <Badge variant="outline" className="text-[10px]">{c.renewal_status}</Badge>
+                    {c.applies_to_all_branches && (
+                      <Badge className="text-[10px] bg-primary/10 text-primary">
+                        <Building2 className="h-3 w-3 mr-1" /> All sites
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {c.branch}
+                    {c.applies_to_all_branches ? "Visible at every site" : c.branch}
                     {c.certificate_number ? ` · ${c.certificate_number}` : ""}
                     {c.holder_name ? ` · ${c.holder_name}` : ""}
+                    {c.holder_job_title ? ` (${c.holder_job_title})` : ""}
                   </p>
                   {c.notes && <p className="text-xs text-muted-foreground mt-1">{c.notes}</p>}
                 </div>
