@@ -41,6 +41,7 @@ Deno.serve(async (req) => {
   const now = new Date();
   let reminders = 0;
   let autoSent = 0;
+  let alcoholSent = 0;
   const notes: string[] = [];
 
   try {
