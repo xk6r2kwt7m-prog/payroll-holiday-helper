@@ -116,14 +116,21 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
       fields: [
         { key: "account_holder", label: "Account holder name", required: true },
         { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true },
-        { key: "confirm_sort_code", label: "Re-enter sort code", placeholder: "00-00-00", required: true, confirmOnly: true },
-        { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
         {
-          key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits",
+          key: "confirm_sort_code", label: "Re-enter sort code", placeholder: "00-00-00",
           required: true, confirmOnly: true, hint: "We ask twice so a typing mistake cannot delay your pay.",
         },
       ],
     },
+    {
+      id: "bank_account", section: "bank", title: "Your account number",
+      blurb: "Please type it twice so we know it is exactly right.", icon: Landmark,
+      fields: [
+        { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
+        { key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits", required: true, confirmOnly: true },
+      ],
+    },
+
   ],
   emergency: [
     {
