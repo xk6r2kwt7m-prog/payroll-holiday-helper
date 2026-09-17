@@ -35,6 +35,7 @@ export function RequestStaffDetailsDialog({ employeeId, employeeName, employeeEm
   const [selected, setSelected] = useState<InfoSection[]>(["personal", "emergency", "bank", "rtw"]);
   const { data: history = [] } = useInfoRequests(employeeId);
   const send = useSendInfoRequest();
+  const revoke = useRevokeInfoRequest();
 
   const toggle = (key: InfoSection) =>
     setSelected((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s, key]));
@@ -121,6 +122,19 @@ export function RequestStaffDetailsDialog({ employeeId, employeeName, employeeEm
                   </Badge>
                 )}
               </p>
+              {!latest.submitted_at && latest.status !== "revoked" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-1 h-7 text-xs"
+                  disabled={revoke.isPending}
+                  onClick={() => revoke.mutate(latest.id)}
+                >
+                  Cancel this link
+                </Button>
+              )}
+              {latest.status === "revoked" && <p>This link was cancelled.</p>}
             </div>
           )}
 
