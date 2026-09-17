@@ -153,17 +153,31 @@ Deno.serve(async (req) => {
     }
 
     // 2. Access to the inviting company only.
-    const { error: membershipError } = await admin
+    // If the person already belongs to this company, never downgrade or change
+    // their existing role — just make sure the membership is active.
+    const { data: existingMembership } = await admin
       .from("tenant_members")
-      .upsert({
-        tenant_id: invite.tenant_id,
-        user_id: userId,
-        role: invite.role,
-        is_active: true,
-      }, { onConflict: "tenant_id,user_id" });
-    if (membershipError) {
-      console.error("accept-invitation: membership could not be granted", membershipError.message);
-      return json({ error: "membership_failed", message: "We could not finish setting up access. Please ask your manager for help." }, 500);
+      .select("id, role, is_active")
+      .eq("tenant_id", invite.tenant_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (existingMembership) {
+      if (!existingMembership.is_active) {
+        await admin.from("tenant_members").update({ is_active: true }).eq("id", existingMembership.id);
+      }
+    } else {
+      const { error: membershipError } = await admin
+        .from("tenant_members")
+        .insert({
+          tenant_id: invite.tenant_id,
+          user_id: userId,
+          role: invite.role,
+          is_active: true,
+        });
+      if (membershipError) {
+        console.error("accept-invitation: membership could not be granted", membershipError.message);
+        return json({ error: "membership_failed", message: "We could not finish setting up access. Please ask your manager for help." }, 500);
+      }
     }
 
     const { data: legacyRole } = await admin
