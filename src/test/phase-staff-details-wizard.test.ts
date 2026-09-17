@@ -12,14 +12,27 @@ describe("staff details form asks a little at a time and ends with a check scree
   });
 
   it("keeps each screen to a small group of questions", () => {
-    const groups = portal.match(/fields: \[[\s\S]*?\n {6}\],/g) ?? [];
-    expect(groups.length).toBeGreaterThan(4);
-    for (const g of groups) {
-      const count = (g.match(/\{ key:/g) ?? []).length;
+    const counts: number[] = [];
+    let from = 0;
+    for (;;) {
+      const start = portal.indexOf("fields: [", from);
+      if (start === -1) break;
+      let depth = 0;
+      let i = start + "fields: ".length;
+      for (; i < portal.length; i++) {
+        if (portal[i] === "[") depth++;
+        else if (portal[i] === "]") { depth--; if (depth === 0) break; }
+      }
+      counts.push((portal.slice(start, i).match(/\{ key:/g) ?? []).length);
+      from = i + 1;
+    }
+    expect(counts.length).toBeGreaterThan(4);
+    for (const count of counts) {
       expect(count).toBeGreaterThan(0);
       expect(count).toBeLessThanOrEqual(4);
     }
   });
+
 
   it("finishes with a review screen where answers can be corrected in place", () => {
     expect(portal).toContain("const isReview = steps.length > 0 && step >= steps.length");
