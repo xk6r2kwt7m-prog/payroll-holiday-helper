@@ -84,10 +84,10 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
     {
       id: "ni", section: "personal", title: "National Insurance number",
       blurb: "Leave this blank if you do not have one yet — you can still carry on.", icon: ShieldCheck,
-      fields: [{
-        key: "ni_number", label: "National Insurance number (optional)", placeholder: "AB123456C",
-        hint: "Two letters, six numbers, then one letter — for example AB123456C.",
-      }],
+      fields: [
+        { key: "ni_number", label: "National Insurance number (optional)", placeholder: "AB123456C", hint: "Two letters, six numbers, then one letter — for example AB123456C." },
+      ],
+
     },
   ],
   rtw: [
