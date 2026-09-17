@@ -322,6 +322,10 @@ Deno.serve(async (req) => {
               title: "Staff details received",
               body: `${emp?.forename ?? "A staff member"} ${emp?.surname ?? ""} has completed their details${
                 rtwPending ? " and uploaded a right to work document for your review" : ""
+              }. ${allocation.filled.length} detail${allocation.filled.length === 1 ? "" : "s"} saved to their record automatically${
+                allocation.conflicts.length
+                  ? `; ${allocation.conflicts.length} need${allocation.conflicts.length === 1 ? "s" : ""} your confirmation because it differs from what we already hold`
+                  : ""
               }.`,
               link: "/onboarding",
               metadata: { employee_id: request.employee_id, info_request_id: request.id },
@@ -339,10 +343,21 @@ Deno.serve(async (req) => {
           sections,
           rtw_documents: request.rtw_uploaded_count ?? 0,
           rtw_status: rtwPending ? "pending_review" : "not_submitted",
+          auto_allocated: allocation.filled.map((f) => f.field),
+          needs_confirmation: allocation.conflicts.map((c) => ({
+            field: c.field,
+            previous: c.current,
+            submitted: c.submitted,
+          })),
         },
       });
 
-      return json({ success: true, rtw_pending: rtwPending });
+      return json({
+        success: true,
+        rtw_pending: rtwPending,
+        allocated: allocation.filled.length,
+        needs_confirmation: allocation.conflicts.length,
+      });
     }
 
     return json({ error: "Unknown action" }, 400);
