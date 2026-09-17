@@ -127,21 +127,35 @@ export default function SignContract() {
   }, [contractInfo, isEmployer]);
 
   const fetchContractInfo = async () => {
+    const load = async () =>
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`, { method: "GET" });
+
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`,
-        { method: "GET" }
-      );
-      const result = await response.json();
+      let response: Response;
+      try {
+        response = await load();
+      } catch {
+        await new Promise((r) => setTimeout(r, 1200));
+        response = await load();
+      }
+
+      const raw = await response.text();
+      let result: any = {};
+      try {
+        result = raw ? JSON.parse(raw) : {};
+      } catch {
+        result = {};
+      }
+
       if (!response.ok) {
-        setErrorCode(result.error_code || "invalid_token");
-        setErrorMessage(result.error || "Invalid link");
+        setErrorCode(result.error_code || (response.status >= 500 ? "internal_error" : "invalid_token"));
+        setErrorMessage(result.error || "We could not open your contract just now. Please reload the page and try again.");
         return;
       }
       setContractInfo(result);
     } catch {
-      setErrorCode("internal_error");
-      setErrorMessage("Unable to load contract. Please check the link and try again.");
+      setErrorCode("network_error");
+      setErrorMessage("We could not reach the server. Check your connection and reload this page.");
     } finally {
       setLoading(false);
     }
