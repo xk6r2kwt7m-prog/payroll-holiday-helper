@@ -92,6 +92,29 @@ export function TrainingAutomationPanel() {
         />
       </div>
 
+      {/* Automatic induction reminders */}
+      <div className="rounded-xl border border-border bg-card p-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium flex items-center gap-1.5">
+            <Clock className="h-4 w-4 text-primary" /> Chase unfinished inductions by email
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Off by default — no automatic emails are sent while this is off. When on, staff with an
+            unfinished induction are reminded 3, 7 and 14 days after it was sent, then weekly.
+          </p>
+        </div>
+        <Switch
+          checked={prefs?.induction_reminders_enabled === true}
+          onCheckedChange={async (v) => {
+            await savePrefs.mutateAsync({
+              category: "training_docs",
+              preferences: { ...(prefs ?? {}), induction_reminders_enabled: v },
+            });
+            toast.success(v ? "Induction reminders will be sent automatically" : "Induction reminders turned off");
+          }}
+        />
+      </div>
+
       {/* Automatic alcohol authorisation for front-of-house staff */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
