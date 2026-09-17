@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   INCIDENT_CATEGORIES, categoryLabel, conditionalFields, missingRequired,
   requiresLicenceRecord, deadlineState, deadlineMessage, defaultConfidentiality,
-  confidentialityLabel,
+  confidentialityLabel, incidentLogConditionSource,
 } from "@/lib/incident-categories";
 import { useSaveIncident, useAddIncidentEvidence, type IncidentRow } from "@/hooks/useIncidents";
 import { useComplianceBranches } from "@/hooks/useComplianceBranches";
