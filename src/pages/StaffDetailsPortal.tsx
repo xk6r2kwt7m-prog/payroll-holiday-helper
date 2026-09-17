@@ -18,7 +18,7 @@ const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 type SectionKey = "personal" | "emergency" | "bank" | "rtw";
 
 const SECTION_META: Record<SectionKey, { title: string; blurb: string; icon: typeof User }> = {
-  personal: { title: "Your personal details", blurb: "Name, date of birth, phone, home address and National Insurance number.", icon: User },
+  personal: { title: "Your personal details", blurb: "Name, date of birth, contact details, home address and National Insurance number.", icon: User },
   emergency: { title: "Emergency contact", blurb: "Someone we can call if something happens at work.", icon: HeartPulse },
   bank: { title: "Bank details for pay", blurb: "Where your wages are paid. Stored securely.", icon: Landmark },
   rtw: { title: "Right to work", blurb: "Required by law before you can start work in the UK.", icon: ShieldCheck },
@@ -36,7 +36,7 @@ interface PortalData {
   };
   employee: { first_name: string; full_name: string };
   saved: Record<string, Record<string, string>>;
-  prefill: { forename: string; surname: string; date_of_birth: string; nationality: string };
+  prefill: { forename: string; surname: string; date_of_birth: string; nationality: string; email: string };
 }
 
 export default function StaffDetailsPortal() {
@@ -66,6 +66,7 @@ export default function StaffDetailsPortal() {
             surname: json.saved?.personal?.surname ?? json.prefill.surname ?? "",
             preferred_name: json.saved?.personal?.preferred_name ?? "",
             date_of_birth: json.saved?.personal?.date_of_birth ?? json.prefill.date_of_birth ?? "",
+            email: json.saved?.personal?.email ?? json.prefill.email ?? "",
             phone: json.saved?.personal?.phone ?? "",
             address_line1: json.saved?.personal?.address_line1 ?? "",
             address_line2: json.saved?.personal?.address_line2 ?? "",
@@ -113,7 +114,8 @@ export default function StaffDetailsPortal() {
     const need = (k: string, label: string) => (a[k]?.trim() ? null : label);
     if (current === "personal") {
       return [need("forename", "First name"), need("surname", "Surname"), need("date_of_birth", "Date of birth"),
-        need("phone", "Phone number"), need("address_line1", "Address"), need("city", "Town or city"),
+        need("phone", "Phone number"), need("email", "Email address"),
+        need("address_line1", "Address"), need("city", "Town or city"),
         need("postcode", "Postcode")].filter(Boolean) as string[];
     }
     if (current === "emergency") {
@@ -266,6 +268,7 @@ export default function StaffDetailsPortal() {
               <Field label="Surname" value={answers.personal?.surname} onChange={(v) => set("personal", "surname", v)} />
               <Field label="Name you prefer to be called (optional)" value={answers.personal?.preferred_name} onChange={(v) => set("personal", "preferred_name", v)} />
               <Field label="Date of birth" type="date" value={answers.personal?.date_of_birth} onChange={(v) => set("personal", "date_of_birth", v)} />
+              <Field label="Email address" type="email" value={answers.personal?.email} onChange={(v) => set("personal", "email", v)} />
               <Field label="Mobile number" type="tel" value={answers.personal?.phone} onChange={(v) => set("personal", "phone", v)} />
               <Field label="National Insurance number (leave blank if you do not have one yet)" placeholder="QQ123456C" value={answers.personal?.ni_number} onChange={(v) => set("personal", "ni_number", v)} />
               <Field label="Address" value={answers.personal?.address_line1} onChange={(v) => set("personal", "address_line1", v)} />

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { allocateStaffDetails, buildContactAliases } from "./allocation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +44,9 @@ Deno.serve(async (req) => {
 
     const { data: request } = await admin
       .from("employee_info_requests")
-      .select("*, employees(forename, surname, preferred_name, email, date_of_birth, nationality)")
+      .select(
+        "*, employees(forename, surname, preferred_name, email, date_of_birth, nationality, ni_number, passport_no, sharing_code, settlement_status, bank_account_no, sort_code)",
+      )
       .eq("token", token)
       .maybeSingle();
 
@@ -88,6 +91,7 @@ Deno.serve(async (req) => {
           surname: emp?.surname ?? "",
           date_of_birth: emp?.date_of_birth ?? "",
           nationality: emp?.nationality ?? "",
+          email: emp?.email ?? "",
         },
       });
     }
@@ -158,23 +162,32 @@ Deno.serve(async (req) => {
       const bank = answers.bank ?? {};
       const rtw = answers.rtw ?? {};
 
-      const empUpdates: Record<string, unknown> = {};
+      // Everything the staff member supplied, keyed by the employee column it
+      // belongs to. The allocation rules then decide what can be written now
+      // and what needs the admin to confirm (never a silent overwrite).
+      const candidates: Record<string, unknown> = {};
       if (sections.includes("personal")) {
-        if (str(personal.date_of_birth, 10)) empUpdates.date_of_birth = str(personal.date_of_birth, 10);
-        if (str(personal.preferred_name, 80)) empUpdates.preferred_name = str(personal.preferred_name, 80);
-        if (str(personal.ni_number, 20)) empUpdates.ni_number = str(personal.ni_number, 20);
+        candidates.forename = str(personal.forename, 80);
+        candidates.surname = str(personal.surname, 80);
+        candidates.preferred_name = str(personal.preferred_name, 80);
+        candidates.email = str(personal.email, 160);
+        candidates.date_of_birth = str(personal.date_of_birth, 10);
+        candidates.ni_number = str(personal.ni_number, 20);
       }
       if (sections.includes("bank")) {
-        if (str(bank.account_number, 20)) empUpdates.bank_account_no = str(bank.account_number, 20);
-        if (str(bank.sort_code, 12)) empUpdates.sort_code = str(bank.sort_code, 12);
+        candidates.bank_account_no = str(bank.account_number, 20);
+        candidates.sort_code = str(bank.sort_code, 12);
       }
       if (sections.includes("rtw")) {
-        if (str(rtw.nationality, 80)) empUpdates.nationality = str(rtw.nationality, 80);
-        if (str(rtw.ni_number, 20)) empUpdates.ni_number = str(rtw.ni_number, 20);
-        if (str(rtw.passport_no, 40)) empUpdates.passport_no = str(rtw.passport_no, 40);
-        if (str(rtw.sharing_code, 40)) empUpdates.sharing_code = str(rtw.sharing_code, 40);
-        if (str(rtw.settlement_status, 60)) empUpdates.settlement_status = str(rtw.settlement_status, 60);
+        candidates.nationality = str(rtw.nationality, 80);
+        candidates.passport_no = str(rtw.passport_no, 40);
+        candidates.sharing_code = str(rtw.sharing_code, 40);
+        candidates.settlement_status = str(rtw.settlement_status, 60);
+        if (!candidates.ni_number) candidates.ni_number = str(rtw.ni_number, 20);
       }
+
+      const allocation = allocateStaffDetails(candidates, emp ?? {});
+      const empUpdates: Record<string, unknown> = { ...allocation.updates };
       if (Object.keys(empUpdates).length > 0) {
         const { error } = await admin.from("employees").update(empUpdates).eq("id", request.employee_id);
         if (error) throw error;
@@ -191,27 +204,40 @@ Deno.serve(async (req) => {
       const line2 = str(personal.address_line2, 120);
       const city = str(personal.city, 80);
       const postcode = str(personal.postcode, 12);
-      const composedAddress = [line1, line2, city, postcode].filter(Boolean).join(", ") || null;
+      const aliases = buildContactAliases({
+        line1,
+        line2,
+        city,
+        postcode,
+        phone: str(personal.phone, 30),
+        email: str(personal.email, 160),
+      });
+
+      const prevPending = Array.isArray((existingOnb?.personal_info as any)?.pending_confirmations)
+        ? ((existingOnb?.personal_info as any).pending_confirmations as any[])
+        : [];
+      const submittedAtIso = new Date().toISOString();
+      const pendingConfirmations = [
+        // Keep any earlier unresolved item that this submission does not touch.
+        ...prevPending.filter(
+          (p: any) => !allocation.conflicts.some((c) => c.field === p?.field),
+        ),
+        ...allocation.conflicts.map((c) => ({ ...c, submitted_at: submittedAtIso })),
+      ];
 
       const personalInfo = {
         ...((existingOnb?.personal_info as Record<string, unknown>) ?? {}),
+        pending_confirmations: pendingConfirmations,
         ...(sections.includes("personal")
           ? {
               legal_forename: str(personal.forename, 80),
               legal_surname: str(personal.surname, 80),
               preferred_name: str(personal.preferred_name, 80),
               date_of_birth: str(personal.date_of_birth, 10),
-              phone: str(personal.phone, 30),
               ni_number: str(personal.ni_number, 20),
-              // Contract generation reads these keys — write all supported shapes
-              // so the address never has to be asked for twice.
-              address: composedAddress,
-              address_line_1: line1,
-              address_line_2: line2,
-              address_line1: line1,
-              address_line2: line2,
-              city,
-              postcode,
+              // Contracts, letters and the staff profile each read a different
+              // key shape — write them all so nothing is asked for twice.
+              ...aliases,
             }
           : {}),
         ...(sections.includes("rtw")
@@ -296,6 +322,10 @@ Deno.serve(async (req) => {
               title: "Staff details received",
               body: `${emp?.forename ?? "A staff member"} ${emp?.surname ?? ""} has completed their details${
                 rtwPending ? " and uploaded a right to work document for your review" : ""
+              }. ${allocation.filled.length} detail${allocation.filled.length === 1 ? "" : "s"} saved to their record automatically${
+                allocation.conflicts.length
+                  ? `; ${allocation.conflicts.length} need${allocation.conflicts.length === 1 ? "s" : ""} your confirmation because it differs from what we already hold`
+                  : ""
               }.`,
               link: "/onboarding",
               metadata: { employee_id: request.employee_id, info_request_id: request.id },
@@ -313,10 +343,21 @@ Deno.serve(async (req) => {
           sections,
           rtw_documents: request.rtw_uploaded_count ?? 0,
           rtw_status: rtwPending ? "pending_review" : "not_submitted",
+          auto_allocated: allocation.filled.map((f) => f.field),
+          needs_confirmation: allocation.conflicts.map((c) => ({
+            field: c.field,
+            previous: c.current,
+            submitted: c.submitted,
+          })),
         },
       });
 
-      return json({ success: true, rtw_pending: rtwPending });
+      return json({
+        success: true,
+        rtw_pending: rtwPending,
+        allocated: allocation.filled.length,
+        needs_confirmation: allocation.conflicts.length,
+      });
     }
 
     return json({ error: "Unknown action" }, 400);
