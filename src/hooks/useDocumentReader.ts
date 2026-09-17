@@ -95,7 +95,7 @@ export function useSaveReaderQuestion() {
         .eq("id", id)
         .maybeSingle();
 
-      const patch = { ...updates, updated_at: new Date().toISOString() };
+      const patch: Record<string, any> = { ...updates, updated_at: new Date().toISOString() };
       if (event === "reader_question_approved") {
         const { data: { user } } = await supabase.auth.getUser();
         patch.approval_status = "approved";
