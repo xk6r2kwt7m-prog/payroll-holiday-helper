@@ -127,21 +127,35 @@ export default function SignContract() {
   }, [contractInfo, isEmployer]);
 
   const fetchContractInfo = async () => {
+    const load = async () =>
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`, { method: "GET" });
+
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`,
-        { method: "GET" }
-      );
-      const result = await response.json();
+      let response: Response;
+      try {
+        response = await load();
+      } catch {
+        await new Promise((r) => setTimeout(r, 1200));
+        response = await load();
+      }
+
+      const raw = await response.text();
+      let result: any = {};
+      try {
+        result = raw ? JSON.parse(raw) : {};
+      } catch {
+        result = {};
+      }
+
       if (!response.ok) {
-        setErrorCode(result.error_code || "invalid_token");
-        setErrorMessage(result.error || "Invalid link");
+        setErrorCode(result.error_code || (response.status >= 500 ? "internal_error" : "invalid_token"));
+        setErrorMessage(result.error || "We could not open your contract just now. Please reload the page and try again.");
         return;
       }
       setContractInfo(result);
     } catch {
-      setErrorCode("internal_error");
-      setErrorMessage("Unable to load contract. Please check the link and try again.");
+      setErrorCode("network_error");
+      setErrorMessage("We could not reach the server. Check your connection and reload this page.");
     } finally {
       setLoading(false);
     }
@@ -175,29 +189,46 @@ export default function SignContract() {
 
     const consentText = `I confirm that: ${consentItems.join("; ")}.`;
 
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            typed_name: typedName.trim(),
-            consent_given: true,
-            consent_text: consentText,
-            signature_data: signatureData,
-            signature_type: "drawn",
-            document_hash: contractInfo?.document_hash || null,
-            signatory_title: isEmployer ? signatoryTitle.trim() || null : null,
-          }),
-        }
-      );
+    // A dropped connection is retried once automatically — resending the same
+    // signature is safe, because a signature already stored is never replaced.
+    const post = async () =>
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          typed_name: typedName.trim(),
+          consent_given: true,
+          consent_text: consentText,
+          signature_data: signatureData,
+          signature_type: "drawn",
+          document_hash: contractInfo?.document_hash || null,
+          signatory_title: isEmployer ? signatoryTitle.trim() || null : null,
+        }),
+      });
 
-      const result = await response.json();
+    try {
+      let response: Response;
+      try {
+        response = await post();
+      } catch {
+        await new Promise((r) => setTimeout(r, 1200));
+        response = await post();
+      }
+
+      const raw = await response.text();
+      let result: any = {};
+      try {
+        result = raw ? JSON.parse(raw) : {};
+      } catch {
+        result = {};
+      }
 
       if (!response.ok) {
         setErrorCode(result.error_code || "save_failed");
-        setErrorMessage(result.error || "Failed to record signature");
+        setErrorMessage(
+          result.error ||
+            "Your signature could not be saved just now. Your details are still here — please tap Sign again in a moment.",
+        );
         return;
       }
 
@@ -206,8 +237,10 @@ export default function SignContract() {
       setFullySigned(result.fully_signed === true);
       setSigningField(result.signing_field || null);
     } catch {
-      setErrorCode("internal_error");
-      setErrorMessage("Something went wrong. Please try again.");
+      setErrorCode("network_error");
+      setErrorMessage(
+        "We could not reach the server. Check your connection and tap Sign again — nothing has been lost and your signature is still on screen.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -806,6 +839,20 @@ function getErrorDisplay(errorCode: ErrorCode, errorMessage: string | null) {
         bgClass: "bg-destructive/10",
         title: "Signature Failed",
         message: errorMessage || "Your signature could not be recorded. Please try again.",
+      };
+    case "network_error":
+      return {
+        icon: <AlertTriangle className="h-8 w-8 text-warning" />,
+        bgClass: "bg-warning/10",
+        title: "Connection Problem",
+        message: errorMessage || "We could not reach the server. Check your connection and try again — nothing has been lost.",
+      };
+    case "internal_error":
+      return {
+        icon: <AlertTriangle className="h-8 w-8 text-destructive" />,
+        bgClass: "bg-destructive/10",
+        title: "Something Interrupted This",
+        message: errorMessage || "Please reload the page and try again. Your contract and any signature already given are safe.",
       };
     default:
       return {

@@ -28,6 +28,30 @@ function sanitizeFileName(value: string): string {
   return value.replace(/[^a-z0-9_-]+/gi, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") || "contract";
 }
 
+/**
+ * Transient failures (storage/network blips inside the isolate) are the most
+ * common cause of a signing attempt failing. Retry them briefly instead of
+ * showing the signer an error.
+ */
+async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      console.error(`[SIGN-CONTRACT] ${label} attempt ${attempt} failed:`, err);
+      if (attempt < attempts) await new Promise((r) => setTimeout(r, attempt * 400));
+    }
+  }
+  throw lastError;
+}
+
+function makeReference(): string {
+  return `SC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
+
 function decodeDataUrl(dataUrl: string | null | undefined): { bytes: Uint8Array; mime: string } | null {
   if (!dataUrl) return null;
   const match = dataUrl.match(/^data:(.+?);base64,(.+)$/);
@@ -539,6 +563,10 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+  // Where the request got to, so a failure can be reported and traced precisely.
+  let failureStage = "request";
+  let failureContext: { tenant_id?: string; employee_document_id?: string; employee_id?: string; signer_type?: string } = {};
+
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get("token");
@@ -979,21 +1007,45 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (signingToken.used_at) {
-        return new Response(JSON.stringify({ error: "This contract has already been signed.", error_code: "already_signed" }), {
-          status: 409,
+      failureStage = "validate_link";
+      failureContext = {
+        tenant_id: signingToken.tenant_id,
+        employee_document_id: signingToken.employee_document_id,
+        employee_id: signingToken.employee_id,
+        signer_type: signingToken.signer_type,
+      };
+
+      // ROLE LOCKING: one signature per role, never overwritten.
+      const { data: existingRoleSigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_type, signed_at, signing_token_id")
+        .eq("employee_document_id", signingToken.employee_document_id)
+        .eq("signer_type", signingToken.signer_type);
+
+      // Same signer, same link, signature already stored: this is a retry after a
+      // dropped connection. Confirm success instead of alarming them — nothing is
+      // changed and the original signature stands.
+      const ownReplay = (existingRoleSigs || []).find((s: any) => s.signing_token_id === signingToken.id);
+      if (ownReplay) {
+        const { data: sigsNow } = await supabase
+          .from("contract_signatures")
+          .select("signer_type")
+          .eq("employee_document_id", signingToken.employee_document_id);
+        const typesNow = (sigsNow || []).map((s: any) => s.signer_type);
+        return new Response(JSON.stringify({
+          success: true,
+          message: "Your signature is already recorded.",
+          signed_at: ownReplay.signed_at,
+          signer_type: signingToken.signer_type,
+          signing_field: signingToken.signer_type === "employee" ? "team_member_block" : "employer_block",
+          fully_signed: typesNow.includes("employee") && typesNow.includes("employer"),
+          replay: true,
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // ROLE LOCKING: Prevent duplicate role signatures
-      const { data: existingRoleSigs } = await supabase
-        .from("contract_signatures")
-        .select("signer_type")
-        .eq("employee_document_id", signingToken.employee_document_id)
-        .eq("signer_type", signingToken.signer_type);
-
-      if (existingRoleSigs && existingRoleSigs.length > 0) {
+      if ((existingRoleSigs && existingRoleSigs.length > 0) || signingToken.used_at) {
         const roleLabel = signingToken.signer_type === "employee" ? "Team Member" : "Employer";
         return new Response(JSON.stringify({
           error: `The ${roleLabel} section has already been signed. This signing link can no longer be used.`,
@@ -1003,6 +1055,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
 
       const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
       const userAgent = req.headers.get("user-agent") || "unknown";
@@ -1042,12 +1095,19 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { data: originalPdfBlob, error: originalPdfError } = await supabase.storage
-        .from("employee-documents")
-        .download(originalFilePath);
+      failureStage = "load_contract_document";
+      const { data: originalPdfBlob, error: originalPdfError } = await withRetry(
+        "download original contract",
+        async () => {
+          const result = await supabase.storage.from("employee-documents").download(originalFilePath);
+          if (result.error) throw result.error;
+          return result;
+        },
+      ).catch((err) => ({ data: null, error: err } as any));
 
       if (originalPdfError || !originalPdfBlob) {
-        return new Response(JSON.stringify({ error: "The contract document could not be loaded.", error_code: "missing_document" }), {
+        console.error("[SIGN-CONTRACT] Original contract could not be downloaded", originalPdfError);
+        return new Response(JSON.stringify({ error: "The contract document could not be loaded. Please try again in a moment, or contact your employer.", error_code: "missing_document" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -1055,6 +1115,7 @@ Deno.serve(async (req) => {
 
       const originalPdfBytes = new Uint8Array(await originalPdfBlob.arrayBuffer());
       const serverDocumentHash = await sha256Bytes(originalPdfBytes);
+      failureStage = "record_signature";
 
       // Record signature with role-specific fields
       const { error: sigError } = await supabase
@@ -1141,41 +1202,87 @@ Deno.serve(async (req) => {
           document_hash: s.document_hash,
         }));
 
-        const finalPackage = await buildFinalSignedContractPdf({
-          originalPdfBytes,
-          documentName: signingToken.employee_documents.document_name,
-          employeeName: `${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim(),
-          companyName,
-          documentId: signingToken.employee_document_id,
-          originalDocumentHash: serverDocumentHash,
-          signatures: signaturesForPdf,
-        });
-
+        // The signatures are already stored — they are the legal record. Assembling
+        // the combined PDF file is a derived step, so a failure here must never
+        // discard the signature or show the signer an error. It is recorded for the
+        // admin and can be rebuilt.
+        failureStage = "assemble_final_pdf";
         const finalPath = `contracts/final/${signingToken.tenant_id}/${signingToken.employee_document_id}/${sanitizeFileName(signingToken.employee_documents.document_name)}_completed_signed.pdf`;
-        const { error: uploadFinalError } = await supabase.storage
-          .from("employee-documents")
-          .upload(finalPath, finalPackage.finalBytes, {
-            contentType: "application/pdf",
-            upsert: true,
+        let finalPdfStored = false;
+        let finalPdfError: string | null = null;
+
+        try {
+          const finalPackage = await withRetry("assemble final signed contract", () =>
+            buildFinalSignedContractPdf({
+              originalPdfBytes,
+              documentName: signingToken.employee_documents.document_name,
+              employeeName: `${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim(),
+              companyName,
+              documentId: signingToken.employee_document_id,
+              originalDocumentHash: serverDocumentHash,
+              signatures: signaturesForPdf,
+            }), 2);
+
+          await withRetry("store final signed contract", async () => {
+            const result = await supabase.storage
+              .from("employee-documents")
+              .upload(finalPath, finalPackage.finalBytes, { contentType: "application/pdf", upsert: true });
+            if (result.error) throw result.error;
+            return result;
           });
 
-        if (uploadFinalError) {
-          console.error("Failed to store final signed contract", uploadFinalError);
-          return new Response(JSON.stringify({ error: "The final signed contract could not be stored.", error_code: "save_failed" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_send_status: "fully_signed",
+              contract_state: "signed",
+              final_signed_pdf_url: finalPath,
+              final_document_hash: finalPackage.finalHash,
+            } as any)
+            .eq("id", signingToken.employee_document_id);
+
+          finalPdfStored = true;
+        } catch (finalErr) {
+          finalPdfError = finalErr instanceof Error ? finalErr.message : String(finalErr);
+          console.error("[SIGN-CONTRACT] Final signed contract file could not be produced:", finalErr);
+
+          // Both signatures exist, so the contract is fully signed. Only the
+          // combined file is missing; it is never replaced by the unsigned original.
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_send_status: "fully_signed",
+              contract_state: "signed",
+            } as any)
+            .eq("id", signingToken.employee_document_id);
+
+          await supabase.from("audit_log").insert({
+            action: "create",
+            table_name: "contract_signatures",
+            record_id: signingToken.employee_document_id,
+            tenant_id: signingToken.tenant_id,
+            new_data: {
+              event: "final_signed_contract_file_pending",
+              reason: finalPdfError,
+              employee_id: signingToken.employee_id,
+              employee_document_id: signingToken.employee_document_id,
+              note: "Both signatures are stored. The combined signed file needs rebuilding before it can be sent or downloaded.",
+            },
+          });
+
+          await notifyAdminsInApp(supabase, signingToken.tenant_id, {
+            event_type: "contract_signed",
+            title: "Signed contract file needs rebuilding",
+            body: `${`${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim()} signed successfully, but the combined signed file could not be produced. Open the contract and rebuild it before sending.`,
+            link: "/contracts",
+            metadata: {
+              employee_document_id: signingToken.employee_document_id,
+              employee_id: signingToken.employee_id,
+              reason: finalPdfError,
+            },
           });
         }
-
-        await supabase
-          .from("employee_documents")
-          .update({
-            contract_send_status: "fully_signed",
-            contract_state: "signed",
-            final_signed_pdf_url: finalPath,
-            final_document_hash: finalPackage.finalHash,
-          } as any)
-          .eq("id", signingToken.employee_document_id);
+        failureStage = "post_signature_updates";
 
         // If this contract is an amendment, supersede the parent and stamp the amendment log.
         const { data: signedDoc } = await supabase
@@ -1679,8 +1786,39 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Error:", err);
-    return new Response(JSON.stringify({ error: "Something went wrong. Please try again.", error_code: "internal_error" }), {
+    const reference = makeReference();
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error(`[SIGN-CONTRACT] Unhandled failure ${reference} at stage "${failureStage}":`, err);
+
+    // Never fail silently: leave a traceable record so the cause is known next time.
+    if (failureContext.tenant_id) {
+      try {
+        await supabase.from("audit_log").insert({
+          action: "create",
+          table_name: "contract_signatures",
+          record_id: failureContext.employee_document_id ?? null,
+          tenant_id: failureContext.tenant_id,
+          new_data: {
+            event: "contract_signing_failed",
+            reference,
+            stage: failureStage,
+            reason: detail,
+            employee_id: failureContext.employee_id ?? null,
+            employee_document_id: failureContext.employee_document_id ?? null,
+            signer_type: failureContext.signer_type ?? null,
+          },
+        });
+      } catch (logErr) {
+        console.error("[SIGN-CONTRACT] Failure audit insert failed:", logErr);
+      }
+    }
+
+    return new Response(JSON.stringify({
+      error: `We could not complete this step. Your contract and any signature already given are safe. Please try again — if it happens again, quote reference ${reference} to your manager.`,
+      error_code: "internal_error",
+      reference,
+      stage: failureStage,
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
