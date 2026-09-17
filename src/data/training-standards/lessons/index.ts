@@ -14,6 +14,13 @@ import { slipsTripsLesson } from "./slips-trips";
 import { fireSafetyLesson } from "./fire-safety";
 import { respectfulConductLesson } from "./respectful-conduct";
 import { incidentReportingLesson } from "./incident-reporting";
+import { udWelcomeLesson } from "./ud-welcome";
+import { udFohStandardsLesson } from "./ud-foh-standards";
+import { udAllergyProtocolLesson } from "./ud-allergy-protocol";
+import { udKitchenStandardsLesson } from "./ud-kitchen-standards";
+import { udFoodSafetyHaccpLesson } from "./ud-food-safety-haccp";
+import { udQualityControlLesson } from "./ud-quality-control";
+import { udManagerOperationsLesson } from "./ud-manager-operations";
 
 // ─── Canonical registry keyed by lesson module_title ───
 
@@ -25,6 +32,14 @@ const CANONICAL_REGISTRY: Record<string, LessonContent> = {
   [fireSafetyLesson.module_title]: fireSafetyLesson,
   [respectfulConductLesson.module_title]: respectfulConductLesson,
   [incidentReportingLesson.module_title]: incidentReportingLesson,
+  // Ugly Dumpling induction lessons, written from the company's own documents
+  [udWelcomeLesson.module_title]: udWelcomeLesson,
+  [udFohStandardsLesson.module_title]: udFohStandardsLesson,
+  [udAllergyProtocolLesson.module_title]: udAllergyProtocolLesson,
+  [udKitchenStandardsLesson.module_title]: udKitchenStandardsLesson,
+  [udFoodSafetyHaccpLesson.module_title]: udFoodSafetyHaccpLesson,
+  [udQualityControlLesson.module_title]: udQualityControlLesson,
+  [udManagerOperationsLesson.module_title]: udManagerOperationsLesson,
 };
 
 // ─── Title alias mapping ───
