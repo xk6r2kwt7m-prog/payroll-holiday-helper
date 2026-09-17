@@ -448,10 +448,13 @@ export default function InductionPortal() {
         {step?.kind === "documents" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Tap to open each document — you can pinch to zoom — then confirm it.
+              Read each document, then confirm it. Where a document has been prepared for the screen
+              you can read it here section by section — the original file is always available too.
             </p>
             {data.items.map((item) => {
               const isDone = !!item.acknowledged_at;
+              const reader = item.reader ?? null;
+              const readerDone = !reader || canConfirmDocument(reader.sections, reader.questions, reader.progress);
               return (
                 <div
                   key={item.id}
@@ -473,6 +476,28 @@ export default function InductionPortal() {
                     {isDone && <CheckCircle2 className="h-5 w-5 text-success shrink-0" />}
                   </div>
 
+                  {!isDone && reader && (
+                    <InductionDocumentReader
+                      reader={reader}
+                      itemId={item.id}
+                      disabled={busy === item.id}
+                      onRead={async (sectionId) => {
+                        await post({ action: "read_section", item_id: item.id, section_id: sectionId });
+                        await load();
+                      }}
+                      onAnswer={async (questionId, answerIndex) => {
+                        const res = await post({
+                          action: "answer_section_question",
+                          item_id: item.id,
+                          question_id: questionId,
+                          answer_index: answerIndex,
+                        });
+                        await load();
+                        return { correct: !!res.correct, explanation: res.explanation ?? null };
+                      }}
+                    />
+                  )}
+
                   {item.view_url && (
                     <a
                       href={item.view_url}
@@ -480,11 +505,12 @@ export default function InductionPortal() {
                       rel="noreferrer"
                       className="inline-flex items-center gap-1.5 text-sm text-primary underline"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" /> Open document
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      {reader ? "Open the original file" : "Open document"}
                     </a>
                   )}
 
-                  {!isDone && item.requires_signature && (
+                  {!isDone && item.requires_signature && readerDone && (
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Sign below</p>
                       <SignaturePad onSignatureChange={(sig) => setItemSignatures((s) => ({ ...s, [item.id]: sig ?? "" }))} />
