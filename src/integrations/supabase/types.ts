@@ -725,14 +725,17 @@ export type Database = {
       }
       compliance_certificates: {
         Row: {
+          applies_to_all_branches: boolean
           branch: string
           branch_location_id: string | null
           certificate_number: string | null
           certificate_type: string
           created_at: string
           created_by: string | null
+          employee_id: string | null
           expiry_date: string | null
           file_path: string | null
+          holder_job_title: string | null
           holder_name: string | null
           id: string
           issue_date: string | null
@@ -743,14 +746,17 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          applies_to_all_branches?: boolean
           branch: string
           branch_location_id?: string | null
           certificate_number?: string | null
           certificate_type: string
           created_at?: string
           created_by?: string | null
+          employee_id?: string | null
           expiry_date?: string | null
           file_path?: string | null
+          holder_job_title?: string | null
           holder_name?: string | null
           id?: string
           issue_date?: string | null
@@ -761,14 +767,17 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          applies_to_all_branches?: boolean
           branch?: string
           branch_location_id?: string | null
           certificate_number?: string | null
           certificate_type?: string
           created_at?: string
           created_by?: string | null
+          employee_id?: string | null
           expiry_date?: string | null
           file_path?: string | null
+          holder_job_title?: string | null
           holder_name?: string | null
           id?: string
           issue_date?: string | null
@@ -784,6 +793,20 @@ export type Database = {
             columns: ["branch_location_id"]
             isOneToOne: false
             referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_certificates_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_certificates_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
             referencedColumns: ["id"]
           },
         ]

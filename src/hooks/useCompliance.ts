@@ -591,7 +591,12 @@ export function useComplianceCertificates(branch?: string) {
         .select("*")
         .eq("tenant_id", tenantId!)
         .order("expiry_date", { ascending: true, nullsFirst: false });
-      if (branch) q = q.eq("branch", branch);
+      // Staff qualifications held company-wide (e.g. Level 2 Food Safety) stay
+      // visible whichever site is being viewed.
+      if (branch) {
+        const safe = branch.replace(/[(),"]/g, "");
+        q = q.or(`branch.eq.${safe},applies_to_all_branches.is.true`);
+      }
       const { data, error } = await q;
       if (error) throw error;
       return data ?? [];

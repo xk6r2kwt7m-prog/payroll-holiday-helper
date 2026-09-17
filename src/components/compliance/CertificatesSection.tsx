@@ -11,7 +11,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Upload, ExternalLink, CalendarClock } from "lucide-react";
+import { Plus, Upload, ExternalLink, CalendarClock, Building2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { expiryLabel, expiryTone, resolveExpiryBand } from "@/lib/compliance-expiry";
 import {
   useComplianceCertificates, useSaveComplianceCertificate,
@@ -30,6 +31,9 @@ const toneClass: Record<string, string> = {
 
 const RENEWAL_STATUSES = ["current", "renewal_started", "renewed", "lapsed"] as const;
 
+/** Label stored on records that belong to the person or company, not one site. */
+export const ALL_SITES = "All sites";
+
 export function CertificatesSection({ branchFilter }: { branchFilter?: string }) {
   const { tenantId } = useTenant();
   const { data: branchData } = useComplianceBranches();
@@ -40,9 +44,11 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     branch: branchFilter || "",
+    applies_to_all_branches: false,
     certificate_type: "",
     certificate_number: "",
     holder_name: "",
+    holder_job_title: "",
     issue_date: "",
     expiry_date: "",
     renewal_status: "current",
@@ -53,8 +59,9 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!form.branch || !form.certificate_type.trim()) {
-      toast.error("Choose the branch and what this certificate is");
+    const allSites = form.applies_to_all_branches;
+    if ((!allSites && !form.branch) || !form.certificate_type.trim()) {
+      toast.error(allSites ? "Say what this certificate is" : "Choose the site and what this certificate is");
       return;
     }
     setSaving(true);
@@ -65,13 +72,22 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
       if (receipt && tenantId) receiptPath = await uploadComplianceFile(receipt, tenantId, "certificates");
       await save.mutateAsync({
         ...form,
+        branch: allSites ? ALL_SITES : form.branch,
+        holder_job_title: form.holder_job_title || null,
         issue_date: form.issue_date || null,
         expiry_date: form.expiry_date || null,
         file_path: filePath,
         receipt_path: receiptPath,
       });
-      toast.success("Certificate saved — reminders start 90 days before expiry");
-      setForm(f => ({ ...f, certificate_type: "", certificate_number: "", holder_name: "", notes: "" }));
+      toast.success(
+        allSites
+          ? "Saved — this certificate now shows at every site"
+          : "Certificate saved — reminders start 90 days before expiry"
+      );
+      setForm(f => ({
+        ...f, certificate_type: "", certificate_number: "",
+        holder_name: "", holder_job_title: "", notes: "",
+      }));
       setOpen(false);
       setFile(null); setReceipt(null);
     } catch (e) {
@@ -124,11 +140,17 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
                       <Badge className={cn("text-[10px]", toneClass[tone])}>{expiryLabel(c.expiry_date)}</Badge>
                     )}
                     <Badge variant="outline" className="text-[10px]">{c.renewal_status}</Badge>
+                    {c.applies_to_all_branches && (
+                      <Badge className="text-[10px] bg-primary/10 text-primary">
+                        <Building2 className="h-3 w-3 mr-1" /> All sites
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {c.branch}
+                    {c.applies_to_all_branches ? "Visible at every site" : c.branch}
                     {c.certificate_number ? ` · ${c.certificate_number}` : ""}
                     {c.holder_name ? ` · ${c.holder_name}` : ""}
+                    {c.holder_job_title ? ` (${c.holder_job_title})` : ""}
                   </p>
                   {c.notes && <p className="text-xs text-muted-foreground mt-1">{c.notes}</p>}
                 </div>
@@ -150,17 +172,31 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Add certificate or licence</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Branch</Label>
-              <Select value={form.branch} onValueChange={(v) => setForm(f => ({ ...f, branch: v }))}>
-                <SelectTrigger><SelectValue placeholder="Choose branch" /></SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.branch}>{b.display_name || b.branch}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
+              <div>
+                <Label className="text-sm">Belongs to a person, not one site</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Staff training like Level 2 Food Safety stays visible at every site.
+                </p>
+              </div>
+              <Switch
+                checked={form.applies_to_all_branches}
+                onCheckedChange={(v) => setForm(f => ({ ...f, applies_to_all_branches: v }))}
+              />
             </div>
+            {!form.applies_to_all_branches && (
+              <div className="space-y-1.5">
+                <Label>Site</Label>
+                <Select value={form.branch} onValueChange={(v) => setForm(f => ({ ...f, branch: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Choose site" /></SelectTrigger>
+                  <SelectContent>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.branch}>{b.display_name || b.branch}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>What is it?</Label>
               <Input
@@ -177,6 +213,14 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
               <div className="space-y-1.5">
                 <Label>Named holder</Label>
                 <Input value={form.holder_name} onChange={(e) => setForm(f => ({ ...f, holder_name: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Holder's job or role</Label>
+                <Input
+                  placeholder="e.g. Kitchen (BOH)"
+                  value={form.holder_job_title}
+                  onChange={(e) => setForm(f => ({ ...f, holder_job_title: e.target.value }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Issue date</Label>
