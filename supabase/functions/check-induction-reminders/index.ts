@@ -2,6 +2,11 @@
 // automatically to new starters. Never touches a completed induction, a test
 // record, or anything a manager has not switched on.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import {
+  buildStaffAlcoholAuthorisation,
+  SUBJECT_LABELS,
+} from "../_shared/licensing-documents.ts";
+import { isFrontOfHouse, hasLiveAlcoholRecord } from "../_shared/front-of-house.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
