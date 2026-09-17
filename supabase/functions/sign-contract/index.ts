@@ -1786,8 +1786,39 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("Error:", err);
-    return new Response(JSON.stringify({ error: "Something went wrong. Please try again.", error_code: "internal_error" }), {
+    const reference = makeReference();
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error(`[SIGN-CONTRACT] Unhandled failure ${reference} at stage "${failureStage}":`, err);
+
+    // Never fail silently: leave a traceable record so the cause is known next time.
+    if (failureContext.tenant_id) {
+      try {
+        await supabase.from("audit_log").insert({
+          action: "create",
+          table_name: "contract_signatures",
+          record_id: failureContext.employee_document_id ?? null,
+          tenant_id: failureContext.tenant_id,
+          new_data: {
+            event: "contract_signing_failed",
+            reference,
+            stage: failureStage,
+            reason: detail,
+            employee_id: failureContext.employee_id ?? null,
+            employee_document_id: failureContext.employee_document_id ?? null,
+            signer_type: failureContext.signer_type ?? null,
+          },
+        });
+      } catch (logErr) {
+        console.error("[SIGN-CONTRACT] Failure audit insert failed:", logErr);
+      }
+    }
+
+    return new Response(JSON.stringify({
+      error: `We could not complete this step. Your contract and any signature already given are safe. Please try again — if it happens again, quote reference ${reference} to your manager.`,
+      error_code: "internal_error",
+      reference,
+      stage: failureStage,
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
