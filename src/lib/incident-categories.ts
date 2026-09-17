@@ -72,6 +72,27 @@ export function categoryLabel(value?: string | null) {
   return findCategory(value)?.label ?? value ?? "Incident";
 }
 
+/**
+ * Which premises licence condition requires an incident log at each site.
+ * Recorded per branch from that branch's own licence — never copied between sites.
+ */
+export const INCIDENT_LOG_CONDITION_BY_BRANCH: Record<string, string> = {
+  Fitzrovia: "Fitzrovia premises licence, condition 28",
+  Brixton: "Brixton premises licence, condition 13",
+};
+
+/**
+ * Plain-English source of the recording requirement for a branch.
+ * Sites whose licence has not been confirmed keep the requirement (safer) but say so.
+ */
+export function incidentLogConditionSource(branch?: string | null) {
+  if (!branch) return "Premises licence incident log requirement";
+  return (
+    INCIDENT_LOG_CONDITION_BY_BRANCH[branch] ??
+    "Premises licence incident log requirement (this site's licence conditions not yet confirmed)"
+  );
+}
+
 /** True when the premises licence requires this incident to be recorded. */
 export function requiresLicenceRecord(category?: string | null) {
   return findCategory(category)?.condition28 ?? false;
