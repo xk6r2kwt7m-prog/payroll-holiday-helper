@@ -66,3 +66,27 @@ export function useSendInfoRequest() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+/**
+ * Cancels an outstanding details link so it can no longer be opened.
+ * Does not touch anything the staff member has already submitted.
+ */
+export function useRevokeInfoRequest() {
+  const qc = useQueryClient();
+  const { tenantId } = useTenant();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const { error } = await supabase
+        .from("employee_info_requests")
+        .update({ status: "revoked", token_expires_at: new Date().toISOString() })
+        .eq("id", requestId)
+        .eq("tenant_id", tenantId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employee_info_requests"] });
+      toast.success("Link cancelled — it can no longer be opened");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
