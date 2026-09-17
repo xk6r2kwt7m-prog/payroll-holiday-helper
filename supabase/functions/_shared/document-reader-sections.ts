@@ -80,6 +80,10 @@ export function splitIntoSections(rawText: string, fallbackTitle = "Document"): 
   if (split.length === 0) {
     return [{ heading: fallbackTitle, body: text }];
   }
+  // A document with no headings at all reads better under its own name.
+  if (split.length === 1 && split[0].heading === "Introduction") {
+    split[0].heading = fallbackTitle;
+  }
   return split;
 }
 
