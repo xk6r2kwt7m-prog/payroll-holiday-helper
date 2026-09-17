@@ -505,6 +505,29 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                     </Badge>
                   )}
                 </div>
+                {subject === "dps_authorisation" && (
+                  <div className="rounded-md border border-border bg-muted/30 p-2.5 space-y-1.5">
+                    <p className="text-xs flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="font-medium">{summaryLine}</span>
+                    </p>
+                    {warningLine && <p className="text-xs text-destructive">{warningLine}</p>}
+                    {registerRows.length > 0 && (
+                      <div className="space-y-0.5">
+                        {registerRows.slice(0, 6).map((r) => (
+                          <p key={r.employee_id} className="text-[11px] text-muted-foreground">
+                            {r.name}{r.role ? ` · ${r.role}` : ""} — {r.status_label}
+                          </p>
+                        ))}
+                        {registerRows.length > 6 && (
+                          <p className="text-[11px] text-muted-foreground">
+                            and {registerRows.length - 6} more on the document
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {!ready && (
                   <p className="text-xs text-warning">
                     Confirm the licence details above before sending this for signature.
@@ -516,8 +539,30 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(subject)}>
                     <Download className="h-3.5 w-3.5 mr-1.5" />
-                    {subject === "dps_authorisation" ? "Signing sheet PDF" : "PDF"}
+                    {subject === "dps_authorisation" ? "Download document" : "PDF"}
                   </Button>
+                  {subject === "dps_authorisation" && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setEmailOpen(true)}>
+                        <Mail className="h-3.5 w-3.5 mr-1.5" /> Email a copy
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const csv = registerCsv(registerRows, branch);
+                          const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `${branch}-alcohol-register.csv`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        Register CSV
+                      </Button>
+                    </>
+                  )}
                   {latest && !latest.signed_at && (
                     <Button
                       size="sm"
@@ -537,6 +582,71 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                   </p>
                 )}
               </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Issued copies */}
+      {issues.length > 0 && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="px-4 py-2.5 bg-muted/40 border-b border-border">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+              Copies issued
+            </p>
+          </div>
+          <div className="divide-y divide-border">
+            {(issues as any[]).map((issue) => {
+              const state = linkState(issue);
+              return (
+                <div key={issue.id} className="px-4 py-2.5 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm truncate">
+                      {issue.recipient_email || "Downloaded copy"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(issue.created_at).toLocaleString("en-GB")} ·{" "}
+                      {DELIVERY_LABELS[issue.delivery_method as DeliveryMethod] ?? issue.delivery_method} ·{" "}
+                      {issue.authorised_count} of {issue.listed_count} authorised
+                      {issue.open_count ? ` · opened ${issue.open_count}×` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Badge variant="outline" className="text-[10px]">{linkStateLabel(state)}</Badge>
+                    {state === "live" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          await revokeLink.mutateAsync(issue.id);
+                          toast.success("Link withdrawn");
+                        }}
+                      >
+                        <XCircle className="h-3.5 w-3.5 mr-1" /> Withdraw
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <EmailLicensingDocumentDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
+        branch={branch}
+        licenceId={licence?.id ?? null}
+        doc={buildDoc("dps_authorisation", signedRequestFor("dps_authorisation"))}
+        rows={registerRows}
+        summaryLine={summaryLine}
+        warningLine={warningLine}
+        authoriserSignature={signedRequestFor("dps_authorisation")?.signature ?? null}
+        authoriserSignedAt={signedRequestFor("dps_authorisation")?.signed_at ?? null}
+        auditLine={auditLineFor(signedRequestFor("dps_authorisation"))}
+      />
+
             );
           })}
         </div>
