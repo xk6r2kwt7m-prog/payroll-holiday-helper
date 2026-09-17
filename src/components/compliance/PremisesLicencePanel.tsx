@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  AlertTriangle, Download, FileSignature, Pencil, Plus, ScrollText, Send, Trash2,
+  AlertTriangle, Download, FileSignature, Mail, Pencil, Plus, ScrollText, Send, Trash2, Users, XCircle,
 } from "lucide-react";
 import {
   awaitingConfirmation, buildDpsAuthorisation, buildSection57,
@@ -28,6 +28,15 @@ import {
   usePremisesLicence, useSaveLicenceCondition, useSavePremisesLicence, useSendLicenceSignature,
 } from "@/hooks/usePremisesLicences";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
+import {
+  useDpsRegister, useLicenceDocumentIssues, useRecordLicenceDocumentIssue,
+  useRevokeLicenceDocumentLink,
+} from "@/hooks/useDpsRegister";
+import {
+  registerPdfRows, registerCsv, DELIVERY_LABELS, linkState, linkStateLabel,
+  type DeliveryMethod,
+} from "@/lib/dps-register";
+import { EmailLicensingDocumentDialog } from "@/components/compliance/EmailLicensingDocumentDialog";
 import { cn } from "@/lib/utils";
 
 const toneClass: Record<string, string> = {
@@ -57,6 +66,9 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
   const saveCondition = useSaveLicenceCondition();
   const sendSignature = useSendLicenceSignature();
   const cancelRequest = useCancelLicenceSignature();
+  const recordIssue = useRecordLicenceDocumentIssue();
+  const { data: issues = [] } = useLicenceDocumentIssues(branch);
+  const revokeLink = useRevokeLicenceDocumentLink();
 
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState<Record<string, any>>({});
@@ -68,6 +80,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
   const [partA, setPartA] = useState("the office folder of the restaurant");
   const [nominated, setNominated] = useState<NominatedPerson[]>([{ name: "", job_title: "" }]);
   const [testSend, setTestSend] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const site: LicenceSite = useMemo(() => ({
