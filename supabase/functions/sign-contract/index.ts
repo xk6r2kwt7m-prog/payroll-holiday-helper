@@ -571,6 +571,161 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const token = url.searchParams.get("token");
 
+    // ════════════════════════════════════════════
+    // Manager action: rebuild the combined signed file when assembly failed.
+    // Signatures are never touched — only the derived PDF is produced again.
+    // ════════════════════════════════════════════
+    if (req.method === "POST" && url.searchParams.get("action") === "rebuild_final") {
+      failureStage = "rebuild_final";
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Please sign in again.", error_code: "auth_required" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Please sign in again.", error_code: "auth_required" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const rebuildBody = await req.json().catch(() => ({}));
+      const documentId = String(rebuildBody?.document_id || "");
+      if (!documentId) {
+        return new Response(JSON.stringify({ error: "Missing contract reference", error_code: "missing_document" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: doc } = await supabase
+        .from("employee_documents")
+        .select("id, tenant_id, employee_id, document_name, file_path, employees ( forename, surname )")
+        .eq("id", documentId)
+        .maybeSingle();
+
+      if (!doc) {
+        return new Response(JSON.stringify({ error: "Contract not found", error_code: "missing_document" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: membership } = await supabase
+        .from("tenant_members")
+        .select("role")
+        .eq("tenant_id", doc.tenant_id)
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!membership || !["company_admin", "manager"].includes(membership.role)) {
+        return new Response(JSON.stringify({ error: "Access denied", error_code: "forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: sigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_type, signed_at, signer_name, signature_data, ip_address, user_agent, signed_by_email, typed_name, signatory_title, signature_type, consent_text, document_hash, invalidated_at")
+        .eq("employee_document_id", documentId);
+
+      const liveSigs = (sigs || []).filter((s: any) => !s.invalidated_at);
+      const types = liveSigs.map((s: any) => s.signer_type);
+      if (!types.includes("employee") || !types.includes("employer")) {
+        return new Response(JSON.stringify({
+          error: "Both signatures are needed before the signed copy can be produced.",
+          error_code: "not_fully_signed",
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: originalFile, error: originalError } = await withRetry("download original for rebuild", () =>
+        supabase.storage.from("employee-documents").download(doc.file_path) as any, 3);
+      if (originalError || !originalFile) {
+        return new Response(JSON.stringify({ error: "The original contract file could not be read. Please try again.", error_code: "missing_document" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: rebuildSettings } = await supabase
+        .from("company_settings")
+        .select("company_name")
+        .eq("tenant_id", doc.tenant_id)
+        .maybeSingle();
+
+      const originalBytes = new Uint8Array(await originalFile.arrayBuffer());
+      const rebuildHash = await sha256Bytes(originalBytes);
+      const rebuildPath = `contracts/final/${doc.tenant_id}/${doc.id}/${sanitizeFileName(doc.document_name)}_completed_signed.pdf`;
+
+      const rebuiltPackage = await withRetry("rebuild final signed contract", () =>
+        buildFinalSignedContractPdf({
+          originalPdfBytes: originalBytes,
+          documentName: doc.document_name,
+          employeeName: `${(doc as any).employees?.forename || ""} ${(doc as any).employees?.surname || ""}`.trim(),
+          companyName: rebuildSettings?.company_name || "Ugly Dumpling",
+          documentId: doc.id,
+          originalDocumentHash: rebuildHash,
+          signatures: liveSigs.sort((a: any, b: any) => (a.signer_type === "employer" ? -1 : 1)).map((s: any) => ({
+            signer_type: s.signer_type,
+            signer_name: s.signer_name,
+            typed_name: s.typed_name,
+            signatory_title: s.signatory_title || null,
+            signed_at: s.signed_at,
+            signed_by_email: s.signed_by_email,
+            ip_address: s.ip_address,
+            user_agent: s.user_agent,
+            signature_data: s.signature_data,
+            signature_type: s.signature_type,
+            consent_text: s.consent_text,
+            document_hash: s.document_hash,
+          })) as SignatureForPdf[],
+        }), 2);
+
+      await withRetry("store rebuilt signed contract", async () => {
+        const result = await supabase.storage
+          .from("employee-documents")
+          .upload(rebuildPath, rebuiltPackage.finalBytes, { contentType: "application/pdf", upsert: true });
+        if (result.error) throw result.error;
+        return result;
+      });
+
+      await supabase
+        .from("employee_documents")
+        .update({
+          final_signed_pdf_url: rebuildPath,
+          final_document_hash: rebuiltPackage.finalHash,
+          contract_send_status: "fully_signed",
+          contract_state: "signed",
+        } as any)
+        .eq("id", doc.id);
+
+      await supabase.from("audit_log").insert({
+        action: "update",
+        table_name: "employee_documents",
+        record_id: doc.id,
+        tenant_id: doc.tenant_id,
+        user_id: user.id,
+        new_data: {
+          event: "final_signed_contract_file_rebuilt",
+          employee_document_id: doc.id,
+          employee_id: doc.employee_id,
+          note: "Combined signed file produced again from the stored signatures. Signatures unchanged.",
+        },
+      });
+
+      return new Response(JSON.stringify({ success: true, path: rebuildPath }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!token) {
       return new Response(JSON.stringify({ error: "Missing token", error_code: "missing_token" }), {
         status: 400,
@@ -705,7 +860,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const brandedDocumentUrl = `${CANONICAL_APP_URL}/document/view?token=${token}`;
+      const brandedDocumentUrl = `${CANONICAL_APP_URL}/document/view?token=${token}&variant=original`;
 
       const docHash = await sha256Bytes(await originalDocumentFile.arrayBuffer());
 

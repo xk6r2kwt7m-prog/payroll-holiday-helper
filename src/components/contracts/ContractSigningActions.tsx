@@ -101,6 +101,7 @@ export function ContractSigningActions({
   const [signedScanPath, setSignedScanPath] = useState<string | null>(null);
   const [signedScanAt, setSignedScanAt] = useState<string | null>(null);
   const [sendingSigned, setSendingSigned] = useState(false);
+  const [rebuilding, setRebuilding] = useState(false);
   const [signedContractSent, setSignedContractSent] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
@@ -353,6 +354,29 @@ export function ContractSigningActions({
   const handleViewFinalContract = async () => {
     const variant = bothSigned ? "final" : "original";
     window.open(`/document/view?id=${documentId}&variant=${variant}`, "_blank");
+  };
+
+  /** Produce the combined signed file again when assembly failed. Signatures are untouched. */
+  const handleRebuildSignedFile = async () => {
+    setRebuilding(true);
+    try {
+      const { data } = await invokeAuthenticatedFunction<{ success?: boolean; error?: string }>(
+        "sign-contract?action=rebuild_final",
+        { document_id: documentId },
+      );
+      if (!data?.success) throw new Error(data?.error || "Rebuild failed");
+      toast({ title: "Signed copy rebuilt", description: "The completed contract can now be opened and sent." });
+      queryClient.invalidateQueries({ queryKey: ["employee-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["contracts"] });
+    } catch (err: any) {
+      toast({
+        title: "Could not rebuild the signed copy",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setRebuilding(false);
+    }
   };
 
   /** Manually email the completed (both-signed) contract to the employee. */
@@ -991,6 +1015,24 @@ export function ContractSigningActions({
                   {sendingSigned ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                   {signedContractSent ? "Send signed contract again" : "Send signed contract to staff"}
                 </Button>
+
+                {!finalSignedFilePath && (
+                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
+                    <p className="text-xs text-foreground">
+                      Both signatures are stored, but the combined signed file has not been produced yet.
+                    </p>
+                    <Button
+                      onClick={handleRebuildSignedFile}
+                      disabled={rebuilding}
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {rebuilding ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      Rebuild signed copy
+                    </Button>
+                  </div>
+                )}
 
                 {!employeeEmail && (
                   <p className="text-[10px] text-muted-foreground">
