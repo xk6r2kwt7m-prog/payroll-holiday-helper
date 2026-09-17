@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,8 +13,12 @@ import { toast } from "sonner";
 import { Wine } from "lucide-react";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useComplianceBranches } from "@/hooks/useComplianceBranches";
-import { usePremisesLicence, useSendLicenceSignature } from "@/hooks/usePremisesLicences";
+import { usePremisesLicence, useSendLicenceSignature, useLicenceSignatureRequests } from "@/hooks/usePremisesLicences";
+import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
 import { isReadyToSend } from "@/lib/licensing-documents";
+import {
+  isFrontOfHouse, alcoholAskState, alcoholAskStateLabel, needsAlcoholAsk,
+} from "@/lib/alcohol-automation";
 
 /**
  * Sends the alcohol-sales authorisation to staff on its own — not bundled
@@ -32,10 +36,13 @@ export function SendStaffAlcoholDialog({
   const [branch, setBranch] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const [testSend, setTestSend] = useState(false);
+  const [showEveryone, setShowEveryone] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const { data: employees = [] } = useEmployees();
   const { data: licence } = usePremisesLicence(branch || undefined);
+  const { data: requests = [] } = useLicenceSignatureRequests({ subjectType: "staff_alcohol" });
+  const { data: authorisations = [] } = useAlcoholAuthorisations();
   const send = useSendLicenceSignature();
 
   const site = useMemo(() => ({
@@ -56,9 +63,24 @@ export function SendStaffAlcoholDialog({
       .filter((e) => !e.archived_at && e.status !== "leaver" && !e.is_test_record)
       .filter((e) => !branch || e.branch === branch)
       .filter((e) => !!e.email)
+      .filter((e) => showEveryone || isFrontOfHouse(e.job_title, e.department))
+      .map((e) => ({
+        ...e,
+        state: alcoholAskState(e.id, requests as any[], authorisations as any[]),
+        needsAsk: needsAlcoholAsk(e as any, requests as any[], authorisations as any[]),
+      }))
       .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`)),
-    [employees, branch]
+    [employees, branch, showEveryone, requests, authorisations]
   );
+
+  const missing = staff.filter((e) => e.needsAsk);
+
+  // Everyone who still needs it is ticked for you when you pick a site.
+  useEffect(() => {
+    if (!branch) return;
+    setSelected(missing.map((e) => e.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branch, showEveryone, staff.length]);
 
   const submit = async () => {
     if (!branch) { toast.error("Choose the site"); return; }
@@ -128,10 +150,28 @@ export function SendStaffAlcoholDialog({
 
           {branch && (
             <div className="space-y-1.5">
-              <Label>Who is it for?</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label>Who is it for?</Label>
+                {missing.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setSelected(missing.map((e) => e.id))}
+                  >
+                    Tick everyone who still needs it ({missing.length})
+                  </Button>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {showEveryone
+                  ? "Everyone at this site with an email address."
+                  : "Front-of-house roles are shown. Turn on \u201cShow everyone\u201d for kitchen and other roles."}
+              </p>
               {staff.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  No active staff with an email address at this site.
+                  Nobody to show at this site. Turn on "Show everyone" if job titles are not filled in.
                 </p>
               ) : (
                 <div className="rounded-lg border border-border divide-y divide-border max-h-60 overflow-y-auto">
@@ -144,14 +184,29 @@ export function SendStaffAlcoholDialog({
                         }
                       />
                       <span className="text-sm min-w-0">
-                        <span className="block truncate">{e.forename} {e.surname}</span>
-                        <span className="block text-xs text-muted-foreground truncate">{e.email}</span>
+                        <span className="block truncate">
+                          {e.forename} {e.surname}
+                          {e.job_title ? <span className="text-muted-foreground"> · {e.job_title}</span> : null}
+                        </span>
+                        <span className="block text-xs text-muted-foreground truncate">
+                          {alcoholAskStateLabel(e.state)}
+                        </span>
                       </span>
                     </label>
                   ))}
                 </div>
               )}
             </div>
+          )}
+
+          {branch && (
+            <label className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+              <span className="text-sm">
+                Show everyone, not only front of house
+                <span className="block text-xs text-muted-foreground">Useful when job titles are missing</span>
+              </span>
+              <Switch checked={showEveryone} onCheckedChange={setShowEveryone} />
+            </label>
           )}
 
           <label className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
@@ -166,7 +221,7 @@ export function SendStaffAlcoholDialog({
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={submit} disabled={busy || !ready || selected.length === 0}>
-            {busy ? "Sending..." : "Send"}
+            {busy ? "Sending..." : `Send${selected.length ? ` to ${selected.length}` : ""}`}
           </Button>
         </DialogFooter>
       </DialogContent>
