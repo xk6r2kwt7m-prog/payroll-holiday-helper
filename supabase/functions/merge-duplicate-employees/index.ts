@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { guardRequest } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,12 +16,31 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    const { dry_run = true } = await req.json().catch(() => ({ dry_run: true }));
+    const { dry_run = true, tenant_id: requestedTenant } = await req
+      .json()
+      .catch(() => ({ dry_run: true, tenant_id: undefined }));
+
+    const guard = await guardRequest(req, {
+      tenantId: requestedTenant ?? null,
+      adminOnly: true,
+      cors: corsHeaders,
+    });
+    if (!guard.ok) return guard.response;
+
+    // A company must always be named: this tool must never run across every company.
+    const tenantId = guard.internal ? requestedTenant : guard.tenantId;
+    if (!tenantId) {
+      return new Response(
+        JSON.stringify({ error: "tenant_id is required — this tool is scoped to one company" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Step 1: Find all duplicate employee groups (same forename + surname)
     const { data: allEmployees } = await supabase
       .from("employees")
-      .select("id, forename, surname, start_date, status, hourly_rate");
+      .select("id, forename, surname, start_date, status, hourly_rate")
+      .eq("tenant_id", tenantId);
 
     if (!allEmployees) throw new Error("Failed to fetch employees");
 
