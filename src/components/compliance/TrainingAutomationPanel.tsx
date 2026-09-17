@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Clock, RefreshCw, GraduationCap } from "lucide-react";
+import { Clock, RefreshCw, GraduationCap, Wine } from "lucide-react";
 import { useInductionPacks } from "@/hooks/useCompliance";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTenantPreferences, useSaveTenantPreferences } from "@/hooks/useTenantPreferences";
@@ -30,7 +30,7 @@ export function TrainingAutomationPanel() {
   const { data: employees = [] } = useEmployees();
   const { data: reissues = [] } = useVersionReissues();
   const decide = useDecideVersionReissue();
-  const { data: prefs } = useTenantPreferences("training_docs", { auto_assign_induction: false });
+  const { data: prefs } = useTenantPreferences("training_docs", { auto_assign_induction: false, auto_alcohol_authorisation: false, auto_alcohol_all_roles: false });
   const savePrefs = useSaveTenantPreferences();
 
   const [deciding, setDeciding] = useState<any | null>(null);
@@ -90,6 +90,57 @@ export function TrainingAutomationPanel() {
             toast.success(v ? "New starters will be sent their induction automatically" : "Automatic sending turned off");
           }}
         />
+      </div>
+
+      {/* Automatic alcohol authorisation for front-of-house staff */}
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium flex items-center gap-1.5">
+              <Wine className="h-4 w-4 text-primary" /> Ask front-of-house staff to sign the alcohol authorisation
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Off by default. When on, anyone front of house at a site with its licence details recorded gets
+              the authorisation by email the next morning: they read it, sign it, and appear on the
+              "Who can sell alcohol" list once you approve them as DPS or personal licence holder. Nobody is
+              asked twice, and nobody is authorised without your approval.
+            </p>
+          </div>
+          <Switch
+            checked={prefs?.auto_alcohol_authorisation === true}
+            onCheckedChange={async (v) => {
+              await savePrefs.mutateAsync({
+                category: "training_docs",
+                preferences: { ...(prefs ?? {}), auto_alcohol_authorisation: v },
+              });
+              toast.success(
+                v
+                  ? "Front-of-house staff will be asked to sign automatically"
+                  : "Automatic alcohol authorisation turned off"
+              );
+            }}
+          />
+        </div>
+        {prefs?.auto_alcohol_authorisation === true && (
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+            <span className="text-sm">
+              Include every role, not only front of house
+              <span className="block text-xs text-muted-foreground">
+                Use this if job titles are not filled in yet
+              </span>
+            </span>
+            <Switch
+              checked={prefs?.auto_alcohol_all_roles === true}
+              onCheckedChange={async (v) => {
+                await savePrefs.mutateAsync({
+                  category: "training_docs",
+                  preferences: { ...(prefs ?? {}), auto_alcohol_all_roles: v },
+                });
+                toast.success(v ? "Everyone will be asked" : "Only front-of-house roles will be asked");
+              }}
+            />
+          </label>
+        )}
       </div>
 
       {/* Unfinished inductions */}
