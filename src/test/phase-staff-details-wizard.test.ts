@@ -83,10 +83,10 @@ describe("staff details form asks a little at a time and ends with a check scree
 describe("National Insurance format check", () => {
   it("accepts a valid number and rejects a wrong one", async () => {
     const { isValidNiNumber } = await import("@/pages/StaffDetailsPortal");
-    expect(isValidNiNumber("QQ123456C")).toBe(true);
-    expect(isValidNiNumber("qq 12 34 56 c")).toBe(true);
+    expect(isValidNiNumber("AB123456C")).toBe(true);
+    expect(isValidNiNumber("ab 12 34 56 c")).toBe(true);
     expect(isValidNiNumber("QQ12345C")).toBe(false);
-    expect(isValidNiNumber("DQ123456C")).toBe(false);
+    expect(isValidNiNumber("DA123456C")).toBe(false);
     expect(isValidNiNumber("QQ123456E")).toBe(false);
   });
 });

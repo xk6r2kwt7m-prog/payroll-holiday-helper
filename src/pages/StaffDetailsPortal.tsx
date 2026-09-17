@@ -85,8 +85,8 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
       id: "ni", section: "personal", title: "National Insurance number",
       blurb: "Leave this blank if you do not have one yet — you can still carry on.", icon: ShieldCheck,
       fields: [{
-        key: "ni_number", label: "National Insurance number (optional)", placeholder: "QQ123456C",
-        hint: "Two letters, six numbers, then one letter — for example QQ123456C.",
+        key: "ni_number", label: "National Insurance number (optional)", placeholder: "AB123456C",
+        hint: "Two letters, six numbers, then one letter — for example AB123456C.",
       }],
     },
   ],
@@ -273,7 +273,7 @@ export default function StaffDetailsPortal() {
       if (s.section === "personal") {
         const ni = (a.ni_number ?? "").trim();
         if (ni && !isValidNiNumber(ni)) {
-          list.push("That National Insurance number does not look right (for example QQ123456C). Leave it blank if you do not have one");
+          list.push("That National Insurance number does not look right (for example AB123456C). Leave it blank if you do not have one");
         }
       }
       if (s.section === "bank") {
