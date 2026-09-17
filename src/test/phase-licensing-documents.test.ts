@@ -132,3 +132,15 @@ describe("signature request rules", () => {
     expect(clampExpiryDays(30)).toBe(30);
   });
 });
+
+describe("incident log condition source per branch", () => {
+  it("names each site's own licence condition", () => {
+    expect(incidentLogConditionSource("Fitzrovia")).toContain("condition 28");
+    expect(incidentLogConditionSource("Brixton")).toContain("condition 13");
+  });
+
+  it("keeps the requirement but says so when a site's licence is unconfirmed", () => {
+    expect(incidentLogConditionSource("Carnaby")).toContain("not yet confirmed");
+    expect(requiresLicenceRecord("alcohol_refusal")).toBe(true);
+  });
+});
