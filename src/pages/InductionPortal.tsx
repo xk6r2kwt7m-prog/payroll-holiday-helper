@@ -521,10 +521,18 @@ export default function InductionPortal() {
                     <Button
                       size="sm"
                       className="w-full min-h-[44px]"
-                      disabled={busy === item.id || (item.requires_signature && !itemSignatures[item.id])}
+                      disabled={
+                        busy === item.id ||
+                        !readerDone ||
+                        (item.requires_signature && !itemSignatures[item.id])
+                      }
                       onClick={() => acknowledgeItem(item)}
                     >
-                      {busy === item.id ? "Saving..." : "I have read and understood this"}
+                      {busy === item.id
+                        ? "Saving..."
+                        : readerDone
+                          ? "I have read and understood this"
+                          : "Finish reading to confirm"}
                     </Button>
                   )}
                 </div>
