@@ -44,6 +44,7 @@ import DocumentsCompliance from "./pages/DocumentsCompliance";
 import ReportIncident from "./pages/ReportIncident";
 import InductionPortal from "./pages/InductionPortal";
 import StaffDetailsPortal from "./pages/StaffDetailsPortal";
+import JoinTeam from "./pages/JoinTeam";
 import SignLicensingDocument from "./pages/SignLicensingDocument";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import LocationDashboard from "./pages/LocationDashboard";
@@ -102,6 +103,7 @@ const App = () => (
             <Route path="/document/view" element={<DocumentView />} />
             <Route path="/induction/:token" element={<InductionPortal />} />
             <Route path="/my-details/:token" element={<StaffDetailsPortal />} />
+            <Route path="/join/:token" element={<JoinTeam />} />
             <Route path="/sign-licence/:token" element={<SignLicensingDocument />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
 

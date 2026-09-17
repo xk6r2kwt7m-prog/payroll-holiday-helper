@@ -20,7 +20,7 @@ export function PendingInvitations() {
   const handleResend = async (inv: any) => {
     setResendingId(inv.id);
     try {
-      await resend.mutateAsync({ email: inv.email, invitationId: inv.id });
+      await resend.mutateAsync({ email: inv.email, invitationId: inv.id, inviteToken: inv.token });
     } finally {
       setResendingId(null);
     }
