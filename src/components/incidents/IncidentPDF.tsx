@@ -70,7 +70,7 @@ export function IncidentPDF({ incident, companyName, amendments = [], witnesses 
           <Row label="Reported by" value={incident.reported_by_name} />
           <Row
             label="Licence requirement"
-            value={incident.licence_condition_28 ? "Recorded under the premises licence conditions" : "Not a licence-required category"}
+            value={incident.licence_condition_28 ? `Recorded under ${incidentLogConditionSource(incident.branch)}` : "Not a licence-required category"}
           />
         </Section>
 
