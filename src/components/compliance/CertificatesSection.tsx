@@ -40,9 +40,11 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     branch: branchFilter || "",
+    applies_to_all_branches: false,
     certificate_type: "",
     certificate_number: "",
     holder_name: "",
+    holder_job_title: "",
     issue_date: "",
     expiry_date: "",
     renewal_status: "current",
@@ -53,8 +55,9 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!form.branch || !form.certificate_type.trim()) {
-      toast.error("Choose the branch and what this certificate is");
+    const allSites = form.applies_to_all_branches;
+    if ((!allSites && !form.branch) || !form.certificate_type.trim()) {
+      toast.error(allSites ? "Say what this certificate is" : "Choose the site and what this certificate is");
       return;
     }
     setSaving(true);
@@ -65,13 +68,22 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
       if (receipt && tenantId) receiptPath = await uploadComplianceFile(receipt, tenantId, "certificates");
       await save.mutateAsync({
         ...form,
+        branch: allSites ? ALL_SITES : form.branch,
+        holder_job_title: form.holder_job_title || null,
         issue_date: form.issue_date || null,
         expiry_date: form.expiry_date || null,
         file_path: filePath,
         receipt_path: receiptPath,
       });
-      toast.success("Certificate saved — reminders start 90 days before expiry");
-      setForm(f => ({ ...f, certificate_type: "", certificate_number: "", holder_name: "", notes: "" }));
+      toast.success(
+        allSites
+          ? "Saved — this certificate now shows at every site"
+          : "Certificate saved — reminders start 90 days before expiry"
+      );
+      setForm(f => ({
+        ...f, certificate_type: "", certificate_number: "",
+        holder_name: "", holder_job_title: "", notes: "",
+      }));
       setOpen(false);
       setFile(null); setReceipt(null);
     } catch (e) {
