@@ -52,6 +52,7 @@ export function useSendInvitation() {
         recipientEmail: email,
         employeeName: name || email,
         tenantId,
+        inviteToken: (data as any)?.token ?? null,
       });
 
       return { invitation: data, emailResult: result };
@@ -78,7 +79,7 @@ export function useResendInvitation() {
   const { sendInviteEmail } = useInviteEmail();
 
   return useMutation({
-    mutationFn: async ({ email, invitationId }: { email: string; invitationId: string }) => {
+    mutationFn: async ({ email, invitationId, inviteToken }: { email: string; invitationId: string; inviteToken?: string | null }) => {
       if (!tenantId) throw new Error("No tenant context");
 
       console.log("[INVITE_RESEND] Resending invite", { invitationId, email, tenantId });
@@ -87,6 +88,7 @@ export function useResendInvitation() {
         recipientEmail: email,
         employeeName: email,
         tenantId,
+        inviteToken: inviteToken ?? null,
       });
 
       if (!result.success) {

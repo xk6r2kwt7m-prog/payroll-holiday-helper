@@ -102,21 +102,24 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
           tenant_id: tenantId,
         } as any);
 
-      // Create invitation DB record
-      await supabase
+      // Create invitation DB record (its token powers the personal joining link)
+      const { data: invitation } = await supabase
         .from("tenant_invitations")
         .insert({
           tenant_id: tenantId,
           email: email.trim().toLowerCase(),
           role: "staff" as any,
           invited_by: (await supabase.auth.getUser()).data.user?.id,
-        });
+        })
+        .select("token")
+        .single();
 
       // Send the actual invite email
       const result = await sendInviteEmail({
         recipientEmail: email.trim().toLowerCase(),
         employeeName: `${forename.trim()} ${surname.trim()}`,
         tenantId,
+        inviteToken: (invitation as any)?.token ?? null,
       });
 
       qc.invalidateQueries({ queryKey: ["employees"] });

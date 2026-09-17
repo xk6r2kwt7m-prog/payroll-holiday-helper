@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
@@ -66,12 +66,46 @@ const CompanyOnboarding = () => {
     members: [{ name: "", contact: "" }],
   });
 
+  // Does this signed-in person have an invitation waiting? If so they are joining
+  // an existing team, not creating a business.
+  const [pendingInvite, setPendingInvite] = useState<{ pending: boolean; token?: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!user) return;
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        const accessToken = session.session?.access_token;
+        if (!accessToken) return;
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accept-invitation?mine=1`,
+          {
+            headers: {
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        );
+        const json = await res.json();
+        if (!cancelled) setPendingInvite(json);
+      } catch {
+        /* checking is best-effort; business setup still works */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
   const updateField = useCallback((field: string, value: string) => {
     setData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   // ─── Redirect guards (using <Navigate> to avoid React warnings) ───
   if (!user) return <Navigate to="/auth" replace />;
+  // An invited team member must never see business setup — send them to their own
+  // joining link instead, which grants access to the company that invited them.
+  if (pendingInvite?.pending && pendingInvite.token) {
+    return <Navigate to={`/join/${pendingInvite.token}`} replace />;
+  }
   if (tenantResolved && tenantId) return <Navigate to="/" replace />;
   if (tenantResolved && membershipCount > 0 && !tenantId) return <Navigate to="/select-workspace" replace />;
   if (!tenantResolved || tenantLoading) {

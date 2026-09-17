@@ -7,6 +7,13 @@ interface InviteEmailPayload {
   employeeName: string;
   companyName?: string;
   tenantId: string;
+  /**
+   * Personal invitation token. When present the email links to /join/<token>,
+   * which knows who the person is, grants access to this company only and can
+   * never show the business setup wizard. Without it the email falls back to
+   * the ordinary sign-in page.
+   */
+  inviteToken?: string | null;
 }
 
 interface InviteEmailResult {
@@ -26,7 +33,9 @@ export function useInviteEmail() {
   const sendInviteEmail = useCallback(
     async (payload: InviteEmailPayload): Promise<InviteEmailResult> => {
       const timestamp = new Date().toISOString();
-      const loginUrl = `${getCanonicalOrigin()}/auth`;
+      const loginUrl = payload.inviteToken
+        ? `${getCanonicalOrigin()}/join/${payload.inviteToken}`
+        : `${getCanonicalOrigin()}/auth`;
 
       console.log("[INVITE_EMAIL] Attempting send", {
         to: payload.recipientEmail,
