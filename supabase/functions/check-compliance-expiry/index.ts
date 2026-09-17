@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
 
     const { data: certs, error } = await admin
       .from("compliance_certificates")
-      .select("id, tenant_id, branch, certificate_type, certificate_number, holder_name, expiry_date, renewal_status")
+      .select("id, tenant_id, branch, applies_to_all_branches, certificate_type, certificate_number, holder_name, expiry_date, renewal_status")
       .not("expiry_date", "is", null)
       .neq("renewal_status", "renewed");
     if (error) throw error;
@@ -127,9 +127,12 @@ Deno.serve(async (req) => {
       for (const m of members ?? []) {
         if (m.tenant_id !== cert.tenant_id) continue;
         if (m.role === "manager") {
-          // Overdue items escalate to company admins as well as the branch manager.
-          const mine = branchesByUser.get(m.user_id);
-          if (!mine || !mine.has(cert.branch)) continue;
+          // Records held company-wide (staff qualifications) reach every manager;
+          // site records stay with the managers of that site.
+          if (!cert.applies_to_all_branches) {
+            const mine = branchesByUser.get(m.user_id);
+            if (!mine || !mine.has(cert.branch)) continue;
+          }
         }
         notifications.push({
           tenant_id: cert.tenant_id,
