@@ -44,7 +44,9 @@ Deno.serve(async (req) => {
 
     const { data: request } = await admin
       .from("employee_info_requests")
-      .select("*, employees(forename, surname, preferred_name, email, date_of_birth, nationality)")
+      .select(
+        "*, employees(forename, surname, preferred_name, email, date_of_birth, nationality, ni_number, passport_no, sharing_code, settlement_status, bank_account_no, sort_code)",
+      )
       .eq("token", token)
       .maybeSingle();
 
@@ -89,6 +91,7 @@ Deno.serve(async (req) => {
           surname: emp?.surname ?? "",
           date_of_birth: emp?.date_of_birth ?? "",
           nationality: emp?.nationality ?? "",
+          email: emp?.email ?? "",
         },
       });
     }
