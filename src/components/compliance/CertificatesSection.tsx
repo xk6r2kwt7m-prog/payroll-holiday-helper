@@ -11,7 +11,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Upload, ExternalLink, CalendarClock } from "lucide-react";
+import { Plus, Upload, ExternalLink, CalendarClock, Building2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { expiryLabel, expiryTone, resolveExpiryBand } from "@/lib/compliance-expiry";
 import {
   useComplianceCertificates, useSaveComplianceCertificate,
@@ -29,6 +30,9 @@ const toneClass: Record<string, string> = {
 };
 
 const RENEWAL_STATUSES = ["current", "renewal_started", "renewed", "lapsed"] as const;
+
+/** Label stored on records that belong to the person or company, not one site. */
+export const ALL_SITES = "All sites";
 
 export function CertificatesSection({ branchFilter }: { branchFilter?: string }) {
   const { tenantId } = useTenant();
