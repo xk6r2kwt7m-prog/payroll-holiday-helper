@@ -204,27 +204,40 @@ Deno.serve(async (req) => {
       const line2 = str(personal.address_line2, 120);
       const city = str(personal.city, 80);
       const postcode = str(personal.postcode, 12);
-      const composedAddress = [line1, line2, city, postcode].filter(Boolean).join(", ") || null;
+      const aliases = buildContactAliases({
+        line1,
+        line2,
+        city,
+        postcode,
+        phone: str(personal.phone, 30),
+        email: str(personal.email, 160),
+      });
+
+      const prevPending = Array.isArray((existingOnb?.personal_info as any)?.pending_confirmations)
+        ? ((existingOnb?.personal_info as any).pending_confirmations as any[])
+        : [];
+      const submittedAtIso = new Date().toISOString();
+      const pendingConfirmations = [
+        // Keep any earlier unresolved item that this submission does not touch.
+        ...prevPending.filter(
+          (p: any) => !allocation.conflicts.some((c) => c.field === p?.field),
+        ),
+        ...allocation.conflicts.map((c) => ({ ...c, submitted_at: submittedAtIso })),
+      ];
 
       const personalInfo = {
         ...((existingOnb?.personal_info as Record<string, unknown>) ?? {}),
+        pending_confirmations: pendingConfirmations,
         ...(sections.includes("personal")
           ? {
               legal_forename: str(personal.forename, 80),
               legal_surname: str(personal.surname, 80),
               preferred_name: str(personal.preferred_name, 80),
               date_of_birth: str(personal.date_of_birth, 10),
-              phone: str(personal.phone, 30),
               ni_number: str(personal.ni_number, 20),
-              // Contract generation reads these keys — write all supported shapes
-              // so the address never has to be asked for twice.
-              address: composedAddress,
-              address_line_1: line1,
-              address_line_2: line2,
-              address_line1: line1,
-              address_line2: line2,
-              city,
-              postcode,
+              // Contracts, letters and the staff profile each read a different
+              // key shape — write them all so nothing is asked for twice.
+              ...aliases,
             }
           : {}),
         ...(sections.includes("rtw")
