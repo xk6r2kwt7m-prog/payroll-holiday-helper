@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { guardRequest } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -151,6 +152,10 @@ Deno.serve(async (req) => {
         },
       );
     }
+
+    // Payroll history may only be imported by an administrator of that company.
+    const guard = await guardRequest(req, { tenantId, adminOnly: true, cors: corsHeaders });
+    if (!guard.ok) return guard.response;
 
     // Cache employee lookups — scoped to the requested tenant
     const { data: employees } = await supabase
