@@ -75,6 +75,65 @@ Deno.serve(async (req) => {
       return data ?? [];
     };
 
+    /**
+     * The on-screen reading version of one induction document, if the manager
+     * has prepared one and left it switched on. Correct answers are never sent
+     * to the browser — answers are marked on the server.
+     */
+    const loadReader = async (item: any) => {
+      if (!item.document_id) return null;
+      const { data: doc } = await admin
+        .from("compliance_documents")
+        .select("reader_status, reader_enabled")
+        .eq("id", item.document_id)
+        .maybeSingle();
+      if (!doc || doc.reader_status !== "ready" || doc.reader_enabled === false) return null;
+
+      const { data: sections } = await admin
+        .from("document_reader_sections")
+        .select("id, heading, body, sort_order")
+        .eq("document_id", item.document_id)
+        .order("sort_order");
+      if (!sections || sections.length === 0) return null;
+
+      const { data: questions } = await admin
+        .from("document_reader_questions")
+        .select("id, section_id, question, options, sort_order")
+        .eq("document_id", item.document_id)
+        .eq("approval_status", "approved")
+        .order("sort_order");
+
+      const { data: progress } = await admin
+        .from("document_reader_progress")
+        .select("section_id, read_at, answered_correctly, attempts")
+        .eq("pack_item_id", item.id);
+
+      return {
+        sections,
+        questions: questions ?? [],
+        progress: (progress ?? []).map((p: any) => ({
+          section_id: p.section_id,
+          read: !!p.read_at,
+          answered_correctly: p.answered_correctly,
+          attempts: p.attempts ?? 0,
+        })),
+      };
+    };
+
+    /** Whether every section has been read and every check answered correctly. */
+    const readerOutstanding = async (item: any): Promise<number> => {
+      const reader = await loadReader(item);
+      if (!reader) return 0;
+      const byId = new Map(reader.progress.map((p: any) => [p.section_id, p]));
+      return reader.sections.filter((s: any) => {
+        const p: any = byId.get(s.id);
+        if (!p?.read) return true;
+        const checks = reader.questions.filter((q: any) => q.section_id === s.id);
+        if (checks.length === 0) return false;
+        return p.answered_correctly !== true;
+      }).length;
+    };
+
     /** Creates module and practical rows the first time the pack is opened. */
     const ensureSeeded = async () => {
       const existing = await loadModules();
@@ -126,7 +185,8 @@ Deno.serve(async (req) => {
             const { data } = await admin.storage.from(BUCKET).createSignedUrl(item.file_path, 3600);
             view_url = data?.signedUrl ?? null;
           }
-          return { ...item, view_url };
+          const reader = await loadReader(item);
+          return { ...item, view_url, reader };
         }),
       );
 
@@ -306,6 +366,114 @@ Deno.serve(async (req) => {
       });
     }
 
+    /** Records that one on-screen section has been read. */
+    if (action === "read_section") {
+      const { item_id: itemId, section_id: sectionId } = body ?? {};
+      if (!itemId || !sectionId) return json({ error: "Missing section" }, 400);
+      const items = await loadItems();
+      const item = items.find((i: any) => i.id === itemId);
+      if (!item) return json({ error: "Document not found" }, 404);
+
+      const { data: section } = await admin
+        .from("document_reader_sections")
+        .select("id, document_id")
+        .eq("id", sectionId)
+        .eq("document_id", item.document_id)
+        .maybeSingle();
+      if (!section) return json({ error: "Section not found" }, 404);
+
+      const { data: existing } = await admin
+        .from("document_reader_progress")
+        .select("id, read_at")
+        .eq("pack_item_id", itemId)
+        .eq("section_id", sectionId)
+        .maybeSingle();
+
+      if (existing) {
+        if (!existing.read_at) {
+          await admin.from("document_reader_progress")
+            .update({ read_at: new Date().toISOString() })
+            .eq("id", existing.id);
+        }
+      } else {
+        await admin.from("document_reader_progress").insert({
+          tenant_id: pack.tenant_id,
+          document_id: item.document_id,
+          section_id: sectionId,
+          employee_id: pack.employee_id,
+          pack_id: pack.id,
+          pack_item_id: itemId,
+          read_at: new Date().toISOString(),
+        });
+      }
+      return json({ success: true });
+    }
+
+    /** Marks one comprehension check. The right answer never leaves the server. */
+    if (action === "answer_section_question") {
+      const { item_id: itemId, question_id: questionId, answer_index: answerIndex } = body ?? {};
+      if (!itemId || !questionId || typeof answerIndex !== "number") {
+        return json({ error: "Missing answer" }, 400);
+      }
+      const items = await loadItems();
+      const item = items.find((i: any) => i.id === itemId);
+      if (!item) return json({ error: "Document not found" }, 404);
+
+      const { data: question } = await admin
+        .from("document_reader_questions")
+        .select("id, section_id, correct_index, explanation, approval_status, document_id")
+        .eq("id", questionId)
+        .maybeSingle();
+      if (!question || question.document_id !== item.document_id) {
+        return json({ error: "Question not found" }, 404);
+      }
+      if (question.approval_status !== "approved") {
+        return json({ error: "This question is not in use." }, 400);
+      }
+
+      const correct = answerIndex === question.correct_index;
+      const now = new Date().toISOString();
+
+      const { data: existing } = await admin
+        .from("document_reader_progress")
+        .select("id, attempts, read_at")
+        .eq("pack_item_id", itemId)
+        .eq("section_id", question.section_id)
+        .maybeSingle();
+
+      if (existing) {
+        await admin.from("document_reader_progress").update({
+          read_at: existing.read_at ?? now,
+          question_id: questionId,
+          answer_index: answerIndex,
+          answered_correctly: correct,
+          attempts: (existing.attempts ?? 0) + 1,
+          answered_at: now,
+        }).eq("id", existing.id);
+      } else {
+        await admin.from("document_reader_progress").insert({
+          tenant_id: pack.tenant_id,
+          document_id: item.document_id,
+          section_id: question.section_id,
+          employee_id: pack.employee_id,
+          pack_id: pack.id,
+          pack_item_id: itemId,
+          read_at: now,
+          question_id: questionId,
+          answer_index: answerIndex,
+          answered_correctly: correct,
+          attempts: 1,
+          answered_at: now,
+        });
+      }
+
+      return json({
+        success: true,
+        correct,
+        explanation: correct ? null : (question.explanation ?? null),
+      });
+    }
+
     if (action === "acknowledge_item") {
       const itemId = body?.item_id;
       if (!itemId) return json({ error: "Missing document" }, 400);
@@ -314,6 +482,14 @@ Deno.serve(async (req) => {
       if (!item) return json({ error: "Document not found" }, 404);
       if (item.requires_signature && !body?.signature_data) {
         return json({ error: "A signature is required for this document" }, 400);
+      }
+      // Where there is an on-screen version, every section must be read and
+      // every question answered correctly before it can be confirmed.
+      const outstanding = await readerOutstanding(item);
+      if (outstanding > 0) {
+        return json({
+          error: `Please finish reading this document first (${outstanding} ${outstanding === 1 ? "section" : "sections"} left).`,
+        }, 400);
       }
       await admin
         .from("induction_pack_items")

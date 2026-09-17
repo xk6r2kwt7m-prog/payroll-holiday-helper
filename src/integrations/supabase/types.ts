@@ -815,6 +815,11 @@ export type Database = {
           name: string
           owner_job_title: string | null
           owner_name: string | null
+          reader_built_at: string | null
+          reader_built_version: number | null
+          reader_enabled: boolean | null
+          reader_error: string | null
+          reader_status: string | null
           reference_number: string | null
           requirement_classification: string | null
           requires_signature: boolean
@@ -852,6 +857,11 @@ export type Database = {
           name: string
           owner_job_title?: string | null
           owner_name?: string | null
+          reader_built_at?: string | null
+          reader_built_version?: number | null
+          reader_enabled?: boolean | null
+          reader_error?: string | null
+          reader_status?: string | null
           reference_number?: string | null
           requirement_classification?: string | null
           requires_signature?: boolean
@@ -889,6 +899,11 @@ export type Database = {
           name?: string
           owner_job_title?: string | null
           owner_name?: string | null
+          reader_built_at?: string | null
+          reader_built_version?: number | null
+          reader_enabled?: boolean | null
+          reader_error?: string | null
+          reader_status?: string | null
           reference_number?: string | null
           requirement_classification?: string | null
           requires_signature?: boolean
@@ -1472,6 +1487,191 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_reader_progress: {
+        Row: {
+          answer_index: number | null
+          answered_at: string | null
+          answered_correctly: boolean | null
+          attempts: number
+          created_at: string
+          document_id: string
+          employee_id: string | null
+          id: string
+          pack_id: string | null
+          pack_item_id: string | null
+          question_id: string | null
+          read_at: string | null
+          section_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer_index?: number | null
+          answered_at?: string | null
+          answered_correctly?: boolean | null
+          attempts?: number
+          created_at?: string
+          document_id: string
+          employee_id?: string | null
+          id?: string
+          pack_id?: string | null
+          pack_item_id?: string | null
+          question_id?: string | null
+          read_at?: string | null
+          section_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer_index?: number | null
+          answered_at?: string | null
+          answered_correctly?: boolean | null
+          attempts?: number
+          created_at?: string
+          document_id?: string
+          employee_id?: string | null
+          id?: string
+          pack_id?: string | null
+          pack_item_id?: string | null
+          question_id?: string | null
+          read_at?: string | null
+          section_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reader_progress_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reader_progress_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "document_reader_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_reader_questions: {
+        Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          correct_index: number
+          created_at: string
+          document_id: string
+          explanation: string | null
+          id: string
+          options: Json
+          origin: string
+          question: string
+          section_id: string | null
+          sort_order: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          correct_index?: number
+          created_at?: string
+          document_id: string
+          explanation?: string | null
+          id?: string
+          options?: Json
+          origin?: string
+          question: string
+          section_id?: string | null
+          sort_order?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          correct_index?: number
+          created_at?: string
+          document_id?: string
+          explanation?: string | null
+          id?: string
+          options?: Json
+          origin?: string
+          question?: string
+          section_id?: string | null
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reader_questions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reader_questions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "document_reader_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_reader_sections: {
+        Row: {
+          body: string
+          created_at: string
+          document_id: string
+          document_version: number | null
+          heading: string
+          id: string
+          sort_order: number
+          source_page: number | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          document_id: string
+          document_version?: number | null
+          heading: string
+          id?: string
+          sort_order?: number
+          source_page?: number | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          document_id?: string
+          document_version?: number | null
+          heading?: string
+          id?: string
+          sort_order?: number
+          source_page?: number | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reader_sections_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
             referencedColumns: ["id"]
           },
         ]

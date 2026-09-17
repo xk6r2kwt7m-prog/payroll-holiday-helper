@@ -18,8 +18,9 @@ import {
 import { toast } from "sonner";
 import {
   FileText, Plus, Search, Upload, Archive, RefreshCw, ExternalLink,
-  ChevronRight, ChevronDown, PenLine, Undo2, X, Check, History,
+  ChevronRight, ChevronDown, PenLine, Undo2, X, Check, History, BookOpen,
 } from "lucide-react";
+import { DocumentReaderSheet } from "@/components/compliance/DocumentReaderSheet";
 import { COMPLIANCE_CATEGORIES, STAFF_ROLES } from "@/lib/compliance-taxonomy";
 import { expiryLabel, expiryTone, resolveExpiryBand } from "@/lib/compliance-expiry";
 import {
@@ -90,6 +91,7 @@ export function DocumentLibrarySection() {
   const replaceDoc = useReplaceComplianceDocument();
   const setApproval = useSetDocumentApproval();
   const [historyFor, setHistoryFor] = useState<any | null>(null);
+  const [readerFor, setReaderFor] = useState<any | null>(null);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -465,9 +467,15 @@ export function DocumentLibrarySection() {
                 )}
 
                 <div className="space-y-2 pt-1">
+                  <Button variant="outline" className="w-full" onClick={() => setReaderFor(selected)}>
+                    <BookOpen className="h-4 w-4 mr-1.5" />
+                    {selected.reader_status === "ready" ? "On-screen version" : "Make it readable on screen"}
+                  </Button>
+
                   <Button variant="outline" className="w-full" onClick={() => setHistoryFor(selected)}>
                     <History className="h-4 w-4 mr-1.5" /> View history
                   </Button>
+
 
                   <Button className="w-full" onClick={() => openFile(selected.file_path)}>
                     <ExternalLink className="h-4 w-4 mr-1.5" /> Open document
@@ -512,6 +520,8 @@ export function DocumentLibrarySection() {
       </Sheet>
 
       <DocumentHistorySheet doc={historyFor} onClose={() => setHistoryFor(null)} />
+
+      <DocumentReaderSheet doc={readerFor} onClose={() => setReaderFor(null)} />
 
 
 

@@ -71,6 +71,13 @@
       "when": 1789598223924,
       "tag": "0009_compliance_phase4_training_automation",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789649564113,
+      "tag": "0010_document_reader_web_versions",
+      "breakpoints": true
     }
   ]
 }
