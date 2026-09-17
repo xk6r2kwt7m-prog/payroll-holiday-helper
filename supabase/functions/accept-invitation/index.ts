@@ -122,82 +122,89 @@ Deno.serve(async (req) => {
     }
 
     const password: string = typeof body?.password === "string" ? body.password : "";
-    if (password.length < 8) {
+    // No password supplied = the joining form only: we collect their details and never
+    // create a login. Access is granted later by a manager from the staff record.
+    const wantsAccount = password.length > 0;
+    if (wantsAccount && password.length < 8) {
       return json({ error: "weak_password", message: "Please choose a password of at least 8 characters." }, 400);
     }
 
-    // 1. Account — create it, or reuse an account that already exists for this email.
     let userId: string | null = null;
     let existingAccount = false;
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email: invite.email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: employee ? `${employee.forename} ${employee.surname}` : invite.email },
-    });
-    if (created?.user) {
-      userId = created.user.id;
-    } else {
-      existingAccount = true;
-      // Find the existing account by listing (email filter is not exposed on admin API).
-      for (let page = 1; page <= 20 && !userId; page++) {
-        const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-        const match = list?.users?.find((u) => (u.email ?? "").toLowerCase() === invite.email.toLowerCase());
-        if (match) userId = match.id;
-        if (!list?.users?.length) break;
-      }
-      if (!userId) {
-        console.error("accept-invitation: could not create or find account", createErr?.message);
-        return json({ error: "account_failed", message: "We could not set up your account. Please ask your manager for help." }, 500);
-      }
-    }
 
-    // 2. Access to the inviting company only.
-    // If the person already belongs to this company, never downgrade or change
-    // their existing role — just make sure the membership is active.
-    const { data: existingMembership } = await admin
-      .from("tenant_members")
-      .select("id, role, is_active")
-      .eq("tenant_id", invite.tenant_id)
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (existingMembership) {
-      if (!existingMembership.is_active) {
-        await admin.from("tenant_members").update({ is_active: true }).eq("id", existingMembership.id);
-      }
-    } else {
-      const { error: membershipError } = await admin
-        .from("tenant_members")
-        .insert({
-          tenant_id: invite.tenant_id,
-          user_id: userId,
-          role: invite.role,
-          is_active: true,
-        });
-      if (membershipError) {
-        console.error("accept-invitation: membership could not be granted", membershipError.message);
-        return json({ error: "membership_failed", message: "We could not finish setting up access. Please ask your manager for help." }, 500);
-      }
-    }
-
-    const { data: legacyRole } = await admin
-      .from("user_roles")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("tenant_id", invite.tenant_id)
-      .maybeSingle();
-    if (!legacyRole) {
-      await admin.from("user_roles").insert({
-        user_id: userId,
-        tenant_id: invite.tenant_id,
-        role: appRole(invite.role) as any,
+    if (wantsAccount) {
+      // 1. Account — create it, or reuse an account that already exists for this email.
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email: invite.email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: employee ? `${employee.forename} ${employee.surname}` : invite.email },
       });
+      if (created?.user) {
+        userId = created.user.id;
+      } else {
+        existingAccount = true;
+        // Find the existing account by listing (email filter is not exposed on admin API).
+        for (let page = 1; page <= 20 && !userId; page++) {
+          const { data: list } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+          const match = list?.users?.find((u) => (u.email ?? "").toLowerCase() === invite.email.toLowerCase());
+          if (match) userId = match.id;
+          if (!list?.users?.length) break;
+        }
+        if (!userId) {
+          console.error("accept-invitation: could not create or find account", createErr?.message);
+          return json({ error: "account_failed", message: "We could not set up your account. Please ask your manager for help." }, 500);
+        }
+      }
+
+      // 2. Access to the inviting company only.
+      // If the person already belongs to this company, never downgrade or change
+      // their existing role — just make sure the membership is active.
+      const { data: existingMembership } = await admin
+        .from("tenant_members")
+        .select("id, role, is_active")
+        .eq("tenant_id", invite.tenant_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (existingMembership) {
+        if (!existingMembership.is_active) {
+          await admin.from("tenant_members").update({ is_active: true }).eq("id", existingMembership.id);
+        }
+      } else {
+        const { error: membershipError } = await admin
+          .from("tenant_members")
+          .insert({
+            tenant_id: invite.tenant_id,
+            user_id: userId,
+            role: invite.role,
+            is_active: true,
+          });
+        if (membershipError) {
+          console.error("accept-invitation: membership could not be granted", membershipError.message);
+          return json({ error: "membership_failed", message: "We could not finish setting up access. Please ask your manager for help." }, 500);
+        }
+      }
+
+      const { data: legacyRole } = await admin
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("tenant_id", invite.tenant_id)
+        .maybeSingle();
+      if (!legacyRole) {
+        await admin.from("user_roles").insert({
+          user_id: userId,
+          tenant_id: invite.tenant_id,
+          role: appRole(invite.role) as any,
+        });
+      }
+
+      // 3. Link the staff record.
+      if (employee && !employee.user_id) {
+        await admin.from("employees").update({ user_id: userId }).eq("id", employee.id);
+      }
     }
 
-    // 3. Link the staff record.
-    if (employee && !employee.user_id) {
-      await admin.from("employees").update({ user_id: userId }).eq("id", employee.id);
-    }
 
     // 4. Mark the invitation used — single use.
     await admin
@@ -246,12 +253,13 @@ Deno.serve(async (req) => {
       tenant_id: invite.tenant_id,
       user_id: userId,
       action: "create",
-      table_name: "tenant_invitation_accepted",
+      table_name: wantsAccount ? "tenant_invitation_accepted" : "invitation_details_started",
       record_id: invite.id,
       new_data: {
         email: invite.email,
         role: invite.role,
         employee_id: employee?.id ?? null,
+        account_created: wantsAccount,
         existing_account: existingAccount,
         details_form_opened: !!detailsToken,
       },
@@ -259,11 +267,13 @@ Deno.serve(async (req) => {
 
     return json({
       success: true,
+      account_created: wantsAccount,
       existing_account: existingAccount,
       email: invite.email,
       company_name: companyName,
       details_token: detailsToken,
     });
+
   } catch (err) {
     console.error("accept-invitation failed:", (err as Error).message);
     return json({ error: "failed", message: "Something went wrong setting up your access. Ask your manager for help." }, 500);

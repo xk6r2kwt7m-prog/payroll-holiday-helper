@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, CheckCircle2, KeyRound, Loader2, LogIn, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, KeyRound, Loader2, LogIn, ShieldCheck } from "lucide-react";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accept-invitation`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -19,9 +17,9 @@ interface InviteInfo {
 /**
  * Personal invitation link for a staff member joining an existing team.
  *
- * Deliberately never shows company setup: accepting the invitation grants access
- * to the inviting company only and then asks for the basics we need
- * (identity + address, right to work, bank details).
+ * No password and no sign-in: the link takes them straight into a short guided
+ * form asking only for the basics (name + address, right to work, bank details).
+ * App access is granted later by a manager from the staff record.
  */
 export default function JoinTeam() {
   const { token } = useParams<{ token: string }>();
@@ -30,9 +28,7 @@ export default function JoinTeam() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [done, setDone] = useState<null | "no_form" | "sign_in">(null);
+  const [done, setDone] = useState(false);
   const [usedEmail, setUsedEmail] = useState("");
   const [recovering, setRecovering] = useState(false);
 
@@ -66,43 +62,29 @@ export default function JoinTeam() {
       setError("We could not send a recovery email. Please ask your manager to send one from your staff record.");
       return;
     }
-    setDone("sign_in");
+    setError("We have emailed you a link to choose a password. Please check your inbox.");
   };
 
   useEffect(() => { load(); }, [load]);
 
-  const submit = async () => {
+  const start = async () => {
     setError(null);
-    if (password.length < 8) return setError("Please choose a password of at least 8 characters.");
-    if (password !== confirm) return setError("The two passwords do not match.");
     setBusy(true);
     try {
       const res = await fetch(FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: ANON, Authorization: `Bearer ${ANON}` },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token }),
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json?.message || "We could not set up your access.");
+        setError(json?.message || "We could not open your form.");
         return;
       }
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: json.email,
-        password,
-      });
-
-      if (signInError) {
-        // Existing account keeping its old password — access is granted, they just sign in.
-        setDone("sign_in");
-        return;
-      }
-
       if (json.details_token) {
         navigate(`/my-details/${json.details_token}`, { replace: true });
       } else {
-        setDone("no_form");
+        setDone(true);
       }
     } catch {
       setError("Something went wrong. Please try again.");
@@ -150,15 +132,8 @@ export default function JoinTeam() {
           <CheckCircle2 className="h-8 w-8 mx-auto text-success" />
           <h1 className="text-lg font-semibold text-card-foreground">You're all set</h1>
           <p className="text-sm text-muted-foreground">
-            {done === "sign_in"
-              ? "Check your inbox for a secure link to choose a password, then sign in."
-              : "Your manager will let you know when there is anything else to do."}
+            Your manager will let you know when there is anything else to do.
           </p>
-          {done === "sign_in" && (
-            <Button className="w-full" onClick={() => navigate("/auth", { replace: true })}>
-              Go to sign in
-            </Button>
-          )}
         </div>
       </div>
     );
@@ -172,51 +147,35 @@ export default function JoinTeam() {
             {info?.first_name ? `Welcome, ${info.first_name}` : "Welcome"}
           </h1>
           <p className="text-sm text-muted-foreground">
-            You've been invited to join {info?.company_name}. Choose a password to get started.
+            {info?.company_name ?? "Your team"} needs a few details before you start.
           </p>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-          <div className="space-y-1">
-            <Label>Your email</Label>
-            <Input value={info?.email ?? ""} readOnly disabled />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="join-password">Choose a password</Label>
-            <Input
-              id="join-password"
-              type="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="join-confirm">Repeat password</Label>
-            <Input
-              id="join-confirm"
-              type="password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-            />
-          </div>
+          <ul className="space-y-2 text-sm text-foreground">
+            <li className="flex items-start gap-2"><ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-primary" /> Your name, date of birth and home address</li>
+            <li className="flex items-start gap-2"><ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-primary" /> A photo of your right to work document</li>
+            <li className="flex items-start gap-2"><ShieldCheck className="h-4 w-4 mt-0.5 shrink-0 text-primary" /> Your bank details, so you can be paid</li>
+          </ul>
+
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            About 3 minutes. One or two questions at a time, and you can check everything before you send it.
+          </p>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button className="w-full" onClick={submit} disabled={busy}>
+          <Button className="w-full" size="lg" onClick={start} disabled={busy}>
             {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            {busy ? "Setting up…" : "Continue"}
+            {busy ? "Opening…" : "Start"}
           </Button>
 
-          <p className="flex items-start gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            Next we'll ask for a few basics only: your name and address, your right to work in the UK,
-            and your bank details for pay.
+          <p className="text-xs text-muted-foreground text-center">
+            No password needed. Your information is stored securely and only used for your employment record.
           </p>
         </div>
       </div>
     </div>
   );
 }
+
