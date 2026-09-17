@@ -199,11 +199,8 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
     }
   };
 
-  const downloadPdf = async (subject: LicenceSubjectType) => {
-    const signedRequest = (requests as any[]).find(
-      (r) => r.subject_type === subject && r.signed_at
-    );
-    const doc = subject === "dps_authorisation"
+  const buildDoc = (subject: LicenceSubjectType, signedRequest: any) =>
+    subject === "dps_authorisation"
       ? buildDpsAuthorisation(site, licence?.issue_date ?? null)
       : subject === "section_57"
         ? buildSection57(
@@ -213,15 +210,28 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
             partA
           )
         : buildStaffAlcoholAuthorisation(site, "", null);
+
+  const auditLineFor = (signedRequest: any) =>
+    signedRequest
+      ? `Signed electronically by ${signedRequest.signer_name} on ${new Date(signedRequest.signed_at).toLocaleString("en-GB")}. Recorded in UglyOps HR.`
+      : "Not yet signed — this is a draft copy.";
+
+  const signedRequestFor = (subject: LicenceSubjectType) =>
+    (requests as any[]).find((r) => r.subject_type === subject && r.signed_at);
+
+  const downloadPdf = async (subject: LicenceSubjectType) => {
+    const signedRequest = signedRequestFor(subject);
+    const doc = buildDoc(subject, signedRequest);
+    const isDps = subject === "dps_authorisation";
     const blob = await pdf(
       <LicensingDocumentPDF
         doc={doc}
-        staff={subject === "dps_authorisation" ? signedStaff : []}
+        staff={isDps ? registerPdfRows(registerRows) : []}
+        summaryLine={isDps ? summaryLine : null}
+        warningLine={isDps ? warningLine : null}
         authoriserSignature={signedRequest?.signature ?? null}
         authoriserSignedAt={signedRequest?.signed_at ?? null}
-        auditLine={signedRequest
-          ? `Signed electronically by ${signedRequest.signer_name} on ${new Date(signedRequest.signed_at).toLocaleString("en-GB")}. Recorded in UglyOps HR.`
-          : "Not yet signed — this is a draft copy."}
+        auditLine={auditLineFor(signedRequest)}
       />
     ).toBlob();
     const url = URL.createObjectURL(blob);
@@ -230,7 +240,19 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
     a.download = `${branch}-${subject}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+    if (isDps) {
+      // Recorded so the audit trail shows which copy left the building.
+      recordIssue.mutate({
+        branch,
+        licence_id: licence?.id ?? null,
+        subject_type: subject,
+        snapshot: { document: doc, rows: registerRows, summary_line: summaryLine },
+        authorised_count: registerTotals.authorised,
+        listed_count: registerTotals.listed,
+      });
+    }
   };
+
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground py-6 text-center">Loading...</p>;
