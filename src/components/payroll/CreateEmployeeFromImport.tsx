@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
+import { findPossibleDuplicates, duplicateWarningMessage } from "@/lib/duplicate-check";
 
 interface CreateEmployeeFromImportProps {
   csvName: string;
@@ -33,6 +34,8 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
   const [email, setEmail] = useState("");
   const [scEligible, setScEligible] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [duplicateOverridden, setDuplicateOverridden] = useState(false);
 
   const handleCreate = async () => {
     if (!forename.trim() || !surname.trim()) {
