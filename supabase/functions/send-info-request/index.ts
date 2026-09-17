@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     );
     const recipientOverride: string | null = body?.recipientOverride ?? null;
     const testSend: boolean = body?.testSend === true;
-    const expiryDays: number = Math.min(Math.max(Number(body?.expiryDays) || 14, 1), 60);
+    const expiryDays: number = Math.min(Math.max(Number(body?.expiryDays) || 7, 1), 30);
 
     if (!tenantId) return json({ error: "Missing tenant" }, 400);
     if (employeeIds.length === 0) return json({ error: "Select at least one staff member" }, 400);

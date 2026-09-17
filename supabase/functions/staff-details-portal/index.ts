@@ -57,6 +57,24 @@ Deno.serve(async (req) => {
         410,
       );
     }
+    if (request.status === "revoked") {
+      return json(
+        { error: "revoked", message: "This link has been cancelled. Ask your manager to send a new one." },
+        410,
+      );
+    }
+    // Single use: once the form has been submitted the link stops working, so a
+    // forwarded link can never be reopened to read back personal details.
+    if (request.status === "submitted" || request.submitted_at) {
+      return json(
+        {
+          error: "already_submitted",
+          message:
+            "Thank you — your details have already been sent to your manager. This link is now closed. Contact your manager if something needs changing.",
+        },
+        410,
+      );
+    }
 
     const emp: any = request.employees;
 
