@@ -5,6 +5,7 @@ import {
   isRequestLocked, mayReachSignatureStep, requestStatusLabel, requestStatusTone,
   resolveRequestStatus, SUBJECT_LABELS, type LicenceSite,
 } from "@/lib/licensing-documents";
+import { incidentLogConditionSource, requiresLicenceRecord } from "@/lib/incident-categories";
 
 const fitzrovia: LicenceSite = {
   branch: "Fitzrovia",
