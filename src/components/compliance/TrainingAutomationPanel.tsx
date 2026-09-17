@@ -8,7 +8,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Clock, RefreshCw, GraduationCap } from "lucide-react";
+import { Clock, RefreshCw, GraduationCap, Wine } from "lucide-react";
 import { useInductionPacks } from "@/hooks/useCompliance";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useTenantPreferences, useSaveTenantPreferences } from "@/hooks/useTenantPreferences";
@@ -30,7 +30,7 @@ export function TrainingAutomationPanel() {
   const { data: employees = [] } = useEmployees();
   const { data: reissues = [] } = useVersionReissues();
   const decide = useDecideVersionReissue();
-  const { data: prefs } = useTenantPreferences("training_docs", { auto_assign_induction: false });
+  const { data: prefs } = useTenantPreferences("training_docs", { auto_assign_induction: false, auto_alcohol_authorisation: false });
   const savePrefs = useSaveTenantPreferences();
 
   const [deciding, setDeciding] = useState<any | null>(null);
