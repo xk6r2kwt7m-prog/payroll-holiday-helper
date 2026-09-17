@@ -28,6 +28,30 @@ function sanitizeFileName(value: string): string {
   return value.replace(/[^a-z0-9_-]+/gi, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") || "contract";
 }
 
+/**
+ * Transient failures (storage/network blips inside the isolate) are the most
+ * common cause of a signing attempt failing. Retry them briefly instead of
+ * showing the signer an error.
+ */
+async function withRetry<T>(label: string, fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      console.error(`[SIGN-CONTRACT] ${label} attempt ${attempt} failed:`, err);
+      if (attempt < attempts) await new Promise((r) => setTimeout(r, attempt * 400));
+    }
+  }
+  throw lastError;
+}
+
+function makeReference(): string {
+  return `SC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
+
 function decodeDataUrl(dataUrl: string | null | undefined): { bytes: Uint8Array; mime: string } | null {
   if (!dataUrl) return null;
   const match = dataUrl.match(/^data:(.+?);base64,(.+)$/);
@@ -539,6 +563,10 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+  // Where the request got to, so a failure can be reported and traced precisely.
+  let failureStage = "request";
+  let failureContext: { tenant_id?: string; employee_document_id?: string; employee_id?: string; signer_type?: string } = {};
+
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get("token");
@@ -979,21 +1007,45 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (signingToken.used_at) {
-        return new Response(JSON.stringify({ error: "This contract has already been signed.", error_code: "already_signed" }), {
-          status: 409,
+      failureStage = "validate_link";
+      failureContext = {
+        tenant_id: signingToken.tenant_id,
+        employee_document_id: signingToken.employee_document_id,
+        employee_id: signingToken.employee_id,
+        signer_type: signingToken.signer_type,
+      };
+
+      // ROLE LOCKING: one signature per role, never overwritten.
+      const { data: existingRoleSigs } = await supabase
+        .from("contract_signatures")
+        .select("signer_type, signed_at, signing_token_id")
+        .eq("employee_document_id", signingToken.employee_document_id)
+        .eq("signer_type", signingToken.signer_type);
+
+      // Same signer, same link, signature already stored: this is a retry after a
+      // dropped connection. Confirm success instead of alarming them — nothing is
+      // changed and the original signature stands.
+      const ownReplay = (existingRoleSigs || []).find((s: any) => s.signing_token_id === signingToken.id);
+      if (ownReplay) {
+        const { data: sigsNow } = await supabase
+          .from("contract_signatures")
+          .select("signer_type")
+          .eq("employee_document_id", signingToken.employee_document_id);
+        const typesNow = (sigsNow || []).map((s: any) => s.signer_type);
+        return new Response(JSON.stringify({
+          success: true,
+          message: "Your signature is already recorded.",
+          signed_at: ownReplay.signed_at,
+          signer_type: signingToken.signer_type,
+          signing_field: signingToken.signer_type === "employee" ? "team_member_block" : "employer_block",
+          fully_signed: typesNow.includes("employee") && typesNow.includes("employer"),
+          replay: true,
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // ROLE LOCKING: Prevent duplicate role signatures
-      const { data: existingRoleSigs } = await supabase
-        .from("contract_signatures")
-        .select("signer_type")
-        .eq("employee_document_id", signingToken.employee_document_id)
-        .eq("signer_type", signingToken.signer_type);
-
-      if (existingRoleSigs && existingRoleSigs.length > 0) {
+      if ((existingRoleSigs && existingRoleSigs.length > 0) || signingToken.used_at) {
         const roleLabel = signingToken.signer_type === "employee" ? "Team Member" : "Employer";
         return new Response(JSON.stringify({
           error: `The ${roleLabel} section has already been signed. This signing link can no longer be used.`,
@@ -1003,6 +1055,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
 
       const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
       const userAgent = req.headers.get("user-agent") || "unknown";
@@ -1042,12 +1095,19 @@ Deno.serve(async (req) => {
         });
       }
 
-      const { data: originalPdfBlob, error: originalPdfError } = await supabase.storage
-        .from("employee-documents")
-        .download(originalFilePath);
+      failureStage = "load_contract_document";
+      const { data: originalPdfBlob, error: originalPdfError } = await withRetry(
+        "download original contract",
+        async () => {
+          const result = await supabase.storage.from("employee-documents").download(originalFilePath);
+          if (result.error) throw result.error;
+          return result;
+        },
+      ).catch((err) => ({ data: null, error: err } as any));
 
       if (originalPdfError || !originalPdfBlob) {
-        return new Response(JSON.stringify({ error: "The contract document could not be loaded.", error_code: "missing_document" }), {
+        console.error("[SIGN-CONTRACT] Original contract could not be downloaded", originalPdfError);
+        return new Response(JSON.stringify({ error: "The contract document could not be loaded. Please try again in a moment, or contact your employer.", error_code: "missing_document" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -1055,6 +1115,7 @@ Deno.serve(async (req) => {
 
       const originalPdfBytes = new Uint8Array(await originalPdfBlob.arrayBuffer());
       const serverDocumentHash = await sha256Bytes(originalPdfBytes);
+      failureStage = "record_signature";
 
       // Record signature with role-specific fields
       const { error: sigError } = await supabase
