@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       if (!email) return json({ pending: false });
       const { data: mine } = await admin
         .from("tenant_invitations")
-        .select("token, expires_at, tenants(company_name)")
+        .select("token, expires_at, tenants(name)")
         .ilike("email", email)
         .is("accepted_at", null)
         .eq("status", "pending")
@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (!mine) return json({ pending: false });
       if (mine.expires_at && new Date(mine.expires_at).getTime() < Date.now()) return json({ pending: false });
-      return json({ pending: true, token: mine.token, company_name: (mine as any).tenants?.company_name ?? null });
+      return json({ pending: true, token: mine.token, company_name: (mine as any).tenants?.name ?? null });
     }
     if (req.method === "POST") {
       body = await req.json().catch(() => ({}));
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
     const { data: invite } = await admin
       .from("tenant_invitations")
-      .select("id, tenant_id, email, role, status, accepted_at, expires_at, tenants(company_name)")
+      .select("id, tenant_id, email, role, status, accepted_at, expires_at, tenants(name)")
       .eq("token", token)
       .maybeSingle();
 
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       return json({ error: "expired", message: "This invitation has expired. Ask your manager to send a new one." }, 410);
     }
 
-    const companyName = (invite as any).tenants?.company_name ?? "your team";
+    const companyName = (invite as any).tenants?.name ?? "your team";
 
     // Staff record for this email, in the inviting company only.
     const { data: employee } = await admin
