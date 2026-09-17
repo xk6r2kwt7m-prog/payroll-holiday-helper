@@ -22,14 +22,10 @@ export function useEmployeesWithBranches(): RegisterEmployee[] {
       list.push(l.branch);
       byEmployee.set(l.employee_id, list);
     }
+    // Every other field is kept so callers (such as the send dialog) still see
+    // the email address and the rest of the record.
     return (employees as any[]).map((e) => ({
-      id: e.id,
-      forename: e.forename,
-      surname: e.surname,
-      department: e.department,
-      status: e.status,
-      archived_at: e.archived_at,
-      is_test_record: e.is_test_record,
+      ...e,
       branches: byEmployee.get(e.id) ?? [],
     }));
   }, [employees, links]);
