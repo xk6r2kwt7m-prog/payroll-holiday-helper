@@ -4066,6 +4066,117 @@ export type Database = {
           },
         ]
       }
+      induction_lesson_approvals: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          created_at: string
+          id: string
+          lesson_key: string
+          lesson_version: string
+          notes: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          id?: string
+          lesson_key: string
+          lesson_version: string
+          notes?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          id?: string
+          lesson_key?: string
+          lesson_version?: string
+          notes?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "induction_lesson_approvals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      induction_lesson_progress: {
+        Row: {
+          acknowledged_understood: boolean
+          completed_at: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          lesson_key: string
+          lesson_version: string
+          pack_role: string
+          started_at: string
+          tenant_id: string
+        }
+        Insert: {
+          acknowledged_understood?: boolean
+          completed_at?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          lesson_key: string
+          lesson_version: string
+          pack_role: string
+          started_at?: string
+          tenant_id: string
+        }
+        Update: {
+          acknowledged_understood?: boolean
+          completed_at?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          lesson_key?: string
+          lesson_version?: string
+          pack_role?: string
+          started_at?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "induction_lesson_progress_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "induction_lesson_progress_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "induction_lesson_progress_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       induction_modules: {
         Row: {
           acknowledged_at: string | null
