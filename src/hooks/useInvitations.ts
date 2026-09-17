@@ -77,18 +77,26 @@ export function useSendInvitation() {
 export function useResendInvitation() {
   const { tenantId } = useTenant();
   const { sendInviteEmail } = useInviteEmail();
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ email, invitationId, inviteToken }: { email: string; invitationId: string; inviteToken?: string | null }) => {
+    mutationFn: async ({ email, invitationId }: { email: string; invitationId: string }) => {
       if (!tenantId) throw new Error("No tenant context");
+      await assertPermission("edit_employees", tenantId);
 
-      console.log("[INVITE_RESEND] Resending invite", { invitationId, email, tenantId });
+      const { data, error } = await supabase.rpc("rotate_pending_invitation", {
+        _invitation_id: invitationId,
+      });
+      if (error) throw error;
+
+      const replacement = Array.isArray(data) ? data[0] : data;
+      if (!replacement?.token) throw new Error("A replacement link could not be created");
 
       const result = await sendInviteEmail({
         recipientEmail: email,
         employeeName: email,
         tenantId,
-        inviteToken: inviteToken ?? null,
+        inviteToken: replacement.token,
       });
 
       if (!result.success) {
@@ -98,7 +106,9 @@ export function useResendInvitation() {
       return result;
     },
     onSuccess: () => {
-      toast.success("Invite email resent successfully");
+      queryClient.invalidateQueries({ queryKey: ["tenant-invitations", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
+      toast.success("A new joining link was sent. The previous link no longer works.");
     },
     onError: (err: any) => {
       toast.error(`Failed to resend invite: ${err.message}`);

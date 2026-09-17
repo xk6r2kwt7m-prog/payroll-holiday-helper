@@ -90,7 +90,8 @@ Deno.serve(async (req) => {
     if (invite.accepted_at || invite.status === "accepted") {
       return json({
         error: "already_used",
-        message: "This invitation has already been used. Please sign in with the password you chose.",
+        email: invite.email,
+        message: "Access for this email has already been created. If you did not finish setup yourself, use password recovery or ask your manager for help.",
       }, 410);
     }
     if (invite.status === "revoked" || invite.status === "cancelled") {
@@ -152,21 +153,17 @@ Deno.serve(async (req) => {
     }
 
     // 2. Access to the inviting company only.
-    const { data: member } = await admin
+    const { error: membershipError } = await admin
       .from("tenant_members")
-      .select("id")
-      .eq("tenant_id", invite.tenant_id)
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (member) {
-      await admin.from("tenant_members").update({ role: invite.role, is_active: true }).eq("id", member.id);
-    } else {
-      await admin.from("tenant_members").insert({
+      .upsert({
         tenant_id: invite.tenant_id,
         user_id: userId,
         role: invite.role,
         is_active: true,
-      });
+      }, { onConflict: "tenant_id,user_id" });
+    if (membershipError) {
+      console.error("accept-invitation: membership could not be granted", membershipError.message);
+      return json({ error: "membership_failed", message: "We could not finish setting up access. Please ask your manager for help." }, 500);
     }
 
     const { data: legacyRole } = await admin

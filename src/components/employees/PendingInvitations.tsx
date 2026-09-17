@@ -20,7 +20,7 @@ export function PendingInvitations() {
   const handleResend = async (inv: any) => {
     setResendingId(inv.id);
     try {
-      await resend.mutateAsync({ email: inv.email, invitationId: inv.id, inviteToken: inv.token });
+      await resend.mutateAsync({ email: inv.email, invitationId: inv.id });
     } finally {
       setResendingId(null);
     }
@@ -67,7 +67,7 @@ export function PendingInvitations() {
               ) : (
                 <RotateCw className="h-3 w-3" />
               )}
-              Resend
+              Send new link
             </Button>
           </div>
         ))}

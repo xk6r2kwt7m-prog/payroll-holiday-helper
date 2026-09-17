@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, KeyRound, Loader2, LogIn, ShieldCheck } from "lucide-react";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/accept-invitation`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -33,6 +33,8 @@ export default function JoinTeam() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [done, setDone] = useState<null | "no_form" | "sign_in">(null);
+  const [usedEmail, setUsedEmail] = useState("");
+  const [recovering, setRecovering] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -41,7 +43,10 @@ export default function JoinTeam() {
         headers: { apikey: ANON, Authorization: `Bearer ${ANON}` },
       });
       const json = await res.json();
-      if (!res.ok) setError(json?.message || "This invitation link could not be opened.");
+      if (!res.ok) {
+        setUsedEmail(json?.error === "already_used" ? json?.email || "" : "");
+        setError(json?.message || "This invitation link could not be opened.");
+      }
       else setInfo(json);
     } catch {
       setError("We could not open your invitation. Please check your connection and try again.");
@@ -49,6 +54,20 @@ export default function JoinTeam() {
       setLoading(false);
     }
   }, [token]);
+
+  const recoverAccess = async () => {
+    if (!usedEmail) return;
+    setRecovering(true);
+    const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(usedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setRecovering(false);
+    if (recoveryError) {
+      setError("We could not send a recovery email. Please ask your manager to send one from your staff record.");
+      return;
+    }
+    setDone("sign_in");
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -107,6 +126,18 @@ export default function JoinTeam() {
           <AlertCircle className="h-8 w-8 mx-auto text-destructive" />
           <h1 className="text-lg font-semibold text-card-foreground">We can't open this link</h1>
           <p className="text-sm text-muted-foreground">{error}</p>
+          {usedEmail && (
+            <div className="space-y-2 pt-2">
+              <Button className="w-full gap-2" onClick={recoverAccess} disabled={recovering}>
+                {recovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                Send password recovery
+              </Button>
+              <Button variant="outline" className="w-full gap-2" onClick={() => navigate(`/auth?email=${encodeURIComponent(usedEmail)}`, { replace: true })}>
+                <LogIn className="h-4 w-4" />
+                Go to sign in
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -120,7 +151,7 @@ export default function JoinTeam() {
           <h1 className="text-lg font-semibold text-card-foreground">You're all set</h1>
           <p className="text-sm text-muted-foreground">
             {done === "sign_in"
-              ? "You already had an account, so please sign in with your usual password."
+              ? "Check your inbox for a secure link to choose a password, then sign in."
               : "Your manager will let you know when there is anything else to do."}
           </p>
           {done === "sign_in" && (
