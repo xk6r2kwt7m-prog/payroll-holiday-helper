@@ -213,8 +213,157 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── 3. Optional automatic alcohol authorisation for front-of-house staff ──
+    for (const row of prefRows ?? []) {
+      const prefs: any = row.preferences ?? {};
+      if (prefs.auto_alcohol_authorisation !== true) continue;
+      const allRoles = prefs.auto_alcohol_all_roles === true;
+
+      const { data: licences } = await supabase
+        .from("premises_licences")
+        .select("*")
+        .eq("tenant_id", row.tenant_id);
+      if (!licences || licences.length === 0) continue;
+
+      const { data: staff } = await supabase
+        .from("employees")
+        .select("id, forename, surname, email, branch, department, job_title, status, archived_at, is_test_record")
+        .eq("tenant_id", row.tenant_id)
+        .is("archived_at", null)
+        .neq("status", "leaver");
+
+      const { data: existingRequests } = await supabase
+        .from("licence_signature_requests")
+        .select("employee_id, status, expires_at, is_test_record")
+        .eq("tenant_id", row.tenant_id)
+        .eq("subject_type", "staff_alcohol");
+
+      const { data: existingAuths } = await supabase
+        .from("alcohol_authorisations")
+        .select("employee_id, status, revoked_at")
+        .eq("tenant_id", row.tenant_id);
+
+      for (const licence of licences) {
+        if (!licence.licence_number || !licence.licence_holder) continue; // never send an incomplete document
+        const candidates = (staff ?? []).filter(
+          (e: any) =>
+            e.branch === licence.branch &&
+            !!e.email &&
+            !e.is_test_record &&
+            (allRoles || isFrontOfHouse(e.job_title, e.department)) &&
+            !hasLiveAlcoholRecord(e.id, existingRequests ?? [], existingAuths ?? [], now)
+        );
+
+        for (const emp of candidates) {
+          const name = `${emp.forename} ${emp.surname}`.trim();
+          const site = {
+            branch: licence.branch,
+            premises_name: licence.premises_name,
+            premises_address: licence.premises_address,
+            licence_number: licence.licence_number,
+            licence_holder: licence.licence_holder,
+            issuing_authority: licence.issuing_authority,
+            dps_name: licence.dps_name,
+            dps_personal_licence_number: licence.dps_personal_licence_number,
+          };
+          const document = buildStaffAlcoholAuthorisation(site, name, now.toISOString().slice(0, 10));
+          const title = `${SUBJECT_LABELS.staff_alcohol} — ${licence.premises_name || licence.branch}`;
+          const token = [...crypto.getRandomValues(new Uint8Array(32))]
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join("");
+
+          const { data: request, error: reqErr } = await supabase
+            .from("licence_signature_requests")
+            .insert({
+              tenant_id: row.tenant_id,
+              branch: licence.branch,
+              branch_location_id: licence.branch_location_id,
+              licence_id: licence.id,
+              subject_type: "staff_alcohol",
+              document_title: title,
+              document_body: document,
+              token,
+              recipient_name: name,
+              recipient_email: emp.email,
+              recipient_role: emp.job_title ?? null,
+              employee_id: emp.id,
+              status: "sent",
+              expires_at: new Date(now.getTime() + 30 * 86_400_000).toISOString(),
+              sent_by_name: "Automatic assignment",
+              is_test_record: false,
+            })
+            .select("id")
+            .single();
+
+          if (reqErr || !request) {
+            notes.push(`${name}: ${reqErr?.message ?? "could not create alcohol authorisation"}`);
+            continue;
+          }
+
+          const { data: auth } = await supabase
+            .from("alcohol_authorisations")
+            .insert({
+              tenant_id: row.tenant_id,
+              employee_id: emp.id,
+              branch: licence.branch,
+              licence_id: licence.id,
+              request_id: request.id,
+              status: "pending",
+              notes: "Sent automatically to front-of-house staff",
+            })
+            .select("id")
+            .single();
+          if (auth) {
+            await supabase
+              .from("licence_signature_requests")
+              .update({ authorisation_id: auth.id })
+              .eq("id", request.id);
+          }
+
+          await supabase.functions.invoke("send-notification", {
+            body: {
+              to: emp.email,
+              subject: `Please sign: ${title}`,
+              type: "licence_signature",
+              tenant_id: row.tenant_id,
+              data: {
+                recipient_name: name,
+                document_title: title,
+                branch: licence.premises_name || licence.branch,
+                signing_url: `${APP_URL}/sign-licence/${token}`,
+                sender_name: "Automatic assignment",
+                expiry_days: "30",
+                is_staff: "yes",
+              },
+            },
+          });
+
+          await supabase.from("audit_log").insert({
+            tenant_id: row.tenant_id,
+            action: "create",
+            table_name: "licence_signature_requests",
+            record_id: request.id,
+            new_data: {
+              event: "signature_requested",
+              event_label: "Sent for signature (automatic)",
+              branch: licence.branch,
+              next: { Document: title, Recipient: name, Email: emp.email, Automatic: "yes" },
+            },
+          });
+
+          (existingRequests ?? []).push({
+            employee_id: emp.id,
+            status: "sent",
+            expires_at: new Date(now.getTime() + 30 * 86_400_000).toISOString(),
+            is_test_record: false,
+          } as any);
+          alcoholSent++;
+        }
+      }
+    }
+
     return new Response(
-      JSON.stringify({ reminders, auto_assigned: autoSent, notes }),
+      JSON.stringify({ reminders, auto_assigned: autoSent, alcohol_sent: alcoholSent, notes }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
