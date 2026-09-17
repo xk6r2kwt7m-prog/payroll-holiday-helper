@@ -78,6 +78,13 @@
       "when": 1789649564113,
       "tag": "0010_document_reader_web_versions",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789653054439,
+      "tag": "0011_tenant_scoped_storage_and_signals_security",
+      "breakpoints": true
     }
   ]
 }

@@ -1296,11 +1296,11 @@ Deno.serve(async (req) => {
         });
 
       if (sigError) {
-        console.error("Signature insert error:", sigError);
+        // Log a reference only — database messages can reveal internal schema.
+        console.error("Signature insert failed", { code: sigError.code ?? "unknown" });
         return new Response(JSON.stringify({
           error: "Your signature could not be recorded. Please try again.",
           error_code: "save_failed",
-          detail: sigError.message,
         }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1943,7 +1943,8 @@ Deno.serve(async (req) => {
   } catch (err) {
     const reference = makeReference();
     const detail = err instanceof Error ? err.message : String(err);
-    console.error(`[SIGN-CONTRACT] Unhandled failure ${reference} at stage "${failureStage}":`, err);
+    // Keep server logs free of raw internals; the full reason goes to the audit trail.
+    console.error(`[SIGN-CONTRACT] Unhandled failure ${reference} at stage "${failureStage}"`);
 
     // Never fail silently: leave a traceable record so the cause is known next time.
     if (failureContext.tenant_id) {
