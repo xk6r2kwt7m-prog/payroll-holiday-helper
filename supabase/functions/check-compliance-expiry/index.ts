@@ -120,7 +120,12 @@ Deno.serve(async (req) => {
         : days === 0
           ? "Certificate expires today"
           : "Certificate expiring";
-      const bodyText = `${cert.certificate_type} at ${cert.branch}${
+      const where = cert.applies_to_all_branches
+        ? cert.holder_name
+          ? `for ${cert.holder_name}`
+          : "(all sites)"
+        : `at ${cert.branch}`;
+      const bodyText = `${cert.certificate_type} ${where}${
         cert.certificate_number ? ` (${cert.certificate_number})` : ""
       } — ${statusLine(days).toLowerCase()}.`;
 
@@ -151,8 +156,8 @@ Deno.serve(async (req) => {
           emails.push({
             to: email,
             subject: overdue
-              ? `Overdue: ${cert.certificate_type} at ${cert.branch}`
-              : `${cert.certificate_type} at ${cert.branch} — ${statusLine(days).toLowerCase()}`,
+              ? `Overdue: ${cert.certificate_type} ${where}`
+              : `${cert.certificate_type} ${where} — ${statusLine(days).toLowerCase()}`,
             type: "compliance_certificate_expiry",
             tenant_id: cert.tenant_id,
             data: {
