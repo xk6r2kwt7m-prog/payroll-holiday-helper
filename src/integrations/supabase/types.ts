@@ -4501,6 +4501,102 @@ export type Database = {
           },
         ]
       }
+      licence_document_issues: {
+        Row: {
+          access_token: string | null
+          authorised_count: number
+          branch: string
+          branch_location_id: string | null
+          created_at: string
+          delivery_method: string
+          file_path: string | null
+          id: string
+          is_test_record: boolean
+          issued_by: string | null
+          issued_by_name: string | null
+          licence_id: string | null
+          listed_count: number
+          message: string | null
+          open_count: number
+          opened_at: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          snapshot: Json
+          subject_type: string
+          tenant_id: string
+          token_expires_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          authorised_count?: number
+          branch: string
+          branch_location_id?: string | null
+          created_at?: string
+          delivery_method?: string
+          file_path?: string | null
+          id?: string
+          is_test_record?: boolean
+          issued_by?: string | null
+          issued_by_name?: string | null
+          licence_id?: string | null
+          listed_count?: number
+          message?: string | null
+          open_count?: number
+          opened_at?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          snapshot?: Json
+          subject_type: string
+          tenant_id: string
+          token_expires_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          authorised_count?: number
+          branch?: string
+          branch_location_id?: string | null
+          created_at?: string
+          delivery_method?: string
+          file_path?: string | null
+          id?: string
+          is_test_record?: boolean
+          issued_by?: string | null
+          issued_by_name?: string | null
+          licence_id?: string | null
+          listed_count?: number
+          message?: string | null
+          open_count?: number
+          opened_at?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          snapshot?: Json
+          subject_type?: string
+          tenant_id?: string
+          token_expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licence_document_issues_branch_location_id_fkey"
+            columns: ["branch_location_id"]
+            isOneToOne: false
+            referencedRelation: "branch_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "licence_document_issues_licence_id_fkey"
+            columns: ["licence_id"]
+            isOneToOne: false
+            referencedRelation: "premises_licences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       licence_signature_requests: {
         Row: {
           authorisation_id: string | null
