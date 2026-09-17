@@ -85,6 +85,13 @@
       "when": 1789653054439,
       "tag": "0011_tenant_scoped_storage_and_signals_security",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789653450579,
+      "tag": "0012_certificates_all_sites_scope",
+      "breakpoints": true
     }
   ]
 }
