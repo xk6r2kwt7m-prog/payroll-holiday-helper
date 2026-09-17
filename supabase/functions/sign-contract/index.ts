@@ -1296,11 +1296,11 @@ Deno.serve(async (req) => {
         });
 
       if (sigError) {
-        console.error("Signature insert error:", sigError);
+        // Log a reference only — database messages can reveal internal schema.
+        console.error("Signature insert failed", { code: sigError.code ?? "unknown" });
         return new Response(JSON.stringify({
           error: "Your signature could not be recorded. Please try again.",
           error_code: "save_failed",
-          detail: sigError.message,
         }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
