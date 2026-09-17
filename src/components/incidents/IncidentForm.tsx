@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   INCIDENT_CATEGORIES, categoryLabel, conditionalFields, missingRequired,
   requiresLicenceRecord, deadlineState, deadlineMessage, defaultConfidentiality,
-  confidentialityLabel,
+  confidentialityLabel, incidentLogConditionSource,
 } from "@/lib/incident-categories";
 import { useSaveIncident, useAddIncidentEvidence, type IncidentRow } from "@/hooks/useIncidents";
 import { useComplianceBranches } from "@/hooks/useComplianceBranches";
@@ -168,7 +168,7 @@ export function IncidentForm({
         </Select>
         {licenceRequired && (
           <p className="text-[11px] text-warning">
-            The premises licence requires this to be recorded within 24 hours of the incident.
+            {incidentLogConditionSource(form.branch)} requires this to be recorded within 24 hours of the incident.
           </p>
         )}
         {form.category && (
