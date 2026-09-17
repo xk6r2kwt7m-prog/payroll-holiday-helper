@@ -826,6 +826,20 @@ function getErrorDisplay(errorCode: ErrorCode, errorMessage: string | null) {
         title: "Signature Failed",
         message: errorMessage || "Your signature could not be recorded. Please try again.",
       };
+    case "network_error":
+      return {
+        icon: <AlertTriangle className="h-8 w-8 text-warning" />,
+        bgClass: "bg-warning/10",
+        title: "Connection Problem",
+        message: errorMessage || "We could not reach the server. Check your connection and try again — nothing has been lost.",
+      };
+    case "internal_error":
+      return {
+        icon: <AlertTriangle className="h-8 w-8 text-destructive" />,
+        bgClass: "bg-destructive/10",
+        title: "Something Interrupted This",
+        message: errorMessage || "Please reload the page and try again. Your contract and any signature already given are safe.",
+      };
     default:
       return {
         icon: <AlertTriangle className="h-8 w-8 text-destructive" />,
