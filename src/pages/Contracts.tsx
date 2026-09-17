@@ -19,10 +19,12 @@ export default function Contracts() {
   const [searchParams] = useSearchParams();
   const preselectedEmployeeId = searchParams.get("employee") || undefined;
   const [generateOpen, setGenerateOpen] = useState(Boolean(preselectedEmployeeId));
+  const [uploadOpen, setUploadOpen] = useState(false);
   const { t } = useI18n();
 
   const resetPageState = useCallback(() => {
     setGenerateOpen(false);
+    setUploadOpen(false);
   }, []);
   const { tenantReady } = useTenantGuard(resetPageState);
   const { tenantId } = useTenant();
@@ -67,10 +69,16 @@ export default function Contracts() {
               <p className="text-sm text-muted-foreground">{t("contracts.subtitle")}</p>
             </div>
           </div>
-          <Button onClick={() => setGenerateOpen(true)} className="gradient-primary w-full sm:w-auto">
-            <FilePlus className="h-4 w-4" />
-            {t("contracts.new_contract")}
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button variant="outline" onClick={() => setUploadOpen(true)} className="w-full sm:w-auto">
+              <Upload className="h-4 w-4" />
+              Upload existing contract
+            </Button>
+            <Button onClick={() => setGenerateOpen(true)} className="gradient-primary w-full sm:w-auto">
+              <FilePlus className="h-4 w-4" />
+              {t("contracts.new_contract")}
+            </Button>
+          </div>
         </div>
 
         <TestStaffCard />
@@ -105,6 +113,7 @@ export default function Contracts() {
       </div>
 
       <ContractFormDialog open={generateOpen} onOpenChange={setGenerateOpen} preselectedEmployeeId={preselectedEmployeeId} />
+      <UploadExistingContractDialog open={uploadOpen} onOpenChange={setUploadOpen} />
     </AppLayout>
   );
 }
