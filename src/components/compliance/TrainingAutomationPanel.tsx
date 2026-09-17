@@ -30,7 +30,7 @@ export function TrainingAutomationPanel() {
   const { data: employees = [] } = useEmployees();
   const { data: reissues = [] } = useVersionReissues();
   const decide = useDecideVersionReissue();
-  const { data: prefs } = useTenantPreferences("training_docs", { auto_assign_induction: false, auto_alcohol_authorisation: false, auto_alcohol_all_roles: false });
+  const { data: prefs } = useTenantPreferences("training_docs", { auto_assign_induction: false, auto_alcohol_authorisation: false, auto_alcohol_all_roles: false, induction_reminders_enabled: false });
   const savePrefs = useSaveTenantPreferences();
 
   const [deciding, setDeciding] = useState<any | null>(null);
