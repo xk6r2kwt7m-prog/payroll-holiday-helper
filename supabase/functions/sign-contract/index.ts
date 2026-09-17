@@ -1943,7 +1943,8 @@ Deno.serve(async (req) => {
   } catch (err) {
     const reference = makeReference();
     const detail = err instanceof Error ? err.message : String(err);
-    console.error(`[SIGN-CONTRACT] Unhandled failure ${reference} at stage "${failureStage}":`, err);
+    // Keep server logs free of raw internals; the full reason goes to the audit trail.
+    console.error(`[SIGN-CONTRACT] Unhandled failure ${reference} at stage "${failureStage}"`);
 
     // Never fail silently: leave a traceable record so the cause is known next time.
     if (failureContext.tenant_id) {
