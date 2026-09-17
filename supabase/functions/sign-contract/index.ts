@@ -1202,41 +1202,87 @@ Deno.serve(async (req) => {
           document_hash: s.document_hash,
         }));
 
-        const finalPackage = await buildFinalSignedContractPdf({
-          originalPdfBytes,
-          documentName: signingToken.employee_documents.document_name,
-          employeeName: `${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim(),
-          companyName,
-          documentId: signingToken.employee_document_id,
-          originalDocumentHash: serverDocumentHash,
-          signatures: signaturesForPdf,
-        });
-
+        // The signatures are already stored — they are the legal record. Assembling
+        // the combined PDF file is a derived step, so a failure here must never
+        // discard the signature or show the signer an error. It is recorded for the
+        // admin and can be rebuilt.
+        failureStage = "assemble_final_pdf";
         const finalPath = `contracts/final/${signingToken.tenant_id}/${signingToken.employee_document_id}/${sanitizeFileName(signingToken.employee_documents.document_name)}_completed_signed.pdf`;
-        const { error: uploadFinalError } = await supabase.storage
-          .from("employee-documents")
-          .upload(finalPath, finalPackage.finalBytes, {
-            contentType: "application/pdf",
-            upsert: true,
+        let finalPdfStored = false;
+        let finalPdfError: string | null = null;
+
+        try {
+          const finalPackage = await withRetry("assemble final signed contract", () =>
+            buildFinalSignedContractPdf({
+              originalPdfBytes,
+              documentName: signingToken.employee_documents.document_name,
+              employeeName: `${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim(),
+              companyName,
+              documentId: signingToken.employee_document_id,
+              originalDocumentHash: serverDocumentHash,
+              signatures: signaturesForPdf,
+            }), 2);
+
+          await withRetry("store final signed contract", async () => {
+            const result = await supabase.storage
+              .from("employee-documents")
+              .upload(finalPath, finalPackage.finalBytes, { contentType: "application/pdf", upsert: true });
+            if (result.error) throw result.error;
+            return result;
           });
 
-        if (uploadFinalError) {
-          console.error("Failed to store final signed contract", uploadFinalError);
-          return new Response(JSON.stringify({ error: "The final signed contract could not be stored.", error_code: "save_failed" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_send_status: "fully_signed",
+              contract_state: "signed",
+              final_signed_pdf_url: finalPath,
+              final_document_hash: finalPackage.finalHash,
+            } as any)
+            .eq("id", signingToken.employee_document_id);
+
+          finalPdfStored = true;
+        } catch (finalErr) {
+          finalPdfError = finalErr instanceof Error ? finalErr.message : String(finalErr);
+          console.error("[SIGN-CONTRACT] Final signed contract file could not be produced:", finalErr);
+
+          // Both signatures exist, so the contract is fully signed. Only the
+          // combined file is missing; it is never replaced by the unsigned original.
+          await supabase
+            .from("employee_documents")
+            .update({
+              contract_send_status: "fully_signed",
+              contract_state: "signed",
+            } as any)
+            .eq("id", signingToken.employee_document_id);
+
+          await supabase.from("audit_log").insert({
+            action: "create",
+            table_name: "contract_signatures",
+            record_id: signingToken.employee_document_id,
+            tenant_id: signingToken.tenant_id,
+            new_data: {
+              event: "final_signed_contract_file_pending",
+              reason: finalPdfError,
+              employee_id: signingToken.employee_id,
+              employee_document_id: signingToken.employee_document_id,
+              note: "Both signatures are stored. The combined signed file needs rebuilding before it can be sent or downloaded.",
+            },
+          });
+
+          await notifyAdminsInApp(supabase, signingToken.tenant_id, {
+            event_type: "contract_signed",
+            title: "Signed contract file needs rebuilding",
+            body: `${`${signingToken.employees?.forename || ""} ${signingToken.employees?.surname || ""}`.trim()} signed successfully, but the combined signed file could not be produced. Open the contract and rebuild it before sending.`,
+            link: "/contracts",
+            metadata: {
+              employee_document_id: signingToken.employee_document_id,
+              employee_id: signingToken.employee_id,
+              reason: finalPdfError,
+            },
           });
         }
-
-        await supabase
-          .from("employee_documents")
-          .update({
-            contract_send_status: "fully_signed",
-            contract_state: "signed",
-            final_signed_pdf_url: finalPath,
-            final_document_hash: finalPackage.finalHash,
-          } as any)
-          .eq("id", signingToken.employee_document_id);
+        failureStage = "post_signature_updates";
 
         // If this contract is an amendment, supersede the parent and stamp the amendment log.
         const { data: signedDoc } = await supabase
