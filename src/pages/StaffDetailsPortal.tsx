@@ -2,20 +2,27 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   AlertCircle, Camera, CheckCircle2, ChevronLeft, ClipboardCheck, FileCheck2, HeartPulse,
-  Landmark, Loader2, MapPin, Pencil, Phone, ShieldCheck, User,
+  Landmark, Loader2, MapPin, MessageSquare, Paperclip, Pencil, Phone, ShieldCheck, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/staff-details-portal`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-type SectionKey = "personal" | "emergency" | "bank" | "rtw";
+type SectionKey = "personal" | "emergency" | "bank" | "rtw" | "notes";
+
+/** UK National Insurance number format (optional field — only checked when given). */
+const NI_PATTERN = /^[ABCEGHJKLMNOPRSTWXYZ][ABCEGHJKLMNPRSTWXYZ]\d{6}[A-D]$/;
+export const isValidNiNumber = (raw: string) =>
+  NI_PATTERN.test(raw.replace(/\s|-/g, "").toUpperCase());
+export const digitsOnly = (raw: string) => raw.replace(/\D/g, "");
 
 interface FieldDef {
   key: string;
@@ -23,6 +30,10 @@ interface FieldDef {
   type?: string;
   placeholder?: string;
   required?: boolean;
+  multiline?: boolean;
+  hint?: string;
+  /** Confirmation fields are only used to catch typing mistakes — never shown on the check screen. */
+  confirmOnly?: boolean;
 }
 
 interface StepDef {
@@ -72,8 +83,11 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
     },
     {
       id: "ni", section: "personal", title: "National Insurance number",
-      blurb: "Leave this blank if you do not have one yet.", icon: ShieldCheck,
-      fields: [{ key: "ni_number", label: "National Insurance number (optional)", placeholder: "QQ123456C" }],
+      blurb: "Leave this blank if you do not have one yet — you can still carry on.", icon: ShieldCheck,
+      fields: [
+        { key: "ni_number", label: "National Insurance number (optional)", placeholder: "AB123456C", hint: "Two letters, six numbers, then one letter — for example AB123456C." },
+      ],
+
     },
   ],
   rtw: [
@@ -86,8 +100,8 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
       ],
     },
     {
-      id: "rtw_doc", section: "rtw", title: "Photo of your document",
-      blurb: "Passport, visa, BRP or share code letter.", icon: Camera,
+      id: "rtw_doc", section: "rtw", title: "Your document",
+      blurb: "Passport, visa, BRP or share code letter. Take a photo or upload a file you already have.", icon: Camera,
       upload: true,
       fields: [
         { key: "passport_no", label: "Passport number (optional)" },
@@ -102,9 +116,21 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
       fields: [
         { key: "account_holder", label: "Account holder name", required: true },
         { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true },
-        { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
+        {
+          key: "confirm_sort_code", label: "Re-enter sort code", placeholder: "00-00-00",
+          required: true, confirmOnly: true, hint: "We ask twice so a typing mistake cannot delay your pay.",
+        },
       ],
     },
+    {
+      id: "bank_account", section: "bank", title: "Your account number",
+      blurb: "Please type it twice so we know it is exactly right.", icon: Landmark,
+      fields: [
+        { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
+        { key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits", required: true, confirmOnly: true },
+      ],
+    },
+
   ],
   emergency: [
     {
@@ -117,6 +143,15 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
       ],
     },
   ],
+  notes: [],
+};
+
+/** Always the last question — anything the person wants their manager to know. */
+const NOTES_STEP: StepDef = {
+  id: "notes", section: "notes", title: "Anything you'd like to add?",
+  blurb: "Optional — for example a name change, a start date question, or anything we should know.",
+  icon: MessageSquare,
+  fields: [{ key: "staff_notes", label: "Your note (optional)", multiline: true, placeholder: "Leave blank if there's nothing to add" }],
 };
 
 interface PortalData {
@@ -144,6 +179,8 @@ export default function StaffDetailsPortal() {
   const [uploads, setUploads] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
   const [editingRow, setEditingRow] = useState<string | null>(null);
+  /** Set locally the moment sending succeeds, so the thank you screen never depends on re-opening the link. */
+  const [sent, setSent] = useState<{ rtwPending: boolean } | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -177,6 +214,7 @@ export default function StaffDetailsPortal() {
             passport_no: "", sharing_code: "", settlement_status: "",
             ...(json.saved?.rtw ?? {}),
           },
+          notes: { staff_notes: "", ...(json.saved?.notes ?? {}) },
         });
         setError(null);
       }
@@ -188,6 +226,17 @@ export default function StaffDetailsPortal() {
   }, [token]);
 
   useEffect(() => { load(); }, [load]);
+
+  /** Confirmation boxes never leave the phone — they only guard against typing mistakes. */
+  const cleanAnswers = useCallback(() => {
+    const out: Record<string, Record<string, string>> = {};
+    for (const [section, values] of Object.entries(answers)) {
+      out[section] = Object.fromEntries(
+        Object.entries(values ?? {}).filter(([k]) => !k.startsWith("confirm_")),
+      );
+    }
+    return out;
+  }, [answers]);
 
   const post = async (payload: Record<string, unknown>) => {
     const res = await fetch(FUNCTION_URL, {
@@ -202,7 +251,7 @@ export default function StaffDetailsPortal() {
 
   const sections = data?.request.sections ?? [];
   const steps = useMemo(
-    () => sections.flatMap((s) => STEPS_BY_SECTION[s] ?? []),
+    () => [...sections.flatMap((s) => STEPS_BY_SECTION[s] ?? []), NOTES_STEP],
     [sections],
   );
   const isReview = steps.length > 0 && step >= steps.length;
@@ -211,35 +260,46 @@ export default function StaffDetailsPortal() {
   const set = (section: string, field: string, value: string) =>
     setAnswers((a) => ({ ...a, [section]: { ...(a[section] ?? {}), [field]: value } }));
 
-  const missing = useMemo(() => {
-    if (!current) return [] as string[];
-    const a = answers[current.section] ?? {};
-    const gaps = current.fields
-      .filter((f) => f.required && !(a[f.key] ?? "").trim())
-      .map((f) => f.label);
-    if (current.upload && uploads === 0) gaps.push("A photo or file of your document");
-    return gaps;
-  }, [current, answers, uploads]);
-
-  const reviewGaps = useMemo(() => {
-    const gaps: string[] = [];
-    for (const s of steps) {
+  /** Format and match checks, written the way a person would read them. */
+  const problems = useCallback((stepDefs: StepDef[]) => {
+    const list: string[] = [];
+    for (const s of stepDefs) {
       const a = answers[s.section] ?? {};
       for (const f of s.fields) {
-        if (f.required && !(a[f.key] ?? "").trim()) gaps.push(f.label);
+        if (f.required && !(a[f.key] ?? "").trim()) list.push(`${f.label} is needed`);
       }
-      if (s.upload && uploads === 0) gaps.push("A photo or file of your document");
+      if (s.upload && uploads === 0) list.push("A photo or file of your document is needed");
+
+      if (s.section === "personal") {
+        const ni = (a.ni_number ?? "").trim();
+        if (ni && !isValidNiNumber(ni)) {
+          list.push("That National Insurance number does not look right (for example AB123456C). Leave it blank if you do not have one");
+        }
+      }
+      if (s.section === "bank") {
+        const sort = digitsOnly(a.sort_code ?? "");
+        const sortAgain = digitsOnly(a.confirm_sort_code ?? "");
+        const acc = digitsOnly(a.account_number ?? "");
+        const accAgain = digitsOnly(a.confirm_account_number ?? "");
+        if (sort && sort.length !== 6) list.push("A sort code has 6 numbers");
+        if (acc && acc.length !== 8) list.push("An account number has 8 numbers");
+        if (sortAgain && sort !== sortAgain) list.push("The two sort codes do not match");
+        if (accAgain && acc !== accAgain) list.push("The two account numbers do not match");
+      }
     }
-    return gaps;
-  }, [steps, answers, uploads]);
+    return list;
+  }, [answers, uploads]);
+
+  const stepProblems = useMemo(() => (current ? problems([current]) : []), [current, problems]);
+  const reviewProblems = useMemo(() => problems(steps), [steps, problems]);
 
   const saveProgress = async () => {
-    try { await post({ action: "save", answers }); } catch { /* progress save is best effort */ }
+    try { await post({ action: "save", answers: cleanAnswers() }); } catch { /* progress save is best effort */ }
   };
 
   const next = async () => {
-    if (missing.length > 0) {
-      toast.error(`Still needed: ${missing.join(", ")}`);
+    if (stepProblems.length > 0) {
+      toast.error(stepProblems[0]);
       return;
     }
     setBusy(true);
@@ -250,15 +310,15 @@ export default function StaffDetailsPortal() {
   };
 
   const submit = async () => {
-    if (reviewGaps.length > 0) {
-      toast.error(`Still needed: ${reviewGaps.join(", ")}`);
+    if (reviewProblems.length > 0) {
+      toast.error(reviewProblems[0]);
       return;
     }
     setBusy(true);
     try {
-      const res = await post({ action: "submit", answers });
-      toast.success(res.rtw_pending ? "Sent — your manager will check your document" : "Thank you, your details have been sent");
-      await load();
+      const res = await post({ action: "submit", answers: cleanAnswers() });
+      setSent({ rtwPending: Boolean(res.rtw_pending) });
+      window.scrollTo({ top: 0 });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -293,6 +353,30 @@ export default function StaffDetailsPortal() {
     }
   };
 
+  const thankYou = (rtwPending: boolean, firstName?: string) => (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-muted/30">
+      <div className="max-w-sm text-center space-y-3">
+        <CheckCircle2 className="h-12 w-12 text-success mx-auto" />
+        <h1 className="text-lg font-semibold text-foreground">
+          Thank you{firstName ? `, ${firstName}` : ""}
+        </h1>
+        <p className="text-sm text-foreground">
+          Everything has been sent to your manager, and it is now on your record — you will not be asked for it again.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {rtwPending
+            ? "Your right to work document will be checked by your manager, who will confirm it with you."
+            : "Your manager will be in touch if anything else is needed."}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          This link is now closed. Contact your manager if something needs changing.
+        </p>
+      </div>
+    </div>
+  );
+
+  if (sent) return thankYou(sent.rtwPending, data?.employee.first_name);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
@@ -302,6 +386,8 @@ export default function StaffDetailsPortal() {
   }
 
   if (error || !data) {
+    // A closed link is a finished form, not a fault — say thank you instead of showing an error.
+    if (error && /already been sent|already sent|now closed/i.test(error)) return thankYou(false);
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-muted/30">
         <div className="max-w-sm text-center space-y-3">
@@ -313,20 +399,7 @@ export default function StaffDetailsPortal() {
     );
   }
 
-  if (data.request.submitted_at) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-muted/30">
-        <div className="max-w-sm text-center space-y-3">
-          <CheckCircle2 className="h-12 w-12 text-success mx-auto" />
-          <h1 className="text-lg font-semibold text-foreground">All done, thank you</h1>
-          <p className="text-sm text-muted-foreground">
-            Your details have been sent to your manager. If you uploaded a right to work document, they will check it
-            and confirm it with you.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (data.request.submitted_at) return thankYou(false, data.employee.first_name);
 
   const totalScreens = steps.length + 1;
   const progress = Math.round(((isReview ? steps.length : step) / totalScreens) * 100);
@@ -335,6 +408,26 @@ export default function StaffDetailsPortal() {
   const blurb = isReview
     ? "Tap anything to change it. When it all looks right, send it."
     : current?.blurb ?? "";
+
+  const uploadInput = (label: string, capture: boolean) => (
+    <label
+      className={cn(
+        "flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-4 text-sm font-medium text-foreground",
+        busy && "opacity-60",
+      )}
+    >
+      {capture ? <Camera className="h-4 w-4" /> : <Paperclip className="h-4 w-4" />}
+      {label}
+      <input
+        type="file"
+        accept="image/*,application/pdf"
+        {...(capture ? { capture: "environment" as const } : {})}
+        className="hidden"
+        disabled={busy}
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.currentTarget.value = ""; }}
+      />
+    </label>
+  );
 
   return (
     <div className="min-h-screen bg-muted/30 pb-28">
@@ -371,6 +464,8 @@ export default function StaffDetailsPortal() {
                 key={f.key}
                 label={f.label}
                 type={f.type}
+                multiline={f.multiline}
+                hint={f.hint}
                 placeholder={f.placeholder}
                 value={answers[current.section]?.[f.key]}
                 onChange={(v) => set(current.section, f.key, v)}
@@ -381,20 +476,12 @@ export default function StaffDetailsPortal() {
               <div className="pt-2 space-y-2">
                 <Label className="text-sm">Photo or file of your document</Label>
                 <p className="text-xs text-muted-foreground">
-                  Make sure all four corners and the text are clear.
+                  Make sure all four corners and the text are clear. A PDF or a photo already on your phone is fine.
                 </p>
-                <label className={cn("flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-6 text-sm font-medium text-foreground", busy && "opacity-60")}>
-                  <Camera className="h-4 w-4" />
-                  {uploads > 0 ? "Add another document" : "Take a photo or choose a file"}
-                  <input
-                    type="file"
-                    accept="image/*,application/pdf"
-                    capture="environment"
-                    className="hidden"
-                    disabled={busy}
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.currentTarget.value = ""; }}
-                  />
-                </label>
+                <div className="flex gap-2">
+                  {uploadInput("Take a photo", true)}
+                  {uploadInput("Upload a file", false)}
+                </div>
                 {uploads > 0 && (
                   <p className="text-xs text-success flex items-center gap-1">
                     <CheckCircle2 className="h-3.5 w-3.5" /> {uploads} document{uploads > 1 ? "s" : ""} received
@@ -413,7 +500,7 @@ export default function StaffDetailsPortal() {
                   {s.title}
                 </p>
                 <div className="divide-y divide-border">
-                  {s.fields.map((f) => {
+                  {s.fields.filter((f) => !f.confirmOnly).map((f) => {
                     const rowId = `${s.section}.${f.key}`;
                     const value = answers[s.section]?.[f.key] ?? "";
                     const editing = editingRow === rowId;
@@ -424,8 +511,8 @@ export default function StaffDetailsPortal() {
                             <Field
                               id={`review-${s.section}-${f.key}`}
                               label={f.label}
-
                               type={f.type}
+                              multiline={f.multiline}
                               placeholder={f.placeholder}
                               value={value}
                               onChange={(v) => set(s.section, f.key, v)}
@@ -466,7 +553,6 @@ export default function StaffDetailsPortal() {
                         <input
                           type="file"
                           accept="image/*,application/pdf"
-                          capture="environment"
                           className="hidden"
                           disabled={busy}
                           onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.currentTarget.value = ""; }}
@@ -501,27 +587,39 @@ export default function StaffDetailsPortal() {
   );
 }
 
-function Field({ id, label, value, onChange, type = "text", placeholder }: {
+function Field({ id, label, value, onChange, type = "text", placeholder, multiline, hint }: {
   id?: string;
   label: string;
   value?: string;
   onChange: (v: string) => void;
   type?: string;
   placeholder?: string;
+  multiline?: boolean;
+  hint?: string;
 }) {
   const inputId = id ?? `field-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
     <div className="space-y-1">
       <Label htmlFor={inputId} className="text-sm">{label}</Label>
-      <Input
-        id={inputId}
-        type={type}
-        value={value ?? ""}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-11 text-base"
-      />
+      {multiline ? (
+        <Textarea
+          id={inputId}
+          value={value ?? ""}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="min-h-24 text-base"
+        />
+      ) : (
+        <Input
+          id={inputId}
+          type={type}
+          value={value ?? ""}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-11 text-base"
+        />
+      )}
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
-

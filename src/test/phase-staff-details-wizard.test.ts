@@ -43,12 +43,34 @@ describe("staff details form asks a little at a time and ends with a check scree
 
   it("only submits from the review screen", () => {
     expect(portal).toContain("onClick={isReview ? submit : next}");
-    expect(portal).toContain("if (reviewGaps.length > 0)");
+    expect(portal).toContain("if (reviewProblems.length > 0)");
   });
 
-  it("keeps National Insurance optional and the right to work document required", () => {
+  it("keeps National Insurance optional but checks the UK format when given", () => {
     expect(portal).toContain('key: "ni_number", label: "National Insurance number (optional)"');
-    expect(portal).toContain('gaps.push("A photo or file of your document")');
+    expect(portal).toContain("isValidNiNumber");
+    expect(portal).toContain("Leave it blank if you do not have one");
+  });
+
+  it("requires a right to work document and allows a photo or an uploaded file", () => {
+    expect(portal).toContain('list.push("A photo or file of your document is needed")');
+    expect(portal).toContain('uploadInput("Take a photo", true)');
+    expect(portal).toContain('uploadInput("Upload a file", false)');
+  });
+
+  it("asks for the bank numbers twice and checks they match", () => {
+    expect(portal).toContain('key: "confirm_sort_code"');
+    expect(portal).toContain('key: "confirm_account_number"');
+    expect(portal).toContain('list.push("The two sort codes do not match")');
+    expect(portal).toContain('list.push("The two account numbers do not match")');
+    expect(portal).toContain('!k.startsWith("confirm_")');
+  });
+
+  it("offers an optional note and thanks the person after sending", () => {
+    expect(portal).toContain("NOTES_STEP");
+    expect(portal).toContain('key: "staff_notes"');
+    expect(portal).toContain("if (sent) return thankYou");
+    expect(portal).toContain("Everything has been sent to your manager");
   });
 
   it("still autosaves progress and reuses the same submit action", () => {
@@ -57,3 +79,15 @@ describe("staff details form asks a little at a time and ends with a check scree
     expect(portal).toContain('action: "upload_rtw"');
   });
 });
+
+describe("National Insurance format check", () => {
+  it("accepts a valid number and rejects a wrong one", async () => {
+    const { isValidNiNumber } = await import("@/pages/StaffDetailsPortal");
+    expect(isValidNiNumber("AB123456C")).toBe(true);
+    expect(isValidNiNumber("ab 12 34 56 c")).toBe(true);
+    expect(isValidNiNumber("QQ12345C")).toBe(false);
+    expect(isValidNiNumber("DA123456C")).toBe(false);
+    expect(isValidNiNumber("QQ123456E")).toBe(false);
+  });
+});
+
