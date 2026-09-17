@@ -21,17 +21,23 @@ const s = StyleSheet.create({
   trLast: { flexDirection: "row" },
   th: { fontFamily: "Helvetica-Bold", color: DARK, fontSize: 9, padding: 6 },
   td: { padding: 6, fontSize: 9 },
-  colName: { width: "45%", borderRightWidth: 1, borderRightColor: RULE },
-  colSig: { width: "33%", borderRightWidth: 1, borderRightColor: RULE },
-  colDate: { width: "22%" },
-  sigImage: { width: 110, height: 34, objectFit: "contain" },
+  colName: { width: "30%", borderRightWidth: 1, borderRightColor: RULE },
+  colRole: { width: "20%", borderRightWidth: 1, borderRightColor: RULE },
+  colStatus: { width: "20%", borderRightWidth: 1, borderRightColor: RULE },
+  colSig: { width: "18%", borderRightWidth: 1, borderRightColor: RULE },
+  colDate: { width: "12%" },
+  sigImage: { width: 80, height: 26, objectFit: "contain" },
   signBlock: { marginTop: 22, paddingTop: 12, borderTopWidth: 1, borderTopColor: RULE },
   statement: { marginTop: 14, padding: 8, borderWidth: 1, borderColor: RULE, fontSize: 9 },
+  summary: { marginTop: 12, fontSize: 9, fontFamily: "Helvetica-Bold", color: DARK },
+  warning: { marginTop: 6, padding: 6, borderWidth: 1, borderColor: "#b91c1c", color: "#b91c1c", fontSize: 9 },
   footNote: { marginTop: 18, fontSize: 8, color: SUBTLE },
 });
 
 export interface SignedStaffRow {
   name: string;
+  job_title?: string | null;
+  status_label?: string | null;
   signature?: string | null;
   signed_at?: string | null;
 }
@@ -44,8 +50,12 @@ function gbDate(iso?: string | null): string {
 
 interface Props {
   doc: LicensingDocument;
-  /** Staff who have signed — printed as the authorisation signing sheet. */
+  /** The site register — everyone front of house plus anyone already authorised. */
   staff?: SignedStaffRow[];
+  /** Plain sentence stating how many people may currently sell alcohol. */
+  summaryLine?: string | null;
+  /** Shown in full when nobody at the site is authorised. */
+  warningLine?: string | null;
   /** Signature captured from the licence holder / DPS. */
   authoriserSignature?: string | null;
   authoriserSignedAt?: string | null;
@@ -54,8 +64,9 @@ interface Props {
 }
 
 export function LicensingDocumentPDF({
-  doc, staff = [], authoriserSignature, authoriserSignedAt, auditLine,
+  doc, staff = [], summaryLine, warningLine, authoriserSignature, authoriserSignedAt, auditLine,
 }: Props) {
+
   const rows: SignedStaffRow[] = staff.length > 0
     ? staff
     : Array.from({ length: 7 }, () => ({ name: "", signature: null, signed_at: null }));
