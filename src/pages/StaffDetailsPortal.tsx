@@ -7,8 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
-  AlertCircle, Camera, CheckCircle2, ChevronLeft, HeartPulse, Landmark,
-  Loader2, ShieldCheck, User,
+  AlertCircle, Camera, CheckCircle2, ChevronLeft, ClipboardCheck, FileCheck2, HeartPulse,
+  Landmark, Loader2, MapPin, Pencil, Phone, ShieldCheck, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,11 +17,106 @@ const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
 type SectionKey = "personal" | "emergency" | "bank" | "rtw";
 
-const SECTION_META: Record<SectionKey, { title: string; blurb: string; icon: typeof User }> = {
-  personal: { title: "Your personal details", blurb: "Name, date of birth, contact details, home address and National Insurance number.", icon: User },
-  emergency: { title: "Emergency contact", blurb: "Someone we can call if something happens at work.", icon: HeartPulse },
-  bank: { title: "Bank details for pay", blurb: "Where your wages are paid. Stored securely.", icon: Landmark },
-  rtw: { title: "Right to work", blurb: "Required by law before you can start work in the UK.", icon: ShieldCheck },
+interface FieldDef {
+  key: string;
+  label: string;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+}
+
+interface StepDef {
+  id: string;
+  section: SectionKey;
+  title: string;
+  blurb: string;
+  icon: typeof User;
+  fields: FieldDef[];
+  upload?: boolean;
+}
+
+/** Small groups of two or three questions, one screen at a time. */
+const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
+  personal: [
+    {
+      id: "name", section: "personal", title: "What is your name?",
+      blurb: "Exactly as it appears on your passport or ID.", icon: User,
+      fields: [
+        { key: "forename", label: "First name", required: true },
+        { key: "surname", label: "Surname", required: true },
+        { key: "preferred_name", label: "Name you prefer to be called (optional)" },
+      ],
+    },
+    {
+      id: "dob_phone", section: "personal", title: "Date of birth and phone",
+      blurb: "So we can reach you and check your pay is correct for your age.", icon: Phone,
+      fields: [
+        { key: "date_of_birth", label: "Date of birth", type: "date", required: true },
+        { key: "phone", label: "Mobile number", type: "tel", required: true },
+      ],
+    },
+    {
+      id: "email", section: "personal", title: "Your email address",
+      blurb: "Payslips and important messages go here.", icon: User,
+      fields: [{ key: "email", label: "Email address", type: "email", required: true }],
+    },
+    {
+      id: "address", section: "personal", title: "Where do you live?",
+      blurb: "Your home address, as on your bank statements.", icon: MapPin,
+      fields: [
+        { key: "address_line1", label: "Address", required: true },
+        { key: "address_line2", label: "Address line 2 (optional)" },
+        { key: "city", label: "Town or city", required: true },
+        { key: "postcode", label: "Postcode", required: true },
+      ],
+    },
+    {
+      id: "ni", section: "personal", title: "National Insurance number",
+      blurb: "Leave this blank if you do not have one yet.", icon: ShieldCheck,
+      fields: [{ key: "ni_number", label: "National Insurance number (optional)", placeholder: "QQ123456C" }],
+    },
+  ],
+  rtw: [
+    {
+      id: "rtw_status", section: "rtw", title: "Your right to work",
+      blurb: "Required by law before you can start work in the UK.", icon: ShieldCheck,
+      fields: [
+        { key: "nationality", label: "Nationality", required: true },
+        { key: "settlement_status", label: "Immigration status (optional)", placeholder: "e.g. British citizen, settled status" },
+      ],
+    },
+    {
+      id: "rtw_doc", section: "rtw", title: "Photo of your document",
+      blurb: "Passport, visa, BRP or share code letter.", icon: Camera,
+      upload: true,
+      fields: [
+        { key: "passport_no", label: "Passport number (optional)" },
+        { key: "sharing_code", label: "Share code (if you have one)" },
+      ],
+    },
+  ],
+  bank: [
+    {
+      id: "bank", section: "bank", title: "Bank details for pay",
+      blurb: "Where your wages are paid. Only your payroll administrator can see these.", icon: Landmark,
+      fields: [
+        { key: "account_holder", label: "Account holder name", required: true },
+        { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true },
+        { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
+      ],
+    },
+  ],
+  emergency: [
+    {
+      id: "emergency", section: "emergency", title: "Emergency contact",
+      blurb: "Someone we can call if something happens at work.", icon: HeartPulse,
+      fields: [
+        { key: "name", label: "Contact name", required: true },
+        { key: "relationship", label: "Relationship to you", required: true },
+        { key: "phone", label: "Phone number", type: "tel", required: true },
+      ],
+    },
+  ],
 };
 
 interface PortalData {
@@ -48,6 +143,7 @@ export default function StaffDetailsPortal() {
   const [busy, setBusy] = useState(false);
   const [uploads, setUploads] = useState(0);
   const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
+  const [editingRow, setEditingRow] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -68,6 +164,7 @@ export default function StaffDetailsPortal() {
             date_of_birth: json.saved?.personal?.date_of_birth ?? json.prefill.date_of_birth ?? "",
             email: json.saved?.personal?.email ?? json.prefill.email ?? "",
             phone: json.saved?.personal?.phone ?? "",
+            ni_number: json.saved?.personal?.ni_number ?? "",
             address_line1: json.saved?.personal?.address_line1 ?? "",
             address_line2: json.saved?.personal?.address_line2 ?? "",
             city: json.saved?.personal?.city ?? "",
@@ -77,7 +174,7 @@ export default function StaffDetailsPortal() {
           bank: { account_holder: "", bank_name: "", sort_code: "", account_number: "", ...(json.saved?.bank ?? {}) },
           rtw: {
             nationality: json.prefill.nationality ?? "",
-            ni_number: "", passport_no: "", sharing_code: "", settlement_status: "",
+            passport_no: "", sharing_code: "", settlement_status: "",
             ...(json.saved?.rtw ?? {}),
           },
         });
@@ -104,35 +201,37 @@ export default function StaffDetailsPortal() {
   };
 
   const sections = data?.request.sections ?? [];
-  const current = sections[step];
+  const steps = useMemo(
+    () => sections.flatMap((s) => STEPS_BY_SECTION[s] ?? []),
+    [sections],
+  );
+  const isReview = steps.length > 0 && step >= steps.length;
+  const current = steps[step];
+
   const set = (section: string, field: string, value: string) =>
     setAnswers((a) => ({ ...a, [section]: { ...(a[section] ?? {}), [field]: value } }));
 
   const missing = useMemo(() => {
     if (!current) return [] as string[];
-    const a = answers[current] ?? {};
-    const need = (k: string, label: string) => (a[k]?.trim() ? null : label);
-    if (current === "personal") {
-      return [need("forename", "First name"), need("surname", "Surname"), need("date_of_birth", "Date of birth"),
-        need("phone", "Phone number"), need("email", "Email address"),
-        need("address_line1", "Address"), need("city", "Town or city"),
-        need("postcode", "Postcode")].filter(Boolean) as string[];
-    }
-    if (current === "emergency") {
-      return [need("name", "Contact name"), need("relationship", "Relationship"), need("phone", "Phone number")]
-        .filter(Boolean) as string[];
-    }
-    if (current === "bank") {
-      return [need("account_holder", "Account holder name"), need("sort_code", "Sort code"),
-        need("account_number", "Account number")].filter(Boolean) as string[];
-    }
-    if (current === "rtw") {
-      const base = [need("nationality", "Nationality")].filter(Boolean) as string[];
-      if (uploads === 0) base.push("A photo or file of your document");
-      return base;
-    }
-    return [];
+    const a = answers[current.section] ?? {};
+    const gaps = current.fields
+      .filter((f) => f.required && !(a[f.key] ?? "").trim())
+      .map((f) => f.label);
+    if (current.upload && uploads === 0) gaps.push("A photo or file of your document");
+    return gaps;
   }, [current, answers, uploads]);
+
+  const reviewGaps = useMemo(() => {
+    const gaps: string[] = [];
+    for (const s of steps) {
+      const a = answers[s.section] ?? {};
+      for (const f of s.fields) {
+        if (f.required && !(a[f.key] ?? "").trim()) gaps.push(f.label);
+      }
+      if (s.upload && uploads === 0) gaps.push("A photo or file of your document");
+    }
+    return gaps;
+  }, [steps, answers, uploads]);
 
   const saveProgress = async () => {
     try { await post({ action: "save", answers }); } catch { /* progress save is best effort */ }
@@ -146,15 +245,15 @@ export default function StaffDetailsPortal() {
     setBusy(true);
     await saveProgress();
     setBusy(false);
-    if (step < sections.length - 1) {
-      setStep(step + 1);
-      window.scrollTo({ top: 0 });
-    } else {
-      submit();
-    }
+    setStep(step + 1);
+    window.scrollTo({ top: 0 });
   };
 
   const submit = async () => {
+    if (reviewGaps.length > 0) {
+      toast.error(`Still needed: ${reviewGaps.join(", ")}`);
+      return;
+    }
     setBusy(true);
     try {
       const res = await post({ action: "submit", answers });
@@ -229,9 +328,13 @@ export default function StaffDetailsPortal() {
     );
   }
 
-  const meta = SECTION_META[current];
-  const Icon = meta.icon;
-  const progress = Math.round((step / sections.length) * 100);
+  const totalScreens = steps.length + 1;
+  const progress = Math.round(((isReview ? steps.length : step) / totalScreens) * 100);
+  const Icon = isReview ? ClipboardCheck : (current?.icon ?? User);
+  const heading = isReview ? "Check your answers" : current?.title ?? "";
+  const blurb = isReview
+    ? "Tap anything to change it. When it all looks right, send it."
+    : current?.blurb ?? "";
 
   return (
     <div className="min-h-screen bg-muted/30 pb-28">
@@ -242,7 +345,7 @@ export default function StaffDetailsPortal() {
               Hi {data.employee.first_name || "there"}
             </p>
             <p className="text-xs text-muted-foreground">
-              Step {step + 1} of {sections.length} · {meta.title}
+              Step {(isReview ? steps.length : step) + 1} of {totalScreens} · {heading}
             </p>
           </div>
           <Badge variant="outline" className="text-[10px] shrink-0">Ugly Dumpling</Badge>
@@ -256,60 +359,29 @@ export default function StaffDetailsPortal() {
             <Icon className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-foreground">{meta.title}</h1>
-            <p className="text-sm text-muted-foreground">{meta.blurb}</p>
+            <h1 className="text-base font-semibold text-foreground">{heading}</h1>
+            <p className="text-sm text-muted-foreground">{blurb}</p>
           </div>
         </div>
 
-        <div className="space-y-3 rounded-xl border border-border bg-card p-4">
-          {current === "personal" && (
-            <>
-              <Field label="First name (as on your passport)" value={answers.personal?.forename} onChange={(v) => set("personal", "forename", v)} />
-              <Field label="Surname" value={answers.personal?.surname} onChange={(v) => set("personal", "surname", v)} />
-              <Field label="Name you prefer to be called (optional)" value={answers.personal?.preferred_name} onChange={(v) => set("personal", "preferred_name", v)} />
-              <Field label="Date of birth" type="date" value={answers.personal?.date_of_birth} onChange={(v) => set("personal", "date_of_birth", v)} />
-              <Field label="Email address" type="email" value={answers.personal?.email} onChange={(v) => set("personal", "email", v)} />
-              <Field label="Mobile number" type="tel" value={answers.personal?.phone} onChange={(v) => set("personal", "phone", v)} />
-              <Field label="National Insurance number (leave blank if you do not have one yet)" placeholder="QQ123456C" value={answers.personal?.ni_number} onChange={(v) => set("personal", "ni_number", v)} />
-              <Field label="Address" value={answers.personal?.address_line1} onChange={(v) => set("personal", "address_line1", v)} />
-              <Field label="Address line 2 (optional)" value={answers.personal?.address_line2} onChange={(v) => set("personal", "address_line2", v)} />
-              <Field label="Town or city" value={answers.personal?.city} onChange={(v) => set("personal", "city", v)} />
-              <Field label="Postcode" value={answers.personal?.postcode} onChange={(v) => set("personal", "postcode", v)} />
-            </>
-          )}
+        {!isReview && current && (
+          <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+            {current.fields.map((f) => (
+              <Field
+                key={f.key}
+                label={f.label}
+                type={f.type}
+                placeholder={f.placeholder}
+                value={answers[current.section]?.[f.key]}
+                onChange={(v) => set(current.section, f.key, v)}
+              />
+            ))}
 
-          {current === "emergency" && (
-            <>
-              <Field label="Contact name" value={answers.emergency?.name} onChange={(v) => set("emergency", "name", v)} />
-              <Field label="Relationship to you" value={answers.emergency?.relationship} onChange={(v) => set("emergency", "relationship", v)} />
-              <Field label="Phone number" type="tel" value={answers.emergency?.phone} onChange={(v) => set("emergency", "phone", v)} />
-            </>
-          )}
-
-          {current === "bank" && (
-            <>
-              <Field label="Account holder name" value={answers.bank?.account_holder} onChange={(v) => set("bank", "account_holder", v)} />
-              <Field label="Bank name (optional)" value={answers.bank?.bank_name} onChange={(v) => set("bank", "bank_name", v)} />
-              <Field label="Sort code" placeholder="00-00-00" value={answers.bank?.sort_code} onChange={(v) => set("bank", "sort_code", v)} />
-              <Field label="Account number" placeholder="8 digits" value={answers.bank?.account_number} onChange={(v) => set("bank", "account_number", v)} />
-              <p className="text-xs text-muted-foreground">
-                Only your payroll administrator can see these details.
-              </p>
-            </>
-          )}
-
-          {current === "rtw" && (
-            <>
-              <Field label="Nationality" value={answers.rtw?.nationality} onChange={(v) => set("rtw", "nationality", v)} />
-              
-              <Field label="Passport number (optional)" value={answers.rtw?.passport_no} onChange={(v) => set("rtw", "passport_no", v)} />
-              <Field label="Share code (if you have one)" value={answers.rtw?.sharing_code} onChange={(v) => set("rtw", "sharing_code", v)} />
-              <Field label="Immigration status (optional)" placeholder="e.g. British citizen, settled status" value={answers.rtw?.settlement_status} onChange={(v) => set("rtw", "settlement_status", v)} />
-
+            {current.upload && (
               <div className="pt-2 space-y-2">
                 <Label className="text-sm">Photo or file of your document</Label>
                 <p className="text-xs text-muted-foreground">
-                  Passport, visa, BRP or share code letter. Make sure all four corners and the text are clear.
+                  Make sure all four corners and the text are clear.
                 </p>
                 <label className={cn("flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-6 text-sm font-medium text-foreground", busy && "opacity-60")}>
                   <Camera className="h-4 w-4" />
@@ -329,9 +401,82 @@ export default function StaffDetailsPortal() {
                   </p>
                 )}
               </div>
-            </>
-          )}
-        </div>
+            )}
+          </div>
+        )}
+
+        {isReview && (
+          <div className="space-y-4">
+            {steps.map((s) => (
+              <div key={s.id} className="rounded-xl border border-border bg-card overflow-hidden">
+                <p className="px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted/50">
+                  {s.title}
+                </p>
+                <div className="divide-y divide-border">
+                  {s.fields.map((f) => {
+                    const rowId = `${s.section}.${f.key}`;
+                    const value = answers[s.section]?.[f.key] ?? "";
+                    const editing = editingRow === rowId;
+                    return (
+                      <div key={rowId} className="px-4 py-3">
+                        {editing ? (
+                          <div className="space-y-2">
+                            <Field
+                              label={f.label}
+                              type={f.type}
+                              placeholder={f.placeholder}
+                              value={value}
+                              onChange={(v) => set(s.section, f.key, v)}
+                            />
+                            <Button size="sm" variant="secondary" onClick={() => { setEditingRow(null); saveProgress(); }}>
+                              Done
+                            </Button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="w-full text-left flex items-center gap-3"
+                            onClick={() => setEditingRow(rowId)}
+                          >
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-xs text-muted-foreground">{f.label}</span>
+                              <span className={cn("block text-sm truncate", value ? "text-foreground" : "text-destructive")}>
+                                {value || (f.required ? "Still needed" : "Not given")}
+                              </span>
+                            </span>
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {s.upload && (
+                    <div className="px-4 py-3 flex items-center gap-3">
+                      <FileCheck2 className={cn("h-4 w-4 shrink-0", uploads > 0 ? "text-success" : "text-destructive")} />
+                      <span className="flex-1 text-sm text-foreground">
+                        {uploads > 0
+                          ? `${uploads} document${uploads > 1 ? "s" : ""} attached`
+                          : "No document attached yet"}
+                      </span>
+                      <label className="text-sm font-medium text-primary">
+                        {uploads > 0 ? "Add another" : "Attach"}
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          capture="environment"
+                          className="hidden"
+                          disabled={busy}
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.currentTarget.value = ""; }}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <p className="text-xs text-muted-foreground text-center">
           Your information is stored securely and only used for your employment record.
@@ -341,12 +486,12 @@ export default function StaffDetailsPortal() {
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background px-4 py-3">
         <div className="max-w-md mx-auto flex items-center gap-2">
           {step > 0 && (
-            <Button variant="outline" size="lg" onClick={() => { setStep(step - 1); window.scrollTo({ top: 0 }); }}>
+            <Button variant="outline" size="lg" onClick={() => { setEditingRow(null); setStep(step - 1); window.scrollTo({ top: 0 }); }}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
-          <Button size="lg" className="flex-1" onClick={next} disabled={busy}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : step === sections.length - 1 ? "Send my details" : "Continue"}
+          <Button size="lg" className="flex-1" onClick={isReview ? submit : next} disabled={busy}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : isReview ? "Send my details" : "Continue"}
           </Button>
         </div>
       </div>
