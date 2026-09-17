@@ -14,6 +14,7 @@ import { DocumentsSection } from "@/components/staff-portal/DocumentsSection";
 import { ReadinessBanner } from "@/components/staff-portal/ReadinessBanner";
 import { StaffTrainingView } from "@/components/training/StaffTrainingView";
 import { FohTrainingQuickAccess } from "@/components/staff-portal/FohTrainingQuickAccess";
+import { InductionJourney } from "@/components/training/InductionJourney";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
@@ -116,6 +117,13 @@ export default function StaffPortal() {
           {activeSection === "timesheets" && <TimesheetsSection />}
           {activeSection === "training" && (
             <div className="space-y-6">
+              {employee && (
+                <InductionJourney
+                  employeeId={employee.id}
+                  tenantId={employee.tenant_id}
+                  department={employee.department}
+                />
+              )}
               <StaffTrainingView employeeId={employeeId} />
               <FohTrainingQuickAccess department={employee?.department} />
             </div>
