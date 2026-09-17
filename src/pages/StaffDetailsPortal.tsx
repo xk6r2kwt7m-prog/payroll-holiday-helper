@@ -499,17 +499,20 @@ export default function StaffDetailsPortal() {
   );
 }
 
-function Field({ label, value, onChange, type = "text", placeholder }: {
+function Field({ id, label, value, onChange, type = "text", placeholder }: {
+  id?: string;
   label: string;
   value?: string;
   onChange: (v: string) => void;
   type?: string;
   placeholder?: string;
 }) {
+  const inputId = id ?? `field-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
     <div className="space-y-1">
-      <Label className="text-sm">{label}</Label>
+      <Label htmlFor={inputId} className="text-sm">{label}</Label>
       <Input
+        id={inputId}
         type={type}
         value={value ?? ""}
         placeholder={placeholder}
@@ -519,3 +522,4 @@ function Field({ label, value, onChange, type = "text", placeholder }: {
     </div>
   );
 }
+
