@@ -422,7 +422,9 @@ export default function StaffDetailsPortal() {
                         {editing ? (
                           <div className="space-y-2">
                             <Field
+                              id={`review-${s.section}-${f.key}`}
                               label={f.label}
+
                               type={f.type}
                               placeholder={f.placeholder}
                               value={value}
