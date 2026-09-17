@@ -46,8 +46,9 @@ describe("invited staff join with a personal link", () => {
     expect(accountPanel).toContain("Send password recovery");
   });
 
-  it("upserts membership to make repeated acceptance safe", () => {
-    expect(fn).toContain('{ onConflict: "tenant_id,user_id" }');
+  it("never changes an existing membership role when a link is opened again", () => {
+    expect(fn).toContain("existingMembership");
+    expect(fn).toContain("is_active: true");
   });
 
   it("grants access only to the inviting company", () => {
@@ -63,9 +64,17 @@ describe("invited staff join with a personal link", () => {
     expect(page).not.toMatch(/workspace name|Where does your team work|team size/i);
   });
 
-  it("requires a password of at least 8 characters", () => {
+  it("asks for no password and creates no login from the joining link", () => {
+    expect(fn).toContain("const wantsAccount = password.length > 0");
+    expect(fn).toContain("if (wantsAccount)");
+    expect(page).not.toMatch(/Choose a password|Repeat password/);
+    expect(page).not.toContain("signInWithPassword");
+    expect(page).toContain("No password needed");
+    expect(page).toContain('JSON.stringify({ token })');
+  });
+
+  it("still validates a password when one is supplied", () => {
     expect(fn).toContain("weak_password");
-    expect(page).toContain("at least 8 characters");
   });
 
   it("opens a details form asking for the basics only", () => {
@@ -83,8 +92,10 @@ describe("invited staff join with a personal link", () => {
   });
 
   it("records acceptance in the audit trail", () => {
-    expect(fn).toContain('table_name: "tenant_invitation_accepted"');
+    expect(fn).toContain('"tenant_invitation_accepted"');
+    expect(fn).toContain('"invitation_details_started"');
   });
+
 
   it("only reveals a waiting invitation to the signed-in owner of that email", () => {
     expect(fn).toContain('url.searchParams.get("mine") === "1"');
