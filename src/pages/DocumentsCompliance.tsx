@@ -19,6 +19,7 @@ import { TrainingAutomationPanel } from "@/components/compliance/TrainingAutomat
 import { PremisesLicencePanel } from "@/components/compliance/PremisesLicencePanel";
 import { SiteEmergencyDetailsCard } from "@/components/compliance/SiteEmergencyDetailsCard";
 import { IncidentBookSection } from "@/components/compliance/IncidentBookSection";
+import { InductionLessonsPanel } from "@/components/compliance/InductionLessonsPanel";
 import {
   useComplianceBranches, useConfirmBranchLocation, type ComplianceBranchOption,
 } from "@/hooks/useComplianceBranches";
@@ -61,6 +62,7 @@ export default function DocumentsCompliance() {
           </TabsList>
 
           <TabsContent value="induction" className="space-y-6">
+            <InductionLessonsPanel />
             <StaffInductionSection />
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
