@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, useEmployees, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
-import { findPossibleDuplicates, duplicateWarningMessage } from "@/lib/duplicate-check";
+import { findPossibleDuplicates, duplicateWarningMessage, blockingMessage } from "@/lib/duplicate-check";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
 import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
 import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRules } from "@/hooks/useCountryRules";
@@ -279,10 +279,11 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
       return;
     }
 
-    // Possible duplicate check for new employees — warn only, never blocks.
-    // Looks at email, full name and National Insurance number, including
-    // archived / leaver records, which are the usual source of double entries.
-    if (isNewEmployee && !duplicateEmailOverridden) {
+    // Duplicate check. Name / National Insurance matches and archived or leaver
+    // records are a warning the manager can pass. The same email address on a
+    // record that is still current is refused: joining links and details forms
+    // would not know which person they belong to.
+    if (isNewEmployee) {
       const { data: existing } = await supabase
         .from("employees")
         .select("id, forename, surname, preferred_name, email, ni_number, user_id, status, archived_at")
@@ -298,10 +299,19 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
         (existing ?? []) as any,
       );
 
-      const warning = duplicateWarningMessage(matches);
-      if (warning) {
-        setDuplicateEmailWarning(warning);
+      const block = blockingMessage(matches);
+      if (block) {
+        setDuplicateEmailWarning(block);
+        toast.error(block);
         return;
+      }
+
+      if (!duplicateEmailOverridden) {
+        const warning = duplicateWarningMessage(matches);
+        if (warning) {
+          setDuplicateEmailWarning(warning);
+          return;
+        }
       }
     }
 
