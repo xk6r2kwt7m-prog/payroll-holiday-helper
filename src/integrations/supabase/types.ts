@@ -329,6 +329,83 @@ export type Database = {
           },
         ]
       }
+      allergen_assessment_attempts: {
+        Row: {
+          answers: Json
+          attempt_number: number
+          branch_id: string | null
+          course_version: number | null
+          created_at: string
+          critical_missed: string[]
+          draft_id: string | null
+          employee_id: string | null
+          id: string
+          is_test: boolean
+          option_order: Json
+          outcome: string | null
+          passed: boolean | null
+          question_ids: string[]
+          score_percent: number | null
+          status: string
+          submitted_at: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          answers?: Json
+          attempt_number: number
+          branch_id?: string | null
+          course_version?: number | null
+          created_at?: string
+          critical_missed?: string[]
+          draft_id?: string | null
+          employee_id?: string | null
+          id?: string
+          is_test?: boolean
+          option_order?: Json
+          outcome?: string | null
+          passed?: boolean | null
+          question_ids?: string[]
+          score_percent?: number | null
+          status?: string
+          submitted_at?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          answers?: Json
+          attempt_number?: number
+          branch_id?: string | null
+          course_version?: number | null
+          created_at?: string
+          critical_missed?: string[]
+          draft_id?: string | null
+          employee_id?: string | null
+          id?: string
+          is_test?: boolean
+          option_order?: Json
+          outcome?: string | null
+          passed?: boolean | null
+          question_ids?: string[]
+          score_percent?: number | null
+          status?: string
+          submitted_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_assessment_attempts_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_course_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       allergen_change_proposals: {
         Row: {
           change_type: string
@@ -404,6 +481,59 @@ export type Database = {
           },
         ]
       }
+      allergen_coaching_records: {
+        Row: {
+          after_attempt_id: string | null
+          coached_by: string | null
+          coached_by_name: string | null
+          coaching_note: string
+          created_at: string
+          employee_id: string | null
+          id: string
+          is_test: boolean
+          tenant_id: string
+          topics_covered: string[]
+          unlocks_attempt: number
+          user_id: string | null
+        }
+        Insert: {
+          after_attempt_id?: string | null
+          coached_by?: string | null
+          coached_by_name?: string | null
+          coaching_note: string
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          is_test?: boolean
+          tenant_id: string
+          topics_covered?: string[]
+          unlocks_attempt?: number
+          user_id?: string | null
+        }
+        Update: {
+          after_attempt_id?: string | null
+          coached_by?: string | null
+          coached_by_name?: string | null
+          coaching_note?: string
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          is_test?: boolean
+          tenant_id?: string
+          topics_covered?: string[]
+          unlocks_attempt?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_coaching_records_after_attempt_id_fkey"
+            columns: ["after_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_assessment_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       allergen_conflicts: {
         Row: {
           affected_lessons: string[]
@@ -462,6 +592,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      allergen_course_drafts: {
+        Row: {
+          based_on_version: number | null
+          comparison: Json
+          confirmed_dish_ids: string[]
+          content: Json
+          created_at: string
+          created_by: string | null
+          excluded_from_scoring: string[]
+          id: string
+          note: string | null
+          proposed_version: number
+          source_map: Json
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          based_on_version?: number | null
+          comparison?: Json
+          confirmed_dish_ids?: string[]
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          excluded_from_scoring?: string[]
+          id?: string
+          note?: string | null
+          proposed_version: number
+          source_map?: Json
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          based_on_version?: number | null
+          comparison?: Json
+          confirmed_dish_ids?: string[]
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          excluded_from_scoring?: string[]
+          id?: string
+          note?: string | null
+          proposed_version?: number
+          source_map?: Json
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       allergen_course_versions: {
         Row: {
@@ -612,6 +793,68 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      allergen_lesson_progress: {
+        Row: {
+          completed_at: string | null
+          completed_sections: string[]
+          course_version: number | null
+          created_at: string
+          draft_id: string | null
+          employee_id: string | null
+          id: string
+          is_complete: boolean
+          is_test: boolean
+          last_seen_at: string
+          lesson_ref: string
+          tenant_id: string
+          total_sections: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_sections?: string[]
+          course_version?: number | null
+          created_at?: string
+          draft_id?: string | null
+          employee_id?: string | null
+          id?: string
+          is_complete?: boolean
+          is_test?: boolean
+          last_seen_at?: string
+          lesson_ref: string
+          tenant_id: string
+          total_sections?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          completed_sections?: string[]
+          course_version?: number | null
+          created_at?: string
+          draft_id?: string | null
+          employee_id?: string | null
+          id?: string
+          is_complete?: boolean
+          is_test?: boolean
+          last_seen_at?: string
+          lesson_ref?: string
+          tenant_id?: string
+          total_sections?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_lesson_progress_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_course_drafts"
             referencedColumns: ["id"]
           },
         ]

@@ -50,6 +50,9 @@ export type ComplianceAuditEvent =
   | "allergen_conflict_resolved"
   | "allergen_proposal_decided"
   | "allergen_course_published"
+  | "allergen_draft_prepared"
+  | "allergen_assessment_submitted"
+  | "allergen_coaching_recorded"
   | "alcohol_list_decision_recorded";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
@@ -96,6 +99,9 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   allergen_dish_decision: "Management decision recorded for a flavour against the approved matrix",
   allergen_conflict_resolved: "Allergen source conflict resolved",
   allergen_proposal_decided: "Allergen course change decided",
+  allergen_draft_prepared: "Draft allergen course snapshot prepared for management review",
+  allergen_assessment_submitted: "Allergen assessment attempt submitted and marked",
+  allergen_coaching_recorded: "Manager coaching recorded before a further allergen attempt",
   allergen_course_published: "Allergen course version published",
   alcohol_list_decision_recorded: "Alcohol list — front of house decided by the manager",
 };
