@@ -71,8 +71,8 @@ export function InductionLessonsPanel() {
         </p>
       </div>
 
-      <Tabs defaultValue={INDUCTION_PACKS[0].role} className="space-y-3">
-        <TabsList className="flex-wrap h-auto">
+      <Tabs defaultValue={INDUCTION_PACKS[0].role} className="min-w-0 space-y-3">
+        <TabsList className="flex w-full flex-nowrap justify-start h-auto">
           {INDUCTION_PACKS.map((pack) => (
             <TabsTrigger key={pack.role} value={pack.role}>
               {PACK_ROLE_LABELS[pack.role]}
@@ -92,15 +92,15 @@ export function InductionLessonsPanel() {
               return (
                 <div
                   key={lesson.key}
-                  className="rounded-xl border border-border bg-card p-3.5 space-y-3"
+                  className="min-w-0 rounded-xl border border-border bg-card p-3.5 space-y-3"
                 >
                   <div className="flex items-start gap-3">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <BookOpen className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{lesson.title}</p>
-                      <p className="text-xs text-muted-foreground">{lesson.summary}</p>
+                      <p className="break-words text-sm font-medium">{lesson.title}</p>
+                      <p className="break-words text-xs text-muted-foreground">{lesson.summary}</p>
                       <div className="flex flex-wrap items-center gap-2 mt-1.5">
                         <Badge variant="outline" className="text-[10px]">v{version}</Badge>
                         <Badge
@@ -123,11 +123,12 @@ export function InductionLessonsPanel() {
                     </p>
                   )}
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2 sm:flex sm:flex-wrap">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setPreview(lesson)}
+                      className="w-full sm:w-auto"
                       disabled={!hasContent}
                     >
                       <Eye className="h-3.5 w-3.5 mr-1.5" /> Preview
@@ -135,6 +136,7 @@ export function InductionLessonsPanel() {
                     {status !== "approved" ? (
                       <Button
                         size="sm"
+                        className="w-full sm:w-auto"
                         disabled={!hasContent || setApproval.isPending}
                         onClick={() =>
                           setApproval.mutate({
@@ -150,6 +152,7 @@ export function InductionLessonsPanel() {
                       <Button
                         size="sm"
                         variant="outline"
+                        className="w-full sm:w-auto"
                         disabled={setApproval.isPending}
                         onClick={() =>
                           setApproval.mutate({
@@ -171,7 +174,7 @@ export function InductionLessonsPanel() {
       </Tabs>
 
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-base pr-6">{preview?.title}</DialogTitle>
           </DialogHeader>

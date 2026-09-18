@@ -41,7 +41,7 @@ export function InductionReviewDialog({ packId, employeeName, onClose }: Props) 
 
   return (
     <Dialog open={!!packId} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{employeeName} — induction record</DialogTitle>
         </DialogHeader>
@@ -67,7 +67,7 @@ export function InductionReviewDialog({ packId, employeeName, onClose }: Props) 
             <section className="space-y-1.5">
               <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Knowledge check</p>
               {latest ? (
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex flex-wrap items-center gap-2 text-sm">
                   <ClipboardCheck className={latest.passed ? "h-4 w-4 text-success" : "h-4 w-4 text-warning"} />
                   <span>{latest.score}/{latest.total} — {latest.passed ? "passed" : "not passed"}</span>
                   <Badge variant="outline" className="text-[10px]">
@@ -128,7 +128,7 @@ export function InductionReviewDialog({ packId, employeeName, onClose }: Props) 
 
             {/* Practical verification */}
             <section className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                   Verify in person
                 </p>
@@ -145,12 +145,12 @@ export function InductionReviewDialog({ packId, employeeName, onClose }: Props) 
                     <p className="px-3 py-2 text-xs font-semibold border-b border-border">{PRACTICAL_GROUPS[g]}</p>
                     <div className="divide-y divide-border">
                       {(grouped[g] ?? []).map((p: any) => (
-                        <label key={p.id} className="flex items-center gap-3 px-3 py-2.5 text-sm cursor-pointer">
+                        <label key={p.id} className="flex items-start gap-3 px-3 py-2.5 text-sm cursor-pointer">
                           <Checkbox
                             checked={!!p.verified_at}
                             onCheckedChange={(v) => verify.mutate({ id: p.id, verified: v === true })}
                           />
-                          <span className="flex-1">{p.label}</span>
+                          <span className="min-w-0 flex-1 break-words">{p.label}</span>
                           {p.verified_at && (
                             <span className="text-[10px] text-muted-foreground shrink-0">
                               {new Date(p.verified_at).toLocaleDateString("en-GB")}

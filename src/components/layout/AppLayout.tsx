@@ -141,7 +141,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen min-w-0 overflow-x-hidden bg-background flex flex-col">
       {/* Top navigation bar — desktop only */}
       <header className="hidden md:flex items-center h-12 border-b border-border/60 bg-card px-5 shrink-0 z-50">
         {/* Logo */}
@@ -324,7 +324,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col min-h-0">
+      <main className="flex-1 flex flex-col min-h-0 min-w-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -333,7 +333,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             animate="animate"
             exit="exit"
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="flex-1 flex flex-col px-4 py-4 sm:px-6 sm:py-6 pb-24 md:pb-6 overflow-x-hidden"
+            className="flex-1 flex flex-col min-w-0 w-full px-4 py-4 sm:px-6 sm:py-6 pb-32 md:pb-6 overflow-x-hidden"
           >
             {children}
           </motion.div>
