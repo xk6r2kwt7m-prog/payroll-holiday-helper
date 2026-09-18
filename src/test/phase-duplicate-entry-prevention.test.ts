@@ -45,9 +45,12 @@ describe("duplicate entry detection", () => {
     expect(findPossibleDuplicates({ forename: "Brand", surname: "New", email: "new@example.com" }, existing)).toHaveLength(0);
   });
 
-  it("puts account-linked records first", () => {
+  it("puts a blocking email clash first, then account-linked records", () => {
     const m = findPossibleDuplicates({ forename: "Sandy", surname: "Tsai", email: "wing@example.com" }, existing);
-    expect(m[0].record.id).toBe("1");
+    // record 2 holds that email and is still current, so it must be dealt with first
+    expect(m[0].record.id).toBe("2");
+    expect(m[0].blocking).toBe(true);
+    expect(m[1].record.id).toBe("1");
   });
 
   it("writes a plain-English warning and never blocks", () => {
