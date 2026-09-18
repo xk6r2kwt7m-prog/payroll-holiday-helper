@@ -1275,9 +1275,23 @@ Deno.serve(async (req) => {
         signature_data,
         signature_type,
         consent_text,
+        consent_items,
+        confirmed_email,
         document_hash,
         signatory_title,
       } = body;
+
+      // The signer must confirm a usable email address before signing.
+      const confirmedEmail = String(confirmed_email || "").trim();
+      if (confirmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(confirmedEmail)) {
+        return new Response(JSON.stringify({
+          error: "Please check your email address.",
+          error_code: "invalid_email",
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
 
       if (!typed_name?.trim()) {
