@@ -103,7 +103,8 @@ export function SendStaffAlcoholDialog({
   const submit = async () => {
     if (!branch) { toast.error("Choose the site"); return; }
     if (!licence) { toast.error("Add this site's premises licence details first"); return; }
-    if (selected.length === 0) { toast.error("Choose at least one person"); return; }
+    if (step !== "confirm") { review(); return; }
+    if (chosen.length === 0) { toast.error("Choose at least one person with an email address"); return; }
     setBusy(true);
     try {
       const res = await send.mutateAsync({
@@ -112,7 +113,7 @@ export function SendStaffAlcoholDialog({
         licence_id: licence.id,
         recipient_name: "",
         recipient_email: "",
-        employee_ids: selected,
+        employee_ids: chosen.map((e) => e.id),
         test_send: testSend,
       });
       if (res.failed?.length) toast.error(res.failed.join("; "));
