@@ -48,7 +48,7 @@ export function ContractDeliveryPanel({ documentId, employeeEmail }: Props) {
     setRetrying(true);
     try {
       const { error } = await supabase.functions.invoke("send-signed-contract", {
-        body: { documentId, trigger_source: "manual_retry" },
+        body: { document_id: documentId, trigger_source: "manual_retry" },
       });
       if (error) throw error;
       toast({

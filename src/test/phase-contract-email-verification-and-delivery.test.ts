@@ -19,6 +19,8 @@ const serveDocument = read("supabase/functions/serve-document/index.ts");
 const signPage = read("src/pages/SignContract.tsx");
 const staffContracts = read("src/components/staff-portal/MyContractsSection.tsx");
 const deliveryPanel = read("src/components/contracts/ContractDeliveryPanel.tsx");
+const deliveryCheck = read("supabase/functions/check-contract-email-delivery/index.ts");
+const signingActions = read("src/components/contracts/ContractSigningActions.tsx");
 
 describe("1. Expired signing links", () => {
   it("refuses an expired link when signing, with a 410 and a plain explanation", () => {
@@ -114,6 +116,28 @@ describe("5. Completed-contract email delivery failure", () => {
   });
 });
 
+describe("5A. Signing invitation delivery truthfulness", () => {
+  it("separates provider acceptance from mailbox delivery", () => {
+    expect(signingActions).toContain("Contract accepted for delivery");
+    expect(signingActions).toContain("Delivery will be checked separately");
+    expect(signingActions).not.toContain('title: isTest ? "Test contract sent to you" : "Contract sent"');
+  });
+
+  it("checks provider delivery only through an authenticated management function", () => {
+    expect(deliveryCheck).toContain("guardRequest");
+    expect(deliveryCheck).toContain('["company_admin", "manager"]');
+    expect(deliveryCheck).toContain("POSTMARK_SERVER_TOKEN");
+    expect(deliveryCheck).toContain("employee_document_id");
+  });
+
+  it("shows rejected mailbox delivery and its reason", () => {
+    expect(deliveryCheck).toContain('types.has("bounced")');
+    expect(deliveryCheck).toContain('return "rejected"');
+    expect(signingActions).toContain("Delivery rejected — check the address before retrying.");
+    expect(signingActions).toContain("delivery.data.reason");
+  });
+});
+
 describe("6. Retrying without duplicate emails or signatures", () => {
   it("treats a repeat post from the same link as a retry and keeps the stored signature", () => {
     expect(signContract).toContain("Your signature is already recorded.");
@@ -127,6 +151,8 @@ describe("6. Retrying without duplicate emails or signatures", () => {
   it("retrying delivery only creates a new link and a new attempt record", () => {
     expect(sendSigned).toContain("contract_delivery_attempts");
     expect(sendSigned).toMatch(/manual_retry/);
+    expect(deliveryPanel).toContain("document_id: documentId");
+    expect(deliveryPanel).not.toContain("body: { documentId,");
     expect(deliveryPanel).toContain("The signed file itself was not changed.");
     // No rebuild, overwrite or upload of the signed contract in the delivery path.
     expect(sendSigned).not.toMatch(/upsert:\s*true/);

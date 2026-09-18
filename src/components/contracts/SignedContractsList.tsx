@@ -399,7 +399,7 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                         year: "numeric",
                       })}
                       {current.contract_send_status === "sent" && current.contract_sent_to && (
-                        <span className="ml-2 text-amber-600">· Sent to {current.contract_sent_to}</span>
+                        <span className="ml-2 text-amber-600">· Accepted for {current.contract_sent_to}</span>
                       )}
                     </p>
                   </div>
