@@ -37,6 +37,8 @@ import { useAllergenDishes, useAllergenConflicts } from "@/hooks/useAllergenLibr
 import { useBranchLocations } from "@/hooks/useSchedule";
 import { AllergenLessonReader } from "@/components/training/allergen/AllergenLessonReader";
 import { AllergenAssessmentRunner } from "@/components/training/allergen/AllergenAssessmentRunner";
+import { AllergenManagementPreview } from "@/components/compliance/allergen/AllergenManagementPreview";
+import { AllergenAcceptanceChecklist } from "@/components/compliance/allergen/AllergenAcceptanceChecklist";
 
 export function AllergenCourseWorkbench() {
   const { data: draft } = useAllergenCourseDraft();
