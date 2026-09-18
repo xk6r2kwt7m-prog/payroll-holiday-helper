@@ -106,13 +106,18 @@ export function AllergenPilotControl() {
             seed: `pilot:${site}`,
           });
           const scoredFlavours = bank.questions.map((q) => q.flavour).filter(Boolean) as string[];
+          const warnings = bank.criticalWarnings ?? [];
           return {
             site,
             scored: bank.questions.length,
             critical: bank.questions.filter((q) => q.critical).length,
             menu: bank.questions.filter((q) => !q.critical).length,
             validation: validateBranchFlavourQuestions(site, scoredFlavours),
-            problem: null as string | null,
+            problem: warnings.length
+              ? `${warnings.length} critical question(s) are kept in but their dish record needs attention: ${warnings
+                  .map((w) => `${w.flavour ?? w.id} — ${w.reason}`)
+                  .join("; ")}`
+              : (null as string | null),
           };
         } catch (e: any) {
           return {
