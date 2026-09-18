@@ -19,6 +19,11 @@ import {
   ALLERGEN_COURSE_TITLE,
   ALLERGEN_COURSE_TOTAL_MINUTES,
 } from "@/data/allergen/allergen-safety-lessons";
+import {
+  ALLERGEN_COURSE_MODULES,
+  moduleLessons,
+  moduleProgressState,
+} from "@/data/allergen/allergen-course-modules";
 import { courseSource } from "@/data/allergen/allergen-course-sources";
 import { courseProgress, lessonIsComplete, type AllergenLesson } from "@/lib/allergen-course";
 import { useAllergenLessonProgress, useSaveSectionProgress } from "@/hooks/useAllergenCourse";
@@ -157,6 +162,10 @@ export function AllergenLessonReader({
     );
   }
 
+  const completedByLesson = Object.fromEntries(
+    ALLERGEN_SAFETY_LESSONS.map((l) => [l.ref, completedSections(l.ref)]),
+  );
+
   return (
     <div className="space-y-3">
       <Card>
@@ -171,9 +180,9 @@ export function AllergenLessonReader({
               to handle an allergy request correctly, every time. This course is how we show that.
             </span>
             <span className="block">
-              Sixteen short lessons, about {ALLERGEN_COURSE_TOTAL_MINUTES} minutes in total. Your place is
-              saved every time you mark a section completed, so you can stop and pick it up later. The
-              assessment opens once every required lesson is finished.
+              {ALLERGEN_COURSE_MODULES.length} short modules, about {ALLERGEN_COURSE_TOTAL_MINUTES} minutes in
+              total, then a short assessment. Your place is saved every time you mark a section completed, so
+              you can stop and pick it up later. The assessment opens once every required module is finished.
             </span>
           </CardDescription>
         </CardHeader>
@@ -185,7 +194,7 @@ export function AllergenLessonReader({
               <Clock className="h-3 w-3" /> About {ALLERGEN_COURSE_TOTAL_MINUTES} min in total
             </Badge>
             <Badge variant="outline">
-              {progress.lessonsComplete} of {progress.lessonsTotal} lessons complete
+              {progress.lessonsComplete} of {progress.lessonsTotal} topics complete
             </Badge>
             <Badge variant="outline" className="gap-1">
               <Clock className="h-3 w-3" /> About {progress.estimatedMinutesRemaining} min left
@@ -205,7 +214,7 @@ export function AllergenLessonReader({
             <Alert>
               <Lock className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                The assessment opens when every required lesson is complete. Still to read:{" "}
+                The assessment opens when every required module is complete. Still to read:{" "}
                 {progress.mandatoryOutstanding.slice(0, 4).join(", ")}
                 {progress.mandatoryOutstanding.length > 4
                   ? ` and ${progress.mandatoryOutstanding.length - 4} more`
@@ -217,31 +226,61 @@ export function AllergenLessonReader({
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
-        {ALLERGEN_SAFETY_LESSONS.map((lesson) => {
-          const done = completedSections(lesson.ref);
-          const complete = lessonIsComplete(lesson, done);
+      <div className="space-y-3">
+        {ALLERGEN_COURSE_MODULES.map((module) => {
+          const state = moduleProgressState(module, completedByLesson);
           return (
-            <button
-              key={lesson.ref}
-              onClick={() => setOpenLesson(lesson.ref)}
-              className="w-full rounded-md border p-3 text-left transition-colors hover:bg-muted/50"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
-                    {lesson.order}. {lesson.title}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{lesson.summary}</p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <Badge variant={complete ? "secondary" : "outline"} className="text-[10px]">
-                    {complete ? "Complete" : `${done.length}/${lesson.sections.length}`}
+            <Card key={module.ref}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">
+                  Module {module.order}. {module.title}
+                </CardTitle>
+                <CardDescription className="text-xs">{module.summary}</CardDescription>
+                <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[10px]">
+                  <Badge variant="outline" className="gap-1">
+                    <Clock className="h-3 w-3" /> About {state.minutes} min
                   </Badge>
-                  <span className="text-[10px] text-muted-foreground">{lesson.estimated_minutes} min</span>
+                  <Badge variant={state.complete ? "secondary" : "outline"}>
+                    {state.complete
+                      ? "Module complete"
+                      : `${state.sectionsComplete}/${state.sectionsTotal} sections saved`}
+                  </Badge>
+                  {state.mandatory && <Badge variant="destructive">Required</Badge>}
                 </div>
-              </div>
-            </button>
+                <Progress
+                  value={state.sectionsTotal ? (state.sectionsComplete / state.sectionsTotal) * 100 : 0}
+                  className="mt-2 h-1.5"
+                />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {moduleLessons(module).map((lesson) => {
+                  const done = completedByLesson[lesson.ref] ?? [];
+                  const complete = lessonIsComplete(lesson, done);
+                  return (
+                    <button
+                      key={lesson.ref}
+                      onClick={() => setOpenLesson(lesson.ref)}
+                      className="w-full rounded-md border p-3 text-left transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{lesson.title}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">{lesson.summary}</p>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <Badge variant={complete ? "secondary" : "outline"} className="text-[10px]">
+                            {complete ? "Complete" : `${done.length}/${lesson.sections.length}`}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">
+                            {lesson.estimated_minutes} min
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </CardContent>
+            </Card>
           );
         })}
       </div>
