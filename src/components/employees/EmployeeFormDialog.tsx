@@ -586,7 +586,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-hidden flex flex-col sm:max-w-2xl">
         <DialogHeader className="pb-4 border-b border-border">
           <DialogTitle className="flex items-center gap-3 text-xl">
             <div className={cn(
@@ -601,7 +601,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="grid grid-cols-8 mb-4">
+            <TabsList className="mb-4 flex w-full justify-start overflow-x-auto">
               <TabButton value="personal" icon={User} label="Personal" />
               <TabButton value="employment" icon={Building} label="Work" />
               <TabButton value="contract" icon={Globe} label="Contract" />
@@ -615,7 +615,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
             <div className="flex-1 overflow-y-auto pr-2">
               {/* Personal Info Tab */}
               <TabsContent value="personal" className="space-y-4 mt-0">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="forename" className="flex items-center gap-1">
                       First Name <span className="text-destructive">*</span>
