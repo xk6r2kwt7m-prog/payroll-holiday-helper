@@ -213,6 +213,66 @@ export function AlcoholAuthorisationBoard() {
                         <Group title="Signed — waiting for the licence holder" rows={group("awaiting_approval")} tone="amber" />
                         <Group title="Waiting for the staff member to sign" rows={group("awaiting_signature")} tone="amber" />
                         <Group title="Not authorised" rows={group("not_authorised")} tone="grey" showReason />
+
+                        {site.unclassified.length > 0 && (
+                          <div className="space-y-1.5 rounded-md border border-warning/40 bg-warning/5 p-2.5">
+                            <p className="text-[11px] font-medium uppercase tracking-wide text-warning">
+                              Role not clear — decide ({site.unclassified.length})
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Their job title does not say whether they serve customers. Choose so they are
+                              not missing from this site's list. Nothing is sent to them by choosing.
+                            </p>
+                            {site.unclassified.map((p: UnclassifiedPerson) => (
+                              <div
+                                key={p.employee_id}
+                                className="flex items-start justify-between gap-2 rounded-md border bg-background p-2.5"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium leading-snug">{p.name}</p>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    {p.role || "Role not recorded"}
+                                  </p>
+                                </div>
+                                <div className="flex gap-1.5 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs"
+                                    disabled={setDecision.isPending}
+                                    onClick={() => setDecision.mutate({
+                                      employee_id: p.employee_id,
+                                      branch: site.branch,
+                                      decision: "front_of_house",
+                                    })}
+                                  >
+                                    Add to the alcohol list
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 text-xs"
+                                    disabled={setDecision.isPending}
+                                    onClick={() => setDecision.mutate({
+                                      employee_id: p.employee_id,
+                                      branch: site.branch,
+                                      decision: "not_front_of_house",
+                                    })}
+                                  >
+                                    Not front of house
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <p className="text-[11px] text-muted-foreground">
+                          A name only moves to "Can sell alcohol" once that person has read and signed the
+                          authorisation themselves and the Designated Premises Supervisor or personal licence
+                          holder has approved it. The system never authorises anyone.
+                        </p>
+
                         <div className="flex flex-wrap gap-2 pt-1">
                           <Button size="sm" variant="outline" onClick={() => downloadDocument(site)}>
                             <Download className="h-3.5 w-3.5 mr-1.5" /> Download the authorisation
