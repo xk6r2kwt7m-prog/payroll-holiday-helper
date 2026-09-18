@@ -69,25 +69,36 @@ export function SendStaffAlcoholDialog({
       .filter((e) => !e.archived_at && e.status !== "leaver" && !e.is_test_record)
       .filter((e) => !branch || (e.branches ?? []).some(
         (b: string) => (b ?? "").trim().toLowerCase() === branch.trim().toLowerCase()))
-      .filter((e) => !!e.email)
-      .filter((e) => showEveryone || isFrontOfHouse(null, e.department))
+      // Same rule as the site alcohol list, including your own decisions, so a
+      // person can never appear on one and not the other.
+      .filter((e) => showEveryone || belongsOnAlcoholList(e as any, branch, decisions as any))
       .map((e) => ({
         ...e,
         state: alcoholAskState(e.id, requests as any[], authorisations as any[]),
         needsAsk: needsAlcoholAsk(e as any, requests as any[], authorisations as any[]),
       }))
       .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`)),
-    [employees, branch, showEveryone, requests, authorisations]
+    [employees, branch, showEveryone, requests, authorisations, decisions]
   );
 
-  const missing = staff.filter((e) => e.needsAsk);
+  const missing = staff.filter((e) => e.needsAsk && !!e.email);
+  const noEmail = staff.filter((e) => !e.email);
+  const chosen = staff.filter((e) => selected.includes(e.id) && !!e.email);
 
   // Everyone who still needs it is ticked for you when you pick a site.
   useEffect(() => {
     if (!branch) return;
+    setStep("choose");
     setSelected(missing.map((e) => e.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branch, showEveryone, staff.length]);
+
+  const review = () => {
+    if (!branch) { toast.error("Choose the site"); return; }
+    if (!licence) { toast.error("Add this site's premises licence details first"); return; }
+    if (chosen.length === 0) { toast.error("Choose at least one person with an email address"); return; }
+    setStep("confirm");
+  };
 
   const submit = async () => {
     if (!branch) { toast.error("Choose the site"); return; }
