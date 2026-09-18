@@ -674,7 +674,14 @@ Deno.serve(async (req) => {
 
       const originalBytes = new Uint8Array(await originalFile.arrayBuffer());
       const rebuildHash = await sha256Bytes(originalBytes);
-      const rebuildPath = `contracts/final/${doc.tenant_id}/${doc.id}/${sanitizeFileName(doc.document_name)}_completed_signed.pdf`;
+      const existingFinalPath: string | null = (doc as any).final_signed_pdf_url || null;
+      // The original completed file is never overwritten. When one already exists the
+      // rebuild is stored as a separate, clearly labelled recovery copy.
+      const canonicalFinalPath = `contracts/final/${doc.tenant_id}/${doc.id}/${sanitizeFileName(doc.document_name)}_completed_signed.pdf`;
+      const isRecoveryCopy = Boolean(existingFinalPath);
+      const rebuildPath = isRecoveryCopy
+        ? `contracts/recovery/${doc.tenant_id}/${doc.id}/${new Date().toISOString().replace(/[:.]/g, "-")}_${sanitizeFileName(doc.document_name)}_recovery.pdf`
+        : canonicalFinalPath;
 
       const rebuiltPackage = await withRetry("rebuild final signed contract", () =>
         buildFinalSignedContractPdf({
@@ -703,20 +710,41 @@ Deno.serve(async (req) => {
       await withRetry("store rebuilt signed contract", async () => {
         const result = await supabase.storage
           .from("employee-documents")
-          .upload(rebuildPath, rebuiltPackage.finalBytes, { contentType: "application/pdf", upsert: true });
+          .upload(rebuildPath, rebuiltPackage.finalBytes, { contentType: "application/pdf", upsert: false });
         if (result.error) throw result.error;
         return result;
       });
 
-      await supabase
-        .from("employee_documents")
-        .update({
-          final_signed_pdf_url: rebuildPath,
-          final_document_hash: rebuiltPackage.finalHash,
-          contract_send_status: "fully_signed",
-          contract_state: "signed",
-        } as any)
-        .eq("id", doc.id);
+      const { data: recoveryActor } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      await supabase.from("contract_file_recoveries").insert({
+        tenant_id: doc.tenant_id,
+        employee_document_id: doc.id,
+        original_file_path: existingFinalPath,
+        original_file_hash: (doc as any).final_document_hash || null,
+        recovery_file_path: rebuildPath,
+        recovery_file_hash: rebuiltPackage.finalHash,
+        reason: recoveryReason,
+        created_by: user.id,
+        created_by_name: (recoveryActor as any)?.full_name || user.email || null,
+      } as any);
+
+      if (!isRecoveryCopy) {
+        // No completed file existed, so this genuinely completes the record.
+        await supabase
+          .from("employee_documents")
+          .update({
+            final_signed_pdf_url: rebuildPath,
+            final_document_hash: rebuiltPackage.finalHash,
+            contract_send_status: "fully_signed",
+            contract_state: "signed",
+          } as any)
+          .eq("id", doc.id);
+      }
 
       await supabase.from("audit_log").insert({
         action: "update",
@@ -725,14 +753,26 @@ Deno.serve(async (req) => {
         tenant_id: doc.tenant_id,
         user_id: user.id,
         new_data: {
-          event: "final_signed_contract_file_rebuilt",
+          event: isRecoveryCopy ? "contract_recovery_copy_created" : "final_signed_contract_file_rebuilt",
           employee_document_id: doc.id,
           employee_id: doc.employee_id,
-          note: "Combined signed file produced again from the stored signatures. Signatures unchanged.",
+          reason: recoveryReason,
+          recovery_file_path: rebuildPath,
+          recovery_file_hash: rebuiltPackage.finalHash,
+          original_file_path: existingFinalPath,
+          original_file_hash: (doc as any).final_document_hash || null,
+          note: isRecoveryCopy
+            ? "Recovery copy produced from the stored signatures. The original completed file and all signatures are unchanged and remain authoritative."
+            : "Combined signed file produced from the stored signatures. Signatures unchanged.",
         },
       });
 
-      return new Response(JSON.stringify({ success: true, path: rebuildPath }), {
+      return new Response(JSON.stringify({
+        success: true,
+        path: rebuildPath,
+        recovery_copy: isRecoveryCopy,
+        original_path: existingFinalPath,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
