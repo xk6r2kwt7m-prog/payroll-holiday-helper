@@ -278,3 +278,88 @@ export function pilotReadiness(input: PilotReadinessInput): PilotReadiness {
   }
   return { readyForPublication, readyForControlledPilot, blockers };
 }
+
+/* ─────────────────── Controlled pilot gate (simplified) ─────────────────── */
+
+/**
+ * Management has simplified what a controlled pilot requires. Keyboard,
+ * screen-reader and interrupted-connection testing stay open actions before full
+ * rollout, and only block the pilot when a serious problem is already recorded.
+ * Outstanding dish evidence does not block the pilot, because those dishes are
+ * excluded from every scored question — it still blocks their confirmation.
+ */
+export interface ControlledPilotInput {
+  automatedChecksPassing: boolean;
+  phoneWalkthroughSigned: boolean;
+  computerWalkthroughSigned: boolean;
+  progressSavingConfirmed: boolean;
+  branchQuestionsConfirmed: boolean;
+  certificateControlsConfirmed: boolean;
+  /** Recorded failures in any environment, including the deferred ones. */
+  knownSeriousProblems: string[];
+}
+
+export interface ControlledPilotGate {
+  ready: boolean;
+  blockers: string[];
+  openActionsBeforeFullRollout: string[];
+}
+
+export const PILOT_DEFERRED_ACTIONS = [
+  "Keyboard-only walkthrough, recorded and signed.",
+  "Screen-reader walkthrough, recorded and signed.",
+  "Interrupted-connection walkthrough, recorded and signed.",
+  "Tempura Aubergine and Corn Fritters evidence approved before either dish is confirmed or scored.",
+];
+
+export function controlledPilotGate(input: ControlledPilotInput): ControlledPilotGate {
+  const blockers: string[] = [];
+  if (!input.automatedChecksPassing) blockers.push("The automated checks are not passing.");
+  if (!input.phoneWalkthroughSigned) blockers.push("The management phone walkthrough has not been signed.");
+  if (!input.computerWalkthroughSigned) blockers.push("The management computer walkthrough has not been signed.");
+  if (!input.progressSavingConfirmed) blockers.push("Progress saving has not been confirmed.");
+  if (!input.branchQuestionsConfirmed) blockers.push("The site questions have not been confirmed as correct.");
+  if (!input.certificateControlsConfirmed) blockers.push("The certificate controls have not been confirmed.");
+  for (const problem of input.knownSeriousProblems) {
+    blockers.push(`A serious problem is already recorded: ${problem}`);
+  }
+  return { ready: blockers.length === 0, blockers, openActionsBeforeFullRollout: PILOT_DEFERRED_ACTIONS };
+}
+
+/* ─────────────────── Three-person pilot group ─────────────────── */
+
+export interface PilotCandidate {
+  employee_id: string;
+  name: string;
+  site: string;
+  audience: "foh" | "kitchen";
+}
+
+export interface PilotSelectionState {
+  chosen: PilotCandidate[];
+  sitesCovered: string[];
+  ok: boolean;
+  problems: string[];
+}
+
+export const PILOT_GROUP_SIZE = 3;
+
+/**
+ * Three people: one from each site, with at least one front-of-house and at
+ * least one kitchen member of staff. Nothing is sent by selecting anybody.
+ */
+export function validatePilotSelection(chosen: PilotCandidate[]): PilotSelectionState {
+  const problems: string[] = [];
+  const sites = Array.from(new Set(chosen.map((c) => c.site)));
+
+  if (chosen.length !== PILOT_GROUP_SIZE) {
+    problems.push(`Choose exactly ${PILOT_GROUP_SIZE} people — ${chosen.length} chosen so far.`);
+  }
+  for (const site of UD_SITES) {
+    if (!sites.includes(site)) problems.push(`No one chosen from ${site}.`);
+  }
+  if (!chosen.some((c) => c.audience === "foh")) problems.push("At least one front-of-house member of staff is required.");
+  if (!chosen.some((c) => c.audience === "kitchen")) problems.push("At least one kitchen member of staff is required.");
+
+  return { chosen, sitesCovered: sites, ok: problems.length === 0, problems };
+}

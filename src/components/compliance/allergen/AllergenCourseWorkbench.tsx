@@ -15,8 +15,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Smartphone, Monitor, Users } from "lucide-react";
+import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Rocket, Smartphone, Monitor, Users } from "lucide-react";
 import { AllergenProgrammeBoard } from "@/components/compliance/allergen/AllergenProgrammeBoard";
+import { AllergenPilotControl } from "@/components/compliance/allergen/AllergenPilotControl";
 import { toast } from "sonner";
 import {
   ALLERGEN_SAFETY_LESSONS,
@@ -150,8 +151,9 @@ export function AllergenCourseWorkbench() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="lessons">
+      <Tabs defaultValue="pilot">
         <TabsList className="flex w-full flex-wrap justify-start">
+          <TabsTrigger value="pilot" className="gap-1"><Rocket className="h-3.5 w-3.5" />Pilot</TabsTrigger>
           <TabsTrigger value="lessons" className="gap-1"><BookOpen className="h-3.5 w-3.5" />Lessons</TabsTrigger>
           <TabsTrigger value="questions" className="gap-1"><ClipboardList className="h-3.5 w-3.5" />Questions</TabsTrigger>
           <TabsTrigger value="practical">Practical sign-off</TabsTrigger>
@@ -163,6 +165,11 @@ export function AllergenCourseWorkbench() {
           <TabsTrigger value="checklist">Hands-on checklist</TabsTrigger>
           <TabsTrigger value="programme" className="gap-1"><Users className="h-3.5 w-3.5" />Assignments, sign-off &amp; certificates</TabsTrigger>
         </TabsList>
+
+        {/* ── The simple pilot view: status, candidates, checks, evidence, buttons ── */}
+        <TabsContent value="pilot" className="pt-3">
+          <AllergenPilotControl />
+        </TabsContent>
 
         {/* ── Phase 2: assignment, tracking, sign-off, certificates, reminders ── */}
         <TabsContent value="programme" className="pt-3">

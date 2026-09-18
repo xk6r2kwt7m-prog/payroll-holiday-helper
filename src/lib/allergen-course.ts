@@ -170,6 +170,8 @@ export interface BankSelection {
   /** Option order per question id, so a resumed attempt looks identical. */
   optionOrder: Record<string, string[]>;
   excluded: { id: string; flavour?: string; reason: string }[];
+  /** Critical questions kept in although their dish record needs attention. */
+  criticalWarnings?: { id: string; flavour?: string; reason: string }[];
 }
 
 /** Deterministic shuffle so a resumed attempt shows the same answer order. */
@@ -189,6 +191,22 @@ function seededShuffle<T>(items: T[], seed: string): T[] {
 }
 
 /**
+ * The approved pilot assessment format: at most 18 scored questions, made up of
+ * the 15 critical-safety questions plus three current-menu or branch-specific
+ * questions. Supporting general questions stay in the bank for teaching and
+ * management review, but are not scored.
+ */
+export const ALLERGEN_MAX_SCORED_QUESTIONS = 18;
+export const ALLERGEN_MENU_QUESTION_SLOTS = 3;
+
+export type AllergenAssessmentFormat = "pilot_18" | "all_eligible";
+
+/** True when a question counts towards the three current-menu slots. */
+function isMenuQuestion(q: AllergenQuestion): boolean {
+  return !q.critical && (!!q.flavour || q.requires_current_menu);
+}
+
+/**
  * Builds the controlled question bank for one learner at one branch.
  * Every critical-safety question is always included. Flavour questions appear
  * only when that flavour passes the eligibility test for the learner's branch.
@@ -200,9 +218,19 @@ export function selectQuestionBank(opts: {
   branchId?: string | null;
   seed: string;
   randomiseOptions?: boolean;
+  /** Defaults to the approved 18-question pilot format. */
+  format?: AllergenAssessmentFormat;
 }): BankSelection {
   const excluded: BankSelection["excluded"] = [];
-  const questions: AllergenQuestion[] = [];
+  const eligible: AllergenQuestion[] = [];
+
+  /**
+   * A critical-safety control is always scored: those 15 questions are the
+   * approved safety rules and cannot be silently dropped. Where the dish record
+   * behind one is missing or not yet confirmed, the question stays in and the
+   * gap is reported to management instead.
+   */
+  const criticalWarnings: { id: string; flavour?: string; reason: string }[] = [];
 
   for (const q of opts.bank) {
     if (!q.active) {
@@ -216,11 +244,59 @@ export function selectQuestionBank(opts: {
         branchId: q.requires_current_menu ? opts.branchId : null,
       });
       if (!verdict.eligible) {
-        excluded.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
-        continue;
+        if (q.critical) {
+          criticalWarnings.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
+        } else {
+          excluded.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
+          continue;
+        }
       }
     }
-    questions.push(q);
+    eligible.push(q);
+  }
+
+  let questions = eligible;
+
+  if ((opts.format ?? "pilot_18") === "pilot_18") {
+    const critical = eligible.filter((q) => q.critical);
+    const menu = eligible.filter(isMenuQuestion);
+    const supporting = eligible.filter((q) => !q.critical && !isMenuQuestion(q));
+
+    for (const q of supporting) {
+      excluded.push({
+        id: q.id,
+        flavour: q.flavour,
+        reason:
+          "Not scored in the shortened assessment: the exam is the 15 critical-safety questions plus three current-menu questions.",
+      });
+    }
+
+    const kept = new Set(
+      seededShuffle(menu, `${opts.seed}:menu-slots`)
+        .slice(0, ALLERGEN_MENU_QUESTION_SLOTS)
+        .map((q) => q.id),
+    );
+    for (const q of menu) {
+      if (!kept.has(q.id)) {
+        excluded.push({
+          id: q.id,
+          flavour: q.flavour,
+          reason: `Held back: only ${ALLERGEN_MENU_QUESTION_SLOTS} current-menu questions are scored in each assessment.`,
+        });
+      }
+    }
+
+    questions = eligible
+      .filter((q) => q.critical || kept.has(q.id))
+      .slice(0, ALLERGEN_MAX_SCORED_QUESTIONS);
+
+    /* A capped assessment must never drop a critical question. */
+    const droppedCritical = critical.filter((q) => !questions.some((x) => x.id === q.id));
+    if (droppedCritical.length) {
+      throw new Error(
+        `The assessment cap would drop ${droppedCritical.length} critical-safety question(s). The format must be corrected before the course is used.`,
+      );
+    }
   }
 
   const optionOrder: Record<string, string[]> = {};
@@ -229,8 +305,9 @@ export function selectQuestionBank(opts: {
     optionOrder[q.id] =
       opts.randomiseOptions === false ? ids : seededShuffle(ids, `${opts.seed}:${q.id}`);
   }
-  return { questions, optionOrder, excluded };
+  return { questions, optionOrder, excluded, criticalWarnings };
 }
+
 
 /** True when a question may be published as scored at all. */
 export function canPublishScoredQuestion(

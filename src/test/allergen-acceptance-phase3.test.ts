@@ -26,9 +26,10 @@ const allText = ALLERGEN_SAFETY_LESSONS.flatMap((l) =>
 ).join(" \n ");
 
 describe("condensed course duration", () => {
-  it("lands inside the 45–60 minute target", () => {
-    expect(ALLERGEN_COURSE_TOTAL_MINUTES).toBeGreaterThanOrEqual(45);
-    expect(ALLERGEN_COURSE_TOTAL_MINUTES).toBeLessThanOrEqual(60);
+  /* Management shortened the approved target again for the controlled pilot. */
+  it("lands inside the 35–45 minute target", () => {
+    expect(ALLERGEN_COURSE_TOTAL_MINUTES).toBeGreaterThanOrEqual(35);
+    expect(ALLERGEN_COURSE_TOTAL_MINUTES).toBeLessThanOrEqual(45);
   });
 
   it("is shorter than the original and records the original time per lesson", () => {

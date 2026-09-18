@@ -7,12 +7,17 @@
  * approved operational procedures. Every section names its sources.
  *
  * Phase 3 (pre-publication acceptance review) condensed the reading time from
- * 97 minutes to 52 minutes. Only repetition, restated rules and duplicated
- * examples were removed. Every critical control, every source reference, the
- * peanut/tree-nut distinction, the full allergy-order process, POS and printed
- * ticket controls, cross-contact controls, the shared dessert fryer, non-14
- * ingredient enquiries, emergency response and near-miss reporting all remain.
+ * 97 minutes to 53 minutes, and the pilot simplification took it to 42 minutes.
+ * Only repetition, restated rules and duplicated examples were removed. Every
+ * critical control, every source reference, the peanut/tree-nut distinction, the
+ * full allergy-order process, POS and printed ticket controls, cross-contact
+ * controls, the shared dessert fryer, non-14 ingredient enquiries, emergency
+ * response and near-miss reporting all remain.
  * `original_minutes` and `condensed` record what changed, for management review.
+ *
+ * The learner now meets these lessons as eight modules — see
+ * `allergen-course-modules.ts`. The lesson records themselves are unchanged in
+ * substance so all saved progress, sources and questions still line up.
  *
  * Nothing here is available to staff: the module sits in management review.
  */
@@ -61,10 +66,10 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 2,
     title: "The 14 regulated allergens",
     summary: "The 14 allergens the law requires us to declare, and what that means in service.",
-    estimated_minutes: 4,
+    estimated_minutes: 3,
     original_minutes: 7,
     condensed:
-      "Three sections merged into two; the pre-packed labelling duty and the matrix wording now sit with the list instead of being restated.",
+      "Three sections merged into two; the pre-packed labelling duty and the matrix wording now sit with the list instead of being restated. The peanut/tree-nut separation line was removed here because it is taught in full in the next module.",
     mandatory: true,
     sections: [
       {
@@ -74,7 +79,6 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
         sources: ["eu-reg-1169", "fsa-allergen-guidance", "ppds-natashas-law"],
         paragraphs: [
           `The 14 are: ${REGULATED_14.join(", ")}.`,
-          "Peanuts and tree nuts are two separate entries. They are not one 'nuts' group.",
           "We must tell a guest accurately whether a dish contains any of the 14, using the approved matrix and current ingredient information. Anything packed ahead for direct sale carries the food name and full ingredient list with the 14 emphasised.",
         ],
       },
@@ -94,9 +98,9 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 3,
     title: "Allergies outside the regulated 14",
     summary: "Garlic, onion, mushrooms, candlenut: real reactions the 14-allergen chart will not show.",
-    estimated_minutes: 3,
+    estimated_minutes: 2,
     original_minutes: 6,
-    condensed: "Wording tightened; the candlenut section kept in full as approved.",
+    condensed: "Wording tightened further for the pilot; the candlenut section kept in full as approved.",
     mandatory: true,
     sections: [
       {
@@ -169,9 +173,9 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 5,
     title: "Ugly Dumpling flavours and ingredients",
     summary: "Where the approved information lives and how availability differs by site.",
-    estimated_minutes: 4,
+    estimated_minutes: 3,
     original_minutes: 8,
-    condensed: "Three sections kept, each shortened; the 'components count' rule kept in full.",
+    condensed: "Three sections kept, each shortened for the pilot; the 'components count' rule kept in full.",
     mandatory: true,
     sections: [
       {
@@ -210,7 +214,7 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 6,
     title: "Receiving an allergy declaration",
     summary: "Asking, listening and capturing the detail precisely.",
-    estimated_minutes: 4,
+    estimated_minutes: 3,
     original_minutes: 7,
     condensed:
       "Three sections merged into two; the 'every later order' rule now sits with the recording rule instead of standing alone.",
@@ -275,7 +279,7 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 8,
     title: "Kitchen, FOH and manager communication",
     summary: "Spoken acknowledgement from all three, every time.",
-    estimated_minutes: 3,
+    estimated_minutes: 2,
     original_minutes: 5,
     condensed: "Two sections merged into one; both rules retained.",
     mandatory: true,
@@ -297,7 +301,7 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 9,
     title: "Preventing cross-contact",
     summary: "Hands, boards, tongs, oil, plates — the routes allergens actually travel.",
-    estimated_minutes: 4,
+    estimated_minutes: 3,
     original_minutes: 7,
     condensed: "Both sections kept; discard-and-remake retained in full as a critical control.",
     mandatory: true,
@@ -329,10 +333,10 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 10,
     title: "Gluten-free preparation and plating",
     summary: "Gluten-free equipment, the approved gluten-free sauce and black plates.",
-    estimated_minutes: 3,
+    estimated_minutes: 2,
     original_minutes: 6,
     condensed:
-      "Two sections merged into one. Plating wording made explicit that a black plate identifies the dish and does not on its own make food safe.",
+      "Two sections merged into one. Plating wording made explicit that a black plate identifies the dish and does not on its own make food safe. The full matrix wording on molluscs and the gluten-free sauce is stated once, in module 1, instead of twice.",
     mandatory: true,
     sections: [
       {
@@ -342,7 +346,7 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
         sources: ["ud-allergy-procedure", "matrix-jul-2026"],
         paragraphs: [
           "Gluten-free dishes use the gluten-free equipment and clean hands, kept away from flour and standard dough.",
-          APPROVED_WORDING.molluscs_and_gf_sauce,
+          "Gluten-free dumplings are served with the approved gluten-free soy or hoisin sauce, exactly as the approved matrix wording states in module 1.",
           "Allergy dishes are plated on the black plates so the pass and the server can see which plate belongs to the affected guest. The black plate identifies the dish — it does not make the food safe. The preparation controls do that.",
         ],
       },
@@ -353,7 +357,7 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 11,
     title: "Satay Chicken and peanut controls",
     summary: "A peanut dish on the menu, and how it is handled around a peanut allergy.",
-    estimated_minutes: 3,
+    estimated_minutes: 2,
     original_minutes: 5,
     condensed: "Two sections merged into one; both controls retained.",
     mandatory: true,
@@ -375,7 +379,7 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 12,
     title: "Tempura Aubergine garnish procedure",
     summary: "When the peanut garnish may be left off, and what happens when it is too late.",
-    estimated_minutes: 3,
+    estimated_minutes: 2,
     original_minutes: 5,
     condensed:
       "Garnish procedure unchanged. The note explaining why the dish is not scored kept, shortened, and still not mandatory.",
@@ -431,7 +435,7 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 14,
     title: "Takeaway and delivery orders",
     summary: "The same duty when the guest is not in front of you.",
-    estimated_minutes: 3,
+    estimated_minutes: 2,
     original_minutes: 5,
     condensed: "Two sections merged into one; packing, labelling and unclear-note rules retained.",
     mandatory: true,
@@ -484,7 +488,7 @@ export const ALLERGEN_SAFETY_LESSONS: AllergenLesson[] = [
     order: 16,
     title: "Near misses, incidents and escalation",
     summary: "Reporting what nearly went wrong, without blame.",
-    estimated_minutes: 3,
+    estimated_minutes: 2,
     original_minutes: 5,
     condensed: "Two sections merged into one; reporting duty and manager record both retained.",
     mandatory: true,
