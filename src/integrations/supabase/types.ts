@@ -268,6 +268,67 @@ export type Database = {
           },
         ]
       }
+      alcohol_list_decisions: {
+        Row: {
+          branch: string
+          created_at: string
+          decided_at: string
+          decided_by: string | null
+          decision: string
+          employee_id: string
+          id: string
+          note: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          branch: string
+          created_at?: string
+          decided_at?: string
+          decided_by?: string | null
+          decision: string
+          employee_id: string
+          id?: string
+          note?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          branch?: string
+          created_at?: string
+          decided_at?: string
+          decided_by?: string | null
+          decision?: string
+          employee_id?: string
+          id?: string
+          note?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alcohol_list_decisions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_list_decisions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alcohol_list_decisions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       allergen_change_proposals: {
         Row: {
           change_type: string
