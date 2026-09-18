@@ -1213,12 +1213,40 @@ export type Database = {
           },
         ]
       }
+      contract_reference_counters: {
+        Row: {
+          last_number: number
+          tenant_id: string
+          year: number
+        }
+        Insert: {
+          last_number?: number
+          tenant_id: string
+          year: number
+        }
+        Update: {
+          last_number?: number
+          tenant_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_reference_counters_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_signatures: {
         Row: {
           consent_given: boolean | null
+          consent_items: Json | null
           consent_text: string
           created_at: string
           document_hash: string | null
+          email_verified_at: string | null
           employee_document_id: string
           employee_id: string
           id: string
@@ -1239,9 +1267,11 @@ export type Database = {
         }
         Insert: {
           consent_given?: boolean | null
+          consent_items?: Json | null
           consent_text: string
           created_at?: string
           document_hash?: string | null
+          email_verified_at?: string | null
           employee_document_id: string
           employee_id: string
           id?: string
@@ -1262,9 +1292,11 @@ export type Database = {
         }
         Update: {
           consent_given?: boolean | null
+          consent_items?: Json | null
           consent_text?: string
           created_at?: string
           document_hash?: string | null
+          email_verified_at?: string | null
           employee_document_id?: string
           employee_id?: string
           id?: string
@@ -1314,6 +1346,53 @@ export type Database = {
           },
           {
             foreignKeyName: "contract_signatures_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_template_versions: {
+        Row: {
+          checksum: string
+          clause_text: Json
+          created_at: string
+          effective_date: string
+          id: string
+          notes: string | null
+          published_by: string | null
+          published_by_name: string | null
+          tenant_id: string
+          version: string
+        }
+        Insert: {
+          checksum: string
+          clause_text: Json
+          created_at?: string
+          effective_date?: string
+          id?: string
+          notes?: string | null
+          published_by?: string | null
+          published_by_name?: string | null
+          tenant_id: string
+          version: string
+        }
+        Update: {
+          checksum?: string
+          clause_text?: Json
+          created_at?: string
+          effective_date?: string
+          id?: string
+          notes?: string | null
+          published_by?: string | null
+          published_by_name?: string | null
+          tenant_id?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_template_versions_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2434,6 +2513,7 @@ export type Database = {
           amendment_summary: string | null
           amendment_type: string | null
           contract_last_token_id: string | null
+          contract_reference: string | null
           contract_scheduled_send_at: string | null
           contract_send_error: string | null
           contract_send_status: string | null
@@ -2460,6 +2540,8 @@ export type Database = {
           final_document_hash: string | null
           final_signed_pdf_url: string | null
           id: string
+          issue_date: string | null
+          legacy_origin_note: string | null
           mime_type: string | null
           notes: string | null
           parent_contract_id: string | null
@@ -2473,9 +2555,11 @@ export type Database = {
           signed_scan_uploaded_by_signer: string | null
           superseded_at: string | null
           superseded_by: string | null
+          template_version: string | null
           tenant_id: string
           terminated_at: string | null
           terminated_reason: string | null
+          terms_snapshot: Json | null
           updated_at: string
           uploaded_by: string | null
           verification_date: string | null
@@ -2489,6 +2573,7 @@ export type Database = {
           amendment_summary?: string | null
           amendment_type?: string | null
           contract_last_token_id?: string | null
+          contract_reference?: string | null
           contract_scheduled_send_at?: string | null
           contract_send_error?: string | null
           contract_send_status?: string | null
@@ -2515,6 +2600,8 @@ export type Database = {
           final_document_hash?: string | null
           final_signed_pdf_url?: string | null
           id?: string
+          issue_date?: string | null
+          legacy_origin_note?: string | null
           mime_type?: string | null
           notes?: string | null
           parent_contract_id?: string | null
@@ -2528,9 +2615,11 @@ export type Database = {
           signed_scan_uploaded_by_signer?: string | null
           superseded_at?: string | null
           superseded_by?: string | null
+          template_version?: string | null
           tenant_id: string
           terminated_at?: string | null
           terminated_reason?: string | null
+          terms_snapshot?: Json | null
           updated_at?: string
           uploaded_by?: string | null
           verification_date?: string | null
@@ -2544,6 +2633,7 @@ export type Database = {
           amendment_summary?: string | null
           amendment_type?: string | null
           contract_last_token_id?: string | null
+          contract_reference?: string | null
           contract_scheduled_send_at?: string | null
           contract_send_error?: string | null
           contract_send_status?: string | null
@@ -2570,6 +2660,8 @@ export type Database = {
           final_document_hash?: string | null
           final_signed_pdf_url?: string | null
           id?: string
+          issue_date?: string | null
+          legacy_origin_note?: string | null
           mime_type?: string | null
           notes?: string | null
           parent_contract_id?: string | null
@@ -2583,9 +2675,11 @@ export type Database = {
           signed_scan_uploaded_by_signer?: string | null
           superseded_at?: string | null
           superseded_by?: string | null
+          template_version?: string | null
           tenant_id?: string
           terminated_at?: string | null
           terminated_reason?: string | null
+          terms_snapshot?: Json | null
           updated_at?: string
           uploaded_by?: string | null
           verification_date?: string | null
@@ -10015,6 +10109,10 @@ export type Database = {
         }
       }
       activate_scheduled_employment_terms: { Args: never; Returns: number }
+      allocate_contract_reference: {
+        Args: { _prefix?: string; _tenant_id: string }
+        Returns: string
+      }
       apply_to_vacancy: {
         Args: {
           _cover_message?: string
