@@ -927,7 +927,9 @@ Deno.serve(async (req) => {
             forename,
             surname,
             email,
-            department
+            department,
+            date_of_birth,
+            ni_number
           )
         `)
         .eq("token", token)
