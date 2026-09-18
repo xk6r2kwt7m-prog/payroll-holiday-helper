@@ -8157,9 +8157,13 @@ export type Database = {
           accepted_at: string | null
           created_at: string
           email: string
+          employee_id: string | null
           expires_at: string
           id: string
           invited_by: string | null
+          last_reminder_at: string | null
+          opened_at: string | null
+          reminder_count: number
           role: Database["public"]["Enums"]["tenant_role"]
           status: string
           tenant_id: string
@@ -8169,9 +8173,13 @@ export type Database = {
           accepted_at?: string | null
           created_at?: string
           email: string
+          employee_id?: string | null
           expires_at?: string
           id?: string
           invited_by?: string | null
+          last_reminder_at?: string | null
+          opened_at?: string | null
+          reminder_count?: number
           role?: Database["public"]["Enums"]["tenant_role"]
           status?: string
           tenant_id: string
@@ -8181,15 +8189,33 @@ export type Database = {
           accepted_at?: string | null
           created_at?: string
           email?: string
+          employee_id?: string | null
           expires_at?: string
           id?: string
           invited_by?: string | null
+          last_reminder_at?: string | null
+          opened_at?: string | null
+          reminder_count?: number
           role?: Database["public"]["Enums"]["tenant_role"]
           status?: string
           tenant_id?: string
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tenant_invitations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_invitations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tenant_invitations_tenant_id_fkey"
             columns: ["tenant_id"]
