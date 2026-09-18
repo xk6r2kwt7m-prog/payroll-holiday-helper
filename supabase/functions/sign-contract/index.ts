@@ -927,7 +927,9 @@ Deno.serve(async (req) => {
             forename,
             surname,
             email,
-            department
+            department,
+            date_of_birth,
+            ni_number
           )
         `)
         .eq("token", token)
@@ -983,26 +985,61 @@ Deno.serve(async (req) => {
       }
 
       // ════════════════════════════════════════════
-      // Details-first gate: for the employee signer, the contract stays
-      // hidden until they have submitted their basic personal details.
+      // Details-first gate: staff are only ever asked for what is genuinely
+      // not already held. Everything already on record is shown back to them
+      // to confirm, and if nothing essential is missing the step is skipped.
       // Read-only check — nothing is modified here.
       // ════════════════════════════════════════════
       if (signingToken.signer_type === "employee" && signingToken.employee_documents.requires_details_first) {
         const { data: onboarding } = await supabase
           .from("employee_onboarding_data")
-          .select("personal_info, submitted_at")
+          .select("personal_info, emergency_contact, submitted_at")
           .eq("employee_id", signingToken.employee_id)
           .maybeSingle();
 
+        const personal = (onboarding?.personal_info as Record<string, unknown> | null) ?? {};
+        const emergency = (onboarding?.emergency_contact as Record<string, unknown> | null) ?? {};
+        const pick = (...keys: string[]): string => {
+          for (const k of keys) {
+            const v = (personal as any)[k] ?? (emergency as any)[k];
+            if (typeof v === "string" && v.trim()) return v.trim();
+            if (typeof v === "number") return String(v);
+          }
+          return "";
+        };
+
+        const emp = signingToken.employees as any;
+        const known: Record<string, string> = {
+          full_name:
+            pick("full_name", "legal_name") ||
+            `${emp.forename} ${emp.surname}`.trim(),
+          date_of_birth: (emp.date_of_birth as string | null) || pick("date_of_birth", "dob"),
+          address: pick("address", "home_address", "full_address"),
+          phone: pick("phone", "mobile", "phone_number"),
+          national_insurance:
+            (emp.ni_number as string | null) || pick("national_insurance", "ni_number"),
+          emergency_contact_name: pick("emergency_contact_name", "name"),
+          emergency_contact_phone: pick("emergency_contact_phone", "phone", "contact_number"),
+        };
+
+        const requiredKeys = ["full_name", "date_of_birth", "address", "phone"];
+        const missingFields = requiredKeys.filter((k) => !known[k]);
+
         const detailsDone =
-          !!signingToken.employee_documents.details_submitted_at || !!onboarding?.submitted_at;
+          !!signingToken.employee_documents.details_submitted_at ||
+          !!onboarding?.submitted_at ||
+          missingFields.length === 0;
 
         if (!detailsDone) {
           return new Response(JSON.stringify({
             signer_type: signingToken.signer_type,
             details_required: true,
-            employee_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
-            employee_email: signingToken.employees.email || null,
+            missing_fields: missingFields,
+            on_file: Object.fromEntries(
+              Object.entries(known).filter(([, v]) => !!v),
+            ),
+            employee_name: `${emp.forename} ${emp.surname}`,
+            employee_email: emp.email || null,
             document_name: signingToken.employee_documents.document_name,
             document_url: null,
             document_hash: null,
@@ -1011,10 +1048,7 @@ Deno.serve(async (req) => {
             company_name: null,
             employer_signatory_name: null,
             employer_signatory_title: null,
-            prefill: {
-              full_name: `${signingToken.employees.forename} ${signingToken.employees.surname}`,
-              ...(onboarding?.personal_info as Record<string, unknown> | null ?? {}),
-            },
+            prefill: known,
           }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });

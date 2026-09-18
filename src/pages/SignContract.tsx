@@ -21,6 +21,10 @@ interface ContractInfo {
   employer_signatory_name: string | null;
   employer_signatory_title: string | null;
   details_required?: boolean;
+  /** Only the essential details that are genuinely not held yet. */
+  missing_fields?: string[];
+  /** Details already held, shown back for confirmation rather than re-asked. */
+  on_file?: Record<string, string>;
   prefill?: Record<string, string>;
   signature_details?: Array<{
     signer_type: string;
@@ -422,6 +426,19 @@ export default function SignContract() {
 
   if (!contractInfo) return null;
 
+  // Only ask for what is genuinely not held. Anything already on record is
+  // shown back for confirmation instead of being typed again.
+  const onFileKeys = new Set(Object.keys(contractInfo.on_file ?? {}));
+  const missingSet = new Set(contractInfo.missing_fields ?? []);
+  const fieldsToAsk = DETAIL_FIELDS.filter((f) =>
+    contractInfo.missing_fields
+      ? missingSet.has(f.key) || (!f.required && !onFileKeys.has(f.key))
+      : true,
+  );
+  const alreadyOnFile = DETAIL_FIELDS.filter(
+    (f) => onFileKeys.has(f.key) && !fieldsToAsk.some((a) => a.key === f.key),
+  );
+
   // ══════════ Details first: contract stays hidden until submitted ══════════
   if (detailsRequired) {
     return (
@@ -432,7 +449,9 @@ export default function SignContract() {
               <User className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Your details</h1>
+              <h1 className="text-lg font-bold text-foreground">
+                {fieldsToAsk.length ? "A few missing details" : "Check your details"}
+              </h1>
               <p className="text-xs text-muted-foreground">
                 Step 1 of 2 — your contract appears once these are saved
               </p>
@@ -443,11 +462,28 @@ export default function SignContract() {
         <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
           <div className="rounded-xl border border-border bg-card p-4 space-y-4">
             <p className="text-sm text-muted-foreground">
-              Hello {contractInfo.employee_name}. Before you read and sign your contract, please
-              confirm the details below. They are used on the contract itself.
+              Hello {contractInfo.employee_name}.{" "}
+              {fieldsToAsk.length
+                ? "We already hold most of your details. Please add only the few below."
+                : "We already hold everything we need — just check the details below."}
             </p>
 
-            {DETAIL_FIELDS.map((field) => (
+            {alreadyOnFile.length > 0 && (
+              <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-1.5">
+                <p className="text-xs font-medium text-foreground">Already on file</p>
+                {alreadyOnFile.map((f) => (
+                  <div key={f.key} className="flex justify-between gap-3 text-xs">
+                    <span className="text-muted-foreground">{f.label}</span>
+                    <span className="text-foreground text-right">{details[f.key]}</span>
+                  </div>
+                ))}
+                <p className="text-[11px] text-muted-foreground pt-1">
+                  If anything here is wrong, tell your manager — they will update it.
+                </p>
+              </div>
+            )}
+
+            {fieldsToAsk.map((field) => (
               <div key={field.key}>
                 <label className="text-xs text-muted-foreground mb-1.5 block">
                   {field.label} {field.required && "*"}
