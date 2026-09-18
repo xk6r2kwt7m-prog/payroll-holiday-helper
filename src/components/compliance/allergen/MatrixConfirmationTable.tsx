@@ -80,6 +80,23 @@ export function MatrixConfirmationTable({ branches }: { branches: { id: string; 
     );
   };
 
+  /* Matched flavours awaiting confirmation — named in full before anything is committed. */
+  const matched = reviewed.filter(
+    (d) => d.recommended_status === "ready_to_confirm" && d.management_decision !== "confirm",
+  );
+
+  const confirmMatched = async () => {
+    for (const d of matched) {
+      await record.mutateAsync({
+        id: d.id,
+        dish_name: d.dish_name,
+        decision: "confirm",
+        note: "Confirmed against the approved July 2026 allergen matrix — declaration matches the matrix and no unresolved supplier or recipe conflict. Branch availability is held separately from allergen confirmation.",
+      });
+    }
+    toast.success(`${matched.length} flavour(s) confirmed against the approved matrix.`);
+  };
+
   return (
     <div className="space-y-4">
       <Card>
