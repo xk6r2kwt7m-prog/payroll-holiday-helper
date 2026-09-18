@@ -135,6 +135,13 @@ export default function SignContract() {
         setSignatoryTitle(contractInfo.employer_signatory_title);
       }
     }
+    // The address on file is offered, but the signer must see and confirm it.
+    if (contractInfo) {
+      const onFile = isEmployer
+        ? (contractInfo as any).employer_signatory_email || ""
+        : contractInfo.employee_email || "";
+      setSignerEmail((prev) => (prev ? prev : onFile || ""));
+    }
   }, [contractInfo, isEmployer]);
 
   const fetchContractInfo = async () => {
@@ -591,7 +598,8 @@ export default function SignContract() {
     );
   }
 
-  const canSubmit = typedName.trim().length > 0 && consentGiven && !!signatureData && !submitting;
+  const canSubmit =
+    typedName.trim().length > 0 && consentGiven && !!signatureData && emailLooksValid && !submitting;
   const companyName = contractInfo.company_name || "the employer";
 
   return (
