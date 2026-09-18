@@ -1430,6 +1430,10 @@ Deno.serve(async (req) => {
         signedByEmail = signingToken.employees?.email || null;
       }
 
+      // The address the signer saw and confirmed on the signing screen takes precedence
+      // and is what the completed contract is sent to.
+      if (confirmedEmail) signedByEmail = confirmedEmail;
+
       if (!originalFilePath || !signingToken.employee_documents) {
         return new Response(JSON.stringify({ error: "The contract document could not be found.", error_code: "missing_document" }), {
           status: 404,
@@ -1475,6 +1479,8 @@ Deno.serve(async (req) => {
           signature_data: signature_data,
           consent_given: true,
           consent_text: consent_text || `I confirm that I have read and understood this contract, I agree to sign this document electronically, and this electronic signature represents my legal signature.`,
+          consent_items: Array.isArray(consent_items) ? consent_items : null,
+          email_verified_at: confirmedEmail ? signedAt : null,
           document_hash: serverDocumentHash,
           ip_address: ip,
           user_agent: userAgent,
