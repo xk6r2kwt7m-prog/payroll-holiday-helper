@@ -293,7 +293,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
     const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
     return (
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{branch} premises licence</DialogTitle>
             <DialogDescription>
@@ -309,7 +309,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
               <Label>Premises address</Label>
               <Input value={form.premises_address ?? ""} onChange={(e) => set("premises_address", e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Licence number</Label>
                 <Input value={form.licence_number ?? ""} onChange={(e) => set("licence_number", e.target.value)} />
@@ -323,7 +323,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
               <Label>Licence holder</Label>
               <Input value={form.licence_holder ?? ""} onChange={(e) => set("licence_holder", e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Licence date</Label>
                 <Input type="date" value={form.issue_date ?? ""} onChange={(e) => set("issue_date", e.target.value)} />
@@ -333,7 +333,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                 <Input type="date" value={form.latest_variation_date ?? ""} onChange={(e) => set("latest_variation_date", e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>DPS name</Label>
                 <Input value={form.dps_name ?? ""} onChange={(e) => set("dps_name", e.target.value)} />
@@ -382,7 +382,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
               <Label>Where it is displayed</Label>
               <Input value={form.display_location ?? ""} onChange={(e) => set("display_location", e.target.value)} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Last physical check</Label>
                 <Input type="date" value={form.last_physical_check ?? ""} onChange={(e) => set("last_physical_check", e.target.value)} />
@@ -392,7 +392,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                 <Input value={form.physical_check_by ?? ""} onChange={(e) => set("physical_check_by", e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Last verified</Label>
                 <Input type="date" value={form.last_verified_date ?? ""} onChange={(e) => set("last_verified_date", e.target.value)} />

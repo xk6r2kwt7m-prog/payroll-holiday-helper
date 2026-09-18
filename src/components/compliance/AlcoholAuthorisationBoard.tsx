@@ -165,7 +165,7 @@ export function AlcoholAuthorisationBoard() {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-4 gap-2">
               <Stat label="Authorised" value={totals.authorised} tone="green" />
               <Stat label="Awaiting signature" value={totals.awaitingSignature} tone="amber" />
               <Stat label="Awaiting approval" value={totals.awaitingApproval} tone="amber" />
