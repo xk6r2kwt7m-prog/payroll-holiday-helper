@@ -1417,7 +1417,14 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   className="flex-1"
                   onClick={async () => {
                     const blob = await pdf(
-                      <ContractPDF variables={variables} contractType={contractType} companyLegalName={companyLegalName} companyAddress={companyAddress} />
+                      <ContractPDF
+                        variables={variables}
+                        contractType={contractType}
+                        companyLegalName={companyLegalName}
+                        companyAddress={companyAddress}
+                        templateVersion={CONTRACT_TEMPLATE_VERSION}
+                        contractVersion={1}
+                      />
                     ).toBlob();
                     const url = URL.createObjectURL(blob);
                     window.open(url, "_blank");
