@@ -730,6 +730,24 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
               })}
             </CardContent>
           </Card>
+
+          {/* ── Proposed certificate policy — for review, not active ── */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Proposed certificate policy</CardTitle>
+              <CardDescription className="text-xs">
+                For your review only. This policy is not activated or published, and no certificate is
+                issued because of it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1 text-xs">
+              {PROPOSED_CERTIFICATE_POLICY.map((c) => (
+                <p key={c.label}>
+                  <span className="font-medium">{c.label}:</span> {c.detail}
+                </p>
+              ))}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Expiry and reminders ── */}
