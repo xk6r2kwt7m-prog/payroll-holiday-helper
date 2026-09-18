@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,9 @@ import {
   type InfoItemKey,
   type InfoRequestKind,
 } from "@/lib/info-request-items";
+import { useInfoCoverage } from "@/hooks/useInfoCoverage";
+import { allMissingItems, missingItems, REASKABLE_ITEMS } from "@/lib/info-request-coverage";
+
 
 /** Legacy export kept so older imports keep compiling. */
 export type InfoSection = "personal" | "emergency" | "bank" | "rtw";
