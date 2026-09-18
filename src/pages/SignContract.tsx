@@ -747,31 +747,54 @@ export default function SignContract() {
             <SignaturePad onSignatureChange={handleSignatureChange} />
           </div>
 
-          {/* Consent Statement */}
-          <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
-            <p className="text-xs font-medium text-foreground">I confirm that:</p>
-            <ul className="space-y-1">
-              {consentItems.map((item, i) => (
-                <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
-                  <span className="text-primary mt-0.5">•</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
+          {/* Email address used for this signature — confirmed by the signer */}
+          <div>
+            <label htmlFor="signer-email" className="text-xs text-muted-foreground mb-1.5 block">
+              Your email address *
+            </label>
+            <Input
+              id="signer-email"
+              type="email"
+              value={signerEmail}
+              onChange={(e) => setSignerEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="text-base"
+              autoComplete="email"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Please check this is correct. Your completed contract is sent here and the address is recorded with your
+              signature.
+            </p>
+            {signerEmail.trim().length > 0 && !emailLooksValid && (
+              <p className="text-[11px] text-destructive mt-1">That does not look like a full email address.</p>
+            )}
           </div>
 
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="consent"
-              checked={consentGiven}
-              onCheckedChange={(checked) => setConsentGiven(checked === true)}
-              className="mt-0.5"
-            />
-            <label htmlFor="consent" className="text-sm text-foreground cursor-pointer leading-snug">
-              {isEmployer
-                ? `I confirm this is my signature and I am signing this contract on behalf of ${companyName} under the UK Electronic Communications Act 2000`
-                : "I confirm this is my signature and I agree to sign this contract electronically under the UK Electronic Communications Act 2000"}
-            </label>
+          {/* Two separate confirmations: acceptance of the terms, and consent to sign electronically */}
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="consent-accept"
+                checked={acceptConfirmed}
+                onCheckedChange={(checked) => setAcceptConfirmed(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="consent-accept" className="text-sm text-foreground cursor-pointer leading-snug">
+                {acceptanceWording}
+              </label>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="consent-esign"
+                checked={eSignConfirmed}
+                onCheckedChange={(checked) => setESignConfirmed(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="consent-esign" className="text-sm text-foreground cursor-pointer leading-snug">
+                {ESIGN_WORDING}
+              </label>
+            </div>
           </div>
 
           <Button
