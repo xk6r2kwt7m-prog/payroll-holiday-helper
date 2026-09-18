@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Rocket, Smartphone, Monitor, Users } from "lucide-react";
 import { AllergenProgrammeBoard } from "@/components/compliance/allergen/AllergenProgrammeBoard";
 import { AllergenPilotControl } from "@/components/compliance/allergen/AllergenPilotControl";
+import { AllergenWalkthrough } from "@/components/compliance/allergen/AllergenWalkthrough";
+
 import { toast } from "sonner";
 import {
   ALLERGEN_SAFETY_LESSONS,
