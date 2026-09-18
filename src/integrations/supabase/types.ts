@@ -1038,6 +1038,125 @@ export type Database = {
           },
         ]
       }
+      contract_delivery_attempts: {
+        Row: {
+          attempted_by: string | null
+          created_at: string
+          delivery_method: string
+          email_verified: boolean
+          employee_document_id: string
+          error_message: string | null
+          id: string
+          recipient_email: string
+          recipient_role: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          tenant_id: string
+          trigger_source: string
+        }
+        Insert: {
+          attempted_by?: string | null
+          created_at?: string
+          delivery_method?: string
+          email_verified?: boolean
+          employee_document_id: string
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          recipient_role: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status: string
+          tenant_id: string
+          trigger_source?: string
+        }
+        Update: {
+          attempted_by?: string | null
+          created_at?: string
+          delivery_method?: string
+          email_verified?: boolean
+          employee_document_id?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          recipient_role?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          tenant_id?: string
+          trigger_source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_delivery_attempts_employee_document_id_fkey"
+            columns: ["employee_document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_email_verifications: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          email: string
+          employee_document_id: string
+          expires_at: string
+          id: string
+          last_sent_at: string
+          signer_type: string
+          signing_token_id: string | null
+          tenant_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          email: string
+          employee_document_id: string
+          expires_at: string
+          id?: string
+          last_sent_at?: string
+          signer_type: string
+          signing_token_id?: string | null
+          tenant_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          email?: string
+          employee_document_id?: string
+          expires_at?: string
+          id?: string
+          last_sent_at?: string
+          signer_type?: string
+          signing_token_id?: string | null
+          tenant_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_email_verifications_employee_document_id_fkey"
+            columns: ["employee_document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_email_verifications_signing_token_id_fkey"
+            columns: ["signing_token_id"]
+            isOneToOne: false
+            referencedRelation: "signing_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_file_recoveries: {
         Row: {
           created_at: string
@@ -1246,6 +1365,7 @@ export type Database = {
           consent_text: string
           created_at: string
           document_hash: string | null
+          email_ownership_verified: boolean
           email_verified_at: string | null
           employee_document_id: string
           employee_id: string
@@ -1271,6 +1391,7 @@ export type Database = {
           consent_text: string
           created_at?: string
           document_hash?: string | null
+          email_ownership_verified?: boolean
           email_verified_at?: string | null
           employee_document_id: string
           employee_id: string
@@ -1296,6 +1417,7 @@ export type Database = {
           consent_text?: string
           created_at?: string
           document_hash?: string | null
+          email_ownership_verified?: boolean
           email_verified_at?: string | null
           employee_document_id?: string
           employee_id?: string
@@ -2567,6 +2689,7 @@ export type Database = {
           verification_notes: string | null
           verified_by: string | null
           version_number: number
+          wording_provenance: string | null
         }
         Insert: {
           amendment_reason?: string | null
@@ -2627,6 +2750,7 @@ export type Database = {
           verification_notes?: string | null
           verified_by?: string | null
           version_number?: number
+          wording_provenance?: string | null
         }
         Update: {
           amendment_reason?: string | null
@@ -2687,6 +2811,7 @@ export type Database = {
           verification_notes?: string | null
           verified_by?: string | null
           version_number?: number
+          wording_provenance?: string | null
         }
         Relationships: [
           {

@@ -71,6 +71,15 @@ export default function SignContract() {
   const [readConfirmed, setReadConfirmed] = useState(false);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [needsHelp, setNeedsHelp] = useState(false);
+  // Email ownership verification. Typing an address is never treated as proof of
+  // ownership: a changed address must be verified with a one-time code first.
+  const [emailOnFile, setEmailOnFile] = useState("");
+  const [codeRequested, setCodeRequested] = useState(false);
+  const [codeSending, setCodeSending] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeChecking, setCodeChecking] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
 
   const detailsRequired = contractInfo?.details_required === true;
 
@@ -144,6 +153,7 @@ export default function SignContract() {
       const onFile = isEmployer
         ? (contractInfo as any).employer_signatory_email || ""
         : contractInfo.employee_email || "";
+      setEmailOnFile(onFile || "");
       setSignerEmail((prev) => (prev ? prev : onFile || ""));
     }
   }, [contractInfo, isEmployer]);

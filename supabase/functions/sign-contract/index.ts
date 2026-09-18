@@ -1121,6 +1121,211 @@ Deno.serve(async (req) => {
       const body = await req.json();
 
       // ════════════════════════════════════════════
+      // Email ownership verification for a CHANGED signer address.
+      // Typing an address proves nothing. A one-time code is sent to the new
+      // address and must be entered before signing or delivery can proceed.
+      // ════════════════════════════════════════════
+      if (body?.action === "request_email_verification" || body?.action === "confirm_email_verification") {
+        if (!token) {
+          return new Response(JSON.stringify({ error: "This signing link is not valid.", error_code: "invalid_token" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: vToken } = await supabase
+          .from("signing_tokens")
+          .select("id, tenant_id, employee_document_id, employee_id, signer_type, expires_at, used_at")
+          .eq("token", token)
+          .maybeSingle();
+
+        if (!vToken) {
+          return new Response(JSON.stringify({ error: "This signing link is not valid.", error_code: "invalid_token" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (new Date(vToken.expires_at) < new Date()) {
+          return new Response(JSON.stringify({ error: "This signing link has expired. Please ask your employer to send a new one.", error_code: "expired" }), {
+            status: 410,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const candidate = String(body?.email || "").trim().toLowerCase();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(candidate)) {
+          return new Response(JSON.stringify({ error: "Please check the email address and try again.", error_code: "invalid_email" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        if (body.action === "request_email_verification") {
+          // Rate limit: one code per address per 60 seconds.
+          const { data: recent } = await supabase
+            .from("contract_email_verifications")
+            .select("id, last_sent_at")
+            .eq("signing_token_id", vToken.id)
+            .eq("email", candidate)
+            .is("verified_at", null)
+            .order("last_sent_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (recent && Date.now() - new Date((recent as any).last_sent_at).getTime() < 60_000) {
+            return new Response(JSON.stringify({
+              error: "A code was just sent. Please wait a minute before asking for another.",
+              error_code: "too_soon",
+            }), {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          const code = String(Math.floor(100000 + Math.random() * 900000));
+          const codeHash = await sha256(`${vToken.id}:${candidate}:${code}`);
+          const expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
+
+          const { error: insertErr } = await supabase.from("contract_email_verifications").insert({
+            tenant_id: vToken.tenant_id,
+            employee_document_id: vToken.employee_document_id,
+            signing_token_id: vToken.id,
+            signer_type: vToken.signer_type,
+            email: candidate,
+            code_hash: codeHash,
+            expires_at: expiresAt,
+          });
+
+          if (insertErr) {
+            console.error("email verification insert failed", { code: insertErr.code ?? "unknown" });
+            return new Response(JSON.stringify({ error: "The verification code could not be created. Please try again.", error_code: "save_failed" }), {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          let sendFailed = false;
+          try {
+            const { error: sendErr } = await supabase.functions.invoke("send-notification", {
+              body: {
+                to: candidate,
+                subject: "Your contract signing verification code",
+                type: "contract_email_verification",
+                data: { code, expires_minutes: 15 },
+                tenant_id: vToken.tenant_id,
+              },
+            });
+            if (sendErr) sendFailed = true;
+          } catch (_e) {
+            sendFailed = true;
+          }
+
+          await supabase.from("audit_log").insert({
+            action: "create",
+            table_name: sendFailed ? "email_failed" : "email_sent",
+            record_id: vToken.employee_document_id,
+            tenant_id: vToken.tenant_id,
+            new_data: {
+              event: "contract_signer_email_verification_code_sent",
+              status: sendFailed ? "failed" : "sent",
+              email_type: "contract_email_verification",
+              recipient_email: candidate,
+              signer_type: vToken.signer_type,
+              trigger: "signer_changed_email",
+            },
+          });
+
+          if (sendFailed) {
+            return new Response(JSON.stringify({
+              error: "We could not send the code to that address. Please check it, or ask your employer for help.",
+              error_code: "verification_send_failed",
+            }), {
+              status: 502,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          return new Response(JSON.stringify({ success: true, expires_in_minutes: 15 }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        // confirm_email_verification
+        const submittedCode = String(body?.code || "").trim();
+        if (!/^\d{6}$/.test(submittedCode)) {
+          return new Response(JSON.stringify({ error: "Please enter the 6-digit code.", error_code: "invalid_code" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const { data: pending } = await supabase
+          .from("contract_email_verifications")
+          .select("id, code_hash, expires_at, attempts, verified_at")
+          .eq("signing_token_id", vToken.id)
+          .eq("email", candidate)
+          .is("verified_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!pending) {
+          return new Response(JSON.stringify({ error: "Please ask for a new code.", error_code: "no_pending_code" }), {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (new Date((pending as any).expires_at) < new Date()) {
+          return new Response(JSON.stringify({ error: "That code has expired. Please ask for a new one.", error_code: "code_expired" }), {
+            status: 410,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (Number((pending as any).attempts) >= 5) {
+          return new Response(JSON.stringify({ error: "Too many incorrect attempts. Please ask for a new code.", error_code: "too_many_attempts" }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const submittedHash = await sha256(`${vToken.id}:${candidate}:${submittedCode}`);
+        if (submittedHash !== (pending as any).code_hash) {
+          await supabase
+            .from("contract_email_verifications")
+            .update({ attempts: Number((pending as any).attempts) + 1 })
+            .eq("id", (pending as any).id);
+          return new Response(JSON.stringify({ error: "That code is not correct.", error_code: "code_incorrect" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const verifiedAt = new Date().toISOString();
+        await supabase
+          .from("contract_email_verifications")
+          .update({ verified_at: verifiedAt })
+          .eq("id", (pending as any).id);
+
+        await supabase.from("audit_log").insert({
+          action: "update",
+          table_name: "contract_email_verifications",
+          record_id: vToken.employee_document_id,
+          tenant_id: vToken.tenant_id,
+          new_data: {
+            event: "contract_signer_email_verified",
+            email: candidate,
+            signer_type: vToken.signer_type,
+            verified_at: verifiedAt,
+          },
+        });
+
+        return new Response(JSON.stringify({ success: true, verified_at: verifiedAt }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+
+      // ════════════════════════════════════════════
       // Optional extra: signer uploads a scan/photo of the signed contract.
       // Supporting evidence only — it never replaces the electronic signature
       // and never modifies the original contract document.
@@ -1464,9 +1669,39 @@ Deno.serve(async (req) => {
         signedByEmail = signingToken.employees?.email || null;
       }
 
-      // The address the signer saw and confirmed on the signing screen takes precedence
-      // and is what the completed contract is sent to.
-      if (confirmedEmail) signedByEmail = confirmedEmail;
+      // Typing or confirming an address is NOT proof of ownership. The address already on
+      // record for this signer may be used as it stands. A CHANGED address may only be used
+      // once a one-time code sent to that address has been entered and verified.
+      const addressOnRecord = (signedByEmail || "").trim().toLowerCase();
+      let emailOwnershipVerified = false;
+
+      if (confirmedEmail) {
+        const changed = confirmedEmail.toLowerCase() !== addressOnRecord;
+        if (changed) {
+          const { data: verifiedRow } = await supabase
+            .from("contract_email_verifications")
+            .select("id, verified_at")
+            .eq("signing_token_id", signingToken.id)
+            .eq("email", confirmedEmail.toLowerCase())
+            .not("verified_at", "is", null)
+            .order("verified_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!verifiedRow) {
+            return new Response(JSON.stringify({
+              error: "Please verify this email address first. We will send a 6-digit code to it.",
+              error_code: "email_verification_required",
+              email: confirmedEmail,
+            }), {
+              status: 428,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          emailOwnershipVerified = true;
+        }
+        signedByEmail = confirmedEmail;
+      }
 
       if (!originalFilePath || !signingToken.employee_documents) {
         return new Response(JSON.stringify({ error: "The contract document could not be found.", error_code: "missing_document" }), {
@@ -1514,7 +1749,8 @@ Deno.serve(async (req) => {
           consent_given: true,
           consent_text: consent_text || `I confirm that I have read and understood this contract, I agree to sign this document electronically, and this electronic signature represents my legal signature.`,
           consent_items: Array.isArray(consent_items) ? consent_items : null,
-          email_verified_at: confirmedEmail ? signedAt : null,
+          email_verified_at: emailOwnershipVerified ? signedAt : null,
+          email_ownership_verified: emailOwnershipVerified,
           document_hash: serverDocumentHash,
           ip_address: ip,
           user_agent: userAgent,
@@ -1837,26 +2073,50 @@ Deno.serve(async (req) => {
         // Use token-based branded URL so employees can access without logging in
         const emailDownloadUrl = `${CANONICAL_APP_URL}/document/view?token=${downloadTokenRecord.token}&variant=final`;
 
-        // Check email automation policy for completion emails
-        const { data: completionPolicyRow } = await supabase
-          .from("tenant_preferences")
-          .select("preferences")
-          .eq("tenant_id", signingToken.tenant_id)
-          .eq("category", "email_automation")
-          .maybeSingle();
-
-        const completionPolicy = completionPolicyRow?.preferences as Record<string, string> | null;
-        const completionSigningMode = completionPolicy?.contract_signing || "manual";
-
-        // Send completion email to EMPLOYEE (only if not disabled).
-        // Prefer the address the employee saw and confirmed at the moment of signing.
+        // ── AUTOMATIC DELIVERY TO THE EMPLOYEE ──
+        // Completion delivery is always automatic: a completed contract must reach the
+        // person who signed it. The file itself is never attached — the email carries a
+        // secure download link only, so the PDF cannot be delivered to an unproven address.
+        // The detailed signing certificate is never emailed (it holds IP and device data);
+        // it is downloadable by the employee and authorised administrators.
         const employeeSignature = (allSigs || []).find(
           (s: any) => s.signer_type === "employee" && s.signed_by_email,
         );
         const recipientEmail = (employeeSignature as any)?.signed_by_email || signingToken.employees?.email;
-        if (recipientEmail && completionSigningMode === "auto") {
+        const recipientVerified = Boolean((employeeSignature as any)?.email_ownership_verified);
+
+        const recordDelivery = async (fields: Record<string, unknown>) => {
+          await supabase.from("contract_delivery_attempts").insert({
+            tenant_id: signingToken.tenant_id,
+            employee_document_id: signingToken.employee_document_id,
+            delivery_method: "secure_link",
+            trigger_source: "automatic",
+            ...fields,
+          });
+        };
+
+        if (!recipientEmail) {
+          await recordDelivery({
+            recipient_role: "employee",
+            recipient_email: "(none on record)",
+            status: "failed",
+            error_message: "No email address on record for this employee.",
+          });
+          await notifyAdminsInApp(supabase, signingToken.tenant_id, {
+            event_type: "contract_delivery_failed",
+            title: `Completed contract could not be sent — ${employeeName}`,
+            body: "There is no email address on record. Add one, then retry delivery from the contract record.",
+            link: "/contracts",
+            metadata: {
+              employee_document_id: signingToken.employee_document_id,
+              employee_id: signingToken.employee_id,
+              reason: "missing_email",
+            },
+          });
+        } else {
+          let deliveryError: string | null = null;
           try {
-            await supabase.functions.invoke("send-notification", {
+            const { error: sendErr } = await supabase.functions.invoke("send-notification", {
               body: {
                 to: recipientEmail,
                 subject: "Your contract is now complete",
@@ -1870,45 +2130,53 @@ Deno.serve(async (req) => {
                 tenant_id: signingToken.tenant_id,
               },
             });
-
-            await supabase.from("audit_log").insert({
-              action: "create",
-              table_name: "email_sent",
-              record_id: signingToken.employee_document_id,
-              tenant_id: signingToken.tenant_id,
-              new_data: {
-                event: "contract_completion_email_sent_to_employee",
-                status: "sent",
-                email_type: "contract_fully_signed",
-                recipient_email: recipientEmail,
-                employee_name: employeeName,
-                trigger: "automatic",
-                policy_mode: completionSigningMode,
-              },
-            });
+            if (sendErr) deliveryError = sendErr.message || "The email provider rejected the send.";
           } catch (emailErr) {
-            console.error("Contract fully-signed email to employee failed:", emailErr);
+            deliveryError = (emailErr as Error)?.message || "The email could not be sent.";
           }
-        } else if (recipientEmail) {
-          // Policy is "manual" or "disabled" — do NOT auto-send, log blocked/pending
+
+          await recordDelivery({
+            recipient_role: "employee",
+            recipient_email: recipientEmail,
+            status: deliveryError ? "failed" : "sent",
+            email_verified: recipientVerified,
+            error_message: deliveryError,
+          });
+
           await supabase.from("audit_log").insert({
             action: "create",
-            table_name: "email_blocked",
+            table_name: deliveryError ? "email_failed" : "email_sent",
             record_id: signingToken.employee_document_id,
             tenant_id: signingToken.tenant_id,
             new_data: {
-              event: "contract_completion_email_blocked",
-              status: completionSigningMode === "disabled" ? "blocked" : "pending_manual",
-              reason: completionSigningMode === "disabled"
-                ? "Email automation policy: contract_signing is disabled"
-                : "Email automation policy: contract_signing is set to manual — admin must send manually",
+              event: "contract_completion_email_sent_to_employee",
+              status: deliveryError ? "failed" : "sent",
+              error: deliveryError,
               email_type: "contract_fully_signed",
+              delivery_method: "secure_link",
+              attachment: false,
               recipient_email: recipientEmail,
+              recipient_email_verified: recipientVerified,
               employee_name: employeeName,
-              trigger: "automatic_blocked",
-              policy_mode: completionSigningMode,
+              trigger: "automatic",
             },
           });
+
+          if (deliveryError) {
+            console.error("Contract fully-signed email to employee failed:", deliveryError);
+            await notifyAdminsInApp(supabase, signingToken.tenant_id, {
+              event_type: "contract_delivery_failed",
+              title: `Completed contract could not be sent — ${employeeName}`,
+              body: `Delivery to ${recipientEmail} failed. Retry from the contract record — the signed file is untouched.`,
+              link: "/contracts",
+              metadata: {
+                employee_document_id: signingToken.employee_document_id,
+                employee_id: signingToken.employee_id,
+                recipient_email: recipientEmail,
+                reason: "send_failed",
+              },
+            });
+          }
         }
 
         // Send completion email to MANAGER(S) — managers always receive (not employee-facing)
@@ -1947,9 +2215,33 @@ Deno.serve(async (req) => {
                 trigger: "automatic",
               },
             });
+
+            for (const admin of managerRecipients) {
+              await recordDelivery({
+                recipient_role: "employer",
+                recipient_email: admin.email,
+                status: "sent",
+              });
+            }
           }
         } catch (notifyErr) {
           console.error("Manager completion notification failed:", notifyErr);
+          await recordDelivery({
+            recipient_role: "employer",
+            recipient_email: "(authorised employer recipients)",
+            status: "failed",
+            error_message: (notifyErr as Error)?.message || "The confirmation email could not be sent.",
+          });
+          await notifyAdminsInApp(supabase, signingToken.tenant_id, {
+            event_type: "contract_delivery_failed",
+            title: `Signing confirmation could not be sent — ${employeeName}`,
+            body: "The employer confirmation email failed. Retry from the contract record — the signed file is untouched.",
+            link: "/contracts",
+            metadata: {
+              employee_document_id: signingToken.employee_document_id,
+              reason: "employer_confirmation_failed",
+            },
+          });
         }
 
         // Log fully signed event

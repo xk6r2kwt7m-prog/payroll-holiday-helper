@@ -141,6 +141,13 @@
       "when": 1789740658996,
       "tag": "0019_contract_references_template_versions_and_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789743900244,
+      "tag": "0020_contract_email_verification_and_delivery",
+      "breakpoints": true
     }
   ]
 }
