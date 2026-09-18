@@ -148,6 +148,38 @@ export function SendStaffAlcoholDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {step === "confirm" ? (
+          <div className="space-y-3">
+            <p className="text-sm">
+              {testSend
+                ? `A test copy comes to you only. Nothing reaches these ${chosen.length} people.`
+                : `This will email ${chosen.length} ${chosen.length === 1 ? "person" : "people"} at ${branch}. Check the names and addresses below.`}
+            </p>
+            <div className="rounded-lg border border-border divide-y divide-border max-h-60 overflow-y-auto">
+              {chosen.map((e) => (
+                <div key={e.id} className="px-3 py-2">
+                  <p className="text-sm truncate">
+                    {e.forename} {e.surname}
+                    {e.department ? <span className="text-muted-foreground"> · {e.department}</span> : null}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{e.email}</p>
+                </div>
+              ))}
+            </div>
+            {noEmail.length > 0 && (
+              <div className="rounded-lg border border-warning/40 bg-warning/5 p-2.5 space-y-1">
+                <p className="text-xs font-medium text-warning">
+                  Cannot be sent — no email address on file ({noEmail.length})
+                </p>
+                {noEmail.map((e) => (
+                  <p key={e.id} className="text-xs text-muted-foreground truncate">
+                    {e.forename} {e.surname}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Site</Label>
