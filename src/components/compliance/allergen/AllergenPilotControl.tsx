@@ -111,12 +111,13 @@ export function AllergenPilotControl() {
             site,
             scored: bank.questions.length,
             critical: bank.questions.filter((q) => q.critical).length,
+            warnings: warnings.length,
             menu: bank.questions.filter((q) => !q.critical).length,
             validation: validateBranchFlavourQuestions(site, scoredFlavours),
             problem: warnings.length
-              ? `${warnings.length} critical question(s) are kept in but their dish record needs attention: ${warnings
+              ? `${warnings.length} critical question(s) are not scored here because their dish record has lost its confirmed evidence: ${warnings
                   .map((w) => `${w.flavour ?? w.id} — ${w.reason}`)
-                  .join("; ")}`
+                  .join("; ")} The safety rule is still taught in the lessons.`
               : (null as string | null),
           };
         } catch (e: any) {
@@ -124,6 +125,7 @@ export function AllergenPilotControl() {
             site,
             scored: 0,
             critical: 0,
+            warnings: CRITICAL_QUESTION_COUNT,
             menu: 0,
             validation: { site, scoredFlavours: [], findings: [], ok: false },
             problem: e?.message ?? "The assessment could not be built for this site.",
@@ -138,7 +140,12 @@ export function AllergenPilotControl() {
     lessonRefsInModules.length === ALLERGEN_SAFETY_LESSONS.length &&
     ALLERGEN_SAFETY_LESSONS.every((l) => lessonRefsInModules.includes(l.ref)) &&
     CRITICAL_QUESTION_COUNT === 15 &&
-    siteChecks.every((s) => s.scored <= ALLERGEN_MAX_SCORED_QUESTIONS && s.critical === 15);
+    siteChecks.every(
+      (s) =>
+        s.scored <= ALLERGEN_MAX_SCORED_QUESTIONS &&
+        s.critical + s.warnings === CRITICAL_QUESTION_COUNT,
+    );
+
 
   const resultFor = (env: string, ref: string) =>
     checks.find((c: any) => c.environment === env && c.check_ref === ref)?.result ?? null;
@@ -376,6 +383,17 @@ export function AllergenPilotControl() {
               </AlertDescription>
             </Alert>
           )}
+          {gate.ready && (
+            <Alert>
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Both the phone and computer walkthroughs have passed. Proposed version 2 is marked ready to
+                publish for the controlled pilot and waits for your approval. Nothing has been published, no
+                pilot assignment has been sent and automatic reminders remain off.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"

@@ -170,9 +170,14 @@ export interface BankSelection {
   /** Option order per question id, so a resumed attempt looks identical. */
   optionOrder: Record<string, string[]>;
   excluded: { id: string; flavour?: string; reason: string }[];
-  /** Critical questions kept in although their dish record needs attention. */
+  /**
+   * Critical-safety questions withheld from scoring because their correct answer
+   * depends on a dish record that is unconfirmed, disputed, incomplete, inactive
+   * or reference-only. Reported so management sees the gap.
+   */
   criticalWarnings?: { id: string; flavour?: string; reason: string }[];
 }
+
 
 /** Deterministic shuffle so a resumed attempt shows the same answer order. */
 function seededShuffle<T>(items: T[], seed: string): T[] {
@@ -225,10 +230,11 @@ export function selectQuestionBank(opts: {
   const eligible: AllergenQuestion[] = [];
 
   /**
-   * A critical-safety control is always scored: those 15 questions are the
-   * approved safety rules and cannot be silently dropped. Where the dish record
-   * behind one is missing or not yet confirmed, the question stays in and the
-   * gap is reported to management instead.
+   * Generic critical-safety questions are always scored: they are the approved
+   * safety rules and cannot be dropped. A question whose correct answer depends
+   * on a dish record is different — if that record is unconfirmed, disputed,
+   * incomplete, inactive or reference-only, the question loses its supporting
+   * evidence and must not be scored. It is withheld and reported instead.
    */
   const criticalWarnings: { id: string; flavour?: string; reason: string }[] = [];
 
@@ -244,16 +250,16 @@ export function selectQuestionBank(opts: {
         branchId: q.requires_current_menu ? opts.branchId : null,
       });
       if (!verdict.eligible) {
+        excluded.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
         if (q.critical) {
           criticalWarnings.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
-        } else {
-          excluded.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
-          continue;
         }
+        continue;
       }
     }
     eligible.push(q);
   }
+
 
   let questions = eligible;
 

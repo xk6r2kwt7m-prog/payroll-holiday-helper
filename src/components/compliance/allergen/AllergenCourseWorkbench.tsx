@@ -18,6 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Rocket, Smartphone, Monitor, Users } from "lucide-react";
 import { AllergenProgrammeBoard } from "@/components/compliance/allergen/AllergenProgrammeBoard";
 import { AllergenPilotControl } from "@/components/compliance/allergen/AllergenPilotControl";
+import { AllergenWalkthrough } from "@/components/compliance/allergen/AllergenWalkthrough";
+
 import { toast } from "sonner";
 import {
   ALLERGEN_SAFETY_LESSONS,
@@ -154,7 +156,11 @@ export function AllergenCourseWorkbench() {
       <Tabs defaultValue="pilot">
         <TabsList className="flex w-full flex-wrap justify-start">
           <TabsTrigger value="pilot" className="gap-1"><Rocket className="h-3.5 w-3.5" />Pilot</TabsTrigger>
+          <TabsTrigger value="walkthrough" className="gap-1">
+            <Smartphone className="h-3.5 w-3.5" />10-minute walkthrough
+          </TabsTrigger>
           <TabsTrigger value="lessons" className="gap-1"><BookOpen className="h-3.5 w-3.5" />Lessons</TabsTrigger>
+
           <TabsTrigger value="questions" className="gap-1"><ClipboardList className="h-3.5 w-3.5" />Questions</TabsTrigger>
           <TabsTrigger value="practical">Practical sign-off</TabsTrigger>
           <TabsTrigger value="comparison" className="gap-1"><GitCompare className="h-3.5 w-3.5" />Version 1 vs 2</TabsTrigger>
@@ -171,7 +177,12 @@ export function AllergenCourseWorkbench() {
           <AllergenPilotControl />
         </TabsContent>
 
-        {/* ── Phase 2: assignment, tracking, sign-off, certificates, reminders ── */}
+        {/* ── The ten-minute management acceptance walkthrough ── */}
+        <TabsContent value="walkthrough" className="pt-3">
+          <AllergenWalkthrough />
+        </TabsContent>
+
+
         <TabsContent value="programme" className="pt-3">
           <AllergenProgrammeBoard testMode={testMode} />
         </TabsContent>
