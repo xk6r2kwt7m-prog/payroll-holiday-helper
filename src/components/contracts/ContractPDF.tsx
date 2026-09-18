@@ -148,6 +148,21 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     letterSpacing: 1,
   },
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    fontSize: 7,
+    color: GRAY,
+  },
+  footerBlock: {
+    position: "absolute",
+    bottom: 24,
+    left: 50,
+    right: 50,
+    borderTopWidth: 0.5,
+    borderTopColor: "#ccc",
+    paddingTop: 5,
+  },
   footer: {
     position: "absolute",
     bottom: 30,
