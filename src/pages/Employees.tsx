@@ -19,6 +19,7 @@ import { EmployeeCard } from "@/components/employees/EmployeeCard";
 import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet";
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { EmployeeDeleteDialog } from "@/components/employees/EmployeeDeleteDialog";
+import { InfoRequestsPanel } from "@/components/employees/InfoRequestsPanel";
 import { InvitationsPanel } from "@/components/employees/InvitationsPanel";
 import { PeopleDashboard } from "@/components/people/PeopleDashboard";
 import { useAuth } from "@/hooks/useAuth";
@@ -360,6 +361,9 @@ const Employees = () => {
 
         {/* Pending invitations */}
         {canEdit && <InvitationsPanel />}
+
+        {/* Information requests sent to existing staff, plus expiring documents */}
+        {canEdit && <InfoRequestsPanel />}
 
         {/* Search + Dept + Sort row */}
         <div className="flex flex-col gap-2">

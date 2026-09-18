@@ -2527,12 +2527,18 @@ export type Database = {
       }
       employee_info_requests: {
         Row: {
+          cancelled_at: string | null
           created_at: string
           employee_id: string
           id: string
+          last_reminder_at: string | null
           opened_at: string | null
+          preset: string | null
           recipient_email: string | null
+          reminder_count: number
           reminder_sent_at: string | null
+          replaced_by: string | null
+          request_kind: string
           requested_by: string | null
           requested_by_name: string | null
           requested_fields: string[]
@@ -2547,12 +2553,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancelled_at?: string | null
           created_at?: string
           employee_id: string
           id?: string
+          last_reminder_at?: string | null
           opened_at?: string | null
+          preset?: string | null
           recipient_email?: string | null
+          reminder_count?: number
           reminder_sent_at?: string | null
+          replaced_by?: string | null
+          request_kind?: string
           requested_by?: string | null
           requested_by_name?: string | null
           requested_fields?: string[]
@@ -2567,12 +2579,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancelled_at?: string | null
           created_at?: string
           employee_id?: string
           id?: string
+          last_reminder_at?: string | null
           opened_at?: string | null
+          preset?: string | null
           recipient_email?: string | null
+          reminder_count?: number
           reminder_sent_at?: string | null
+          replaced_by?: string | null
+          request_kind?: string
           requested_by?: string | null
           requested_by_name?: string | null
           requested_fields?: string[]
@@ -2599,6 +2617,13 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_info_requests_replaced_by_fkey"
+            columns: ["replaced_by"]
+            isOneToOne: false
+            referencedRelation: "employee_info_requests"
             referencedColumns: ["id"]
           },
         ]

@@ -1,4 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  expandRequestedFields,
+  infoItemLabel,
+  INFO_ITEM_KEYS,
+} from "../_shared/info-request-items.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,12 +12,8 @@ const corsHeaders = {
 
 const APP_URL = "https://udp.lovable.app";
 
-const SECTION_LABELS: Record<string, string> = {
-  personal: "Your personal details (full name, date of birth, phone, home address, National Insurance number)",
-  emergency: "An emergency contact",
-  bank: "Your bank details for pay",
-  rtw: "Your right to work document (photo or file)",
-};
+const LEGACY_SECTIONS = ["personal", "emergency", "bank", "rtw"];
+const ALLOWED_FIELDS = [...INFO_ITEM_KEYS, ...LEGACY_SECTIONS];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -44,17 +45,19 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const tenantId: string = body?.tenant_id;
+    const action: string = body?.action || "send";
     const employeeIds: string[] = body?.employeeIds || [];
     const sections: string[] = (body?.sections || ["personal", "emergency", "bank", "rtw"]).filter(
-      (s: string) => s in SECTION_LABELS,
+      (s: string) => ALLOWED_FIELDS.includes(s),
     );
+    const requestKind: string =
+      body?.requestKind === "existing_staff_update" ? "existing_staff_update" : "onboarding";
+    const preset: string | null = typeof body?.preset === "string" ? body.preset.slice(0, 60) : null;
     const recipientOverride: string | null = body?.recipientOverride ?? null;
     const testSend: boolean = body?.testSend === true;
     const expiryDays: number = Math.min(Math.max(Number(body?.expiryDays) || 7, 1), 30);
 
     if (!tenantId) return json({ error: "Missing tenant" }, 400);
-    if (employeeIds.length === 0) return json({ error: "Select at least one staff member" }, 400);
-    if (sections.length === 0) return json({ error: "Select at least one section" }, 400);
 
     const { data: membership } = await admin
       .from("tenant_members")
@@ -66,6 +69,83 @@ Deno.serve(async (req) => {
     if (!membership || !["company_admin", "manager"].includes(membership.role)) {
       return json({ error: "You do not have permission to request staff details" }, 403);
     }
+
+    const itemList = (fields: string[]) =>
+      expandRequestedFields(fields).map((k) => `• ${infoItemLabel(k)}`).join("<br/>");
+
+    // ── Reminder: the same link again, so part-filled answers survive ──
+    if (action === "remind") {
+      const requestId: string = body?.requestId;
+      if (!requestId) return json({ error: "Missing request" }, 400);
+
+      const { data: existing } = await admin
+        .from("employee_info_requests")
+        .select("*, employees(forename, surname)")
+        .eq("id", requestId)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      if (!existing) return json({ error: "That request could not be found" }, 404);
+      if (existing.submitted_at) return json({ error: "They have already completed this" }, 409);
+      if (existing.status === "revoked") return json({ error: "That link was cancelled — send a new one" }, 409);
+      if (new Date(existing.token_expires_at).getTime() < Date.now()) {
+        return json({ error: "That link has expired — send a new one" }, 409);
+      }
+
+      const recipient = existing.recipient_email;
+      if (!recipient) return json({ error: "No email address on that request" }, 400);
+      const emp: any = existing.employees;
+
+      let sent = false;
+      let sendError: string | undefined;
+      try {
+        const { data: mail, error: mailErr } = await admin.functions.invoke("send-notification", {
+          body: {
+            to: recipient,
+            subject: "Reminder: please complete your details",
+            type: "info_request",
+            tenant_id: tenantId,
+            data: {
+              employee_name: `${emp?.forename ?? ""} ${emp?.surname ?? ""}`.trim(),
+              first_name: emp?.forename ?? "there",
+              details_url: `${APP_URL}/my-details/${existing.token}`,
+              section_list: itemList(existing.requested_fields ?? []),
+              expires_on: String(existing.token_expires_at).slice(0, 10),
+            },
+          },
+        });
+        if (mailErr) sendError = mailErr.message;
+        else if (mail?.success === false) sendError = mail?.error || "Email provider rejected the message";
+        else sent = true;
+      } catch (e) {
+        sendError = (e as Error).message;
+      }
+
+      if (sent) {
+        await admin
+          .from("employee_info_requests")
+          .update({
+            reminder_count: (existing.reminder_count ?? 0) + 1,
+            last_reminder_at: new Date().toISOString(),
+            reminder_sent_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      }
+
+      await admin.from("audit_log").insert({
+        tenant_id: tenantId,
+        user_id: callerId,
+        action: "update",
+        table_name: sent ? "employee_info_request_reminded" : "employee_info_request_reminder_failed",
+        record_id: existing.id,
+        new_data: { recipient, employee_id: existing.employee_id, error: sendError ?? null },
+      });
+
+      if (!sent) return json({ error: sendError ?? "The reminder could not be sent" }, 502);
+      return json({ success: true, sent: true });
+    }
+
+    if (employeeIds.length === 0) return json({ error: "Select at least one staff member" }, 400);
+    if (sections.length === 0) return json({ error: "Select at least one thing to ask for" }, 400);
 
     const { data: issuer } = await admin
       .from("employees")
@@ -85,7 +165,8 @@ Deno.serve(async (req) => {
     if (empErr) throw empErr;
 
     const expiresAt = new Date(Date.now() + expiryDays * 86400000);
-    const sectionList = sections.map((s) => `• ${SECTION_LABELS[s]}`).join("<br/>");
+    const sectionList = itemList(sections);
+    const isUpdate = requestKind === "existing_staff_update";
 
     const results: { employee_id: string; sent: boolean; recipient?: string; error?: string }[] = [];
 
@@ -105,6 +186,8 @@ Deno.serve(async (req) => {
           token,
           token_expires_at: expiresAt.toISOString(),
           requested_fields: sections,
+          request_kind: requestKind,
+          preset,
           recipient_email: recipient,
           requested_by: callerId,
           requested_by_name: issuerName,
@@ -117,6 +200,22 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Only one live link per person: any earlier unfinished one is closed and
+      // pointed at this one, so an old link can never be used by mistake.
+      await admin
+        .from("employee_info_requests")
+        .update({
+          status: "revoked",
+          cancelled_at: new Date().toISOString(),
+          token_expires_at: new Date().toISOString(),
+          replaced_by: request.id,
+        })
+        .eq("tenant_id", tenantId)
+        .eq("employee_id", emp.id)
+        .neq("id", request.id)
+        .is("submitted_at", null)
+        .in("status", ["sent", "opened", "in_progress"]);
+
       const detailsUrl = `${APP_URL}/my-details/${token}`;
       let sent = false;
       let sendError: string | undefined;
@@ -124,7 +223,9 @@ Deno.serve(async (req) => {
         const { data: mail, error: mailErr } = await admin.functions.invoke("send-notification", {
           body: {
             to: recipient,
-            subject: `${testSend ? "[TEST] " : ""}Please complete your details`,
+            subject: `${testSend ? "[TEST] " : ""}${
+              isUpdate ? "We need a couple of details from you" : "Please complete your details"
+            }`,
             type: "info_request",
             tenant_id: tenantId,
             data: {
@@ -153,6 +254,8 @@ Deno.serve(async (req) => {
           employee_id: emp.id,
           recipient,
           sections,
+          request_kind: requestKind,
+          preset,
           requested_by_name: issuerName,
           test_send: testSend,
           error: sendError ?? null,

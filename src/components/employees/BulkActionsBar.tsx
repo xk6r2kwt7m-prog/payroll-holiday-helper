@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, UserCheck, UserMinus, X, Loader2 } from "lucide-react";
+import { Archive, UserCheck, UserMinus, X, Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useUpdateEmployee, useArchiveEmployee, type Employee } from "@/hooks/useEmployees";
 import { toast } from "sonner";
+import { BulkRequestInfoDialog } from "./BulkRequestInfoDialog";
 import { cn } from "@/lib/utils";
 
 interface BulkActionsBarProps {
@@ -105,6 +106,17 @@ export function BulkActionsBar({ selectedEmployees, onClearSelection }: BulkActi
           </DropdownMenuContent>
         </DropdownMenu>
         
+        <BulkRequestInfoDialog
+          employees={selectedEmployees}
+          onSent={onClearSelection}
+          trigger={
+            <Button variant="outline" size="sm">
+              <Mail className="h-4 w-4 mr-2" />
+              Ask for info
+            </Button>
+          }
+        />
+
         <Button 
           variant="outline" 
           size="sm"

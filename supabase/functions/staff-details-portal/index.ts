@@ -1,5 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { allocateStaffDetails, buildContactAliases } from "./allocation.ts";
+import {
+  documentKindForItems,
+  expandRequestedFields,
+  sectionsForItems,
+} from "../_shared/info-request-items.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,7 +97,10 @@ Deno.serve(async (req) => {
       return json({
         request: {
           id: request.id,
-          sections: request.requested_fields,
+          // Legacy rows hold section keys; both shapes expand to item keys.
+          items: expandRequestedFields(request.requested_fields),
+          sections: sectionsForItems(request.requested_fields ?? []),
+          kind: request.request_kind ?? "onboarding",
           status: request.status,
           submitted_at: request.submitted_at,
           expires_at: request.token_expires_at,
@@ -149,15 +157,22 @@ Deno.serve(async (req) => {
         .upload(path, bytes, { contentType: mime, upsert: false });
       if (upErr) throw upErr;
 
+      // Filed as the kind of document that was asked for, with the expiry date
+      // when one was given, so it can be chased before it lapses.
+      const docKind = documentKindForItems(request.requested_fields ?? []);
+      const rawExpiry = str(body.expires_at, 10);
+      const expiresAt = rawExpiry && /^\d{4}-\d{2}-\d{2}$/.test(rawExpiry) ? rawExpiry : null;
+
       const { error: docErr } = await admin.from("employee_documents").insert({
         tenant_id: request.tenant_id,
         employee_id: request.employee_id,
-        document_type: "right_to_work",
+        document_type: docKind,
         document_name: str(body.document_label, 120) || "Right to work (staff upload)",
         file_path: path,
         file_size: bytes.byteLength,
         mime_type: mime,
         document_status: "uploaded",
+        ...(expiresAt ? { expires_at: expiresAt } : {}),
         notes: "Uploaded by the employee from their details link — awaiting manager review",
       });
       if (docErr) throw docErr;
@@ -173,7 +188,9 @@ Deno.serve(async (req) => {
     // ── Final submission ──
     if (action === "submit") {
       const answers = { ...(request.submitted_data ?? {}), ...(body.answers ?? {}) };
-      const sections: string[] = request.requested_fields ?? [];
+      // Sections drive which answers are read; item-level requests map onto the
+      // same sections, and only values the person actually typed are considered.
+      const sections: string[] = sectionsForItems(request.requested_fields ?? []);
 
       const personal = answers.personal ?? {};
       const emergency = answers.emergency ?? {};

@@ -12,6 +12,7 @@ import {
   Landmark, Loader2, MapPin, MessageSquare, Paperclip, Pencil, Phone, ShieldCheck, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { expandRequestedFields } from "@/lib/info-request-items";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/staff-details-portal`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -46,10 +47,17 @@ interface StepDef {
   upload?: boolean;
 }
 
-/** Small groups of two or three questions, one screen at a time. */
-const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
-  personal: [
-    {
+/**
+ * Only the things that were asked for appear, one small screen at a time.
+ * Screens are built from the item keys on the request, so someone already on
+ * the team who is only asked for a visa never sees the rest.
+ */
+function buildSteps(items: readonly string[]): StepDef[] {
+  const has = (k: string) => items.includes(k);
+  const steps: StepDef[] = [];
+
+  if (has("legal_name")) {
+    steps.push({
       id: "name", section: "personal", title: "What is your name?",
       blurb: "Exactly as it appears on your passport or ID.", icon: User,
       fields: [
@@ -57,21 +65,31 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
         { key: "surname", label: "Surname", required: true },
         { key: "preferred_name", label: "Name you prefer to be called (optional)" },
       ],
-    },
-    {
-      id: "dob_phone", section: "personal", title: "Date of birth and phone",
+    });
+  }
+
+  if (has("dob") || has("phone")) {
+    steps.push({
+      id: "dob_phone", section: "personal",
+      title: has("dob") && has("phone") ? "Date of birth and phone" : has("dob") ? "Your date of birth" : "Your phone number",
       blurb: "So we can reach you and check your pay is correct for your age.", icon: Phone,
       fields: [
-        { key: "date_of_birth", label: "Date of birth", type: "date", required: true },
-        { key: "phone", label: "Mobile number", type: "tel", required: true },
+        ...(has("dob") ? [{ key: "date_of_birth", label: "Date of birth", type: "date", required: true }] : []),
+        ...(has("phone") ? [{ key: "phone", label: "Mobile number", type: "tel", required: true }] : []),
       ],
-    },
-    {
+    });
+  }
+
+  if (has("email")) {
+    steps.push({
       id: "email", section: "personal", title: "Your email address",
       blurb: "Payslips and important messages go here.", icon: User,
       fields: [{ key: "email", label: "Email address", type: "email", required: true }],
-    },
-    {
+    });
+  }
+
+  if (has("address")) {
+    steps.push({
       id: "address", section: "personal", title: "Where do you live?",
       blurb: "Your home address, as on your bank statements.", icon: MapPin,
       fields: [
@@ -80,60 +98,79 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
         { key: "city", label: "Town or city", required: true },
         { key: "postcode", label: "Postcode", required: true },
       ],
-    },
-    {
+    });
+  }
+
+  if (has("ni_number")) {
+    steps.push({
       id: "ni", section: "personal", title: "National Insurance number",
       blurb: "Leave this blank if you do not have one yet — you can still carry on.", icon: ShieldCheck,
       fields: [
         { key: "ni_number", label: "National Insurance number (optional)", placeholder: "AB123456C", hint: "Two letters, six numbers, then one letter — for example AB123456C." },
       ],
+    });
+  }
 
-    },
-  ],
-  rtw: [
-    {
+  if (has("nationality")) {
+    steps.push({
       id: "rtw_status", section: "rtw", title: "Your right to work",
-      blurb: "Required by law before you can start work in the UK.", icon: ShieldCheck,
+      blurb: "Required by law before you can work in the UK.", icon: ShieldCheck,
       fields: [
         { key: "nationality", label: "Nationality", required: true },
         { key: "settlement_status", label: "Immigration status (optional)", placeholder: "e.g. British citizen, settled status" },
       ],
-    },
-    {
-      id: "rtw_doc", section: "rtw", title: "Your document",
-      blurb: "Passport, visa, BRP or share code letter. Take a photo or upload a file you already have.", icon: Camera,
+    });
+  }
+
+  const wantsDoc = has("passport") || has("visa") || has("share_code");
+  if (wantsDoc) {
+    const which = has("visa")
+      ? "Your visa or permit"
+      : has("passport")
+        ? "Your passport"
+        : "Your share code";
+    steps.push({
+      id: "rtw_doc", section: "rtw", title: which,
+      blurb: "Take a photo or upload a file you already have, and tell us when it runs out.", icon: Camera,
       upload: true,
       fields: [
-        { key: "passport_no", label: "Passport number (optional)" },
-        { key: "sharing_code", label: "Share code (if you have one)" },
-      ],
-    },
-  ],
-  bank: [
-    {
-      id: "bank", section: "bank", title: "Bank details for pay",
-      blurb: "Where your wages are paid. Only your payroll administrator can see these.", icon: Landmark,
-      fields: [
-        { key: "account_holder", label: "Account holder name", required: true },
-        { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true },
+        ...(has("passport") ? [{ key: "passport_no", label: "Passport number (optional)" }] : []),
+        ...(has("share_code") ? [{ key: "sharing_code", label: "Share code", placeholder: "e.g. W12 3AB 456" }] : []),
         {
-          key: "confirm_sort_code", label: "Re-enter sort code", placeholder: "00-00-00",
-          required: true, confirmOnly: true, hint: "We ask twice so a typing mistake cannot delay your pay.",
+          key: "expires_at", label: "Expiry date (leave blank if it does not expire)", type: "date",
+          hint: "We use this only to remind you before it runs out.",
         },
       ],
-    },
-    {
-      id: "bank_account", section: "bank", title: "Your account number",
-      blurb: "Please type it twice so we know it is exactly right.", icon: Landmark,
-      fields: [
-        { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
-        { key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits", required: true, confirmOnly: true },
-      ],
-    },
+    });
+  }
 
-  ],
-  emergency: [
-    {
+  if (has("bank")) {
+    steps.push(
+      {
+        id: "bank", section: "bank", title: "Bank details for pay",
+        blurb: "Where your wages are paid. Only your payroll administrator can see these.", icon: Landmark,
+        fields: [
+          { key: "account_holder", label: "Account holder name", required: true },
+          { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true },
+          {
+            key: "confirm_sort_code", label: "Re-enter sort code", placeholder: "00-00-00",
+            required: true, confirmOnly: true, hint: "We ask twice so a typing mistake cannot delay your pay.",
+          },
+        ],
+      },
+      {
+        id: "bank_account", section: "bank", title: "Your account number",
+        blurb: "Please type it twice so we know it is exactly right.", icon: Landmark,
+        fields: [
+          { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
+          { key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits", required: true, confirmOnly: true },
+        ],
+      },
+    );
+  }
+
+  if (has("emergency")) {
+    steps.push({
       id: "emergency", section: "emergency", title: "Emergency contact",
       blurb: "Someone we can call if something happens at work.", icon: HeartPulse,
       fields: [
@@ -141,10 +178,13 @@ const STEPS_BY_SECTION: Record<SectionKey, StepDef[]> = {
         { key: "relationship", label: "Relationship to you", required: true },
         { key: "phone", label: "Phone number", type: "tel", required: true },
       ],
-    },
-  ],
-  notes: [],
-};
+    });
+  }
+
+  return steps;
+}
+
+export const buildPortalSteps = buildSteps;
 
 /** Always the last question — anything the person wants their manager to know. */
 const NOTES_STEP: StepDef = {
@@ -157,7 +197,10 @@ const NOTES_STEP: StepDef = {
 interface PortalData {
   request: {
     id: string;
+    /** Item keys. Older links send section keys, which the server expands. */
+    items?: string[];
     sections: SectionKey[];
+    kind?: string;
     status: string;
     submitted_at: string | null;
     expires_at: string;
@@ -249,11 +292,11 @@ export default function StaffDetailsPortal() {
     return json;
   };
 
-  const sections = data?.request.sections ?? [];
-  const steps = useMemo(
-    () => [...sections.flatMap((s) => STEPS_BY_SECTION[s] ?? []), NOTES_STEP],
-    [sections],
+  const items = useMemo(
+    () => expandRequestedFields(data?.request.items ?? data?.request.sections ?? []),
+    [data?.request.items, data?.request.sections],
   );
+  const steps = useMemo(() => [...buildSteps(items), NOTES_STEP], [items]);
   const isReview = steps.length > 0 && step >= steps.length;
   const current = steps[step];
 
@@ -341,6 +384,7 @@ export default function StaffDetailsPortal() {
       const res = await post({
         action: "upload_rtw",
         file_name: file.name,
+        expires_at: (answers.rtw?.expires_at ?? "").trim() || null,
         mime_type: file.type || "application/octet-stream",
         file_base64: btoa(binary),
       });

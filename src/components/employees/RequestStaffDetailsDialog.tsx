@@ -1,152 +1,279 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Send, MailCheck, Clock, CheckCircle2 } from "lucide-react";
+import { Send, MailCheck, Clock, CheckCircle2, ChevronLeft, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import {
   useInfoRequests,
   useSendInfoRequest,
   useRevokeInfoRequest,
-  type InfoSection,
 } from "@/hooks/useInfoRequests";
+import {
+  INFO_ITEMS,
+  INFO_PRESETS,
+  type InfoItemKey,
+  type InfoRequestKind,
+} from "@/lib/info-request-items";
 
-const SECTIONS: { key: InfoSection; label: string; hint: string }[] = [
-  { key: "personal", label: "Personal details", hint: "Full name, date of birth, phone, home address, National Insurance number" },
-  { key: "emergency", label: "Emergency contact", hint: "Name, relationship, phone" },
-  { key: "bank", label: "Bank details for pay", hint: "Account holder, sort code, account number" },
-  { key: "rtw", label: "Right to work", hint: "Nationality, share code and a photo of their document" },
-];
+/** Legacy export kept so older imports keep compiling. */
+export type InfoSection = "personal" | "emergency" | "bank" | "rtw";
 
 interface Props {
   employeeId: string;
   employeeName: string;
   employeeEmail?: string | null;
+  /**
+   * "existing_staff_update" asks someone already on the team for a few things;
+   * "onboarding" is the full new-starter set. The two are never blended.
+   */
+  kind?: InfoRequestKind;
   trigger: React.ReactNode;
 }
 
-export function RequestStaffDetailsDialog({ employeeId, employeeName, employeeEmail, trigger }: Props) {
+const GROUP_ORDER = ["Identity", "Contact", "Right to work", "Pay", "Emergency"] as const;
+
+export function RequestStaffDetailsDialog({
+  employeeId,
+  employeeName,
+  employeeEmail,
+  kind = "existing_staff_update",
+  trigger,
+}: Props) {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [email, setEmail] = useState(employeeEmail ?? "");
   const [expiryDays, setExpiryDays] = useState("7");
-  const [selected, setSelected] = useState<InfoSection[]>(["personal", "emergency", "bank", "rtw"]);
+  const [preset, setPreset] = useState<string | null>(null);
+  const [selected, setSelected] = useState<InfoItemKey[]>(
+    kind === "onboarding" ? INFO_ITEMS.map((i) => i.key) : [],
+  );
   const { data: history = [] } = useInfoRequests(employeeId);
   const send = useSendInfoRequest();
   const revoke = useRevokeInfoRequest();
 
-  const toggle = (key: InfoSection) =>
-    setSelected((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s, key]));
+  const toggle = (key: InfoItemKey) =>
+    setSelected((s) => {
+      setPreset(null);
+      return s.includes(key) ? s.filter((k) => k !== key) : [...s, key];
+    });
+
+  const applyPreset = (key: string, items: InfoItemKey[]) => {
+    setPreset(key);
+    setSelected([...items]);
+  };
+
+  const grouped = useMemo(
+    () => GROUP_ORDER.map((g) => ({ group: g, items: INFO_ITEMS.filter((i) => i.group === g) })),
+    [],
+  );
 
   const submit = () => {
     send.mutate(
       {
         employeeIds: [employeeId],
         sections: selected,
+        requestKind: kind,
+        preset,
         recipientOverride: email.trim() || null,
         expiryDays: Number(expiryDays) || 7,
       },
-      { onSuccess: () => setOpen(false) },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          setConfirming(false);
+        },
+      },
     );
   };
 
   const latest = history[0];
+  const canContinue = selected.length > 0 && !!email.trim();
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) setConfirming(false);
+      }}
+    >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Ask {employeeName.split(" ")[0]} to complete their details</DialogTitle>
+          <DialogTitle>
+            {confirming ? "Check before sending" : `Ask ${employeeName.split(" ")[0]} for information`}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-          <div className="space-y-1">
-            <Label>Send to</Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
-            />
-            <p className="text-xs text-muted-foreground">
-              They get a secure link — no account needed. Nothing here changes their pay or hours.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label>What to ask for</Label>
-            {SECTIONS.map((s) => (
-              <label key={s.key} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                <Checkbox checked={selected.includes(s.key)} onCheckedChange={() => toggle(s.key)} className="mt-0.5" />
-                <span>
-                  <span className="block text-sm font-medium text-card-foreground">{s.label}</span>
-                  <span className="block text-xs text-muted-foreground">{s.hint}</span>
-                </span>
-              </label>
-            ))}
-            {selected.includes("rtw") && (
-              <p className="text-xs text-muted-foreground">
-                Right to work documents wait for your review before they count as checked.
+        {confirming ? (
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="rounded-lg border border-border p-3 space-y-1 text-sm">
+              <p>
+                <span className="text-muted-foreground">Person: </span>
+                <span id="confirm-request-name" className="font-medium text-card-foreground">{employeeName}</span>
               </p>
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <Label>Link expires after (days)</Label>
-            <Input type="number" min={1} max={30} value={expiryDays} onChange={(e) => setExpiryDays(e.target.value)} />
-            <p className="text-xs text-muted-foreground">
-              The link also closes as soon as they finish, so it can't be reopened later.
-            </p>
-          </div>
-
-          {latest && (
-            <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
-              <p className="flex items-center gap-1.5 font-medium text-card-foreground">
-                <MailCheck className="h-3.5 w-3.5" /> Last request
+              <p>
+                <span className="text-muted-foreground">Email: </span>
+                <span id="confirm-request-email" className="font-medium text-card-foreground">{email.trim()}</span>
               </p>
-              <p>Sent {formatDistanceToNow(parseISO(latest.sent_at), { addSuffix: true })} to {latest.recipient_email}</p>
-              <p className="flex items-center gap-1.5">
-                {latest.submitted_at ? (
-                  <><CheckCircle2 className="h-3.5 w-3.5 text-success" /> Completed</>
-                ) : latest.opened_at ? (
-                  <><Clock className="h-3.5 w-3.5" /> Opened, not finished</>
-                ) : (
-                  <><Clock className="h-3.5 w-3.5" /> Not opened yet</>
-                )}
-                {latest.rtw_uploaded_count > 0 && (
-                  <Badge variant="outline" className="text-[10px] ml-1">
-                    {latest.rtw_uploaded_count} document{latest.rtw_uploaded_count > 1 ? "s" : ""}
-                  </Badge>
-                )}
-              </p>
-              {!latest.submitted_at && latest.status !== "revoked" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-1 h-7 text-xs"
-                  disabled={revoke.isPending}
-                  onClick={() => revoke.mutate(latest.id)}
-                >
-                  Cancel this link
-                </Button>
-              )}
-              {latest.status === "revoked" && <p>This link was cancelled.</p>}
             </div>
-          )}
 
-          <Button
-            className="w-full"
-            onClick={submit}
-            disabled={send.isPending || selected.length === 0 || !email.trim()}
-          >
-            <Send className="h-4 w-4 mr-2" />
-            {send.isPending ? "Sending..." : latest ? "Send again" : "Send request"}
-          </Button>
-        </div>
+            <div className="space-y-1">
+              <Label>What they will be asked for</Label>
+              <ul id="confirm-request-items" className="text-sm text-card-foreground space-y-1">
+                {selected.map((key) => (
+                  <li key={key}>• {INFO_ITEMS.find((i) => i.key === key)?.label ?? key}</li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              They get a secure link that closes as soon as they finish. Nothing here changes their pay
+              or hours, and anything sensitive that differs from what you already hold is shown to you to
+              confirm rather than changed.
+            </p>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setConfirming(false)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button className="flex-1" onClick={submit} disabled={send.isPending}>
+                <Send className="h-4 w-4 mr-2" />
+                {send.isPending ? "Sending..." : "Send request"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            <div className="space-y-1">
+              <Label htmlFor="request-email">Send to</Label>
+              <Input
+                id="request-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+              />
+              {!employeeEmail && (
+                <p className="text-xs text-warning flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5" /> No email on their record yet
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Quick choices</Label>
+              <div className="flex flex-wrap gap-2">
+                {INFO_PRESETS.map((p) => (
+                  <Button
+                    key={p.key}
+                    type="button"
+                    size="sm"
+                    variant={preset === p.key ? "default" : "outline"}
+                    className="h-7 text-xs"
+                    onClick={() => applyPreset(p.key, p.items)}
+                  >
+                    {p.label}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Each one is just a set of ticks — change anything below.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label>What to ask for</Label>
+              {grouped.map(({ group, items }) => (
+                <div key={group} className="space-y-1.5">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group}</p>
+                  {items.map((item) => (
+                    <label
+                      key={item.key}
+                      className="flex items-start gap-3 rounded-lg border border-border p-3"
+                    >
+                      <Checkbox
+                        id={`item-${item.key}`}
+                        checked={selected.includes(item.key)}
+                        onCheckedChange={() => toggle(item.key)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-card-foreground">{item.label}</span>
+                        <span className="block text-xs text-muted-foreground">{item.hint}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ))}
+              {selected.some((k) => ["passport", "visa", "share_code"].includes(k)) && (
+                <p className="text-xs text-muted-foreground">
+                  Right to work documents wait for your review before they count as checked. The expiry date
+                  they give is used to warn you before it runs out.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="request-expiry">Link expires after (days)</Label>
+              <Input
+                id="request-expiry"
+                type="number"
+                min={1}
+                max={30}
+                value={expiryDays}
+                onChange={(e) => setExpiryDays(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                The link also closes as soon as they finish, so it can't be reopened later.
+              </p>
+            </div>
+
+            {latest && (
+              <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
+                <p className="flex items-center gap-1.5 font-medium text-card-foreground">
+                  <MailCheck className="h-3.5 w-3.5" /> Last request
+                </p>
+                <p>Sent {formatDistanceToNow(parseISO(latest.sent_at), { addSuffix: true })} to {latest.recipient_email}</p>
+                <p className="flex items-center gap-1.5">
+                  {latest.submitted_at ? (
+                    <><CheckCircle2 className="h-3.5 w-3.5 text-success" /> Completed</>
+                  ) : latest.opened_at ? (
+                    <><Clock className="h-3.5 w-3.5" /> Opened, not finished</>
+                  ) : (
+                    <><Clock className="h-3.5 w-3.5" /> Not opened yet</>
+                  )}
+                  {latest.rtw_uploaded_count > 0 && (
+                    <Badge variant="outline" className="text-[10px] ml-1">
+                      {latest.rtw_uploaded_count} document{latest.rtw_uploaded_count > 1 ? "s" : ""}
+                    </Badge>
+                  )}
+                </p>
+                {!latest.submitted_at && latest.status !== "revoked" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 h-7 text-xs"
+                    disabled={revoke.isPending}
+                    onClick={() => revoke.mutate(latest.id)}
+                  >
+                    Cancel this link
+                  </Button>
+                )}
+                {latest.status === "revoked" && <p>This link was cancelled.</p>}
+              </div>
+            )}
+
+            <Button className="w-full" onClick={() => setConfirming(true)} disabled={!canContinue}>
+              Continue
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

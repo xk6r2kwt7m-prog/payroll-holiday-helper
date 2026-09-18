@@ -120,6 +120,13 @@
       "when": 1789737059842,
       "tag": "0016_invitation_employee_link",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789738739060,
+      "tag": "0017_info_request_kind_and_reminders",
+      "breakpoints": true
     }
   ]
 }

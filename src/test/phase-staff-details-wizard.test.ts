@@ -6,9 +6,10 @@ const portal = readFileSync(resolve(process.cwd(), "src/pages/StaffDetailsPortal
 
 describe("staff details form asks a little at a time and ends with a check screen", () => {
   it("drives the screens from a step definition, not one screen per section", () => {
-    expect(portal).toContain("STEPS_BY_SECTION");
+    // Screens are now built from the exact items that were requested.
+    expect(portal).toContain("function buildSteps");
     expect(portal).toContain("interface StepDef");
-    expect(portal).toContain("sections.flatMap");
+    expect(portal).toContain("buildSteps(items)");
   });
 
   it("keeps each screen to a small group of questions", () => {
