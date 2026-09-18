@@ -11,7 +11,10 @@
  *  - Test records never appear on a licensing document.
  */
 
-import { isFrontOfHouse } from "@/lib/alcohol-automation";
+import {
+  belongsOnAlcoholList, needsRoleDecision, decisionFor, classifyRole,
+  type AlcoholListDecision,
+} from "@/lib/alcohol-automation";
 import {
   latestAuthorisation,
   resolveAuthorisationStatus,
@@ -58,7 +61,7 @@ export interface RegisterRow {
   approver_licence: string | null;
   revoked_reason: string | null;
   /** Why the person is on the register. */
-  listed_because: "front_of_house" | "authorisation_on_record";
+  listed_because: "front_of_house" | "authorisation_on_record" | "manager_added";
   /** True when the person has left or been archived but a record still exists. */
   no_longer_employed: boolean;
 }
