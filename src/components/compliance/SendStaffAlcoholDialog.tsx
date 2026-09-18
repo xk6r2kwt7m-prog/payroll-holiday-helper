@@ -17,8 +17,9 @@ import { usePremisesLicence, useSendLicenceSignature, useLicenceSignatureRequest
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
 import { isReadyToSend } from "@/lib/licensing-documents";
 import {
-  isFrontOfHouse, alcoholAskState, alcoholAskStateLabel, needsAlcoholAsk,
+  belongsOnAlcoholList, alcoholAskState, alcoholAskStateLabel, needsAlcoholAsk,
 } from "@/lib/alcohol-automation";
+import { useAlcoholListDecisions } from "@/hooks/useDpsRegister";
 
 /**
  * Sends the alcohol-sales authorisation to staff on its own — not bundled
@@ -38,9 +39,13 @@ export function SendStaffAlcoholDialog({
   const [testSend, setTestSend] = useState(false);
   const [showEveryone, setShowEveryone] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Nothing is ever sent from the first step — the recipient list must be
+  // confirmed on the second step first.
+  const [step, setStep] = useState<"choose" | "confirm">("choose");
 
   // Sites come from employee_branches — there is no branch column on employees.
   const employees = useEmployeesWithBranches();
+  const { data: decisions = [] } = useAlcoholListDecisions();
   const { data: licence } = usePremisesLicence(branch || undefined);
   const { data: requests = [] } = useLicenceSignatureRequests({ subjectType: "staff_alcohol" });
   const { data: authorisations = [] } = useAlcoholAuthorisations();
@@ -64,30 +69,42 @@ export function SendStaffAlcoholDialog({
       .filter((e) => !e.archived_at && e.status !== "leaver" && !e.is_test_record)
       .filter((e) => !branch || (e.branches ?? []).some(
         (b: string) => (b ?? "").trim().toLowerCase() === branch.trim().toLowerCase()))
-      .filter((e) => !!e.email)
-      .filter((e) => showEveryone || isFrontOfHouse(null, e.department))
+      // Same rule as the site alcohol list, including your own decisions, so a
+      // person can never appear on one and not the other.
+      .filter((e) => showEveryone || belongsOnAlcoholList(e as any, branch, decisions as any))
       .map((e) => ({
         ...e,
         state: alcoholAskState(e.id, requests as any[], authorisations as any[]),
         needsAsk: needsAlcoholAsk(e as any, requests as any[], authorisations as any[]),
       }))
       .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`)),
-    [employees, branch, showEveryone, requests, authorisations]
+    [employees, branch, showEveryone, requests, authorisations, decisions]
   );
 
-  const missing = staff.filter((e) => e.needsAsk);
+  const missing = staff.filter((e) => e.needsAsk && !!e.email);
+  const noEmail = staff.filter((e) => !e.email);
+  const chosen = staff.filter((e) => selected.includes(e.id) && !!e.email);
 
   // Everyone who still needs it is ticked for you when you pick a site.
   useEffect(() => {
     if (!branch) return;
+    setStep("choose");
     setSelected(missing.map((e) => e.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branch, showEveryone, staff.length]);
 
+  const review = () => {
+    if (!branch) { toast.error("Choose the site"); return; }
+    if (!licence) { toast.error("Add this site's premises licence details first"); return; }
+    if (chosen.length === 0) { toast.error("Choose at least one person with an email address"); return; }
+    setStep("confirm");
+  };
+
   const submit = async () => {
     if (!branch) { toast.error("Choose the site"); return; }
     if (!licence) { toast.error("Add this site's premises licence details first"); return; }
-    if (selected.length === 0) { toast.error("Choose at least one person"); return; }
+    if (step !== "confirm") { review(); return; }
+    if (chosen.length === 0) { toast.error("Choose at least one person with an email address"); return; }
     setBusy(true);
     try {
       const res = await send.mutateAsync({
@@ -96,7 +113,7 @@ export function SendStaffAlcoholDialog({
         licence_id: licence.id,
         recipient_name: "",
         recipient_email: "",
-        employee_ids: selected,
+        employee_ids: chosen.map((e) => e.id),
         test_send: testSend,
       });
       if (res.failed?.length) toast.error(res.failed.join("; "));
@@ -109,6 +126,7 @@ export function SendStaffAlcoholDialog({
         );
         onOpenChange(false);
         setSelected([]);
+        setStep("choose");
       }
     } catch (e) {
       toast.error((e as Error).message);
@@ -130,6 +148,38 @@ export function SendStaffAlcoholDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {step === "confirm" ? (
+          <div className="space-y-3">
+            <p className="text-sm">
+              {testSend
+                ? `A test copy comes to you only. Nothing reaches these ${chosen.length} people.`
+                : `This will email ${chosen.length} ${chosen.length === 1 ? "person" : "people"} at ${branch}. Check the names and addresses below.`}
+            </p>
+            <div className="rounded-lg border border-border divide-y divide-border max-h-60 overflow-y-auto">
+              {chosen.map((e) => (
+                <div key={e.id} className="px-3 py-2">
+                  <p className="text-sm truncate">
+                    {e.forename} {e.surname}
+                    {e.department ? <span className="text-muted-foreground"> · {e.department}</span> : null}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{e.email}</p>
+                </div>
+              ))}
+            </div>
+            {noEmail.length > 0 && (
+              <div className="rounded-lg border border-warning/40 bg-warning/5 p-2.5 space-y-1">
+                <p className="text-xs font-medium text-warning">
+                  Cannot be sent — no email address on file ({noEmail.length})
+                </p>
+                {noEmail.map((e) => (
+                  <p key={e.id} className="text-xs text-muted-foreground truncate">
+                    {e.forename} {e.surname}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Site</Label>
@@ -181,6 +231,7 @@ export function SendStaffAlcoholDialog({
                     <label key={e.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
                       <Checkbox
                         checked={selected.includes(e.id)}
+                        disabled={!e.email}
                         onCheckedChange={(v) =>
                           setSelected((s) => (v === true ? [...s, e.id] : s.filter((x) => x !== e.id)))
                         }
@@ -191,7 +242,7 @@ export function SendStaffAlcoholDialog({
                           {e.department ? <span className="text-muted-foreground"> · {e.department}</span> : null}
                         </span>
                         <span className="block text-xs text-muted-foreground truncate">
-                          {alcoholAskStateLabel(e.state)}
+                          {e.email ? alcoholAskStateLabel(e.state) : "Cannot be sent — no email address on file"}
                         </span>
                       </span>
                     </label>
@@ -219,12 +270,24 @@ export function SendStaffAlcoholDialog({
             <Switch checked={testSend} onCheckedChange={setTestSend} />
           </label>
         </div>
+        )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={busy || !ready || selected.length === 0}>
-            {busy ? "Sending..." : `Send${selected.length ? ` to ${selected.length}` : ""}`}
-          </Button>
+          {step === "confirm" ? (
+            <>
+              <Button variant="outline" onClick={() => setStep("choose")} disabled={busy}>Back</Button>
+              <Button onClick={submit} disabled={busy || !ready || chosen.length === 0}>
+                {busy ? "Sending..." : `Send to these ${chosen.length} ${chosen.length === 1 ? "person" : "people"}`}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={review} disabled={!ready || chosen.length === 0}>
+                Review who it goes to
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

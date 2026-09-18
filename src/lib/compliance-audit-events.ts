@@ -48,7 +48,8 @@ export type ComplianceAuditEvent =
   | "allergen_dish_edited"
   | "allergen_conflict_resolved"
   | "allergen_proposal_decided"
-  | "allergen_course_published";
+  | "allergen_course_published"
+  | "alcohol_list_decision_recorded";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   document_created: "Document created",
@@ -94,6 +95,7 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   allergen_conflict_resolved: "Allergen source conflict resolved",
   allergen_proposal_decided: "Allergen course change decided",
   allergen_course_published: "Allergen course version published",
+  alcohol_list_decision_recorded: "Alcohol list — front of house decided by the manager",
 };
 
 /** Audit actions supported by the shared audit log. */

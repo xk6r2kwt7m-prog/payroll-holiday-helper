@@ -11,7 +11,10 @@
  *  - Test records never appear on a licensing document.
  */
 
-import { isFrontOfHouse } from "@/lib/alcohol-automation";
+import {
+  belongsOnAlcoholList, needsRoleDecision, decisionFor, classifyRole,
+  type AlcoholListDecision,
+} from "@/lib/alcohol-automation";
 import {
   latestAuthorisation,
   resolveAuthorisationStatus,
@@ -58,7 +61,7 @@ export interface RegisterRow {
   approver_licence: string | null;
   revoked_reason: string | null;
   /** Why the person is on the register. */
-  listed_because: "front_of_house" | "authorisation_on_record";
+  listed_because: "front_of_house" | "authorisation_on_record" | "manager_added";
   /** True when the person has left or been archived but a record still exists. */
   no_longer_employed: boolean;
 }
@@ -125,15 +128,21 @@ const ORDER: RegisterStatus[] = [
 ];
 
 /**
- * Builds the register for one site: everyone front of house there, plus anyone
- * else at that site who already holds an authorisation record.
+ * Builds the register for one site: everyone front of house there, anyone the
+ * manager has added by hand, plus anyone else at that site who already holds an
+ * authorisation record.
+ *
+ * A recorded manager decision always beats the guess from the job title, and a
+ * role nobody has settled yet is never silently dropped — it comes back from
+ * `unclassifiedForSite` for the manager to decide.
  */
 export function buildDpsRegister(opts: {
   branch: string;
   employees: RegisterEmployee[];
   authorisations: RegisterAuthorisation[];
+  decisions?: AlcoholListDecision[];
 }): RegisterRow[] {
-  const { branch, employees, authorisations } = opts;
+  const { branch, employees, authorisations, decisions = [] } = opts;
   const wanted = norm(branch);
 
   const siteAuths = authorisations.filter(
@@ -152,12 +161,12 @@ export function buildDpsRegister(opts: {
     if (e.is_test_record) continue;
     const records = byEmployee.get(e.id) ?? [];
     const hasRecord = records.length > 0;
-    const foh =
-      worksAtSite(e, branch) &&
-      stillEmployed(e) &&
-      isFrontOfHouse(e.job_title ?? null, e.department ?? null);
+    const atSite = worksAtSite(e, branch) && stillEmployed(e);
+    const listed = atSite && belongsOnAlcoholList(e, branch, decisions);
+    const addedByManager =
+      listed && decisionFor(e.id, branch, decisions) === "front_of_house";
 
-    if (!foh && !hasRecord) continue;
+    if (!listed && !hasRecord) continue;
     // Someone who has left only appears while a record still exists, so the
     // document shows the officer that their authorisation has ended.
     if (!stillEmployed(e) && !hasRecord) continue;
@@ -175,7 +184,11 @@ export function buildDpsRegister(opts: {
       approved_by: record?.authoriser_name ?? null,
       approver_licence: record?.authoriser_licence_number ?? null,
       revoked_reason: record?.revoked_reason ?? null,
-      listed_because: foh ? "front_of_house" : "authorisation_on_record",
+      listed_because: addedByManager
+        ? "manager_added"
+        : listed
+          ? "front_of_house"
+          : "authorisation_on_record",
       no_longer_employed: !stillEmployed(e),
     });
   }
@@ -185,6 +198,44 @@ export function buildDpsRegister(opts: {
     if (r !== 0) return r;
     return a.name.localeCompare(b.name);
   });
+}
+
+export interface UnclassifiedPerson {
+  employee_id: string;
+  name: string;
+  role: string | null;
+}
+
+/**
+ * Staff at this site whose role does not say whether they serve alcohol and who
+ * nobody has decided about yet. They are shown to the manager to decide rather
+ * than being left off the register quietly.
+ */
+export function unclassifiedForSite(opts: {
+  branch: string;
+  employees: RegisterEmployee[];
+  authorisations: RegisterAuthorisation[];
+  decisions?: AlcoholListDecision[];
+}): UnclassifiedPerson[] {
+  const { branch, employees, authorisations, decisions = [] } = opts;
+  const wanted = norm(branch);
+  const withRecord = new Set(
+    authorisations
+      .filter((a) => !a.is_test_record && (!wanted || norm(a.branch) === wanted))
+      .map((a) => a.employee_id),
+  );
+
+  return employees
+    .filter((e) => !e.is_test_record)
+    .filter((e) => worksAtSite(e, branch) && stillEmployed(e))
+    .filter((e) => !withRecord.has(e.id))
+    .filter((e) => needsRoleDecision(e, branch, decisions))
+    .map((e) => ({
+      employee_id: e.id,
+      name: personName(e),
+      role: (e.job_title || e.department || "").trim() || null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function registerSummary(rows: RegisterRow[]): RegisterSummary {
@@ -233,7 +284,11 @@ export function registerCsv(rows: RegisterRow[], branch: string): string {
       gbDate(r.approved_at),
       r.approved_by ?? "",
       r.approver_licence ?? "",
-      r.listed_because === "front_of_house" ? "Front of house" : "Authorisation on record",
+      r.listed_because === "front_of_house"
+        ? "Front of house"
+        : r.listed_because === "manager_added"
+          ? "Added by the manager"
+          : "Authorisation on record",
       r.no_longer_employed ? "No" : "Yes",
     ]);
   }

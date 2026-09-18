@@ -68,12 +68,73 @@ function hasWord(haystack: string, words: string[]): boolean {
  * department. Only used to pre-select people — a manager can always override.
  */
 export function isFrontOfHouse(jobTitle?: string | null, department?: string | null): boolean {
+  return classifyRole(jobTitle, department) === "front_of_house";
+}
+
+/** What the words in a role say about serving alcohol. */
+export type RoleClass = "front_of_house" | "back_of_house" | "unclear";
+
+/**
+ * Classifies a role from its wording. A blank or unrecognised role is
+ * "unclear" — never quietly treated as back of house, so the manager is asked
+ * to decide instead of the person being missing from the alcohol list.
+ */
+export function classifyRole(jobTitle?: string | null, department?: string | null): RoleClass {
   const text = `${norm(jobTitle)} ${norm(department)}`.trim();
-  if (!text) return false;
+  if (!text) return "unclear";
   if (hasWord(text, BACK_OF_HOUSE_WORDS) && !hasWord(text, ["bar", "front of house", "foh"])) {
-    return false;
+    return "back_of_house";
   }
-  return hasWord(text, FOH_WORDS);
+  if (hasWord(text, FOH_WORDS)) return "front_of_house";
+  return "unclear";
+}
+
+export type AlcoholListDecisionValue = "front_of_house" | "not_front_of_house";
+
+export interface AlcoholListDecision {
+  employee_id: string;
+  branch?: string | null;
+  decision: AlcoholListDecisionValue;
+}
+
+/** The manager's recorded decision for this person at this site, if any. */
+export function decisionFor(
+  employeeId: string,
+  branch: string | null | undefined,
+  decisions: AlcoholListDecision[] = [],
+): AlcoholListDecisionValue | null {
+  const wanted = norm(branch);
+  const match = decisions.find(
+    (d) => d.employee_id === employeeId && (!wanted || norm(d.branch) === wanted),
+  );
+  return match?.decision ?? null;
+}
+
+/**
+ * Whether this person belongs on the site alcohol list. A recorded manager
+ * decision always wins over the word-list guess.
+ */
+export function belongsOnAlcoholList(
+  employee: { id: string; job_title?: string | null; department?: string | null },
+  branch: string | null | undefined,
+  decisions: AlcoholListDecision[] = [],
+): boolean {
+  const decided = decisionFor(employee.id, branch, decisions);
+  if (decided) return decided === "front_of_house";
+  return classifyRole(employee.job_title, employee.department) === "front_of_house";
+}
+
+/**
+ * True when nobody has decided and the wording does not settle it — the person
+ * appears in the "role not clear" list for the manager to decide.
+ */
+export function needsRoleDecision(
+  employee: { id: string; job_title?: string | null; department?: string | null },
+  branch: string | null | undefined,
+  decisions: AlcoholListDecision[] = [],
+): boolean {
+  if (decisionFor(employee.id, branch, decisions)) return false;
+  return classifyRole(employee.job_title, employee.department) === "unclear";
 }
 
 export type AlcoholAskState =

@@ -6,9 +6,10 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useAllEmployeeBranches } from "@/hooks/useBranches";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
 import {
-  buildDpsRegister, registerSummary, registerSummaryLine,
+  buildDpsRegister, registerSummary, registerSummaryLine, unclassifiedForSite,
   type RegisterEmployee, type RegisterAuthorisation, type DeliveryMethod,
 } from "@/lib/dps-register";
+import { logComplianceAudit } from "@/hooks/useCompliance";
 
 /** Staff with the sites they are assigned to, ready for the register. */
 export function useEmployeesWithBranches(): RegisterEmployee[] {
@@ -31,25 +32,95 @@ export function useEmployeesWithBranches(): RegisterEmployee[] {
   }, [employees, links]);
 }
 
-/** The live register for one site. */
+/**
+ * Manager decisions about who counts as front of house for the alcohol list.
+ * A decision always beats the guess made from the job title.
+ */
+export function useAlcoholListDecisions(branch?: string) {
+  const { tenantId } = useTenant();
+  return useQuery({
+    queryKey: ["alcohol_list_decisions", tenantId, branch ?? "all"],
+    queryFn: async () => {
+      let q = supabase
+        .from("alcohol_list_decisions")
+        .select("*")
+        .eq("tenant_id", tenantId!);
+      if (branch) q = q.eq("branch", branch);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+    enabled: !!tenantId,
+  });
+}
+
+/** Records the manager's decision. Nothing is sent to the person by doing this. */
+export function useSetAlcoholListDecision() {
+  const qc = useQueryClient();
+  const { tenantId } = useTenant();
+  return useMutation({
+    mutationFn: async (input: {
+      employee_id: string;
+      branch: string;
+      decision: "front_of_house" | "not_front_of_house";
+      note?: string | null;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("alcohol_list_decisions")
+        .upsert(
+          {
+            tenant_id: tenantId!,
+            employee_id: input.employee_id,
+            branch: input.branch,
+            decision: input.decision,
+            note: input.note ?? null,
+            decided_by: user?.id ?? null,
+            decided_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "tenant_id,employee_id,branch" },
+        )
+        .select()
+        .single();
+      if (error) throw error;
+      await logComplianceAudit({
+        tenantId: tenantId!,
+        table: "alcohol_list_decisions",
+        recordId: data.id,
+        event: "alcohol_list_decision_recorded",
+        branch: input.branch,
+        next: { decision: input.decision, employee_id: input.employee_id },
+        note: input.note ?? null,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["alcohol_list_decisions"] });
+    },
+  });
+}
+
+/** The live register for one site, plus anyone whose role is not yet settled. */
 export function useDpsRegister(branch?: string) {
   const employees = useEmployeesWithBranches();
   const { data: authorisations = [] } = useAlcoholAuthorisations();
+  const { data: decisions = [] } = useAlcoholListDecisions();
 
   return useMemo(() => {
+    const auths = authorisations as unknown as RegisterAuthorisation[];
     const rows = branch
-      ? buildDpsRegister({
-          branch,
-          employees,
-          authorisations: authorisations as unknown as RegisterAuthorisation[],
-        })
+      ? buildDpsRegister({ branch, employees, authorisations: auths, decisions: decisions as any })
       : [];
     return {
       rows,
+      unclassified: branch
+        ? unclassifiedForSite({ branch, employees, authorisations: auths, decisions: decisions as any })
+        : [],
       summary: registerSummary(rows),
       summaryLine: branch ? registerSummaryLine(rows, branch) : "",
     };
-  }, [branch, employees, authorisations]);
+  }, [branch, employees, authorisations, decisions]);
 }
 
 /* ─────────────── Issued copies ─────────────── */
