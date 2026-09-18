@@ -50,7 +50,9 @@ export default function SignContract() {
   const [typedName, setTypedName] = useState("");
   const [signatoryTitle, setSignatoryTitle] = useState("");
   const [signatureData, setSignatureData] = useState<string | null>(null);
-  const [consentGiven, setConsentGiven] = useState(false);
+  const [acceptConfirmed, setAcceptConfirmed] = useState(false);
+  const [eSignConfirmed, setESignConfirmed] = useState(false);
+  const [signerEmail, setSignerEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signedAt, setSignedAt] = useState<string | null>(null);
