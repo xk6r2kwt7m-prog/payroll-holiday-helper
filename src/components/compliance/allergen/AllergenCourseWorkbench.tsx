@@ -132,6 +132,19 @@ export function AllergenCourseWorkbench() {
               </AlertDescription>
             </Alert>
           )}
+
+          <Alert variant="destructive">
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs space-y-1">
+              <p className="font-medium">{OUTSTANDING_EVIDENCE_WARNING}</p>
+              {OUTSTANDING_EVIDENCE_REQUESTS.map((r) => (
+                <p key={r.dish}>
+                  <span className="font-medium">{r.dish}</span>
+                  {r.onCurrentMenu ? " (on the current menu)" : ""} — still required: {r.required.join(", ")}. {r.effect}
+                </p>
+              ))}
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
@@ -158,7 +171,12 @@ export function AllergenCourseWorkbench() {
                 <CardTitle className="text-sm">{lesson.order}. {lesson.title}</CardTitle>
                 <CardDescription className="text-xs">{lesson.summary}</CardDescription>
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <Badge variant="outline" className="text-[10px]">{lesson.estimated_minutes} min</Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    {lesson.estimated_minutes} min
+                    {lesson.original_minutes && lesson.original_minutes !== lesson.estimated_minutes
+                      ? ` (was ${lesson.original_minutes})`
+                      : ""}
+                  </Badge>
                   <Badge variant={lesson.mandatory ? "destructive" : "outline"} className="text-[10px]">
                     {lesson.mandatory ? "Required lesson" : "Optional"}
                   </Badge>
