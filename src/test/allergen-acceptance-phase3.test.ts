@@ -52,7 +52,7 @@ describe("condensed course duration", () => {
 describe("no critical control was removed", () => {
   const controls: [string, RegExp][] = [
     ["peanut/tree-nut separation", /two separate entries|Peanuts are a legume/i],
-    ["clarify a nut allergy", /peanuts, tree nuts or both/i],
+    ["clarify a nut allergy", /tree nuts, peanuts or both|peanuts, tree nuts such as cashews and almonds, or both/i],
     ["Satay Chicken peanuts, no tree nuts", /Satay Chicken contains peanuts .*does not contain tree nuts/i],
     ["ask every table", /Ask whether anybody at the table/i],
     ["record guest, allergen and dishes", /which guest is affected/i],
