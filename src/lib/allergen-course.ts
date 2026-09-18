@@ -305,7 +305,7 @@ export function selectQuestionBank(opts: {
     optionOrder[q.id] =
       opts.randomiseOptions === false ? ids : seededShuffle(ids, `${opts.seed}:${q.id}`);
   }
-  return { questions, optionOrder, excluded };
+  return { questions, optionOrder, excluded, criticalWarnings };
 }
 
 
