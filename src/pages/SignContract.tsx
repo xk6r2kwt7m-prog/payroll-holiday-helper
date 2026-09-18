@@ -213,6 +213,65 @@ export default function SignContract() {
   const consentGiven = acceptConfirmed && eSignConfirmed;
   const consentItems = [acceptanceWording, ESIGN_WORDING];
 
+  // A CHANGED address is only usable once a one-time code sent to it has been entered.
+  const emailChanged =
+    signerEmail.trim().toLowerCase() !== (emailOnFile || "").trim().toLowerCase();
+  const emailVerified =
+    !emailChanged || (verifiedEmail || "").toLowerCase() === signerEmail.trim().toLowerCase();
+
+  const postAction = async (payload: Record<string, unknown>) =>
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+  const requestEmailCode = async () => {
+    setCodeSending(true);
+    setCodeError(null);
+    try {
+      const response = await postAction({
+        action: "request_email_verification",
+        email: signerEmail.trim(),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setCodeError(result.error || "We could not send the code. Please try again.");
+        return;
+      }
+      setCodeRequested(true);
+    } catch {
+      setCodeError("We could not reach the server. Please check your connection and try again.");
+    } finally {
+      setCodeSending(false);
+    }
+  };
+
+  const confirmEmailCode = async () => {
+    setCodeChecking(true);
+    setCodeError(null);
+    try {
+      const response = await postAction({
+        action: "confirm_email_verification",
+        email: signerEmail.trim(),
+        code: codeInput.trim(),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setCodeError(result.error || "That code could not be checked. Please try again.");
+        return;
+      }
+      setVerifiedEmail(signerEmail.trim());
+      setCodeRequested(false);
+      setCodeInput("");
+    } catch {
+      setCodeError("We could not reach the server. Please check your connection and try again.");
+    } finally {
+      setCodeChecking(false);
+    }
+  };
+
+
   const handleSign = async () => {
     if (!typedName.trim() || !consentGiven || !signatureData || !emailLooksValid) return;
 
