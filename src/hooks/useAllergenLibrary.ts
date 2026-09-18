@@ -27,6 +27,11 @@ export interface AllergenSource {
   created_at: string;
 }
 
+export type DishRecommendedStatus =
+  | "ready_to_confirm" | "needs_correction" | "reference_only" | "needs_evidence";
+export type DishManagementDecision =
+  | "confirm" | "correct" | "reference_only" | "needs_evidence";
+
 export interface AllergenDish {
   id: string;
   tenant_id: string;
@@ -40,6 +45,17 @@ export interface AllergenDish {
   is_confirmed: boolean;
   source_id: string | null;
   source_note: string | null;
+  /* Comparison against the approved allergen matrix (additive, review only). */
+  matrix_source_id: string | null;
+  matrix_declaration: string | null;
+  garnish_only_allergens: string[];
+  removable_components: string | null;
+  dough_sauce_allergens: string | null;
+  comparison_note: string | null;
+  recommended_status: DishRecommendedStatus | null;
+  management_decision: DishManagementDecision | null;
+  decision_note: string | null;
+  decided_at: string | null;
 }
 
 export interface AllergenConflict {
@@ -182,6 +198,46 @@ export function useSaveAllergenDish() {
       await logComplianceAudit({
         tenantId, table: "allergen_dish_reference", recordId: id,
         event: "allergen_dish_edited", note: `Dish reference updated: ${input.dish_name ?? id}`,
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["allergen-dishes"] }),
+  });
+}
+
+/**
+ * Records the management decision for one flavour against the approved matrix.
+ * Only "Confirm" marks the flavour confirmed; every other decision leaves it
+ * unconfirmed so no scored question can be produced from it. Nothing is
+ * published and no allergen wording is rewritten here.
+ */
+export function useRecordDishDecision() {
+  const { tenantId } = useTenant();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      dish_name: string;
+      decision: DishManagementDecision;
+      note?: string;
+    }) => {
+      if (!tenantId) throw new Error("No tenant");
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("allergen_dish_reference")
+        .update({
+          management_decision: input.decision,
+          decision_note: input.note ?? null,
+          decided_by: user?.id ?? null,
+          decided_at: new Date().toISOString(),
+          is_confirmed: input.decision === "confirm",
+        } as any)
+        .eq("id", input.id)
+        .eq("tenant_id", tenantId);
+      if (error) throw error;
+      await logComplianceAudit({
+        tenantId, table: "allergen_dish_reference", recordId: input.id,
+        event: "allergen_dish_decision",
+        note: `Management decision for ${input.dish_name}: ${input.decision}${input.note ? ` — ${input.note}` : ""}`,
       });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["allergen-dishes"] }),

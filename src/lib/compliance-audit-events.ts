@@ -46,6 +46,7 @@ export type ComplianceAuditEvent =
   | "allergen_source_added"
   | "allergen_source_edited"
   | "allergen_dish_edited"
+  | "allergen_dish_decision"
   | "allergen_conflict_resolved"
   | "allergen_proposal_decided"
   | "allergen_course_published"
@@ -92,6 +93,7 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   allergen_source_added: "Allergen source document added to the library",
   allergen_source_edited: "Allergen source priority or details edited",
   allergen_dish_edited: "Dish or flavour allergen reference edited",
+  allergen_dish_decision: "Management decision recorded for a flavour against the approved matrix",
   allergen_conflict_resolved: "Allergen source conflict resolved",
   allergen_proposal_decided: "Allergen course change decided",
   allergen_course_published: "Allergen course version published",

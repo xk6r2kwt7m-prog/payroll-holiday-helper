@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useAllergenLibrary";
 import { useBranchLocations } from "@/hooks/useSchedule";
 import { ALLERGEN_SOURCE_RANKS, sourceRankLabel, sourcePriority } from "@/lib/allergen-sources";
+import { MatrixConfirmationTable } from "./MatrixConfirmationTable";
 
 const fmtDate = (d: string | null | undefined) =>
   d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -81,8 +82,9 @@ export function AllergenTrainingReview() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="proposals">
+      <Tabs defaultValue="matrix">
         <TabsList className="flex-wrap">
+          <TabsTrigger value="matrix">Matrix confirmation</TabsTrigger>
           <TabsTrigger value="proposals">Proposed changes</TabsTrigger>
           <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
           <TabsTrigger value="sources">Source documents</TabsTrigger>
@@ -90,6 +92,9 @@ export function AllergenTrainingReview() {
           <TabsTrigger value="versions">Published versions</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="matrix" className="mt-4">
+          <MatrixConfirmationTable branches={branches.map((b) => ({ id: b.id, name: b.display_name }))} />
+        </TabsContent>
         <TabsContent value="proposals" className="mt-4">
           <ProposalReview pending={pending} approved={approved} openConflicts={openConflicts.length} />
         </TabsContent>
