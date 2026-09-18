@@ -356,21 +356,39 @@ export function ContractSigningActions({
     window.open(`/document/view?id=${documentId}&variant=${variant}`, "_blank");
   };
 
-  /** Produce the combined signed file again when assembly failed. Signatures are untouched. */
+  /** Produce the combined signed file when assembly failed, or store a separate recovery
+   *  copy. The original completed file is never overwritten and signatures are untouched. */
   const handleRebuildSignedFile = async () => {
+    const reason = recoveryReason.trim();
+    if (reason.length < 5) {
+      toast({
+        title: "A reason is needed",
+        description: "Please say briefly why a recovery copy is needed. It is kept in the audit trail.",
+        variant: "destructive",
+      });
+      return;
+    }
     setRebuilding(true);
     try {
-      const { data } = await invokeAuthenticatedFunction<{ success?: boolean; error?: string }>(
+      const { data } = await invokeAuthenticatedFunction<{ success?: boolean; error?: string; recovery_copy?: boolean }>(
         "sign-contract?action=rebuild_final",
-        { document_id: documentId },
+        { document_id: documentId, reason },
       );
       if (!data?.success) throw new Error(data?.error || "Rebuild failed");
-      toast({ title: "Signed copy rebuilt", description: "The completed contract can now be opened and sent." });
+      toast({
+        title: data.recovery_copy ? "Recovery copy created" : "Signed copy produced",
+        description: data.recovery_copy
+          ? "Stored as a separate recovery copy. The original signed file is unchanged and remains the authoritative document."
+          : "The completed contract can now be opened and sent.",
+      });
+      setRecoveryReason("");
       queryClient.invalidateQueries({ queryKey: ["employee-documents"] });
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["contract-integrity", documentId] });
+      queryClient.invalidateQueries({ queryKey: ["contract-recoveries", documentId] });
     } catch (err: any) {
       toast({
-        title: "Could not rebuild the signed copy",
+        title: "Could not produce the signed copy",
         description: err?.message || "Please try again.",
         variant: "destructive",
       });
