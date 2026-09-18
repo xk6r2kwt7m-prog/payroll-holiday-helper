@@ -51,23 +51,57 @@ export function RequestStaffDetailsDialog({
   const [email, setEmail] = useState(employeeEmail ?? "");
   const [expiryDays, setExpiryDays] = useState("7");
   const [preset, setPreset] = useState<string | null>(null);
-  const [selected, setSelected] = useState<InfoItemKey[]>(
-    kind === "onboarding" ? INFO_ITEMS.map((i) => i.key) : [],
-  );
+  const [selected, setSelected] = useState<InfoItemKey[]>([]);
+  const [touched, setTouched] = useState(false);
   const { data: history = [] } = useInfoRequests(employeeId);
+  const { data: coverage, isLoading: coverageLoading } = useInfoCoverage(employeeId, open);
   const send = useSendInfoRequest();
   const revoke = useRevokeInfoRequest();
 
+  /** What is genuinely missing (right-to-work items can always be asked again). */
+  const missingKeys = useMemo(() => {
+    if (!coverage) return [] as InfoItemKey[];
+    const missing = allMissingItems(coverage);
+    return kind === "onboarding"
+      ? Array.from(new Set([...missing, ...REASKABLE_ITEMS]))
+      : missing;
+  }, [coverage, kind]);
+
+  const heldKeys = useMemo(
+    () => (coverage ? INFO_ITEMS.map((i) => i.key).filter((k) => coverage[k]) : []),
+    [coverage],
+  );
+
+  /** Start from what is missing — the admin can still tick anything else. */
+  useEffect(() => {
+    if (!open || touched || !coverage) return;
+    setSelected(missingKeys);
+  }, [open, touched, coverage, missingKeys]);
+
+  useEffect(() => {
+    if (!open) {
+      setTouched(false);
+      setPreset(null);
+    }
+  }, [open]);
+
   const toggle = (key: InfoItemKey) =>
     setSelected((s) => {
+      setTouched(true);
       setPreset(null);
       return s.includes(key) ? s.filter((k) => k !== key) : [...s, key];
     });
 
+  /** Presets narrow themselves to the items we don't already hold. */
   const applyPreset = (key: string, items: InfoItemKey[]) => {
+    setTouched(true);
     setPreset(key);
-    setSelected([...items]);
+    const trimmed = coverage
+      ? Array.from(new Set([...missingItems(items, coverage), ...items.filter((i) => REASKABLE_ITEMS.includes(i))]))
+      : [...items];
+    setSelected(trimmed.length ? trimmed : [...items]);
   };
+
 
   const grouped = useMemo(
     () => GROUP_ORDER.map((g) => ({ group: g, items: INFO_ITEMS.filter((i) => i.group === g) })),
