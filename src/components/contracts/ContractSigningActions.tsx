@@ -41,6 +41,8 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveTestSend } from "@/lib/contract-test-mode";
 import { invokeAuthenticatedFunction } from "@/lib/authenticated-function";
+import { Textarea } from "@/components/ui/textarea";
+import { ContractIntegrityPanel } from "./ContractIntegrityPanel";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -1064,11 +1066,7 @@ export function ContractSigningActions({
                   </Button>
                 </div>
 
-                <ContractIntegrityPanel
-                  documentId={documentId}
-                  storedHash={finalDocumentHash}
-                  finalFilePath={finalSignedFilePath}
-                />
+                <ContractIntegrityPanel documentId={documentId} />
 
 
                 {!employeeEmail && (
