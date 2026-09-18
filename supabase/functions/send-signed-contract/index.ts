@@ -204,10 +204,26 @@ Deno.serve(async (req) => {
         status: sendError ? "failed" : "sent",
         test_send: isTestSend,
         email_type: "contract_fully_signed",
+        delivery_method: "secure_link",
+        attachment: false,
         recipient_email: recipient.trim(),
         employee_name: employeeName,
         trigger: "manual_admin",
       },
+    });
+
+    // Retrying delivery only creates a new download link and a new attempt record.
+    // The signed file and its fingerprint are never read for writing, rebuilt or replaced.
+    await admin.from("contract_delivery_attempts").insert({
+      tenant_id: doc.tenant_id,
+      employee_document_id: documentId,
+      recipient_role: "employee",
+      recipient_email: recipient.trim(),
+      delivery_method: "secure_link",
+      status: sendError ? "failed" : "sent",
+      error_message: sendError ? (sendError.message || "The email could not be sent.") : null,
+      trigger_source: isTestSend ? "manual_test" : "manual_retry",
+      attempted_by: user.id,
     });
 
     if (sendError) {

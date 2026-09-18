@@ -71,6 +71,15 @@ export default function SignContract() {
   const [readConfirmed, setReadConfirmed] = useState(false);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [needsHelp, setNeedsHelp] = useState(false);
+  // Email ownership verification. Typing an address is never treated as proof of
+  // ownership: a changed address must be verified with a one-time code first.
+  const [emailOnFile, setEmailOnFile] = useState("");
+  const [codeRequested, setCodeRequested] = useState(false);
+  const [codeSending, setCodeSending] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeChecking, setCodeChecking] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
 
   const detailsRequired = contractInfo?.details_required === true;
 
@@ -144,6 +153,7 @@ export default function SignContract() {
       const onFile = isEmployer
         ? (contractInfo as any).employer_signatory_email || ""
         : contractInfo.employee_email || "";
+      setEmailOnFile(onFile || "");
       setSignerEmail((prev) => (prev ? prev : onFile || ""));
     }
   }, [contractInfo, isEmployer]);
@@ -203,8 +213,67 @@ export default function SignContract() {
   const consentGiven = acceptConfirmed && eSignConfirmed;
   const consentItems = [acceptanceWording, ESIGN_WORDING];
 
+  // A CHANGED address is only usable once a one-time code sent to it has been entered.
+  const emailChanged =
+    signerEmail.trim().toLowerCase() !== (emailOnFile || "").trim().toLowerCase();
+  const emailVerified =
+    !emailChanged || (verifiedEmail || "").toLowerCase() === signerEmail.trim().toLowerCase();
+
+  const postAction = async (payload: Record<string, unknown>) =>
+    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sign-contract?token=${token}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+  const requestEmailCode = async () => {
+    setCodeSending(true);
+    setCodeError(null);
+    try {
+      const response = await postAction({
+        action: "request_email_verification",
+        email: signerEmail.trim(),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setCodeError(result.error || "We could not send the code. Please try again.");
+        return;
+      }
+      setCodeRequested(true);
+    } catch {
+      setCodeError("We could not reach the server. Please check your connection and try again.");
+    } finally {
+      setCodeSending(false);
+    }
+  };
+
+  const confirmEmailCode = async () => {
+    setCodeChecking(true);
+    setCodeError(null);
+    try {
+      const response = await postAction({
+        action: "confirm_email_verification",
+        email: signerEmail.trim(),
+        code: codeInput.trim(),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setCodeError(result.error || "That code could not be checked. Please try again.");
+        return;
+      }
+      setVerifiedEmail(signerEmail.trim());
+      setCodeRequested(false);
+      setCodeInput("");
+    } catch {
+      setCodeError("We could not reach the server. Please check your connection and try again.");
+    } finally {
+      setCodeChecking(false);
+    }
+  };
+
+
   const handleSign = async () => {
-    if (!typedName.trim() || !consentGiven || !signatureData || !emailLooksValid) return;
+    if (!typedName.trim() || !consentGiven || !signatureData || !emailLooksValid || !emailVerified) return;
 
     setSubmitting(true);
     setErrorCode(null);
@@ -635,7 +704,12 @@ export default function SignContract() {
   }
 
   const canSubmit =
-    typedName.trim().length > 0 && consentGiven && !!signatureData && emailLooksValid && !submitting;
+    typedName.trim().length > 0 &&
+    consentGiven &&
+    !!signatureData &&
+    emailLooksValid &&
+    emailVerified &&
+    !submitting;
   const companyName = contractInfo.company_name || "the employer";
 
   return (
@@ -819,6 +893,60 @@ export default function SignContract() {
             </p>
             {signerEmail.trim().length > 0 && !emailLooksValid && (
               <p className="text-[11px] text-destructive mt-1">That does not look like a full email address.</p>
+            )}
+
+            {/* A changed address must be proven by a one-time code before signing. */}
+            {emailLooksValid && emailChanged && !emailVerified && (
+              <div className="mt-3 rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+                <p className="text-xs text-foreground">
+                  This is different from the address held for this contract. To use it, we need to check it belongs to
+                  you: we will email a 6-digit code to <span className="font-medium">{signerEmail.trim()}</span>.
+                </p>
+                {!codeRequested ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={requestEmailCode}
+                    disabled={codeSending}
+                    className="w-full"
+                  >
+                    {codeSending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send me a code"}
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <Input
+                      value={codeInput}
+                      onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="6-digit code"
+                      inputMode="numeric"
+                      className="text-base tracking-widest"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={confirmEmailCode}
+                        disabled={codeInput.length !== 6 || codeChecking}
+                        className="flex-1"
+                      >
+                        {codeChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check code"}
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={requestEmailCode} disabled={codeSending}>
+                        Resend
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">The code lasts 15 minutes.</p>
+                  </div>
+                )}
+                {codeError && <p className="text-[11px] text-destructive">{codeError}</p>}
+              </div>
+            )}
+
+            {emailChanged && emailVerified && (
+              <p className="text-[11px] text-success mt-2">
+                This address has been verified. Your completed contract will be sent here.
+              </p>
             )}
           </div>
 

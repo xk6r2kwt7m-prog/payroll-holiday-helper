@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useEmployeeDocuments, getExpiryStatus } from "@/hooks/useEmployeeDocuments";
 import { StaffDocumentRequests } from "@/components/documents/StaffDocumentRequests";
 import { StaffEvidenceUpload } from "@/components/attendance/StaffEvidenceUpload";
+import { MyContractsSection } from "@/components/staff-portal/MyContractsSection";
 
 interface DocumentsSectionProps {
   employeeId: string;
@@ -13,6 +14,7 @@ export function DocumentsSection({ employeeId }: DocumentsSectionProps) {
   return (
     <div className="space-y-4">
       <StaffDocumentRequests employeeId={employeeId} />
+      <MyContractsSection employeeId={employeeId} />
       <StaffDocumentView employeeId={employeeId} />
       <StaffEvidenceUpload employeeId={employeeId} />
     </div>
