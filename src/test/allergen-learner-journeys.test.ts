@@ -213,7 +213,8 @@ for (const branch of branches) {
         expect(marking.outcome).toBe("passed");
 
         const gate = certificationGate({
-          lessonsComplete: true,
+          lessonsComplete: 16,
+          lessonsRequired: 16,
           mandatoryOutstanding: [],
           assessment: { passed: true, scorePercent: 92, criticalMissed: [] },
           observation: {
@@ -222,8 +223,9 @@ for (const branch of branches) {
             signedByName: "A Manager",
             signerIsAuthorisedManager: true,
           },
-        } as never);
-        expect(gate.canIssue).toBe(true);
+        });
+        expect(gate.blockers).toEqual([]);
+        expect(gate.eligible).toBe(true);
       });
     });
   }
