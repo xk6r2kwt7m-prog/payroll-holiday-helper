@@ -33,7 +33,7 @@ import {
 import { useAllergenDishes, useAllergenConflicts } from "@/hooks/useAllergenLibrary";
 
 export function AllergenAssessmentRunner({
-  isTest, branchId, branchName, courseVersionLabel, draftId, employeeId,
+  isTest, branchId, branchName, courseVersionLabel, draftId, employeeId, previewKey,
 }: {
   isTest: boolean;
   branchId: string | null;
@@ -41,12 +41,14 @@ export function AllergenAssessmentRunner({
   courseVersionLabel: string;
   draftId?: string | null;
   employeeId?: string | null;
+  /** Isolates a management preview session; genuine attempts have no preview key. */
+  previewKey?: string | null;
 }) {
   const { data: dishes = [] } = useAllergenDishes();
   const { data: conflicts = [] } = useAllergenConflicts();
-  const { data: attempts = [] } = useAllergenAttempts(isTest);
-  const { data: coaching = [] } = useAllergenCoaching(isTest);
-  const { data: progressRows = [] } = useAllergenLessonProgress(isTest);
+  const { data: attempts = [] } = useAllergenAttempts(isTest, previewKey ?? null);
+  const { data: coaching = [] } = useAllergenCoaching(isTest, previewKey ?? null);
+  const { data: progressRows = [] } = useAllergenLessonProgress(isTest, previewKey ?? null);
 
   const start = useStartAllergenAttempt();
   const saveAnswers = useSaveAttemptAnswers();

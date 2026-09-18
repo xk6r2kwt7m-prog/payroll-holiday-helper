@@ -183,6 +183,13 @@
       "when": 1789758694465,
       "tag": "0025_allergen_learner_phase2",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789761777886,
+      "tag": "0026_allergen_management_preview_and_acceptance_checklist",
+      "breakpoints": true
     }
   ]
 }

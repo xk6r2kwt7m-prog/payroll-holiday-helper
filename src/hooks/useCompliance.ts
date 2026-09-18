@@ -41,7 +41,7 @@ export async function complianceFileUrl(path: string, seconds = 300): Promise<st
 export async function logComplianceAudit(opts: {
   tenantId: string;
   table: string;
-  recordId: string;
+  recordId: string | null;
   event: ComplianceAuditEvent;
   previous?: Record<string, any> | null;
   next?: Record<string, any> | null;

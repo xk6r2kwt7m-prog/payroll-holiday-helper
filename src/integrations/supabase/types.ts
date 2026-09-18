@@ -329,6 +329,90 @@ export type Database = {
           },
         ]
       }
+      allergen_acceptance_checks: {
+        Row: {
+          check_ref: string
+          checked_at: string
+          checked_by: string | null
+          checked_by_name: string | null
+          comment: string | null
+          created_at: string
+          environment: string
+          id: string
+          result: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          check_ref: string
+          checked_at?: string
+          checked_by?: string | null
+          checked_by_name?: string | null
+          comment?: string | null
+          created_at?: string
+          environment: string
+          id?: string
+          result: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          check_ref?: string
+          checked_at?: string
+          checked_by?: string | null
+          checked_by_name?: string | null
+          comment?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          result?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      allergen_acceptance_signoffs: {
+        Row: {
+          created_at: string
+          device_note: string | null
+          environment: string
+          id: string
+          outcome: string
+          signed_at: string
+          signed_by: string | null
+          signed_by_name: string
+          signed_role: string | null
+          summary: Json
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_note?: string | null
+          environment: string
+          id?: string
+          outcome: string
+          signed_at?: string
+          signed_by?: string | null
+          signed_by_name: string
+          signed_role?: string | null
+          summary?: Json
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          device_note?: string | null
+          environment?: string
+          id?: string
+          outcome?: string
+          signed_at?: string
+          signed_by?: string | null
+          signed_by_name?: string
+          signed_role?: string | null
+          summary?: Json
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       allergen_assessment_attempts: {
         Row: {
           answers: Json
@@ -344,6 +428,7 @@ export type Database = {
           option_order: Json
           outcome: string | null
           passed: boolean | null
+          preview_key: string | null
           question_ids: string[]
           score_percent: number | null
           status: string
@@ -366,6 +451,7 @@ export type Database = {
           option_order?: Json
           outcome?: string | null
           passed?: boolean | null
+          preview_key?: string | null
           question_ids?: string[]
           score_percent?: number | null
           status?: string
@@ -388,6 +474,7 @@ export type Database = {
           option_order?: Json
           outcome?: string | null
           passed?: boolean | null
+          preview_key?: string | null
           question_ids?: string[]
           score_percent?: number | null
           status?: string
@@ -422,6 +509,7 @@ export type Database = {
           is_test: boolean
           note: string | null
           notification_state: string
+          preview_key: string | null
           status: string
           tenant_id: string
           updated_at: string
@@ -443,6 +531,7 @@ export type Database = {
           is_test?: boolean
           note?: string | null
           notification_state?: string
+          preview_key?: string | null
           status?: string
           tenant_id: string
           updated_at?: string
@@ -464,6 +553,7 @@ export type Database = {
           is_test?: boolean
           note?: string | null
           notification_state?: string
+          preview_key?: string | null
           status?: string
           tenant_id?: string
           updated_at?: string
@@ -505,6 +595,7 @@ export type Database = {
           observation_id: string | null
           practical_signed_at: string | null
           practical_signed_by_name: string | null
+          preview_key: string | null
           score_percent: number | null
           status: string
           superseded_reason: string | null
@@ -537,6 +628,7 @@ export type Database = {
           observation_id?: string | null
           practical_signed_at?: string | null
           practical_signed_by_name?: string | null
+          preview_key?: string | null
           score_percent?: number | null
           status?: string
           superseded_reason?: string | null
@@ -569,6 +661,7 @@ export type Database = {
           observation_id?: string | null
           practical_signed_at?: string | null
           practical_signed_by_name?: string | null
+          preview_key?: string | null
           score_percent?: number | null
           status?: string
           superseded_reason?: string | null
@@ -693,6 +786,7 @@ export type Database = {
           employee_id: string | null
           id: string
           is_test: boolean
+          preview_key: string | null
           tenant_id: string
           topics_covered: string[]
           unlocks_attempt: number
@@ -707,6 +801,7 @@ export type Database = {
           employee_id?: string | null
           id?: string
           is_test?: boolean
+          preview_key?: string | null
           tenant_id: string
           topics_covered?: string[]
           unlocks_attempt?: number
@@ -721,6 +816,7 @@ export type Database = {
           employee_id?: string | null
           id?: string
           is_test?: boolean
+          preview_key?: string | null
           tenant_id?: string
           topics_covered?: string[]
           unlocks_attempt?: number
@@ -1012,6 +1108,7 @@ export type Database = {
           is_test: boolean
           last_seen_at: string
           lesson_ref: string
+          preview_key: string | null
           tenant_id: string
           total_sections: number
           updated_at: string
@@ -1029,6 +1126,7 @@ export type Database = {
           is_test?: boolean
           last_seen_at?: string
           lesson_ref: string
+          preview_key?: string | null
           tenant_id: string
           total_sections?: number
           updated_at?: string
@@ -1046,6 +1144,7 @@ export type Database = {
           is_test?: boolean
           last_seen_at?: string
           lesson_ref?: string
+          preview_key?: string | null
           tenant_id?: string
           total_sections?: number
           updated_at?: string
@@ -1078,6 +1177,7 @@ export type Database = {
           manager_note: string | null
           observed_on: string | null
           outcome: string
+          preview_key: string | null
           signed_at: string | null
           signed_by: string | null
           signed_by_name: string | null
@@ -1103,6 +1203,7 @@ export type Database = {
           manager_note?: string | null
           observed_on?: string | null
           outcome?: string
+          preview_key?: string | null
           signed_at?: string | null
           signed_by?: string | null
           signed_by_name?: string | null
@@ -1128,6 +1229,7 @@ export type Database = {
           manager_note?: string | null
           observed_on?: string | null
           outcome?: string
+          preview_key?: string | null
           signed_at?: string | null
           signed_by?: string | null
           signed_by_name?: string | null
