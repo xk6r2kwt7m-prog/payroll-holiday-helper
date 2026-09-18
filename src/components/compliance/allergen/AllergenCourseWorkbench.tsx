@@ -24,7 +24,7 @@ import { courseSource, APPROVED_WORDING } from "@/data/allergen/allergen-course-
 import { EXCLUDED_FROM_SCORING, canPublishScoredQuestion, selectQuestionBank } from "@/lib/allergen-course";
 import { useAllergenCourseDraft, useCreateAllergenCourseDraft } from "@/hooks/useAllergenCourse";
 import { useAllergenDishes, useAllergenConflicts } from "@/hooks/useAllergenLibrary";
-import { useBranchLocations } from "@/hooks/useBranchLocations";
+import { useBranchLocations } from "@/hooks/useSchedule";
 import { AllergenLessonReader } from "@/components/training/allergen/AllergenLessonReader";
 import { AllergenAssessmentRunner } from "@/components/training/allergen/AllergenAssessmentRunner";
 

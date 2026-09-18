@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AllergenCourseWorkbench } from "@/components/compliance/allergen/AllergenCourseWorkbench";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, BookOpen, CheckCircle2, FileStack, Layers, ShieldCheck } from "lucide-react";
@@ -85,6 +86,7 @@ export function AllergenTrainingReview() {
       <Tabs defaultValue="matrix">
         <TabsList className="flex-wrap">
           <TabsTrigger value="matrix">Matrix confirmation</TabsTrigger>
+          <TabsTrigger value="course">Learner course (draft)</TabsTrigger>
           <TabsTrigger value="proposals">Proposed changes</TabsTrigger>
           <TabsTrigger value="conflicts">Conflicts</TabsTrigger>
           <TabsTrigger value="sources">Source documents</TabsTrigger>
@@ -94,6 +96,9 @@ export function AllergenTrainingReview() {
 
         <TabsContent value="matrix" className="mt-4">
           <MatrixConfirmationTable branches={branches.map((b) => ({ id: b.id, name: b.display_name }))} />
+        </TabsContent>
+        <TabsContent value="course" className="mt-4">
+          <AllergenCourseWorkbench />
         </TabsContent>
         <TabsContent value="proposals" className="mt-4">
           <ProposalReview pending={pending} approved={approved} openConflicts={openConflicts.length} />
