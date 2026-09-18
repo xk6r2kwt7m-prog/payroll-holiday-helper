@@ -1432,7 +1432,7 @@ Deno.serve(async (req) => {
           await withRetry("store final signed contract", async () => {
             const result = await supabase.storage
               .from("employee-documents")
-              .upload(finalPath, finalPackage.finalBytes, { contentType: "application/pdf", upsert: true });
+              .upload(finalPath, finalPackage.finalBytes, { contentType: "application/pdf", upsert: false });
             if (result.error) throw result.error;
             return result;
           });
