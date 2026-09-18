@@ -148,6 +148,21 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     letterSpacing: 1,
   },
+  footerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    fontSize: 7,
+    color: GRAY,
+  },
+  footerBlock: {
+    position: "absolute",
+    bottom: 24,
+    left: 50,
+    right: 50,
+    borderTopWidth: 0.5,
+    borderTopColor: "#ccc",
+    paddingTop: 5,
+  },
   footer: {
     position: "absolute",
     bottom: 30,
@@ -180,6 +195,14 @@ interface ContractPDFProps {
   companyLegalName?: string;
   companyTradingName?: string;
   companyAddress?: string;
+  /** Permanent unique reference for this contract, printed on every page. */
+  contractReference?: string | null;
+  /** Date this contract was issued, printed on every page. */
+  issueDate?: string | null;
+  /** Wording release this contract was generated from. */
+  templateVersion?: string | null;
+  /** Version of this contract itself (1 for the original, higher for variations). */
+  contractVersion?: number | null;
 }
 
 export function ContractPDF({
@@ -188,6 +211,10 @@ export function ContractPDF({
   companyLegalName = "Your Company",
   companyTradingName,
   companyAddress,
+  contractReference,
+  issueDate,
+  templateVersion,
+  contractVersion = 1,
 }: ContractPDFProps) {
   const isManagement = contractType === "management" || contractType === "supervisor";
   const roleLabel = resolveContractRoleLabel(variables.jobTitle, isManagement);
@@ -211,10 +238,28 @@ export function ContractPDF({
     </View>
   );
 
+  const formattedIssueDate = issueDate
+    ? new Date(issueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : null;
+
+  // Every page carries the reference, the employee's name, page numbers, the issue
+  // date and both version numbers, so a loose page can always be placed.
   const PageFooter = () => (
-    <View style={styles.footer} fixed>
-      <Text>{companyLegalName} — Confidential</Text>
-      <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+    <View style={styles.footerBlock} fixed>
+      <View style={styles.footerRow}>
+        <Text>{companyLegalName} — Confidential</Text>
+        <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
+      </View>
+      <View style={styles.footerRow}>
+        <Text>
+          {contractReference ? `Ref ${contractReference}` : "Ref pending"} · {variables.employeeName}
+        </Text>
+        <Text>
+          {formattedIssueDate ? `Issued ${formattedIssueDate}` : "Issue date pending"}
+          {` · v${contractVersion || 1}`}
+          {templateVersion ? ` · wording ${templateVersion}` : ""}
+        </Text>
+      </View>
     </View>
   );
 

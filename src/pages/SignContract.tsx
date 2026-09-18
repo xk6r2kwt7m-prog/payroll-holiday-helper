@@ -50,7 +50,9 @@ export default function SignContract() {
   const [typedName, setTypedName] = useState("");
   const [signatoryTitle, setSignatoryTitle] = useState("");
   const [signatureData, setSignatureData] = useState<string | null>(null);
-  const [consentGiven, setConsentGiven] = useState(false);
+  const [acceptConfirmed, setAcceptConfirmed] = useState(false);
+  const [eSignConfirmed, setESignConfirmed] = useState(false);
+  const [signerEmail, setSignerEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
   const [signedAt, setSignedAt] = useState<string | null>(null);
@@ -133,6 +135,13 @@ export default function SignContract() {
         setSignatoryTitle(contractInfo.employer_signatory_title);
       }
     }
+    // The address on file is offered, but the signer must see and confirm it.
+    if (contractInfo) {
+      const onFile = isEmployer
+        ? (contractInfo as any).employer_signatory_email || ""
+        : contractInfo.employee_email || "";
+      setSignerEmail((prev) => (prev ? prev : onFile || ""));
+    }
   }, [contractInfo, isEmployer]);
 
   const fetchContractInfo = async () => {
@@ -174,29 +183,30 @@ export default function SignContract() {
     setSignatureData(dataUrl);
   }, []);
 
-  const CONSENT_ITEMS_EMPLOYEE = [
-    "I have read and understood this contract",
-    "I agree to sign this document electronically",
-    "This electronic signature represents my legal signature",
-  ];
+  // Two separate confirmations. The acceptance wording never mentions schedules or
+  // incorporated documents unless this contract actually has them.
+  const hasSchedules = Boolean((contractInfo as any)?.has_schedules);
+  const acceptanceWording = isEmployer
+    ? hasSchedules
+      ? "I confirm that I have reviewed the complete employment contract, including its schedules and any documents expressly incorporated into it, and that I am authorised to sign it on behalf of the employer."
+      : "I confirm that I have reviewed the complete employment contract and that I am authorised to sign it on behalf of the employer."
+    : hasSchedules
+      ? "I confirm that I have read and accept the complete employment contract, including its schedules and any documents expressly incorporated into it."
+      : "I confirm that I have read and accept the complete employment contract.";
+  const ESIGN_WORDING = "I consent to signing this document electronically.";
 
-  const CONSENT_ITEMS_EMPLOYER = [
-    "I have reviewed this contract and confirm it is ready for execution",
-    "I am authorised to sign this document on behalf of the employer",
-    "I agree to sign this document electronically",
-    "This electronic signature represents my legal signature",
-  ];
-
-  const consentItems = isEmployer ? CONSENT_ITEMS_EMPLOYER : CONSENT_ITEMS_EMPLOYEE;
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(signerEmail.trim());
+  const consentGiven = acceptConfirmed && eSignConfirmed;
+  const consentItems = [acceptanceWording, ESIGN_WORDING];
 
   const handleSign = async () => {
-    if (!typedName.trim() || !consentGiven || !signatureData) return;
+    if (!typedName.trim() || !consentGiven || !signatureData || !emailLooksValid) return;
 
     setSubmitting(true);
     setErrorCode(null);
     setErrorMessage(null);
 
-    const consentText = `I confirm that: ${consentItems.join("; ")}.`;
+    const consentText = consentItems.join(" ");
 
     // A dropped connection is retried once automatically — resending the same
     // signature is safe, because a signature already stored is never replaced.
@@ -208,6 +218,11 @@ export default function SignContract() {
           typed_name: typedName.trim(),
           consent_given: true,
           consent_text: consentText,
+          consent_items: [
+            { key: "accept_terms", text: acceptanceWording, confirmed: true },
+            { key: "electronic_signature", text: ESIGN_WORDING, confirmed: true },
+          ],
+          confirmed_email: signerEmail.trim(),
           signature_data: signatureData,
           signature_type: "drawn",
           document_hash: contractInfo?.document_hash || null,
@@ -583,7 +598,8 @@ export default function SignContract() {
     );
   }
 
-  const canSubmit = typedName.trim().length > 0 && consentGiven && !!signatureData && !submitting;
+  const canSubmit =
+    typedName.trim().length > 0 && consentGiven && !!signatureData && emailLooksValid && !submitting;
   const companyName = contractInfo.company_name || "the employer";
 
   return (
@@ -747,31 +763,54 @@ export default function SignContract() {
             <SignaturePad onSignatureChange={handleSignatureChange} />
           </div>
 
-          {/* Consent Statement */}
-          <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-2">
-            <p className="text-xs font-medium text-foreground">I confirm that:</p>
-            <ul className="space-y-1">
-              {consentItems.map((item, i) => (
-                <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
-                  <span className="text-primary mt-0.5">•</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
+          {/* Email address used for this signature — confirmed by the signer */}
+          <div>
+            <label htmlFor="signer-email" className="text-xs text-muted-foreground mb-1.5 block">
+              Your email address *
+            </label>
+            <Input
+              id="signer-email"
+              type="email"
+              value={signerEmail}
+              onChange={(e) => setSignerEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="text-base"
+              autoComplete="email"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Please check this is correct. Your completed contract is sent here and the address is recorded with your
+              signature.
+            </p>
+            {signerEmail.trim().length > 0 && !emailLooksValid && (
+              <p className="text-[11px] text-destructive mt-1">That does not look like a full email address.</p>
+            )}
           </div>
 
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="consent"
-              checked={consentGiven}
-              onCheckedChange={(checked) => setConsentGiven(checked === true)}
-              className="mt-0.5"
-            />
-            <label htmlFor="consent" className="text-sm text-foreground cursor-pointer leading-snug">
-              {isEmployer
-                ? `I confirm this is my signature and I am signing this contract on behalf of ${companyName} under the UK Electronic Communications Act 2000`
-                : "I confirm this is my signature and I agree to sign this contract electronically under the UK Electronic Communications Act 2000"}
-            </label>
+          {/* Two separate confirmations: acceptance of the terms, and consent to sign electronically */}
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="consent-accept"
+                checked={acceptConfirmed}
+                onCheckedChange={(checked) => setAcceptConfirmed(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="consent-accept" className="text-sm text-foreground cursor-pointer leading-snug">
+                {acceptanceWording}
+              </label>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <Checkbox
+                id="consent-esign"
+                checked={eSignConfirmed}
+                onCheckedChange={(checked) => setESignConfirmed(checked === true)}
+                className="mt-0.5"
+              />
+              <label htmlFor="consent-esign" className="text-sm text-foreground cursor-pointer leading-snug">
+                {ESIGN_WORDING}
+              </label>
+            </div>
           </div>
 
           <Button

@@ -58,6 +58,7 @@ import {
   getEmploymentTypeLabel,
 } from "./contractTemplates";
 import { ContractPDF } from "./ContractPDF";
+import { CONTRACT_TEMPLATE_VERSION, CURRENT_CONTRACT_TEMPLATE } from "@/lib/contract-template-version";
 import { useLocationSettings } from "@/hooks/useLocationSettings";
 import { PayStructureFields, type NmwOverrideState } from "./PayStructureFields";
 import { useCreateNmwOverride } from "@/hooks/useNmwOverride";
@@ -122,7 +123,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const { data: tenantBranches } = useTenantBranches();
   const { data: companySettings } = useCompanySettings();
   const queryClient = useQueryClient();
-  const { tenantName } = useTenant();
+  const { tenantName, tenantId } = useTenant();
   const uploadDocument = useUploadDocument();
   const generateSigningLink = useGenerateSigningLink();
   const { sendContractEmail } = useSendContractEmail();
@@ -448,8 +449,32 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
     }
     setGenerating(true);
     try {
+      // A permanent reference and issue date are allocated BEFORE the file is
+      // produced, so they are printed on every page of the contract itself.
+      const issueDate = new Date().toISOString().slice(0, 10);
+      let contractReference: string | null = null;
+      if (tenantId) {
+        const { data: refData, error: refError } = await supabase.rpc("allocate_contract_reference", {
+          _tenant_id: tenantId,
+        });
+        if (refError) {
+          console.error("Failed to allocate contract reference:", refError);
+        } else {
+          contractReference = (refData as unknown as string) || null;
+        }
+      }
+
       const blob = await pdf(
-        <ContractPDF variables={variables} contractType={contractType} companyLegalName={companyLegalName} companyAddress={companyAddress} />
+        <ContractPDF
+          variables={variables}
+          contractType={contractType}
+          companyLegalName={companyLegalName}
+          companyAddress={companyAddress}
+          contractReference={contractReference}
+          issueDate={issueDate}
+          templateVersion={CONTRACT_TEMPLATE_VERSION}
+          contractVersion={1}
+        />
       ).toBlob();
 
       const fileName = `Employment_Contract_${variables.employeeName.replace(/\s+/g, "_")}.pdf`;
@@ -464,11 +489,26 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
 
       setSavedDocumentId(result.id);
 
-      // Record how this contract reaches the staff member. Details-first keeps
-      // the contract hidden until they submit their own details.
+      // Record how this contract reaches the staff member, together with the
+      // reference, issue date, wording version and a snapshot of the exact terms
+      // used. The snapshot is what proves later which wording produced this file.
       const { error: modeError } = await supabase
         .from("employee_documents")
-        .update({ requires_details_first: detailsMode === "details_first" })
+        .update({
+          requires_details_first: detailsMode === "details_first",
+          contract_reference: contractReference,
+          issue_date: issueDate,
+          template_version: CONTRACT_TEMPLATE_VERSION,
+          terms_snapshot: {
+            template_version: CONTRACT_TEMPLATE_VERSION,
+            template_effective_date: CURRENT_CONTRACT_TEMPLATE.effectiveDate,
+            contract_type: contractType,
+            company_legal_name: companyLegalName,
+            company_address: companyAddress,
+            issued_at: new Date().toISOString(),
+            variables,
+          } as any,
+        } as any)
         .eq("id", result.id);
       if (modeError) {
         console.error("Failed to save contract sending mode:", modeError);
@@ -1377,7 +1417,14 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                   className="flex-1"
                   onClick={async () => {
                     const blob = await pdf(
-                      <ContractPDF variables={variables} contractType={contractType} companyLegalName={companyLegalName} companyAddress={companyAddress} />
+                      <ContractPDF
+                        variables={variables}
+                        contractType={contractType}
+                        companyLegalName={companyLegalName}
+                        companyAddress={companyAddress}
+                        templateVersion={CONTRACT_TEMPLATE_VERSION}
+                        contractVersion={1}
+                      />
                     ).toBlob();
                     const url = URL.createObjectURL(blob);
                     window.open(url, "_blank");

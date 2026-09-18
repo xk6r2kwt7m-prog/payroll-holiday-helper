@@ -1275,9 +1275,23 @@ Deno.serve(async (req) => {
         signature_data,
         signature_type,
         consent_text,
+        consent_items,
+        confirmed_email,
         document_hash,
         signatory_title,
       } = body;
+
+      // The signer must confirm a usable email address before signing.
+      const confirmedEmail = String(confirmed_email || "").trim();
+      if (confirmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(confirmedEmail)) {
+        return new Response(JSON.stringify({
+          error: "Please check your email address.",
+          error_code: "invalid_email",
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
 
       if (!typed_name?.trim()) {
@@ -1416,6 +1430,10 @@ Deno.serve(async (req) => {
         signedByEmail = signingToken.employees?.email || null;
       }
 
+      // The address the signer saw and confirmed on the signing screen takes precedence
+      // and is what the completed contract is sent to.
+      if (confirmedEmail) signedByEmail = confirmedEmail;
+
       if (!originalFilePath || !signingToken.employee_documents) {
         return new Response(JSON.stringify({ error: "The contract document could not be found.", error_code: "missing_document" }), {
           status: 404,
@@ -1461,6 +1479,8 @@ Deno.serve(async (req) => {
           signature_data: signature_data,
           consent_given: true,
           consent_text: consent_text || `I confirm that I have read and understood this contract, I agree to sign this document electronically, and this electronic signature represents my legal signature.`,
+          consent_items: Array.isArray(consent_items) ? consent_items : null,
+          email_verified_at: confirmedEmail ? signedAt : null,
           document_hash: serverDocumentHash,
           ip_address: ip,
           user_agent: userAgent,
@@ -1794,8 +1814,12 @@ Deno.serve(async (req) => {
         const completionPolicy = completionPolicyRow?.preferences as Record<string, string> | null;
         const completionSigningMode = completionPolicy?.contract_signing || "manual";
 
-        // Send completion email to EMPLOYEE (only if not disabled)
-        const recipientEmail = signingToken.employees?.email;
+        // Send completion email to EMPLOYEE (only if not disabled).
+        // Prefer the address the employee saw and confirmed at the moment of signing.
+        const employeeSignature = (allSigs || []).find(
+          (s: any) => s.signer_type === "employee" && s.signed_by_email,
+        );
+        const recipientEmail = (employeeSignature as any)?.signed_by_email || signingToken.employees?.email;
         if (recipientEmail && completionSigningMode === "auto") {
           try {
             await supabase.functions.invoke("send-notification", {
