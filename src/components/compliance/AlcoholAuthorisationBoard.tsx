@@ -38,6 +38,8 @@ export function AlcoholAuthorisationBoard() {
   const { data: licences = [] } = usePremisesLicences();
   const employees = useEmployeesWithBranches();
   const recordIssue = useRecordLicenceDocumentIssue();
+  const { data: decisions = [] } = useAlcoholListDecisions();
+  const setDecision = useSetAlcoholListDecision();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [emailSite, setEmailSite] = useState<string | null>(null);
 
@@ -48,21 +50,29 @@ export function AlcoholAuthorisationBoard() {
     for (const e of employees) for (const b of e.branches ?? []) branches.add(b);
 
     return Array.from(branches).sort().map((branch) => {
+      const auths = records as unknown as RegisterAuthorisation[];
       const rows = buildDpsRegister({
         branch,
         employees,
-        authorisations: records as unknown as RegisterAuthorisation[],
+        authorisations: auths,
+        decisions: decisions as any,
       });
       const licence = (licences as any[]).find((l) => l.branch === branch);
       return {
         branch,
         licence,
         rows,
+        unclassified: unclassifiedForSite({
+          branch,
+          employees,
+          authorisations: auths,
+          decisions: decisions as any,
+        }),
         summary: registerSummary(rows),
         summaryLine: registerSummaryLine(rows, branch),
       };
-    }).filter((s) => s.rows.length > 0 || !!s.licence);
-  }, [licences, records, employees]);
+    }).filter((s) => s.rows.length > 0 || s.unclassified.length > 0 || !!s.licence);
+  }, [licences, records, employees, decisions]);
 
   const totals = useMemo(() => sites.reduce(
     (acc, s) => ({
