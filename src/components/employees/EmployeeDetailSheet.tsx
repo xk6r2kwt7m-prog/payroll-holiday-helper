@@ -354,6 +354,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
                   employeeId={employee.id}
                   employeeName={`${employee.forename} ${employee.surname}`}
                   employeeEmail={employee.email}
+                  kind={employee.status === "onboarding" || employee.status === "starter" ? "onboarding" : "existing_staff_update"}
                   trigger={
                     <Button size="sm" variant="outline" className="gap-2 w-full">
                       <Mail className="h-4 w-4" />
