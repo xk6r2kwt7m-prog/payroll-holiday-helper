@@ -534,7 +534,9 @@ export default function SignContract() {
               Hello {contractInfo.employee_name}.{" "}
               {fieldsToAsk.length
                 ? "We already hold most of your details. Please add only the few below."
-                : "We already hold everything we need — just check the details below."}
+                : "We already hold everything we need — just check the details below."}{" "}
+              We only ask for details we don't already hold, and we never send your
+              personal details by email.
             </p>
 
             {alreadyOnFile.length > 0 && (
