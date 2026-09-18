@@ -192,9 +192,19 @@ export function AllergenPilotControl() {
               Automated checks {automatedChecksPassing ? "passing" : "not passing — see the details below"}.
             </Tick>
             {siteChecks.map((s) => (
-              <Tick key={s.site} ok={s.validation.ok}>
-                {s.site}: {s.scored} scored questions ({s.critical} critical, {s.menu} current-menu).{" "}
-                {s.validation.ok ? "Site questions correct." : "Site questions do not match the approved menu records."}
+              <Tick key={s.site} ok={s.validation.ok && !s.problem}>
+                {s.problem ? (
+                  <>
+                    {s.site}: {s.problem}
+                  </>
+                ) : (
+                  <>
+                    {s.site}: {s.scored} scored questions ({s.critical} critical, {s.menu} current-menu).{" "}
+                    {s.validation.ok
+                      ? "Site questions correct."
+                      : "Site questions do not match the approved menu records."}
+                  </>
+                )}
               </Tick>
             ))}
           </div>
