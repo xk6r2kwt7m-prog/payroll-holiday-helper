@@ -3,7 +3,9 @@ import {
   buildDpsRegister, registerSummary, registerSummaryLine, registerCsv, registerPdfRows,
   clampLinkExpiryDays, deliveryMethodFor, linkState, canOpenLink,
   type RegisterAuthorisation, type RegisterEmployee,
+  unclassifiedForSite,
 } from "@/lib/dps-register";
+import { belongsOnAlcoholList, needsRoleDecision } from "@/lib/alcohol-automation";
 
 const emp = (over: Partial<RegisterEmployee> & { id: string }): RegisterEmployee => ({
   forename: "A", surname: "Person", department: "Front of House",
@@ -174,5 +176,48 @@ describe("issued copies", () => {
     expect(linkState({ access_token: "t", token_expires_at: "2026-01-05T00:00:00Z" }, now)).toBe("expired");
     expect(canOpenLink({ access_token: "t", token_expires_at: "2026-03-05T00:00:00Z" }, now)).toBe(true);
     expect(canOpenLink({ access_token: "t", revoked_at: "2026-01-05T00:00:00Z" }, now)).toBe(false);
+  });
+});
+
+describe("unclear roles need a manager decision", () => {
+  const unclear = emp({ id: "u1", forename: "Sam", surname: "Doubt", department: "" });
+
+  it("keeps an unclear role off the list until decided, never as authorised", () => {
+    const rows = buildDpsRegister({ branch: "Carnaby", employees: [unclear], authorisations: [] });
+    expect(rows).toHaveLength(0);
+    const pending = unclassifiedForSite({ branch: "Carnaby", employees: [unclear], authorisations: [] });
+    expect(pending.map((p) => p.employee_id)).toEqual(["u1"]);
+  });
+
+  it("a manager decision adds them to the list and clears the decide group", () => {
+    const decisions = [{ employee_id: "u1", branch: "Carnaby", decision: "front_of_house" as const }];
+    const rows = buildDpsRegister({ branch: "Carnaby", employees: [unclear], authorisations: [], decisions });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].listed_because).toBe("manager_added");
+    expect(rows[0].status).toBe("not_authorised");
+    expect(unclassifiedForSite({ branch: "Carnaby", employees: [unclear], authorisations: [], decisions })).toHaveLength(0);
+  });
+
+  it("a not-front-of-house decision keeps them off the list and out of the decide group", () => {
+    const decisions = [{ employee_id: "u1", branch: "Carnaby", decision: "not_front_of_house" as const }];
+    expect(buildDpsRegister({ branch: "Carnaby", employees: [unclear], authorisations: [], decisions })).toHaveLength(0);
+    expect(unclassifiedForSite({ branch: "Carnaby", employees: [unclear], authorisations: [], decisions })).toHaveLength(0);
+  });
+
+  it("a decision does not override an existing authorisation record", () => {
+    const decisions = [{ employee_id: "u1", branch: "Carnaby", decision: "not_front_of_house" as const }];
+    const rows = buildDpsRegister({
+      branch: "Carnaby", employees: [unclear], authorisations: [auth({ employee_id: "u1" })], decisions,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("authorised");
+  });
+
+  it("the send list and the site list use the same rule", () => {
+    const decisions = [{ employee_id: "u1", branch: "Carnaby", decision: "front_of_house" as const }];
+    expect(belongsOnAlcoholList(unclear as any, "Carnaby", decisions)).toBe(true);
+    expect(needsRoleDecision(unclear as any, "Carnaby", [])).toBe(true);
+    expect(needsRoleDecision(unclear as any, "Carnaby", decisions)).toBe(false);
+    expect(belongsOnAlcoholList(emp({ id: "k1", department: "Kitchen" }) as any, "Carnaby", [])).toBe(false);
   });
 });
