@@ -223,10 +223,28 @@ export function ContractPDF({
     </View>
   );
 
+  const formattedIssueDate = issueDate
+    ? new Date(issueDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : null;
+
+  // Every page carries the reference, the employee's name, page numbers, the issue
+  // date and both version numbers, so a loose page can always be placed.
   const PageFooter = () => (
-    <View style={styles.footer} fixed>
-      <Text>{companyLegalName} — Confidential</Text>
-      <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+    <View style={{ position: "absolute", bottom: 20, left: 40, right: 40 }} fixed>
+      <View style={styles.footer}>
+        <Text>{companyLegalName} — Confidential</Text>
+        <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
+      </View>
+      <View style={styles.footer}>
+        <Text>
+          {contractReference ? `Ref ${contractReference}` : "Ref pending"} · {variables.employeeName}
+        </Text>
+        <Text>
+          {formattedIssueDate ? `Issued ${formattedIssueDate}` : "Issue date pending"}
+          {` · v${contractVersion || 1}`}
+          {templateVersion ? ` · wording ${templateVersion}` : ""}
+        </Text>
+      </View>
     </View>
   );
 
