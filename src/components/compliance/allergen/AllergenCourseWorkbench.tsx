@@ -188,7 +188,7 @@ export function AllergenCourseWorkbench() {
                 <SelectContent>
                   <SelectItem value="none">No site chosen</SelectItem>
                   {branches.map((b: any) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    <SelectItem key={b.id} value={b.id}>{b.display_name ?? b.branch}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -235,7 +235,7 @@ export function AllergenCourseWorkbench() {
                       <Badge key={ref} variant="outline" className="text-[10px]">{courseSource(ref).title}</Badge>
                     ))}
                   </div>
-                  {!publishable.allowed && (
+                  {!publishable.eligible && (
                     <Alert className="mt-2">
                       <AlertDescription className="text-xs">
                         Cannot be published as a scored question: {publishable.reason}
@@ -367,7 +367,7 @@ export function AllergenCourseWorkbench() {
                 <SelectContent>
                   <SelectItem value="none">No site chosen</SelectItem>
                   {branches.map((b: any) => (
-                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    <SelectItem key={b.id} value={b.id}>{b.display_name ?? b.branch}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -387,7 +387,7 @@ export function AllergenCourseWorkbench() {
               <AllergenAssessmentRunner
                 isTest={testMode}
                 branchId={branchId}
-                branchName={branches.find((b: any) => b.id === branchId)?.name}
+                branchName={branches.find((b: any) => b.id === branchId)?.display_name}
                 courseVersionLabel={versionLabel}
                 draftId={draft?.id ?? null}
               />
