@@ -155,6 +155,10 @@ export function AllergenCourseWorkbench() {
           <TabsTrigger value="practical">Practical sign-off</TabsTrigger>
           <TabsTrigger value="comparison" className="gap-1"><GitCompare className="h-3.5 w-3.5" />Version 1 vs 2</TabsTrigger>
           <TabsTrigger value="learner">Learner preview</TabsTrigger>
+          <TabsTrigger value="acceptance" className="gap-1">
+            <FlaskConical className="h-3.5 w-3.5" />Management learner preview
+          </TabsTrigger>
+          <TabsTrigger value="checklist">Hands-on checklist</TabsTrigger>
           <TabsTrigger value="programme" className="gap-1"><Users className="h-3.5 w-3.5" />Assignments, sign-off &amp; certificates</TabsTrigger>
         </TabsList>
 
