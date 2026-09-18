@@ -268,6 +268,313 @@ export type Database = {
           },
         ]
       }
+      allergen_change_proposals: {
+        Row: {
+          change_type: string
+          conflict_id: string | null
+          created_at: string
+          current_text: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          proposed_text: string
+          published_version: number | null
+          rationale: string | null
+          source_ids: string[]
+          status: string
+          target_kind: string
+          target_label: string
+          target_ref: string | null
+          tenant_id: string
+        }
+        Insert: {
+          change_type?: string
+          conflict_id?: string | null
+          created_at?: string
+          current_text?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          proposed_text: string
+          published_version?: number | null
+          rationale?: string | null
+          source_ids?: string[]
+          status?: string
+          target_kind?: string
+          target_label: string
+          target_ref?: string | null
+          tenant_id: string
+        }
+        Update: {
+          change_type?: string
+          conflict_id?: string | null
+          created_at?: string
+          current_text?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          proposed_text?: string
+          published_version?: number | null
+          rationale?: string | null
+          source_ids?: string[]
+          status?: string
+          target_kind?: string
+          target_label?: string
+          target_ref?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_change_proposals_conflict_id_fkey"
+            columns: ["conflict_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_conflicts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allergen_change_proposals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      allergen_conflicts: {
+        Row: {
+          affected_lessons: string[]
+          affected_questions: string[]
+          created_at: string
+          id: string
+          needs_admin_decision: boolean
+          recommended_wording: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          statements: Json
+          status: string
+          subject: string
+          subject_kind: string
+          tenant_id: string
+        }
+        Insert: {
+          affected_lessons?: string[]
+          affected_questions?: string[]
+          created_at?: string
+          id?: string
+          needs_admin_decision?: boolean
+          recommended_wording?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          statements?: Json
+          status?: string
+          subject: string
+          subject_kind?: string
+          tenant_id: string
+        }
+        Update: {
+          affected_lessons?: string[]
+          affected_questions?: string[]
+          created_at?: string
+          id?: string
+          needs_admin_decision?: boolean
+          recommended_wording?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          statements?: Json
+          status?: string
+          subject?: string
+          subject_kind?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_conflicts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      allergen_course_versions: {
+        Row: {
+          approved_proposal_ids: string[]
+          content: Json
+          id: string
+          note: string | null
+          published_at: string
+          published_by: string | null
+          review_date: string | null
+          source_map: Json
+          tenant_id: string
+          version: number
+        }
+        Insert: {
+          approved_proposal_ids?: string[]
+          content: Json
+          id?: string
+          note?: string | null
+          published_at?: string
+          published_by?: string | null
+          review_date?: string | null
+          source_map?: Json
+          tenant_id: string
+          version: number
+        }
+        Update: {
+          approved_proposal_ids?: string[]
+          content?: Json
+          id?: string
+          note?: string | null
+          published_at?: string
+          published_by?: string | null
+          review_date?: string | null
+          source_map?: Json
+          tenant_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_course_versions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      allergen_dish_reference: {
+        Row: {
+          active_branch_ids: string[]
+          availability_note: string | null
+          created_at: string
+          cross_contact_note: string | null
+          dish_kind: string
+          dish_name: string
+          id: string
+          is_confirmed: boolean
+          other_allergens: string[]
+          regulated_allergens: string[]
+          source_id: string | null
+          source_note: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active_branch_ids?: string[]
+          availability_note?: string | null
+          created_at?: string
+          cross_contact_note?: string | null
+          dish_kind?: string
+          dish_name: string
+          id?: string
+          is_confirmed?: boolean
+          other_allergens?: string[]
+          regulated_allergens?: string[]
+          source_id?: string | null
+          source_note?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active_branch_ids?: string[]
+          availability_note?: string | null
+          created_at?: string
+          cross_contact_note?: string | null
+          dish_kind?: string
+          dish_name?: string
+          id?: string
+          is_confirmed?: boolean
+          other_allergens?: string[]
+          regulated_allergens?: string[]
+          source_id?: string | null
+          source_note?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_dish_reference_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allergen_dish_reference_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      allergen_sources: {
+        Row: {
+          compliance_document_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_current: boolean
+          note: string | null
+          source_date: string | null
+          source_rank: string
+          source_version: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          compliance_document_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_current?: boolean
+          note?: string | null
+          source_date?: string | null
+          source_rank?: string
+          source_version?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          compliance_document_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_current?: boolean
+          note?: string | null
+          source_date?: string | null
+          source_rank?: string
+          source_version?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_sources_compliance_document_id_fkey"
+            columns: ["compliance_document_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allergen_sources_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcement_read_receipts: {
         Row: {
           announcement_id: string
