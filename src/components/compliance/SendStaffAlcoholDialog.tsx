@@ -39,9 +39,13 @@ export function SendStaffAlcoholDialog({
   const [testSend, setTestSend] = useState(false);
   const [showEveryone, setShowEveryone] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Nothing is ever sent from the first step — the recipient list must be
+  // confirmed on the second step first.
+  const [step, setStep] = useState<"choose" | "confirm">("choose");
 
   // Sites come from employee_branches — there is no branch column on employees.
   const employees = useEmployeesWithBranches();
+  const { data: decisions = [] } = useAlcoholListDecisions();
   const { data: licence } = usePremisesLicence(branch || undefined);
   const { data: requests = [] } = useLicenceSignatureRequests({ subjectType: "staff_alcohol" });
   const { data: authorisations = [] } = useAlcoholAuthorisations();
