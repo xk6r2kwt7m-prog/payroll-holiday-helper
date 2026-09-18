@@ -1068,6 +1068,10 @@ export function ContractSigningActions({
 
                 <ContractIntegrityPanel documentId={documentId} />
 
+                <ContractDeliveryPanel documentId={documentId} employeeEmail={employeeEmail} />
+
+
+
 
                 {!employeeEmail && (
                   <p className="text-[10px] text-muted-foreground">
