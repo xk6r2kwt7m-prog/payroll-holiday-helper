@@ -16,7 +16,7 @@ import {
   useAllergenSources, useSaveAllergenSource, useAllergenDishes, useSaveAllergenDish,
   useAllergenConflicts, useResolveAllergenConflict, useAllergenProposals,
   useDecideAllergenProposal, useAllergenCourseVersions, usePublishAllergenCourseVersion,
-  useBuildAllergenProposals, type AllergenProposal,
+  useBuildAllergenProposals, useApplyJulyMenus, type AllergenProposal,
 } from "@/hooks/useAllergenLibrary";
 import { useBranchLocations } from "@/hooks/useSchedule";
 import { ALLERGEN_SOURCE_RANKS, sourceRankLabel, sourcePriority } from "@/lib/allergen-sources";
@@ -449,7 +449,19 @@ function SourceLibrary() {
 function DishReference({ branches }: { branches: { id: string; name: string }[] }) {
   const { data: dishes = [] } = useAllergenDishes();
   const save = useSaveAllergenDish();
+  const applyMenus = useApplyJulyMenus();
   const [filter, setFilter] = useState("");
+  const [menuResult, setMenuResult] = useState<{
+    updated: number; notOnMenu: string[]; unmatchedSites: string[];
+  } | null>(null);
+
+  const applyMenus_run = async () => {
+    try {
+      setMenuResult(await applyMenus.mutateAsync(branches));
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
 
   const shown = dishes.filter((d) => d.dish_name.toLowerCase().includes(filter.toLowerCase()));
 
@@ -467,7 +479,34 @@ function DishReference({ branches }: { branches: { id: string; name: string }[] 
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search flavours" className="max-w-xs" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search flavours" className="max-w-xs" />
+          <Button size="sm" variant="outline" disabled={applyMenus.isPending} onClick={applyMenus_run}>
+            Apply the July 2026 customer menus
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          The July 2026 menus set which of the three sites — Carnaby, Brixton and Fitzrovia — sell each
+          flavour. They are used for availability only, never as the allergen authority: allergen wording
+          still comes from the approved matrix, supplier specifications and recipes, and nothing is
+          published to staff by this.
+        </p>
+        {menuResult && (
+          <div className="rounded-md border bg-muted/40 p-2.5 text-xs space-y-1">
+            <p>{menuResult.updated} flavour(s) had their live sites set from the July 2026 menus.</p>
+            {menuResult.notOnMenu.length > 0 && (
+              <p className="text-muted-foreground">
+                Not on either menu, kept as reference only: {menuResult.notOnMenu.join(", ")}
+              </p>
+            )}
+            {menuResult.unmatchedSites.length > 0 && (
+              <p className="text-warning">
+                No site record found for: {menuResult.unmatchedSites.join(", ")} — add or rename the site
+                and run this again.
+              </p>
+            )}
+          </div>
+        )}
         {shown.map((d) => (
           <div key={d.id} className="space-y-2 rounded-md border p-3">
             <div className="flex flex-wrap items-center gap-2">
