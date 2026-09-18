@@ -11,4 +11,4 @@ Validation note: 45 focused compliance/allergen checks passed. One existing addi
 ## Contract signature email delivery
 - [x] Trace the manual send flow and delivery records.
 - [x] Identify and fix false “Sent” reporting by separating provider acceptance from mailbox delivery.
-- [ ] Verify the corrected flow with isolated checks and confirm no staff contact occurred.
+- [x] Verify the corrected flow with isolated checks and confirm no staff contact occurred.

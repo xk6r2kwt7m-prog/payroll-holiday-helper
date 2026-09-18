@@ -649,8 +649,8 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
       if (result.success) {
         setContractEmailSent(true);
         toast({
-          title: "Contract sent",
-          description: `Contract sent to ${employeeEmail}`,
+            title: "Contract accepted for delivery",
+            description: `The email service accepted the message for ${employeeEmail}. Mailbox delivery is checked separately.`,
         });
       } else {
         toast({
@@ -1639,7 +1639,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
                       </Button>
                     ) : contractEmailSent ? (
                       <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center">
-                        <p className="text-xs font-medium text-primary">✓ Contract sent to {employeeEmail}</p>
+                        <p className="text-xs font-medium text-primary">Contract email accepted for {employeeEmail}</p>
                       </div>
                     ) : (
                       <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
