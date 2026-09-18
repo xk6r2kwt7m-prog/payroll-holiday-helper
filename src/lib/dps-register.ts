@@ -184,7 +184,11 @@ export function buildDpsRegister(opts: {
       approved_by: record?.authoriser_name ?? null,
       approver_licence: record?.authoriser_licence_number ?? null,
       revoked_reason: record?.revoked_reason ?? null,
-      listed_because: foh ? "front_of_house" : "authorisation_on_record",
+      listed_because: addedByManager
+        ? "manager_added"
+        : listed
+          ? "front_of_house"
+          : "authorisation_on_record",
       no_longer_employed: !stillEmployed(e),
     });
   }
