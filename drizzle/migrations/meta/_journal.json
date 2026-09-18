@@ -148,6 +148,13 @@
       "when": 1789743900244,
       "tag": "0020_contract_email_verification_and_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789745771861,
+      "tag": "0021_allergen_source_library_and_course_versions",
+      "breakpoints": true
     }
   ]
 }

@@ -42,7 +42,13 @@ export type ComplianceAuditEvent =
   | "reader_question_approved"
   | "reader_question_rejected"
   | "reader_enabled"
-  | "reader_disabled";
+  | "reader_disabled"
+  | "allergen_source_added"
+  | "allergen_source_edited"
+  | "allergen_dish_edited"
+  | "allergen_conflict_resolved"
+  | "allergen_proposal_decided"
+  | "allergen_course_published";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   document_created: "Document created",
@@ -82,6 +88,12 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   reader_question_rejected: "Question rejected",
   reader_enabled: "On-screen version turned on for staff",
   reader_disabled: "On-screen version turned off for staff",
+  allergen_source_added: "Allergen source document added to the library",
+  allergen_source_edited: "Allergen source priority or details edited",
+  allergen_dish_edited: "Dish or flavour allergen reference edited",
+  allergen_conflict_resolved: "Allergen source conflict resolved",
+  allergen_proposal_decided: "Allergen course change decided",
+  allergen_course_published: "Allergen course version published",
 };
 
 /** Audit actions supported by the shared audit log. */
@@ -90,7 +102,8 @@ export type AuditAction = "create" | "update" | "delete" | "approve" | "reject" 
 export function auditActionForEvent(event: ComplianceAuditEvent): AuditAction {
   if (
     event === "document_created" || event === "incident_created" ||
-    event === "licence_recorded" || event === "licence_condition_created"
+    event === "licence_recorded" || event === "licence_condition_created" ||
+    event === "allergen_source_added" || event === "allergen_course_published"
   ) return "create";
   if (event === "document_approved" || event === "branch_confirmed") return "approve";
   if (event === "document_rejected") return "reject";
