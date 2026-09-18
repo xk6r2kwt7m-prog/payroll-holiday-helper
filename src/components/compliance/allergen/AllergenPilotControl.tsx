@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle2, CircleAlert, Monitor, Send, Smartphone, Upload, Users } from "lucide-react";
+import { CheckCircle2, CircleAlert, Copy, Link2, Monitor, Send, Smartphone, Upload, Users } from "lucide-react";
+import { getCanonicalOrigin } from "@/lib/getCanonicalUrl";
 import { toast } from "sonner";
 import {
   ALLERGEN_SAFETY_LESSONS,
@@ -361,6 +362,46 @@ export function AllergenPilotControl() {
               {r.required.join(", ")}.
             </p>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* ── 5b. The staff link — copy only, never sent ── */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Link2 className="h-4 w-4" /> Staff training link
+          </CardTitle>
+          <CardDescription className="text-xs">
+            This is the link staff open on their phone or computer. Copy it and send it yourself when
+            you are ready — the system never sends it for you. Only people you have assigned can open
+            the course; everyone else sees a polite "not assigned yet" message.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="rounded-md border bg-muted/50 px-2 py-1 text-xs break-all">
+              {getCanonicalOrigin()}/training/allergen-safety
+            </code>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(`${getCanonicalOrigin()}/training/allergen-safety`);
+                  toast.success("Link copied. Send it yourself — nothing was sent by the system.");
+                } catch {
+                  toast.error("Could not copy — please copy the link shown above by hand.");
+                }
+              }}
+            >
+              <Copy className="h-3.5 w-3.5" /> Copy link
+            </Button>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            The link works only once the course is published and the person has an assignment. Sharing
+            the link alone grants no access.
+          </p>
         </CardContent>
       </Card>
 
