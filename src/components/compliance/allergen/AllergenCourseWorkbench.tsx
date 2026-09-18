@@ -184,6 +184,11 @@ export function AllergenCourseWorkbench() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
+                {lesson.condensed && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Shortened for management review: {lesson.condensed}
+                  </p>
+                )}
                 {lesson.sections.map((s) => (
                   <div key={s.ref} className="rounded-md border p-2 text-xs">
                     <div className="flex flex-wrap items-center justify-between gap-2">
