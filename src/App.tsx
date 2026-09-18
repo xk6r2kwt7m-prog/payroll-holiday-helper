@@ -65,6 +65,7 @@ import TermsOfUse from "./pages/TermsOfUse";
 import CookiePolicy from "./pages/CookiePolicy";
 import FohServiceTraining from "./pages/FohServiceTraining";
 import FohAllergyTraining from "./pages/FohAllergyTraining";
+import AllergenTraining from "./pages/AllergenTraining";
 import FohUpsellingTraining from "./pages/FohUpsellingTraining";
 import FohPrintableTraining from "./pages/FohPrintableTraining";
 import Integrations from "./pages/Integrations";
@@ -177,6 +178,9 @@ const App = () => (
             {/* FOH Training — staff+ */}
             <Route path="/foh/service" element={<ProtectedRoute requiredRole="staff"><FohServiceTraining /></ProtectedRoute>} />
             <Route path="/foh/allergy" element={<ProtectedRoute requiredRole="staff"><FohAllergyTraining /></ProtectedRoute>} />
+
+            {/* Allergen Safety course — staff, published version + assignment required */}
+            <Route path="/training/allergen-safety" element={<ProtectedRoute requiredRole="staff"><AllergenTraining /></ProtectedRoute>} />
             <Route path="/foh/upselling" element={<ProtectedRoute requiredRole="staff"><FohUpsellingTraining /></ProtectedRoute>} />
             <Route path="/foh/print" element={<ProtectedRoute requiredRole="staff"><FohPrintableTraining /></ProtectedRoute>} />
 
