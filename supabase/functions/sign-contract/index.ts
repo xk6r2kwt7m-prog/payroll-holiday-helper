@@ -601,9 +601,20 @@ Deno.serve(async (req) => {
         });
       }
 
+      const recoveryReason = String(rebuildBody?.reason || "").trim();
+      if (recoveryReason.length < 5) {
+        return new Response(JSON.stringify({
+          error: "Please give the reason a recovery copy is needed.",
+          error_code: "reason_required",
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: doc } = await supabase
         .from("employee_documents")
-        .select("id, tenant_id, employee_id, document_name, file_path, employees ( forename, surname )")
+        .select("id, tenant_id, employee_id, document_name, file_path, final_signed_pdf_url, final_document_hash, contract_state, employees ( forename, surname )")
         .eq("id", documentId)
         .maybeSingle();
 
