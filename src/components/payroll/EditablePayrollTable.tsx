@@ -887,7 +887,9 @@ export function EditablePayrollTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="w-[220px] sticky left-0 z-10 bg-muted/30">Employee</TableHead>
+              <TableHead className="w-[120px] max-w-[120px] sticky left-0 z-10 bg-muted/30 sm:w-[220px] sm:max-w-[220px]">
+                <span className="block truncate">Employee</span>
+              </TableHead>
               <TableHead>Dept</TableHead>
               <TableHead className="text-right">Rate</TableHead>
               <TableHead className="text-right">Service</TableHead>
