@@ -151,6 +151,8 @@ describe("6. Retrying without duplicate emails or signatures", () => {
   it("retrying delivery only creates a new link and a new attempt record", () => {
     expect(sendSigned).toContain("contract_delivery_attempts");
     expect(sendSigned).toMatch(/manual_retry/);
+    expect(deliveryPanel).toContain("document_id: documentId");
+    expect(deliveryPanel).not.toContain("body: { documentId,");
     expect(deliveryPanel).toContain("The signed file itself was not changed.");
     // No rebuild, overwrite or upload of the signed contract in the delivery path.
     expect(sendSigned).not.toMatch(/upsert:\s*true/);
