@@ -222,8 +222,13 @@ export function selectQuestionBank(opts: {
   const excluded: BankSelection["excluded"] = [];
   const eligible: AllergenQuestion[] = [];
 
-  /** A critical-safety control must never be dropped quietly. */
-  const droppedCriticalByEligibility: string[] = [];
+  /**
+   * A critical-safety control is always scored: those 15 questions are the
+   * approved safety rules and cannot be silently dropped. Where the dish record
+   * behind one is missing or not yet confirmed, the question stays in and the
+   * gap is reported to management instead.
+   */
+  const criticalWarnings: { id: string; flavour?: string; reason: string }[] = [];
 
   for (const q of opts.bank) {
     if (!q.active) {
@@ -237,18 +242,15 @@ export function selectQuestionBank(opts: {
         branchId: q.requires_current_menu ? opts.branchId : null,
       });
       if (!verdict.eligible) {
-        excluded.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
-        if (q.critical) droppedCriticalByEligibility.push(`${q.id} (${q.flavour}): ${verdict.reason}`);
-        continue;
+        if (q.critical) {
+          criticalWarnings.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
+        } else {
+          excluded.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
+          continue;
+        }
       }
     }
     eligible.push(q);
-  }
-
-  if (droppedCriticalByEligibility.length) {
-    throw new Error(
-      `A critical-safety question cannot be scored because its dish record is not in order: ${droppedCriticalByEligibility.join("; ")}. The dish records must be corrected before the assessment is used.`,
-    );
   }
 
   let questions = eligible;
