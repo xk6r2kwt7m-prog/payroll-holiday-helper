@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,9 @@ import {
   type InfoItemKey,
   type InfoRequestKind,
 } from "@/lib/info-request-items";
+import { useInfoCoverage } from "@/hooks/useInfoCoverage";
+import { allMissingItems, missingItems, REASKABLE_ITEMS } from "@/lib/info-request-coverage";
+
 
 /** Legacy export kept so older imports keep compiling. */
 export type InfoSection = "personal" | "emergency" | "bank" | "rtw";
@@ -48,23 +51,57 @@ export function RequestStaffDetailsDialog({
   const [email, setEmail] = useState(employeeEmail ?? "");
   const [expiryDays, setExpiryDays] = useState("7");
   const [preset, setPreset] = useState<string | null>(null);
-  const [selected, setSelected] = useState<InfoItemKey[]>(
-    kind === "onboarding" ? INFO_ITEMS.map((i) => i.key) : [],
-  );
+  const [selected, setSelected] = useState<InfoItemKey[]>([]);
+  const [touched, setTouched] = useState(false);
   const { data: history = [] } = useInfoRequests(employeeId);
+  const { data: coverage, isLoading: coverageLoading } = useInfoCoverage(employeeId, open);
   const send = useSendInfoRequest();
   const revoke = useRevokeInfoRequest();
 
+  /** What is genuinely missing (right-to-work items can always be asked again). */
+  const missingKeys = useMemo(() => {
+    if (!coverage) return [] as InfoItemKey[];
+    const missing = allMissingItems(coverage);
+    return kind === "onboarding"
+      ? Array.from(new Set([...missing, ...REASKABLE_ITEMS]))
+      : missing;
+  }, [coverage, kind]);
+
+  const heldKeys = useMemo(
+    () => (coverage ? INFO_ITEMS.map((i) => i.key).filter((k) => coverage[k]) : []),
+    [coverage],
+  );
+
+  /** Start from what is missing — the admin can still tick anything else. */
+  useEffect(() => {
+    if (!open || touched || !coverage) return;
+    setSelected(missingKeys);
+  }, [open, touched, coverage, missingKeys]);
+
+  useEffect(() => {
+    if (!open) {
+      setTouched(false);
+      setPreset(null);
+    }
+  }, [open]);
+
   const toggle = (key: InfoItemKey) =>
     setSelected((s) => {
+      setTouched(true);
       setPreset(null);
       return s.includes(key) ? s.filter((k) => k !== key) : [...s, key];
     });
 
+  /** Presets narrow themselves to the items we don't already hold. */
   const applyPreset = (key: string, items: InfoItemKey[]) => {
+    setTouched(true);
     setPreset(key);
-    setSelected([...items]);
+    const trimmed = coverage
+      ? Array.from(new Set([...missingItems(items, coverage), ...items.filter((i) => REASKABLE_ITEMS.includes(i))]))
+      : [...items];
+    setSelected(trimmed.length ? trimmed : [...items]);
   };
+
 
   const grouped = useMemo(
     () => GROUP_ORDER.map((g) => ({ group: g, items: INFO_ITEMS.filter((i) => i.group === g) })),
@@ -187,7 +224,16 @@ export function RequestStaffDetailsDialog({
             </div>
 
             <div className="space-y-3">
-              <Label>What to ask for</Label>
+              <div className="space-y-1">
+                <Label>What to ask for</Label>
+                <p id="coverage-summary" className="text-xs text-muted-foreground">
+                  {coverageLoading
+                    ? "Checking what we already hold..."
+                    : missingKeys.length === 0
+                      ? "We already hold everything on this list. Only tick something if you want it checked or refreshed."
+                      : `Ticked below: the ${missingKeys.length} item${missingKeys.length > 1 ? "s" : ""} we don't hold yet. Items marked "already on file" aren't asked for again unless you tick them.`}
+                </p>
+              </div>
               {grouped.map(({ group, items }) => (
                 <div key={group} className="space-y-1.5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group}</p>
@@ -203,13 +249,21 @@ export function RequestStaffDetailsDialog({
                         className="mt-0.5"
                       />
                       <span>
-                        <span className="block text-sm font-medium text-card-foreground">{item.label}</span>
+                        <span className="flex items-center gap-2 text-sm font-medium text-card-foreground">
+                          {item.label}
+                          {heldKeys.includes(item.key) && (
+                            <Badge variant="outline" className="text-[10px] font-normal">
+                              {REASKABLE_ITEMS.includes(item.key) ? "on file — may expire" : "already on file"}
+                            </Badge>
+                          )}
+                        </span>
                         <span className="block text-xs text-muted-foreground">{item.hint}</span>
                       </span>
                     </label>
                   ))}
                 </div>
               ))}
+
               {selected.some((k) => ["passport", "visa", "share_code"].includes(k)) && (
                 <p className="text-xs text-muted-foreground">
                   Right to work documents wait for your review before they count as checked. The expiry date
