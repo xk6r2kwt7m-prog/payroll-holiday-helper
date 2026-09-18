@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
     const { data: invite } = await admin
       .from("tenant_invitations")
-      .select("id, tenant_id, email, role, status, accepted_at, expires_at, tenants(name)")
+      .select("id, tenant_id, email, role, status, accepted_at, expires_at, employee_id, opened_at, tenants(name)")
       .eq("token", token)
       .maybeSingle();
 
@@ -103,16 +103,48 @@ Deno.serve(async (req) => {
 
     const companyName = (invite as any).tenants?.name ?? "your team";
 
-    // Staff record for this email, in the inviting company only.
-    const { data: employee } = await admin
-      .from("employees")
-      .select("id, forename, surname, preferred_name, user_id")
-      .eq("tenant_id", invite.tenant_id)
-      .ilike("email", invite.email)
-      .limit(1)
-      .maybeSingle();
+    // Who is this invitation for?
+    // 1. The staff record the manager chose when sending it — always wins, so the
+    //    name on the link can never be guessed from a shared email address.
+    // 2. Only if no record was attached (older invitations) do we fall back to the
+    //    email address, and then only to current staff. If more than one current
+    //    record shares the address we refuse rather than guess.
+    let employee: { id: string; forename: string; surname: string; preferred_name: string | null; user_id: string | null } | null = null;
+
+    if (invite.employee_id) {
+      const { data } = await admin
+        .from("employees")
+        .select("id, forename, surname, preferred_name, user_id")
+        .eq("tenant_id", invite.tenant_id)
+        .eq("id", invite.employee_id)
+        .maybeSingle();
+      employee = data as any;
+    } else {
+      const { data: candidates } = await admin
+        .from("employees")
+        .select("id, forename, surname, preferred_name, user_id, status, archived_at, is_test_record")
+        .eq("tenant_id", invite.tenant_id)
+        .ilike("email", invite.email);
+      const current = (candidates ?? []).filter(
+        (e: any) => !e.archived_at && e.status !== "leaver" && !e.is_test_record,
+      );
+      if (current.length > 1) {
+        return json({
+          error: "ambiguous_record",
+          message:
+            "More than one staff record uses this email address, so we cannot be sure who this link belongs to. Please ask your manager to send a new link from your own staff record.",
+        }, 409);
+      }
+      employee = (current[0] as any) ?? null;
+    }
 
     if (req.method === "GET") {
+      if (!invite.opened_at) {
+        await admin
+          .from("tenant_invitations")
+          .update({ opened_at: new Date().toISOString() })
+          .eq("id", invite.id);
+      }
       return json({
         email: invite.email,
         company_name: companyName,
