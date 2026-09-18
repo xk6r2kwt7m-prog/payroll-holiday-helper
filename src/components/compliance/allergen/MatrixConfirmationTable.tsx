@@ -138,6 +138,43 @@ export function MatrixConfirmationTable({ branches }: { branches: { id: string; 
             its recipe and supplier information carry no unresolved disagreement. The July 2026
             customer menus are used for availability only, never as the allergen authority.
           </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" disabled={!matched.length || record.isPending}>
+                {matched.length
+                  ? `Confirm the ${matched.length} flavour(s) that match the matrix`
+                  : "All matched flavours are confirmed"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="max-h-[80vh] overflow-y-auto">
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Confirm {matched.length} flavour(s) against the approved July 2026 matrix?
+                </AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-2 text-left text-xs">
+                    <p>
+                      Each of these flavours matches the declaration in the approved matrix and has no
+                      unresolved supplier or recipe disagreement. The matrix is recorded as the source and
+                      your decision is written to the audit trail. Branch availability is not changed.
+                    </p>
+                    <ul className="list-disc space-y-0.5 pl-5">
+                      {matched.map((d) => <li key={d.id}>{d.dish_name}</li>)}
+                    </ul>
+                    <p className="font-medium">
+                      Nothing is published to staff, no assignment is created and no certificate is issued.
+                    </p>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmMatched}>
+                  Confirm these {matched.length} flavour(s)
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
