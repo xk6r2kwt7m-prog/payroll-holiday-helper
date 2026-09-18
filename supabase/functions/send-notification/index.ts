@@ -265,6 +265,13 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
+    // EMAIL CONTENT RULE (contract emails): emails may contain the recipient's
+    // first name, the employee's name, a contract reference and secure links
+    // ONLY. Never include stored personal data — home address, NI number, bank
+    // details, date of birth, phone number, emergency contact — in any email
+    // body. Emails can be forwarded or read from shared inboxes; held details
+    // are only ever shown behind the secure, single-use signing link. We only
+    // ever ASK for information the system does not already hold.
     case "contract_signing": {
       const empFirstName = (data.employee_name || "").split(" ")[0] || "there";
       body = `
