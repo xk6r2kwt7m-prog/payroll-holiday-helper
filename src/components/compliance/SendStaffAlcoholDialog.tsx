@@ -231,6 +231,7 @@ export function SendStaffAlcoholDialog({
                     <label key={e.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer">
                       <Checkbox
                         checked={selected.includes(e.id)}
+                        disabled={!e.email}
                         onCheckedChange={(v) =>
                           setSelected((s) => (v === true ? [...s, e.id] : s.filter((x) => x !== e.id)))
                         }
@@ -241,7 +242,7 @@ export function SendStaffAlcoholDialog({
                           {e.department ? <span className="text-muted-foreground"> · {e.department}</span> : null}
                         </span>
                         <span className="block text-xs text-muted-foreground truncate">
-                          {alcoholAskStateLabel(e.state)}
+                          {e.email ? alcoholAskStateLabel(e.state) : "Cannot be sent — no email address on file"}
                         </span>
                       </span>
                     </label>
