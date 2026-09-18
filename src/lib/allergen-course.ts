@@ -222,6 +222,9 @@ export function selectQuestionBank(opts: {
   const excluded: BankSelection["excluded"] = [];
   const eligible: AllergenQuestion[] = [];
 
+  /** A critical-safety control must never be dropped quietly. */
+  const droppedCriticalByEligibility: string[] = [];
+
   for (const q of opts.bank) {
     if (!q.active) {
       excluded.push({ id: q.id, flavour: q.flavour, reason: "Question is switched off." });
@@ -235,10 +238,17 @@ export function selectQuestionBank(opts: {
       });
       if (!verdict.eligible) {
         excluded.push({ id: q.id, flavour: q.flavour, reason: verdict.reason });
+        if (q.critical) droppedCriticalByEligibility.push(`${q.id} (${q.flavour}): ${verdict.reason}`);
         continue;
       }
     }
     eligible.push(q);
+  }
+
+  if (droppedCriticalByEligibility.length) {
+    throw new Error(
+      `A critical-safety question cannot be scored because its dish record is not in order: ${droppedCriticalByEligibility.join("; ")}. The dish records must be corrected before the assessment is used.`,
+    );
   }
 
   let questions = eligible;
