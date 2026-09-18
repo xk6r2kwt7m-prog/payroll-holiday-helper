@@ -204,6 +204,46 @@ export function useSaveAllergenDish() {
   });
 }
 
+/**
+ * Records the management decision for one flavour against the approved matrix.
+ * Only "Confirm" marks the flavour confirmed; every other decision leaves it
+ * unconfirmed so no scored question can be produced from it. Nothing is
+ * published and no allergen wording is rewritten here.
+ */
+export function useRecordDishDecision() {
+  const { tenantId } = useTenant();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      dish_name: string;
+      decision: DishManagementDecision;
+      note?: string;
+    }) => {
+      if (!tenantId) throw new Error("No tenant");
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("allergen_dish_reference")
+        .update({
+          management_decision: input.decision,
+          decision_note: input.note ?? null,
+          decided_by: user?.id ?? null,
+          decided_at: new Date().toISOString(),
+          is_confirmed: input.decision === "confirm",
+        } as any)
+        .eq("id", input.id)
+        .eq("tenant_id", tenantId);
+      if (error) throw error;
+      await logComplianceAudit({
+        tenantId, table: "allergen_dish_reference", recordId: input.id,
+        event: "allergen_dish_decision",
+        note: `Management decision for ${input.dish_name}: ${input.decision}${input.note ? ` — ${input.note}` : ""}`,
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["allergen-dishes"] }),
+  });
+}
+
 /* ───────────────────────── Conflicts ───────────────────────── */
 
 export function useAllergenConflicts() {
