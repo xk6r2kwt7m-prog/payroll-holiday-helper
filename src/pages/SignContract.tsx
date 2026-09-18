@@ -449,7 +449,9 @@ export default function SignContract() {
               <User className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Your details</h1>
+              <h1 className="text-lg font-bold text-foreground">
+                {fieldsToAsk.length ? "A few missing details" : "Check your details"}
+              </h1>
               <p className="text-xs text-muted-foreground">
                 Step 1 of 2 — your contract appears once these are saved
               </p>
