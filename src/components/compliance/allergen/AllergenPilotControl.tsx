@@ -98,20 +98,32 @@ export function AllergenPilotControl() {
   const siteChecks = useMemo(
     () =>
       UD_SITES.map((site) => {
-        const bank = selectQuestionBank({
-          bank: ALLERGEN_QUESTION_BANK,
-          ...eligibility,
-          branchId: siteBranchId(site),
-          seed: `pilot:${site}`,
-        });
-        const scoredFlavours = bank.questions.map((q) => q.flavour).filter(Boolean) as string[];
-        return {
-          site,
-          scored: bank.questions.length,
-          critical: bank.questions.filter((q) => q.critical).length,
-          menu: bank.questions.filter((q) => !q.critical).length,
-          validation: validateBranchFlavourQuestions(site, scoredFlavours),
-        };
+        try {
+          const bank = selectQuestionBank({
+            bank: ALLERGEN_QUESTION_BANK,
+            ...eligibility,
+            branchId: siteBranchId(site),
+            seed: `pilot:${site}`,
+          });
+          const scoredFlavours = bank.questions.map((q) => q.flavour).filter(Boolean) as string[];
+          return {
+            site,
+            scored: bank.questions.length,
+            critical: bank.questions.filter((q) => q.critical).length,
+            menu: bank.questions.filter((q) => !q.critical).length,
+            validation: validateBranchFlavourQuestions(site, scoredFlavours),
+            problem: null as string | null,
+          };
+        } catch (e: any) {
+          return {
+            site,
+            scored: 0,
+            critical: 0,
+            menu: 0,
+            validation: { site, scoredFlavours: [], findings: [], ok: false },
+            problem: e?.message ?? "The assessment could not be built for this site.",
+          };
+        }
       }),
     [eligibility, branches],
   );
