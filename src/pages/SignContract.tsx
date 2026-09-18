@@ -47,7 +47,6 @@ const DETAIL_FIELDS = [
   { key: "full_name", label: "Full legal name", required: true, placeholder: "e.g. John Smith" },
   { key: "date_of_birth", label: "Date of birth", required: true, type: "date" },
   { key: "address", label: "Home address", required: true, placeholder: "House, street, town, postcode" },
-  { key: "phone", label: "Mobile number", required: true, placeholder: "e.g. 07700 900123" },
 ] as const;
 
 /** Held values that must never be rendered back to the signer. */

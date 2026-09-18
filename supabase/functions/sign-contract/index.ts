@@ -920,7 +920,8 @@ Deno.serve(async (req) => {
             document_type,
             file_path,
             requires_details_first,
-            details_submitted_at
+            details_submitted_at,
+            terms_snapshot
           ),
           employees (
             id,
@@ -1009,12 +1010,30 @@ Deno.serve(async (req) => {
         };
 
         const emp = signingToken.employees as any;
+
+        // An address typed by an administrator when the contract was created is
+        // held on the contract record itself, so it counts as already known and
+        // must never be asked for again.
+        const snapshotVars =
+          ((signingToken.employee_documents as any)?.terms_snapshot?.variables as
+            | Record<string, unknown>
+            | undefined) ?? {};
+        const fromSnapshot = (...keys: string[]): string => {
+          for (const k of keys) {
+            const v = snapshotVars[k];
+            if (typeof v === "string" && v.trim()) return v.trim();
+          }
+          return "";
+        };
+
         const known: Record<string, string> = {
           full_name:
             pick("full_name", "legal_name") ||
             `${emp.forename} ${emp.surname}`.trim(),
           date_of_birth: (emp.date_of_birth as string | null) || pick("date_of_birth", "dob"),
-          address: pick("address", "home_address", "full_address"),
+          address:
+            pick("address", "home_address", "full_address") ||
+            fromSnapshot("homeAddress", "home_address", "address"),
           phone: pick("phone", "mobile", "phone_number"),
           national_insurance:
             (emp.ni_number as string | null) || pick("national_insurance", "ni_number"),
@@ -1022,7 +1041,9 @@ Deno.serve(async (req) => {
           emergency_contact_phone: pick("emergency_contact_phone", "phone", "contact_number"),
         };
 
-        const requiredKeys = ["full_name", "date_of_birth", "address", "phone"];
+        // A mobile number is not needed for a contract, so it is never asked for
+        // here. Phone numbers are collected only through a staff details request.
+        const requiredKeys = ["full_name", "date_of_birth", "address"];
         const missingFields = requiredKeys.filter((k) => !known[k]);
 
         const detailsDone =

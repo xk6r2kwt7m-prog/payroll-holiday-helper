@@ -127,6 +127,25 @@ describe("signing page only asks for details not already held", () => {
     expect(signContractSrc).toContain("!NON_DISCLOSABLE_KEYS.includes");
   });
 
+  it("never asks for a mobile number — a contract does not need one", () => {
+    const block = signContractSrc.slice(
+      signContractSrc.indexOf("const DETAIL_FIELDS"),
+      signContractSrc.indexOf("] as const", signContractSrc.indexOf("const DETAIL_FIELDS")),
+    );
+    expect(block).not.toContain("Mobile number");
+    expect(block).not.toContain('key: "phone"');
+  });
+
+  it("treats an address held on the contract record as already known", () => {
+    const fn = readFileSync(
+      resolve(process.cwd(), "supabase/functions/sign-contract/index.ts"),
+      "utf8",
+    );
+    expect(fn).toContain("terms_snapshot");
+    expect(fn).toContain('fromSnapshot("homeAddress"');
+    expect(fn).toContain('const requiredKeys = ["full_name", "date_of_birth", "address"]');
+  });
+
   it("asks only for the required contract fields, nothing optional", () => {
     const block = signContractSrc.slice(
       signContractSrc.indexOf("const DETAIL_FIELDS"),
