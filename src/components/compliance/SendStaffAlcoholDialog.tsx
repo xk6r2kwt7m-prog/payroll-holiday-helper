@@ -270,12 +270,24 @@ export function SendStaffAlcoholDialog({
             <Switch checked={testSend} onCheckedChange={setTestSend} />
           </label>
         </div>
+        )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={busy || !ready || selected.length === 0}>
-            {busy ? "Sending..." : `Send${selected.length ? ` to ${selected.length}` : ""}`}
-          </Button>
+          {step === "confirm" ? (
+            <>
+              <Button variant="outline" onClick={() => setStep("choose")} disabled={busy}>Back</Button>
+              <Button onClick={submit} disabled={busy || !ready || chosen.length === 0}>
+                {busy ? "Sending..." : `Send to these ${chosen.length} ${chosen.length === 1 ? "person" : "people"}`}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={review} disabled={!ready || chosen.length === 0}>
+                Review who it goes to
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
