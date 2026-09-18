@@ -894,6 +894,60 @@ export default function SignContract() {
             {signerEmail.trim().length > 0 && !emailLooksValid && (
               <p className="text-[11px] text-destructive mt-1">That does not look like a full email address.</p>
             )}
+
+            {/* A changed address must be proven by a one-time code before signing. */}
+            {emailLooksValid && emailChanged && !emailVerified && (
+              <div className="mt-3 rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
+                <p className="text-xs text-foreground">
+                  This is different from the address held for this contract. To use it, we need to check it belongs to
+                  you: we will email a 6-digit code to <span className="font-medium">{signerEmail.trim()}</span>.
+                </p>
+                {!codeRequested ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={requestEmailCode}
+                    disabled={codeSending}
+                    className="w-full"
+                  >
+                    {codeSending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send me a code"}
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <Input
+                      value={codeInput}
+                      onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="6-digit code"
+                      inputMode="numeric"
+                      className="text-base tracking-widest"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={confirmEmailCode}
+                        disabled={codeInput.length !== 6 || codeChecking}
+                        className="flex-1"
+                      >
+                        {codeChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check code"}
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={requestEmailCode} disabled={codeSending}>
+                        Resend
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">The code lasts 15 minutes.</p>
+                  </div>
+                )}
+                {codeError && <p className="text-[11px] text-destructive">{codeError}</p>}
+              </div>
+            )}
+
+            {emailChanged && emailVerified && (
+              <p className="text-[11px] text-success mt-2">
+                This address has been verified. Your completed contract will be sent here.
+              </p>
+            )}
           </div>
 
           {/* Two separate confirmations: acceptance of the terms, and consent to sign electronically */}
