@@ -123,8 +123,6 @@ export function ContractSigningActions({
   const [testMode, setTestMode] = useState(false);
   const { user } = useAuth();
   const myEmail = user?.email || "";
-  const hasContractSend = contractSendStatus === "sent" || emailSent;
-  const delivery = useContractEmailDelivery(documentId, hasContractSend && !bothSigned);
 
   useEffect(() => {
     setEmailOnFile(employeeEmail || "");
@@ -297,6 +295,8 @@ export function ContractSigningActions({
   const employeeSigned = signatures?.some((s) => s.signer_type === "employee");
   const employerSigned = signatures?.some((s) => s.signer_type === "employer");
   const bothSigned = employeeSigned && employerSigned;
+  const hasContractSend = contractSendStatus === "sent" || emailSent;
+  const delivery = useContractEmailDelivery(documentId, hasContractSend && !bothSigned);
 
   const sendEval = evaluateContractSend({
     mode: sendMode,
