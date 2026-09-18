@@ -101,8 +101,10 @@ describe("signing page only asks for details not already held", () => {
   });
 
   it("tells the signer we never email personal details", () => {
-    expect(signContractSrc).toContain("We only ask for details we don't already hold");
-    expect(signContractSrc).toContain("we never send your personal details by email");
+    // Normalise whitespace/case: the copy wraps across JSX lines.
+    const flat = signContractSrc.replace(/\s+/g, " ").toLowerCase();
+    expect(flat).toContain("we only ask for details we don't already hold");
+    expect(flat).toContain("we never send your personal details by email");
   });
 
   it("skips the details step entirely when nothing is missing", () => {
