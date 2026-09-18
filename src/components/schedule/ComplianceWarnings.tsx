@@ -165,7 +165,7 @@ export function ComplianceWarningsBanner({ warnings }: { warnings: Warning[] }) 
           <span className="text-xs">WTR Compliance</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0" align="start">
+      <PopoverContent className="w-[calc(100vw-2rem)] max-w-[400px] p-0" align="start">
         <div className="px-4 py-3 border-b border-border">
           <h3 className="font-semibold text-sm">Working Time Regulation Alerts</h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">

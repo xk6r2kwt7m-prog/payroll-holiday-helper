@@ -27,10 +27,10 @@ const presets: { value: DatePreset; label: string }[] = [
 
 export function FinancialFilters({ filters, onChange, branches }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
       {/* Period preset */}
       <Select value={filters.preset} onValueChange={(v) => onChange({ ...filters, preset: v as DatePreset })}>
-        <SelectTrigger className="w-[140px] h-8 text-xs">
+        <SelectTrigger className="h-9 w-full text-xs sm:h-8 sm:w-[140px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -45,7 +45,7 @@ export function FinancialFilters({ filters, onChange, branches }: Props) {
         <>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+              <Button variant="outline" size="sm" className="h-9 w-full text-xs gap-1 sm:h-8 sm:w-auto">
                 <CalendarIcon className="h-3 w-3" />
                 {filters.dateFrom ? format(parseISO(filters.dateFrom), "d MMM") : "From"}
               </Button>
@@ -61,7 +61,7 @@ export function FinancialFilters({ filters, onChange, branches }: Props) {
           </Popover>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+              <Button variant="outline" size="sm" className="h-9 w-full text-xs gap-1 sm:h-8 sm:w-auto">
                 <CalendarIcon className="h-3 w-3" />
                 {filters.dateTo ? format(parseISO(filters.dateTo), "d MMM") : "To"}
               </Button>
@@ -80,7 +80,7 @@ export function FinancialFilters({ filters, onChange, branches }: Props) {
 
       {/* Site filter */}
       <Select value={filters.site} onValueChange={(v) => onChange({ ...filters, site: v })}>
-        <SelectTrigger className="w-[130px] h-8 text-xs">
+        <SelectTrigger className="h-9 w-full text-xs sm:h-8 sm:w-[130px]">
           <SelectValue placeholder="All sites" />
         </SelectTrigger>
         <SelectContent>
@@ -92,7 +92,7 @@ export function FinancialFilters({ filters, onChange, branches }: Props) {
       </Select>
 
       {/* Compare toggle */}
-      <div className="flex items-center gap-1.5 ml-auto">
+      <div className="col-span-2 flex items-center gap-1.5 sm:col-span-1 sm:ml-auto">
         <Switch
           id="compare"
           checked={filters.comparePrevious}
