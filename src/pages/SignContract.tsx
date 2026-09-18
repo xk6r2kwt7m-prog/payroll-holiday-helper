@@ -33,15 +33,37 @@ interface ContractInfo {
   }>;
 }
 
+/**
+ * PRIVACY RULE — contract link and contract emails:
+ *  1. Never disclose stored personal data. Emails carry only a name and a
+ *     secure link; this page never displays a held date of birth, National
+ *     Insurance number, address, phone, bank detail or emergency contact.
+ *  2. Never ask for anything outside the required contract set below.
+ *     Anything else (emergency contacts, right-to-work documents, bank
+ *     details) is collected through a staff details request chosen by an
+ *     administrator, not through a contract link.
+ */
 const DETAIL_FIELDS = [
   { key: "full_name", label: "Full legal name", required: true, placeholder: "e.g. John Smith" },
   { key: "date_of_birth", label: "Date of birth", required: true, type: "date" },
   { key: "address", label: "Home address", required: true, placeholder: "House, street, town, postcode" },
   { key: "phone", label: "Mobile number", required: true, placeholder: "e.g. 07700 900123" },
-  { key: "national_insurance", label: "National Insurance number", required: false, placeholder: "e.g. QQ123456C" },
-  { key: "emergency_contact_name", label: "Emergency contact name", required: false },
-  { key: "emergency_contact_phone", label: "Emergency contact number", required: false },
 ] as const;
+
+/** Held values that must never be rendered back to the signer. */
+const NON_DISCLOSABLE_KEYS = [
+  "date_of_birth",
+  "national_insurance",
+  "ni_number",
+  "address",
+  "phone",
+  "bank",
+  "sort_code",
+  "account_number",
+  "emergency_contact_name",
+  "emergency_contact_phone",
+] as const;
+
 
 type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "missing_signature" | "internal_error" | "missing_token" | string;
 
@@ -495,18 +517,20 @@ export default function SignContract() {
 
   if (!contractInfo) return null;
 
-  // Only ask for what is genuinely not held. Anything already on record is
-  // shown back for confirmation instead of being typed again.
+  // Only ask for what is genuinely missing, and never more than the required
+  // contract set. Held details are acknowledged but never displayed back.
   const onFileKeys = new Set(Object.keys(contractInfo.on_file ?? {}));
   const missingSet = new Set(contractInfo.missing_fields ?? []);
   const fieldsToAsk = DETAIL_FIELDS.filter((f) =>
-    contractInfo.missing_fields
-      ? missingSet.has(f.key) || (!f.required && !onFileKeys.has(f.key))
-      : true,
+    contractInfo.missing_fields ? missingSet.has(f.key) : true,
   );
   const alreadyOnFile = DETAIL_FIELDS.filter(
-    (f) => onFileKeys.has(f.key) && !fieldsToAsk.some((a) => a.key === f.key),
+    (f) =>
+      onFileKeys.has(f.key) &&
+      !fieldsToAsk.some((a) => a.key === f.key) &&
+      !NON_DISCLOSABLE_KEYS.includes(f.key as (typeof NON_DISCLOSABLE_KEYS)[number]),
   );
+
 
   // ══════════ Details first: contract stays hidden until submitted ══════════
   if (detailsRequired) {
@@ -534,9 +558,10 @@ export default function SignContract() {
               Hello {contractInfo.employee_name}.{" "}
               {fieldsToAsk.length
                 ? "We already hold most of your details. Please add only the few below."
-                : "We already hold everything we need — just check the details below."}{" "}
-              We only ask for details we don't already hold, and we never send your
-              personal details by email.
+                : "We already hold everything we need — nothing further to add."}{" "}
+              We only ask for details we don't already hold, we never show your
+              stored details back on this page, and we never send your personal
+              details by email.
             </p>
 
             {alreadyOnFile.length > 0 && (
@@ -549,10 +574,12 @@ export default function SignContract() {
                   </div>
                 ))}
                 <p className="text-[11px] text-muted-foreground pt-1">
-                  If anything here is wrong, tell your manager — they will update it.
+                  Anything else we hold is kept securely and not shown here. If
+                  something is wrong, tell your manager — they will update it.
                 </p>
               </div>
             )}
+
 
             {fieldsToAsk.map((field) => (
               <div key={field.key}>
