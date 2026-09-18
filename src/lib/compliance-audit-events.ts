@@ -53,6 +53,14 @@ export type ComplianceAuditEvent =
   | "allergen_draft_prepared"
   | "allergen_assessment_submitted"
   | "allergen_coaching_recorded"
+  | "allergen_assignment_created"
+  | "allergen_assignment_withdrawn"
+  | "allergen_observation_started"
+  | "allergen_observation_signed"
+  | "allergen_certificate_issued"
+  | "allergen_certificate_revoked"
+  | "allergen_certificate_superseded"
+  | "allergen_renewal_settings_changed"
   | "alcohol_list_decision_recorded";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
@@ -102,6 +110,14 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   allergen_draft_prepared: "Draft allergen course snapshot prepared for management review",
   allergen_assessment_submitted: "Allergen assessment attempt submitted and marked",
   allergen_coaching_recorded: "Manager coaching recorded before a further allergen attempt",
+  allergen_assignment_created: "Allergen course assignment created",
+  allergen_assignment_withdrawn: "Allergen course assignment withdrawn",
+  allergen_observation_started: "Practical allergen observation started",
+  allergen_observation_signed: "Practical allergen observation signed by a manager",
+  allergen_certificate_issued: "Allergen certificate issued",
+  allergen_certificate_revoked: "Allergen certificate revoked",
+  allergen_certificate_superseded: "Allergen certificate superseded",
+  allergen_renewal_settings_changed: "Allergen validity and reminder settings changed",
   allergen_course_published: "Allergen course version published",
   alcohol_list_decision_recorded: "Alcohol list — front of house decided by the manager",
 };

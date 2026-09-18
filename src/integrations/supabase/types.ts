@@ -406,6 +406,208 @@ export type Database = {
           },
         ]
       }
+      allergen_assignments: {
+        Row: {
+          assigned_by: string | null
+          assigned_by_name: string | null
+          assignment_source: string
+          audience: string
+          branch_id: string | null
+          course_version: number | null
+          created_at: string
+          draft_id: string | null
+          due_date: string | null
+          employee_id: string | null
+          id: string
+          is_test: boolean
+          note: string | null
+          notification_state: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          user_id: string | null
+          withdrawn_at: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_by_name?: string | null
+          assignment_source?: string
+          audience?: string
+          branch_id?: string | null
+          course_version?: number | null
+          created_at?: string
+          draft_id?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          is_test?: boolean
+          note?: string | null
+          notification_state?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          user_id?: string | null
+          withdrawn_at?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_by_name?: string | null
+          assignment_source?: string
+          audience?: string
+          branch_id?: string | null
+          course_version?: number | null
+          created_at?: string
+          draft_id?: string | null
+          due_date?: string | null
+          employee_id?: string | null
+          id?: string
+          is_test?: boolean
+          note?: string | null
+          notification_state?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string | null
+          withdrawn_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_assignments_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_course_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      allergen_certificates: {
+        Row: {
+          assignment_id: string | null
+          attempt_id: string | null
+          branch_id: string | null
+          certificate_number: string
+          course_title: string
+          course_version: number | null
+          created_at: string
+          delivery_state: string
+          draft_id: string | null
+          employee_id: string | null
+          employee_name: string | null
+          evidence: Json
+          expires_on: string | null
+          id: string
+          is_test: boolean
+          issued_at: string
+          issued_by: string | null
+          issued_by_name: string | null
+          lessons_completed: number | null
+          lessons_required: number | null
+          observation_id: string | null
+          practical_signed_at: string | null
+          practical_signed_by_name: string | null
+          score_percent: number | null
+          status: string
+          superseded_reason: string | null
+          tenant_id: string
+          updated_at: string
+          user_id: string | null
+          valid_from: string
+        }
+        Insert: {
+          assignment_id?: string | null
+          attempt_id?: string | null
+          branch_id?: string | null
+          certificate_number: string
+          course_title: string
+          course_version?: number | null
+          created_at?: string
+          delivery_state?: string
+          draft_id?: string | null
+          employee_id?: string | null
+          employee_name?: string | null
+          evidence?: Json
+          expires_on?: string | null
+          id?: string
+          is_test?: boolean
+          issued_at?: string
+          issued_by?: string | null
+          issued_by_name?: string | null
+          lessons_completed?: number | null
+          lessons_required?: number | null
+          observation_id?: string | null
+          practical_signed_at?: string | null
+          practical_signed_by_name?: string | null
+          score_percent?: number | null
+          status?: string
+          superseded_reason?: string | null
+          tenant_id: string
+          updated_at?: string
+          user_id?: string | null
+          valid_from?: string
+        }
+        Update: {
+          assignment_id?: string | null
+          attempt_id?: string | null
+          branch_id?: string | null
+          certificate_number?: string
+          course_title?: string
+          course_version?: number | null
+          created_at?: string
+          delivery_state?: string
+          draft_id?: string | null
+          employee_id?: string | null
+          employee_name?: string | null
+          evidence?: Json
+          expires_on?: string | null
+          id?: string
+          is_test?: boolean
+          issued_at?: string
+          issued_by?: string | null
+          issued_by_name?: string | null
+          lessons_completed?: number | null
+          lessons_required?: number | null
+          observation_id?: string | null
+          practical_signed_at?: string | null
+          practical_signed_by_name?: string | null
+          score_percent?: number | null
+          status?: string
+          superseded_reason?: string | null
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string | null
+          valid_from?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_certificates_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allergen_certificates_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_assessment_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allergen_certificates_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_course_drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allergen_certificates_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_practical_observations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       allergen_change_proposals: {
         Row: {
           change_type: string
@@ -858,6 +1060,131 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      allergen_practical_observations: {
+        Row: {
+          assignment_id: string | null
+          audience: string
+          branch_id: string | null
+          course_version: number | null
+          created_at: string
+          critical_missed: string[]
+          employee_id: string | null
+          id: string
+          is_test: boolean
+          item_results: Json
+          items_seen: number
+          items_total: number
+          manager_note: string | null
+          observed_on: string | null
+          outcome: string
+          signed_at: string | null
+          signed_by: string | null
+          signed_by_name: string | null
+          signed_role: string | null
+          template_version: string
+          tenant_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assignment_id?: string | null
+          audience?: string
+          branch_id?: string | null
+          course_version?: number | null
+          created_at?: string
+          critical_missed?: string[]
+          employee_id?: string | null
+          id?: string
+          is_test?: boolean
+          item_results?: Json
+          items_seen?: number
+          items_total?: number
+          manager_note?: string | null
+          observed_on?: string | null
+          outcome?: string
+          signed_at?: string | null
+          signed_by?: string | null
+          signed_by_name?: string | null
+          signed_role?: string | null
+          template_version?: string
+          tenant_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assignment_id?: string | null
+          audience?: string
+          branch_id?: string | null
+          course_version?: number | null
+          created_at?: string
+          critical_missed?: string[]
+          employee_id?: string | null
+          id?: string
+          is_test?: boolean
+          item_results?: Json
+          items_seen?: number
+          items_total?: number
+          manager_note?: string | null
+          observed_on?: string | null
+          outcome?: string
+          signed_at?: string | null
+          signed_by?: string | null
+          signed_by_name?: string | null
+          signed_role?: string | null
+          template_version?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergen_practical_observations_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      allergen_renewal_settings: {
+        Row: {
+          automatic_sending_enabled: boolean
+          created_at: string
+          id: string
+          new_version_action: string
+          overdue_reminder_days: number[]
+          reminder_days_before: number[]
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          validity_months: number
+        }
+        Insert: {
+          automatic_sending_enabled?: boolean
+          created_at?: string
+          id?: string
+          new_version_action?: string
+          overdue_reminder_days?: number[]
+          reminder_days_before?: number[]
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+          validity_months?: number
+        }
+        Update: {
+          automatic_sending_enabled?: boolean
+          created_at?: string
+          id?: string
+          new_version_action?: string
+          overdue_reminder_days?: number[]
+          reminder_days_before?: number[]
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          validity_months?: number
+        }
+        Relationships: []
       }
       allergen_sources: {
         Row: {

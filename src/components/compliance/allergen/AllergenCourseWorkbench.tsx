@@ -15,7 +15,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Smartphone, Monitor } from "lucide-react";
+import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Smartphone, Monitor, Users } from "lucide-react";
+import { AllergenProgrammeBoard } from "@/components/compliance/allergen/AllergenProgrammeBoard";
 import { toast } from "sonner";
 import { ALLERGEN_SAFETY_LESSONS, ALLERGEN_COURSE_TITLE, ALLERGEN_COURSE_TOTAL_MINUTES } from "@/data/allergen/allergen-safety-lessons";
 import { ALLERGEN_QUESTION_BANK, CRITICAL_QUESTION_COUNT } from "@/data/allergen/allergen-safety-questions";
@@ -130,7 +131,13 @@ export function AllergenCourseWorkbench() {
           <TabsTrigger value="practical">Practical sign-off</TabsTrigger>
           <TabsTrigger value="comparison" className="gap-1"><GitCompare className="h-3.5 w-3.5" />Version 1 vs 2</TabsTrigger>
           <TabsTrigger value="learner">Learner preview</TabsTrigger>
+          <TabsTrigger value="programme" className="gap-1"><Users className="h-3.5 w-3.5" />Assignments, sign-off &amp; certificates</TabsTrigger>
         </TabsList>
+
+        {/* ── Phase 2: assignment, tracking, sign-off, certificates, reminders ── */}
+        <TabsContent value="programme" className="pt-3">
+          <AllergenProgrammeBoard testMode={testMode} />
+        </TabsContent>
 
         {/* ── Lessons ── */}
         <TabsContent value="lessons" className="space-y-2 pt-3">
