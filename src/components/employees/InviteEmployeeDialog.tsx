@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserPlus, Send, Loader2 } from "lucide-react";
+import { UserPlus, Send, Loader2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,12 @@ import { useTenant } from "@/hooks/useTenant";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDepartments } from "@/hooks/useDepartments";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
+import {
+  findPossibleDuplicates,
+  duplicateWarningMessage,
+  blockingMessage,
+  type ExistingRecord,
+} from "@/lib/duplicate-check";
 
 type DepartmentType = string;
 
@@ -22,6 +28,8 @@ interface InviteEmployeeDialogProps {
 export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [step, setStep] = useState<"form" | "confirm">("form");
   const [forename, setForename] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
@@ -31,53 +39,63 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
   const { data: departments = [] } = useDepartments();
   const { sendInviteEmail } = useInviteEmail();
 
+  /** Refusal: the email already belongs to a current staff record. */
+  const [blocked, setBlocked] = useState<string | null>(null);
+  /** Warning only: a leaver / archived record looks like the same person. */
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
-  const [duplicateOverridden, setDuplicateOverridden] = useState(false);
 
-  const checkDuplicateEmail = async (emailToCheck: string): Promise<string | null> => {
-    if (!emailToCheck.trim() || !tenantId) return null;
-    const normalised = emailToCheck.trim().toLowerCase();
+  const runChecks = async (): Promise<boolean> => {
+    if (!tenantId) return false;
+    setChecking(true);
+    try {
+      const { data } = await supabase
+        .from("employees")
+        .select("id, forename, surname, preferred_name, email, ni_number, status, user_id, archived_at")
+        .eq("tenant_id", tenantId);
 
-    const { data: existing } = await supabase
-      .from("employees")
-      .select("id, forename, surname, user_id, status")
-      .eq("tenant_id", tenantId)
-      .ilike("email", normalised);
+      const matches = findPossibleDuplicates(
+        { forename: forename.trim(), surname: surname.trim(), email: email.trim() },
+        (data ?? []) as ExistingRecord[],
+      );
 
-    if (!existing || existing.length === 0) return null;
-
-    const linked = existing.filter(e => e.user_id);
-    const active = existing.filter(e => ["active", "starter", "onboarding"].includes(e.status));
-
-    if (linked.length > 0) {
-      return `⚠️ This email is already linked to an auth account (${linked[0].forename} ${linked[0].surname}). Creating another record with the same email will cause linkage conflicts.`;
+      const block = blockingMessage(matches);
+      if (block) {
+        setBlocked(block);
+        setDuplicateWarning(null);
+        return false;
+      }
+      setBlocked(null);
+      setDuplicateWarning(duplicateWarningMessage(matches));
+      return true;
+    } finally {
+      setChecking(false);
     }
-    if (active.length > 0) {
-      return `An active employee record already exists for this email (${active[0].forename} ${active[0].surname}, ${active[0].status}). Are you sure you want to create another?`;
-    }
-    return `An employee record already exists for this email (${existing[0].forename} ${existing[0].surname}, ${existing[0].status}).`;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forename.trim() || !surname.trim() || !email.trim()) {
       toast.error("Please fill in all required fields");
       return;
     }
     if (!tenantId) return;
+    const ok = await runChecks();
+    if (ok) setStep("confirm");
+  };
 
-    // Check for duplicate email before proceeding
-    if (!duplicateOverridden) {
-      const warning = await checkDuplicateEmail(email);
-      if (warning) {
-        setDuplicateWarning(warning);
-        return;
-      }
-    }
-
+  const handleSend = async () => {
+    if (!tenantId) return;
     setLoading(true);
     try {
-      // Create minimal employee record with onboarding status
+      // Last safety check immediately before anything is created.
+      const ok = await runChecks();
+      if (!ok) {
+        setStep("form");
+        return;
+      }
+
+      const fullName = `${forename.trim()} ${surname.trim()}`;
+
       const { data: employee, error } = await supabase
         .from("employees")
         .insert({
@@ -94,15 +112,12 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
 
       if (error) throw error;
 
-      // Create onboarding data record
       await supabase
         .from("employee_onboarding_data" as any)
-        .insert({
-          employee_id: employee.id,
-          tenant_id: tenantId,
-        } as any);
+        .insert({ employee_id: employee.id, tenant_id: tenantId } as any);
 
-      // Create invitation DB record (its token powers the personal joining link)
+      // The invitation is tied to this exact staff record, so the joining link can
+      // never show somebody else's name.
       const { data: invitation } = await supabase
         .from("tenant_invitations")
         .insert({
@@ -110,14 +125,14 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
           email: email.trim().toLowerCase(),
           role: "employee" as any,
           invited_by: (await supabase.auth.getUser()).data.user?.id,
-        })
+          employee_id: employee.id,
+        } as any)
         .select("token")
         .single();
 
-      // Send the actual invite email
       const result = await sendInviteEmail({
         recipientEmail: email.trim().toLowerCase(),
-        employeeName: `${forename.trim()} ${surname.trim()}`,
+        employeeName: fullName,
         tenantId,
         inviteToken: (invitation as any)?.token ?? null,
       });
@@ -126,7 +141,7 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
       qc.invalidateQueries({ queryKey: ["tenant-invitations"] });
 
       if (result.success) {
-        toast.success(`Invite email submitted to ${email.trim().toLowerCase()}`);
+        toast.success(`Invite sent to ${fullName} at ${email.trim().toLowerCase()}`);
       } else {
         toast.warning(`Invitation created, but the invite email failed to send.`, {
           description: result.error || "The employee record was created. You can resend the invite later.",
@@ -149,8 +164,9 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
     setSurname("");
     setEmail("");
     setDepartment("FOH");
+    setBlocked(null);
     setDuplicateWarning(null);
-    setDuplicateOverridden(false);
+    setStep("form");
   };
 
   return (
@@ -168,84 +184,131 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
               <UserPlus className="h-5 w-5 text-primary" />
             </div>
-            Invite New Employee
+            {step === "form" ? "Invite New Employee" : "Check before sending"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <p className="text-sm text-muted-foreground">
-            Enter the employee's name and email. They will complete their personal details, upload documents, and set their availability through self-service onboarding.
-          </p>
+        {step === "confirm" ? (
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              This is exactly what the invitation will say. Check the name matches the email address.
+            </p>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>First Name <span className="text-destructive">*</span></Label>
-              <Input
-                value={forename}
-                onChange={e => setForename(e.target.value)}
-                placeholder="First name"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Last Name <span className="text-destructive">*</span></Label>
-              <Input
-                value={surname}
-                onChange={e => setSurname(e.target.value)}
-                placeholder="Last name"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Email Address <span className="text-destructive">*</span></Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="employee@email.com"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Department</Label>
-            <Select value={department} onValueChange={v => setDepartment(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {departments.map(d => (
-                  <SelectItem key={d.key} value={d.key}>{d.emoji} {d.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {duplicateWarning && (
-            <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 space-y-2">
-              <p className="text-xs text-warning font-medium">{duplicateWarning}</p>
-              <div className="flex gap-2">
-                <Button type="button" size="sm" variant="outline" className="text-xs" onClick={() => { setDuplicateWarning(null); setDuplicateOverridden(true); }}>
-                  Continue Anyway
-                </Button>
-                <Button type="button" size="sm" variant="ghost" className="text-xs" onClick={() => { setDuplicateWarning(null); setOpen(false); }}>
-                  Cancel
-                </Button>
+            <div className="rounded-lg border border-border bg-muted/30 divide-y divide-border/60">
+              <div className="flex items-baseline justify-between gap-3 px-3 py-2">
+                <span className="text-xs text-muted-foreground">Name</span>
+                <span id="confirm-name" className="text-sm font-medium text-foreground text-right">
+                  {forename.trim()} {surname.trim()}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 px-3 py-2">
+                <span className="text-xs text-muted-foreground">Email</span>
+                <span id="confirm-email" className="text-sm font-medium text-foreground text-right break-all">
+                  {email.trim().toLowerCase()}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 px-3 py-2">
+                <span className="text-xs text-muted-foreground">Department</span>
+                <span id="confirm-department" className="text-sm font-medium text-foreground text-right">{department}</span>
               </div>
             </div>
-          )}
 
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" className="flex-1 gap-2" disabled={loading}>
-              {loading ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
-              ) : (
-                <><Send className="h-4 w-4" /> Send Invite</>
-              )}
-            </Button>
+            {duplicateWarning && (
+              <div className="rounded-lg border border-warning/30 bg-warning/5 p-3">
+                <p className="text-xs text-warning flex items-start gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" />
+                  {duplicateWarning}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-1">
+              <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setStep("form")}>
+                <ArrowLeft className="h-4 w-4" /> Change
+              </Button>
+              <Button type="button" className="flex-1 gap-2" disabled={loading} onClick={handleSend}>
+                {loading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
+                ) : (
+                  <><Send className="h-4 w-4" /> Send invite</>
+                )}
+              </Button>
+            </div>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleReview} className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Enter the employee's name and email. They will complete their personal details, upload documents, and set their availability through self-service onboarding.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="invite-forename">First Name <span className="text-destructive">*</span></Label>
+                <Input
+                  id="invite-forename"
+                  value={forename}
+                  onChange={e => setForename(e.target.value)}
+                  placeholder="First name"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invite-surname">Last Name <span className="text-destructive">*</span></Label>
+                <Input
+                  id="invite-surname"
+                  value={surname}
+                  onChange={e => setSurname(e.target.value)}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Email Address <span className="text-destructive">*</span></Label>
+              <Input
+                id="invite-email"
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setBlocked(null); }}
+                placeholder="employee@email.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select value={department} onValueChange={v => setDepartment(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {departments.map(d => (
+                    <SelectItem key={d.key} value={d.key}>{d.emoji} {d.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {blocked && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+                <p className="text-xs text-destructive flex items-start gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" />
+                  {blocked}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1 gap-2" disabled={checking}>
+                {checking ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Checking...</>
+                ) : (
+                  <>Review invite</>
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -19,7 +19,7 @@ import { EmployeeCard } from "@/components/employees/EmployeeCard";
 import { EmployeeDetailSheet } from "@/components/employees/EmployeeDetailSheet";
 import { BulkActionsBar } from "@/components/employees/BulkActionsBar";
 import { EmployeeDeleteDialog } from "@/components/employees/EmployeeDeleteDialog";
-import { PendingInvitations } from "@/components/employees/PendingInvitations";
+import { InvitationsPanel } from "@/components/employees/InvitationsPanel";
 import { PeopleDashboard } from "@/components/people/PeopleDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/hooks/useI18n";
@@ -359,7 +359,7 @@ const Employees = () => {
         )}
 
         {/* Pending invitations */}
-        {canEdit && <PendingInvitations />}
+        {canEdit && <InvitationsPanel />}
 
         {/* Search + Dept + Sort row */}
         <div className="flex flex-col gap-2">

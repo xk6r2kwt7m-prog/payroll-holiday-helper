@@ -33,6 +33,34 @@ export interface DuplicateMatch {
   reasons: DuplicateReason[];
   /** True when the existing record already has an app sign-in attached. */
   linkedToAccount: boolean;
+  /**
+   * True when the same email address is already held by a record that is still
+   * current (not archived, not a leaver). Two current records on one address make
+   * invitations and details links ambiguous, so this case must be blocked.
+   */
+  blocking: boolean;
+}
+
+/** Records that are still in use — a leaver or archived record is not current. */
+export function isCurrentRecord(record: ExistingRecord): boolean {
+  return !record.archived_at && String(record.status ?? "") !== "leaver";
+}
+
+/** Only the matches that must stop the save (same email, still-current record). */
+export function blockingDuplicates(matches: DuplicateMatch[]): DuplicateMatch[] {
+  return matches.filter((m) => m.blocking);
+}
+
+/**
+ * Plain-English reason a save is refused. Names the record holding the address so
+ * the manager can go and fix it.
+ */
+export function blockingMessage(matches: DuplicateMatch[]): string | null {
+  const blocked = blockingDuplicates(matches);
+  if (blocked.length === 0) return null;
+  const r = blocked[0].record;
+  const name = `${r.forename ?? ""} ${r.surname ?? ""}`.trim() || "another staff member";
+  return `${name} already uses this email address. Two current staff records cannot share one address — joining links and details forms would not know which person they belong to. Open ${name}'s record to fix the address, or use a different one here.`;
 }
 
 /** Loose comparison: ignores case, spacing, dashes and dots. */
@@ -74,12 +102,18 @@ export function findPossibleDuplicates(
     if (candidateNi && loose(record.ni_number) === candidateNi) reasons.push("ni_number");
 
     if (reasons.length > 0) {
-      matches.push({ record, reasons, linkedToAccount: !!record.user_id });
+      matches.push({
+        record,
+        reasons,
+        linkedToAccount: !!record.user_id,
+        blocking: reasons.includes("email") && isCurrentRecord(record),
+      });
     }
   }
 
-  // Records already holding a sign-in matter most, then email, then name.
+  // Blocking clashes first, then records holding a sign-in, then email, then name.
   return matches.sort((a, b) => {
+    if (a.blocking !== b.blocking) return a.blocking ? -1 : 1;
     if (a.linkedToAccount !== b.linkedToAccount) return a.linkedToAccount ? -1 : 1;
     const aEmail = a.reasons.includes("email");
     const bEmail = b.reasons.includes("email");
