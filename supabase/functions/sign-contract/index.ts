@@ -1031,12 +1031,18 @@ Deno.serve(async (req) => {
           missingFields.length === 0;
 
         if (!detailsDone) {
+          // PRIVACY RULE: never disclose stored personal data back to the
+          // signer. Only non-sensitive keys may be acknowledged as held, and
+          // prefill carries only the fields we are actually asking for.
+          const DISCLOSABLE_ON_FILE = ["full_name"];
           return new Response(JSON.stringify({
             signer_type: signingToken.signer_type,
             details_required: true,
             missing_fields: missingFields,
             on_file: Object.fromEntries(
-              Object.entries(known).filter(([, v]) => !!v),
+              Object.entries(known).filter(
+                ([k, v]) => !!v && DISCLOSABLE_ON_FILE.includes(k),
+              ),
             ),
             employee_name: `${emp.forename} ${emp.surname}`,
             employee_email: emp.email || null,
@@ -1048,11 +1054,16 @@ Deno.serve(async (req) => {
             company_name: null,
             employer_signatory_name: null,
             employer_signatory_title: null,
-            prefill: known,
+            prefill: Object.fromEntries(
+              Object.entries(known).filter(
+                ([k, v]) => !!v && (DISCLOSABLE_ON_FILE.includes(k) || missingFields.includes(k)),
+              ),
+            ),
           }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+
       }
 
 
