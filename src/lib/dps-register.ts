@@ -161,12 +161,12 @@ export function buildDpsRegister(opts: {
     if (e.is_test_record) continue;
     const records = byEmployee.get(e.id) ?? [];
     const hasRecord = records.length > 0;
-    const foh =
-      worksAtSite(e, branch) &&
-      stillEmployed(e) &&
-      isFrontOfHouse(e.job_title ?? null, e.department ?? null);
+    const atSite = worksAtSite(e, branch) && stillEmployed(e);
+    const listed = atSite && belongsOnAlcoholList(e, branch, decisions);
+    const addedByManager =
+      listed && decisionFor(e.id, branch, decisions) === "front_of_house";
 
-    if (!foh && !hasRecord) continue;
+    if (!listed && !hasRecord) continue;
     // Someone who has left only appears while a record still exists, so the
     // document shows the officer that their authorisation has ended.
     if (!stillEmployed(e) && !hasRecord) continue;
