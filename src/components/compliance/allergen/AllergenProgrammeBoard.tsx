@@ -94,6 +94,15 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
   const [audience, setAudience] = useState<ObservationAudience>("foh");
   const [dueDate, setDueDate] = useState<string>("");
 
+  /* bulk assignment selection (preview only — nothing is sent) */
+  const [mode, setMode] = useState<AssignmentSelectionMode>("people");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkBranch, setBulkBranch] = useState<string>("");
+  const [bulkRole, setBulkRole] = useState<ObservationAudience>("foh");
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
+  const [allowReassign, setAllowReassign] = useState(false);
+  const [bulkDueDate, setBulkDueDate] = useState<string>("");
+
   /* practical observation dialog */
   const [observing, setObserving] = useState<AllergenAssignmentRow | null>(null);
   const [results, setResults] = useState<ObservationResults>({});
