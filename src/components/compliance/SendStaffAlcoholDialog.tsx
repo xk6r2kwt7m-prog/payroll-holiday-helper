@@ -17,8 +17,9 @@ import { usePremisesLicence, useSendLicenceSignature, useLicenceSignatureRequest
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
 import { isReadyToSend } from "@/lib/licensing-documents";
 import {
-  isFrontOfHouse, alcoholAskState, alcoholAskStateLabel, needsAlcoholAsk,
+  belongsOnAlcoholList, alcoholAskState, alcoholAskStateLabel, needsAlcoholAsk,
 } from "@/lib/alcohol-automation";
+import { useAlcoholListDecisions } from "@/hooks/useDpsRegister";
 
 /**
  * Sends the alcohol-sales authorisation to staff on its own — not bundled
