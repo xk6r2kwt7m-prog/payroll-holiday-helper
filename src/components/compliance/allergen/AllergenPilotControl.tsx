@@ -383,6 +383,17 @@ export function AllergenPilotControl() {
               </AlertDescription>
             </Alert>
           )}
+          {gate.ready && (
+            <Alert>
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Both the phone and computer walkthroughs have passed. Proposed version 2 is marked ready to
+                publish for the controlled pilot and waits for your approval. Nothing has been published, no
+                pilot assignment has been sent and automatic reminders remain off.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
