@@ -517,18 +517,20 @@ export default function SignContract() {
 
   if (!contractInfo) return null;
 
-  // Only ask for what is genuinely not held. Anything already on record is
-  // shown back for confirmation instead of being typed again.
+  // Only ask for what is genuinely missing, and never more than the required
+  // contract set. Held details are acknowledged but never displayed back.
   const onFileKeys = new Set(Object.keys(contractInfo.on_file ?? {}));
   const missingSet = new Set(contractInfo.missing_fields ?? []);
   const fieldsToAsk = DETAIL_FIELDS.filter((f) =>
-    contractInfo.missing_fields
-      ? missingSet.has(f.key) || (!f.required && !onFileKeys.has(f.key))
-      : true,
+    contractInfo.missing_fields ? missingSet.has(f.key) : true,
   );
   const alreadyOnFile = DETAIL_FIELDS.filter(
-    (f) => onFileKeys.has(f.key) && !fieldsToAsk.some((a) => a.key === f.key),
+    (f) =>
+      onFileKeys.has(f.key) &&
+      !fieldsToAsk.some((a) => a.key === f.key) &&
+      !NON_DISCLOSABLE_KEYS.includes(f.key as (typeof NON_DISCLOSABLE_KEYS)[number]),
   );
+
 
   // ══════════ Details first: contract stays hidden until submitted ══════════
   if (detailsRequired) {
