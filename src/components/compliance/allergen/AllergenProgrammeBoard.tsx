@@ -393,6 +393,163 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
             </CardContent>
           </Card>
 
+          {/* ── Bulk selection with a recipient preview. Nothing is sent. ── */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Assign several people</CardTitle>
+              <CardDescription className="text-xs">
+                Choose who should receive the course, check the recipient list, then record it. Every
+                assignment is kept as “Not sent” — staff are only contacted after you approve sending
+                separately.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1">
+                  <Label className="text-xs">Who</Label>
+                  <Select value={mode} onValueChange={(v) => setMode(v as AssignmentSelectionMode)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="people">Chosen people</SelectItem>
+                      <SelectItem value="branch">Everyone at one site</SelectItem>
+                      <SelectItem value="role">Everyone in one role</SelectItem>
+                      <SelectItem value="all">All eligible staff</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {mode === "branch" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Site</Label>
+                    <Select value={bulkBranch} onValueChange={setBulkBranch}>
+                      <SelectTrigger><SelectValue placeholder="Choose" /></SelectTrigger>
+                      <SelectContent>
+                        {branches.map((b: any) => (
+                          <SelectItem key={b.id} value={b.id}>{b.display_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {mode === "role" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Role</Label>
+                    <Select value={bulkRole} onValueChange={(v) => setBulkRole(v as ObservationAudience)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="foh">Front of house</SelectItem>
+                        <SelectItem value="kitchen">Kitchen</SelectItem>
+                        <SelectItem value="both">Both</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label className="text-xs">Due by</Label>
+                  <Input type="date" value={bulkDueDate} onChange={(e) => setBulkDueDate(e.target.value)} />
+                </div>
+                <div className="flex items-end gap-2">
+                  <Switch id="allow-reassign" checked={allowReassign} onCheckedChange={setAllowReassign} />
+                  <Label htmlFor="allow-reassign" className="text-xs">
+                    Reassign people who already hold this version
+                  </Label>
+                </div>
+              </div>
+
+              {mode === "people" && (
+                <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {candidates.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 rounded-md border p-2 text-xs">
+                      <Checkbox
+                        checked={selectedIds.includes(c.id)}
+                        onCheckedChange={(v) =>
+                          setSelectedIds((prev) => (v ? [...prev, c.id] : prev.filter((x) => x !== c.id)))
+                        }
+                      />
+                      <span>{c.name || "Unnamed"}</span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {c.audience === "kitchen" ? "Kitchen" : "FOH"}
+                      </Badge>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <div className="rounded-md border p-3 text-xs">
+                <p className="font-medium">
+                  Recipient preview — {preview.recipients.length} {preview.recipients.length === 1 ? "person" : "people"} ·
+                  kept as “Not sent”
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {preview.recipients.map((r) => (
+                    <li key={r.id} className="flex flex-wrap items-center gap-2">
+                      <Checkbox
+                        checked={false}
+                        onCheckedChange={() => setExcludedIds((prev) => [...prev, r.id])}
+                        aria-label={`Exclude ${r.name}`}
+                      />
+                      <span>{r.name}</span>
+                      <Badge variant="outline" className="text-[10px]">{branchName(r.branch_id)}</Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        {r.audience === "kitchen" ? "Kitchen" : "FOH"}
+                      </Badge>
+                      <span className="text-muted-foreground">{r.note}</span>
+                    </li>
+                  ))}
+                  {preview.recipients.length === 0 && (
+                    <li className="text-muted-foreground">Nobody selected yet.</li>
+                  )}
+                </ul>
+                {preview.alreadyCompleted.length > 0 && (
+                  <p className="mt-2 text-muted-foreground">
+                    Already completed version {courseVersion}:{" "}
+                    {preview.alreadyCompleted.map((p) => p.name).join(", ")}
+                  </p>
+                )}
+                {preview.excluded.length > 0 && (
+                  <div className="mt-2 space-y-1 text-muted-foreground">
+                    {preview.excluded.map((p) => (
+                      <p key={p.id}>
+                        Excluded — {p.name}: {p.reason}{" "}
+                        <button
+                          type="button"
+                          className="underline"
+                          onClick={() => setExcludedIds((prev) => prev.filter((x) => x !== p.id))}
+                        >
+                          put back
+                        </button>
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button
+                size="sm"
+                disabled={preview.recipients.length === 0 || createAssignment.isPending}
+                onClick={async () => {
+                  for (const r of preview.recipients) {
+                    await createAssignment.mutateAsync({
+                      employeeId: r.id,
+                      branchId: r.branch_id,
+                      audience: r.audience,
+                      dueDate: bulkDueDate || null,
+                      draftId: draft?.id ?? null,
+                      courseVersion: draft?.proposed_version ?? null,
+                      isTest: testMode,
+                      note: testMode ? "Test assignment — management workflow test only." : r.note,
+                    });
+                  }
+                  toast.success(
+                    `${preview.recipients.length} assignment(s) recorded as “Not sent”. Nobody was contacted.`,
+                  );
+                  setSelectedIds([]);
+                }}
+              >
+                Record {preview.recipients.length || ""} assignment(s) — not sent
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Tracking ({assignments.length})</CardTitle>
