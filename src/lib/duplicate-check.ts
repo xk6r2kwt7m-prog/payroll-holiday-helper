@@ -111,8 +111,9 @@ export function findPossibleDuplicates(
     }
   }
 
-  // Records already holding a sign-in matter most, then email, then name.
+  // Blocking clashes first, then records holding a sign-in, then email, then name.
   return matches.sort((a, b) => {
+    if (a.blocking !== b.blocking) return a.blocking ? -1 : 1;
     if (a.linkedToAccount !== b.linkedToAccount) return a.linkedToAccount ? -1 : 1;
     const aEmail = a.reasons.includes("email");
     const bEmail = b.reasons.includes("email");
