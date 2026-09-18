@@ -54,7 +54,7 @@ export function FloatingActionButton() {
       {/* Action items */}
       <AnimatePresence>
         {isOpen && (
-          <div className="fixed bottom-24 right-4 z-50 flex flex-col-reverse items-end gap-3">
+          <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,0px))] right-4 z-50 flex max-h-[calc(100dvh-8rem)] flex-col-reverse items-end gap-3 overflow-y-auto py-1">
             {quickActions.map((action, i) => (
               <motion.button
                 key={action.label}
@@ -81,7 +81,7 @@ export function FloatingActionButton() {
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-colors",
+          "fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-colors",
           isOpen
             ? "bg-muted text-foreground"
             : "bg-primary text-primary-foreground"

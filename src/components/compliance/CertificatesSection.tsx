@@ -205,7 +205,7 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
                 onChange={(e) => setForm(f => ({ ...f, certificate_type: e.target.value }))}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Number</Label>
                 <Input value={form.certificate_number} onChange={(e) => setForm(f => ({ ...f, certificate_number: e.target.value }))} />
@@ -240,15 +240,15 @@ export function CertificatesSection({ branchFilter }: { branchFilter?: string })
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex items-center gap-2 rounded-lg border border-dashed border-border p-3 cursor-pointer text-xs text-muted-foreground">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="flex min-w-0 items-center gap-2 rounded-lg border border-dashed border-border p-3 cursor-pointer text-xs text-muted-foreground">
                 <Upload className="h-4 w-4" />
-                {file ? file.name : "Certificate file"}
+                <span className="min-w-0 break-all">{file ? file.name : "Certificate file"}</span>
                 <input type="file" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
               </label>
-              <label className="flex items-center gap-2 rounded-lg border border-dashed border-border p-3 cursor-pointer text-xs text-muted-foreground">
+              <label className="flex min-w-0 items-center gap-2 rounded-lg border border-dashed border-border p-3 cursor-pointer text-xs text-muted-foreground">
                 <Upload className="h-4 w-4" />
-                {receipt ? receipt.name : "Payment receipt"}
+                <span className="min-w-0 break-all">{receipt ? receipt.name : "Payment receipt"}</span>
                 <input type="file" className="hidden" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} />
               </label>
             </div>

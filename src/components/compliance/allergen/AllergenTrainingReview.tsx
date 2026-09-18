@@ -189,7 +189,7 @@ function ProposalReview({
       ) : (
         <>
           <div className="flex flex-wrap items-end gap-2">
-            <div className="flex-1 min-w-[240px]">
+            <div className="min-w-0 basis-full sm:min-w-[240px] sm:flex-1">
               <Label className="text-xs">Note for the record (optional)</Label>
               <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why you approved, rejected or sent this back" />
             </div>
@@ -330,7 +330,7 @@ function ConflictReview() {
             ) : null}
             {c.status === "open" ? (
               <div className="flex flex-wrap items-end gap-2">
-                <div className="flex-1 min-w-[220px]">
+                <div className="min-w-0 basis-full sm:min-w-[220px] sm:flex-1">
                   <Label className="text-xs">Your decision note</Label>
                   <Input
                     value={notes[c.id] ?? ""}

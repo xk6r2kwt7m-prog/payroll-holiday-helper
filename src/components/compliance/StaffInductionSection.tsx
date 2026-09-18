@@ -152,26 +152,26 @@ export function StaffInductionSection() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
+      <div className="flex min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-sm font-semibold">Staff induction</h2>
           <p className="text-xs text-muted-foreground">
             Pick the person, branch and role — the right documents are chosen for you.
           </p>
         </div>
-        <Button onClick={startWizard}><Send className="h-4 w-4 mr-1.5" /> Send induction</Button>
+        <Button className="w-full sm:w-auto" onClick={startWizard}><Send className="h-4 w-4 mr-1.5" /> Send induction</Button>
       </div>
 
       {incomplete.length > 0 && (
         <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 space-y-2">
           <p className="text-xs font-semibold text-warning uppercase tracking-wide">Not finished yet</p>
           {incomplete.map((p: any) => (
-            <div key={p.id} className="flex items-center justify-between gap-2 text-sm">
-              <span className="truncate">
+            <div key={p.id} className="flex min-w-0 flex-col items-stretch gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <span className="break-words">
                 {p.employees ? `${p.employees.forename} ${p.employees.surname}` : "Staff member"}
                 {p.branch ? ` · ${p.branch}` : ""}
               </span>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                 <Badge className="text-[10px] bg-warning/10 text-warning">
                   <Clock className="h-3 w-3 mr-1" />
                   {p.opened_at ? "Opened, not completed" : "Sent, not opened"}
@@ -202,7 +202,7 @@ export function StaffInductionSection() {
         ) : (
           <div className="divide-y divide-border">
             {completed.map((p: any) => (
-              <div key={p.id} className="px-4 py-3 flex items-center justify-between gap-2">
+              <div key={p.id} className="px-4 py-3 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
                     {p.employees ? `${p.employees.forename} ${p.employees.surname}` : "Staff member"}
@@ -212,7 +212,7 @@ export function StaffInductionSection() {
                     {new Date(p.completed_at).toLocaleDateString("en-GB")}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center justify-between gap-2 sm:justify-start sm:shrink-0">
                   <CheckCircle2 className="h-4 w-4 text-success" />
                   <Button
                     size="sm"
@@ -232,7 +232,7 @@ export function StaffInductionSection() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{stepTitle[step]}</DialogTitle>
           </DialogHeader>
@@ -290,8 +290,8 @@ export function StaffInductionSection() {
                   {r}
                 </button>
               ))}
-              <div className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                <div className="min-w-0">
                   <p className="text-sm font-medium">Will sell alcohol</p>
                   <p className="text-xs text-muted-foreground">Adds age verification and written authorisation.</p>
                 </div>

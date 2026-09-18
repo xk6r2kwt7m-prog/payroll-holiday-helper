@@ -37,7 +37,7 @@ export default function DocumentsCompliance() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto space-y-5 pb-16">
+      <div className="max-w-5xl min-w-0 w-full mx-auto space-y-5 pb-16">
         <header className="space-y-1">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
@@ -52,8 +52,9 @@ export default function DocumentsCompliance() {
 
         {needsReview.length > 0 && <BranchReviewNotice items={needsReview} />}
 
-        <Tabs defaultValue="induction" className="space-y-4">
-          <TabsList className="flex-wrap h-auto">
+        <Tabs defaultValue="induction" className="min-w-0 space-y-4">
+          <div className="-mx-4 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:px-0">
+          <TabsList className="flex w-max min-w-full flex-nowrap h-auto justify-start">
             <TabsTrigger value="induction">Staff induction</TabsTrigger>
             <TabsTrigger value="library">Document library</TabsTrigger>
             <TabsTrigger value="branch">Branch compliance</TabsTrigger>
@@ -62,6 +63,7 @@ export default function DocumentsCompliance() {
             <TabsTrigger value="allergen">Allergen training</TabsTrigger>
             <TabsTrigger value="incidents">Incident book</TabsTrigger>
           </TabsList>
+          </div>
 
           <TabsContent value="induction" className="space-y-6">
             <InductionLessonsPanel />
@@ -174,7 +176,7 @@ function BranchPicker({
   }
   return (
     <Select value={value || (allowAll ? "__all" : "")} onValueChange={(v) => onChange(v === "__all" ? "" : v)}>
-      <SelectTrigger className="w-[240px]"><SelectValue placeholder="Choose branch" /></SelectTrigger>
+      <SelectTrigger className="w-full sm:w-[240px]"><SelectValue placeholder="Choose branch" /></SelectTrigger>
       <SelectContent>
         {allowAll && <SelectItem value="__all">All branches</SelectItem>}
         {options.map((b) => (

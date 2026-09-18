@@ -182,11 +182,11 @@ export default function ScheduleReport() {
         </div>
 
         {/* Week navigator */}
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex min-w-0 items-center justify-center gap-2 sm:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h2 className="text-lg font-semibold min-w-[220px] text-center">
+          <h2 className="min-w-0 flex-1 text-center text-base font-semibold sm:flex-none sm:min-w-[220px] sm:text-lg">
             {format(weekStart, "d MMM")} – {format(weekEnd, "d MMM yyyy")}
           </h2>
           <Button variant="ghost" size="icon" onClick={() => navigate(1)}>

@@ -203,7 +203,7 @@ export function MobileBottomNav() {
 
   return (
     <nav data-testid="mobile-bottom-nav" className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border pb-safe">
-      <div className="flex items-center justify-around px-1 h-16">
+      <div className="flex items-center justify-around px-1 h-16 min-w-0">
         {visibleMainNav.map((item) => {
           const isActive = isNavActive(item);
           return (
@@ -211,12 +211,12 @@ export function MobileBottomNav() {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors min-h-[48px]",
+                "flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors min-h-[48px]",
                 isActive ? "text-primary" : "text-muted-foreground active:text-foreground"
               )}
             >
               <item.icon className={cn("h-5 w-5", isActive && "stroke-[2.5px]")} />
-              <span className="text-[10px] font-medium leading-none">{item.label}</span>
+              <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-none">{item.label}</span>
               {isActive && <div className="w-1 h-1 rounded-full bg-primary mt-0.5" />}
             </Link>
           );
@@ -228,7 +228,7 @@ export function MobileBottomNav() {
             <SheetTrigger asChild>
               <button
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors min-h-[48px]",
+                  "flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors min-h-[48px]",
                   isMoreActive ? "text-primary" : "text-muted-foreground active:text-foreground"
                 )}
               >

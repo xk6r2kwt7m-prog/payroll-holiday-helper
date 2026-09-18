@@ -48,10 +48,10 @@ export function IncidentBookSection({ branch }: { branch?: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Stat label="Open" value={openInvestigations.length} />
         <Stat label="Overdue" value={overdue.length} tone={overdue.length ? "warning" : undefined} />
-        <Stat label="Total" value={rows.length} />
+        <div className="col-span-2 sm:col-span-1"><Stat label="Total" value={rows.length} /></div>
       </div>
 
       {overdue.length > 0 && (
@@ -64,11 +64,11 @@ export function IncidentBookSection({ branch }: { branch?: string }) {
         </div>
       )}
 
-      <div className="flex gap-2">
-        <Button className="flex-1" onClick={() => setNewOpen(true)}>
+      <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
+        <Button className="w-full" onClick={() => setNewOpen(true)}>
           <Plus className="h-4 w-4 mr-1" /> Record an incident
         </Button>
-        <Button variant="outline" onClick={() => setExportOpen(true)}>
+        <Button className="w-full" variant="outline" onClick={() => setExportOpen(true)}>
           <Download className="h-4 w-4 mr-1" /> Registers
         </Button>
       </div>

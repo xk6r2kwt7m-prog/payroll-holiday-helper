@@ -118,7 +118,7 @@ export function ShiftDetailPopover({
         {children}
       </PopoverTrigger>
       <PopoverContent
-        className="w-[320px] p-0"
+        className="w-[calc(100vw-1rem)] max-w-[320px] p-0"
         side="right"
         align="start"
         sideOffset={8}

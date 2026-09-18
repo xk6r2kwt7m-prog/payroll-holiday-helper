@@ -7,7 +7,7 @@
  * service-charge logic.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { selectInductionDocuments, summariseSelection } from "@/lib/induction-pack-selection";
 import { reminderDueToday, resolveExpiryBand } from "@/lib/compliance-expiry";
@@ -144,10 +144,15 @@ describe("inspection readiness", () => {
 
 describe("safety: compliance code is additive only", () => {
   const forbidden = ["payroll", "holiday", "nmw", "service-charge", "servicecharge", "timesheet"];
+  const sourceFiles = (directory: string): string[] => readdirSync(directory)
+    .flatMap((name) => {
+      const path = join(directory, name);
+      return statSync(path).isDirectory() ? sourceFiles(path) : [path];
+    });
 
   it("no compliance library, hook or component imports payroll or holiday logic", () => {
     const files: string[] = [
-      ...readdirSync("src/components/compliance").map(f => join("src/components/compliance", f)),
+      ...sourceFiles("src/components/compliance"),
       "src/hooks/useCompliance.ts",
       "src/pages/DocumentsCompliance.tsx",
       "src/pages/InductionPortal.tsx",

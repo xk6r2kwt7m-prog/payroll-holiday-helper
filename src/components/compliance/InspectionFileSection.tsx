@@ -185,12 +185,12 @@ export function InspectionFileSection({ branch }: { branch: string }) {
                   {String(item.status).replace(/_/g, " ")}
                 </Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="grid grid-cols-1 items-center gap-3 min-[360px]:grid-cols-2 sm:flex sm:flex-wrap">
                 <Select
                   value={item.status}
                   onValueChange={(v) => updateItem.mutate({ id: item.id, updates: { status: v, last_reviewed_at: new Date().toISOString() } })}
                 >
-                  <SelectTrigger className="h-8 w-[170px] text-xs"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 w-full text-xs min-[360px]:col-span-2 sm:h-8 sm:w-[170px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {CHECKLIST_STATUSES.map(s => (
                       <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
