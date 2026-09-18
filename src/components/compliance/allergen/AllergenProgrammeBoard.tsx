@@ -127,6 +127,46 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
 
   const mandatoryLessons = ALLERGEN_SAFETY_LESSONS.filter((l) => l.mandatory).length;
 
+  const courseVersion = draft?.proposed_version ?? 2;
+
+  /** Candidate list for the recipient preview. Leavers are never eligible. */
+  const candidates: AssignmentCandidate[] = useMemo(
+    () =>
+      employees.map((e: any) => {
+        const role = `${e.job_title ?? ""} ${e.department ?? ""}`.toLowerCase();
+        const kitchen = /chef|kitchen|kp|cook|prep/.test(role);
+        const cert = certificates.find((c) => c.employee_id === e.id);
+        return {
+          id: e.id,
+          name: `${e.forename ?? ""} ${e.surname ?? ""}`.trim(),
+          branch_id: e.branch_id ?? null,
+          audience: (kitchen ? "kitchen" : "foh") as ObservationAudience,
+          eligible: e.status !== "leaver" && !e.archived_at,
+          ineligibleReason: "Left the business — not assignable.",
+          completedVersions: certificates
+            .filter((c) => c.employee_id === e.id && c.course_version != null)
+            .map((c) => Number(c.course_version)),
+          certificateStanding: (cert?.status as any) ?? "none",
+        } satisfies AssignmentCandidate;
+      }),
+    [employees, certificates],
+  );
+
+  const preview = useMemo(
+    () =>
+      buildAssignmentPreview({
+        candidates,
+        mode,
+        selectedIds,
+        branchId: bulkBranch || null,
+        role: bulkRole,
+        excludedIds,
+        courseVersion,
+        allowReassign,
+      }),
+    [candidates, mode, selectedIds, bulkBranch, bulkRole, excludedIds, courseVersion, allowReassign],
+  );
+
   const observationItems = useMemo(
     () => (observing ? observationItemsFor(observing.audience) : []),
     [observing],
