@@ -174,29 +174,30 @@ export default function SignContract() {
     setSignatureData(dataUrl);
   }, []);
 
-  const CONSENT_ITEMS_EMPLOYEE = [
-    "I have read and understood this contract",
-    "I agree to sign this document electronically",
-    "This electronic signature represents my legal signature",
-  ];
+  // Two separate confirmations. The acceptance wording never mentions schedules or
+  // incorporated documents unless this contract actually has them.
+  const hasSchedules = Boolean((contractInfo as any)?.has_schedules);
+  const acceptanceWording = isEmployer
+    ? hasSchedules
+      ? "I confirm that I have reviewed the complete employment contract, including its schedules and any documents expressly incorporated into it, and that I am authorised to sign it on behalf of the employer."
+      : "I confirm that I have reviewed the complete employment contract and that I am authorised to sign it on behalf of the employer."
+    : hasSchedules
+      ? "I confirm that I have read and accept the complete employment contract, including its schedules and any documents expressly incorporated into it."
+      : "I confirm that I have read and accept the complete employment contract.";
+  const ESIGN_WORDING = "I consent to signing this document electronically.";
 
-  const CONSENT_ITEMS_EMPLOYER = [
-    "I have reviewed this contract and confirm it is ready for execution",
-    "I am authorised to sign this document on behalf of the employer",
-    "I agree to sign this document electronically",
-    "This electronic signature represents my legal signature",
-  ];
-
-  const consentItems = isEmployer ? CONSENT_ITEMS_EMPLOYER : CONSENT_ITEMS_EMPLOYEE;
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(signerEmail.trim());
+  const consentGiven = acceptConfirmed && eSignConfirmed;
+  const consentItems = [acceptanceWording, ESIGN_WORDING];
 
   const handleSign = async () => {
-    if (!typedName.trim() || !consentGiven || !signatureData) return;
+    if (!typedName.trim() || !consentGiven || !signatureData || !emailLooksValid) return;
 
     setSubmitting(true);
     setErrorCode(null);
     setErrorMessage(null);
 
-    const consentText = `I confirm that: ${consentItems.join("; ")}.`;
+    const consentText = consentItems.join(" ");
 
     // A dropped connection is retried once automatically — resending the same
     // signature is safe, because a signature already stored is never replaced.
@@ -208,6 +209,11 @@ export default function SignContract() {
           typed_name: typedName.trim(),
           consent_given: true,
           consent_text: consentText,
+          consent_items: [
+            { key: "accept_terms", text: acceptanceWording, confirmed: true },
+            { key: "electronic_signature", text: ESIGN_WORDING, confirmed: true },
+          ],
+          confirmed_email: signerEmail.trim(),
           signature_data: signatureData,
           signature_type: "drawn",
           document_hash: contractInfo?.document_hash || null,
