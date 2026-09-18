@@ -58,6 +58,7 @@ import {
   getEmploymentTypeLabel,
 } from "./contractTemplates";
 import { ContractPDF } from "./ContractPDF";
+import { CONTRACT_TEMPLATE_VERSION, CURRENT_CONTRACT_TEMPLATE } from "@/lib/contract-template-version";
 import { useLocationSettings } from "@/hooks/useLocationSettings";
 import { PayStructureFields, type NmwOverrideState } from "./PayStructureFields";
 import { useCreateNmwOverride } from "@/hooks/useNmwOverride";
@@ -122,7 +123,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
   const { data: tenantBranches } = useTenantBranches();
   const { data: companySettings } = useCompanySettings();
   const queryClient = useQueryClient();
-  const { tenantName } = useTenant();
+  const { tenantName, tenantId } = useTenant();
   const uploadDocument = useUploadDocument();
   const generateSigningLink = useGenerateSigningLink();
   const { sendContractEmail } = useSendContractEmail();
