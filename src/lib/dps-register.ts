@@ -284,7 +284,11 @@ export function registerCsv(rows: RegisterRow[], branch: string): string {
       gbDate(r.approved_at),
       r.approved_by ?? "",
       r.approver_licence ?? "",
-      r.listed_because === "front_of_house" ? "Front of house" : "Authorisation on record",
+      r.listed_because === "front_of_house"
+        ? "Front of house"
+        : r.listed_because === "manager_added"
+          ? "Added by the manager"
+          : "Authorisation on record",
       r.no_longer_employed ? "No" : "Yes",
     ]);
   }
