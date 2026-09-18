@@ -127,6 +127,13 @@
       "when": 1789738739060,
       "tag": "0017_info_request_kind_and_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789740437282,
+      "tag": "0018_contract_file_immutability_and_integrity",
+      "breakpoints": true
     }
   ]
 }

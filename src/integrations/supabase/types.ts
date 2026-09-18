@@ -1038,6 +1038,120 @@ export type Database = {
           },
         ]
       }
+      contract_file_recoveries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          employee_document_id: string
+          id: string
+          original_file_hash: string | null
+          original_file_path: string | null
+          reason: string
+          recovery_file_hash: string
+          recovery_file_path: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          employee_document_id: string
+          id?: string
+          original_file_hash?: string | null
+          original_file_path?: string | null
+          reason: string
+          recovery_file_hash: string
+          recovery_file_path: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          employee_document_id?: string
+          id?: string
+          original_file_hash?: string | null
+          original_file_path?: string | null
+          reason?: string
+          recovery_file_hash?: string
+          recovery_file_path?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_file_recoveries_employee_document_id_fkey"
+            columns: ["employee_document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_file_recoveries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_integrity_checks: {
+        Row: {
+          checked_at: string
+          checked_by: string | null
+          detail: string | null
+          employee_document_id: string
+          file_kind: string
+          file_path: string | null
+          id: string
+          recalculated_hash: string | null
+          result: string
+          stored_hash: string | null
+          tenant_id: string
+        }
+        Insert: {
+          checked_at?: string
+          checked_by?: string | null
+          detail?: string | null
+          employee_document_id: string
+          file_kind: string
+          file_path?: string | null
+          id?: string
+          recalculated_hash?: string | null
+          result: string
+          stored_hash?: string | null
+          tenant_id: string
+        }
+        Update: {
+          checked_at?: string
+          checked_by?: string | null
+          detail?: string | null
+          employee_document_id?: string
+          file_kind?: string
+          file_path?: string | null
+          id?: string
+          recalculated_hash?: string | null
+          result?: string
+          stored_hash?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_integrity_checks_employee_document_id_fkey"
+            columns: ["employee_document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_integrity_checks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_minimum_wage_overrides: {
         Row: {
           age_band: string | null
@@ -10038,6 +10152,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_locked_contract_object: { Args: { _name: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       is_supervisor_only: { Args: never; Returns: boolean }
       is_supervisor_or_above: { Args: never; Returns: boolean }
