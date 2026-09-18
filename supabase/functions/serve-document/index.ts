@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
 
       const { data: doc, error: docError } = await supabase
         .from("employee_documents")
-        .select("id, document_name, file_path, final_signed_pdf_url, tenant_id")
+        .select("id, document_name, file_path, final_signed_pdf_url, tenant_id, employee_id, document_type, contract_state")
         .eq("id", documentId)
         .maybeSingle();
 
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
       // Check tenant membership
       const { data: membership } = await supabase
         .from("tenant_members")
-        .select("id")
+        .select("id, role")
         .eq("tenant_id", doc.tenant_id)
         .eq("user_id", user.id)
         .eq("is_active", true)
@@ -150,6 +150,25 @@ Deno.serve(async (req) => {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      }
+
+      // Staff (non-manager roles) may only open their own completed contract.
+      const isManagerial = ["company_admin", "manager", "supervisor"].includes(String((membership as any).role));
+      if (!isManagerial) {
+        const { data: ownEmployee } = await supabase
+          .from("employees")
+          .select("id, status")
+          .eq("id", doc.employee_id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const completed = ["signed", "superseded", "terminated"].includes(String((doc as any).contract_state || ""));
+        if (!ownEmployee || (ownEmployee as any).status === "leaver" || !completed) {
+          return new Response(JSON.stringify({ error: "Access denied" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
 
       if (variant === "final" && !doc.final_signed_pdf_url) {

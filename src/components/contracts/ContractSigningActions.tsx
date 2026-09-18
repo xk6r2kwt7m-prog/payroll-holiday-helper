@@ -41,6 +41,8 @@ import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { resolveTestSend } from "@/lib/contract-test-mode";
 import { invokeAuthenticatedFunction } from "@/lib/authenticated-function";
+import { Textarea } from "@/components/ui/textarea";
+import { ContractIntegrityPanel } from "./ContractIntegrityPanel";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -102,6 +104,7 @@ export function ContractSigningActions({
   const [signedScanAt, setSignedScanAt] = useState<string | null>(null);
   const [sendingSigned, setSendingSigned] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
+  const [recoveryReason, setRecoveryReason] = useState("");
   const [signedContractSent, setSignedContractSent] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
@@ -356,21 +359,39 @@ export function ContractSigningActions({
     window.open(`/document/view?id=${documentId}&variant=${variant}`, "_blank");
   };
 
-  /** Produce the combined signed file again when assembly failed. Signatures are untouched. */
+  /** Produce the combined signed file when assembly failed, or store a separate recovery
+   *  copy. The original completed file is never overwritten and signatures are untouched. */
   const handleRebuildSignedFile = async () => {
+    const reason = recoveryReason.trim();
+    if (reason.length < 5) {
+      toast({
+        title: "A reason is needed",
+        description: "Please say briefly why a recovery copy is needed. It is kept in the audit trail.",
+        variant: "destructive",
+      });
+      return;
+    }
     setRebuilding(true);
     try {
-      const { data } = await invokeAuthenticatedFunction<{ success?: boolean; error?: string }>(
+      const { data } = await invokeAuthenticatedFunction<{ success?: boolean; error?: string; recovery_copy?: boolean }>(
         "sign-contract?action=rebuild_final",
-        { document_id: documentId },
+        { document_id: documentId, reason },
       );
       if (!data?.success) throw new Error(data?.error || "Rebuild failed");
-      toast({ title: "Signed copy rebuilt", description: "The completed contract can now be opened and sent." });
+      toast({
+        title: data.recovery_copy ? "Recovery copy created" : "Signed copy produced",
+        description: data.recovery_copy
+          ? "Stored as a separate recovery copy. The original signed file is unchanged and remains the authoritative document."
+          : "The completed contract can now be opened and sent.",
+      });
+      setRecoveryReason("");
       queryClient.invalidateQueries({ queryKey: ["employee-documents"] });
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["contract-integrity", documentId] });
+      queryClient.invalidateQueries({ queryKey: ["contract-recoveries", documentId] });
     } catch (err: any) {
       toast({
-        title: "Could not rebuild the signed copy",
+        title: "Could not produce the signed copy",
         description: err?.message || "Please try again.",
         variant: "destructive",
       });
@@ -1016,23 +1037,37 @@ export function ContractSigningActions({
                   {signedContractSent ? "Send signed contract again" : "Send signed contract to staff"}
                 </Button>
 
-                {!finalSignedFilePath && (
-                  <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
-                    <p className="text-xs text-foreground">
-                      Both signatures are stored, but the combined signed file has not been produced yet.
-                    </p>
-                    <Button
-                      onClick={handleRebuildSignedFile}
-                      disabled={rebuilding}
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                    >
-                      {rebuilding ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      Rebuild signed copy
-                    </Button>
-                  </div>
-                )}
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 space-y-2">
+                  <p className="text-xs text-foreground">
+                    {finalSignedFilePath
+                      ? "The signed file is stored and cannot be replaced. If a copy is needed for recovery, it is saved separately and the original stays as it is."
+                      : "Both signatures are stored, but the combined signed file has not been produced yet."}
+                  </p>
+                  <Label htmlFor="recovery-reason" className="text-[11px] text-muted-foreground">
+                    Reason (kept in the audit trail)
+                  </Label>
+                  <Textarea
+                    id="recovery-reason"
+                    value={recoveryReason}
+                    onChange={(e) => setRecoveryReason(e.target.value)}
+                    placeholder="Why is a copy needed?"
+                    rows={2}
+                    className="text-xs"
+                  />
+                  <Button
+                    onClick={handleRebuildSignedFile}
+                    disabled={rebuilding || recoveryReason.trim().length < 5}
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {rebuilding ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    {finalSignedFilePath ? "Create recovery copy" : "Produce signed copy"}
+                  </Button>
+                </div>
+
+                <ContractIntegrityPanel documentId={documentId} />
+
 
                 {!employeeEmail && (
                   <p className="text-[10px] text-muted-foreground">

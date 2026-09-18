@@ -601,9 +601,20 @@ Deno.serve(async (req) => {
         });
       }
 
+      const recoveryReason = String(rebuildBody?.reason || "").trim();
+      if (recoveryReason.length < 5) {
+        return new Response(JSON.stringify({
+          error: "Please give the reason a recovery copy is needed.",
+          error_code: "reason_required",
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       const { data: doc } = await supabase
         .from("employee_documents")
-        .select("id, tenant_id, employee_id, document_name, file_path, employees ( forename, surname )")
+        .select("id, tenant_id, employee_id, document_name, file_path, final_signed_pdf_url, final_document_hash, contract_state, employees ( forename, surname )")
         .eq("id", documentId)
         .maybeSingle();
 
@@ -663,7 +674,14 @@ Deno.serve(async (req) => {
 
       const originalBytes = new Uint8Array(await originalFile.arrayBuffer());
       const rebuildHash = await sha256Bytes(originalBytes);
-      const rebuildPath = `contracts/final/${doc.tenant_id}/${doc.id}/${sanitizeFileName(doc.document_name)}_completed_signed.pdf`;
+      const existingFinalPath: string | null = (doc as any).final_signed_pdf_url || null;
+      // The original completed file is never overwritten. When one already exists the
+      // rebuild is stored as a separate, clearly labelled recovery copy.
+      const canonicalFinalPath = `contracts/final/${doc.tenant_id}/${doc.id}/${sanitizeFileName(doc.document_name)}_completed_signed.pdf`;
+      const isRecoveryCopy = Boolean(existingFinalPath);
+      const rebuildPath = isRecoveryCopy
+        ? `contracts/recovery/${doc.tenant_id}/${doc.id}/${new Date().toISOString().replace(/[:.]/g, "-")}_${sanitizeFileName(doc.document_name)}_recovery.pdf`
+        : canonicalFinalPath;
 
       const rebuiltPackage = await withRetry("rebuild final signed contract", () =>
         buildFinalSignedContractPdf({
@@ -692,20 +710,41 @@ Deno.serve(async (req) => {
       await withRetry("store rebuilt signed contract", async () => {
         const result = await supabase.storage
           .from("employee-documents")
-          .upload(rebuildPath, rebuiltPackage.finalBytes, { contentType: "application/pdf", upsert: true });
+          .upload(rebuildPath, rebuiltPackage.finalBytes, { contentType: "application/pdf", upsert: false });
         if (result.error) throw result.error;
         return result;
       });
 
-      await supabase
-        .from("employee_documents")
-        .update({
-          final_signed_pdf_url: rebuildPath,
-          final_document_hash: rebuiltPackage.finalHash,
-          contract_send_status: "fully_signed",
-          contract_state: "signed",
-        } as any)
-        .eq("id", doc.id);
+      const { data: recoveryActor } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      await supabase.from("contract_file_recoveries").insert({
+        tenant_id: doc.tenant_id,
+        employee_document_id: doc.id,
+        original_file_path: existingFinalPath,
+        original_file_hash: (doc as any).final_document_hash || null,
+        recovery_file_path: rebuildPath,
+        recovery_file_hash: rebuiltPackage.finalHash,
+        reason: recoveryReason,
+        created_by: user.id,
+        created_by_name: (recoveryActor as any)?.full_name || user.email || null,
+      } as any);
+
+      if (!isRecoveryCopy) {
+        // No completed file existed, so this genuinely completes the record.
+        await supabase
+          .from("employee_documents")
+          .update({
+            final_signed_pdf_url: rebuildPath,
+            final_document_hash: rebuiltPackage.finalHash,
+            contract_send_status: "fully_signed",
+            contract_state: "signed",
+          } as any)
+          .eq("id", doc.id);
+      }
 
       await supabase.from("audit_log").insert({
         action: "update",
@@ -714,17 +753,151 @@ Deno.serve(async (req) => {
         tenant_id: doc.tenant_id,
         user_id: user.id,
         new_data: {
-          event: "final_signed_contract_file_rebuilt",
+          event: isRecoveryCopy ? "contract_recovery_copy_created" : "final_signed_contract_file_rebuilt",
           employee_document_id: doc.id,
           employee_id: doc.employee_id,
-          note: "Combined signed file produced again from the stored signatures. Signatures unchanged.",
+          reason: recoveryReason,
+          recovery_file_path: rebuildPath,
+          recovery_file_hash: rebuiltPackage.finalHash,
+          original_file_path: existingFinalPath,
+          original_file_hash: (doc as any).final_document_hash || null,
+          note: isRecoveryCopy
+            ? "Recovery copy produced from the stored signatures. The original completed file and all signatures are unchanged and remain authoritative."
+            : "Combined signed file produced from the stored signatures. Signatures unchanged.",
         },
       });
 
-      return new Response(JSON.stringify({ success: true, path: rebuildPath }), {
+      return new Response(JSON.stringify({
+        success: true,
+        path: rebuildPath,
+        recovery_copy: isRecoveryCopy,
+        original_path: existingFinalPath,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ════════════════════════════════════════════
+    // Manager action: dated integrity check. Recalculates the fingerprint of the
+    // stored files and records the result. Nothing is ever corrected automatically.
+    // ════════════════════════════════════════════
+    if (req.method === "POST" && url.searchParams.get("action") === "integrity_check") {
+      failureStage = "integrity_check";
+      const authHeader = req.headers.get("authorization");
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Please sign in again.", error_code: "auth_required" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+      if (authError || !user) {
+        return new Response(JSON.stringify({ error: "Please sign in again.", error_code: "auth_required" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const checkBody = await req.json().catch(() => ({}));
+      const checkDocumentIds: string[] = Array.isArray(checkBody?.document_ids)
+        ? checkBody.document_ids.map((v: unknown) => String(v))
+        : checkBody?.document_id
+          ? [String(checkBody.document_id)]
+          : [];
+
+      if (checkDocumentIds.length === 0) {
+        return new Response(JSON.stringify({ error: "Missing contract reference", error_code: "missing_document" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: checkDocs } = await supabase
+        .from("employee_documents")
+        .select("id, tenant_id, document_name, file_path, final_signed_pdf_url, final_document_hash, contract_state")
+        .in("id", checkDocumentIds);
+
+      const results: Array<Record<string, unknown>> = [];
+
+      for (const checkDoc of checkDocs || []) {
+        const { data: membership } = await supabase
+          .from("tenant_members")
+          .select("role")
+          .eq("tenant_id", checkDoc.tenant_id)
+          .eq("user_id", user.id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (!membership || membership.role !== "company_admin") {
+          results.push({ document_id: checkDoc.id, result: "not_permitted" });
+          continue;
+        }
+
+        const targets: Array<{ kind: string; path: string | null; stored: string | null }> = [
+          { kind: "completed", path: (checkDoc as any).final_signed_pdf_url, stored: (checkDoc as any).final_document_hash },
+          { kind: "original", path: (checkDoc as any).file_path, stored: null },
+        ];
+
+        for (const target of targets) {
+          if (!target.path) {
+            results.push({ document_id: checkDoc.id, file_kind: target.kind, result: "no_file" });
+            continue;
+          }
+
+          let recalculated: string | null = null;
+          let detail: string | null = null;
+          let result = "match";
+
+          try {
+            const { data: fileData, error: fileError } = await withRetry(`integrity read ${target.kind}`, () =>
+              supabase.storage.from("employee-documents").download(target.path as string) as any, 3);
+            if (fileError || !fileData) throw fileError || new Error("File could not be read");
+            recalculated = await sha256Bytes(new Uint8Array(await fileData.arrayBuffer()));
+            if (!target.stored) {
+              result = "recorded";
+              detail = "No fingerprint was stored for this file, so this check records the fingerprint as at today only.";
+            } else if (target.stored !== recalculated) {
+              result = "mismatch";
+              detail = "The stored fingerprint and the file do not match. No change has been made.";
+            }
+          } catch (checkErr) {
+            result = "unreadable";
+            detail = checkErr instanceof Error ? checkErr.message : String(checkErr);
+          }
+
+          const { data: inserted } = await supabase.from("contract_integrity_checks").insert({
+            tenant_id: checkDoc.tenant_id,
+            employee_document_id: checkDoc.id,
+            file_kind: target.kind,
+            file_path: target.path,
+            stored_hash: target.stored,
+            recalculated_hash: recalculated,
+            result,
+            detail,
+            checked_by: user.id,
+          } as any).select("id, checked_at").maybeSingle();
+
+          results.push({
+            document_id: checkDoc.id,
+            file_kind: target.kind,
+            result,
+            detail,
+            recalculated_hash: recalculated,
+            checked_at: (inserted as any)?.checked_at || new Date().toISOString(),
+          });
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        results,
+        note: "Each result confirms the file as at the date and time checked. It is not evidence of its condition before that date.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
 
     if (!token) {
       return new Response(JSON.stringify({ error: "Missing token", error_code: "missing_token" }), {
@@ -1381,7 +1554,7 @@ Deno.serve(async (req) => {
           await withRetry("store final signed contract", async () => {
             const result = await supabase.storage
               .from("employee-documents")
-              .upload(finalPath, finalPackage.finalBytes, { contentType: "application/pdf", upsert: true });
+              .upload(finalPath, finalPackage.finalBytes, { contentType: "application/pdf", upsert: false });
             if (result.error) throw result.error;
             return result;
           });
