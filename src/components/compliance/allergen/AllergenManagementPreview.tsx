@@ -38,7 +38,7 @@ import {
   PREVIEW_PERSONAS, previewKeyFor, validateBranchFlavourQuestions,
 } from "@/lib/allergen-preview";
 import {
-  courseProgress, selectQuestionBank, EXCLUDED_FROM_SCORING, markAttempt,
+  courseProgress, selectQuestionBank, EXCLUDED_FROM_SCORING,
 } from "@/lib/allergen-course";
 import { certificationGate, markObservation, observationItemsFor } from "@/lib/allergen-certification";
 import { ALLERGEN_QUESTION_BANK } from "@/data/allergen/allergen-safety-questions";
