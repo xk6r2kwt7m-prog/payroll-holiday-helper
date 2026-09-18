@@ -43,6 +43,7 @@ import { resolveTestSend } from "@/lib/contract-test-mode";
 import { invokeAuthenticatedFunction } from "@/lib/authenticated-function";
 import { Textarea } from "@/components/ui/textarea";
 import { ContractIntegrityPanel } from "./ContractIntegrityPanel";
+import { ContractDeliveryPanel } from "./ContractDeliveryPanel";
 
 interface ContractSigningActionsProps {
   documentId: string;
