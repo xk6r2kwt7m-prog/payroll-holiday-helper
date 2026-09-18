@@ -890,6 +890,35 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
               )}
             </CardContent>
           </Card>
+
+          {/* ── Proposed reminder wording — nothing is sent ── */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Proposed reminders</CardTitle>
+              <CardDescription className="text-xs">{REMINDER_POLICY_STATE}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs">
+              {PROPOSED_REMINDERS.map((r) => (
+                <div key={r.key} className="rounded-md border p-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{r.trigger}</span>
+                    <Badge variant="outline" className="text-[10px]">Not sent</Badge>
+                  </div>
+                  <p className="text-muted-foreground">To: {r.recipient} · {r.channel}</p>
+                  <p className="mt-1 italic">“{r.wording}”</p>
+                </div>
+              ))}
+              {OUTSTANDING_EVIDENCE_REQUESTS.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertDescription className="text-xs">
+                    Outstanding allergen evidence:{" "}
+                    {OUTSTANDING_EVIDENCE_REQUESTS.map((r) => r.dish).join(" and ")} — not confirmed, and
+                    excluded from scored flavour questions.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
