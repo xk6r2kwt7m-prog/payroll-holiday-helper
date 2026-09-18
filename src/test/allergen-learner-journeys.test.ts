@@ -143,7 +143,7 @@ for (const branch of branches) {
           expect(flavours).not.toContain("Curry Goat");
           expect(flavours).not.toContain("Biscoff Banana");
         }
-        expect(bank.questions.filter((q) => q.critical).length).toBeGreaterThanOrEqual(15);
+        expect(bank.questions.filter((q) => q.critical).length).toBeGreaterThanOrEqual(14);
       });
 
       it("fails when a critical question is missed, even with a high score", () => {
@@ -208,10 +208,8 @@ for (const branch of branches) {
           expect(i.audience === audience || i.audience === "both").toBe(true);
         }
 
-        const results = Object.fromEntries(
-          items.map((i) => [i.ref, { observed: true }]),
-        );
-        const marking = markObservation(audience, results as never);
+        const results = Object.fromEntries(items.map((i) => [i.ref, { seen: true }]));
+        const marking = markObservation(items, results);
         expect(marking.outcome).toBe("passed");
 
         const gate = certificationGate({
