@@ -447,11 +447,28 @@ export default function SignContract() {
         <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
           <div className="rounded-xl border border-border bg-card p-4 space-y-4">
             <p className="text-sm text-muted-foreground">
-              Hello {contractInfo.employee_name}. Before you read and sign your contract, please
-              confirm the details below. They are used on the contract itself.
+              Hello {contractInfo.employee_name}.{" "}
+              {fieldsToAsk.length
+                ? "We already hold most of your details. Please add only the few below."
+                : "We already hold everything we need — just check the details below."}
             </p>
 
-            {DETAIL_FIELDS.map((field) => (
+            {alreadyOnFile.length > 0 && (
+              <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-1.5">
+                <p className="text-xs font-medium text-foreground">Already on file</p>
+                {alreadyOnFile.map((f) => (
+                  <div key={f.key} className="flex justify-between gap-3 text-xs">
+                    <span className="text-muted-foreground">{f.label}</span>
+                    <span className="text-foreground text-right">{details[f.key]}</span>
+                  </div>
+                ))}
+                <p className="text-[11px] text-muted-foreground pt-1">
+                  If anything here is wrong, tell your manager — they will update it.
+                </p>
+              </div>
+            )}
+
+            {fieldsToAsk.map((field) => (
               <div key={field.key}>
                 <label className="text-xs text-muted-foreground mb-1.5 block">
                   {field.label} {field.required && "*"}
