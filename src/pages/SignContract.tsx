@@ -21,6 +21,10 @@ interface ContractInfo {
   employer_signatory_name: string | null;
   employer_signatory_title: string | null;
   details_required?: boolean;
+  /** Only the essential details that are genuinely not held yet. */
+  missing_fields?: string[];
+  /** Details already held, shown back for confirmation rather than re-asked. */
+  on_file?: Record<string, string>;
   prefill?: Record<string, string>;
   signature_details?: Array<{
     signer_type: string;
