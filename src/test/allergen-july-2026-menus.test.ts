@@ -51,3 +51,16 @@ describe("July 2026 customer menus", () => {
     )).toBe(false);
   });
 });
+
+describe("site name matching", () => {
+  it("matches the real site records, which are named UD Carnaby and so on", () => {
+    const branches = [
+      { id: "c", name: "UD Carnaby" },
+      { id: "b", name: "UD Brixton" },
+      { id: "f", name: "UD Fitzrovia" },
+    ];
+    const res = resolveSiteBranchIds(["Carnaby", "Brixton", "Fitzrovia"], branches);
+    expect(res.ids).toEqual(["c", "b", "f"]);
+    expect(res.unmatched).toEqual([]);
+  });
+});

@@ -101,8 +101,10 @@ export function resolveSiteBranchIds(
 ): { ids: string[]; unmatched: string[] } {
   const ids: string[] = [];
   const unmatched: string[] = [];
+  const norm = (v: string) => (v ?? "").trim().toLowerCase().replace(/^ud\s+/, "");
   for (const site of sites) {
-    const hit = branches.find((b) => (b.name ?? "").trim().toLowerCase() === site.trim().toLowerCase());
+    /* Site records are named e.g. "UD Carnaby"; match on the site name itself. */
+    const hit = branches.find((b) => norm(b.name) === norm(site));
     if (hit) ids.push(hit.id);
     else unmatched.push(site);
   }
