@@ -164,6 +164,7 @@ export function useSendContractEmail() {
         queryClient.invalidateQueries({ queryKey: ["signing_tokens"] });
         queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
         queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
+        queryClient.invalidateQueries({ queryKey: ["contract-email-delivery", employeeDocumentId] });
 
         console.log("[CONTRACT_EMAIL] Sent successfully", {
           messageId: data?.diagnostics?.message_id,

@@ -9,6 +9,6 @@
 Validation note: 45 focused compliance/allergen checks passed. One existing additive-safety test still errors because its file scan encounters the compliance subdirectory.
 
 ## Contract signature email delivery
-- [ ] Trace the manual send flow and delivery records.
-- [ ] Identify and fix the delivery failure without sending test emails to staff.
+- [x] Trace the manual send flow and delivery records.
+- [x] Identify and fix false “Sent” reporting by separating provider acceptance from mailbox delivery.
 - [ ] Verify the corrected flow with isolated checks and confirm no staff contact occurred.

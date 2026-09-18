@@ -44,6 +44,7 @@ import { invokeAuthenticatedFunction } from "@/lib/authenticated-function";
 import { Textarea } from "@/components/ui/textarea";
 import { ContractIntegrityPanel } from "./ContractIntegrityPanel";
 import { ContractDeliveryPanel } from "./ContractDeliveryPanel";
+import { useContractEmailDelivery } from "@/hooks/useContractEmailDelivery";
 
 interface ContractSigningActionsProps {
   documentId: string;
@@ -122,6 +123,8 @@ export function ContractSigningActions({
   const [testMode, setTestMode] = useState(false);
   const { user } = useAuth();
   const myEmail = user?.email || "";
+  const hasContractSend = contractSendStatus === "sent" || emailSent;
+  const delivery = useContractEmailDelivery(documentId, hasContractSend && !bothSigned);
 
   useEffect(() => {
     setEmailOnFile(employeeEmail || "");
@@ -314,7 +317,7 @@ export function ContractSigningActions({
     if (bothSigned) return "fully_signed";
     if (employeeSigned && !employerSigned) return "employee_signed";
     if (employerSigned && !employeeSigned) return "employer_signed";
-    if (contractSendStatus === "sent" || emailSent) return "sent";
+    if (hasContractSend) return "sent";
     return "draft";
   };
   const signingStage = getSigningStage();
@@ -527,10 +530,10 @@ export function ContractSigningActions({
       if (result.success) {
         if (!isTest) setEmailSent(true);
         toast({
-          title: isTest ? "Test contract sent to you" : "Contract sent",
+          title: isTest ? "Test contract accepted" : "Contract accepted for delivery",
           description: isTest
-            ? `Sent to ${toEmail}. ${employeeName}'s record was not changed.`
-            : `Contract sent to ${toEmail}`,
+            ? `Accepted for ${toEmail}. ${employeeName}'s record was not changed.`
+            : `The email service accepted the message for ${toEmail}. Delivery will be checked separately.`,
         });
       } else {
         toast({
@@ -1199,11 +1202,11 @@ export function ContractSigningActions({
                   <div className="space-y-3">
                     <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
                       <p className="text-xs font-medium text-foreground mb-2">
-                        {emailSent ? "✓ Contract sent" : "Signing Link Ready"}
+                        {emailSent ? "Contract email accepted" : "Signing Link Ready"}
                       </p>
                       {emailSent && (contractSentTo || employeeEmail) && (
                         <p className="text-xs text-primary mb-2">
-                          Sent to {contractSentTo || employeeEmail}
+                          Accepted for {contractSentTo || employeeEmail}
                           {contractSentAt && (
                             <span className="text-muted-foreground ml-1">
                               · {new Date(contractSentAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
@@ -1212,6 +1215,28 @@ export function ContractSigningActions({
                         </p>
                       )}
                     </div>
+                      {hasContractSend && signerType === "employee" && (
+                        <div className="rounded-md border border-border bg-muted/30 p-3">
+                          {delivery.isLoading ? (
+                            <p className="text-xs text-muted-foreground flex items-center gap-2">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking mailbox delivery…
+                            </p>
+                          ) : delivery.data?.state === "delivered" ? (
+                            <p className="text-xs text-success flex items-center gap-2">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Delivered to the recipient's email service.
+                            </p>
+                          ) : delivery.data?.state === "rejected" ? (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-destructive">Delivery rejected — check the address before retrying.</p>
+                              {delivery.data.reason && <p className="text-[11px] text-muted-foreground break-words">{delivery.data.reason}</p>}
+                            </div>
+                          ) : delivery.isError ? (
+                            <p className="text-xs text-warning">Delivery status could not be checked right now.</p>
+                          ) : (
+                            <p className="text-xs text-warning">Accepted by the email service; mailbox delivery is still processing.</p>
+                          )}
+                        </div>
+                      )}
 
                     {/* Primary: Send by email (employee only) */}
                     {signerType === "employee" && (
