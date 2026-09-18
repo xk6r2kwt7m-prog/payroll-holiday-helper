@@ -30,6 +30,7 @@ import { controlledPilotGate, validatePilotSelection } from "@/lib/allergen-prev
 
 const dishes = [
   { dish_name: "Satay Chicken", is_confirmed: true, management_decision: "approved", active_branch_ids: ["b1"] },
+  { dish_name: "Nutella", is_confirmed: true, management_decision: "approved", active_branch_ids: ["b1"] },
   { dish_name: "Nutella sweet dumpling", is_confirmed: true, management_decision: "approved", active_branch_ids: ["b1"] },
   { dish_name: "Tempura Aubergine", is_confirmed: false, management_decision: "evidence_requested", active_branch_ids: ["b1"] },
   { dish_name: "Corn Fritters", is_confirmed: false, management_decision: "evidence_requested", active_branch_ids: ["b1"] },
