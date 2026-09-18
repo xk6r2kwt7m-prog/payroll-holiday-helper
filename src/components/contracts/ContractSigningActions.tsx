@@ -102,6 +102,7 @@ export function ContractSigningActions({
   const [signedScanAt, setSignedScanAt] = useState<string | null>(null);
   const [sendingSigned, setSendingSigned] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
+  const [recoveryReason, setRecoveryReason] = useState("");
   const [signedContractSent, setSignedContractSent] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
