@@ -329,3 +329,103 @@ export function newVersionEffect(settings: RenewalSettings): {
   };
   return { action: settings.new_version_action, description: map[settings.new_version_action] };
 }
+
+/* ───────────────── Assignment selection preview (Phase 3) ───────────────── */
+
+export type AssignmentSelectionMode = "people" | "branch" | "role" | "all";
+
+export interface AssignmentCandidate {
+  id: string;
+  name: string;
+  branch_id: string | null;
+  /** "foh" | "kitchen" | "both" — used for role-based selection. */
+  audience: ObservationAudience;
+  eligible: boolean;
+  /** Reason the person cannot be assigned at all (leaver, test record, etc.). */
+  ineligibleReason?: string;
+  /** Course versions this person has already completed. */
+  completedVersions: number[];
+  /** Standing of any current certificate: valid | expired | superseded | revoked | none. */
+  certificateStanding?: "valid" | "expired" | "superseded" | "revoked" | "none";
+}
+
+export interface AssignmentPreviewRow {
+  id: string;
+  name: string;
+  branch_id: string | null;
+  audience: ObservationAudience;
+  note: string;
+}
+
+export interface AssignmentPreview {
+  recipients: AssignmentPreviewRow[];
+  excluded: { id: string; name: string; reason: string }[];
+  alreadyCompleted: { id: string; name: string }[];
+  /** Always "not_sent": an assignment never contacts staff by itself. */
+  deliveryState: "not_sent";
+}
+
+/**
+ * Builds the recipient list for an assignment, without creating anything.
+ * Reassignment is offered for failed, expired or superseded training; a person
+ * who already holds a valid certificate for this version is listed separately
+ * rather than silently re-assigned.
+ */
+export function buildAssignmentPreview(opts: {
+  candidates: AssignmentCandidate[];
+  mode: AssignmentSelectionMode;
+  selectedIds?: string[];
+  branchId?: string | null;
+  role?: ObservationAudience | null;
+  excludedIds?: string[];
+  courseVersion: number;
+  allowReassign?: boolean;
+}): AssignmentPreview {
+  const excluded: AssignmentPreview["excluded"] = [];
+  const alreadyCompleted: AssignmentPreview["alreadyCompleted"] = [];
+  const recipients: AssignmentPreviewRow[] = [];
+  const selected = new Set(opts.selectedIds ?? []);
+  const manuallyExcluded = new Set(opts.excludedIds ?? []);
+
+  for (const c of opts.candidates) {
+    const inScope =
+      opts.mode === "people"
+        ? selected.has(c.id)
+        : opts.mode === "branch"
+          ? !!opts.branchId && c.branch_id === opts.branchId
+          : opts.mode === "role"
+            ? !!opts.role && (c.audience === opts.role || c.audience === "both" || opts.role === "both")
+            : true;
+    if (!inScope) continue;
+
+    if (manuallyExcluded.has(c.id)) {
+      excluded.push({ id: c.id, name: c.name, reason: "Excluded by the administrator." });
+      continue;
+    }
+    if (!c.eligible) {
+      excluded.push({ id: c.id, name: c.name, reason: c.ineligibleReason ?? "Not eligible for this course." });
+      continue;
+    }
+
+    const holdsThisVersion = c.completedVersions.includes(opts.courseVersion);
+    const standing = c.certificateStanding ?? "none";
+    if (holdsThisVersion && standing === "valid" && !opts.allowReassign) {
+      alreadyCompleted.push({ id: c.id, name: c.name });
+      continue;
+    }
+
+    const note =
+      standing === "expired"
+        ? "Reassignment — certificate expired."
+        : standing === "superseded"
+          ? "Reassignment — certificate superseded."
+          : standing === "revoked"
+            ? "Reassignment — certificate revoked."
+            : holdsThisVersion
+              ? "Reassignment of the same version, approved by the administrator."
+              : "New assignment.";
+    recipients.push({ id: c.id, name: c.name, branch_id: c.branch_id, audience: c.audience, note });
+  }
+
+  return { recipients, excluded, alreadyCompleted, deliveryState: "not_sent" };
+}
