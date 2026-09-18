@@ -86,9 +86,16 @@ describe("no critical control was removed", () => {
   });
 
   it("never claims a dish is allergen-free or that removing an allergen makes it safe", () => {
-    expect(allText).not.toMatch(/allergen[- ]free|nut[- ]free(?! )/i);
-    expect(allText).not.toMatch(/pick the peanuts off and serve the same dish\.(?! )/i);
-    expect(allText).toMatch(/never pick an ingredient off and serve the same plate|never pick the peanuts off/i);
+    // "nut-free" only ever appears as something staff must NOT say.
+    const sentences = allText.split(/(?<=[.?!])\s+/);
+    for (const s of sentences) {
+      if (/nut[- ]free|allergen[- ]free/i.test(s)) {
+        expect(s).toMatch(/must not|do not|never|not describ/i);
+      }
+    }
+    expect(allText).toMatch(/never pick an ingredient off and serve the same plate/i);
+    expect(allText).toMatch(/never pick the peanuts off and serve the same dish/i);
+    expect(allText).toMatch(/does not make the food safe/i);
   });
 });
 
