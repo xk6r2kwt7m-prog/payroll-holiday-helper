@@ -273,7 +273,7 @@ export default function SignContract() {
 
 
   const handleSign = async () => {
-    if (!typedName.trim() || !consentGiven || !signatureData || !emailLooksValid) return;
+    if (!typedName.trim() || !consentGiven || !signatureData || !emailLooksValid || !emailVerified) return;
 
     setSubmitting(true);
     setErrorCode(null);
@@ -704,7 +704,12 @@ export default function SignContract() {
   }
 
   const canSubmit =
-    typedName.trim().length > 0 && consentGiven && !!signatureData && emailLooksValid && !submitting;
+    typedName.trim().length > 0 &&
+    consentGiven &&
+    !!signatureData &&
+    emailLooksValid &&
+    emailVerified &&
+    !submitting;
   const companyName = contractInfo.company_name || "the employer";
 
   return (
