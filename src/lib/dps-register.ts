@@ -128,15 +128,21 @@ const ORDER: RegisterStatus[] = [
 ];
 
 /**
- * Builds the register for one site: everyone front of house there, plus anyone
- * else at that site who already holds an authorisation record.
+ * Builds the register for one site: everyone front of house there, anyone the
+ * manager has added by hand, plus anyone else at that site who already holds an
+ * authorisation record.
+ *
+ * A recorded manager decision always beats the guess from the job title, and a
+ * role nobody has settled yet is never silently dropped — it comes back from
+ * `unclassifiedForSite` for the manager to decide.
  */
 export function buildDpsRegister(opts: {
   branch: string;
   employees: RegisterEmployee[];
   authorisations: RegisterAuthorisation[];
+  decisions?: AlcoholListDecision[];
 }): RegisterRow[] {
-  const { branch, employees, authorisations } = opts;
+  const { branch, employees, authorisations, decisions = [] } = opts;
   const wanted = norm(branch);
 
   const siteAuths = authorisations.filter(
