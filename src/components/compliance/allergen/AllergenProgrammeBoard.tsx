@@ -54,6 +54,17 @@ import {
   type ObservationResults,
   type RenewalSettings,
 } from "@/lib/allergen-certification";
+import {
+  buildAssignmentPreview,
+  type AssignmentCandidate,
+  type AssignmentSelectionMode,
+} from "@/lib/allergen-certification";
+import {
+  PROPOSED_CERTIFICATE_POLICY,
+  PROPOSED_REMINDERS,
+  REMINDER_POLICY_STATE,
+  OUTSTANDING_EVIDENCE_REQUESTS,
+} from "@/data/allergen/allergen-acceptance-policy";
 import { ALLERGEN_SAFETY_LESSONS } from "@/data/allergen/allergen-safety-lessons";
 import { PRACTICAL_SIGNOFF_TEMPLATE, type ObservationAudience } from "@/data/allergen/allergen-practical-signoff";
 
@@ -83,6 +94,15 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
   const [audience, setAudience] = useState<ObservationAudience>("foh");
   const [dueDate, setDueDate] = useState<string>("");
 
+  /* bulk assignment selection (preview only — nothing is sent) */
+  const [mode, setMode] = useState<AssignmentSelectionMode>("people");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkBranch, setBulkBranch] = useState<string>("");
+  const [bulkRole, setBulkRole] = useState<ObservationAudience>("foh");
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
+  const [allowReassign, setAllowReassign] = useState(false);
+  const [bulkDueDate, setBulkDueDate] = useState<string>("");
+
   /* practical observation dialog */
   const [observing, setObserving] = useState<AllergenAssignmentRow | null>(null);
   const [results, setResults] = useState<ObservationResults>({});
@@ -106,6 +126,46 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
     certificates.find((c) => c.assignment_id === assignmentId && c.status === "valid") ?? null;
 
   const mandatoryLessons = ALLERGEN_SAFETY_LESSONS.filter((l) => l.mandatory).length;
+
+  const courseVersion = draft?.proposed_version ?? 2;
+
+  /** Candidate list for the recipient preview. Leavers are never eligible. */
+  const candidates: AssignmentCandidate[] = useMemo(
+    () =>
+      employees.map((e: any) => {
+        const role = `${e.job_title ?? ""} ${e.department ?? ""}`.toLowerCase();
+        const kitchen = /chef|kitchen|kp|cook|prep/.test(role);
+        const cert = certificates.find((c) => c.employee_id === e.id);
+        return {
+          id: e.id,
+          name: `${e.forename ?? ""} ${e.surname ?? ""}`.trim(),
+          branch_id: e.branch_id ?? null,
+          audience: (kitchen ? "kitchen" : "foh") as ObservationAudience,
+          eligible: e.status !== "leaver" && !e.archived_at,
+          ineligibleReason: "Left the business — not assignable.",
+          completedVersions: certificates
+            .filter((c) => c.employee_id === e.id && c.course_version != null)
+            .map((c) => Number(c.course_version)),
+          certificateStanding: (cert?.status as any) ?? "none",
+        } satisfies AssignmentCandidate;
+      }),
+    [employees, certificates],
+  );
+
+  const preview = useMemo(
+    () =>
+      buildAssignmentPreview({
+        candidates,
+        mode,
+        selectedIds,
+        branchId: bulkBranch || null,
+        role: bulkRole,
+        excludedIds,
+        courseVersion,
+        allowReassign,
+      }),
+    [candidates, mode, selectedIds, bulkBranch, bulkRole, excludedIds, courseVersion, allowReassign],
+  );
 
   const observationItems = useMemo(
     () => (observing ? observationItemsFor(observing.audience) : []),
@@ -333,6 +393,163 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
             </CardContent>
           </Card>
 
+          {/* ── Bulk selection with a recipient preview. Nothing is sent. ── */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Assign several people</CardTitle>
+              <CardDescription className="text-xs">
+                Choose who should receive the course, check the recipient list, then record it. Every
+                assignment is kept as “Not sent” — staff are only contacted after you approve sending
+                separately.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1">
+                  <Label className="text-xs">Who</Label>
+                  <Select value={mode} onValueChange={(v) => setMode(v as AssignmentSelectionMode)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="people">Chosen people</SelectItem>
+                      <SelectItem value="branch">Everyone at one site</SelectItem>
+                      <SelectItem value="role">Everyone in one role</SelectItem>
+                      <SelectItem value="all">All eligible staff</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {mode === "branch" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Site</Label>
+                    <Select value={bulkBranch} onValueChange={setBulkBranch}>
+                      <SelectTrigger><SelectValue placeholder="Choose" /></SelectTrigger>
+                      <SelectContent>
+                        {branches.map((b: any) => (
+                          <SelectItem key={b.id} value={b.id}>{b.display_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {mode === "role" && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Role</Label>
+                    <Select value={bulkRole} onValueChange={(v) => setBulkRole(v as ObservationAudience)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="foh">Front of house</SelectItem>
+                        <SelectItem value="kitchen">Kitchen</SelectItem>
+                        <SelectItem value="both">Both</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <Label className="text-xs">Due by</Label>
+                  <Input type="date" value={bulkDueDate} onChange={(e) => setBulkDueDate(e.target.value)} />
+                </div>
+                <div className="flex items-end gap-2">
+                  <Switch id="allow-reassign" checked={allowReassign} onCheckedChange={setAllowReassign} />
+                  <Label htmlFor="allow-reassign" className="text-xs">
+                    Reassign people who already hold this version
+                  </Label>
+                </div>
+              </div>
+
+              {mode === "people" && (
+                <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                  {candidates.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 rounded-md border p-2 text-xs">
+                      <Checkbox
+                        checked={selectedIds.includes(c.id)}
+                        onCheckedChange={(v) =>
+                          setSelectedIds((prev) => (v ? [...prev, c.id] : prev.filter((x) => x !== c.id)))
+                        }
+                      />
+                      <span>{c.name || "Unnamed"}</span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {c.audience === "kitchen" ? "Kitchen" : "FOH"}
+                      </Badge>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <div className="rounded-md border p-3 text-xs">
+                <p className="font-medium">
+                  Recipient preview — {preview.recipients.length} {preview.recipients.length === 1 ? "person" : "people"} ·
+                  kept as “Not sent”
+                </p>
+                <ul className="mt-1 space-y-1">
+                  {preview.recipients.map((r) => (
+                    <li key={r.id} className="flex flex-wrap items-center gap-2">
+                      <Checkbox
+                        checked={false}
+                        onCheckedChange={() => setExcludedIds((prev) => [...prev, r.id])}
+                        aria-label={`Exclude ${r.name}`}
+                      />
+                      <span>{r.name}</span>
+                      <Badge variant="outline" className="text-[10px]">{branchName(r.branch_id)}</Badge>
+                      <Badge variant="outline" className="text-[10px]">
+                        {r.audience === "kitchen" ? "Kitchen" : "FOH"}
+                      </Badge>
+                      <span className="text-muted-foreground">{r.note}</span>
+                    </li>
+                  ))}
+                  {preview.recipients.length === 0 && (
+                    <li className="text-muted-foreground">Nobody selected yet.</li>
+                  )}
+                </ul>
+                {preview.alreadyCompleted.length > 0 && (
+                  <p className="mt-2 text-muted-foreground">
+                    Already completed version {courseVersion}:{" "}
+                    {preview.alreadyCompleted.map((p) => p.name).join(", ")}
+                  </p>
+                )}
+                {preview.excluded.length > 0 && (
+                  <div className="mt-2 space-y-1 text-muted-foreground">
+                    {preview.excluded.map((p) => (
+                      <p key={p.id}>
+                        Excluded — {p.name}: {p.reason}{" "}
+                        <button
+                          type="button"
+                          className="underline"
+                          onClick={() => setExcludedIds((prev) => prev.filter((x) => x !== p.id))}
+                        >
+                          put back
+                        </button>
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button
+                size="sm"
+                disabled={preview.recipients.length === 0 || createAssignment.isPending}
+                onClick={async () => {
+                  for (const r of preview.recipients) {
+                    await createAssignment.mutateAsync({
+                      employeeId: r.id,
+                      branchId: r.branch_id,
+                      audience: r.audience,
+                      dueDate: bulkDueDate || null,
+                      draftId: draft?.id ?? null,
+                      courseVersion: draft?.proposed_version ?? null,
+                      isTest: testMode,
+                      note: testMode ? "Test assignment — management workflow test only." : r.note,
+                    });
+                  }
+                  toast.success(
+                    `${preview.recipients.length} assignment(s) recorded as “Not sent”. Nobody was contacted.`,
+                  );
+                  setSelectedIds([]);
+                }}
+              >
+                Record {preview.recipients.length || ""} assignment(s) — not sent
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Tracking ({assignments.length})</CardTitle>
@@ -513,6 +730,24 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
               })}
             </CardContent>
           </Card>
+
+          {/* ── Proposed certificate policy — for review, not active ── */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Proposed certificate policy</CardTitle>
+              <CardDescription className="text-xs">
+                For your review only. This policy is not activated or published, and no certificate is
+                issued because of it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1 text-xs">
+              {PROPOSED_CERTIFICATE_POLICY.map((c) => (
+                <p key={c.label}>
+                  <span className="font-medium">{c.label}:</span> {c.detail}
+                </p>
+              ))}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Expiry and reminders ── */}
@@ -652,6 +887,35 @@ export function AllergenProgrammeBoard({ testMode }: { testMode: boolean }) {
                       })}
                   </ul>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── Proposed reminder wording — nothing is sent ── */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Proposed reminders</CardTitle>
+              <CardDescription className="text-xs">{REMINDER_POLICY_STATE}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs">
+              {PROPOSED_REMINDERS.map((r) => (
+                <div key={r.key} className="rounded-md border p-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{r.trigger}</span>
+                    <Badge variant="outline" className="text-[10px]">Not sent</Badge>
+                  </div>
+                  <p className="text-muted-foreground">To: {r.recipient} · {r.channel}</p>
+                  <p className="mt-1 italic">“{r.wording}”</p>
+                </div>
+              ))}
+              {OUTSTANDING_EVIDENCE_REQUESTS.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertDescription className="text-xs">
+                    Outstanding allergen evidence:{" "}
+                    {OUTSTANDING_EVIDENCE_REQUESTS.map((r) => r.dish).join(" and ")} — not confirmed, and
+                    excluded from scored flavour questions.
+                  </AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>

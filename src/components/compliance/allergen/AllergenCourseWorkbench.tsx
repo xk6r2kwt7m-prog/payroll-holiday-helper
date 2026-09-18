@@ -18,7 +18,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Smartphone, Monitor, Users } from "lucide-react";
 import { AllergenProgrammeBoard } from "@/components/compliance/allergen/AllergenProgrammeBoard";
 import { toast } from "sonner";
-import { ALLERGEN_SAFETY_LESSONS, ALLERGEN_COURSE_TITLE, ALLERGEN_COURSE_TOTAL_MINUTES } from "@/data/allergen/allergen-safety-lessons";
+import {
+  ALLERGEN_SAFETY_LESSONS,
+  ALLERGEN_COURSE_TITLE,
+  ALLERGEN_COURSE_TOTAL_MINUTES,
+  ALLERGEN_COURSE_ORIGINAL_MINUTES,
+} from "@/data/allergen/allergen-safety-lessons";
+import {
+  OUTSTANDING_EVIDENCE_REQUESTS,
+  OUTSTANDING_EVIDENCE_WARNING,
+} from "@/data/allergen/allergen-acceptance-policy";
 import { ALLERGEN_QUESTION_BANK, CRITICAL_QUESTION_COUNT } from "@/data/allergen/allergen-safety-questions";
 import { PRACTICAL_SIGNOFF_TEMPLATE } from "@/data/allergen/allergen-practical-signoff";
 import { courseSource, APPROVED_WORDING } from "@/data/allergen/allergen-course-sources";
@@ -83,7 +92,9 @@ export function AllergenCourseWorkbench() {
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2 text-xs">
             <Badge variant="outline">{ALLERGEN_SAFETY_LESSONS.length} lessons</Badge>
-            <Badge variant="outline">About {ALLERGEN_COURSE_TOTAL_MINUTES} min of reading</Badge>
+            <Badge variant="outline">
+              About {ALLERGEN_COURSE_TOTAL_MINUTES} min of reading (was {ALLERGEN_COURSE_ORIGINAL_MINUTES} min)
+            </Badge>
             <Badge variant="outline">{ALLERGEN_QUESTION_BANK.length} questions written</Badge>
             <Badge variant="outline">{CRITICAL_QUESTION_COUNT} critical-safety questions</Badge>
             <Badge variant="outline">{PRACTICAL_SIGNOFF_TEMPLATE.items.length} practical observations</Badge>
@@ -121,6 +132,19 @@ export function AllergenCourseWorkbench() {
               </AlertDescription>
             </Alert>
           )}
+
+          <Alert variant="destructive">
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs space-y-1">
+              <p className="font-medium">{OUTSTANDING_EVIDENCE_WARNING}</p>
+              {OUTSTANDING_EVIDENCE_REQUESTS.map((r) => (
+                <p key={r.dish}>
+                  <span className="font-medium">{r.dish}</span>
+                  {r.onCurrentMenu ? " (on the current menu)" : ""} — still required: {r.required.join(", ")}. {r.effect}
+                </p>
+              ))}
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
 
@@ -147,7 +171,12 @@ export function AllergenCourseWorkbench() {
                 <CardTitle className="text-sm">{lesson.order}. {lesson.title}</CardTitle>
                 <CardDescription className="text-xs">{lesson.summary}</CardDescription>
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <Badge variant="outline" className="text-[10px]">{lesson.estimated_minutes} min</Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    {lesson.estimated_minutes} min
+                    {lesson.original_minutes && lesson.original_minutes !== lesson.estimated_minutes
+                      ? ` (was ${lesson.original_minutes})`
+                      : ""}
+                  </Badge>
                   <Badge variant={lesson.mandatory ? "destructive" : "outline"} className="text-[10px]">
                     {lesson.mandatory ? "Required lesson" : "Optional"}
                   </Badge>
@@ -155,6 +184,11 @@ export function AllergenCourseWorkbench() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
+                {lesson.condensed && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Shortened for management review: {lesson.condensed}
+                  </p>
+                )}
                 {lesson.sections.map((s) => (
                   <div key={s.ref} className="rounded-md border p-2 text-xs">
                     <div className="flex flex-wrap items-center justify-between gap-2">

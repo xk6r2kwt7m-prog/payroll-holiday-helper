@@ -45,6 +45,10 @@ export interface AllergenLesson {
   title: string;
   summary: string;
   estimated_minutes: number;
+  /** Reading time before the pre-publication condensing review. */
+  original_minutes?: number;
+  /** What was removed or consolidated during the condensing review. */
+  condensed?: string;
   /** A lesson is mandatory when any of its sections are mandatory. */
   mandatory: boolean;
   sections: AllergenLessonSection[];
