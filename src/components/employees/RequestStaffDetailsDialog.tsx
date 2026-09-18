@@ -224,7 +224,16 @@ export function RequestStaffDetailsDialog({
             </div>
 
             <div className="space-y-3">
-              <Label>What to ask for</Label>
+              <div className="space-y-1">
+                <Label>What to ask for</Label>
+                <p id="coverage-summary" className="text-xs text-muted-foreground">
+                  {coverageLoading
+                    ? "Checking what we already hold..."
+                    : missingKeys.length === 0
+                      ? "We already hold everything on this list. Only tick something if you want it checked or refreshed."
+                      : `Ticked below: the ${missingKeys.length} item${missingKeys.length > 1 ? "s" : ""} we don't hold yet. Items marked "already on file" aren't asked for again unless you tick them.`}
+                </p>
+              </div>
               {grouped.map(({ group, items }) => (
                 <div key={group} className="space-y-1.5">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group}</p>
@@ -240,13 +249,21 @@ export function RequestStaffDetailsDialog({
                         className="mt-0.5"
                       />
                       <span>
-                        <span className="block text-sm font-medium text-card-foreground">{item.label}</span>
+                        <span className="flex items-center gap-2 text-sm font-medium text-card-foreground">
+                          {item.label}
+                          {heldKeys.includes(item.key) && (
+                            <Badge variant="outline" className="text-[10px] font-normal">
+                              {REASKABLE_ITEMS.includes(item.key) ? "on file — may expire" : "already on file"}
+                            </Badge>
+                          )}
+                        </span>
                         <span className="block text-xs text-muted-foreground">{item.hint}</span>
                       </span>
                     </label>
                   ))}
                 </div>
               ))}
+
               {selected.some((k) => ["passport", "visa", "share_code"].includes(k)) && (
                 <p className="text-xs text-muted-foreground">
                   Right to work documents wait for your review before they count as checked. The expiry date
