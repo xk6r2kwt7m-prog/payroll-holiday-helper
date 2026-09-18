@@ -170,6 +170,8 @@ export interface BankSelection {
   /** Option order per question id, so a resumed attempt looks identical. */
   optionOrder: Record<string, string[]>;
   excluded: { id: string; flavour?: string; reason: string }[];
+  /** Critical questions kept in although their dish record needs attention. */
+  criticalWarnings?: { id: string; flavour?: string; reason: string }[];
 }
 
 /** Deterministic shuffle so a resumed attempt shows the same answer order. */
