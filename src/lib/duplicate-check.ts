@@ -102,7 +102,12 @@ export function findPossibleDuplicates(
     if (candidateNi && loose(record.ni_number) === candidateNi) reasons.push("ni_number");
 
     if (reasons.length > 0) {
-      matches.push({ record, reasons, linkedToAccount: !!record.user_id });
+      matches.push({
+        record,
+        reasons,
+        linkedToAccount: !!record.user_id,
+        blocking: reasons.includes("email") && isCurrentRecord(record),
+      });
     }
   }
 
