@@ -26,7 +26,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "induction_pack" | "induction_reminder" | "inspection_pack" | "licence_signature" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "contract_email_verification" | "induction_pack" | "induction_reminder" | "inspection_pack" | "licence_signature" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -410,6 +410,17 @@ function buildHtml(type: string, data: Record<string, string>): string {
         </p>
         <p>You can read it now and sign later — the link stays open for ${data.expiry_days || "30"} days. No login is needed.</p>
         <p style="color:#666;">This link is personal to you. Please do not forward it.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
+    case "contract_email_verification": {
+      // One-time code only — never any personal data beyond the code itself.
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your verification code</h2>
+        <p>Hello,</p>
+        <p>You asked to use this email address for signing your contract. Enter the code below to confirm it belongs to you:</p>
+        <p style="text-align:center;margin:24px 0;"><span style="display:inline-block;padding:12px 28px;background:#1a1a2e;color:#ffffff;border-radius:6px;font-weight:bold;font-size:24px;letter-spacing:6px;">${data.code || ""}</span></p>
+        <p>The code lasts ${data.expires_minutes || 15} minutes. If you did not ask for this, you can ignore this email.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
