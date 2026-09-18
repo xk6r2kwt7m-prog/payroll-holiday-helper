@@ -245,12 +245,12 @@ export function ContractPDF({
   // Every page carries the reference, the employee's name, page numbers, the issue
   // date and both version numbers, so a loose page can always be placed.
   const PageFooter = () => (
-    <View style={{ position: "absolute", bottom: 20, left: 40, right: 40 }} fixed>
-      <View style={styles.footer}>
+    <View style={styles.footerBlock} fixed>
+      <View style={styles.footerRow}>
         <Text>{companyLegalName} — Confidential</Text>
         <Text render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} />
       </View>
-      <View style={styles.footer}>
+      <View style={styles.footerRow}>
         <Text>
           {contractReference ? `Ref ${contractReference}` : "Ref pending"} · {variables.employeeName}
         </Text>
