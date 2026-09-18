@@ -180,6 +180,14 @@ interface ContractPDFProps {
   companyLegalName?: string;
   companyTradingName?: string;
   companyAddress?: string;
+  /** Permanent unique reference for this contract, printed on every page. */
+  contractReference?: string | null;
+  /** Date this contract was issued, printed on every page. */
+  issueDate?: string | null;
+  /** Wording release this contract was generated from. */
+  templateVersion?: string | null;
+  /** Version of this contract itself (1 for the original, higher for variations). */
+  contractVersion?: number | null;
 }
 
 export function ContractPDF({
@@ -188,6 +196,10 @@ export function ContractPDF({
   companyLegalName = "Your Company",
   companyTradingName,
   companyAddress,
+  contractReference,
+  issueDate,
+  templateVersion,
+  contractVersion = 1,
 }: ContractPDFProps) {
   const isManagement = contractType === "management" || contractType === "supervisor";
   const roleLabel = resolveContractRoleLabel(variables.jobTitle, isManagement);
