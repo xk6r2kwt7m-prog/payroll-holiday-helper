@@ -126,6 +126,7 @@ export function SendStaffAlcoholDialog({
         );
         onOpenChange(false);
         setSelected([]);
+        setStep("choose");
       }
     } catch (e) {
       toast.error((e as Error).message);
