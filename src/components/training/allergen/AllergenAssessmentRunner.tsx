@@ -141,6 +141,7 @@ export function AllergenAssessmentRunner({
         draftId: draftId ?? null,
         employeeId: employeeId ?? null,
         isTest,
+        previewKey: previewKey ?? null,
       },
       {
         onSuccess: () => {
