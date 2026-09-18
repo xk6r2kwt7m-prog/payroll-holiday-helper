@@ -10,6 +10,9 @@ import {
   UD_COURSE_DOCUMENT_TITLE,
 } from "@/data/allergen/ud-allergen-draft";
 import { assessConflict, type RankedSourceStatement } from "@/lib/allergen-sources";
+import {
+  JULY_2026_MENU_SOURCES, menuSitesForDish, resolveSiteBranchIds,
+} from "@/data/allergen/ud-july-2026-menus";
 
 export interface AllergenSource {
   id: string;
@@ -620,4 +623,86 @@ async function buildConflicts(tenantId: string, courseSourceId: string): Promise
     if (error) throw error;
   }
   return rows.length;
+}
+
+/* ─────────────── July 2026 customer menus → which sites sell what ───────────────
+ * The menus decide availability only. They are never treated as an allergen
+ * authority: allergen wording still comes from the approved matrix, supplier
+ * specifications and recipes, and a flavour stays unconfirmed until that matrix
+ * is uploaded. Nothing here publishes a course version or contacts staff.
+ */
+export function useApplyJulyMenus() {
+  const { tenantId } = useTenant();
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (branches: { id: string; name: string }[]) => {
+      if (!tenantId) throw new Error("No tenant");
+
+      /* 1. Record both menus as sources, once each. */
+      const { data: existingSources, error: sErr } = await supabase
+        .from("allergen_sources")
+        .select("id, title")
+        .eq("tenant_id", tenantId);
+      if (sErr) throw sErr;
+      const haveTitle = new Set((existingSources ?? []).map((s: any) => s.title));
+      const newSources = JULY_2026_MENU_SOURCES.filter((m) => !haveTitle.has(m.title)).map((m) => ({
+        tenant_id: tenantId,
+        title: m.title,
+        source_rank: "operational_procedure",
+        source_version: "July 2026",
+        source_date: m.source_date,
+        is_current: true,
+        note: `Customer menu used for availability only, not for allergen wording. ${m.url}`,
+      }));
+      if (newSources.length) {
+        const { error } = await supabase.from("allergen_sources").insert(newSources as any);
+        if (error) throw error;
+      }
+
+      /* 2. Set the live sites for each flavour from the menus. */
+      const { data: dishes, error: dErr } = await supabase
+        .from("allergen_dish_reference")
+        .select("id, dish_name, active_branch_ids, availability_note")
+        .eq("tenant_id", tenantId);
+      if (dErr) throw dErr;
+
+      let updated = 0;
+      const notOnMenu: string[] = [];
+      const unmatchedSites = new Set<string>();
+
+      for (const d of (dishes ?? []) as any[]) {
+        const sites = menuSitesForDish(d.dish_name);
+        if (sites.length === 0) { notOnMenu.push(d.dish_name); continue; }
+        const { ids, unmatched } = resolveSiteBranchIds(sites, branches);
+        unmatched.forEach((u) => unmatchedSites.add(u));
+        if (ids.length === 0) continue;
+        const before = [...(d.active_branch_ids ?? [])].sort().join(",");
+        if (before === [...ids].sort().join(",")) continue;
+        const { error } = await supabase
+          .from("allergen_dish_reference")
+          .update({ active_branch_ids: ids })
+          .eq("id", d.id)
+          .eq("tenant_id", tenantId);
+        if (error) throw error;
+        updated += 1;
+      }
+
+      await logComplianceAudit({
+        tenantId, table: "allergen_dish_reference", recordId: tenantId,
+        event: "allergen_dish_edited",
+        note:
+          `July 2026 customer menus applied: ${updated} flavour(s) had their live sites set ` +
+          `(Carnaby, Brixton, Fitzrovia only). ${notOnMenu.length} flavour(s) are not on either menu and ` +
+          `remain reference only. Menus recorded for availability, not as an allergen authority. ` +
+          `No course version published.`,
+      });
+
+      return { updated, notOnMenu, unmatchedSites: Array.from(unmatchedSites) };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["allergen-dishes"] });
+      qc.invalidateQueries({ queryKey: ["allergen-sources"] });
+    },
+  });
 }
