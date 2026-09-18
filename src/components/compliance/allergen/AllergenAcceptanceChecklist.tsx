@@ -21,8 +21,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ClipboardList, Signature } from "lucide-react";
 import { toast } from "sonner";
 import {
-  ACCEPTANCE_ENVIRONMENTS, ACCEPTANCE_RESULTS, checksForEnvironment,
-  acceptanceCommentRequired, ACCEPTANCE_TOTAL_CHECKS,
+  ACCEPTANCE_ENVIRONMENTS, ACCEPTANCE_RESULT_LABELS, checksForEnvironment,
+  acceptanceCommentRequired, ACCEPTANCE_TOTAL_CHECKS, ACCESSIBILITY_STATEMENT_CAUTION,
 } from "@/data/allergen/allergen-acceptance-checklist";
 import type { AcceptanceEnvironment, AcceptanceResult } from "@/data/allergen/allergen-acceptance-checklist";
 import { acceptanceOverview, environmentChecklistState } from "@/lib/allergen-preview";
@@ -30,6 +30,10 @@ import {
   useAcceptanceChecks, useRecordAcceptanceCheck,
   useAcceptanceSignoffs, useSignAcceptanceEnvironment,
 } from "@/hooks/useAllergenAcceptance";
+
+const RESULT_OPTIONS = (Object.keys(ACCEPTANCE_RESULT_LABELS) as AcceptanceResult[]).map(
+  (key) => ({ key, label: ACCEPTANCE_RESULT_LABELS[key] }),
+);
 
 const OUTCOME_LABEL: Record<string, string> = {
   accepted: "Accepted",
@@ -135,7 +139,7 @@ export function AllergenAcceptanceChecklist() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">{env.label}</CardTitle>
-                  <CardDescription className="text-xs">{env.instruction}</CardDescription>
+                  <CardDescription className="text-xs">{env.how}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex flex-wrap gap-2 text-xs">
@@ -157,15 +161,11 @@ export function AllergenAcceptanceChecklist() {
                           {existing && (
                             <Badge variant={existing.result === "fail" ? "destructive" : "secondary"}
                               className="text-[10px]">
-                              {ACCEPTANCE_RESULTS.find((r) => r.key === existing.result)?.label}
+                              {ACCEPTANCE_RESULT_LABELS[existing.result as AcceptanceResult]}
                             </Badge>
                           )}
                         </div>
-                        <p className="mt-1 text-muted-foreground">{check.instruction}</p>
-                        <p className="mt-1 text-muted-foreground">
-                          <span className="font-medium text-foreground">Pass looks like: </span>
-                          {check.expected}
-                        </p>
+                        <p className="mt-1 text-muted-foreground">{check.what_to_do}</p>
                         <Textarea
                           className="mt-2"
                           rows={2}
@@ -174,7 +174,7 @@ export function AllergenAcceptanceChecklist() {
                           onChange={(e) => setComments({ ...comments, [key]: e.target.value })}
                         />
                         <div className="mt-2 flex flex-wrap gap-2">
-                          {ACCEPTANCE_RESULTS.map((r) => (
+                          {RESULT_OPTIONS.map((r) => (
                             <Button
                               key={r.key}
                               size="sm"
