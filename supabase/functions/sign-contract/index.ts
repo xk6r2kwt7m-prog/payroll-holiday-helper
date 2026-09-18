@@ -1814,8 +1814,12 @@ Deno.serve(async (req) => {
         const completionPolicy = completionPolicyRow?.preferences as Record<string, string> | null;
         const completionSigningMode = completionPolicy?.contract_signing || "manual";
 
-        // Send completion email to EMPLOYEE (only if not disabled)
-        const recipientEmail = signingToken.employees?.email;
+        // Send completion email to EMPLOYEE (only if not disabled).
+        // Prefer the address the employee saw and confirmed at the moment of signing.
+        const employeeSignature = (allSigs || []).find(
+          (s: any) => s.signer_type === "employee" && s.signed_by_email,
+        );
+        const recipientEmail = (employeeSignature as any)?.signed_by_email || signingToken.employees?.email;
         if (recipientEmail && completionSigningMode === "auto") {
           try {
             await supabase.functions.invoke("send-notification", {
