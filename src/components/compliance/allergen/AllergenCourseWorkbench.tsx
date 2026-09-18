@@ -18,7 +18,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Smartphone, Monitor, Users } from "lucide-react";
 import { AllergenProgrammeBoard } from "@/components/compliance/allergen/AllergenProgrammeBoard";
 import { toast } from "sonner";
-import { ALLERGEN_SAFETY_LESSONS, ALLERGEN_COURSE_TITLE, ALLERGEN_COURSE_TOTAL_MINUTES } from "@/data/allergen/allergen-safety-lessons";
+import {
+  ALLERGEN_SAFETY_LESSONS,
+  ALLERGEN_COURSE_TITLE,
+  ALLERGEN_COURSE_TOTAL_MINUTES,
+  ALLERGEN_COURSE_ORIGINAL_MINUTES,
+} from "@/data/allergen/allergen-safety-lessons";
+import {
+  OUTSTANDING_EVIDENCE_REQUESTS,
+  OUTSTANDING_EVIDENCE_WARNING,
+} from "@/data/allergen/allergen-acceptance-policy";
 import { ALLERGEN_QUESTION_BANK, CRITICAL_QUESTION_COUNT } from "@/data/allergen/allergen-safety-questions";
 import { PRACTICAL_SIGNOFF_TEMPLATE } from "@/data/allergen/allergen-practical-signoff";
 import { courseSource, APPROVED_WORDING } from "@/data/allergen/allergen-course-sources";
@@ -83,7 +92,9 @@ export function AllergenCourseWorkbench() {
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-2 text-xs">
             <Badge variant="outline">{ALLERGEN_SAFETY_LESSONS.length} lessons</Badge>
-            <Badge variant="outline">About {ALLERGEN_COURSE_TOTAL_MINUTES} min of reading</Badge>
+            <Badge variant="outline">
+              About {ALLERGEN_COURSE_TOTAL_MINUTES} min of reading (was {ALLERGEN_COURSE_ORIGINAL_MINUTES} min)
+            </Badge>
             <Badge variant="outline">{ALLERGEN_QUESTION_BANK.length} questions written</Badge>
             <Badge variant="outline">{CRITICAL_QUESTION_COUNT} critical-safety questions</Badge>
             <Badge variant="outline">{PRACTICAL_SIGNOFF_TEMPLATE.items.length} practical observations</Badge>
