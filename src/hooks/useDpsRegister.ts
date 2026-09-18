@@ -6,9 +6,10 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useAllEmployeeBranches } from "@/hooks/useBranches";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
 import {
-  buildDpsRegister, registerSummary, registerSummaryLine,
+  buildDpsRegister, registerSummary, registerSummaryLine, unclassifiedForSite,
   type RegisterEmployee, type RegisterAuthorisation, type DeliveryMethod,
 } from "@/lib/dps-register";
+import { logComplianceAudit } from "@/hooks/useCompliance";
 
 /** Staff with the sites they are assigned to, ready for the register. */
 export function useEmployeesWithBranches(): RegisterEmployee[] {
