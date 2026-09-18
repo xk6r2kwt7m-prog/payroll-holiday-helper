@@ -20,6 +20,7 @@ import { PremisesLicencePanel } from "@/components/compliance/PremisesLicencePan
 import { SiteEmergencyDetailsCard } from "@/components/compliance/SiteEmergencyDetailsCard";
 import { IncidentBookSection } from "@/components/compliance/IncidentBookSection";
 import { InductionLessonsPanel } from "@/components/compliance/InductionLessonsPanel";
+import { AllergenTrainingReview } from "@/components/compliance/allergen/AllergenTrainingReview";
 import {
   useComplianceBranches, useConfirmBranchLocation, type ComplianceBranchOption,
 } from "@/hooks/useComplianceBranches";
@@ -58,6 +59,7 @@ export default function DocumentsCompliance() {
             <TabsTrigger value="branch">Branch compliance</TabsTrigger>
             <TabsTrigger value="certificates">Certificates &amp; expiry</TabsTrigger>
             <TabsTrigger value="inspection">Inspection file</TabsTrigger>
+            <TabsTrigger value="allergen">Allergen training</TabsTrigger>
             <TabsTrigger value="incidents">Incident book</TabsTrigger>
           </TabsList>
 
@@ -100,6 +102,10 @@ export default function DocumentsCompliance() {
           <TabsContent value="inspection" className="space-y-4">
             <BranchPicker options={options} value={branch} onChange={setBranch} />
             {branch && <InspectionFileSection branch={branch} />}
+          </TabsContent>
+
+          <TabsContent value="allergen" className="space-y-4">
+            <AllergenTrainingReview />
           </TabsContent>
 
           <TabsContent value="incidents" className="space-y-4">
