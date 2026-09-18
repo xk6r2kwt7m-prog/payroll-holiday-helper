@@ -200,6 +200,44 @@ export function buildDpsRegister(opts: {
   });
 }
 
+export interface UnclassifiedPerson {
+  employee_id: string;
+  name: string;
+  role: string | null;
+}
+
+/**
+ * Staff at this site whose role does not say whether they serve alcohol and who
+ * nobody has decided about yet. They are shown to the manager to decide rather
+ * than being left off the register quietly.
+ */
+export function unclassifiedForSite(opts: {
+  branch: string;
+  employees: RegisterEmployee[];
+  authorisations: RegisterAuthorisation[];
+  decisions?: AlcoholListDecision[];
+}): UnclassifiedPerson[] {
+  const { branch, employees, authorisations, decisions = [] } = opts;
+  const wanted = norm(branch);
+  const withRecord = new Set(
+    authorisations
+      .filter((a) => !a.is_test_record && (!wanted || norm(a.branch) === wanted))
+      .map((a) => a.employee_id),
+  );
+
+  return employees
+    .filter((e) => !e.is_test_record)
+    .filter((e) => worksAtSite(e, branch) && stillEmployed(e))
+    .filter((e) => !withRecord.has(e.id))
+    .filter((e) => needsRoleDecision(e, branch, decisions))
+    .map((e) => ({
+      employee_id: e.id,
+      name: personName(e),
+      role: (e.job_title || e.department || "").trim() || null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function registerSummary(rows: RegisterRow[]): RegisterSummary {
   const count = (s: RegisterStatus) => rows.filter((r) => r.status === s).length;
   const authorised = count("authorised");
