@@ -33,15 +33,37 @@ interface ContractInfo {
   }>;
 }
 
+/**
+ * PRIVACY RULE — contract link and contract emails:
+ *  1. Never disclose stored personal data. Emails carry only a name and a
+ *     secure link; this page never displays a held date of birth, National
+ *     Insurance number, address, phone, bank detail or emergency contact.
+ *  2. Never ask for anything outside the required contract set below.
+ *     Anything else (emergency contacts, right-to-work documents, bank
+ *     details) is collected through a staff details request chosen by an
+ *     administrator, not through a contract link.
+ */
 const DETAIL_FIELDS = [
   { key: "full_name", label: "Full legal name", required: true, placeholder: "e.g. John Smith" },
   { key: "date_of_birth", label: "Date of birth", required: true, type: "date" },
   { key: "address", label: "Home address", required: true, placeholder: "House, street, town, postcode" },
   { key: "phone", label: "Mobile number", required: true, placeholder: "e.g. 07700 900123" },
-  { key: "national_insurance", label: "National Insurance number", required: false, placeholder: "e.g. QQ123456C" },
-  { key: "emergency_contact_name", label: "Emergency contact name", required: false },
-  { key: "emergency_contact_phone", label: "Emergency contact number", required: false },
 ] as const;
+
+/** Held values that must never be rendered back to the signer. */
+const NON_DISCLOSABLE_KEYS = [
+  "date_of_birth",
+  "national_insurance",
+  "ni_number",
+  "address",
+  "phone",
+  "bank",
+  "sort_code",
+  "account_number",
+  "emergency_contact_name",
+  "emergency_contact_phone",
+] as const;
+
 
 type ErrorCode = "invalid_token" | "expired" | "already_signed" | "missing_document" | "save_failed" | "missing_name" | "missing_consent" | "missing_signature" | "internal_error" | "missing_token" | string;
 
