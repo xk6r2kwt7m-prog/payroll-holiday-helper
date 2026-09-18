@@ -14,21 +14,29 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookOpen, CheckCircle2, Clock, Lock, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { ALLERGEN_SAFETY_LESSONS, ALLERGEN_COURSE_TITLE } from "@/data/allergen/allergen-safety-lessons";
+import {
+  ALLERGEN_SAFETY_LESSONS,
+  ALLERGEN_COURSE_TITLE,
+  ALLERGEN_COURSE_TOTAL_MINUTES,
+} from "@/data/allergen/allergen-safety-lessons";
 import { courseSource } from "@/data/allergen/allergen-course-sources";
 import { courseProgress, lessonIsComplete, type AllergenLesson } from "@/lib/allergen-course";
 import { useAllergenLessonProgress, useSaveSectionProgress } from "@/hooks/useAllergenCourse";
 
 export function AllergenLessonReader({
-  isTest, courseVersionLabel, draftId, employeeId, onAssessmentOpen,
+  isTest, courseVersionLabel, draftId, employeeId, onAssessmentOpen, previewKey, dueDate, personaLabel,
 }: {
   isTest: boolean;
   courseVersionLabel: string;
   draftId?: string | null;
   employeeId?: string | null;
   onAssessmentOpen?: () => void;
+  /** Isolates a management preview session; genuine reading has no preview key. */
+  previewKey?: string | null;
+  dueDate?: string | null;
+  personaLabel?: string;
 }) {
-  const { data: progressRows = [] } = useAllergenLessonProgress(isTest);
+  const { data: progressRows = [] } = useAllergenLessonProgress(isTest, previewKey ?? null);
   const save = useSaveSectionProgress();
   const [openLesson, setOpenLesson] = useState<string | null>(null);
 
@@ -57,6 +65,7 @@ export function AllergenLessonReader({
         isTest,
         draftId: draftId ?? null,
         employeeId: employeeId ?? null,
+        previewKey: previewKey ?? null,
       },
       {
         onSuccess: () => toast.success("Section saved — you can leave and continue later."),
@@ -156,23 +165,40 @@ export function AllergenLessonReader({
             <BookOpen className="h-4 w-4" />
             {ALLERGEN_COURSE_TITLE}
           </CardTitle>
-          <CardDescription>
-            Sixteen short lessons. Your place is saved every time you mark a section completed, so you
-            can stop and pick it up later. The assessment opens once every required lesson is finished.
+          <CardDescription className="space-y-1">
+            <span className="block">
+              Why you have this: everyone who takes an order, prepares food or plates food must be able
+              to handle an allergy request correctly, every time. This course is how we show that.
+            </span>
+            <span className="block">
+              Sixteen short lessons, about {ALLERGEN_COURSE_TOTAL_MINUTES} minutes in total. Your place is
+              saved every time you mark a section completed, so you can stop and pick it up later. The
+              assessment opens once every required lesson is finished.
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <Badge variant="outline">{courseVersionLabel}</Badge>
+            {personaLabel && <Badge variant="outline">{personaLabel}</Badge>}
+            <Badge variant="outline" className="gap-1">
+              <Clock className="h-3 w-3" /> About {ALLERGEN_COURSE_TOTAL_MINUTES} min in total
+            </Badge>
             <Badge variant="outline">
               {progress.lessonsComplete} of {progress.lessonsTotal} lessons complete
             </Badge>
             <Badge variant="outline" className="gap-1">
               <Clock className="h-3 w-3" /> About {progress.estimatedMinutesRemaining} min left
             </Badge>
+            <Badge variant={dueDate ? "secondary" : "outline"}>
+              {dueDate ? `Due by ${dueDate}` : "No due date set"}
+            </Badge>
           </div>
           <Progress value={progress.percent} className="h-2" />
-          <p className="text-xs text-muted-foreground">{progress.percent}% of the course read.</p>
+          <p className="text-xs text-muted-foreground">
+            {progress.percent}% of the course read — {progress.sectionsComplete} of{" "}
+            {progress.sectionsTotal} sections saved.
+          </p>
           {progress.assessmentOpen ? (
             <Button size="sm" onClick={onAssessmentOpen}>Open the assessment</Button>
           ) : (

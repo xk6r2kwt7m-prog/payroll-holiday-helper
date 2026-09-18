@@ -228,19 +228,25 @@ export function useCreateAllergenCourseDraft() {
 
 /* ─────────────────── Lesson progress ─────────────────── */
 
-export function useAllergenLessonProgress(isTest: boolean) {
+/**
+ * Reading progress. A previewKey isolates one management preview session; when
+ * none is given, only ordinary rows (preview_key IS NULL) are read.
+ */
+export function useAllergenLessonProgress(isTest: boolean, previewKey?: string | null) {
   const { tenantId } = useTenant();
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["allergen-lesson-progress", tenantId, user?.id, isTest],
+    queryKey: ["allergen-lesson-progress", tenantId, user?.id, isTest, previewKey ?? null],
     enabled: !!tenantId && !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("allergen_lesson_progress")
         .select("*")
         .eq("tenant_id", tenantId!)
         .eq("user_id", user!.id)
         .eq("is_test", isTest);
+      q = previewKey ? q.eq("preview_key", previewKey) : q.is("preview_key", null);
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as unknown as AllergenLessonProgressRow[];
     },
@@ -260,14 +266,18 @@ export function useSaveSectionProgress() {
       isTest: boolean;
       draftId?: string | null;
       employeeId?: string | null;
+      previewKey?: string | null;
     }) => {
       if (!tenantId || !user?.id) throw new Error("Not signed in");
-      const { data: existing } = await supabase
+      let find = supabase
         .from("allergen_lesson_progress")
         .select("id, completed_sections")
         .eq("tenant_id", tenantId).eq("user_id", user.id)
-        .eq("lesson_ref", input.lessonRef).eq("is_test", input.isTest)
-        .maybeSingle();
+        .eq("lesson_ref", input.lessonRef).eq("is_test", input.isTest);
+      find = input.previewKey
+        ? find.eq("preview_key", input.previewKey)
+        : find.is("preview_key", null);
+      const { data: existing } = await find.maybeSingle();
 
       const sections = Array.from(
         new Set([...(((existing as any)?.completed_sections as string[]) ?? []), input.sectionRef]),
@@ -279,6 +289,7 @@ export function useSaveSectionProgress() {
         employee_id: input.employeeId ?? null,
         lesson_ref: input.lessonRef,
         draft_id: input.draftId ?? null,
+        preview_key: input.previewKey ?? null,
         completed_sections: sections,
         total_sections: input.totalSections,
         is_complete: complete,
@@ -305,40 +316,42 @@ export function useSaveSectionProgress() {
 
 /* ─────────────────── Assessment attempts ─────────────────── */
 
-export function useAllergenAttempts(isTest: boolean) {
+export function useAllergenAttempts(isTest: boolean, previewKey?: string | null) {
   const { tenantId } = useTenant();
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["allergen-attempts", tenantId, user?.id, isTest],
+    queryKey: ["allergen-attempts", tenantId, user?.id, isTest, previewKey ?? null],
     enabled: !!tenantId && !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("allergen_assessment_attempts")
         .select("*")
         .eq("tenant_id", tenantId!)
         .eq("user_id", user!.id)
-        .eq("is_test", isTest)
-        .order("attempt_number", { ascending: true });
+        .eq("is_test", isTest);
+      q = previewKey ? q.eq("preview_key", previewKey) : q.is("preview_key", null);
+      const { data, error } = await q.order("attempt_number", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as AllergenAttemptRow[];
     },
   });
 }
 
-export function useAllergenCoaching(isTest: boolean) {
+export function useAllergenCoaching(isTest: boolean, previewKey?: string | null) {
   const { tenantId } = useTenant();
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["allergen-coaching", tenantId, user?.id, isTest],
+    queryKey: ["allergen-coaching", tenantId, user?.id, isTest, previewKey ?? null],
     enabled: !!tenantId && !!user?.id,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("allergen_coaching_records")
         .select("*")
         .eq("tenant_id", tenantId!)
         .eq("user_id", user!.id)
-        .eq("is_test", isTest)
-        .order("created_at", { ascending: false });
+        .eq("is_test", isTest);
+      q = previewKey ? q.eq("preview_key", previewKey) : q.is("preview_key", null);
+      const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as AllergenCoachingRow[];
     },
@@ -359,6 +372,7 @@ export function useStartAllergenAttempt() {
       draftId?: string | null;
       employeeId?: string | null;
       isTest: boolean;
+      previewKey?: string | null;
     }) => {
       if (!tenantId || !user?.id) throw new Error("Not signed in");
       const { data, error } = await supabase
@@ -376,6 +390,7 @@ export function useStartAllergenAttempt() {
           draft_id: input.draftId ?? null,
           status: "in_progress",
           is_test: input.isTest,
+          preview_key: input.previewKey ?? null,
         } as any)
         .select("*")
         .single();
@@ -470,6 +485,7 @@ export function useRecordAllergenCoaching() {
       topics: string[];
       coachedByName?: string;
       isTest: boolean;
+      previewKey?: string | null;
     }) => {
       if (!tenantId) throw new Error("No tenant");
       const { data, error } = await supabase
@@ -485,6 +501,7 @@ export function useRecordAllergenCoaching() {
           topics_covered: input.topics,
           unlocks_attempt: 3,
           is_test: input.isTest,
+          preview_key: input.previewKey ?? null,
         } as any)
         .select("id")
         .single();

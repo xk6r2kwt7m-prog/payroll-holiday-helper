@@ -202,18 +202,19 @@ export function useUpdateAllergenAssignment() {
 
 /* ─────────────────── Practical observations ─────────────────── */
 
-export function useAllergenObservations(isTest: boolean) {
+export function useAllergenObservations(isTest: boolean, previewKey?: string | null) {
   const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["allergen-observations", tenantId, isTest],
+    queryKey: ["allergen-observations", tenantId, isTest, previewKey ?? null],
     enabled: !!tenantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("allergen_practical_observations")
         .select("*")
         .eq("tenant_id", tenantId!)
-        .eq("is_test", isTest)
-        .order("created_at", { ascending: false });
+        .eq("is_test", isTest);
+      q = previewKey ? q.eq("preview_key", previewKey) : q.is("preview_key", null);
+      const { data, error } = await q.order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as AllergenObservationRow[];
     },
@@ -245,6 +246,8 @@ export function useSaveAllergenObservation() {
       signedByName?: string | null;
       signedRole?: string | null;
       isTest: boolean;
+      /** Set for a management preview session, so the record is isolated. */
+      previewKey?: string | null;
     }) => {
       if (!tenantId) throw new Error("No tenant");
       if (input.sign && input.outcome === "in_progress") {
@@ -267,6 +270,7 @@ export function useSaveAllergenObservation() {
         manager_note: input.managerNote ?? null,
         course_version: input.courseVersion ?? null,
         is_test: input.isTest,
+        preview_key: input.previewKey ?? null,
         updated_at: new Date().toISOString(),
       };
       if (input.sign) {

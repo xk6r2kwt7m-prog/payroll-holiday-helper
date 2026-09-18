@@ -61,6 +61,8 @@ export type ComplianceAuditEvent =
   | "allergen_certificate_revoked"
   | "allergen_certificate_superseded"
   | "allergen_renewal_settings_changed"
+  | "allergen_acceptance_signed"
+  | "allergen_preview_session_reset"
   | "alcohol_list_decision_recorded";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
@@ -101,6 +103,8 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   reader_question_rejected: "Question rejected",
   reader_enabled: "On-screen version turned on for staff",
   reader_disabled: "On-screen version turned off for staff",
+  allergen_acceptance_signed: "Hands-on acceptance column signed by a person",
+  allergen_preview_session_reset: "Management preview session cleared (test activity only)",
   allergen_source_added: "Allergen source document added to the library",
   allergen_source_edited: "Allergen source priority or details edited",
   allergen_dish_edited: "Dish or flavour allergen reference edited",
