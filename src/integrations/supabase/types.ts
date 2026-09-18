@@ -514,14 +514,25 @@ export type Database = {
         Row: {
           active_branch_ids: string[]
           availability_note: string | null
+          comparison_note: string | null
           created_at: string
           cross_contact_note: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
           dish_kind: string
           dish_name: string
+          dough_sauce_allergens: string | null
+          garnish_only_allergens: string[]
           id: string
           is_confirmed: boolean
+          management_decision: string | null
+          matrix_declaration: string | null
+          matrix_source_id: string | null
           other_allergens: string[]
+          recommended_status: string | null
           regulated_allergens: string[]
+          removable_components: string | null
           source_id: string | null
           source_note: string | null
           tenant_id: string
@@ -530,14 +541,25 @@ export type Database = {
         Insert: {
           active_branch_ids?: string[]
           availability_note?: string | null
+          comparison_note?: string | null
           created_at?: string
           cross_contact_note?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
           dish_kind?: string
           dish_name: string
+          dough_sauce_allergens?: string | null
+          garnish_only_allergens?: string[]
           id?: string
           is_confirmed?: boolean
+          management_decision?: string | null
+          matrix_declaration?: string | null
+          matrix_source_id?: string | null
           other_allergens?: string[]
+          recommended_status?: string | null
           regulated_allergens?: string[]
+          removable_components?: string | null
           source_id?: string | null
           source_note?: string | null
           tenant_id: string
@@ -546,20 +568,38 @@ export type Database = {
         Update: {
           active_branch_ids?: string[]
           availability_note?: string | null
+          comparison_note?: string | null
           created_at?: string
           cross_contact_note?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
           dish_kind?: string
           dish_name?: string
+          dough_sauce_allergens?: string | null
+          garnish_only_allergens?: string[]
           id?: string
           is_confirmed?: boolean
+          management_decision?: string | null
+          matrix_declaration?: string | null
+          matrix_source_id?: string | null
           other_allergens?: string[]
+          recommended_status?: string | null
           regulated_allergens?: string[]
+          removable_components?: string | null
           source_id?: string | null
           source_note?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "allergen_dish_reference_matrix_source_id_fkey"
+            columns: ["matrix_source_id"]
+            isOneToOne: false
+            referencedRelation: "allergen_sources"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "allergen_dish_reference_source_id_fkey"
             columns: ["source_id"]

@@ -27,6 +27,11 @@ export interface AllergenSource {
   created_at: string;
 }
 
+export type DishRecommendedStatus =
+  | "ready_to_confirm" | "needs_correction" | "reference_only" | "needs_evidence";
+export type DishManagementDecision =
+  | "confirm" | "correct" | "reference_only" | "needs_evidence";
+
 export interface AllergenDish {
   id: string;
   tenant_id: string;
@@ -40,6 +45,17 @@ export interface AllergenDish {
   is_confirmed: boolean;
   source_id: string | null;
   source_note: string | null;
+  /* Comparison against the approved allergen matrix (additive, review only). */
+  matrix_source_id: string | null;
+  matrix_declaration: string | null;
+  garnish_only_allergens: string[];
+  removable_components: string | null;
+  dough_sauce_allergens: string | null;
+  comparison_note: string | null;
+  recommended_status: DishRecommendedStatus | null;
+  management_decision: DishManagementDecision | null;
+  decision_note: string | null;
+  decided_at: string | null;
 }
 
 export interface AllergenConflict {
