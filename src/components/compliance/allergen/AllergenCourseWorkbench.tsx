@@ -439,6 +439,15 @@ export function AllergenCourseWorkbench() {
             )}
           </div>
         </TabsContent>
+
+        {/* ── Final hands-on acceptance stage (management only, isolated test data) ── */}
+        <TabsContent value="acceptance" className="pt-3">
+          <AllergenManagementPreview />
+        </TabsContent>
+
+        <TabsContent value="checklist" className="pt-3">
+          <AllergenAcceptanceChecklist />
+        </TabsContent>
       </Tabs>
     </div>
   );
