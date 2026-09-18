@@ -558,9 +558,10 @@ export default function SignContract() {
               Hello {contractInfo.employee_name}.{" "}
               {fieldsToAsk.length
                 ? "We already hold most of your details. Please add only the few below."
-                : "We already hold everything we need — just check the details below."}{" "}
-              We only ask for details we don't already hold, and we never send your
-              personal details by email.
+                : "We already hold everything we need — nothing further to add."}{" "}
+              We only ask for details we don't already hold, we never show your
+              stored details back on this page, and we never send your personal
+              details by email.
             </p>
 
             {alreadyOnFile.length > 0 && (
@@ -573,10 +574,12 @@ export default function SignContract() {
                   </div>
                 ))}
                 <p className="text-[11px] text-muted-foreground pt-1">
-                  If anything here is wrong, tell your manager — they will update it.
+                  Anything else we hold is kept securely and not shown here. If
+                  something is wrong, tell your manager — they will update it.
                 </p>
               </div>
             )}
+
 
             {fieldsToAsk.map((field) => (
               <div key={field.key}>
