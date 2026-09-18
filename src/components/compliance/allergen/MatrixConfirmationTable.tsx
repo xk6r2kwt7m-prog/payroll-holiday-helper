@@ -5,6 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -76,6 +80,23 @@ export function MatrixConfirmationTable({ branches }: { branches: { id: string; 
     );
   };
 
+  /* Matched flavours awaiting confirmation — named in full before anything is committed. */
+  const matched = reviewed.filter(
+    (d) => d.recommended_status === "ready_to_confirm" && d.management_decision !== "confirm",
+  );
+
+  const confirmMatched = async () => {
+    for (const d of matched) {
+      await record.mutateAsync({
+        id: d.id,
+        dish_name: d.dish_name,
+        decision: "confirm",
+        note: "Confirmed against the approved July 2026 allergen matrix — declaration matches the matrix and no unresolved supplier or recipe conflict. Branch availability is held separately from allergen confirmation.",
+      });
+    }
+    toast.success(`${matched.length} flavour(s) confirmed against the approved matrix.`);
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -117,6 +138,43 @@ export function MatrixConfirmationTable({ branches }: { branches: { id: string; 
             its recipe and supplier information carry no unresolved disagreement. The July 2026
             customer menus are used for availability only, never as the allergen authority.
           </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" disabled={!matched.length || record.isPending}>
+                {matched.length
+                  ? `Confirm the ${matched.length} flavour(s) that match the matrix`
+                  : "All matched flavours are confirmed"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="max-h-[80vh] overflow-y-auto">
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Confirm {matched.length} flavour(s) against the approved July 2026 matrix?
+                </AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-2 text-left text-xs">
+                    <p>
+                      Each of these flavours matches the declaration in the approved matrix and has no
+                      unresolved supplier or recipe disagreement. The matrix is recorded as the source and
+                      your decision is written to the audit trail. Branch availability is not changed.
+                    </p>
+                    <ul className="list-disc space-y-0.5 pl-5">
+                      {matched.map((d) => <li key={d.id}>{d.dish_name}</li>)}
+                    </ul>
+                    <p className="font-medium">
+                      Nothing is published to staff, no assignment is created and no certificate is issued.
+                    </p>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmMatched}>
+                  Confirm these {matched.length} flavour(s)
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
