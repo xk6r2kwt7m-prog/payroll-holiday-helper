@@ -45,6 +45,8 @@ interface StepDef {
   icon: typeof User;
   fields: FieldDef[];
   upload?: boolean;
+  /** Shows the "I do not have one yet" tick box. */
+  noNiOption?: boolean;
 }
 
 /**
@@ -104,9 +106,10 @@ function buildSteps(items: readonly string[]): StepDef[] {
   if (has("ni_number")) {
     steps.push({
       id: "ni", section: "personal", title: "National Insurance number",
-      blurb: "Leave this blank if you do not have one yet — you can still carry on.", icon: ShieldCheck,
+      blurb: "If you do not have one yet, tick the box — you can still carry on.", icon: ShieldCheck,
+      noNiOption: true,
       fields: [
-        { key: "ni_number", label: "National Insurance number (optional)", placeholder: "AB123456C", hint: "Two letters, six numbers, then one letter — for example AB123456C." },
+        { key: "ni_number", label: "National Insurance number", placeholder: "AB123456C", hint: "Two letters, six numbers, then one letter — for example AB123456C." },
       ],
     });
   }
@@ -186,6 +189,10 @@ function buildSteps(items: readonly string[]): StepDef[] {
 
 export const buildPortalSteps = buildSteps;
 
+/** Shown on every pay screen, so nobody is fooled by a message pretending to be us. */
+export const PAYROLL_SECURITY_NOTICE =
+  "Ugly Dumpling will never ask for your online-banking password, PIN, card security code or verification code.";
+
 /** Always the last question — anything the person wants their manager to know. */
 const NOTES_STEP: StepDef = {
   id: "notes", section: "notes", title: "Anything you'd like to add?",
@@ -206,6 +213,9 @@ interface PortalData {
     expires_at: string;
     requested_by_name: string | null;
     rtw_uploaded_count: number;
+    contract_document_id?: string | null;
+    contract_sign_path?: string | null;
+    last_saved_at?: string | null;
   };
   employee: { first_name: string; full_name: string };
   saved: Record<string, Record<string, string>>;
@@ -223,7 +233,11 @@ export default function StaffDetailsPortal() {
   const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
   const [editingRow, setEditingRow] = useState<string | null>(null);
   /** Set locally the moment sending succeeds, so the thank you screen never depends on re-opening the link. */
-  const [sent, setSent] = useState<{ rtwPending: boolean } | null>(null);
+  const [sent, setSent] = useState<{ rtwPending: boolean; contractPath?: string | null } | null>(null);
+  /** The opening screen is shown until they choose to start. */
+  const [started, setStarted] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [noNi, setNoNi] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
