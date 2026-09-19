@@ -67,13 +67,14 @@ export interface RegisterRow {
 }
 
 export interface RegisterSummary {
-  listed: number;
-  authorised: number;
+  /** Everyone listed for the site — all covered by the written authorisation. */
+  covered: number;
+  signed: number;
   awaitingSignature: number;
-  awaitingApproval: number;
-  notAuthorised: number;
-  nobodyAuthorised: boolean;
+  /** True when nobody at the site has signed yet. Missing paperwork, not a ban. */
+  noneSigned: boolean;
 }
+
 
 const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
 
