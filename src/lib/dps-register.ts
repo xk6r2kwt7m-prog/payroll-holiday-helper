@@ -78,11 +78,10 @@ export interface RegisterSummary {
 const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
 
 export const REGISTER_STATUS_LABELS: Record<RegisterStatus, string> = {
-  authorised: "Authorised",
-  awaiting_approval: "Signed — awaiting licence holder",
+  signed: "Signed",
   awaiting_signature: "Awaiting signature",
-  not_authorised: "Not authorised",
 };
+
 
 function personName(e: RegisterEmployee): string {
   const name = `${e.forename ?? ""} ${e.surname ?? ""}`.trim();
