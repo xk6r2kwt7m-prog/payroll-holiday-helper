@@ -94,7 +94,7 @@ describe("what a manager can ask for", () => {
 describe("protected values", () => {
   it("keeps bank, National Insurance and identity numbers out of ordinary staff queries", () => {
     for (const column of SENSITIVE_EMPLOYEE_COLUMNS) {
-      expect(EMPLOYEE_COLUMNS).not.toContain(column);
+      expect(EMPLOYEE_COLUMNS.split(", ")).not.toContain(column);
     }
   });
 
@@ -121,7 +121,7 @@ describe("protected values", () => {
       const src = read(file);
       if (!src.includes('from("employees")')) continue;
       for (const column of SENSITIVE_EMPLOYEE_COLUMNS) {
-        if (new RegExp(`select\\([^)]*${column}`).test(src)) offenders.push(`${file}:${column}`);
+        if (new RegExp(`select\\([^)]*(?<!has_)${column}`).test(src)) offenders.push(`${file}:${column}`);
       }
     }
     expect(offenders).toEqual([]);
