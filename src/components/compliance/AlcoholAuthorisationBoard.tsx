@@ -14,9 +14,10 @@ import {
 } from "@/hooks/useDpsRegister";
 import {
   buildDpsRegister, registerCsv, registerPdfRows, registerSummary, registerSummaryLine,
-  unclassifiedForSite,
+  outstandingSignatureLine, unclassifiedForSite,
   type RegisterAuthorisation, type RegisterRow, type UnclassifiedPerson,
 } from "@/lib/dps-register";
+
 import { buildDpsAuthorisation, type LicenceSite } from "@/lib/licensing-documents";
 import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentPDF";
 import { EmailLicensingDocumentDialog } from "@/components/compliance/EmailLicensingDocumentDialog";
@@ -121,9 +122,7 @@ export function AlcoholAuthorisationBoard() {
         doc={doc}
         staff={registerPdfRows(site.rows)}
         summaryLine={site.summaryLine}
-        warningLine={site.summary.nobodyAuthorised
-          ? `Nobody at ${site.branch} is currently authorised to sell alcohol. Alcohol must not be sold until the licence holder has authorised at least one person.`
-          : null}
+        warningLine={outstandingSignatureLine(site.rows, site.branch)}
         auditLine="Produced from the live staff register in UglyOps HR."
       />
     ).toBlob();
@@ -138,10 +137,11 @@ export function AlcoholAuthorisationBoard() {
       licence_id: site.licence?.id ?? null,
       subject_type: "dps_authorisation",
       snapshot: { document: doc, rows: site.rows, summary_line: site.summaryLine },
-      authorised_count: site.summary.authorised,
-      listed_count: site.summary.listed,
+      authorised_count: site.summary.signed,
+      listed_count: site.summary.covered,
     });
   };
+
 
   const emailing = sites.find((s) => s.branch === emailSite);
 
