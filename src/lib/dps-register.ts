@@ -4,12 +4,15 @@
  * Pure functions — no database access, no side effects, nothing inferred.
  *
  * Rules that must not be broken:
- *  - Nobody is authorised by this file. A person's status comes only from their
- *    own signature and the licence holder's approval, resolved by
- *    alcohol-authorisation-status.ts.
- *  - A person with no record is "not authorised" — never assumed authorised.
+ *  - Everyone front of house at a site is covered by the licence holder's
+ *    written authorisation for that site, so nobody front of house is ever
+ *    presented as barred from selling.
+ *  - What varies is the paperwork: a person has either signed the authorisation
+ *    (their own signature, with the licence holder's approval where recorded) or
+ *    their signature is still outstanding.
  *  - Test records never appear on a licensing document.
  */
+
 
 import {
   belongsOnAlcoholList, needsRoleDecision, decisionFor, classifyRole,
