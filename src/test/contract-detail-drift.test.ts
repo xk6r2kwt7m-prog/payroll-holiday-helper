@@ -26,7 +26,7 @@ describe("contract detail comparison", () => {
   it("treats equal numbers and dates as unchanged", () => {
     expect(
       compareContractDetails(
-        { weeklyHours: 40, effectiveDate: "2026-01-05T00:00:00Z" as never },
+        { weeklyHours: 40 as never, effectiveDate: "2026-01-05T00:00:00Z" },
         { weeklyHours: "40" as never, effectiveDate: "2026-01-05" },
       ),
     ).toHaveLength(0);
