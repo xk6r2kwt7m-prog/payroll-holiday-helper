@@ -48,6 +48,13 @@ import { useAcceptanceChecks, useAcceptanceSignoffs } from "@/hooks/useAllergenA
 import { useBranchLocations } from "@/hooks/useSchedule";
 import { usePilotCandidates, usePilotAssignments, usePreparePilotAssignments } from "@/hooks/useAllergenPilot";
 import { AllergenCourseEmailCard } from "@/components/compliance/allergen/AllergenCourseEmailCard";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  useAllergenMaterialApproval,
+  useApproveAllergenMaterial,
+} from "@/hooks/useAllergenMaterialApproval";
 
 function Tick({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   return (
@@ -75,6 +82,10 @@ export function AllergenPilotControl() {
   const publish = usePublishAllergenCourseVersion();
 
   const [chosen, setChosen] = useState<string[]>([]);
+  const [approverName, setApproverName] = useState("");
+  const [approvalNote, setApprovalNote] = useState("");
+  const { data: approval } = useAllergenMaterialApproval();
+  const approve = useApproveAllergenMaterial();
 
   const eligibility = useMemo(
     () => ({
@@ -168,6 +179,7 @@ export function AllergenPilotControl() {
     certificateControlsConfirmed:
       passed("smartphone", "certificate-display") || passed("desktop", "certificate-display"),
     knownSeriousProblems: seriousProblems,
+    materialApprovedByAdministrator: !!approval,
   });
 
   const chosenCandidates: PilotCandidate[] = candidates.filter((c) => chosen.includes(c.employee_id));
@@ -222,6 +234,90 @@ export function AllergenPilotControl() {
               </Tick>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── 1b. Approving the training material ── */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <CheckCircle2 className="h-4 w-4" /> Approve the training material
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Approving records that you are happy with the lessons and questions as they stand, so the
+            course can be published and used in the normal way. Approving publishes nothing and
+            contacts nobody.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {approval ? (
+            <>
+              <Alert>
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Approved by {approval.approved_by_name} on{" "}
+                  {new Date(approval.created_at).toLocaleDateString("en-GB")}.
+                  {approval.note ? ` Note: ${approval.note}` : ""}
+                </AlertDescription>
+              </Alert>
+              {approval.device_walkthroughs_outstanding && (
+                <p className="text-[11px] text-muted-foreground">
+                  The phone and computer walkthroughs are still recorded as outstanding and stay
+                  listed above as open work.
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="grid gap-1.5 sm:max-w-[260px]">
+                <Label className="text-xs">Your name</Label>
+                <Input
+                  value={approverName}
+                  onChange={(e) => setApproverName(e.target.value)}
+                  placeholder="Type your name"
+                  className="h-9"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label className="text-xs">Note (optional)</Label>
+                <Textarea
+                  value={approvalNote}
+                  onChange={(e) => setApprovalNote(e.target.value)}
+                  rows={2}
+                  placeholder="Anything you want recorded with this approval"
+                />
+              </div>
+              <Button
+                size="sm"
+                className="gap-1"
+                disabled={!approverName.trim() || !automatedChecksPassing || approve.isPending}
+                onClick={() =>
+                  approve.mutate(
+                    {
+                      approvedByName: approverName,
+                      proposedVersion: draft?.proposed_version ?? null,
+                      note: approvalNote,
+                      deviceWalkthroughsOutstanding: !(signedFor("smartphone") && signedFor("desktop")),
+                    },
+                    {
+                      onSuccess: () => {
+                        setApprovalNote("");
+                        toast.success("Material approved and recorded. Nothing was published or sent.");
+                      },
+                      onError: (e: any) => toast.error(e.message ?? "Could not record the approval"),
+                    },
+                  )
+                }
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" /> Approve the training material
+              </Button>
+              {!automatedChecksPassing && (
+                <p className="text-[11px] text-muted-foreground">
+                  The automated checks must pass before the material can be approved.
+                </p>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -432,9 +528,11 @@ export function AllergenPilotControl() {
             <Alert>
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription className="text-xs">
-                Both the phone and computer walkthroughs have passed. Proposed version 2 is marked ready to
-                publish for the controlled pilot and waits for your approval. Nothing has been published, no
-                pilot assignment has been sent and automatic reminders remain off.
+                {approval
+                  ? `Material approved by ${approval.approved_by_name}. The course is ready to publish for the controlled pilot.`
+                  : "Both the phone and computer walkthroughs have passed. The course is marked ready to publish for the controlled pilot."}{" "}
+                Nothing has been published, no pilot assignment has been sent and automatic reminders
+                remain off.
               </AlertDescription>
             </Alert>
           )}

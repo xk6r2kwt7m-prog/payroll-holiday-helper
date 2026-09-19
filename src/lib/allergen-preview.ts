@@ -297,6 +297,12 @@ export interface ControlledPilotInput {
   certificateControlsConfirmed: boolean;
   /** Recorded failures in any environment, including the deferred ones. */
   knownSeriousProblems: string[];
+  /**
+   * The administrator has approved the material in writing. This stands in for
+   * the device walkthroughs only — a recorded failure or a failing automated
+   * check still blocks the pilot.
+   */
+  materialApprovedByAdministrator?: boolean;
 }
 
 export interface ControlledPilotGate {
@@ -314,12 +320,15 @@ export const PILOT_DEFERRED_ACTIONS = [
 
 export function controlledPilotGate(input: ControlledPilotInput): ControlledPilotGate {
   const blockers: string[] = [];
+  const approved = input.materialApprovedByAdministrator === true;
   if (!input.automatedChecksPassing) blockers.push("The automated checks are not passing.");
-  if (!input.phoneWalkthroughSigned) blockers.push("The management phone walkthrough has not been signed.");
-  if (!input.computerWalkthroughSigned) blockers.push("The management computer walkthrough has not been signed.");
-  if (!input.progressSavingConfirmed) blockers.push("Progress saving has not been confirmed.");
+  if (!approved) {
+    if (!input.phoneWalkthroughSigned) blockers.push("The management phone walkthrough has not been signed.");
+    if (!input.computerWalkthroughSigned) blockers.push("The management computer walkthrough has not been signed.");
+    if (!input.progressSavingConfirmed) blockers.push("Progress saving has not been confirmed.");
+    if (!input.certificateControlsConfirmed) blockers.push("The certificate controls have not been confirmed.");
+  }
   if (!input.branchQuestionsConfirmed) blockers.push("The site questions have not been confirmed as correct.");
-  if (!input.certificateControlsConfirmed) blockers.push("The certificate controls have not been confirmed.");
   for (const problem of input.knownSeriousProblems) {
     blockers.push(`A serious problem is already recorded: ${problem}`);
   }
