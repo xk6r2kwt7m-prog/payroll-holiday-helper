@@ -68,6 +68,7 @@ interface ContractRow {
   requires_details_first?: boolean | null;
   details_submitted_at?: string | null;
   review_accepted_at?: string | null;
+  terms_snapshot?: Record<string, unknown> | null;
   employees?: {
     id: string;
     forename: string;
