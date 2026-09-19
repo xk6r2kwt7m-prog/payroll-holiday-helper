@@ -83,6 +83,23 @@ Deno.serve(async (req) => {
 
     const emp: any = request.employees;
 
+    // When the link is tied to a contract, the same session carries on to it
+    // once the details are in, so nothing is asked for twice.
+    const contractSignPath = async (): Promise<string | null> => {
+      if (!request.contract_document_id) return null;
+      const { data: tok } = await admin
+        .from("signing_tokens")
+        .select("token, expires_at, used_at")
+        .eq("employee_document_id", request.contract_document_id)
+        .eq("signer_type", "employee")
+        .is("used_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return tok?.token ? `/sign/${tok.token}` : null;
+    };
+
     if (req.method === "GET") {
       if (!request.opened_at) {
         await admin
@@ -107,6 +124,7 @@ Deno.serve(async (req) => {
           requested_by_name: request.requested_by_name,
           rtw_uploaded_count: request.rtw_uploaded_count,
           contract_document_id: request.contract_document_id ?? null,
+          contract_sign_path: await contractSignPath(),
           last_saved_at: request.last_saved_at ?? null,
         },
         employee: {
@@ -456,6 +474,7 @@ Deno.serve(async (req) => {
 
       return json({
         success: true,
+        contract_sign_path: await contractSignPath(),
         rtw_pending: rtwPending,
         allocated: allocation.filled.length,
         needs_confirmation: allocation.conflicts.length,
