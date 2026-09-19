@@ -488,6 +488,8 @@ export function AllergenCourseWorkbench() {
           <AllergenAcceptanceChecklist />
         </TabsContent>
       </Tabs>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
