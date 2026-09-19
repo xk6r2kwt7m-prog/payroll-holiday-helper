@@ -192,6 +192,9 @@ Deno.serve(async (req) => {
           requested_by: callerId,
           requested_by_name: issuerName,
           status: "sent",
+          // When the request was raised from a contract, the same session
+          // carries straight on to signing once the details are in.
+          ...(contractDocumentId ? { contract_document_id: contractDocumentId } : {}),
         })
         .select()
         .single();
