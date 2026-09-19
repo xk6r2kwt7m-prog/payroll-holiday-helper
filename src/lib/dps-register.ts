@@ -4,12 +4,15 @@
  * Pure functions — no database access, no side effects, nothing inferred.
  *
  * Rules that must not be broken:
- *  - Nobody is authorised by this file. A person's status comes only from their
- *    own signature and the licence holder's approval, resolved by
- *    alcohol-authorisation-status.ts.
- *  - A person with no record is "not authorised" — never assumed authorised.
+ *  - Everyone front of house at a site is covered by the licence holder's
+ *    written authorisation for that site, so nobody front of house is ever
+ *    presented as barred from selling.
+ *  - What varies is the paperwork: a person has either signed the authorisation
+ *    (their own signature, with the licence holder's approval where recorded) or
+ *    their signature is still outstanding.
  *  - Test records never appear on a licensing document.
  */
+
 
 import {
   belongsOnAlcoholList, needsRoleDecision, decisionFor, classifyRole,
@@ -21,11 +24,8 @@ import {
   type AuthorisationRecord,
 } from "@/lib/alcohol-authorisation-status";
 
-export type RegisterStatus =
-  | "authorised"
-  | "awaiting_approval"
-  | "awaiting_signature"
-  | "not_authorised";
+export type RegisterStatus = "signed" | "awaiting_signature";
+
 
 export interface RegisterEmployee {
   id: string;
@@ -67,22 +67,22 @@ export interface RegisterRow {
 }
 
 export interface RegisterSummary {
-  listed: number;
-  authorised: number;
+  /** Everyone listed for the site — all covered by the written authorisation. */
+  covered: number;
+  signed: number;
   awaitingSignature: number;
-  awaitingApproval: number;
-  notAuthorised: number;
-  nobodyAuthorised: boolean;
+  /** True when nobody at the site has signed yet. Missing paperwork, not a ban. */
+  noneSigned: boolean;
 }
+
 
 const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
 
 export const REGISTER_STATUS_LABELS: Record<RegisterStatus, string> = {
-  authorised: "Authorised",
-  awaiting_approval: "Signed — awaiting licence holder",
+  signed: "Signed",
   awaiting_signature: "Awaiting signature",
-  not_authorised: "Not authorised",
 };
+
 
 function personName(e: RegisterEmployee): string {
   const name = `${e.forename ?? ""} ${e.surname ?? ""}`.trim();
@@ -99,33 +99,30 @@ function stillEmployed(e: RegisterEmployee): boolean {
   return !e.archived_at && norm(e.status) !== "leaver";
 }
 
-/** Status of one person, from their own records only. */
+/**
+ * Paperwork state of one person, from their own records only.
+ *
+ * "Signed" means that person put their own signature to the authorisation and
+ * it has not been withdrawn. Everything else is an outstanding signature.
+ */
 export function registerStatusFor(
   employee: RegisterEmployee,
   records: RegisterAuthorisation[],
 ): { status: RegisterStatus; record: RegisterAuthorisation | null } {
   const record = latestAuthorisation(records) as RegisterAuthorisation | null;
-  if (!record) return { status: "not_authorised", record: null };
+  if (!record) return { status: "awaiting_signature", record: null };
   const effective = resolveAuthorisationStatus(record, {
     status: employee.status ?? null,
     archived_at: employee.archived_at ?? null,
   });
-  if (effective === "active") return { status: "authorised", record };
-  if (effective === "pending") {
-    return {
-      status: record.employee_signed_at ? "awaiting_approval" : "awaiting_signature",
-      record,
-    };
-  }
-  return { status: "not_authorised", record };
+  const live = effective === "active" || effective === "pending";
+  const signed = !!record.employee_signed_at && live;
+
+  return { status: signed ? "signed" : "awaiting_signature", record };
 }
 
-const ORDER: RegisterStatus[] = [
-  "authorised",
-  "awaiting_approval",
-  "awaiting_signature",
-  "not_authorised",
-];
+const ORDER: RegisterStatus[] = ["signed", "awaiting_signature"];
+
 
 /**
  * Builds the register for one site: everyone front of house there, anyone the
@@ -240,27 +237,30 @@ export function unclassifiedForSite(opts: {
 
 export function registerSummary(rows: RegisterRow[]): RegisterSummary {
   const count = (s: RegisterStatus) => rows.filter((r) => r.status === s).length;
-  const authorised = count("authorised");
+  const signed = count("signed");
   return {
-    listed: rows.length,
-    authorised,
+    covered: rows.length,
+    signed,
     awaitingSignature: count("awaiting_signature"),
-    awaitingApproval: count("awaiting_approval"),
-    notAuthorised: count("not_authorised"),
-    nobodyAuthorised: authorised === 0,
+    noneSigned: signed === 0,
   };
 }
 
 export function registerSummaryLine(rows: RegisterRow[], branch: string): string {
   const s = registerSummary(rows);
-  if (s.listed === 0) {
-    return `No front-of-house staff are recorded for ${branch}. Nobody may sell alcohol here.`;
+  if (s.covered === 0) {
+    return `No front-of-house staff are recorded for ${branch} yet.`;
   }
-  if (s.nobodyAuthorised) {
-    return `Nobody at ${branch} is currently authorised to sell alcohol. Alcohol must not be sold until the licence holder has authorised at least one person.`;
-  }
-  return `${s.authorised} of ${s.listed} people listed are currently authorised to sell alcohol at ${branch}.`;
+  return `${s.signed} of ${s.covered} front-of-house staff listed for ${branch} have signed this authorisation.`;
 }
+
+/** Plain note about outstanding signatures. Never a statement that selling must stop. */
+export function outstandingSignatureLine(rows: RegisterRow[], branch: string): string | null {
+  const s = registerSummary(rows);
+  if (s.awaitingSignature === 0) return null;
+  return `${s.awaitingSignature} of ${s.covered} front-of-house staff at ${branch} have not signed this authorisation yet.`;
+}
+
 
 function gbDate(iso?: string | null): string {
   if (!iso) return "";
@@ -297,16 +297,21 @@ export function registerCsv(rows: RegisterRow[], branch: string): string {
     .join("\n");
 }
 
-/** Rows in the shape the licensing PDF prints. */
+/**
+ * Rows in the shape the licensing PDF prints — name, role, signature and date
+ * only. People who have left are not printed, and no status wording is shown.
+ */
 export function registerPdfRows(rows: RegisterRow[]) {
-  return rows.map((r) => ({
-    name: r.name + (r.no_longer_employed ? " (no longer employed)" : ""),
-    job_title: r.role,
-    status_label: r.status_label,
-    signature: r.status === "authorised" || r.status === "awaiting_approval" ? r.signature : null,
-    signed_at: r.signed_at,
-  }));
+  return rows
+    .filter((r) => !r.no_longer_employed)
+    .map((r) => ({
+      name: r.name,
+      job_title: r.role,
+      signature: r.status === "signed" ? r.signature : null,
+      signed_at: r.status === "signed" ? r.signed_at : null,
+    }));
 }
+
 
 /* ─────────────── Issued copies ─────────────── */
 

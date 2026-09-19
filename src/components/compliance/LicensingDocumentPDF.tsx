@@ -21,23 +21,22 @@ const s = StyleSheet.create({
   trLast: { flexDirection: "row" },
   th: { fontFamily: "Helvetica-Bold", color: DARK, fontSize: 9, padding: 6 },
   td: { padding: 6, fontSize: 9 },
-  colName: { width: "30%", borderRightWidth: 1, borderRightColor: RULE },
-  colRole: { width: "20%", borderRightWidth: 1, borderRightColor: RULE },
-  colStatus: { width: "20%", borderRightWidth: 1, borderRightColor: RULE },
-  colSig: { width: "18%", borderRightWidth: 1, borderRightColor: RULE },
-  colDate: { width: "12%" },
+  colName: { width: "40%", borderRightWidth: 1, borderRightColor: RULE },
+  colRole: { width: "22%", borderRightWidth: 1, borderRightColor: RULE },
+  colSig: { width: "24%", borderRightWidth: 1, borderRightColor: RULE },
+  colDate: { width: "14%" },
   sigImage: { width: 80, height: 26, objectFit: "contain" },
   signBlock: { marginTop: 22, paddingTop: 12, borderTopWidth: 1, borderTopColor: RULE },
   statement: { marginTop: 14, padding: 8, borderWidth: 1, borderColor: RULE, fontSize: 9 },
   summary: { marginTop: 12, fontSize: 9, fontFamily: "Helvetica-Bold", color: DARK },
-  warning: { marginTop: 6, padding: 6, borderWidth: 1, borderColor: "#b91c1c", color: "#b91c1c", fontSize: 9 },
+  note: { marginTop: 6, fontSize: 9, color: SUBTLE },
+
   footNote: { marginTop: 18, fontSize: 8, color: SUBTLE },
 });
 
 export interface SignedStaffRow {
   name: string;
   job_title?: string | null;
-  status_label?: string | null;
   signature?: string | null;
   signed_at?: string | null;
 }
@@ -48,14 +47,18 @@ function gbDate(iso?: string | null): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-GB");
 }
 
+/** A detail we do not hold is left off the document rather than printed blank. */
+const isBlank = (v?: string | null) => !v || /^_+$/.test(v.trim());
+
 interface Props {
   doc: LicensingDocument;
-  /** The site register — everyone front of house plus anyone already authorised. */
+  /** The site register — everyone front of house at this premises. */
   staff?: SignedStaffRow[];
-  /** Plain sentence stating how many people may currently sell alcohol. */
+  /** Plain sentence stating how many of the listed staff have signed. */
   summaryLine?: string | null;
-  /** Shown in full when nobody at the site is authorised. */
+  /** Neutral note about signatures still outstanding. */
   warningLine?: string | null;
+
   /** Signature captured from the licence holder / DPS. */
   authoriserSignature?: string | null;
   authoriserSignedAt?: string | null;
@@ -77,12 +80,13 @@ export function LicensingDocumentPDF({
         <Text style={s.title}>{doc.title}</Text>
         {doc.subtitle && <Text style={s.subtitle}>{doc.subtitle}</Text>}
 
-        {doc.facts.map((f) => (
+        {doc.facts.filter((f) => !isBlank(f.value)).map((f) => (
           <View key={f.label} style={s.factRow}>
             <Text style={s.factLabel}>{f.label}:</Text>
             <Text style={s.factValue}>{f.value}</Text>
           </View>
         ))}
+
 
         {doc.paragraphs.map((p, i) => (
           <Text key={i} style={s.para}>{p}</Text>
@@ -100,12 +104,11 @@ export function LicensingDocumentPDF({
           <View>
             <Text style={s.sectionTitle}>Staff register for this premises</Text>
             {summaryLine && <Text style={s.summary}>{summaryLine}</Text>}
-            {warningLine && <Text style={s.warning}>{warningLine}</Text>}
+            {warningLine && <Text style={s.note}>{warningLine}</Text>}
             <View style={s.table}>
               <View style={s.tr}>
                 <Text style={[s.th, s.colName]}>Name of Staff Member</Text>
                 <Text style={[s.th, s.colRole]}>Role</Text>
-                <Text style={[s.th, s.colStatus]}>Status</Text>
                 <Text style={[s.th, s.colSig]}>Signature</Text>
                 <Text style={[s.th, s.colDate]}>Date</Text>
               </View>
@@ -113,7 +116,6 @@ export function LicensingDocumentPDF({
                 <View key={i} style={i === rows.length - 1 ? s.trLast : s.tr}>
                   <Text style={[s.td, s.colName]}>{r.name || "______________________"}</Text>
                   <Text style={[s.td, s.colRole]}>{r.job_title || "____________"}</Text>
-                  <Text style={[s.td, s.colStatus]}>{r.status_label || "____________"}</Text>
                   <View style={[s.td, s.colSig]}>
                     {r.signature
                       ? <Image src={r.signature} style={s.sigImage} />
@@ -127,16 +129,18 @@ export function LicensingDocumentPDF({
         )}
 
 
+
         {doc.statement && <Text style={s.statement}>{doc.statement}</Text>}
 
         <View style={s.signBlock}>
           <Text style={{ fontFamily: "Helvetica-Bold", color: DARK, marginBottom: 6 }}>AUTHORISED BY</Text>
-          {doc.signature_block.map((f) => (
+          {doc.signature_block.filter((f) => !isBlank(f.value)).map((f) => (
             <View key={f.label} style={s.factRow}>
               <Text style={s.factLabel}>{f.label}:</Text>
               <Text style={s.factValue}>{f.value}</Text>
             </View>
           ))}
+
           <View style={{ marginTop: 10 }}>
             {authoriserSignature
               ? <Image src={authoriserSignature} style={s.sigImage} />

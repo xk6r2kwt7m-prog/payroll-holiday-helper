@@ -14,9 +14,10 @@ import {
 } from "@/hooks/useDpsRegister";
 import {
   buildDpsRegister, registerCsv, registerPdfRows, registerSummary, registerSummaryLine,
-  unclassifiedForSite,
+  outstandingSignatureLine, unclassifiedForSite,
   type RegisterAuthorisation, type RegisterRow, type UnclassifiedPerson,
 } from "@/lib/dps-register";
+
 import { buildDpsAuthorisation, type LicenceSite } from "@/lib/licensing-documents";
 import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentPDF";
 import { EmailLicensingDocumentDialog } from "@/components/compliance/EmailLicensingDocumentDialog";
@@ -76,18 +77,19 @@ export function AlcoholAuthorisationBoard() {
 
   const totals = useMemo(() => sites.reduce(
     (acc, s) => ({
-      authorised: acc.authorised + s.summary.authorised,
+      covered: acc.covered + s.summary.covered,
+      signed: acc.signed + s.summary.signed,
       awaitingSignature: acc.awaitingSignature + s.summary.awaitingSignature,
-      awaitingApproval: acc.awaitingApproval + s.summary.awaitingApproval,
-      notAuthorised: acc.notAuthorised + s.summary.notAuthorised,
     }),
-    { authorised: 0, awaitingSignature: 0, awaitingApproval: 0, notAuthorised: 0 },
+    { covered: 0, signed: 0, awaitingSignature: 0 },
   ), [sites]);
 
-  const emptySites = useMemo(
-    () => sites.filter((s) => s.summary.nobodyAuthorised).map((s) => s.branch),
+  const outstandingSites = useMemo(
+    () => sites.filter((s) => s.summary.awaitingSignature > 0),
     [sites],
   );
+  const outstandingCount = outstandingSites.reduce((n, s) => n + s.summary.awaitingSignature, 0);
+
 
   const siteFor = (branch: string): LicenceSite => {
     const l = (licences as any[]).find((x) => x.branch === branch);
@@ -120,9 +122,7 @@ export function AlcoholAuthorisationBoard() {
         doc={doc}
         staff={registerPdfRows(site.rows)}
         summaryLine={site.summaryLine}
-        warningLine={site.summary.nobodyAuthorised
-          ? `Nobody at ${site.branch} is currently authorised to sell alcohol. Alcohol must not be sold until the licence holder has authorised at least one person.`
-          : null}
+        warningLine={outstandingSignatureLine(site.rows, site.branch)}
         auditLine="Produced from the live staff register in UglyOps HR."
       />
     ).toBlob();
@@ -137,10 +137,11 @@ export function AlcoholAuthorisationBoard() {
       licence_id: site.licence?.id ?? null,
       subject_type: "dps_authorisation",
       snapshot: { document: doc, rows: site.rows, summary_line: site.summaryLine },
-      authorised_count: site.summary.authorised,
-      listed_count: site.summary.listed,
+      authorised_count: site.summary.signed,
+      listed_count: site.summary.covered,
     });
   };
+
 
   const emailing = sites.find((s) => s.branch === emailSite);
 
@@ -165,19 +166,19 @@ export function AlcoholAuthorisationBoard() {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-4 gap-2">
-              <Stat label="Authorised" value={totals.authorised} tone="green" />
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-2">
+              <Stat label="Covered by the authorisation" value={totals.covered} tone="green" />
+              <Stat label="Signed" value={totals.signed} tone="green" />
               <Stat label="Awaiting signature" value={totals.awaitingSignature} tone="amber" />
-              <Stat label="Awaiting approval" value={totals.awaitingApproval} tone="amber" />
-              <Stat label="Not authorised" value={totals.notAuthorised} tone="grey" />
             </div>
 
-            {emptySites.length > 0 && (
-              <p className="rounded-lg bg-destructive/10 text-destructive text-xs p-2.5 flex items-start gap-2">
+            {outstandingCount > 0 && (
+              <p className="rounded-lg bg-warning/10 text-warning text-xs p-2.5 flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
-                  Nobody is authorised to sell alcohol at {emptySites.join(", ")}. Alcohol must not be
-                  sold there until someone is authorised by the licence holder.
+                  {outstandingCount} front-of-house {outstandingCount === 1 ? "person has" : "people have"} not
+                  signed the authorisation yet at {outstandingSites.map((s) => s.branch).join(", ")}. They are
+                  covered by the licence holder's written authorisation — only the signature is outstanding.
                 </span>
               </p>
             )}
@@ -200,7 +201,7 @@ export function AlcoholAuthorisationBoard() {
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium">{site.branch}</span>
                         <span className="block text-[11px] text-muted-foreground">
-                          {site.summary.authorised} of {site.summary.listed} authorised
+                          {site.summary.signed} of {site.summary.covered} signed
                           {site.licence?.dps_name ? ` · Designated Premises Supervisor ${site.licence.dps_name}` : ""}
                           {site.licence?.dps_personal_licence_number ? ` (${site.licence.dps_personal_licence_number})` : ""}
                         </span>
@@ -209,10 +210,9 @@ export function AlcoholAuthorisationBoard() {
 
                     {!isCollapsed && (
                       <div className="px-3 pb-3 space-y-3">
-                        <Group title="Can sell alcohol" rows={group("authorised")} tone="green" showApproval />
-                        <Group title="Signed — waiting for the licence holder" rows={group("awaiting_approval")} tone="amber" />
-                        <Group title="Waiting for the staff member to sign" rows={group("awaiting_signature")} tone="amber" />
-                        <Group title="Not authorised" rows={group("not_authorised")} tone="grey" showReason />
+                        <Group title="Signed the authorisation" rows={group("signed")} tone="green" showApproval />
+                        <Group title="Awaiting signature" rows={group("awaiting_signature")} tone="amber" showReason />
+
 
                         {site.unclassified.length > 0 && (
                           <div className="space-y-1.5 rounded-md border border-warning/40 bg-warning/5 p-2.5">
@@ -308,9 +308,8 @@ export function AlcoholAuthorisationBoard() {
             doc={buildDpsAuthorisation(siteFor(emailing.branch), emailing.licence?.issue_date ?? null)}
             rows={emailing.rows}
             summaryLine={emailing.summaryLine}
-            warningLine={emailing.summary.nobodyAuthorised
-              ? `Nobody at ${emailing.branch} is currently authorised to sell alcohol.`
-              : null}
+            warningLine={outstandingSignatureLine(emailing.rows, emailing.branch)}
+
             auditLine="Produced from the live staff register in UglyOps HR."
           />
         )}
