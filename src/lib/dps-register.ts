@@ -297,16 +297,21 @@ export function registerCsv(rows: RegisterRow[], branch: string): string {
     .join("\n");
 }
 
-/** Rows in the shape the licensing PDF prints. */
+/**
+ * Rows in the shape the licensing PDF prints — name, role, signature and date
+ * only. People who have left are not printed, and no status wording is shown.
+ */
 export function registerPdfRows(rows: RegisterRow[]) {
-  return rows.map((r) => ({
-    name: r.name + (r.no_longer_employed ? " (no longer employed)" : ""),
-    job_title: r.role,
-    status_label: r.status_label,
-    signature: r.status === "authorised" || r.status === "awaiting_approval" ? r.signature : null,
-    signed_at: r.signed_at,
-  }));
+  return rows
+    .filter((r) => !r.no_longer_employed)
+    .map((r) => ({
+      name: r.name,
+      job_title: r.role,
+      signature: r.status === "signed" ? r.signature : null,
+      signed_at: r.status === "signed" ? r.signed_at : null,
+    }));
 }
+
 
 /* ─────────────── Issued copies ─────────────── */
 
