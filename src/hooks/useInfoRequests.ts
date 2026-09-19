@@ -31,10 +31,11 @@ export interface EmployeeInfoRequest {
   employees?: { forename: string | null; surname: string | null; email: string | null; status: string | null } | null;
 }
 
-export type InfoRequestState = "completed" | "opened" | "waiting" | "expired" | "cancelled";
+export type InfoRequestState = "completed" | "opened" | "waiting" | "expired" | "cancelled" | "prepared";
 
 export const INFO_REQUEST_STATE_LABELS: Record<InfoRequestState, string> = {
   completed: "Completed",
+  prepared: "Not sent",
   opened: "Opened, not finished",
   waiting: "Waiting",
   expired: "Expired",
@@ -45,6 +46,7 @@ export const INFO_REQUEST_STATE_LABELS: Record<InfoRequestState, string> = {
 export function infoRequestState(r: EmployeeInfoRequest): InfoRequestState {
   if (r.submitted_at) return "completed";
   if (r.status === "revoked" || r.cancelled_at) return "cancelled";
+  if (r.status === "prepared") return "prepared";
   if (new Date(r.token_expires_at).getTime() < Date.now()) return "expired";
   if (r.opened_at) return "opened";
   return "waiting";
@@ -97,17 +99,28 @@ export function useSendInfoRequest() {
       expiryDays?: number;
       /** Links the request to a contract, so signing follows on in the same session. */
       contractDocumentId?: string | null;
+      /** Creates the request and its link but sends nothing — it stays "Not sent". */
+      prepareOnly?: boolean;
     }) => {
       const { data, error } = await supabase.functions.invoke("send-info-request", {
         body: { tenant_id: tenantId, requestKind: input.requestKind ?? "existing_staff_update", ...input },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      return data as { sent: number; results: { employee_id: string; sent: boolean; error?: string }[] };
+      return data as {
+        sent: number;
+        prepared?: number;
+        results: { employee_id: string; sent: boolean; prepared?: boolean; error?: string }[];
+      };
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["employee_info_requests"] });
-      const failed = data.results.filter((r) => !r.sent);
+      if ((data.prepared ?? 0) > 0) {
+        toast.success(
+          `Request prepared for ${data.prepared} staff member${data.prepared! > 1 ? "s" : ""} — nothing sent yet`,
+        );
+      }
+      const failed = data.results.filter((r) => !r.sent && !r.prepared);
       if (data.sent > 0) toast.success(`Request sent to ${data.sent} staff member${data.sent > 1 ? "s" : ""}`);
       if (failed.length > 0) toast.error(`${failed.length} could not be sent: ${failed[0].error ?? "unknown reason"}`);
     },
@@ -220,5 +233,30 @@ export function useExpiringDocuments(withinDays = 90) {
         })) as ExpiringDocument[];
     },
     enabled: !!tenantId,
+  });
+}
+
+/**
+ * Sends a request that was prepared earlier and deliberately left unsent.
+ * The same link is used, so nothing about the request changes except that the
+ * email now goes out — and only because an administrator asked for it.
+ */
+export function useSendPreparedInfoRequest() {
+  const qc = useQueryClient();
+  const { tenantId } = useTenant();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const { data, error } = await supabase.functions.invoke("send-info-request", {
+        body: { tenant_id: tenantId, action: "send_prepared", requestId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employee_info_requests"] });
+      toast.success("Request sent");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 }

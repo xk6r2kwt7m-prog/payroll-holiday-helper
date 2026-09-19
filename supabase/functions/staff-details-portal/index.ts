@@ -62,6 +62,10 @@ Deno.serve(async (req) => {
         410,
       );
     }
+    if (request.status === "prepared") {
+      return json({ error: "This link is not active yet. Your manager will send it to you." }, 403);
+    }
+
     if (request.status === "revoked") {
       return json(
         { error: "revoked", message: "This link has been cancelled. Ask your manager to send a new one." },
