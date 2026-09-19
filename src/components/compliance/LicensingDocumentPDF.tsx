@@ -37,7 +37,6 @@ const s = StyleSheet.create({
 export interface SignedStaffRow {
   name: string;
   job_title?: string | null;
-  status_label?: string | null;
   signature?: string | null;
   signed_at?: string | null;
 }
@@ -48,14 +47,18 @@ function gbDate(iso?: string | null): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-GB");
 }
 
+/** A detail we do not hold is left off the document rather than printed blank. */
+const isBlank = (v?: string | null) => !v || /^_+$/.test(v.trim());
+
 interface Props {
   doc: LicensingDocument;
-  /** The site register — everyone front of house plus anyone already authorised. */
+  /** The site register — everyone front of house at this premises. */
   staff?: SignedStaffRow[];
-  /** Plain sentence stating how many people may currently sell alcohol. */
+  /** Plain sentence stating how many of the listed staff have signed. */
   summaryLine?: string | null;
-  /** Shown in full when nobody at the site is authorised. */
+  /** Neutral note about signatures still outstanding. */
   warningLine?: string | null;
+
   /** Signature captured from the licence holder / DPS. */
   authoriserSignature?: string | null;
   authoriserSignedAt?: string | null;
