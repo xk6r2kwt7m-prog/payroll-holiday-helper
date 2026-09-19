@@ -250,6 +250,8 @@ export default function StaffDetailsPortal() {
       else {
         setData(json);
         setUploads(json.request.rtw_uploaded_count ?? 0);
+        setSavedAt(json.request.last_saved_at ?? null);
+        setNoNi(json.saved?.personal?.no_ni_number === "yes");
         setAnswers({
           personal: {
             forename: json.saved?.personal?.forename ?? json.prefill.forename ?? "",
@@ -314,6 +316,14 @@ export default function StaffDetailsPortal() {
   const isReview = steps.length > 0 && step >= steps.length;
   const current = steps[step];
 
+  const setNoNiChoice = (value: boolean) => {
+    setNoNi(value);
+    setAnswers((a) => ({
+      ...a,
+      personal: { ...(a.personal ?? {}), no_ni_number: value ? "yes" : "", ...(value ? { ni_number: "" } : {}) },
+    }));
+  };
+
   const set = (section: string, field: string, value: string) =>
     setAnswers((a) => ({ ...a, [section]: { ...(a[section] ?? {}), [field]: value } }));
 
@@ -329,6 +339,9 @@ export default function StaffDetailsPortal() {
 
       if (s.section === "personal") {
         const ni = (a.ni_number ?? "").trim();
+        if (!ni && !noNi && s.noNiOption) {
+          list.push("Please give your National Insurance number, or tick that you do not have one yet");
+        }
         if (ni && !isValidNiNumber(ni)) {
           list.push("That National Insurance number does not look right (for example AB123456C). Leave it blank if you do not have one");
         }
@@ -345,14 +358,30 @@ export default function StaffDetailsPortal() {
       }
     }
     return list;
-  }, [answers, uploads]);
+  }, [answers, uploads, noNi]);
 
   const stepProblems = useMemo(() => (current ? problems([current]) : []), [current, problems]);
   const reviewProblems = useMemo(() => problems(steps), [steps, problems]);
 
-  const saveProgress = async () => {
-    try { await post({ action: "save", answers: cleanAnswers() }); } catch { /* progress save is best effort */ }
-  };
+  const saveProgress = useCallback(async () => {
+    try {
+      await post({ action: "save", answers: cleanAnswers() });
+      setSavedAt(new Date().toISOString());
+    } catch {
+      /* saving again shortly is enough — nothing typed is lost from the screen */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanAnswers, token]);
+
+  /**
+   * Answers save on their own a couple of seconds after typing stops, so the
+   * form can be closed and picked up again later on any device.
+   */
+  useEffect(() => {
+    if (!data || !started || data.request.submitted_at || sent) return;
+    const timer = setTimeout(() => { void saveProgress(); }, 2000);
+    return () => clearTimeout(timer);
+  }, [answers, noNi, data, started, sent, saveProgress]);
 
   const next = async () => {
     if (stepProblems.length > 0) {
@@ -374,7 +403,10 @@ export default function StaffDetailsPortal() {
     setBusy(true);
     try {
       const res = await post({ action: "submit", answers: cleanAnswers() });
-      setSent({ rtwPending: Boolean(res.rtw_pending) });
+      setSent({
+        rtwPending: Boolean(res.rtw_pending),
+        contractPath: (res.contract_sign_path as string | null) ?? data?.request.contract_sign_path ?? null,
+      });
       window.scrollTo({ top: 0 });
     } catch (e) {
       toast.error((e as Error).message);
