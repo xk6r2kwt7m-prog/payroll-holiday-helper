@@ -166,19 +166,19 @@ export function AlcoholAuthorisationBoard() {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-4 gap-2">
-              <Stat label="Authorised" value={totals.authorised} tone="green" />
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-2">
+              <Stat label="Covered by the authorisation" value={totals.covered} tone="green" />
+              <Stat label="Signed" value={totals.signed} tone="green" />
               <Stat label="Awaiting signature" value={totals.awaitingSignature} tone="amber" />
-              <Stat label="Awaiting approval" value={totals.awaitingApproval} tone="amber" />
-              <Stat label="Not authorised" value={totals.notAuthorised} tone="grey" />
             </div>
 
-            {emptySites.length > 0 && (
-              <p className="rounded-lg bg-destructive/10 text-destructive text-xs p-2.5 flex items-start gap-2">
+            {outstandingCount > 0 && (
+              <p className="rounded-lg bg-warning/10 text-warning text-xs p-2.5 flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
-                  Nobody is authorised to sell alcohol at {emptySites.join(", ")}. Alcohol must not be
-                  sold there until someone is authorised by the licence holder.
+                  {outstandingCount} front-of-house {outstandingCount === 1 ? "person has" : "people have"} not
+                  signed the authorisation yet at {outstandingSites.map((s) => s.branch).join(", ")}. They are
+                  covered by the licence holder's written authorisation — only the signature is outstanding.
                 </span>
               </p>
             )}
@@ -201,7 +201,7 @@ export function AlcoholAuthorisationBoard() {
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium">{site.branch}</span>
                         <span className="block text-[11px] text-muted-foreground">
-                          {site.summary.authorised} of {site.summary.listed} authorised
+                          {site.summary.signed} of {site.summary.covered} signed
                           {site.licence?.dps_name ? ` · Designated Premises Supervisor ${site.licence.dps_name}` : ""}
                           {site.licence?.dps_personal_licence_number ? ` (${site.licence.dps_personal_licence_number})` : ""}
                         </span>
@@ -210,10 +210,9 @@ export function AlcoholAuthorisationBoard() {
 
                     {!isCollapsed && (
                       <div className="px-3 pb-3 space-y-3">
-                        <Group title="Can sell alcohol" rows={group("authorised")} tone="green" showApproval />
-                        <Group title="Signed — waiting for the licence holder" rows={group("awaiting_approval")} tone="amber" />
-                        <Group title="Waiting for the staff member to sign" rows={group("awaiting_signature")} tone="amber" />
-                        <Group title="Not authorised" rows={group("not_authorised")} tone="grey" showReason />
+                        <Group title="Signed the authorisation" rows={group("signed")} tone="green" showApproval />
+                        <Group title="Awaiting signature" rows={group("awaiting_signature")} tone="amber" showReason />
+
 
                         {site.unclassified.length > 0 && (
                           <div className="space-y-1.5 rounded-md border border-warning/40 bg-warning/5 p-2.5">
