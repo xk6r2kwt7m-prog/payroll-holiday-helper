@@ -18,8 +18,10 @@ describe("allocateStaffDetails", () => {
       { ni_number: "QQ123456C", sort_code: "00-00-00", date_of_birth: "1991-05-02" },
     );
     expect(r.updates).toEqual({});
-    expect(r.conflicts.map((c) => c.field).sort()).toEqual(["date_of_birth", "ni_number", "sort_code"]);
+    expect(r.conflicts.map((c) => c.field).sort()).toEqual(["date_of_birth", "ni_number"]);
     expect(r.conflicts[0].current).toBeTruthy();
+    // Bank details always wait for an administrator to confirm them directly.
+    expect(r.held.map((h) => h.field)).toEqual(["sort_code"]);
   });
 
   it("updates descriptive fields when they differ", () => {
