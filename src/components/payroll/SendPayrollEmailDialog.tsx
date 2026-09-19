@@ -59,6 +59,9 @@ export function SendPayrollEmailDialog({
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [includeBankDetails, setIncludeBankDetails] = useState(false);
+  // Bank details for the payroll file are fetched deliberately, for
+  // administrators only, and only when the manager asks to include them.
+  const { data: protectedFields = {} } = useTenantSensitiveFields(includeBankDetails);
   const [sending, setSending] = useState(false);
 
   const defaultSubject = `Payroll – ${period.period_name}`;

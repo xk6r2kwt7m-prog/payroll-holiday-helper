@@ -21,6 +21,7 @@ import { checkPayRisk, type PayRiskResult } from "@/lib/age-band";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { SubmittedDetailsReview } from "./SubmittedDetailsReview";
 import { EmployeePrivacyLog } from "./EmployeePrivacyLog";
+import { useSensitiveEmployeeFields } from "@/hooks/useSensitiveEmployeeFields";
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
@@ -114,6 +115,10 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
   const [searchParams] = useSearchParams();
   const deepLinkTab = searchParams.get("tab") || undefined;
   const [editOpen, setEditOpen] = useState(false);
+  // The database does not return bank details, National Insurance numbers or
+  // identity document numbers with an ordinary staff query. They are read here
+  // only when this sheet is open, and only for administrators.
+  const { data: heldSensitive } = useSensitiveEmployeeFields(employee.id, open && canViewSensitive);
 
   if (!employee) return null;
 
