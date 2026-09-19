@@ -490,6 +490,16 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                   </p>
                 )}
 
+                {/* Field-level comparison against the details we hold today */}
+                {current.employees?.id && (
+                  <ContractDetailDriftPanel
+                    contractId={current.id}
+                    employeeId={current.employees.id}
+                    contractState={state}
+                    termsSnapshot={current.terms_snapshot as never}
+                  />
+                )}
+
                 {/* Next step for this contract */}
                 <div className="mt-3">
                   <ContractSigningActions
