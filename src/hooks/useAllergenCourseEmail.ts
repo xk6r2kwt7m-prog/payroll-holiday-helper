@@ -37,7 +37,16 @@ export interface CourseRecipient {
   audience: "foh" | "kitchen";
   assignment_id: string | null;
   notification_state: string | null;
+  assignment_status: string | null;
   last_note: string | null;
+}
+
+/** Simple per-person state for the management panel. */
+export function recipientState(r: CourseRecipient): "not_sent" | "link_sent" | "in_progress" | "completed" {
+  if (r.assignment_status === "completed" || r.assignment_status === "certified") return "completed";
+  if (r.assignment_status && r.assignment_status !== "not_started") return "in_progress";
+  if (r.notification_state === "sent") return "link_sent";
+  return "not_sent";
 }
 
 function audienceForDepartment(department: string): "foh" | "kitchen" | null {
@@ -71,7 +80,7 @@ export function useCourseRecipients() {
             .eq("tenant_id", tenantId!),
           supabase
             .from("allergen_assignments")
-            .select("id, employee_id, notification_state, note, created_at")
+            .select("id, employee_id, notification_state, status, note, created_at")
             .eq("tenant_id", tenantId!)
             .eq("is_test", false)
             .order("created_at", { ascending: false }),
@@ -111,6 +120,7 @@ export function useCourseRecipients() {
           audience,
           assignment_id: assignment?.id ?? null,
           notification_state: assignment?.notification_state ?? null,
+          assignment_status: assignment?.status ?? null,
           last_note: assignment?.note ?? null,
         });
       }

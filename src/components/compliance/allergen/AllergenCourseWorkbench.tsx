@@ -15,7 +15,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, ClipboardList, FlaskConical, GitCompare, Info, Rocket, Smartphone, Monitor, Users } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { BookOpen, ChevronDown, ClipboardList, FlaskConical, GitCompare, Info, Smartphone, Monitor, Users } from "lucide-react";
 import { AllergenProgrammeBoard } from "@/components/compliance/allergen/AllergenProgrammeBoard";
 import { AllergenPilotControl } from "@/components/compliance/allergen/AllergenPilotControl";
 import { AllergenWalkthrough } from "@/components/compliance/allergen/AllergenWalkthrough";
@@ -54,6 +55,7 @@ export function AllergenCourseWorkbench() {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [learnerView, setLearnerView] = useState<"lessons" | "assessment">("lessons");
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const versionLabel = draft
     ? `Studying proposed version ${draft.proposed_version} (draft)`
@@ -153,9 +155,30 @@ export function AllergenCourseWorkbench() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="pilot">
+      {/* ── The main decision panel: status, approve, publish, who to send to, send ── */}
+      <AllergenPilotControl />
+
+      {/* ── Everything else: course review and testing, kept out of the way ── */}
+      <Collapsible open={reviewOpen} onOpenChange={setReviewOpen}>
+        <Card>
+          <CardContent className="py-3">
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full justify-between gap-2">
+                <span className="flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-3.5" /> Review &amp; test the course
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${reviewOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Lessons, questions, walkthroughs, previews, checklists and certificates — for reviewing
+              the material, not needed to send the course.
+            </p>
+          </CardContent>
+        </Card>
+        <CollapsibleContent>
+      <Tabs defaultValue="walkthrough">
         <TabsList className="flex w-full flex-wrap justify-start">
-          <TabsTrigger value="pilot" className="gap-1"><Rocket className="h-3.5 w-3.5" />Pilot</TabsTrigger>
           <TabsTrigger value="walkthrough" className="gap-1">
             <Smartphone className="h-3.5 w-3.5" />10-minute walkthrough
           </TabsTrigger>
@@ -172,15 +195,11 @@ export function AllergenCourseWorkbench() {
           <TabsTrigger value="programme" className="gap-1"><Users className="h-3.5 w-3.5" />Assignments, sign-off &amp; certificates</TabsTrigger>
         </TabsList>
 
-        {/* ── The simple pilot view: status, candidates, checks, evidence, buttons ── */}
-        <TabsContent value="pilot" className="pt-3">
-          <AllergenPilotControl />
-        </TabsContent>
-
         {/* ── The ten-minute management acceptance walkthrough ── */}
         <TabsContent value="walkthrough" className="pt-3">
           <AllergenWalkthrough />
         </TabsContent>
+
 
 
         <TabsContent value="programme" className="pt-3">
@@ -469,6 +488,8 @@ export function AllergenCourseWorkbench() {
           <AllergenAcceptanceChecklist />
         </TabsContent>
       </Tabs>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }

@@ -21,6 +21,7 @@ import {
   useCourseRecipients,
   useSendAllergenCourseEmail,
   allergenCourseUrl,
+  recipientState,
   type CourseEmailOutcome,
 } from "@/hooks/useAllergenCourseEmail";
 import { usePublishedAllergenVersion } from "@/hooks/useAllergenStaffAccess";
@@ -109,15 +110,24 @@ export function AllergenCourseEmailCard() {
                     <Badge variant="outline" className="text-[10px]">
                       {r.audience === "foh" ? "Front of house" : "Kitchen"}
                     </Badge>
-                    {r.notification_state === "sent" ? (
-                      <Badge variant="outline" className="gap-1 text-[10px]">
-                        <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Link sent
-                      </Badge>
-                    ) : r.assignment_id ? (
-                      <Badge variant="outline" className="text-[10px]">
-                        Assigned — not emailed
-                      </Badge>
-                    ) : null}
+                    {(() => {
+                      const state = recipientState(r);
+                      if (state === "completed")
+                        return (
+                          <Badge variant="secondary" className="gap-1 text-[10px]">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Completed
+                          </Badge>
+                        );
+                      if (state === "in_progress")
+                        return <Badge variant="secondary" className="text-[10px]">In progress</Badge>;
+                      if (state === "link_sent")
+                        return (
+                          <Badge variant="outline" className="gap-1 text-[10px]">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Link sent
+                          </Badge>
+                        );
+                      return <Badge variant="outline" className="text-[10px]">Not sent</Badge>;
+                    })()}
                     {!r.email && (
                       <span className="text-[10px] text-amber-700">No email address on file</span>
                     )}
