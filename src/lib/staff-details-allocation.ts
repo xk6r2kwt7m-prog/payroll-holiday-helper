@@ -28,6 +28,12 @@ export interface StaffFieldRule {
    * false = descriptive. The newest answer from the staff member wins.
    */
   critical: boolean;
+  /**
+   * true = never written automatically, even when the record is blank. Bank
+   * details always wait for an administrator, who must confirm the change
+   * directly with the employee before pay uses the new account.
+   */
+  alwaysReview?: boolean;
 }
 
 export const STAFF_FIELD_RULES: StaffFieldRule[] = [
@@ -41,8 +47,8 @@ export const STAFF_FIELD_RULES: StaffFieldRule[] = [
   { column: "passport_no", label: "Passport number", critical: false },
   { column: "sharing_code", label: "Share code", critical: false },
   { column: "settlement_status", label: "Immigration status", critical: false },
-  { column: "bank_account_no", label: "Bank account number", critical: true },
-  { column: "sort_code", label: "Sort code", critical: true },
+  { column: "bank_account_no", label: "Bank account number", critical: true, alwaysReview: true },
+  { column: "sort_code", label: "Sort code", critical: true, alwaysReview: true },
 ];
 
 export interface StaffDetailConflict {
@@ -59,6 +65,12 @@ export interface StaffAllocationResult {
   filled: { field: string; label: string; value: string }[];
   /** Fields where the staff answer differs from what is already on record. */
   conflicts: StaffDetailConflict[];
+  /**
+   * Fields held back on purpose — bank details, whether new or changed. They
+   * are stored as submitted but never applied to the employee record until an
+   * administrator confirms them directly with the employee.
+   */
+  held: StaffDetailConflict[];
 }
 
 const clean = (v: unknown): string => (typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim());
@@ -82,12 +94,20 @@ export function allocateStaffDetails(
   const updates: Record<string, string> = {};
   const filled: StaffAllocationResult["filled"] = [];
   const conflicts: StaffDetailConflict[] = [];
+  const held: StaffDetailConflict[] = [];
 
   for (const rule of STAFF_FIELD_RULES) {
     const submitted = clean(candidates[rule.column]);
     if (!submitted) continue;
 
     const current = clean(existing[rule.column]);
+
+    if (rule.alwaysReview) {
+      if (!sameValue(current, submitted)) {
+        held.push({ field: rule.column, label: rule.label, current, submitted });
+      }
+      continue;
+    }
 
     if (!current) {
       updates[rule.column] = submitted;
@@ -105,7 +125,7 @@ export function allocateStaffDetails(
     }
   }
 
-  return { updates, filled, conflicts };
+  return { updates, filled, conflicts, held };
 }
 
 /**

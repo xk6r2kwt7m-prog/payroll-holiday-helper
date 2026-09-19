@@ -118,26 +118,43 @@ export interface InfoPreset {
   items: InfoItemKey[];
 }
 
-/** Quick starting points — every one is just a set of ticks you can change. */
+/**
+ * The five things a manager can ask for. Each one is just a set of ticks,
+ * so anything can be added or removed before sending.
+ */
 export const INFO_PRESETS: InfoPreset[] = [
   {
+    key: "new_starter",
+    label: "New starter details",
+    description: "Everything needed to add someone to the team and to payroll",
+    items: [
+      "legal_name", "dob", "email", "address", "ni_number",
+      "nationality", "share_code", "bank", "emergency",
+    ],
+  },
+  {
+    key: "payroll",
+    label: "Payroll details",
+    description: "Bank details for pay, and National Insurance number",
+    items: ["bank", "ni_number"],
+  },
+  {
     key: "right_to_work",
-    label: "Right to work refresh",
-    description: "Nationality, visa or share code, and its expiry date",
-    items: ["nationality", "visa", "share_code"],
+    label: "Right to work information",
+    description: "Nationality, immigration status, and the document or share code",
+    items: ["nationality", "passport", "visa", "share_code"],
   },
   {
-    key: "contact",
-    label: "Contact details check",
-    description: "Email, mobile number and home address",
-    items: ["email", "phone", "address"],
+    key: "emergency",
+    label: "Emergency contact",
+    description: "Someone to call if something happens at work",
+    items: ["emergency"],
   },
-  { key: "bank", label: "Bank details", description: "For pay — asked twice to catch typing mistakes", items: ["bank"] },
   {
-    key: "everything",
-    label: "Everything",
-    description: "All items — normally only for someone new",
-    items: [...INFO_ITEM_KEYS],
+    key: "correction",
+    label: "Correct existing information",
+    description: "Ask them to check and correct the details we already hold",
+    items: ["legal_name", "dob", "email", "address"],
   },
 ];
 
