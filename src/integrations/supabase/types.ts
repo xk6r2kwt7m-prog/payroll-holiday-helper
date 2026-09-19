@@ -2118,6 +2118,73 @@ export type Database = {
           },
         ]
       }
+      contract_corrections: {
+        Row: {
+          contract_id: string
+          corrected_by: string
+          corrected_on: string
+          created_at: string
+          employee_id: string
+          field: string
+          id: string
+          label: string
+          new_value: string | null
+          previous_value: string | null
+          reason: string
+          tenant_id: string
+        }
+        Insert: {
+          contract_id: string
+          corrected_by: string
+          corrected_on?: string
+          created_at?: string
+          employee_id: string
+          field: string
+          id?: string
+          label: string
+          new_value?: string | null
+          previous_value?: string | null
+          reason: string
+          tenant_id: string
+        }
+        Update: {
+          contract_id?: string
+          corrected_by?: string
+          corrected_on?: string
+          created_at?: string
+          employee_id?: string
+          field?: string
+          id?: string
+          label?: string
+          new_value?: string | null
+          previous_value?: string | null
+          reason?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_corrections_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_corrections_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_corrections_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_delivery_attempts: {
         Row: {
           attempted_by: string | null
