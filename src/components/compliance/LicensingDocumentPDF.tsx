@@ -21,16 +21,16 @@ const s = StyleSheet.create({
   trLast: { flexDirection: "row" },
   th: { fontFamily: "Helvetica-Bold", color: DARK, fontSize: 9, padding: 6 },
   td: { padding: 6, fontSize: 9 },
-  colName: { width: "30%", borderRightWidth: 1, borderRightColor: RULE },
-  colRole: { width: "20%", borderRightWidth: 1, borderRightColor: RULE },
-  colStatus: { width: "20%", borderRightWidth: 1, borderRightColor: RULE },
-  colSig: { width: "18%", borderRightWidth: 1, borderRightColor: RULE },
-  colDate: { width: "12%" },
+  colName: { width: "40%", borderRightWidth: 1, borderRightColor: RULE },
+  colRole: { width: "22%", borderRightWidth: 1, borderRightColor: RULE },
+  colSig: { width: "24%", borderRightWidth: 1, borderRightColor: RULE },
+  colDate: { width: "14%" },
   sigImage: { width: 80, height: 26, objectFit: "contain" },
   signBlock: { marginTop: 22, paddingTop: 12, borderTopWidth: 1, borderTopColor: RULE },
   statement: { marginTop: 14, padding: 8, borderWidth: 1, borderColor: RULE, fontSize: 9 },
   summary: { marginTop: 12, fontSize: 9, fontFamily: "Helvetica-Bold", color: DARK },
-  warning: { marginTop: 6, padding: 6, borderWidth: 1, borderColor: "#b91c1c", color: "#b91c1c", fontSize: 9 },
+  note: { marginTop: 6, fontSize: 9, color: SUBTLE },
+
   footNote: { marginTop: 18, fontSize: 8, color: SUBTLE },
 });
 
