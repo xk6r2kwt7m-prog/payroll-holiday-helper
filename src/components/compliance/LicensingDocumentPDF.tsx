@@ -104,12 +104,11 @@ export function LicensingDocumentPDF({
           <View>
             <Text style={s.sectionTitle}>Staff register for this premises</Text>
             {summaryLine && <Text style={s.summary}>{summaryLine}</Text>}
-            {warningLine && <Text style={s.warning}>{warningLine}</Text>}
+            {warningLine && <Text style={s.note}>{warningLine}</Text>}
             <View style={s.table}>
               <View style={s.tr}>
                 <Text style={[s.th, s.colName]}>Name of Staff Member</Text>
                 <Text style={[s.th, s.colRole]}>Role</Text>
-                <Text style={[s.th, s.colStatus]}>Status</Text>
                 <Text style={[s.th, s.colSig]}>Signature</Text>
                 <Text style={[s.th, s.colDate]}>Date</Text>
               </View>
@@ -117,7 +116,6 @@ export function LicensingDocumentPDF({
                 <View key={i} style={i === rows.length - 1 ? s.trLast : s.tr}>
                   <Text style={[s.td, s.colName]}>{r.name || "______________________"}</Text>
                   <Text style={[s.td, s.colRole]}>{r.job_title || "____________"}</Text>
-                  <Text style={[s.td, s.colStatus]}>{r.status_label || "____________"}</Text>
                   <View style={[s.td, s.colSig]}>
                     {r.signature
                       ? <Image src={r.signature} style={s.sigImage} />
@@ -129,6 +127,7 @@ export function LicensingDocumentPDF({
             </View>
           </View>
         )}
+
 
 
         {doc.statement && <Text style={s.statement}>{doc.statement}</Text>}
