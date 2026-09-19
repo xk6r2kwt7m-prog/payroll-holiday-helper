@@ -45,7 +45,7 @@ export const INFO_ITEMS: InfoItemDef[] = [
   { key: "nationality", label: "Nationality and immigration status", hint: "Nationality, and status if they have one", group: "Identity", section: "rtw" },
   { key: "ni_number", label: "National Insurance number", hint: "Optional for them — they can carry on without it", group: "Identity", section: "personal" },
   { key: "email", label: "Email address", hint: "Where payslips and messages go", group: "Contact", section: "personal" },
-  { key: "phone", label: "Mobile number", hint: "For rotas and urgent contact", group: "Contact", section: "personal" },
+  { key: "phone", label: "Mobile number", hint: "Used only for work contact — rotas and urgent messages", group: "Contact", section: "personal" },
   { key: "address", label: "Home address", hint: "Used on contracts and letters", group: "Contact", section: "personal" },
   { key: "passport", label: "Passport", hint: "Number, photo or file, and expiry date", group: "Right to work", section: "rtw", expires: true },
   { key: "visa", label: "Visa or residence permit", hint: "Photo or file, and expiry date", group: "Right to work", section: "rtw", expires: true },
@@ -128,7 +128,7 @@ export const INFO_PRESETS: InfoPreset[] = [
     label: "New starter details",
     description: "Everything needed to add someone to the team and to payroll",
     items: [
-      "legal_name", "dob", "email", "address", "ni_number",
+      "legal_name", "dob", "email", "phone", "address", "ni_number",
       "nationality", "share_code", "bank", "emergency",
     ],
   },

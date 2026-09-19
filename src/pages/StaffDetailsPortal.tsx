@@ -25,6 +25,17 @@ export const isValidNiNumber = (raw: string) =>
   NI_PATTERN.test(raw.replace(/\s|-/g, "").toUpperCase());
 export const digitsOnly = (raw: string) => raw.replace(/\D/g, "");
 
+/**
+ * Telephone numbers are accepted from anywhere — a UK mobile, a landline, or an
+ * international number with a country code. Only obvious nonsense is refused.
+ */
+export const isValidPhoneNumber = (raw: string) => {
+  const trimmed = raw.trim();
+  if (!/^\+?[\d\s()./-]+$/.test(trimmed)) return false;
+  const digits = digitsOnly(trimmed);
+  return digits.length >= 7 && digits.length <= 15;
+};
+
 interface FieldDef {
   key: string;
   label: string;
@@ -47,6 +58,8 @@ interface StepDef {
   upload?: boolean;
   /** Shows the "I do not have one yet" tick box. */
   noNiOption?: boolean;
+  /** Shows the "I do not have a number yet" tick box. */
+  noPhoneOption?: boolean;
 }
 
 /**
@@ -75,9 +88,15 @@ function buildSteps(items: readonly string[]): StepDef[] {
       id: "dob_phone", section: "personal",
       title: has("dob") && has("phone") ? "Date of birth and phone" : has("dob") ? "Your date of birth" : "Your phone number",
       blurb: "So we can reach you and check your pay is correct for your age.", icon: Phone,
+      noPhoneOption: has("phone"),
       fields: [
         ...(has("dob") ? [{ key: "date_of_birth", label: "Date of birth", type: "date", required: true }] : []),
-        ...(has("phone") ? [{ key: "phone", label: "Mobile number", type: "tel", required: true }] : []),
+        ...(has("phone")
+          ? [{
+              key: "phone", label: "Mobile number", type: "tel", placeholder: "07700 900123 or +351 912 345 678",
+              hint: "Used only for work contact — rota changes and urgent messages. UK or international numbers are both fine.",
+            }]
+          : []),
       ],
     });
   }
@@ -238,6 +257,7 @@ export default function StaffDetailsPortal() {
   const [started, setStarted] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [noNi, setNoNi] = useState(false);
+  const [noPhone, setNoPhone] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -324,6 +344,14 @@ export default function StaffDetailsPortal() {
     }));
   };
 
+  const setNoPhoneChoice = (value: boolean) => {
+    setNoPhone(value);
+    setAnswers((a) => ({
+      ...a,
+      personal: { ...(a.personal ?? {}), no_phone_number: value ? "yes" : "", ...(value ? { phone: "" } : {}) },
+    }));
+  };
+
   const set = (section: string, field: string, value: string) =>
     setAnswers((a) => ({ ...a, [section]: { ...(a[section] ?? {}), [field]: value } }));
 
@@ -345,6 +373,13 @@ export default function StaffDetailsPortal() {
         if (ni && !isValidNiNumber(ni)) {
           list.push("That National Insurance number does not look right (for example AB123456C). Leave it blank if you do not have one");
         }
+        const phone = (a.phone ?? "").trim();
+        if (s.noPhoneOption && !phone && !noPhone) {
+          list.push("Please give a phone number, or tick that you do not have one yet");
+        }
+        if (phone && !isValidPhoneNumber(phone)) {
+          list.push("That phone number does not look right — include the country code for a number outside the UK");
+        }
       }
       if (s.section === "bank") {
         const sort = digitsOnly(a.sort_code ?? "");
@@ -358,7 +393,7 @@ export default function StaffDetailsPortal() {
       }
     }
     return list;
-  }, [answers, uploads, noNi]);
+  }, [answers, uploads, noNi, noPhone]);
 
   const stepProblems = useMemo(() => (current ? problems([current]) : []), [current, problems]);
   const reviewProblems = useMemo(() => problems(steps), [steps, problems]);
@@ -381,7 +416,7 @@ export default function StaffDetailsPortal() {
     if (!data || !started || data.request.submitted_at || sent) return;
     const timer = setTimeout(() => { void saveProgress(); }, 2000);
     return () => clearTimeout(timer);
-  }, [answers, noNi, data, started, sent, saveProgress]);
+  }, [answers, noNi, noPhone, data, started, sent, saveProgress]);
 
   const next = async () => {
     if (stepProblems.length > 0) {
@@ -639,6 +674,18 @@ export default function StaffDetailsPortal() {
                   onChange={(e) => setNoNiChoice(e.target.checked)}
                 />
                 <span>I do not have a National Insurance number yet</span>
+              </label>
+            )}
+
+            {current.noPhoneOption && (
+              <label className="flex items-start gap-2 pt-1 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4"
+                  checked={noPhone}
+                  onChange={(e) => setNoPhoneChoice(e.target.checked)}
+                />
+                <span>I do not have a number yet</span>
               </label>
             )}
 

@@ -15,7 +15,7 @@ const employee = {
   surname: "Silva",
   email: "maria@example.com",
   date_of_birth: "1990-01-01",
-  ni_number: "QQ123456C",
+  has_ni_number: true,
   nationality: "Portuguese",
   passport_no: null,
   residence_permit: null,
