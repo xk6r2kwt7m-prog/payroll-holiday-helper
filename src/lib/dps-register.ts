@@ -98,33 +98,28 @@ function stillEmployed(e: RegisterEmployee): boolean {
   return !e.archived_at && norm(e.status) !== "leaver";
 }
 
-/** Status of one person, from their own records only. */
+/**
+ * Paperwork state of one person, from their own records only.
+ *
+ * "Signed" means that person put their own signature to the authorisation and
+ * it has not been withdrawn. Everything else is an outstanding signature.
+ */
 export function registerStatusFor(
   employee: RegisterEmployee,
   records: RegisterAuthorisation[],
 ): { status: RegisterStatus; record: RegisterAuthorisation | null } {
   const record = latestAuthorisation(records) as RegisterAuthorisation | null;
-  if (!record) return { status: "not_authorised", record: null };
+  if (!record) return { status: "awaiting_signature", record: null };
   const effective = resolveAuthorisationStatus(record, {
     status: employee.status ?? null,
     archived_at: employee.archived_at ?? null,
   });
-  if (effective === "active") return { status: "authorised", record };
-  if (effective === "pending") {
-    return {
-      status: record.employee_signed_at ? "awaiting_approval" : "awaiting_signature",
-      record,
-    };
-  }
-  return { status: "not_authorised", record };
+  const signed = !!record.employee_signed_at && effective !== "revoked";
+  return { status: signed ? "signed" : "awaiting_signature", record };
 }
 
-const ORDER: RegisterStatus[] = [
-  "authorised",
-  "awaiting_approval",
-  "awaiting_signature",
-  "not_authorised",
-];
+const ORDER: RegisterStatus[] = ["signed", "awaiting_signature"];
+
 
 /**
  * Builds the register for one site: everyone front of house there, anyone the
