@@ -297,6 +297,12 @@ export interface ControlledPilotInput {
   certificateControlsConfirmed: boolean;
   /** Recorded failures in any environment, including the deferred ones. */
   knownSeriousProblems: string[];
+  /**
+   * The administrator has approved the material in writing. This stands in for
+   * the device walkthroughs only — a recorded failure or a failing automated
+   * check still blocks the pilot.
+   */
+  materialApprovedByAdministrator?: boolean;
 }
 
 export interface ControlledPilotGate {
