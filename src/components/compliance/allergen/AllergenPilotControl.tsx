@@ -82,6 +82,10 @@ export function AllergenPilotControl() {
   const publish = usePublishAllergenCourseVersion();
 
   const [chosen, setChosen] = useState<string[]>([]);
+  const [approverName, setApproverName] = useState("");
+  const [approvalNote, setApprovalNote] = useState("");
+  const { data: approval } = useAllergenMaterialApproval();
+  const approve = useApproveAllergenMaterial();
 
   const eligibility = useMemo(
     () => ({
