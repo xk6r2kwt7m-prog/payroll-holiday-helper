@@ -617,7 +617,7 @@ export function SettleLeaverDialog() {
 
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>Rate: <strong className="text-foreground">{formatCurrency(selectedEmployee.hourly_rate)}</strong>/hr</span>
-                  {(selectedEmployee as any).ni_number && <span>NI: {(selectedEmployee as any).ni_number}</span>}
+                  {(selectedEmployee as any).has_ni_number && <span>National Insurance number on file</span>}
                 </div>
 
                 <div className="rounded-md bg-muted/50 p-2.5 space-y-1.5">

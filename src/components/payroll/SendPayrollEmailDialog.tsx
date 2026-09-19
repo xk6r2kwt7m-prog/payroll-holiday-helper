@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useTenantSensitiveFields } from "@/hooks/useSensitiveEmployeeFields";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "./PayrollPDF";
 import { useTenant } from "@/hooks/useTenant";
@@ -133,7 +134,12 @@ export function SendPayrollEmailDialog({
 
       // If bank details are excluded, filter them from starters
       const filteredStarters = includeBankDetails
-        ? starterEmployees
+        ? starterEmployees.map((s: any) => ({
+            ...s,
+            bank_account_no: protectedFields[s.id]?.bank_account_no ?? null,
+            sort_code: protectedFields[s.id]?.sort_code ?? null,
+            ni_number: protectedFields[s.id]?.ni_number ?? null,
+          }))
         : starterEmployees.map((s: any) => ({
             ...s,
             bank_account_no: null,

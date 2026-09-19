@@ -242,7 +242,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
               {canViewSensitive && (
                 <SensitiveInfoRow
                   label="Passport Number"
-                  value={employee.passport_no}
+                  value={heldSensitive?.passport_no}
                   fieldKey={`detail-${employee.id}-passport`}
                   category="personal_id"
                   employeeId={employee.id}
@@ -252,7 +252,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
               {canViewSensitive && (
                 <SensitiveInfoRow
                   label="National Insurance"
-                  value={employee.ni_number}
+                  value={heldSensitive?.ni_number}
                   fieldKey={`detail-${employee.id}-ni`}
                   category="personal_id"
                   employeeId={employee.id}
@@ -292,7 +292,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
           </Section>
 
           {/* Banking Details — Admin only, privacy shielded */}
-          {canViewSensitive && (employee.sort_code || employee.bank_account_no) && (
+          {canViewSensitive && (heldSensitive?.sort_code || heldSensitive?.bank_account_no) && (
             <SensitiveSection
               sectionKey={`detail-${employee.id}-bank`}
               category="personal_id"
@@ -301,8 +301,8 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             >
               <Section title="Banking Details" icon={CreditCard}>
                 <div className="space-y-1">
-                  <InfoRow label="Sort Code" value={employee.sort_code} mono />
-                  <InfoRow label="Account Number" value={employee.bank_account_no} mono />
+                  <InfoRow label="Sort Code" value={heldSensitive?.sort_code} mono />
+                  <InfoRow label="Account Number" value={heldSensitive?.bank_account_no} mono />
                 </div>
               </Section>
             </SensitiveSection>
