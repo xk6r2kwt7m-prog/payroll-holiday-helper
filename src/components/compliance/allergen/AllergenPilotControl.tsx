@@ -47,6 +47,7 @@ import { useAllergenCourseDraft } from "@/hooks/useAllergenCourse";
 import { useAcceptanceChecks, useAcceptanceSignoffs } from "@/hooks/useAllergenAcceptance";
 import { useBranchLocations } from "@/hooks/useSchedule";
 import { usePilotCandidates, usePilotAssignments, usePreparePilotAssignments } from "@/hooks/useAllergenPilot";
+import { AllergenCourseEmailCard } from "@/components/compliance/allergen/AllergenCourseEmailCard";
 
 function Tick({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   return (
@@ -404,6 +405,9 @@ export function AllergenPilotControl() {
           </p>
         </CardContent>
       </Card>
+
+      {/* ── 5c. Emailing the course link — manual, one press per send ── */}
+      <AllergenCourseEmailCard />
 
       {/* ── 6. The two separate buttons ── */}
       <Card>
