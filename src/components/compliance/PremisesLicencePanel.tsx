@@ -99,9 +99,8 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
   // The register: everyone front of house at this site, plus anyone here who
   // already holds an authorisation record. Status comes from their own records.
   const { rows: registerRows, summary: registerTotals, summaryLine } = useDpsRegister(branch);
-  const warningLine = registerTotals.nobodyAuthorised
-    ? `Nobody at ${branch} is currently authorised to sell alcohol. Alcohol must not be sold until the licence holder has authorised at least one person.`
-    : null;
+  const warningLine = outstandingSignatureLine(registerRows, branch);
+
 
 
   const openEdit = () => {
@@ -260,8 +259,9 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
         licence_id: licence?.id ?? null,
         subject_type: subject,
         snapshot: { document: doc, rows: registerRows, summary_line: summaryLine },
-        authorised_count: registerTotals.authorised,
-        listed_count: registerTotals.listed,
+        authorised_count: registerTotals.signed,
+        listed_count: registerTotals.covered,
+
       });
     }
   };
@@ -511,7 +511,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                       <Users className="h-3.5 w-3.5 text-muted-foreground" />
                       <span className="font-medium">{summaryLine}</span>
                     </p>
-                    {warningLine && <p className="text-xs text-destructive">{warningLine}</p>}
+                    {warningLine && <p className="text-xs text-warning">{warningLine}</p>}
                     {registerRows.length > 0 && (
                       <div className="space-y-0.5">
                         {registerRows.slice(0, 6).map((r) => (
@@ -607,7 +607,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                     <p className="text-[11px] text-muted-foreground">
                       {new Date(issue.created_at).toLocaleString("en-GB")} ·{" "}
                       {DELIVERY_LABELS[issue.delivery_method as DeliveryMethod] ?? issue.delivery_method} ·{" "}
-                      {issue.authorised_count} of {issue.listed_count} authorised
+                      {issue.authorised_count} of {issue.listed_count} signed
                       {issue.open_count ? ` · opened ${issue.open_count}×` : ""}
                     </p>
                   </div>

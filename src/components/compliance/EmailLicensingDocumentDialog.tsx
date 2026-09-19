@@ -85,8 +85,9 @@ export function EmailLicensingDocumentDialog({
         link_expiry_days: clampLinkExpiryDays(expiryDays),
         file_path: filePath,
         snapshot: { document: doc, rows, summary_line: summaryLine },
-        authorised_count: summary.authorised,
-        listed_count: summary.listed,
+        authorised_count: summary.signed,
+        listed_count: summary.covered,
+
       });
       toast.success(`Copy sent to ${email.trim()}`);
       onOpenChange(false);
@@ -106,7 +107,7 @@ export function EmailLicensingDocumentDialog({
             <Mail className="h-4 w-4" /> Email a copy
           </DialogTitle>
           <DialogDescription>
-            {branch} — {summary.authorised} of {summary.listed} people listed are currently authorised.
+            {branch} — {summary.signed} of {summary.covered} front-of-house staff listed have signed.
           </DialogDescription>
         </DialogHeader>
 

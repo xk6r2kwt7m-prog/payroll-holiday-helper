@@ -308,9 +308,8 @@ export function AlcoholAuthorisationBoard() {
             doc={buildDpsAuthorisation(siteFor(emailing.branch), emailing.licence?.issue_date ?? null)}
             rows={emailing.rows}
             summaryLine={emailing.summaryLine}
-            warningLine={emailing.summary.nobodyAuthorised
-              ? `Nobody at ${emailing.branch} is currently authorised to sell alcohol.`
-              : null}
+            warningLine={outstandingSignatureLine(emailing.rows, emailing.branch)}
+
             auditLine="Produced from the live staff register in UglyOps HR."
           />
         )}
