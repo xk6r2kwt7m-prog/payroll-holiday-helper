@@ -106,7 +106,7 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
     }
 
     const missingBank = employees.filter(
-      (e) => e.status === "active" && (!e.bank_account_no || !e.sort_code)
+      (e) => e.status === "active" && !e.has_bank_details
     );
     if (missingBank.length > 0) {
       result.push({
@@ -171,7 +171,7 @@ export function TodayActions({ employees, periods, entries }: TodayActionsProps)
     }
 
     const missingNI = employees.filter(
-      (e) => e.status === "active" && !e.ni_number
+      (e) => e.status === "active" && !e.has_ni_number
     );
     if (missingNI.length > 0) {
       result.push({

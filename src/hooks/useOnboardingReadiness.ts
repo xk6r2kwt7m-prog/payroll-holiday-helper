@@ -166,7 +166,7 @@ function checkRequirement(
         ? "complete" : "missing";
 
     case "bank_details":
-      return (employee.bank_account_no || onboardingData?.bank_details?.account_number)
+      return (employee.has_bank_details || onboardingData?.bank_details?.account_number)
         ? "complete" : "missing";
 
     case "right_to_work": {
