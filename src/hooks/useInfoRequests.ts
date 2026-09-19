@@ -95,6 +95,8 @@ export function useSendInfoRequest() {
       recipientOverride?: string | null;
       testSend?: boolean;
       expiryDays?: number;
+      /** Links the request to a contract, so signing follows on in the same session. */
+      contractDocumentId?: string | null;
     }) => {
       const { data, error } = await supabase.functions.invoke("send-info-request", {
         body: { tenant_id: tenantId, requestKind: input.requestKind ?? "existing_staff_update", ...input },

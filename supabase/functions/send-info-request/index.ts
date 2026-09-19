@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
     const tenantId: string = body?.tenant_id;
     const action: string = body?.action || "send";
     const employeeIds: string[] = body?.employeeIds || [];
+    const contractDocumentId: string | null = body?.contractDocumentId ?? null;
     const sections: string[] = (body?.sections || ["personal", "emergency", "bank", "rtw"]).filter(
       (s: string) => ALLOWED_FIELDS.includes(s),
     );
