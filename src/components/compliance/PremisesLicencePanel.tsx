@@ -33,9 +33,10 @@ import {
   useRevokeLicenceDocumentLink,
 } from "@/hooks/useDpsRegister";
 import {
-  registerPdfRows, registerCsv, DELIVERY_LABELS, linkState, linkStateLabel,
+  registerPdfRows, registerCsv, outstandingSignatureLine, DELIVERY_LABELS, linkState, linkStateLabel,
   type DeliveryMethod,
 } from "@/lib/dps-register";
+
 import { EmailLicensingDocumentDialog } from "@/components/compliance/EmailLicensingDocumentDialog";
 import { cn } from "@/lib/utils";
 
