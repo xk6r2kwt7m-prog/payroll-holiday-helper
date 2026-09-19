@@ -48,7 +48,8 @@ describe("staff details form asks a little at a time and ends with a check scree
   });
 
   it("keeps National Insurance optional but checks the UK format when given", () => {
-    expect(portal).toContain('key: "ni_number", label: "National Insurance number (optional)"');
+    expect(portal).toContain('key: "ni_number", label: "National Insurance number"');
+    expect(portal).toContain("I do not have a National Insurance number yet");
     expect(portal).toContain("isValidNiNumber");
     expect(portal).toContain("Leave it blank if you do not have one");
   });
