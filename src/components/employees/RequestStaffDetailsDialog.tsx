@@ -185,13 +185,31 @@ export function RequestStaffDetailsDialog({
                 id="confirm-request-email-preview"
                 className="rounded-lg border border-border bg-muted/40 p-3 text-sm text-card-foreground space-y-2"
               >
-                <p className="font-medium">Subject: We need a few details from you</p>
+                <p className="font-medium">
+                  Subject:{" "}
+                  {kind === "onboarding"
+                    ? "Please complete your details"
+                    : "We need a couple of details from you"}
+                </p>
+                <p className="font-semibold">Please complete your details</p>
                 <p>Hi {employeeName.split(" ")[0]},</p>
                 <p>
-                  Ugly Dumpling needs a few details for your employment record. It takes about
-                  five minutes and works on your phone.
+                  We need a few details from you before your first shift. It takes about 5 minutes
+                  on your phone and you do not need an account.
+                </p>
+                <p>
+                  <span className="font-medium">You will be asked for:</span>{" "}
+                  {selected.map((k) => INFO_ITEMS.find((i) => i.key === k)?.label ?? k).join(", ")}
                 </p>
                 <p className="font-medium text-primary">[ Complete my details ]</p>
+                <p>
+                  If you are asked for your right to work document, you can take a photo of it with
+                  your phone camera.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  This link is personal to you and expires on the date above. Please do not forward it.
+                </p>
+                <p>Thank you, Ugly Dumpling Team</p>
                 <p className="text-xs text-muted-foreground">
                   The button is their own secure link. The email contains nothing else about them —
                   no address, bank details or National Insurance number.
