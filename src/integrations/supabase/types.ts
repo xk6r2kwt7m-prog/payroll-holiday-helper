@@ -1484,6 +1484,42 @@ export type Database = {
           },
         ]
       }
+      bank_detail_verifications: {
+        Row: {
+          change_id: string | null
+          confirmed_directly: boolean
+          employee_id: string
+          id: string
+          notes: string | null
+          tenant_id: string
+          verified_at: string
+          verified_by: string | null
+          verified_by_name: string
+        }
+        Insert: {
+          change_id?: string | null
+          confirmed_directly?: boolean
+          employee_id: string
+          id?: string
+          notes?: string | null
+          tenant_id: string
+          verified_at?: string
+          verified_by?: string | null
+          verified_by_name: string
+        }
+        Update: {
+          change_id?: string | null
+          confirmed_directly?: boolean
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          tenant_id?: string
+          verified_at?: string
+          verified_by?: string | null
+          verified_by_name?: string
+        }
+        Relationships: []
+      }
       billing_events: {
         Row: {
           amount: number | null
@@ -4041,10 +4077,12 @@ export type Database = {
       employee_info_requests: {
         Row: {
           cancelled_at: string | null
+          contract_document_id: string | null
           created_at: string
           employee_id: string
           id: string
           last_reminder_at: string | null
+          last_saved_at: string | null
           opened_at: string | null
           preset: string | null
           recipient_email: string | null
@@ -4055,6 +4093,12 @@ export type Database = {
           requested_by: string | null
           requested_by_name: string | null
           requested_fields: string[]
+          review_decision: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewed_by_name: string | null
+          revoked_at: string | null
           rtw_uploaded_count: number
           sent_at: string
           status: string
@@ -4067,10 +4111,12 @@ export type Database = {
         }
         Insert: {
           cancelled_at?: string | null
+          contract_document_id?: string | null
           created_at?: string
           employee_id: string
           id?: string
           last_reminder_at?: string | null
+          last_saved_at?: string | null
           opened_at?: string | null
           preset?: string | null
           recipient_email?: string | null
@@ -4081,6 +4127,12 @@ export type Database = {
           requested_by?: string | null
           requested_by_name?: string | null
           requested_fields?: string[]
+          review_decision?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          revoked_at?: string | null
           rtw_uploaded_count?: number
           sent_at?: string
           status?: string
@@ -4093,10 +4145,12 @@ export type Database = {
         }
         Update: {
           cancelled_at?: string | null
+          contract_document_id?: string | null
           created_at?: string
           employee_id?: string
           id?: string
           last_reminder_at?: string | null
+          last_saved_at?: string | null
           opened_at?: string | null
           preset?: string | null
           recipient_email?: string | null
@@ -4107,6 +4161,12 @@ export type Database = {
           requested_by?: string | null
           requested_by_name?: string | null
           requested_fields?: string[]
+          review_decision?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          revoked_at?: string | null
           rtw_uploaded_count?: number
           sent_at?: string
           status?: string
@@ -4152,9 +4212,11 @@ export type Database = {
           onboarding_approved_by: string | null
           onboarding_completed_at: string | null
           personal_info: Json | null
+          rtw_expires_on: string | null
           rtw_review_notes: string | null
           rtw_reviewed_at: string | null
           rtw_reviewed_by: string | null
+          rtw_reviewed_by_name: string | null
           rtw_status: string
           step_completed: number
           submitted_at: string | null
@@ -4171,9 +4233,11 @@ export type Database = {
           onboarding_approved_by?: string | null
           onboarding_completed_at?: string | null
           personal_info?: Json | null
+          rtw_expires_on?: string | null
           rtw_review_notes?: string | null
           rtw_reviewed_at?: string | null
           rtw_reviewed_by?: string | null
+          rtw_reviewed_by_name?: string | null
           rtw_status?: string
           step_completed?: number
           submitted_at?: string | null
@@ -4190,9 +4254,11 @@ export type Database = {
           onboarding_approved_by?: string | null
           onboarding_completed_at?: string | null
           personal_info?: Json | null
+          rtw_expires_on?: string | null
           rtw_review_notes?: string | null
           rtw_reviewed_at?: string | null
           rtw_reviewed_by?: string | null
+          rtw_reviewed_by_name?: string | null
           rtw_status?: string
           step_completed?: number
           submitted_at?: string | null
@@ -4351,6 +4417,10 @@ export type Database = {
           employing_entity: string | null
           end_date: string | null
           forename: string
+          has_bank_details: boolean | null
+          has_ni_number: boolean | null
+          has_passport: boolean | null
+          has_share_code: boolean | null
           holiday_entitlement_method: string | null
           hourly_rate: number
           id: string
@@ -4394,6 +4464,10 @@ export type Database = {
           employing_entity?: string | null
           end_date?: string | null
           forename: string
+          has_bank_details?: boolean | null
+          has_ni_number?: boolean | null
+          has_passport?: boolean | null
+          has_share_code?: boolean | null
           holiday_entitlement_method?: string | null
           hourly_rate: number
           id?: string
@@ -4437,6 +4511,10 @@ export type Database = {
           employing_entity?: string | null
           end_date?: string | null
           forename?: string
+          has_bank_details?: boolean | null
+          has_ni_number?: boolean | null
+          has_passport?: boolean | null
+          has_share_code?: boolean | null
           holiday_entitlement_method?: string | null
           hourly_rate?: number
           id?: string
@@ -8621,6 +8699,66 @@ export type Database = {
           },
         ]
       }
+      staff_detail_changes: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decided_by_name: string | null
+          employee_id: string
+          field_label: string
+          field_name: string
+          id: string
+          needs_review: boolean
+          new_value: string | null
+          notes: string | null
+          old_value: string | null
+          request_id: string | null
+          section: string
+          sensitive: boolean
+          state: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_by_name?: string | null
+          employee_id: string
+          field_label: string
+          field_name: string
+          id?: string
+          needs_review?: boolean
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          request_id?: string | null
+          section: string
+          sensitive?: boolean
+          state?: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decided_by_name?: string | null
+          employee_id?: string
+          field_label?: string
+          field_name?: string
+          id?: string
+          needs_review?: boolean
+          new_value?: string | null
+          notes?: string | null
+          old_value?: string | null
+          request_id?: string | null
+          section?: string
+          sensitive?: boolean
+          state?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       staff_transfers: {
         Row: {
           created_at: string
@@ -11435,9 +11573,22 @@ export type Database = {
         Returns: number
       }
       can_read_storage_object: { Args: { _name: string }; Returns: boolean }
+      can_view_employee: { Args: { _employee_id: string }; Returns: boolean }
       can_view_incident: {
         Args: { _confidentiality: string; _tenant_id: string }
         Returns: boolean
+      }
+      employee_sensitive_fields: {
+        Args: { _employee_id: string }
+        Returns: {
+          bank_account_no: string
+          employee_id: string
+          ni_number: string
+          passport_no: string
+          residence_permit: string
+          sharing_code: string
+          sort_code: string
+        }[]
       }
       ensure_accrual_ledger_for_entry: {
         Args: { _entry_id: string }
@@ -11541,6 +11692,7 @@ export type Database = {
         }
       }
       has_any_role: { Args: never; Returns: boolean }
+      has_branch_scope: { Args: { _tenant_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -11577,6 +11729,7 @@ export type Database = {
         Args: { _conversation_id: string; _reader_sender_type: string }
         Returns: undefined
       }
+      my_branches: { Args: { _tenant_id: string }; Returns: string[] }
       purchase_talent_credits: { Args: { _pack_id: string }; Returns: Json }
       reconcile_talent_wallet: { Args: { _tenant_id: string }; Returns: Json }
       respond_to_contact_request: {
@@ -11597,6 +11750,18 @@ export type Database = {
         Returns: undefined
       }
       storage_path_tenant_allowed: { Args: { _name: string }; Returns: boolean }
+      tenant_sensitive_fields: {
+        Args: { _tenant_id: string }
+        Returns: {
+          bank_account_no: string
+          employee_id: string
+          ni_number: string
+          passport_no: string
+          residence_permit: string
+          sharing_code: string
+          sort_code: string
+        }[]
+      }
       unlock_talent_contact: {
         Args: { _intro_message?: string; _talent_profile_id: string }
         Returns: Json
