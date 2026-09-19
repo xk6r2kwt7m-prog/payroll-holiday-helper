@@ -55,6 +55,7 @@ export function AllergenCourseWorkbench() {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [learnerView, setLearnerView] = useState<"lessons" | "assessment">("lessons");
+  const [reviewOpen, setReviewOpen] = useState(false);
 
   const versionLabel = draft
     ? `Studying proposed version ${draft.proposed_version} (draft)`
