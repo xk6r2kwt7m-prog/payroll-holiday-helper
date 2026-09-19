@@ -108,7 +108,7 @@ export function RequestStaffDetailsDialog({
     [],
   );
 
-  const submit = () => {
+  const submit = (prepareOnly = false) => {
     send.mutate(
       {
         employeeIds: [employeeId],
@@ -117,6 +117,7 @@ export function RequestStaffDetailsDialog({
         preset,
         recipientOverride: email.trim() || null,
         expiryDays: Number(expiryDays) || 7,
+        prepareOnly,
       },
       {
         onSuccess: () => {
@@ -228,11 +229,22 @@ export function RequestStaffDetailsDialog({
               <Button variant="outline" onClick={() => setConfirming(false)}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button className="flex-1" onClick={submit} disabled={send.isPending}>
+              <Button className="flex-1" onClick={() => submit(false)} disabled={send.isPending}>
                 <Send className="h-4 w-4 mr-2" />
                 {send.isPending ? "Sending..." : "Send request"}
               </Button>
             </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => submit(true)}
+              disabled={send.isPending}
+            >
+              Prepare it, but do not send yet
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              A prepared request is saved as "Not sent". The link does not work until you send it.
+            </p>
           </div>
         ) : (
           <div className="space-y-4 max-h-[70vh] overflow-y-auto">

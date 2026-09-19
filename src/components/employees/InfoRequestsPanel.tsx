@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Mail, BellRing, Ban, Loader2, CheckCircle2, Clock, CalendarClock } from "lucide-react";
+import { Mail, BellRing, Ban, Loader2, CheckCircle2, Clock, CalendarClock, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -7,6 +7,7 @@ import {
   useInfoRequests,
   useRemindInfoRequest,
   useRevokeInfoRequest,
+  useSendPreparedInfoRequest,
   useExpiringDocuments,
   infoRequestState,
   infoRequestPersonName,
@@ -22,6 +23,7 @@ const TONE: Record<InfoRequestState, string> = {
   waiting: "bg-muted text-muted-foreground border-border",
   expired: "bg-warning/10 text-warning border-warning/30",
   cancelled: "bg-muted text-muted-foreground border-border",
+  prepared: "bg-warning/10 text-warning border-warning/30",
 };
 
 /**
@@ -34,6 +36,7 @@ export function InfoRequestsPanel({ showCompleted = false }: { showCompleted?: b
   const { data: expiring = [] } = useExpiringDocuments(90);
   const remind = useRemindInfoRequest();
   const cancel = useRevokeInfoRequest();
+  const sendPrepared = useSendPreparedInfoRequest();
   const [busy, setBusy] = useState<string | null>(null);
 
   const rows = useMemo(() => {
@@ -72,7 +75,8 @@ export function InfoRequestsPanel({ showCompleted = false }: { showCompleted?: b
                   </p>
                   <p className="text-[11px] text-muted-foreground flex flex-wrap items-center gap-x-2">
                     <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> Sent {format(new Date(r.sent_at), "d MMM")}
+                      <Clock className="h-3 w-3" />{" "}
+                      {state === "prepared" ? "Prepared" : "Sent"} {format(new Date(r.sent_at), "d MMM")}
                     </span>
                     <span>Expires {format(new Date(r.token_expires_at), "d MMM")}</span>
                     {r.reminder_count > 0 && (
@@ -88,6 +92,34 @@ export function InfoRequestsPanel({ showCompleted = false }: { showCompleted?: b
                       </span>
                     )}
                   </p>
+                  {state === "prepared" && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={working}
+                        onClick={async () => {
+                          setBusy(r.id);
+                          try { await sendPrepared.mutateAsync(r.id); } finally { setBusy(null); }
+                        }}
+                      >
+                        {working ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Send className="h-3 w-3 mr-1" />}
+                        Send now
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs text-muted-foreground"
+                        disabled={working}
+                        onClick={async () => {
+                          setBusy(r.id);
+                          try { await cancel.mutateAsync(r.id); } finally { setBusy(null); }
+                        }}
+                      >
+                        <Ban className="h-3 w-3 mr-1" /> Discard
+                      </Button>
+                    </div>
+                  )}
                   {(state === "waiting" || state === "opened") && (
                     <div className="flex gap-1.5 pt-0.5">
                       <Button
