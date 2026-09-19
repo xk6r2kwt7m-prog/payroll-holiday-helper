@@ -254,3 +254,50 @@ describe("the staff-facing service", () => {
     }
   });
 });
+
+describe("telephone number", () => {
+  it("asks for it as an ordinary question with an opt-out", () => {
+    const step = buildPortalSteps(["phone"]).find((s) => s.fields.some((f) => f.key === "phone"))!;
+    const field = step.fields.find((f) => f.key === "phone")!;
+    expect(field.required).toBeUndefined();
+    expect(step.noPhoneOption).toBe(true);
+    expect(field.hint).toMatch(/work contact/i);
+  });
+
+  it("accepts UK and international numbers and refuses nonsense", () => {
+    expect(isValidPhoneNumber("07700 900123")).toBe(true);
+    expect(isValidPhoneNumber("+351 912 345 678")).toBe(true);
+    expect(isValidPhoneNumber("(020) 7946-0018")).toBe(true);
+    expect(isValidPhoneNumber("12345")).toBe(false);
+    expect(isValidPhoneNumber("not a number")).toBe(false);
+  });
+});
+
+describe("requests prepared but not sent", () => {
+  const fn = readFileSync("supabase/functions/send-info-request/index.ts", "utf8");
+  const portal = readFileSync("supabase/functions/staff-details-portal/index.ts", "utf8");
+
+  it("saves the request without sending an email", () => {
+    expect(fn).toContain('status: prepareOnly ? "prepared" : "sent"');
+    expect(fn).toContain("if (prepareOnly) {");
+    expect(fn).toContain("employee_info_request_prepared");
+  });
+
+  it("keeps a prepared link closed until an administrator sends it", () => {
+    expect(portal).toContain('request.status === "prepared"');
+    expect(fn).toContain('action === "send_prepared"');
+  });
+
+  it("reads as Not sent while it waits", () => {
+    expect(INFO_REQUEST_STATE_LABELS.prepared).toBe("Not sent");
+    expect(
+      infoRequestState({
+        submitted_at: null,
+        status: "prepared",
+        cancelled_at: null,
+        token_expires_at: new Date(Date.now() + 86400000).toISOString(),
+        opened_at: null,
+      } as never),
+    ).toBe("prepared");
+  });
+});
