@@ -1160,6 +1160,39 @@ export type Database = {
           },
         ]
       }
+      allergen_material_approvals: {
+        Row: {
+          approved_by: string | null
+          approved_by_name: string
+          approved_version: number | null
+          created_at: string
+          device_walkthroughs_outstanding: boolean
+          id: string
+          note: string | null
+          tenant_id: string
+        }
+        Insert: {
+          approved_by?: string | null
+          approved_by_name: string
+          approved_version?: number | null
+          created_at?: string
+          device_walkthroughs_outstanding?: boolean
+          id?: string
+          note?: string | null
+          tenant_id: string
+        }
+        Update: {
+          approved_by?: string | null
+          approved_by_name?: string
+          approved_version?: number | null
+          created_at?: string
+          device_walkthroughs_outstanding?: boolean
+          id?: string
+          note?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       allergen_practical_observations: {
         Row: {
           assignment_id: string | null
