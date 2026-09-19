@@ -356,6 +356,26 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
+    /**
+     * Training course link. Sent only when an administrator presses send for a
+     * named person. Contains the first name and the course link only — never
+     * any held personal details, and never any automatic reminder.
+     */
+    case "training_course_link": {
+      const trFirst = (data.employee_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your ${data.course_name || "training"} course</h2>
+        <p>Hi ${trFirst},</p>
+        <p>Your <strong>${data.course_name || "training"}</strong> course is ready for you to complete. It covers how we take and handle allergy orders, and finishes with a short exam.</p>
+        ${data.due_date ? `<p><strong>Please complete it by:</strong> ${data.due_date}</p>` : ""}
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.course_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Start my training</a>
+        </p>
+        <p>Sign in with your usual work account. It works on your phone, and your progress is saved as you go, so you can stop and come back.</p>
+        <p style="color:#666;">If the link does not open, please speak to your manager.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>${data.company_name || "Ugly Dumpling"} Team</strong></p>`;
+      break;
+    }
     case "induction_pack": {
       const indFirst = data.first_name || (data.employee_name || "").split(" ")[0] || "there";
       body = `
