@@ -134,12 +134,13 @@ export function LicensingDocumentPDF({
 
         <View style={s.signBlock}>
           <Text style={{ fontFamily: "Helvetica-Bold", color: DARK, marginBottom: 6 }}>AUTHORISED BY</Text>
-          {doc.signature_block.map((f) => (
+          {doc.signature_block.filter((f) => !isBlank(f.value)).map((f) => (
             <View key={f.label} style={s.factRow}>
               <Text style={s.factLabel}>{f.label}:</Text>
               <Text style={s.factValue}>{f.value}</Text>
             </View>
           ))}
+
           <View style={{ marginTop: 10 }}>
             {authoriserSignature
               ? <Image src={authoriserSignature} style={s.sigImage} />
