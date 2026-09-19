@@ -3,6 +3,8 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { allocateStaffDetails, STAFF_FIELD_RULES } from "@/lib/staff-details-allocation";
 import { INFO_PRESETS } from "@/lib/info-request-items";
+import { buildPortalSteps, isValidPhoneNumber } from "@/pages/StaffDetailsPortal";
+import { INFO_REQUEST_STATE_LABELS, infoRequestState } from "@/hooks/useInfoRequests";
 import { EMPLOYEE_COLUMNS, SENSITIVE_EMPLOYEE_COLUMNS, maskTail } from "@/lib/employee-columns";
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
