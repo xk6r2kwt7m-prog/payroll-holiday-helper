@@ -41,6 +41,7 @@ import { ContractVersionTimeline } from "./ContractVersionTimeline";
 import { CreateAmendmentDialog } from "./CreateAmendmentDialog";
 import { TerminateContractDialog } from "./TerminateContractDialog";
 import { useTenant } from "@/hooks/useTenant";
+import { ContractDetailDriftPanel } from "./ContractDetailDriftPanel";
 
 const deptStyles: Record<string, string> = {
   FOH: "bg-accent/10 text-accent",
