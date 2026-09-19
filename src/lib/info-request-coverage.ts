@@ -18,13 +18,18 @@ export interface CoverageEmployee {
   surname?: string | null;
   email?: string | null;
   date_of_birth?: string | null;
-  ni_number?: string | null;
   nationality?: string | null;
-  passport_no?: string | null;
-  residence_permit?: string | null;
-  sharing_code?: string | null;
-  sort_code?: string | null;
-  bank_account_no?: string | null;
+  settlement_status?: string | null;
+  /**
+   * Whether a protected value is held. The values themselves (National
+   * Insurance number, bank details, identity document numbers) are never read
+   * here — only whether they exist — so nothing sensitive passes through this
+   * calculation.
+   */
+  has_ni_number?: boolean | null;
+  has_passport?: boolean | null;
+  has_share_code?: boolean | null;
+  has_bank_details?: boolean | null;
 }
 
 export interface CoverageOnboarding {
@@ -64,13 +69,13 @@ export function computeInfoCoverage(
     phone: pick(personal, "phone", "mobile", "phone_number"),
     email: has(employee?.email) || pick(personal, "email"),
     address: pick(personal, "address", "home_address", "full_address", "address_line1"),
-    ni_number: has(employee?.ni_number) || pick(personal, "national_insurance", "ni_number"),
+    ni_number: !!employee?.has_ni_number || pick(personal, "national_insurance", "ni_number"),
     nationality: has(employee?.nationality) || pick(personal, "nationality"),
-    passport: has(employee?.passport_no) || pick(personal, "passport_no", "passport_number"),
-    visa: has(employee?.residence_permit) || pick(personal, "residence_permit", "visa_number"),
-    share_code: has(employee?.sharing_code) || pick(personal, "share_code", "sharing_code"),
+    passport: !!employee?.has_passport || pick(personal, "passport_no", "passport_number"),
+    visa: has(employee?.settlement_status) || pick(personal, "residence_permit", "visa_number"),
+    share_code: !!employee?.has_share_code || pick(personal, "share_code", "sharing_code"),
     bank:
-      (has(employee?.sort_code) && has(employee?.bank_account_no)) ||
+      !!employee?.has_bank_details ||
       (pick(bank, "sort_code") && pick(bank, "account_number", "account_no")),
     emergency: pick(emergency, "name", "contact_name") && pick(emergency, "phone", "contact_number"),
   };

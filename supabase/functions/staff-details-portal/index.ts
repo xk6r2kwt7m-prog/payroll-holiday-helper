@@ -83,6 +83,23 @@ Deno.serve(async (req) => {
 
     const emp: any = request.employees;
 
+    // When the link is tied to a contract, the same session carries on to it
+    // once the details are in, so nothing is asked for twice.
+    const contractSignPath = async (): Promise<string | null> => {
+      if (!request.contract_document_id) return null;
+      const { data: tok } = await admin
+        .from("signing_tokens")
+        .select("token, expires_at, used_at")
+        .eq("employee_document_id", request.contract_document_id)
+        .eq("signer_type", "employee")
+        .is("used_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return tok?.token ? `/sign/${tok.token}` : null;
+    };
+
     if (req.method === "GET") {
       if (!request.opened_at) {
         await admin
@@ -106,6 +123,9 @@ Deno.serve(async (req) => {
           expires_at: request.token_expires_at,
           requested_by_name: request.requested_by_name,
           rtw_uploaded_count: request.rtw_uploaded_count,
+          contract_document_id: request.contract_document_id ?? null,
+          contract_sign_path: await contractSignPath(),
+          last_saved_at: request.last_saved_at ?? null,
         },
         employee: {
           first_name: emp?.preferred_name || emp?.forename || "",
@@ -133,7 +153,11 @@ Deno.serve(async (req) => {
       const answers = typeof body.answers === "object" && body.answers ? body.answers : {};
       await admin
         .from("employee_info_requests")
-        .update({ submitted_data: { ...(request.submitted_data ?? {}), ...answers }, status: "in_progress" })
+        .update({
+          submitted_data: { ...(request.submitted_data ?? {}), ...answers },
+          status: "in_progress",
+          last_saved_at: new Date().toISOString(),
+        })
         .eq("id", request.id);
       return json({ success: true });
     }
@@ -222,6 +246,67 @@ Deno.serve(async (req) => {
       }
 
       const allocation = allocateStaffDetails(candidates, emp ?? {});
+
+      // Every submitted value is written to the review trail: what was already
+      // held, what was sent, and whether an administrator must decide. Bank
+      // details and National Insurance numbers are marked protected so only
+      // administrators can read the row at all.
+      const SENSITIVE_FIELDS = [
+        "ni_number",
+        "bank_account_no",
+        "sort_code",
+        "passport_no",
+        "sharing_code",
+        "residence_permit",
+      ];
+      const sectionOf = (field: string) =>
+        field === "bank_account_no" || field === "sort_code"
+          ? "bank"
+          : ["nationality", "passport_no", "sharing_code", "settlement_status"].includes(field)
+            ? "rtw"
+            : "personal";
+      const changeRows = [
+        ...allocation.filled.map((f) => ({
+          field_name: f.field,
+          field_label: f.label,
+          old_value: null as string | null,
+          new_value: f.value,
+          needs_review: false,
+          state: "accepted",
+          notes: "Filled a blank field on the staff record",
+        })),
+        ...allocation.conflicts.map((c) => ({
+          field_name: c.field,
+          field_label: c.label,
+          old_value: c.current,
+          new_value: c.submitted,
+          needs_review: true,
+          state: "pending",
+          notes: "Differs from the value already held — needs a manager decision",
+        })),
+        ...allocation.held.map((h) => ({
+          field_name: h.field,
+          field_label: h.label,
+          old_value: h.current || null,
+          new_value: h.submitted,
+          needs_review: true,
+          state: "pending",
+          notes:
+            "Bank details are not used for pay until an administrator confirms them directly with the employee",
+        })),
+      ].map((row) => ({
+        ...row,
+        tenant_id: request.tenant_id,
+        employee_id: request.employee_id,
+        request_id: request.id,
+        section: sectionOf(row.field_name),
+        sensitive: SENSITIVE_FIELDS.includes(row.field_name),
+        decided_at: row.state === "accepted" ? new Date().toISOString() : null,
+      }));
+      if (changeRows.length > 0) {
+        const { error: changeErr } = await admin.from("staff_detail_changes").insert(changeRows);
+        if (changeErr) console.error("could not record submitted changes:", changeErr.message);
+      }
       const empUpdates: Record<string, unknown> = { ...allocation.updates };
       if (Object.keys(empUpdates).length > 0) {
         const { error } = await admin.from("employees").update(empUpdates).eq("id", request.employee_id);
@@ -315,7 +400,7 @@ Deno.serve(async (req) => {
             personal_info: personalInfo,
             emergency_contact: emergencyContact,
             bank_details: bankDetails,
-            ...(rtwPending ? { rtw_status: "pending_review" } : {}),
+            ...(rtwPending ? { rtw_status: "submitted" } : {}),
           })
           .eq("id", existingOnb.id);
       } else {
@@ -325,7 +410,7 @@ Deno.serve(async (req) => {
           personal_info: personalInfo,
           emergency_contact: emergencyContact,
           bank_details: bankDetails,
-          ...(rtwPending ? { rtw_status: "pending_review" } : {}),
+          ...(rtwPending ? { rtw_status: "submitted" } : {}),
         });
       }
 
@@ -377,7 +462,7 @@ Deno.serve(async (req) => {
           employee_id: request.employee_id,
           sections,
           rtw_documents: request.rtw_uploaded_count ?? 0,
-          rtw_status: rtwPending ? "pending_review" : "not_submitted",
+          rtw_status: rtwPending ? "submitted" : "not_submitted",
           auto_allocated: allocation.filled.map((f) => f.field),
           needs_confirmation: allocation.conflicts.map((c) => ({
             field: c.field,
@@ -389,6 +474,7 @@ Deno.serve(async (req) => {
 
       return json({
         success: true,
+        contract_sign_path: await contractSignPath(),
         rtw_pending: rtwPending,
         allocated: allocation.filled.length,
         needs_confirmation: allocation.conflicts.length,

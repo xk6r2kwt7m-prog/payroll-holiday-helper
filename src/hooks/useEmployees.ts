@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
 import { assertPermission } from "@/lib/permission-guard";
+import { EMPLOYEE_COLUMNS } from "@/lib/employee-columns";
 
 /**
  * Employee type extended with date_of_birth.
@@ -33,7 +34,7 @@ export function useEmployees(includeArchived = false) {
 
       let query = supabase
         .from("employees")
-        .select("*")
+        .select(EMPLOYEE_COLUMNS)
         .eq("tenant_id", tenantId)
         .order("forename");
 
@@ -55,7 +56,7 @@ export function useEmployee(id: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
-        .select("*")
+        .select(EMPLOYEE_COLUMNS)
         .eq("id", id)
         .single();
       
@@ -77,7 +78,7 @@ export function useCreateEmployee() {
       const { data, error } = await supabase
         .from("employees")
         .insert(employee)
-        .select()
+        .select(EMPLOYEE_COLUMNS)
         .single();
       
       if (error) throw error;
@@ -107,7 +108,7 @@ export function useUpdateEmployee() {
         .from("employees")
         .update(payload)
         .eq("id", id)
-        .select()
+        .select(EMPLOYEE_COLUMNS)
         .single();
       
       if (error) throw error;

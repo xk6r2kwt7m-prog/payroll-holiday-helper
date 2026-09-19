@@ -1273,7 +1273,7 @@ export function ContractSigningActions({
                       Copy link
                     </Button>
                     <p className="text-[10px] text-muted-foreground text-center">
-                      Share this link via WhatsApp, email, or any messenger. The signer does not need an account.
+                      Send this link by email or through the secure portal — the normal route for anything personal. The signer does not need an account.
                     </p>
                   </div>
                 )}

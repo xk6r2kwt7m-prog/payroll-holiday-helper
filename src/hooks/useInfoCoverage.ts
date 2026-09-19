@@ -21,7 +21,7 @@ export function useInfoCoverage(employeeId?: string, enabled = true) {
           supabase
             .from("employees")
             .select(
-              "forename, surname, email, date_of_birth, ni_number, nationality, passport_no, residence_permit, sharing_code, sort_code, bank_account_no",
+              "forename, surname, email, date_of_birth, nationality, settlement_status, has_ni_number, has_passport, has_share_code, has_bank_details",
             )
             .eq("id", employeeId!)
             .maybeSingle(),
@@ -56,7 +56,7 @@ export function useBulkInfoCoverage(employeeIds: string[], enabled = true) {
           supabase
             .from("employees")
             .select(
-              "id, forename, surname, email, date_of_birth, ni_number, nationality, passport_no, residence_permit, sharing_code, sort_code, bank_account_no",
+              "id, forename, surname, email, date_of_birth, nationality, settlement_status, has_ni_number, has_passport, has_share_code, has_bank_details",
             )
             .in("id", ids),
           supabase

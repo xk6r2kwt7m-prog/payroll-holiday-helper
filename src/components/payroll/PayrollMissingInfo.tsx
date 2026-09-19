@@ -70,9 +70,8 @@ export function PayrollMissingInfo({
 
     const missing: MissingField[] = [];
 
-    if (!emp.bank_account_no) missing.push({ label: "Bank account number", tab: "banking" });
-    if (!emp.sort_code) missing.push({ label: "Sort code", tab: "banking" });
-    if (!emp.ni_number) missing.push({ label: "National Insurance number", tab: "personal" });
+    if (!emp.has_bank_details) missing.push({ label: "Bank details for pay", tab: "banking" });
+    if (!emp.has_ni_number) missing.push({ label: "National Insurance number", tab: "personal" });
     if (!(emp as any).date_of_birth) missing.push({ label: "Date of birth", tab: "personal" });
 
     // RTW warning is only meaningful for a true current-period starter.

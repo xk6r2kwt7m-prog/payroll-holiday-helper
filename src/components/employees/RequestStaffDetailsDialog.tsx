@@ -168,10 +168,60 @@ export function RequestStaffDetailsDialog({
               </ul>
             </div>
 
+            <div className="space-y-1">
+              <Label>Link expiry</Label>
+              <p id="confirm-request-expiry" className="text-sm text-card-foreground">
+                {(() => {
+                  const days = Number(expiryDays) || 7;
+                  const when = new Date(Date.now() + days * 86400000);
+                  return `${days} day${days > 1 ? "s" : ""} — until ${when.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`;
+                })()}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <Label>The email they will get</Label>
+              <div
+                id="confirm-request-email-preview"
+                className="rounded-lg border border-border bg-muted/40 p-3 text-sm text-card-foreground space-y-2"
+              >
+                <p className="font-medium">
+                  Subject:{" "}
+                  {kind === "onboarding"
+                    ? "Please complete your details"
+                    : "We need a couple of details from you"}
+                </p>
+                <p className="font-semibold">Please complete your details</p>
+                <p>Hi {employeeName.split(" ")[0]},</p>
+                <p>
+                  We need a few details from you before your first shift. It takes about 5 minutes
+                  on your phone and you do not need an account.
+                </p>
+                <p>
+                  <span className="font-medium">You will be asked for:</span>{" "}
+                  {selected.map((k) => INFO_ITEMS.find((i) => i.key === k)?.label ?? k).join(", ")}
+                </p>
+                <p className="font-medium text-primary">[ Complete my details ]</p>
+                <p>
+                  If you are asked for your right to work document, you can take a photo of it with
+                  your phone camera.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  This link is personal to you and expires on the date above. Please do not forward it.
+                </p>
+                <p>Thank you, Ugly Dumpling Team</p>
+                <p className="text-xs text-muted-foreground">
+                  The button is their own secure link. The email contains nothing else about them —
+                  no address, bank details or National Insurance number.
+                </p>
+              </div>
+            </div>
+
             <p className="text-xs text-muted-foreground">
               They get a secure link that closes as soon as they finish. Nothing here changes their pay
               or hours, and anything sensitive that differs from what you already hold is shown to you to
-              confirm rather than changed.
+              confirm rather than changed. Bank details never take effect until you confirm them with
+              the person directly.
             </p>
 
             <div className="flex gap-2">

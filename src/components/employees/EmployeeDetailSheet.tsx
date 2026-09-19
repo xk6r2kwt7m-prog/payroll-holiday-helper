@@ -20,7 +20,9 @@ import { cn } from "@/lib/utils";
 import { checkPayRisk, type PayRiskResult } from "@/lib/age-band";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { SubmittedDetailsReview } from "./SubmittedDetailsReview";
+import { StaffChangesReview } from "./StaffChangesReview";
 import { EmployeePrivacyLog } from "./EmployeePrivacyLog";
+import { useSensitiveEmployeeFields } from "@/hooks/useSensitiveEmployeeFields";
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
@@ -114,6 +116,10 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
   const [searchParams] = useSearchParams();
   const deepLinkTab = searchParams.get("tab") || undefined;
   const [editOpen, setEditOpen] = useState(false);
+  // The database does not return bank details, National Insurance numbers or
+  // identity document numbers with an ordinary staff query. They are read here
+  // only when this sheet is open, and only for administrators.
+  const { data: heldSensitive } = useSensitiveEmployeeFields(employee.id, open && canViewSensitive);
 
   if (!employee) return null;
 
@@ -216,6 +222,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
         <div className="space-y-6 pb-6">
           {/* Details the staff member sent that differ from our record */}
           {isAdmin && <SubmittedDetailsReview employeeId={employee.id} />}
+          {canViewSensitive && <StaffChangesReview employeeId={employee.id} />}
 
           {/* Personal Information */}
           <Section title="Personal Information" icon={User}>
@@ -242,7 +249,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
               {canViewSensitive && (
                 <SensitiveInfoRow
                   label="Passport Number"
-                  value={employee.passport_no}
+                  value={heldSensitive?.passport_no}
                   fieldKey={`detail-${employee.id}-passport`}
                   category="personal_id"
                   employeeId={employee.id}
@@ -252,7 +259,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
               {canViewSensitive && (
                 <SensitiveInfoRow
                   label="National Insurance"
-                  value={employee.ni_number}
+                  value={heldSensitive?.ni_number}
                   fieldKey={`detail-${employee.id}-ni`}
                   category="personal_id"
                   employeeId={employee.id}
@@ -292,7 +299,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
           </Section>
 
           {/* Banking Details — Admin only, privacy shielded */}
-          {canViewSensitive && (employee.sort_code || employee.bank_account_no) && (
+          {canViewSensitive && (heldSensitive?.sort_code || heldSensitive?.bank_account_no) && (
             <SensitiveSection
               sectionKey={`detail-${employee.id}-bank`}
               category="personal_id"
@@ -301,8 +308,8 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             >
               <Section title="Banking Details" icon={CreditCard}>
                 <div className="space-y-1">
-                  <InfoRow label="Sort Code" value={employee.sort_code} mono />
-                  <InfoRow label="Account Number" value={employee.bank_account_no} mono />
+                  <InfoRow label="Sort Code" value={heldSensitive?.sort_code} mono />
+                  <InfoRow label="Account Number" value={heldSensitive?.bank_account_no} mono />
                 </div>
               </Section>
             </SensitiveSection>

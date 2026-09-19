@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { EMPLOYEE_COLUMNS } from "@/lib/employee-columns";
 import { useTenant } from "@/hooks/useTenant";
 import type { Employee } from "@/hooks/useEmployees";
 
@@ -165,7 +166,7 @@ function checkRequirement(
         ? "complete" : "missing";
 
     case "bank_details":
-      return (employee.bank_account_no || onboardingData?.bank_details?.account_number)
+      return (employee.has_bank_details || onboardingData?.bank_details?.account_number)
         ? "complete" : "missing";
 
     case "right_to_work": {
@@ -358,7 +359,7 @@ export function useEmployeeReadiness(employeeId?: string) {
       if (!employeeId || !tenantId) return null;
 
       const [empRes, onbRes, docsRes, sigRes, availRes, trainRes, libRes, assignRes] = await Promise.all([
-        supabase.from("employees").select("*").eq("id", employeeId).single(),
+        supabase.from("employees").select(EMPLOYEE_COLUMNS).eq("id", employeeId).single(),
         supabase.from("employee_onboarding_data" as any).select("*").eq("employee_id", employeeId).maybeSingle(),
         supabase.from("employee_documents").select("*").eq("employee_id", employeeId),
         supabase.from("contract_signatures").select("*").eq("employee_id", employeeId),

@@ -45,6 +45,8 @@ interface StepDef {
   icon: typeof User;
   fields: FieldDef[];
   upload?: boolean;
+  /** Shows the "I do not have one yet" tick box. */
+  noNiOption?: boolean;
 }
 
 /**
@@ -104,9 +106,10 @@ function buildSteps(items: readonly string[]): StepDef[] {
   if (has("ni_number")) {
     steps.push({
       id: "ni", section: "personal", title: "National Insurance number",
-      blurb: "Leave this blank if you do not have one yet — you can still carry on.", icon: ShieldCheck,
+      blurb: "If you do not have one yet, tick the box — you can still carry on.", icon: ShieldCheck,
+      noNiOption: true,
       fields: [
-        { key: "ni_number", label: "National Insurance number (optional)", placeholder: "AB123456C", hint: "Two letters, six numbers, then one letter — for example AB123456C." },
+        { key: "ni_number", label: "National Insurance number", placeholder: "AB123456C", hint: "Two letters, six numbers, then one letter — for example AB123456C." },
       ],
     });
   }
@@ -186,6 +189,10 @@ function buildSteps(items: readonly string[]): StepDef[] {
 
 export const buildPortalSteps = buildSteps;
 
+/** Shown on every pay screen, so nobody is fooled by a message pretending to be us. */
+export const PAYROLL_SECURITY_NOTICE =
+  "Ugly Dumpling will never ask for your online-banking password, PIN, card security code or verification code.";
+
 /** Always the last question — anything the person wants their manager to know. */
 const NOTES_STEP: StepDef = {
   id: "notes", section: "notes", title: "Anything you'd like to add?",
@@ -206,6 +213,9 @@ interface PortalData {
     expires_at: string;
     requested_by_name: string | null;
     rtw_uploaded_count: number;
+    contract_document_id?: string | null;
+    contract_sign_path?: string | null;
+    last_saved_at?: string | null;
   };
   employee: { first_name: string; full_name: string };
   saved: Record<string, Record<string, string>>;
@@ -223,7 +233,11 @@ export default function StaffDetailsPortal() {
   const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({});
   const [editingRow, setEditingRow] = useState<string | null>(null);
   /** Set locally the moment sending succeeds, so the thank you screen never depends on re-opening the link. */
-  const [sent, setSent] = useState<{ rtwPending: boolean } | null>(null);
+  const [sent, setSent] = useState<{ rtwPending: boolean; contractPath?: string | null } | null>(null);
+  /** The opening screen is shown until they choose to start. */
+  const [started, setStarted] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [noNi, setNoNi] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -236,6 +250,8 @@ export default function StaffDetailsPortal() {
       else {
         setData(json);
         setUploads(json.request.rtw_uploaded_count ?? 0);
+        setSavedAt(json.request.last_saved_at ?? null);
+        setNoNi(json.saved?.personal?.no_ni_number === "yes");
         setAnswers({
           personal: {
             forename: json.saved?.personal?.forename ?? json.prefill.forename ?? "",
@@ -300,6 +316,14 @@ export default function StaffDetailsPortal() {
   const isReview = steps.length > 0 && step >= steps.length;
   const current = steps[step];
 
+  const setNoNiChoice = (value: boolean) => {
+    setNoNi(value);
+    setAnswers((a) => ({
+      ...a,
+      personal: { ...(a.personal ?? {}), no_ni_number: value ? "yes" : "", ...(value ? { ni_number: "" } : {}) },
+    }));
+  };
+
   const set = (section: string, field: string, value: string) =>
     setAnswers((a) => ({ ...a, [section]: { ...(a[section] ?? {}), [field]: value } }));
 
@@ -315,6 +339,9 @@ export default function StaffDetailsPortal() {
 
       if (s.section === "personal") {
         const ni = (a.ni_number ?? "").trim();
+        if (!ni && !noNi && s.noNiOption) {
+          list.push("Please give your National Insurance number, or tick that you do not have one yet");
+        }
         if (ni && !isValidNiNumber(ni)) {
           list.push("That National Insurance number does not look right (for example AB123456C). Leave it blank if you do not have one");
         }
@@ -331,14 +358,30 @@ export default function StaffDetailsPortal() {
       }
     }
     return list;
-  }, [answers, uploads]);
+  }, [answers, uploads, noNi]);
 
   const stepProblems = useMemo(() => (current ? problems([current]) : []), [current, problems]);
   const reviewProblems = useMemo(() => problems(steps), [steps, problems]);
 
-  const saveProgress = async () => {
-    try { await post({ action: "save", answers: cleanAnswers() }); } catch { /* progress save is best effort */ }
-  };
+  const saveProgress = useCallback(async () => {
+    try {
+      await post({ action: "save", answers: cleanAnswers() });
+      setSavedAt(new Date().toISOString());
+    } catch {
+      /* saving again shortly is enough — nothing typed is lost from the screen */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cleanAnswers, token]);
+
+  /**
+   * Answers save on their own a couple of seconds after typing stops, so the
+   * form can be closed and picked up again later on any device.
+   */
+  useEffect(() => {
+    if (!data || !started || data.request.submitted_at || sent) return;
+    const timer = setTimeout(() => { void saveProgress(); }, 2000);
+    return () => clearTimeout(timer);
+  }, [answers, noNi, data, started, sent, saveProgress]);
 
   const next = async () => {
     if (stepProblems.length > 0) {
@@ -360,7 +403,10 @@ export default function StaffDetailsPortal() {
     setBusy(true);
     try {
       const res = await post({ action: "submit", answers: cleanAnswers() });
-      setSent({ rtwPending: Boolean(res.rtw_pending) });
+      setSent({
+        rtwPending: Boolean(res.rtw_pending),
+        contractPath: (res.contract_sign_path as string | null) ?? data?.request.contract_sign_path ?? null,
+      });
       window.scrollTo({ top: 0 });
     } catch (e) {
       toast.error((e as Error).message);
@@ -397,7 +443,7 @@ export default function StaffDetailsPortal() {
     }
   };
 
-  const thankYou = (rtwPending: boolean, firstName?: string) => (
+  const thankYou = (rtwPending: boolean, firstName?: string, contractPath?: string | null) => (
     <div className="min-h-screen flex items-center justify-center p-6 bg-muted/30">
       <div className="max-w-sm text-center space-y-3">
         <CheckCircle2 className="h-12 w-12 text-success mx-auto" />
@@ -412,14 +458,19 @@ export default function StaffDetailsPortal() {
             ? "Your right to work document will be checked by your manager, who will confirm it with you."
             : "Your manager will be in touch if anything else is needed."}
         </p>
+        {contractPath && (
+          <Button size="lg" className="w-full" onClick={() => { window.location.href = contractPath; }}>
+            Continue to your contract
+          </Button>
+        )}
         <p className="text-xs text-muted-foreground">
-          This link is now closed. Contact your manager if something needs changing.
+          This link is now read-only. Contact your manager if something needs changing.
         </p>
       </div>
     </div>
   );
 
-  if (sent) return thankYou(sent.rtwPending, data?.employee.first_name);
+  if (sent) return thankYou(sent.rtwPending, data?.employee.first_name, sent.contractPath);
 
   if (loading) {
     return (
@@ -443,7 +494,67 @@ export default function StaffDetailsPortal() {
     );
   }
 
-  if (data.request.submitted_at) return thankYou(false, data.employee.first_name);
+  if (data.request.submitted_at)
+    return thankYou(false, data.employee.first_name, data.request.contract_sign_path);
+
+  // Opening screen: who is asking, why, and how long the link lasts.
+  if (!started) {
+    const expires = new Date(data.request.expires_at);
+    const expiresLabel = expires.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    const askedFor = steps.filter((st) => st.id !== "notes").map((st) => st.title);
+    return (
+      <div className="min-h-screen bg-muted/30 px-4 py-8">
+        <div className="max-w-md mx-auto space-y-5">
+          <div className="text-center space-y-2">
+            <Badge variant="outline" className="text-[10px]">Ugly Dumpling</Badge>
+            <h1 className="text-xl font-semibold text-foreground">
+              Hi {data.employee.first_name || "there"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Ugly Dumpling needs a few details to add you to the team properly — for your
+              employment record, to pay you correctly, and to meet the checks we are required
+              by law to complete.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              What we will ask for
+            </p>
+            <ul className="text-sm text-foreground space-y-1">
+              {askedFor.map((title) => <li key={title}>• {title}</li>)}
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-4 space-y-2 text-sm text-muted-foreground">
+            <p className="flex items-start gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <span>
+                This link is yours alone. Your answers save as you go, so you can close this
+                page and come back before sending.
+              </span>
+            </p>
+            <p className="flex items-start gap-2">
+              <ClipboardCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <span>It takes about five minutes, and the link works until {expiresLabel}.</span>
+            </p>
+            {savedAt && (
+              <p className="text-xs text-success">
+                You have already started this form — your answers are still here.
+              </p>
+            )}
+          </div>
+
+          <Button size="lg" className="w-full" onClick={() => setStarted(true)}>
+            {savedAt ? "Carry on where I left off" : "Start"}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            {PAYROLL_SECURITY_NOTICE}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const totalScreens = steps.length + 1;
   const progress = Math.round(((isReview ? steps.length : step) / totalScreens) * 100);
@@ -488,6 +599,9 @@ export default function StaffDetailsPortal() {
           <Badge variant="outline" className="text-[10px] shrink-0">Ugly Dumpling</Badge>
         </div>
         <Progress value={progress} className="h-1.5 mt-2" />
+        <p className="text-[10px] text-muted-foreground mt-1">
+          {savedAt ? "Saved — you can close this page and come back" : "Your answers save as you go"}
+        </p>
       </header>
 
       <main className="px-4 py-5 space-y-5 max-w-md mx-auto">
@@ -515,6 +629,24 @@ export default function StaffDetailsPortal() {
                 onChange={(v) => set(current.section, f.key, v)}
               />
             ))}
+
+            {current.noNiOption && (
+              <label className="flex items-start gap-2 pt-1 text-sm text-foreground">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4"
+                  checked={noNi}
+                  onChange={(e) => setNoNiChoice(e.target.checked)}
+                />
+                <span>I do not have a National Insurance number yet</span>
+              </label>
+            )}
+
+            {current.section === "bank" && (
+              <p className="text-xs text-muted-foreground border-t border-border pt-3">
+                {PAYROLL_SECURITY_NOTICE}
+              </p>
+            )}
 
             {current.upload && (
               <div className="pt-2 space-y-2">

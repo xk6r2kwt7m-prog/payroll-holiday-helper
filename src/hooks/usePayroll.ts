@@ -74,15 +74,13 @@ export function usePayrollEntries(periodId?: string) {
             status,
             hourly_rate,
             service_charge,
-            bank_account_no,
-            sort_code,
-            ni_number,
             date_of_birth,
             service_charge_eligible,
-            passport_no,
-            sharing_code,
             settlement_status,
-            residence_permit
+            has_bank_details,
+            has_ni_number,
+            has_passport,
+            has_share_code
           )
         `)
         .eq("tenant_id", tenantId)

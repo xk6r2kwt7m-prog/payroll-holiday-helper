@@ -47,6 +47,7 @@ Deno.serve(async (req) => {
     const tenantId: string = body?.tenant_id;
     const action: string = body?.action || "send";
     const employeeIds: string[] = body?.employeeIds || [];
+    const contractDocumentId: string | null = body?.contractDocumentId ?? null;
     const sections: string[] = (body?.sections || ["personal", "emergency", "bank", "rtw"]).filter(
       (s: string) => ALLOWED_FIELDS.includes(s),
     );
@@ -192,6 +193,9 @@ Deno.serve(async (req) => {
           requested_by: callerId,
           requested_by_name: issuerName,
           status: "sent",
+          // When the request was raised from a contract, the same session
+          // carries straight on to signing once the details are in.
+          ...(contractDocumentId ? { contract_document_id: contractDocumentId } : {}),
         })
         .select()
         .single();

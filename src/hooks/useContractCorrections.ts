@@ -15,6 +15,7 @@
 import { pdf } from "@react-pdf/renderer";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { EMPLOYEE_COLUMNS } from "@/lib/employee-columns";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
@@ -35,7 +36,7 @@ export function useHeldContractDetails(employeeId: string | null | undefined) {
     queryFn: async () => {
       const { data: employee, error } = await supabase
         .from("employees")
-        .select("*")
+        .select(EMPLOYEE_COLUMNS)
         .eq("id", employeeId!)
         .maybeSingle();
       if (error) throw error;

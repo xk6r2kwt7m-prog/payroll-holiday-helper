@@ -1707,7 +1707,7 @@ export function ContractFormDialog({ open, onOpenChange, preselectedEmployeeId }
               </div>
 
               <p className="text-[10px] text-muted-foreground text-center">
-                Links expire in 7 days. Share via WhatsApp, email, or any messenger. No login needed.
+                Links expire in 7 days and need no login. Send it through the secure portal or by email — the usual route for anything personal.
               </p>
             </div>
           )}
