@@ -76,18 +76,19 @@ export function AlcoholAuthorisationBoard() {
 
   const totals = useMemo(() => sites.reduce(
     (acc, s) => ({
-      authorised: acc.authorised + s.summary.authorised,
+      covered: acc.covered + s.summary.covered,
+      signed: acc.signed + s.summary.signed,
       awaitingSignature: acc.awaitingSignature + s.summary.awaitingSignature,
-      awaitingApproval: acc.awaitingApproval + s.summary.awaitingApproval,
-      notAuthorised: acc.notAuthorised + s.summary.notAuthorised,
     }),
-    { authorised: 0, awaitingSignature: 0, awaitingApproval: 0, notAuthorised: 0 },
+    { covered: 0, signed: 0, awaitingSignature: 0 },
   ), [sites]);
 
-  const emptySites = useMemo(
-    () => sites.filter((s) => s.summary.nobodyAuthorised).map((s) => s.branch),
+  const outstandingSites = useMemo(
+    () => sites.filter((s) => s.summary.awaitingSignature > 0),
     [sites],
   );
+  const outstandingCount = outstandingSites.reduce((n, s) => n + s.summary.awaitingSignature, 0);
+
 
   const siteFor = (branch: string): LicenceSite => {
     const l = (licences as any[]).find((x) => x.branch === branch);
