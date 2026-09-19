@@ -24,11 +24,8 @@ import {
   type AuthorisationRecord,
 } from "@/lib/alcohol-authorisation-status";
 
-export type RegisterStatus =
-  | "authorised"
-  | "awaiting_approval"
-  | "awaiting_signature"
-  | "not_authorised";
+export type RegisterStatus = "signed" | "awaiting_signature";
+
 
 export interface RegisterEmployee {
   id: string;
