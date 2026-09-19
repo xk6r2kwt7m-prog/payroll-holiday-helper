@@ -22,7 +22,7 @@ import { getActiveEmploymentTerms } from "@/lib/employment-terms";
 import { mapEmployeeToContractDefaults } from "@/lib/contract-employee-defaults";
 import type { ContractVariables, ContractType } from "@/components/contracts/contractTemplates";
 import { ContractPDF } from "@/components/contracts/ContractPDF";
-import { CONTRACT_TEMPLATE_VERSION, CURRENT_CONTRACT_TEMPLATE } from "@/components/contracts/contractClauses";
+import { CONTRACT_TEMPLATE_VERSION, CURRENT_CONTRACT_TEMPLATE } from "@/lib/contract-template-version";
 import { canReissueContract, LOCKED_CONTRACT_STATES } from "@/lib/contract-detail-drift";
 import { createElement } from "react";
 
