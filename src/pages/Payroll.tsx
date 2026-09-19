@@ -14,6 +14,7 @@ import { formatCurrency, formatHours, useHolidayPayments } from "@/hooks/useHoli
 import { AddHolidayPaymentDialog } from "@/components/holidays/AddHolidayPaymentDialog";
 import { SettleLeaverDialog } from "@/components/holidays/SettleLeaverDialog";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useTenantSensitiveFields } from "@/hooks/useSensitiveEmployeeFields";
 import { ImportPayrollDialog } from "@/components/payroll/ImportPayrollDialog";
 import { TimesheetAliasManager } from "@/components/payroll/TimesheetAliasManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -160,6 +161,14 @@ const Payroll = () => {
   }, [priorEntries]);
   const { data: holidayPayments = [] } = useHolidayPayments(selectedPeriod?.id);
   const { data: allEmployees = [] } = useEmployees();
+  // Bank details and National Insurance numbers are not part of an ordinary
+  // staff query. Payroll files need the real values, so they are fetched
+  // separately and only ever returned to an administrator.
+  const { data: protectedFields = {} } = useTenantSensitiveFields();
+  const held = useCallback(
+    (id?: string | null) => (id ? protectedFields[id] : undefined),
+    [protectedFields],
+  );
   const currentEmployeeIds = entries.map((entry: any) => entry.employee_id);
   const { unresolvedIssues, excludedNames } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
   const blockingIssues = unresolvedIssues.filter(i => !reviewedIssueNames.has(i.csvName));
@@ -675,8 +684,8 @@ const Payroll = () => {
             `"${emp?.forename} ${emp?.surname}"`, `"${emp?.department || ""}"`,
             `"${emp?.status || ""}"`, marker,
             `"${sr.locationName}"`, sr.locationHours, `"${sr.locationDepartment || ""}"`, sr.employeeTotalHours,
-            `"${emp?.ni_number || ""}"`,
-            ...(includeBankDetails ? [`"${(emp as any)?.sort_code || ""}"`, `"${(emp as any)?.bank_account_no || ""}"`] : []),
+            `"${held(emp?.id)?.ni_number || ""}"`,
+            ...(includeBankDetails ? [`"${held(emp?.id)?.sort_code || ""}"`, `"${held(emp?.id)?.bank_account_no || ""}"`] : []),
             sr.entry.hourly_rate, sr.entry.service_charge || 0,
             sr.entry.performance_bonus || 0, sr.entry.special_bonus || 0,
             sr.entry.holiday_accrued_hours || 0, sr.entry.total_pay,
@@ -710,8 +719,8 @@ const Payroll = () => {
           return [
             `"${emp?.forename} ${emp?.surname}"`, `"${emp?.department}"`, `"${emp?.status || ""}"`,
             marker,
-            `"${emp?.ni_number || ""}"`,
-            ...(includeBankDetails ? [`"${emp?.sort_code || ""}"`, `"${emp?.bank_account_no || ""}"`] : []),
+            `"${held(emp?.id)?.ni_number || ""}"`,
+            ...(includeBankDetails ? [`"${held(emp?.id)?.sort_code || ""}"`, `"${held(emp?.id)?.bank_account_no || ""}"`] : []),
             entry.hourly_rate, entry.service_charge || 0, entry.timesheet_hours,
             entry.performance_bonus || 0, entry.special_bonus || 0,
             entry.holiday_accrued_hours || 0, entry.total_pay,
@@ -751,7 +760,12 @@ const Payroll = () => {
           entryEmployeeIds,
         });
         return starterHere || leaverHere;
-      });
+      }).map((emp) => ({
+        ...emp,
+        ni_number: held(emp.id)?.ni_number ?? null,
+        sort_code: held(emp.id)?.sort_code ?? null,
+        bank_account_no: held(emp.id)?.bank_account_no ?? null,
+      }));
 
       const logoUrl = `${window.location.origin}/logo.jpeg`;
       const blob = await pdf(
