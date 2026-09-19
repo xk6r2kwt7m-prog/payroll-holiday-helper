@@ -114,7 +114,9 @@ export function registerStatusFor(
     status: employee.status ?? null,
     archived_at: employee.archived_at ?? null,
   });
-  const signed = !!record.employee_signed_at && effective !== "revoked";
+  const live = effective === "active" || effective === "pending";
+  const signed = !!record.employee_signed_at && live;
+
   return { status: signed ? "signed" : "awaiting_signature", record };
 }
 
