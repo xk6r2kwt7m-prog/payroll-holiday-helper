@@ -7,14 +7,7 @@
  * use the `has_…` flags below to tell whether something is held, and
  * administrators read the real values through `useSensitiveEmployeeFields`.
  */
-export const EMPLOYEE_COLUMNS =
-  "id, employee_ref, forename, surname, preferred_name, email, department, status, " +
-  "hourly_rate, service_charge, service_charge_eligible, nationality, settlement_status, " +
-  "start_date, end_date, notes, created_at, updated_at, user_id, archived_at, tenant_id, " +
-  "employing_entity, contract_country, work_country, work_region, pay_type, pay_amount, " +
-  "holiday_entitlement_method, public_holiday_calendar, overtime_model, onboarding_token, " +
-  "onboarding_token_expires_at, date_of_birth, import_aliases, is_test_record, " +
-  "has_ni_number, has_bank_details, has_passport, has_share_code";
+export const EMPLOYEE_COLUMNS = "id, employee_ref, forename, surname, preferred_name, email, department, status, hourly_rate, service_charge, service_charge_eligible, nationality, settlement_status, start_date, end_date, notes, created_at, updated_at, user_id, archived_at, tenant_id, employing_entity, contract_country, work_country, work_region, pay_type, pay_amount, holiday_entitlement_method, public_holiday_calendar, overtime_model, onboarding_token, onboarding_token_expires_at, date_of_birth, import_aliases, is_test_record, has_ni_number, has_bank_details, has_passport, has_share_code" as const;
 
 /** The values only administrators may read. */
 export const SENSITIVE_EMPLOYEE_COLUMNS = [
