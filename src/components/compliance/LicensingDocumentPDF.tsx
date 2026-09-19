@@ -80,12 +80,13 @@ export function LicensingDocumentPDF({
         <Text style={s.title}>{doc.title}</Text>
         {doc.subtitle && <Text style={s.subtitle}>{doc.subtitle}</Text>}
 
-        {doc.facts.map((f) => (
+        {doc.facts.filter((f) => !isBlank(f.value)).map((f) => (
           <View key={f.label} style={s.factRow}>
             <Text style={s.factLabel}>{f.label}:</Text>
             <Text style={s.factValue}>{f.value}</Text>
           </View>
         ))}
+
 
         {doc.paragraphs.map((p, i) => (
           <Text key={i} style={s.para}>{p}</Text>
