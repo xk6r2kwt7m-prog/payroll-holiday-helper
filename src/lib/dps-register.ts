@@ -237,27 +237,30 @@ export function unclassifiedForSite(opts: {
 
 export function registerSummary(rows: RegisterRow[]): RegisterSummary {
   const count = (s: RegisterStatus) => rows.filter((r) => r.status === s).length;
-  const authorised = count("authorised");
+  const signed = count("signed");
   return {
-    listed: rows.length,
-    authorised,
+    covered: rows.length,
+    signed,
     awaitingSignature: count("awaiting_signature"),
-    awaitingApproval: count("awaiting_approval"),
-    notAuthorised: count("not_authorised"),
-    nobodyAuthorised: authorised === 0,
+    noneSigned: signed === 0,
   };
 }
 
 export function registerSummaryLine(rows: RegisterRow[], branch: string): string {
   const s = registerSummary(rows);
-  if (s.listed === 0) {
-    return `No front-of-house staff are recorded for ${branch}. Nobody may sell alcohol here.`;
+  if (s.covered === 0) {
+    return `No front-of-house staff are recorded for ${branch} yet.`;
   }
-  if (s.nobodyAuthorised) {
-    return `Nobody at ${branch} is currently authorised to sell alcohol. Alcohol must not be sold until the licence holder has authorised at least one person.`;
-  }
-  return `${s.authorised} of ${s.listed} people listed are currently authorised to sell alcohol at ${branch}.`;
+  return `${s.signed} of ${s.covered} front-of-house staff listed for ${branch} have signed this authorisation.`;
 }
+
+/** Plain note about outstanding signatures. Never a statement that selling must stop. */
+export function outstandingSignatureLine(rows: RegisterRow[], branch: string): string | null {
+  const s = registerSummary(rows);
+  if (s.awaitingSignature === 0) return null;
+  return `${s.awaitingSignature} of ${s.covered} front-of-house staff at ${branch} have not signed this authorisation yet.`;
+}
+
 
 function gbDate(iso?: string | null): string {
   if (!iso) return "";
