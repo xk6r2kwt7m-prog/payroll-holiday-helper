@@ -65,6 +65,7 @@ export type ComplianceAuditEvent =
   | "allergen_preview_session_reset"
   | "allergen_course_link_emailed"
   | "allergen_course_link_email_failed"
+  | "allergen_material_approved"
   | "alcohol_list_decision_recorded";
 
 export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
@@ -127,6 +128,7 @@ export const COMPLIANCE_AUDIT_LABELS: Record<ComplianceAuditEvent, string> = {
   allergen_certificate_superseded: "Allergen certificate superseded",
   allergen_renewal_settings_changed: "Allergen validity and reminder settings changed",
   allergen_course_published: "Allergen course version published",
+  allergen_material_approved: "Allergen training material approved by management",
   alcohol_list_decision_recorded: "Alcohol list — front of house decided by the manager",
 };
 
