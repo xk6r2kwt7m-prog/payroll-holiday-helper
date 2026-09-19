@@ -41,6 +41,7 @@ import { ContractVersionTimeline } from "./ContractVersionTimeline";
 import { CreateAmendmentDialog } from "./CreateAmendmentDialog";
 import { TerminateContractDialog } from "./TerminateContractDialog";
 import { useTenant } from "@/hooks/useTenant";
+import { ContractDetailDriftPanel } from "./ContractDetailDriftPanel";
 
 const deptStyles: Record<string, string> = {
   FOH: "bg-accent/10 text-accent",
@@ -67,6 +68,7 @@ interface ContractRow {
   requires_details_first?: boolean | null;
   details_submitted_at?: string | null;
   review_accepted_at?: string | null;
+  terms_snapshot?: Record<string, unknown> | null;
   employees?: {
     id: string;
     forename: string;
@@ -488,6 +490,16 @@ export function SignedContractsList({ onlyStates, emptyTitle, emptyDescription }
                   <p className="mt-2 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-2 text-xs text-amber-800">
                     {staleness.warning}
                   </p>
+                )}
+
+                {/* Field-level comparison against the details we hold today */}
+                {current.employees?.id && (
+                  <ContractDetailDriftPanel
+                    contractId={current.id}
+                    employeeId={current.employees.id}
+                    contractState={state}
+                    termsSnapshot={current.terms_snapshot as never}
+                  />
                 )}
 
                 {/* Next step for this contract */}
