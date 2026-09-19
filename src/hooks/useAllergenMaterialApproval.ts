@@ -35,7 +35,7 @@ export function useAllergenMaterialApproval() {
         .order("created_at", { ascending: false })
         .limit(1);
       if (error) throw error;
-      return ((data ?? [])[0] ?? null) as MaterialApprovalRow | null;
+      return (((data ?? []) as unknown as MaterialApprovalRow[])[0] ?? null) as MaterialApprovalRow | null;
     },
   });
 }
