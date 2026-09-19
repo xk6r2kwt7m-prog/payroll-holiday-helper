@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildDpsRegister, registerSummary, registerSummaryLine, registerCsv, registerPdfRows,
-  clampLinkExpiryDays, deliveryMethodFor, linkState, canOpenLink,
+  outstandingSignatureLine, clampLinkExpiryDays, deliveryMethodFor, linkState, canOpenLink,
   type RegisterAuthorisation, type RegisterEmployee,
   unclassifiedForSite,
 } from "@/lib/dps-register";
@@ -27,15 +27,15 @@ describe("site register composition", () => {
       authorisations: [],
     });
     expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe("not_authorised");
+    expect(rows[0].status).toBe("awaiting_signature");
     expect(rows[0].listed_because).toBe("front_of_house");
   });
 
-  it("never assumes anyone is authorised", () => {
+  it("never assumes anyone has signed", () => {
     const rows = buildDpsRegister({
       branch: "Carnaby", employees: [emp({ id: "1" })], authorisations: [],
     });
-    expect(rows.every((r) => r.status !== "authorised")).toBe(true);
+    expect(rows.every((r) => r.status !== "signed")).toBe(true);
   });
 
   it("excludes kitchen staff with no record", () => {
@@ -53,17 +53,17 @@ describe("site register composition", () => {
       employees: [emp({ id: "1", department: "Kitchen" })],
       authorisations: [auth({ employee_id: "1" })],
     });
-    expect(rows[0].status).toBe("authorised");
+    expect(rows[0].status).toBe("signed");
     expect(rows[0].listed_because).toBe("authorisation_on_record");
   });
 
-  it("marks signed-but-unapproved people as awaiting the licence holder", () => {
+  it("counts a signed but not yet approved authorisation as signed", () => {
     const rows = buildDpsRegister({
       branch: "Carnaby",
       employees: [emp({ id: "1" })],
       authorisations: [auth({ employee_id: "1", status: "pending", authoriser_confirmed_at: null })],
     });
-    expect(rows[0].status).toBe("awaiting_approval");
+    expect(rows[0].status).toBe("signed");
   });
 
   it("marks unsigned requests as awaiting signature", () => {
@@ -101,10 +101,10 @@ describe("site register composition", () => {
       branch: "Carnaby", employees: [leaver], authorisations: [auth({ employee_id: "1" })],
     });
     expect(rows[0].no_longer_employed).toBe(true);
-    expect(rows[0].status).not.toBe("authorised");
+    expect(rows[0].status).not.toBe("signed");
   });
 
-  it("sorts authorised people first", () => {
+  it("sorts people who have signed first", () => {
     const rows = buildDpsRegister({
       branch: "Carnaby",
       employees: [emp({ id: "1", forename: "Zoe" }), emp({ id: "2", forename: "Amy" })],
@@ -123,22 +123,25 @@ describe("summary and exports", () => {
 
   it("counts the register", () => {
     const s = registerSummary(rows);
-    expect(s.listed).toBe(2);
-    expect(s.authorised).toBe(1);
-    expect(s.nobodyAuthorised).toBe(false);
+    expect(s.covered).toBe(2);
+    expect(s.signed).toBe(1);
+    expect(s.awaitingSignature).toBe(1);
+    expect(s.noneSigned).toBe(false);
   });
 
-  it("warns when nobody is authorised", () => {
+  it("notes outstanding signatures without banning alcohol sales", () => {
     const none = buildDpsRegister({
       branch: "Carnaby", employees: [emp({ id: "1" })], authorisations: [],
     });
-    expect(registerSummary(none).nobodyAuthorised).toBe(true);
-    expect(registerSummaryLine(none, "Carnaby")).toMatch(/must not be sold/i);
+    expect(registerSummary(none).noneSigned).toBe(true);
+    expect(registerSummaryLine(none, "Carnaby")).not.toMatch(/must not be sold/i);
+    expect(outstandingSignatureLine(none, "Carnaby")).toMatch(/have not signed/i);
+    expect(outstandingSignatureLine(rows.filter((r) => r.status === "signed"), "Carnaby")).toBeNull();
   });
 
   it("states the count in plain English", () => {
     expect(registerSummaryLine(rows, "Carnaby")).toBe(
-      "1 of 2 people listed are currently authorised to sell alcohol at Carnaby.",
+      "1 of 2 front-of-house staff listed for Carnaby have signed this authorisation.",
     );
   });
 
@@ -148,10 +151,10 @@ describe("summary and exports", () => {
     expect(csv).toHaveLength(3);
   });
 
-  it("prints only real signatures", () => {
+  it("prints only what a licensing officer needs", () => {
     const printed = registerPdfRows(rows);
     expect(printed).toHaveLength(2);
-    expect(printed.every((r) => !!r.status_label)).toBe(true);
+    expect(printed.every((r) => !("status_label" in r))).toBe(true);
     expect(printed.find((r) => r.name.includes("Zoe"))?.signature).toBeNull();
   });
 });
@@ -194,7 +197,7 @@ describe("unclear roles need a manager decision", () => {
     const rows = buildDpsRegister({ branch: "Carnaby", employees: [unclear], authorisations: [], decisions });
     expect(rows).toHaveLength(1);
     expect(rows[0].listed_because).toBe("manager_added");
-    expect(rows[0].status).toBe("not_authorised");
+    expect(rows[0].status).toBe("awaiting_signature");
     expect(unclassifiedForSite({ branch: "Carnaby", employees: [unclear], authorisations: [], decisions })).toHaveLength(0);
   });
 
@@ -210,7 +213,7 @@ describe("unclear roles need a manager decision", () => {
       branch: "Carnaby", employees: [unclear], authorisations: [auth({ employee_id: "u1" })], decisions,
     });
     expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe("authorised");
+    expect(rows[0].status).toBe("signed");
   });
 
   it("the send list and the site list use the same rule", () => {
