@@ -86,8 +86,11 @@ describe("what a manager can ask for", () => {
     ]);
   });
 
-  it("never asks for a telephone number unless it is ticked separately", () => {
-    for (const preset of INFO_PRESETS) expect(preset.items).not.toContain("phone");
+  it("asks for a telephone number only as part of new starter details", () => {
+    for (const preset of INFO_PRESETS) {
+      if (preset.key === "new_starter") expect(preset.items).toContain("phone");
+      else expect(preset.items).not.toContain("phone");
+    }
   });
 });
 

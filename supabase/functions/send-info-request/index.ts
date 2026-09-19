@@ -56,6 +56,8 @@ Deno.serve(async (req) => {
     const preset: string | null = typeof body?.preset === "string" ? body.preset.slice(0, 60) : null;
     const recipientOverride: string | null = body?.recipientOverride ?? null;
     const testSend: boolean = body?.testSend === true;
+    /** Prepares the request and its link but sends nothing — an administrator sends it later. */
+    const prepareOnly: boolean = body?.prepareOnly === true;
     const expiryDays: number = Math.min(Math.max(Number(body?.expiryDays) || 7, 1), 30);
 
     if (!tenantId) return json({ error: "Missing tenant" }, 400);
@@ -73,6 +75,74 @@ Deno.serve(async (req) => {
 
     const itemList = (fields: string[]) =>
       expandRequestedFields(fields).map((k) => `• ${infoItemLabel(k)}`).join("<br/>");
+
+    // ── Sending a request that was prepared earlier and left unsent ──
+    if (action === "send_prepared") {
+      const requestId: string = body?.requestId;
+      if (!requestId) return json({ error: "Missing request" }, 400);
+
+      const { data: existing } = await admin
+        .from("employee_info_requests")
+        .select("*, employees(forename, surname)")
+        .eq("id", requestId)
+        .eq("tenant_id", tenantId)
+        .maybeSingle();
+      if (!existing) return json({ error: "That request could not be found" }, 404);
+      if (existing.status !== "prepared") return json({ error: "That request is not waiting to be sent" }, 409);
+      if (new Date(existing.token_expires_at).getTime() < Date.now()) {
+        return json({ error: "That link has expired — prepare a new one" }, 409);
+      }
+      const recipient = existing.recipient_email;
+      if (!recipient) return json({ error: "No email address on that request" }, 400);
+      const emp: any = existing.employees;
+
+      let sent = false;
+      let sendError: string | undefined;
+      try {
+        const { data: mail, error: mailErr } = await admin.functions.invoke("send-notification", {
+          body: {
+            to: recipient,
+            subject:
+              existing.request_kind === "existing_staff_update"
+                ? "We need a couple of details from you"
+                : "Please complete your details",
+            type: "info_request",
+            tenant_id: tenantId,
+            data: {
+              employee_name: `${emp?.forename ?? ""} ${emp?.surname ?? ""}`.trim(),
+              first_name: emp?.forename ?? "there",
+              details_url: `${APP_URL}/my-details/${existing.token}`,
+              section_list: itemList(existing.requested_fields ?? []),
+              expires_on: String(existing.token_expires_at).slice(0, 10),
+            },
+          },
+        });
+        if (mailErr) sendError = mailErr.message;
+        else if (mail?.success === false) sendError = mail?.error || "Email provider rejected the message";
+        else sent = true;
+      } catch (e) {
+        sendError = (e as Error).message;
+      }
+
+      if (sent) {
+        await admin
+          .from("employee_info_requests")
+          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .eq("id", existing.id);
+      }
+
+      await admin.from("audit_log").insert({
+        tenant_id: tenantId,
+        user_id: callerId,
+        action: "update",
+        table_name: sent ? "employee_info_request_sent" : "employee_info_request_send_failed",
+        record_id: existing.id,
+        new_data: { recipient, employee_id: existing.employee_id, from_prepared: true, error: sendError ?? null },
+      });
+
+      if (!sent) return json({ error: sendError ?? "The request could not be sent" }, 502);
+      return json({ success: true, sent: 1, results: [{ employee_id: existing.employee_id, sent: true, recipient }] });
+    }
 
     // ── Reminder: the same link again, so part-filled answers survive ──
     if (action === "remind") {
@@ -192,7 +262,7 @@ Deno.serve(async (req) => {
           recipient_email: recipient,
           requested_by: callerId,
           requested_by_name: issuerName,
-          status: "sent",
+          status: prepareOnly ? "prepared" : "sent",
           // When the request was raised from a contract, the same session
           // carries straight on to signing once the details are in.
           ...(contractDocumentId ? { contract_document_id: contractDocumentId } : {}),
@@ -201,6 +271,28 @@ Deno.serve(async (req) => {
         .single();
       if (reqErr) {
         results.push({ employee_id: emp.id, sent: false, error: reqErr.message });
+        continue;
+      }
+
+      // Nothing is sent or changed while a request is only being prepared.
+      if (prepareOnly) {
+        await admin.from("audit_log").insert({
+          tenant_id: tenantId,
+          user_id: callerId,
+          action: "create",
+          table_name: "employee_info_request_prepared",
+          record_id: request.id,
+          new_data: {
+            employee_id: emp.id,
+            recipient,
+            sections,
+            request_kind: requestKind,
+            preset,
+            requested_by_name: issuerName,
+            test_send: testSend,
+          },
+        });
+        results.push({ employee_id: emp.id, sent: false, recipient, prepared: true } as any);
         continue;
       }
 
@@ -270,7 +362,13 @@ Deno.serve(async (req) => {
     }
 
     const sentCount = results.filter((r) => r.sent).length;
-    return json({ success: sentCount > 0, sent: sentCount, results });
+    const preparedCount = results.filter((r: any) => r.prepared).length;
+    return json({
+      success: prepareOnly ? preparedCount > 0 : sentCount > 0,
+      sent: sentCount,
+      prepared: preparedCount,
+      results,
+    });
   } catch (err) {
     console.error("send-info-request failed:", err);
     return json({ error: (err as Error).message }, 500);
