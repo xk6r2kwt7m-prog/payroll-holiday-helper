@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { checkPayRisk, type PayRiskResult } from "@/lib/age-band";
 import { SensitiveField, SensitiveSection } from "@/components/ui/sensitive-field";
 import { SubmittedDetailsReview } from "./SubmittedDetailsReview";
+import { StaffChangesReview } from "./StaffChangesReview";
 import { EmployeePrivacyLog } from "./EmployeePrivacyLog";
 import { useSensitiveEmployeeFields } from "@/hooks/useSensitiveEmployeeFields";
 
@@ -221,6 +222,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
         <div className="space-y-6 pb-6">
           {/* Details the staff member sent that differ from our record */}
           {isAdmin && <SubmittedDetailsReview employeeId={employee.id} />}
+          {canViewSensitive && <StaffChangesReview employeeId={employee.id} />}
 
           {/* Personal Information */}
           <Section title="Personal Information" icon={User}>
