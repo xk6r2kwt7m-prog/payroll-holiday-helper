@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useCreateEmployee, useUpdateEmployee, useEmployees, type Employee, type EmployeeInsert } from "@/hooks/useEmployees";
 import { findPossibleDuplicates, duplicateWarningMessage, blockingMessage } from "@/lib/duplicate-check";
 import { useInviteEmail } from "@/hooks/useInviteEmail";
+import { useSensitiveEmployeeFields } from "@/hooks/useSensitiveEmployeeFields";
 import { useEmployeeBranches, useSetEmployeeBranches, useTenantBranches, getBranchEmoji, type BranchType } from "@/hooks/useBranches";
 import { PAY_TYPES, OVERTIME_MODELS, HOLIDAY_ENTITLEMENT_METHODS, useCountryRules } from "@/hooks/useCountryRules";
 import { useDepartments } from "@/hooks/useDepartments";
@@ -98,6 +99,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
   });
 
   const { data: existingBranches = [] } = useEmployeeBranches(employee?.id);
+  // Bank details, National Insurance and identity numbers do not travel with
+  // an ordinary staff query. They are fetched here, for administrators only.
+  const { data: heldSensitive } = useSensitiveEmployeeFields(employee?.id, open);
   const { data: availableBranches = [] } = useTenantBranches();
   const { data: countryRules = [] } = useCountryRules();
   const { data: departments = [] } = useDepartments();
@@ -116,19 +120,19 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
         status: (employee.status || "starter") as EmployeeStatus,
         hourly_rate: employee.hourly_rate?.toString() || "",
         service_charge: employee.service_charge?.toString() || "0",
-        ni_number: employee.ni_number || "",
-        bank_account_no: employee.bank_account_no || "",
-        sort_code: employee.sort_code || "",
+        ni_number: heldSensitive?.ni_number || "",
+        bank_account_no: heldSensitive?.bank_account_no || "",
+        sort_code: heldSensitive?.sort_code || "",
         notes: employee.notes || "",
         start_date: employee.start_date || "",
         end_date: employee.end_date || "",
         nationality: employee.nationality || "",
-        passport_no: employee.passport_no || "",
+        passport_no: heldSensitive?.passport_no || "",
         employee_ref: employee.employee_ref || "",
-        sharing_code: employee.sharing_code || "",
+        sharing_code: heldSensitive?.sharing_code || "",
         settlement_status: employee.settlement_status || "",
-        residence_permit: employee.residence_permit || "",
-        rtw_confirmed: !!(employee.settlement_status || employee.sharing_code),
+        residence_permit: heldSensitive?.residence_permit || "",
+        rtw_confirmed: !!(employee.settlement_status || employee.has_share_code),
         rtw_checked_date: "",
         contract_country: (employee as any).contract_country || "GB",
         work_country: (employee as any).work_country || "",
@@ -177,9 +181,9 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
     setNiConfirm("");
     setNiMismatchError(false);
     setNiMasked(false);
-    setOriginalNi(employee?.ni_number || "");
+    setOriginalNi(heldSensitive?.ni_number || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, heldSensitive]);
 
   // Set branches when they load for editing (only for existing employees)
   useEffect(() => {
@@ -286,7 +290,7 @@ export function EmployeeFormDialog({ employee, trigger, onSuccess, defaultTab, a
     if (isNewEmployee) {
       const { data: existing } = await supabase
         .from("employees")
-        .select("id, forename, surname, preferred_name, email, ni_number, user_id, status, archived_at")
+        .select("id, forename, surname, preferred_name, email, user_id, status, archived_at")
         .eq("tenant_id", tenantId);
 
       const matches = findPossibleDuplicates(

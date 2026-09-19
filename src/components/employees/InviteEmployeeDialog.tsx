@@ -50,7 +50,7 @@ export function InviteEmployeeDialog({ trigger, onSuccess }: InviteEmployeeDialo
     try {
       const { data } = await supabase
         .from("employees")
-        .select("id, forename, surname, preferred_name, email, ni_number, status, user_id, archived_at")
+        .select("id, forename, surname, preferred_name, email, status, user_id, archived_at")
         .eq("tenant_id", tenantId);
 
       const matches = findPossibleDuplicates(

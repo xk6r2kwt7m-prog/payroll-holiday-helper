@@ -48,7 +48,7 @@ export function CreateEmployeeFromImport({ csvName, onCreated, onCancel }: Creat
     if (!duplicateOverridden) {
       const { data: existing } = await supabase
         .from("employees")
-        .select("id, forename, surname, preferred_name, email, ni_number, user_id, status, archived_at")
+        .select("id, forename, surname, preferred_name, email, user_id, status, archived_at")
         .eq("tenant_id", tenantId);
 
       const warning = duplicateWarningMessage(
