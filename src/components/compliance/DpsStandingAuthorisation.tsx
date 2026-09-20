@@ -9,7 +9,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Download, PenLine, Send, ShieldCheck } from "lucide-react";
+import { Download, PenLine, Send, ShieldCheck, Eye } from "lucide-react";
 import {
   usePremisesLicences, useSendLicenceSignature, useLicenceSignatureRequests,
   useSavePremisesLicence,
@@ -24,13 +24,15 @@ import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentP
  * One signature from the Designated Premises Supervisor covering every site.
  *
  * It is a standing authorisation: once signed it keeps applying as front-of-house
- * people join or leave. Nothing is emailed until the manager presses Send and
- * confirms, and no existing per-site document or record is touched.
+ * people join or leave. Reading is always allowed — only sending waits on the
+ * licence details being confirmed, and nothing is emailed until the manager
+ * presses Send and confirms.
  */
 export function DpsStandingAuthorisation() {
   const { data: licences = [] } = usePremisesLicences();
   const { data: requests = [] } = useLicenceSignatureRequests({ subjectType: "dps_authorisation" });
   const send = useSendLicenceSignature();
+  const saveLicence = useSavePremisesLicence();
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"details" | "confirm">("details");
@@ -39,6 +41,7 @@ export function DpsStandingAuthorisation() {
   const [expiryDays, setExpiryDays] = useState(30);
   const [testSend, setTestSend] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [savingEmail, setSavingEmail] = useState(false);
 
   const sites: LicenceSite[] = useMemo(
     () => (licences as any[])
@@ -67,12 +70,12 @@ export function DpsStandingAuthorisation() {
 
   const doc = useMemo(() => buildDpsAuthorisationAllSites(sites, null), [sites]);
   const siteNames = sites.map((s) => s.branch).join(", ");
-  const defaultEmail = (licences as any[]).find((l) => (l.dps_email ?? "").trim())?.dps_email ?? "";
+  const savedEmail = (licences as any[]).find((l) => (l.dps_email ?? "").trim())?.dps_email ?? "";
   const defaultName = sites.find((s) => (s.dps_name ?? "").trim())?.dps_name ?? "";
 
   const start = () => {
     setName(defaultName);
-    setEmail(defaultEmail);
+    setEmail(savedEmail);
     setExpiryDays(30);
     setTestSend(false);
     setStep("details");
@@ -80,11 +83,30 @@ export function DpsStandingAuthorisation() {
   };
 
   const expiryDate = new Date(Date.now() + expiryDays * 86400000).toLocaleDateString("en-GB");
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  /** Saves his address against every site so it is filled in next time. Sends nothing. */
+  const saveEmail = async () => {
+    if (!emailValid) { toast.error("Enter a valid email address"); return; }
+    setSavingEmail(true);
+    try {
+      for (const l of licences as any[]) {
+        if (!l.branch) continue;
+        await saveLicence.mutateAsync({ id: l.id, branch: l.branch, dps_email: email.trim() });
+      }
+      toast.success("His email address is saved. Nothing was sent.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSavingEmail(false);
+    }
+  };
 
   const submit = async () => {
-    if (!name.trim()) { toast.error("Enter his name"); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { toast.error("Enter a valid email address"); return; }
     if (step === "details") { setStep("confirm"); return; }
+    if (!ready) { toast.error("Confirm the licence details first"); return; }
+    if (!name.trim()) { toast.error("Enter his name"); return; }
+    if (!emailValid) { toast.error("Enter a valid email address"); return; }
     setBusy(true);
     try {
       const res = await send.mutateAsync({
@@ -150,6 +172,11 @@ export function DpsStandingAuthorisation() {
           {sites.length > 0 && (
             <p className="text-[11px] text-muted-foreground">Covers {siteNames}</p>
           )}
+          <p className="text-[11px] text-muted-foreground">
+            {savedEmail
+              ? `His email on file: ${savedEmail}`
+              : "No email address on file — add it when you review."}
+          </p>
         </div>
         {status && (
           <Badge className="text-[10px] shrink-0" variant={signed ? "default" : "secondary"}>
@@ -159,15 +186,16 @@ export function DpsStandingAuthorisation() {
       </div>
 
       {!ready && sites.length > 0 && (
-        <p className="text-xs text-warning">
-          Confirm these licence details before asking for his signature: {outstanding.join("; ")}.
+        <p className="text-xs text-muted-foreground">
+          You can read and check the document now. Before it can be sent, confirm these licence
+          details: {outstanding.join("; ")}.
         </p>
       )}
 
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" onClick={start} disabled={!ready}>
-          <Send className="h-3.5 w-3.5 mr-1.5" />
-          {signed ? "Request a fresh signature" : "Request his signature"}
+        <Button size="sm" onClick={start} disabled={sites.length === 0}>
+          <Eye className="h-3.5 w-3.5 mr-1.5" />
+          {signed ? "Review or request a fresh signature" : "Review the authorisation"}
         </Button>
         <Button size="sm" variant="outline" onClick={download} disabled={sites.length === 0}>
           <Download className="h-3.5 w-3.5 mr-1.5" /> Download the authorisation
@@ -178,11 +206,11 @@ export function DpsStandingAuthorisation() {
         <DialogContent className="max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              <PenLine className="h-4 w-4 inline mr-1.5" /> Request the DPS signature
+              <PenLine className="h-4 w-4 inline mr-1.5" /> The DPS authorisation
             </DialogTitle>
             <DialogDescription>
-              This asks for one signature, for this one purpose: authorising front-of-house staff to
-              sell alcohol at {siteNames}.
+              Read it here in full. It authorises front-of-house staff to sell alcohol at {siteNames}.
+              Nothing is sent until you press Send and confirm.
             </DialogDescription>
           </DialogHeader>
 
@@ -194,12 +222,20 @@ export function DpsStandingAuthorisation() {
               </div>
               <div className="space-y-1.5">
                 <Label>His email address</Label>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                {!defaultEmail && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Save it with the licence details and it will be filled in next time.
-                  </p>
-                )}
+                <div className="flex gap-2">
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Button
+                    variant="outline"
+                    onClick={saveEmail}
+                    disabled={savingEmail || !emailValid || email.trim() === savedEmail}
+                  >
+                    Save
+                  </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Saving keeps it with all three sites' licence details for next time. Saving sends
+                  nothing.
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label>Link stays open for</Label>
@@ -219,9 +255,19 @@ export function DpsStandingAuthorisation() {
                 </span>
                 <Switch checked={testSend} onCheckedChange={setTestSend} />
               </label>
+              <div className="rounded-md border p-2.5 space-y-1 text-[11px] text-muted-foreground">
+                <p className="font-medium text-foreground text-xs">{doc.title}</p>
+                {doc.paragraphs.map((p, i) => <p key={i}>{p}</p>)}
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
+              {!ready && (
+                <p className="rounded-md border border-warning/40 bg-warning/5 p-2.5 text-xs text-warning">
+                  Sending is held until these licence details are confirmed: {outstanding.join("; ")}.
+                  Open that site's premises licence and fill them in, then come back here.
+                </p>
+              )}
               <div className="rounded-md border p-2.5 space-y-1 text-xs">
                 <p><span className="text-muted-foreground">To:</span> {name} — {email}</p>
                 <p><span className="text-muted-foreground">Sites covered:</span> {siteNames}</p>
@@ -261,9 +307,11 @@ export function DpsStandingAuthorisation() {
             {step === "confirm" && (
               <Button variant="ghost" onClick={() => setStep("details")} disabled={busy}>Back</Button>
             )}
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
-            <Button onClick={submit} disabled={busy}>
-              {step === "details" ? "Review before sending" : testSend ? "Send test to me" : "Send for signature"}
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Close</Button>
+            <Button onClick={submit} disabled={busy || (step === "confirm" && !ready)}>
+              {step === "details"
+                ? "Next — see the email"
+                : testSend ? "Send test to me" : "Send for signature"}
             </Button>
           </DialogFooter>
         </DialogContent>
