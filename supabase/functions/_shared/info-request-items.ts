@@ -111,6 +111,59 @@ export function documentKindForItems(items: readonly string[]): "visa" | "passpo
   return "right_to_work";
 }
 
+/**
+ * How someone is entitled to work in the UK. Only some of these run out, so the
+ * expiry date is only asked for where there is genuinely something to expire.
+ */
+export const RTW_BASIS_OPTIONS = [
+  { value: "british_irish", label: "British or Irish citizen", expires: false },
+  { value: "settled", label: "Settled status (EU Settlement Scheme)", expires: false },
+  { value: "pre_settled", label: "Pre-settled status (EU Settlement Scheme)", expires: true },
+  { value: "visa", label: "Visa or immigration permission", expires: true },
+  { value: "other", label: "Other / not sure", expires: true },
+] as const;
+
+export type RtwBasis = (typeof RTW_BASIS_OPTIONS)[number]["value"];
+
+/** True when the person must give the date their permission runs out. */
+export const rtwBasisNeedsExpiry = (basis: string | null | undefined): boolean => {
+  const found = RTW_BASIS_OPTIONS.find((o) => o.value === basis);
+  return found ? found.expires : false;
+};
+
+export const rtwBasisLabel = (basis: string | null | undefined): string =>
+  RTW_BASIS_OPTIONS.find((o) => o.value === basis)?.label ?? "";
+
+/** The documents a person may send in as evidence, and how each one is filed. */
+export const RTW_DOCUMENT_TYPES = [
+  { value: "passport", label: "Passport", filedAs: "passport" },
+  { value: "national_id", label: "National identity card", filedAs: "id_document" },
+  { value: "birth_certificate", label: "Birth certificate (with proof of National Insurance number)", filedAs: "id_document" },
+  { value: "brp", label: "Biometric residence permit", filedAs: "visa" },
+  { value: "brc", label: "Biometric residence card", filedAs: "visa" },
+  { value: "visa", label: "Visa or entry clearance", filedAs: "visa" },
+  { value: "share_code", label: "Share code confirmation", filedAs: "right_to_work" },
+  { value: "naturalisation", label: "Certificate of naturalisation or registration", filedAs: "id_document" },
+  { value: "right_of_abode", label: "Right-of-abode certificate", filedAs: "right_to_work" },
+  { value: "status_document", label: "Immigration status document", filedAs: "right_to_work" },
+  { value: "other", label: "Other document", filedAs: "right_to_work" },
+] as const;
+
+export type RtwDocumentType = (typeof RTW_DOCUMENT_TYPES)[number]["value"];
+
+export const rtwDocumentLabel = (value: string | null | undefined): string =>
+  RTW_DOCUMENT_TYPES.find((d) => d.value === value)?.label ?? "";
+
+/** Which of the stored document kinds a chosen document is filed under. */
+export const rtwDocumentFiledAs = (
+  value: string | null | undefined,
+): "passport" | "visa" | "id_document" | "right_to_work" =>
+  (RTW_DOCUMENT_TYPES.find((d) => d.value === value)?.filedAs ?? "right_to_work") as
+    | "passport"
+    | "visa"
+    | "id_document"
+    | "right_to_work";
+
 export interface InfoPreset {
   key: string;
   label: string;
