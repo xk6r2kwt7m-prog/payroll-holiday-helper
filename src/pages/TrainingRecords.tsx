@@ -90,7 +90,7 @@ function TrainingAdminView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
     employee_id: "", certification_name: "", certification_type: "food_hygiene",
-    provider: "", date_obtained: "", expiry_date: "", notes: "",
+    provider: "", date_obtained: "", expiry_date: "", review_due_date: "", notes: "",
   });
 
   const activeEmployees = employees.filter(e => e.status === "active" || e.status === "starter");
@@ -111,11 +111,12 @@ function TrainingAdminView() {
       provider: form.provider || undefined,
       date_obtained: form.date_obtained,
       expiry_date: form.expiry_date || undefined,
+      review_due_date: form.review_due_date || undefined,
       notes: form.notes || undefined,
     }, {
       onSuccess: () => {
         setDialogOpen(false);
-        setForm({ employee_id: "", certification_name: "", certification_type: "food_hygiene", provider: "", date_obtained: "", expiry_date: "", notes: "" });
+        setForm({ employee_id: "", certification_name: "", certification_type: "food_hygiene", provider: "", date_obtained: "", expiry_date: "", review_due_date: "", notes: "" });
       },
     });
   };
@@ -292,7 +293,7 @@ function TrainingAdminView() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          {getExpiryBadge(r.expiry_date)}
+                          {getExpiryBadge(r.expiry_date, (r as any).review_due_date)}
                           <Badge variant="outline" className="text-xs hidden sm:inline-flex">{certType?.label || r.certification_type}</Badge>
                           {canManageTraining && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteRecord.mutate(r.id)}>
