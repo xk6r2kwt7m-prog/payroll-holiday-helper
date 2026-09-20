@@ -118,6 +118,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
       licence_status: licence?.licence_status ?? "active",
       dps_name: licence?.dps_name ?? "",
       dps_personal_licence_number: licence?.dps_personal_licence_number ?? "",
+      dps_email: licence?.dps_email ?? "",
       opening_hours: licence?.opening_hours ?? "",
       alcohol_hours: licence?.alcohol_hours ?? "",
       late_night_refreshment_hours: licence?.late_night_refreshment_hours ?? "",
