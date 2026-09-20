@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Wine, AlertTriangle, Printer, ChevronDown, ChevronRight, Download, Mail,
+  Wine, Printer, ChevronDown, ChevronRight, Download, Mail,
 } from "lucide-react";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
 import { usePremisesLicences } from "@/hooks/usePremisesLicences";
