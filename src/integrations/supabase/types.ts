@@ -11239,6 +11239,7 @@ export type Database = {
           notes: string | null
           provider: string | null
           recorded_by: string | null
+          review_due_date: string | null
           tenant_id: string
           updated_at: string
         }
@@ -11254,6 +11255,7 @@ export type Database = {
           notes?: string | null
           provider?: string | null
           recorded_by?: string | null
+          review_due_date?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -11269,6 +11271,7 @@ export type Database = {
           notes?: string | null
           provider?: string | null
           recorded_by?: string | null
+          review_due_date?: string | null
           tenant_id?: string
           updated_at?: string
         }

@@ -218,6 +218,13 @@
       "when": 1789898880769,
       "tag": "0030_add_dps_email_to_premises_licences",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1789932910786,
+      "tag": "0031_training_records_review_due_date",
+      "breakpoints": true
     }
   ]
 }
