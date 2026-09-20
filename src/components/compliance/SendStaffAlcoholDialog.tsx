@@ -15,7 +15,8 @@ import { useEmployeesWithBranches } from "@/hooks/useDpsRegister";
 import { useComplianceBranches } from "@/hooks/useComplianceBranches";
 import { usePremisesLicence, useSendLicenceSignature, useLicenceSignatureRequests } from "@/hooks/usePremisesLicences";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
-import { isReadyToSend } from "@/lib/licensing-documents";
+import { ALL_SITES_BRANCH, isGroupReadyToSend, isReadyToSend, type LicenceSite } from "@/lib/licensing-documents";
+import { usePremisesLicences } from "@/hooks/usePremisesLicences";
 import {
   belongsOnAlcoholList, alcoholAskState, alcoholAskStateLabel, needsAlcoholAsk,
 } from "@/lib/alcohol-automation";
@@ -46,7 +47,9 @@ export function SendStaffAlcoholDialog({
   // Sites come from employee_branches — there is no branch column on employees.
   const employees = useEmployeesWithBranches();
   const { data: decisions = [] } = useAlcoholListDecisions();
-  const { data: licence } = usePremisesLicence(branch || undefined);
+  const allSites = branch === ALL_SITES_BRANCH;
+  const { data: licence } = usePremisesLicence(allSites ? undefined : (branch || undefined));
+  const { data: allLicences = [] } = usePremisesLicences();
   const { data: requests = [] } = useLicenceSignatureRequests({ subjectType: "staff_alcohol" });
   const { data: authorisations = [] } = useAlcoholAuthorisations();
   const send = useSendLicenceSignature();
@@ -62,23 +65,49 @@ export function SendStaffAlcoholDialog({
     dps_personal_licence_number: licence?.dps_personal_licence_number,
   }), [branch, licence]);
 
-  const ready = !!licence && isReadyToSend(site, "staff_alcohol");
+  // Every site's licence details must be confirmed before one signature can
+  // stand for someone who works across more than one of them.
+  const licenceSites: LicenceSite[] = useMemo(
+    () => (allLicences as any[]).filter((l) => !!l.branch).map((l) => ({
+      branch: l.branch,
+      premises_name: l.premises_name,
+      premises_address: l.premises_address,
+      licence_number: l.licence_number,
+      licence_holder: l.licence_holder,
+      issuing_authority: l.issuing_authority,
+      dps_name: l.dps_name,
+      dps_personal_licence_number: l.dps_personal_licence_number,
+    })),
+    [allLicences],
+  );
+  const licencedBranches = useMemo(
+    () => licenceSites.map((s) => s.branch.trim().toLowerCase()),
+    [licenceSites],
+  );
+  const ready = allSites
+    ? licenceSites.length > 0 && isGroupReadyToSend(licenceSites)
+    : !!licence && isReadyToSend(site, "staff_alcohol");
 
   const staff = useMemo(
     () => (employees as any[])
       .filter((e) => !e.archived_at && e.status !== "leaver" && !e.is_test_record)
-      .filter((e) => !branch || (e.branches ?? []).some(
+      .filter((e) => !branch || allSites || (e.branches ?? []).some(
         (b: string) => (b ?? "").trim().toLowerCase() === branch.trim().toLowerCase()))
       // Same rule as the site alcohol list, including your own decisions, so a
       // person can never appear on one and not the other.
-      .filter((e) => showEveryone || belongsOnAlcoholList(e as any, branch, decisions as any))
+      .filter((e) => showEveryone || (allSites
+        ? (e.branches ?? []).some((b: string) => belongsOnAlcoholList(e as any, b, decisions as any))
+        : belongsOnAlcoholList(e as any, branch, decisions as any)))
       .map((e) => ({
         ...e,
+        // The sites this one signature will cover for this person.
+        coveredBranches: ((e.branches ?? []) as string[])
+          .filter((b) => licencedBranches.includes((b ?? "").trim().toLowerCase())),
         state: alcoholAskState(e.id, requests as any[], authorisations as any[]),
         needsAsk: needsAlcoholAsk(e as any, requests as any[], authorisations as any[]),
       }))
       .sort((a, b) => `${a.forename} ${a.surname}`.localeCompare(`${b.forename} ${b.surname}`)),
-    [employees, branch, showEveryone, requests, authorisations, decisions]
+    [employees, branch, allSites, showEveryone, requests, authorisations, decisions, licencedBranches]
   );
 
   const missing = staff.filter((e) => e.needsAsk && !!e.email);
@@ -95,14 +124,14 @@ export function SendStaffAlcoholDialog({
 
   const review = () => {
     if (!branch) { toast.error("Choose the site"); return; }
-    if (!licence) { toast.error("Add this site's premises licence details first"); return; }
+    if (!allSites && !licence) { toast.error("Add this site's premises licence details first"); return; }
     if (chosen.length === 0) { toast.error("Choose at least one person with an email address"); return; }
     setStep("confirm");
   };
 
   const submit = async () => {
     if (!branch) { toast.error("Choose the site"); return; }
-    if (!licence) { toast.error("Add this site's premises licence details first"); return; }
+    if (!allSites && !licence) { toast.error("Add this site's premises licence details first"); return; }
     if (step !== "confirm") { review(); return; }
     if (chosen.length === 0) { toast.error("Choose at least one person with an email address"); return; }
     setBusy(true);
@@ -110,7 +139,7 @@ export function SendStaffAlcoholDialog({
       const res = await send.mutateAsync({
         subject_type: "staff_alcohol",
         branch,
-        licence_id: licence.id,
+        licence_id: allSites ? null : licence?.id ?? null,
         recipient_name: "",
         recipient_email: "",
         employee_ids: chosen.map((e) => e.id),
@@ -153,7 +182,7 @@ export function SendStaffAlcoholDialog({
             <p className="text-sm">
               {testSend
                 ? `A test copy comes to you only. Nothing reaches these ${chosen.length} people.`
-                : `This will email ${chosen.length} ${chosen.length === 1 ? "person" : "people"} at ${branch}. Check the names and addresses below.`}
+                : `This will email ${chosen.length} ${chosen.length === 1 ? "person" : "people"}${allSites ? " across every site" : ` at ${branch}`}. Check the names and addresses below.`}
             </p>
             <div className="rounded-lg border border-border divide-y divide-border max-h-60 overflow-y-auto">
               {chosen.map((e) => (
@@ -163,6 +192,11 @@ export function SendStaffAlcoholDialog({
                     {e.department ? <span className="text-muted-foreground"> · {e.department}</span> : null}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">{e.email}</p>
+                  {e.coveredBranches.length > 1 && (
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      Covers {e.coveredBranches.join(" and ")} — they sign once
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -186,6 +220,7 @@ export function SendStaffAlcoholDialog({
             <Select value={branch} onValueChange={(v) => { setBranch(v); setSelected([]); }}>
               <SelectTrigger><SelectValue placeholder="Choose site" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value={ALL_SITES_BRANCH}>All sites</SelectItem>
                 {branches.map((b) => (
                   <SelectItem key={b.id} value={b.branch}>{b.display_name || b.branch}</SelectItem>
                 ))}
@@ -195,8 +230,9 @@ export function SendStaffAlcoholDialog({
 
           {branch && !ready && (
             <p className="text-xs text-warning">
-              Record this site's premises licence details in Branch compliance before sending — the document
-              names the licence and the licence holder.
+              {allSites
+                ? "Record every site's premises licence details in Branch compliance before sending — one signature has to name each licence it covers."
+                : "Record this site's premises licence details in Branch compliance before sending — the document names the licence and the licence holder."}
             </p>
           )}
 
@@ -218,12 +254,12 @@ export function SendStaffAlcoholDialog({
               </div>
               <p className="text-[11px] text-muted-foreground">
                 {showEveryone
-                  ? "Everyone at this site with an email address."
+                  ? (allSites ? "Everyone with an email address." : "Everyone at this site with an email address.")
                   : "Front-of-house roles are shown. Turn on \u201cShow everyone\u201d for kitchen and other roles."}
               </p>
               {staff.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Nobody to show at this site. Turn on "Show everyone" if job titles are not filled in.
+                  Nobody to show. Turn on "Show everyone" if job titles are not filled in.
                 </p>
               ) : (
                 <div className="rounded-lg border border-border divide-y divide-border max-h-60 overflow-y-auto">
@@ -244,6 +280,11 @@ export function SendStaffAlcoholDialog({
                         <span className="block text-xs text-muted-foreground truncate">
                           {e.email ? alcoholAskStateLabel(e.state) : "Cannot be sent — no email address on file"}
                         </span>
+                        {e.coveredBranches.length > 1 && (
+                          <span className="block text-[11px] text-muted-foreground truncate">
+                            One signature covers {e.coveredBranches.join(" and ")}
+                          </span>
+                        )}
                       </span>
                     </label>
                   ))}
