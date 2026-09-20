@@ -222,8 +222,8 @@ describe("wired behaviour", () => {
 });
 
 describe("the details step only insists on what is genuinely missing", () => {
-  const page = readFileSync("src/pages/SignContract.tsx", "utf8");
-  const fn = readFileSync("supabase/functions/sign-contract/index.ts", "utf8");
+  const page = fs.readFileSync("src/pages/SignContract.tsx", "utf8");
+  const fn = fs.readFileSync("supabase/functions/sign-contract/index.ts", "utf8");
 
   it("checks only the details actually asked for", () => {
     expect(page).toContain("const askedKeys = contractInfo?.missing_fields");
