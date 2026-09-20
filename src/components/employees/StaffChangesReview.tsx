@@ -4,7 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Check, Eye, EyeOff, Landmark, ShieldCheck, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AlertTriangle, Check, Eye, EyeOff, FileText, Landmark, ShieldCheck, X } from "lucide-react";
+import { useContractAutoDraft } from "@/hooks/useContractAutoDraft";
 import { useAuth } from "@/hooks/useAuth";
 import { maskTail } from "@/lib/employee-columns";
 import {
@@ -33,6 +35,7 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
   const decide = useDecideStaffDetailChange();
   const verifyBank = useVerifyBankChange();
   const recordRtw = useRecordRightToWorkDecision();
+  const autoDraft = useContractAutoDraft(employeeId);
 
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
@@ -178,6 +181,38 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
                 </p>
               )}
             </div>
+          )}
+        </div>
+      )}
+
+      {changes.length > 0 && (
+        <div
+          className={`rounded-lg border p-3 space-y-2 ${autoDraft.ready ? "border-success/40 bg-success/5" : "border-border bg-card"}`}
+        >
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <FileText className="h-4 w-4 text-primary" />
+            Contract
+          </div>
+          {autoDraft.ready ? (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Everything has been approved, so the contract is ready to be prepared from the
+                approved details. It is produced as a draft for your review — nothing is sent or
+                signed until you decide.
+              </p>
+              <Button asChild size="sm" className="w-full">
+                <Link to={autoDraft.prepareHref}>Prepare the contract now</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                The contract will be prepared once these are settled:
+              </p>
+              <ul className="text-xs text-foreground space-y-0.5">
+                {autoDraft.outstanding.map((o) => <li key={o}>• {o}</li>)}
+              </ul>
+            </>
           )}
         </div>
       )}
