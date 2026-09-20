@@ -120,8 +120,28 @@ function TrainingAdminView() {
     });
   };
 
-  const getExpiryBadge = (expiryDate: string | null) => {
-    if (!expiryDate) return <Badge variant="outline" className="text-muted-foreground text-xs">No expiry</Badge>;
+  /**
+   * Some qualifications carry no legal expiry (Level 2 Food Safety, for example).
+   * Those show the refresher review date instead, never an expiry.
+   */
+  const getExpiryBadge = (expiryDate: string | null, reviewDue?: string | null) => {
+    if (!expiryDate) {
+      if (reviewDue) {
+        const reviewDays = differenceInDays(parseISO(reviewDue), new Date());
+        return (
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-xs",
+              reviewDays <= 90 ? "text-warning border-warning/30" : "text-muted-foreground"
+            )}
+          >
+            No expiry — refresher review due {format(parseISO(reviewDue), "d MMM yyyy")}
+          </Badge>
+        );
+      }
+      return <Badge variant="outline" className="text-muted-foreground text-xs">No expiry</Badge>;
+    }
     const days = differenceInDays(parseISO(expiryDate), new Date());
     if (days < 0) return <Badge variant="destructive" className="text-xs">Expired {Math.abs(days)}d ago</Badge>;
     if (days <= 30) return <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs"><AlertTriangle className="h-3 w-3 mr-1" />Expires in {days}d</Badge>;
