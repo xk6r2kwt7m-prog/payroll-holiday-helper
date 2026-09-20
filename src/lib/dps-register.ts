@@ -78,9 +78,15 @@ export interface RegisterSummary {
 
 const norm = (v?: string | null) => (v ?? "").trim().toLowerCase();
 
+/**
+ * A staff signature is not required by the Licensing Act 2003 — the written,
+ * dated list under the Designated Premises Supervisor's signature is the
+ * authorisation. So someone without their own signature reads as "Listed",
+ * not as though something is missing.
+ */
 export const REGISTER_STATUS_LABELS: Record<RegisterStatus, string> = {
   signed: "Signed",
-  awaiting_signature: "Awaiting signature",
+  awaiting_signature: "Listed",
 };
 
 
@@ -251,14 +257,17 @@ export function registerSummaryLine(rows: RegisterRow[], branch: string): string
   if (s.covered === 0) {
     return `No front-of-house staff are recorded for ${branch} yet.`;
   }
-  return `${s.signed} of ${s.covered} front-of-house staff listed for ${branch} have signed this authorisation.`;
+  return `${s.covered} front-of-house staff are authorised to sell alcohol at ${branch} under the Designated Premises Supervisor's signature below (${s.signed} have also signed individually).`;
 }
 
-/** Plain note about outstanding signatures. Never a statement that selling must stop. */
+/**
+ * Neutral note printed under the register. A staff signature is extra evidence,
+ * not a legal requirement, so this never reads as an outstanding obligation.
+ */
 export function outstandingSignatureLine(rows: RegisterRow[], branch: string): string | null {
   const s = registerSummary(rows);
   if (s.awaitingSignature === 0) return null;
-  return `${s.awaitingSignature} of ${s.covered} front-of-house staff at ${branch} have not signed this authorisation yet.`;
+  return `${s.awaitingSignature} of the ${s.covered} people listed at ${branch} have not added their own signature. A staff signature is not required — this list is authorised by the Designated Premises Supervisor's signature below.`;
 }
 
 

@@ -129,19 +129,21 @@ describe("summary and exports", () => {
     expect(s.noneSigned).toBe(false);
   });
 
-  it("notes outstanding signatures without banning alcohol sales", () => {
+  it("treats a missing staff signature as optional, not as a ban", () => {
     const none = buildDpsRegister({
       branch: "Carnaby", employees: [emp({ id: "1" })], authorisations: [],
     });
     expect(registerSummary(none).noneSigned).toBe(true);
     expect(registerSummaryLine(none, "Carnaby")).not.toMatch(/must not be sold/i);
-    expect(outstandingSignatureLine(none, "Carnaby")).toMatch(/have not signed/i);
+    const note = outstandingSignatureLine(none, "Carnaby")!;
+    expect(note).toMatch(/not required/i);
+    expect(note).toMatch(/Designated Premises Supervisor/i);
     expect(outstandingSignatureLine(rows.filter((r) => r.status === "signed"), "Carnaby")).toBeNull();
   });
 
   it("states the count in plain English", () => {
     expect(registerSummaryLine(rows, "Carnaby")).toBe(
-      "1 of 2 front-of-house staff listed for Carnaby have signed this authorisation.",
+      "2 front-of-house staff are authorised to sell alcohol at Carnaby under the Designated Premises Supervisor's signature below (1 have also signed individually).",
     );
   });
 
