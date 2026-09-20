@@ -12,6 +12,8 @@ export interface TrainingRecord {
   provider: string | null;
   date_obtained: string;
   expiry_date: string | null;
+  /** Refresher review date for qualifications with no legal expiry (e.g. Level 2 Food Safety). */
+  review_due_date?: string | null;
   certificate_file_path: string | null;
   notes: string | null;
   recorded_by: string | null;
@@ -65,6 +67,7 @@ export function useAddTrainingRecord() {
       provider?: string;
       date_obtained: string;
       expiry_date?: string;
+      review_due_date?: string;
       notes?: string;
     }) => {
       await assertPermission("manage_training", tenantId!);
