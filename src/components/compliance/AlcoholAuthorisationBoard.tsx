@@ -201,7 +201,7 @@ export function AlcoholAuthorisationBoard() {
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium">{site.branch}</span>
                         <span className="block text-[11px] text-muted-foreground">
-                          {site.summary.signed} of {site.summary.covered} signed
+                          {site.summary.covered} authorised · {site.summary.signed} also signed
                           {site.licence?.dps_name ? ` · Designated Premises Supervisor ${site.licence.dps_name}` : ""}
                           {site.licence?.dps_personal_licence_number ? ` (${site.licence.dps_personal_licence_number})` : ""}
                         </span>
@@ -268,9 +268,10 @@ export function AlcoholAuthorisationBoard() {
                         )}
 
                         <p className="text-[11px] text-muted-foreground">
-                          A name only moves to "Can sell alcohol" once that person has read and signed the
-                          authorisation themselves and the Designated Premises Supervisor or personal licence
-                          holder has approved it. The system never authorises anyone.
+                          Everyone named here is authorised to sell alcohol by the Designated Premises
+                          Supervisor's signature on this list — under the Licensing Act 2003 their own
+                          signature is not required. Ask for one only if you want the extra record. The
+                          system never authorises anyone by itself.
                         </p>
 
                         <div className="flex flex-wrap gap-2 pt-1">
@@ -377,7 +378,7 @@ function Group({
             )}
           </div>
           <Badge variant="outline" className={cn("text-[10px] shrink-0", badgeTone[tone])}>
-            {tone === "green" ? "Authorised" : tone === "amber" ? "In progress" : "No"}
+            {tone === "green" ? "Signed" : tone === "amber" ? "In progress" : "Authorised"}
           </Badge>
         </div>
       ))}
