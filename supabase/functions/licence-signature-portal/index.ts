@@ -157,6 +157,8 @@ Deno.serve(async (req) => {
 
       // A staff signature completes their half of the alcohol authorisation.
       // Approval by the DPS or licence holder is unchanged and still required.
+      // Every site record created from this one request is signed together, so a
+      // person who works at more than one site only signs once.
       if (request.subject_type === "staff_alcohol" && request.authorisation_id) {
         await admin
           .from("alcohol_authorisations")
@@ -165,7 +167,7 @@ Deno.serve(async (req) => {
             employee_signed_at: signedAt,
             updated_at: signedAt,
           })
-          .eq("id", request.authorisation_id);
+          .eq("request_id", request.id);
       }
 
       await admin.from("audit_log").insert({

@@ -26,7 +26,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "contract_email_verification" | "induction_pack" | "induction_reminder" | "inspection_pack" | "licence_signature" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "contract_email_verification" | "induction_pack" | "induction_reminder" | "inspection_pack" | "licence_signature" | "dps_signature_request" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
@@ -422,6 +422,23 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p>${data.intro || "Please find the current inspection file summary below."}</p>
         <div style="font-size:14px;">${data.summary_html || ""}</div>
         <p style="color:#666;margin-top:16px;">Documents themselves are held securely in UglyOps HR and can be opened from the Documents &amp; Compliance section.</p>
+        <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
+      break;
+    }
+    case "dps_signature_request": {
+      // One request, one purpose: the DPS signature authorising front-of-house
+      // staff to sell alcohol at the premises he supervises. Nothing else.
+      const dpsFirst = (data.recipient_name || "").split(" ")[0] || "there";
+      body = `
+        <h2 style="color:#1a1a2e;margin:0 0 16px;">Your signature is needed — authorisation to sell alcohol</h2>
+        <p>Hi ${dpsFirst},</p>
+        <p>${data.sender_name || "Your manager"} is asking for your signature as Designated Premises Supervisor on one document only: the written authorisation for front-of-house staff to sell alcohol at <strong>${data.branch || ""}</strong>.</p>
+        <p>It is a standing authorisation, so it keeps applying as people join or leave until it is withdrawn in writing. Please read it in full before signing.</p>
+        <p style="text-align:center;margin:24px 0;">
+          <a href="${data.signing_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Read and sign</a>
+        </p>
+        <p>You can read it now and sign later — the link stays open for ${data.expiry_days || "30"} days. No login is needed.</p>
+        <p style="color:#666;">This link is personal to you. Please do not forward it.</p>
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }

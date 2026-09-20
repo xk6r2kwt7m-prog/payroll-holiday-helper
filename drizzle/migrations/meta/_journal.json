@@ -211,6 +211,13 @@
       "when": 1789838197708,
       "tag": "0029_staff_info_security_and_review",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1789898880769,
+      "tag": "0030_add_dps_email_to_premises_licences",
+      "breakpoints": true
     }
   ]
 }

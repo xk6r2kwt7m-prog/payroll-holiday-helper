@@ -183,6 +183,9 @@ export interface SendSignatureInput {
   part_a_location?: string | null;
   expiry_days?: number;
   test_send?: boolean;
+  /** One DPS signature covering every site listed in `branches`. */
+  all_sites?: boolean;
+  branches?: string[];
 }
 
 export function useSendLicenceSignature() {

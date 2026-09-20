@@ -21,6 +21,7 @@ import {
 import { buildDpsAuthorisation, type LicenceSite } from "@/lib/licensing-documents";
 import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentPDF";
 import { EmailLicensingDocumentDialog } from "@/components/compliance/EmailLicensingDocumentDialog";
+import { DpsStandingAuthorisation } from "@/components/compliance/DpsStandingAuthorisation";
 import { cn } from "@/lib/utils";
 
 function formatDate(value: string | null): string {
@@ -158,6 +159,7 @@ export function AlcoholAuthorisationBoard() {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        <DpsStandingAuthorisation />
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : sites.length === 0 ? (

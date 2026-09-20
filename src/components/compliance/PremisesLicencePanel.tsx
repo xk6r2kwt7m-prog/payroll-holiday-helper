@@ -118,6 +118,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
       licence_status: licence?.licence_status ?? "active",
       dps_name: licence?.dps_name ?? "",
       dps_personal_licence_number: licence?.dps_personal_licence_number ?? "",
+      dps_email: licence?.dps_email ?? "",
       opening_hours: licence?.opening_hours ?? "",
       alcohol_hours: licence?.alcohol_hours ?? "",
       late_night_refreshment_hours: licence?.late_night_refreshment_hours ?? "",
@@ -343,6 +344,18 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
                 <Label>DPS personal licence</Label>
                 <Input value={form.dps_personal_licence_number ?? ""} onChange={(e) => set("dps_personal_licence_number", e.target.value)} />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>DPS email address</Label>
+              <Input
+                type="email"
+                value={form.dps_email ?? ""}
+                onChange={(e) => set("dps_email", e.target.value)}
+                placeholder="Used when asking for his signature"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Saved so it is filled in for you. Nothing is sent to it until you choose to send.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label>Opening hours</Label>
