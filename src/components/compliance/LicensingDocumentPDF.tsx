@@ -64,10 +64,13 @@ interface Props {
   authoriserSignedAt?: string | null;
   /** Extra audit line shown at the foot of the page. */
   auditLine?: string | null;
+  /** The all-sites authorisation carries no per-premises staff register. */
+  showStaffRegister?: boolean;
 }
 
 export function LicensingDocumentPDF({
   doc, staff = [], summaryLine, warningLine, authoriserSignature, authoriserSignedAt, auditLine,
+  showStaffRegister = true,
 }: Props) {
 
   const rows: SignedStaffRow[] = staff.length > 0
@@ -100,7 +103,7 @@ export function LicensingDocumentPDF({
           </View>
         )}
 
-        {doc.subject_type === "dps_authorisation" && (
+        {doc.subject_type === "dps_authorisation" && showStaffRegister && (
           <View>
             <Text style={s.sectionTitle}>Staff register for this premises</Text>
             {summaryLine && <Text style={s.summary}>{summaryLine}</Text>}

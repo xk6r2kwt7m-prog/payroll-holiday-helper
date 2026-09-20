@@ -113,6 +113,7 @@ export function DpsStandingAuthorisation() {
       <LicensingDocumentPDF
         doc={signedDoc as any}
         staff={[]}
+        showStaffRegister={false}
         authoriserSignature={signed?.signature ?? null}
         authoriserSignedAt={signed?.signed_at ?? null}
         auditLine={signed
