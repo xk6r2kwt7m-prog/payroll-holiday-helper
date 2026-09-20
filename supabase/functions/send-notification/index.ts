@@ -168,6 +168,14 @@ const FROM_ADDRESS = "UglyOps HR <support@uglyops.com>";
 
 // ─── HTML Templates ──────────────────────────────────────────────────────────
 
+/**
+ * Staff emails are sent from an unmonitored address. Every staff-facing template
+ * says so in the body as well as the footer, so the two never disagree.
+ */
+const DO_NOT_REPLY =
+  `<p style="color:#666;">Please do not reply to this email — it is not monitored. If you have a question, speak to your manager.</p>`;
+
+
 function buildHtml(type: string, data: Record<string, string>): string {
   const header = `
     <div style="background:#1a1a2e;padding:24px;text-align:center;">
