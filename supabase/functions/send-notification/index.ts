@@ -168,6 +168,14 @@ const FROM_ADDRESS = "UglyOps HR <support@uglyops.com>";
 
 // ─── HTML Templates ──────────────────────────────────────────────────────────
 
+/**
+ * Staff emails are sent from an unmonitored address. Every staff-facing template
+ * says so in the body as well as the footer, so the two never disagree.
+ */
+const DO_NOT_REPLY =
+  `<p style="color:#666;">Please do not reply to this email — it is not monitored. If you have a question, speak to your manager.</p>`;
+
+
 function buildHtml(type: string, data: Record<string, string>): string {
   const header = `
     <div style="background:#1a1a2e;padding:24px;text-align:center;">
@@ -248,6 +256,7 @@ function buildHtml(type: string, data: Record<string, string>): string {
         </p>
         <p>If you are asked for your right to work document, you can take a photo of it with your phone camera.</p>
         <p style="color:#666;">This link is personal to you and expires on ${data.expires_on || "the date shown in the app"}. Please do not forward it.</p>
+        ${DO_NOT_REPLY}
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
@@ -283,7 +292,7 @@ function buildHtml(type: string, data: Record<string, string>): string {
           <a href="${data.signing_url}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Sign your contract</a>
         </p>
         <p>It only takes a couple of minutes and can be completed on your phone.</p>
-        <p>If you have any questions, just reply to this email.</p>
+        ${DO_NOT_REPLY}
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
@@ -307,6 +316,7 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p>We have received your signature.</p>
         <p>Your contract is not yet finalised. It will be completed once the employer also signs it.</p>
         <p>You will receive a final copy once the contract has been fully completed.</p>
+        ${DO_NOT_REPLY}
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }
@@ -322,7 +332,7 @@ function buildHtml(type: string, data: Record<string, string>): string {
         <p>Your final signed copy has been stored securely and is now available.</p>
         ${finalContractLink}
         <p><strong>Completed on:</strong> ${data.signed_at || new Date().toISOString()}</p>
-        <p>If you have any questions, please contact your manager.</p>
+        ${DO_NOT_REPLY}
         <p style="margin-top:24px;">Thank you,<br/><strong>Ugly Dumpling Team</strong></p>`;
       break;
     }

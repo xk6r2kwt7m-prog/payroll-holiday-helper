@@ -9,10 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   AlertCircle, Camera, CheckCircle2, ChevronLeft, ClipboardCheck, FileCheck2, HeartPulse,
-  Landmark, Loader2, MapPin, MessageSquare, Paperclip, Pencil, Phone, ShieldCheck, User,
+  Eye, EyeOff, Landmark, Loader2, MapPin, MessageSquare, Paperclip, Pencil, Phone, ShieldCheck, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { expandRequestedFields } from "@/lib/info-request-items";
+import {
+  expandRequestedFields,
+  RTW_BASIS_OPTIONS,
+  RTW_DOCUMENT_TYPES,
+  rtwBasisNeedsExpiry,
+} from "@/lib/info-request-items";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/staff-details-portal`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -36,6 +41,20 @@ export const isValidPhoneNumber = (raw: string) => {
   return digits.length >= 7 && digits.length <= 15;
 };
 
+/**
+ * The email we already hold is shown back only partly, and cannot be changed
+ * here — a wrong address has to go through the manager.
+ */
+export const maskEmail = (raw: string): string => {
+  const email = (raw || "").trim();
+  const at = email.lastIndexOf("@");
+  if (at < 1) return email;
+  const name = email.slice(0, at);
+  const domain = email.slice(at);
+  const keep = name.slice(0, Math.min(2, name.length));
+  return `${keep}${"\u2022".repeat(Math.max(name.length - keep.length, 3))}${domain}`;
+};
+
 interface FieldDef {
   key: string;
   label: string;
@@ -46,6 +65,12 @@ interface FieldDef {
   hint?: string;
   /** Confirmation fields are only used to catch typing mistakes — never shown on the check screen. */
   confirmOnly?: boolean;
+  /** Hidden as it is typed, with a show button — used for bank numbers. */
+  masked?: boolean;
+  /** A short list to choose from instead of a free-text box. */
+  options?: readonly { value: string; label: string }[];
+  /** Shown back but not changeable here. */
+  readOnly?: boolean;
 }
 
 interface StepDef {
@@ -67,8 +92,9 @@ interface StepDef {
  * Screens are built from the item keys on the request, so someone already on
  * the team who is only asked for a visa never sees the rest.
  */
-function buildSteps(items: readonly string[]): StepDef[] {
+function buildSteps(items: readonly string[], held?: { email?: string | null }): StepDef[] {
   const has = (k: string) => items.includes(k);
+  const heldEmail = (held?.email ?? "").trim();
   const steps: StepDef[] = [];
 
   if (has("legal_name")) {
@@ -104,8 +130,18 @@ function buildSteps(items: readonly string[]): StepDef[] {
   if (has("email")) {
     steps.push({
       id: "email", section: "personal", title: "Your email address",
-      blurb: "Payslips and important messages go here.", icon: User,
-      fields: [{ key: "email", label: "Email address", type: "email", required: true }],
+      blurb: heldEmail
+        ? "This is the email we hold for you."
+        : "Payslips and important messages go here.", icon: User,
+      fields: [{
+        key: "email", label: "Email address", type: "email", required: true,
+        ...(heldEmail
+          ? {
+              readOnly: true,
+              hint: "This is the email we hold for you. If it is wrong, please speak to your manager before continuing — we cannot change it here.",
+            }
+          : {}),
+      }],
     });
   }
 
@@ -139,7 +175,11 @@ function buildSteps(items: readonly string[]): StepDef[] {
       blurb: "Required by law before you can work in the UK.", icon: ShieldCheck,
       fields: [
         { key: "nationality", label: "Nationality", required: true },
-        { key: "settlement_status", label: "Immigration status (optional)", placeholder: "e.g. British citizen, settled status" },
+        {
+          key: "rtw_basis", label: "How are you entitled to work in the UK?", required: true,
+          options: RTW_BASIS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+        },
+        { key: "settlement_status", label: "Anything else about your status (optional)", placeholder: "e.g. skilled worker visa" },
       ],
     });
   }
@@ -156,11 +196,16 @@ function buildSteps(items: readonly string[]): StepDef[] {
       blurb: "Take a photo or upload a file you already have, and tell us when it runs out.", icon: Camera,
       upload: true,
       fields: [
+        {
+          key: "document_type", label: "Which document are you sending?", required: true,
+          options: RTW_DOCUMENT_TYPES.map((d) => ({ value: d.value, label: d.label })),
+          hint: "Please choose before taking a photo, so it is filed correctly.",
+        },
         ...(has("passport") ? [{ key: "passport_no", label: "Passport number (optional)" }] : []),
         ...(has("share_code") ? [{ key: "sharing_code", label: "Share code", placeholder: "e.g. W12 3AB 456" }] : []),
         {
-          key: "expires_at", label: "Expiry date (leave blank if it does not expire)", type: "date",
-          hint: "We use this only to remind you before it runs out.",
+          key: "expires_at", label: "Date your permission runs out", type: "date",
+          hint: "British and Irish citizens and people with settled status can leave this blank — there is nothing that expires.",
         },
       ],
     });
@@ -173,10 +218,11 @@ function buildSteps(items: readonly string[]): StepDef[] {
         blurb: "Where your wages are paid. Only your payroll administrator can see these.", icon: Landmark,
         fields: [
           { key: "account_holder", label: "Account holder name", required: true },
-          { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true },
+          { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true, masked: true },
           {
             key: "confirm_sort_code", label: "Re-enter sort code", placeholder: "00-00-00",
-            required: true, confirmOnly: true, hint: "We ask twice so a typing mistake cannot delay your pay.",
+            required: true, confirmOnly: true, masked: true,
+            hint: "Hidden as you type, and asked twice so a typing mistake cannot delay your pay.",
           },
         ],
       },
@@ -184,8 +230,8 @@ function buildSteps(items: readonly string[]): StepDef[] {
         id: "bank_account", section: "bank", title: "Your account number",
         blurb: "Please type it twice so we know it is exactly right.", icon: Landmark,
         fields: [
-          { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
-          { key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits", required: true, confirmOnly: true },
+          { key: "account_number", label: "Account number", placeholder: "8 digits", required: true, masked: true },
+          { key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits", required: true, confirmOnly: true, masked: true },
         ],
       },
     );
@@ -291,6 +337,7 @@ export default function StaffDetailsPortal() {
           rtw: {
             nationality: json.prefill.nationality ?? "",
             passport_no: "", sharing_code: "", settlement_status: "",
+            rtw_basis: "", document_type: "", expires_at: "",
             ...(json.saved?.rtw ?? {}),
           },
           notes: { staff_notes: "", ...(json.saved?.notes ?? {}) },
@@ -332,7 +379,10 @@ export default function StaffDetailsPortal() {
     () => expandRequestedFields(data?.request.items ?? data?.request.sections ?? []),
     [data?.request.items, data?.request.sections],
   );
-  const steps = useMemo(() => [...buildSteps(items), NOTES_STEP], [items]);
+  const steps = useMemo(
+    () => [...buildSteps(items, { email: data?.prefill.email ?? "" }), NOTES_STEP],
+    [items, data?.prefill.email],
+  );
   const isReview = steps.length > 0 && step >= steps.length;
   const current = steps[step];
 
@@ -379,6 +429,17 @@ export default function StaffDetailsPortal() {
         }
         if (phone && !isValidPhoneNumber(phone)) {
           list.push("That phone number does not look right — include the country code for a number outside the UK");
+        }
+      }
+      if (s.section === "rtw") {
+        if (s.id === "rtw_doc") {
+          if (!(a.document_type ?? "").trim()) {
+            list.push("Please choose which document you are sending");
+          }
+          const basis = (answers.rtw?.rtw_basis ?? "").trim();
+          if (rtwBasisNeedsExpiry(basis) && !(a.expires_at ?? "").trim()) {
+            list.push("Please give the date your permission to work runs out");
+          }
         }
       }
       if (s.section === "bank") {
@@ -465,6 +526,7 @@ export default function StaffDetailsPortal() {
       const res = await post({
         action: "upload_rtw",
         file_name: file.name,
+        document_type: (answers.rtw?.document_type ?? "").trim() || null,
         expires_at: (answers.rtw?.expires_at ?? "").trim() || null,
         mime_type: file.type || "application/octet-stream",
         file_base64: btoa(binary),
@@ -599,11 +661,12 @@ export default function StaffDetailsPortal() {
     ? "Tap anything to change it. When it all looks right, send it."
     : current?.blurb ?? "";
 
+  const docTypeChosen = Boolean((answers.rtw?.document_type ?? "").trim());
   const uploadInput = (label: string, capture: boolean) => (
     <label
       className={cn(
         "flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-4 text-sm font-medium text-foreground",
-        busy && "opacity-60",
+        (busy || !docTypeChosen) && "opacity-60 pointer-events-none",
       )}
     >
       {capture ? <Camera className="h-4 w-4" /> : <Paperclip className="h-4 w-4" />}
@@ -613,7 +676,7 @@ export default function StaffDetailsPortal() {
         accept="image/*,application/pdf"
         {...(capture ? { capture: "environment" as const } : {})}
         className="hidden"
-        disabled={busy}
+        disabled={busy || !docTypeChosen}
         onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.currentTarget.value = ""; }}
       />
     </label>
@@ -660,6 +723,9 @@ export default function StaffDetailsPortal() {
                 multiline={f.multiline}
                 hint={f.hint}
                 placeholder={f.placeholder}
+                masked={f.masked}
+                options={f.options}
+                readOnly={f.readOnly}
                 value={answers[current.section]?.[f.key]}
                 onChange={(v) => set(current.section, f.key, v)}
               />
@@ -698,6 +764,11 @@ export default function StaffDetailsPortal() {
             {current.upload && (
               <div className="pt-2 space-y-2">
                 <Label className="text-sm">Photo or file of your document</Label>
+                {!(answers.rtw?.document_type ?? "").trim() && (
+                  <p className="text-xs text-warning">
+                    Choose which document you are sending first, then take a photo or attach a file.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Make sure all four corners and the text are clear. A PDF or a photo already on your phone is fine.
                 </p>
@@ -726,7 +797,14 @@ export default function StaffDetailsPortal() {
                   {s.fields.filter((f) => !f.confirmOnly).map((f) => {
                     const rowId = `${s.section}.${f.key}`;
                     const value = answers[s.section]?.[f.key] ?? "";
-                    const editing = editingRow === rowId;
+                    const editing = editingRow === rowId && !f.readOnly;
+                    const shown = f.masked && value
+                      ? `${"\u2022".repeat(Math.max(value.replace(/\D/g, "").length - 2, 2))}${value.replace(/\D/g, "").slice(-2)}`
+                      : f.options
+                        ? (f.options.find((o) => o.value === value)?.label ?? value)
+                        : f.readOnly && f.key === "email" && value
+                          ? maskEmail(value)
+                          : value;
                     return (
                       <div key={rowId} className="px-4 py-3">
                         {editing ? (
@@ -736,6 +814,8 @@ export default function StaffDetailsPortal() {
                               label={f.label}
                               type={f.type}
                               multiline={f.multiline}
+                              masked={f.masked}
+                              options={f.options}
                               placeholder={f.placeholder}
                               value={value}
                               onChange={(v) => set(s.section, f.key, v)}
@@ -748,15 +828,16 @@ export default function StaffDetailsPortal() {
                           <button
                             type="button"
                             className="w-full text-left flex items-center gap-3"
+                            disabled={f.readOnly}
                             onClick={() => setEditingRow(rowId)}
                           >
                             <span className="flex-1 min-w-0">
                               <span className="block text-xs text-muted-foreground">{f.label}</span>
                               <span className={cn("block text-sm truncate", value ? "text-foreground" : "text-destructive")}>
-                                {value || (f.required ? "Still needed" : "Not given")}
+                                {shown || (f.required ? "Still needed" : "Not given")}
                               </span>
                             </span>
-                            <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            {!f.readOnly && <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                           </button>
                         )}
                       </div>
@@ -810,7 +891,7 @@ export default function StaffDetailsPortal() {
   );
 }
 
-function Field({ id, label, value, onChange, type = "text", placeholder, multiline, hint }: {
+function Field({ id, label, value, onChange, type = "text", placeholder, multiline, hint, masked, options, readOnly }: {
   id?: string;
   label: string;
   value?: string;
@@ -819,8 +900,76 @@ function Field({ id, label, value, onChange, type = "text", placeholder, multili
   placeholder?: string;
   multiline?: boolean;
   hint?: string;
+  masked?: boolean;
+  options?: readonly { value: string; label: string }[];
+  readOnly?: boolean;
 }) {
   const inputId = id ?? `field-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const [show, setShow] = useState(false);
+
+  if (options) {
+    return (
+      <div className="space-y-1">
+        <Label htmlFor={inputId} className="text-sm">{label}</Label>
+        <select
+          id={inputId}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-11 w-full rounded-md border border-input bg-background px-3 text-base text-foreground"
+        >
+          <option value="">Please choose…</option>
+          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+    );
+  }
+
+  if (readOnly) {
+    const display = type === "email" ? maskEmail(value ?? "") : (value ?? "");
+    return (
+      <div className="space-y-1">
+        <Label className="text-sm">{label}</Label>
+        <div
+          data-testid={`readonly-${inputId}`}
+          className="h-11 flex items-center rounded-md border border-input bg-muted px-3 text-base text-muted-foreground"
+        >
+          {display}
+        </div>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+    );
+  }
+
+  if (masked) {
+    return (
+      <div className="space-y-1">
+        <Label htmlFor={inputId} className="text-sm">{label}</Label>
+        <div className="relative">
+          <Input
+            id={inputId}
+            type={show ? "text" : "password"}
+            inputMode="numeric"
+            autoComplete="off"
+            value={value ?? ""}
+            placeholder={placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-11 text-base pr-11"
+          />
+          <button
+            type="button"
+            aria-label={show ? "Hide the numbers" : "Show the numbers"}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            onClick={() => setShow((v) => !v)}
+          >
+            {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-1">
       <Label htmlFor={inputId} className="text-sm">{label}</Label>

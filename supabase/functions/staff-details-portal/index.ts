@@ -3,6 +3,9 @@ import { allocateStaffDetails, buildContactAliases } from "./allocation.ts";
 import {
   documentKindForItems,
   expandRequestedFields,
+  rtwBasisNeedsExpiry,
+  rtwDocumentFiledAs,
+  rtwDocumentLabel,
   sectionsForItems,
 } from "../_shared/info-request-items.ts";
 
@@ -185,9 +188,12 @@ Deno.serve(async (req) => {
         .upload(path, bytes, { contentType: mime, upsert: false });
       if (upErr) throw upErr;
 
-      // Filed as the kind of document that was asked for, with the expiry date
-      // when one was given, so it can be chased before it lapses.
-      const docKind = documentKindForItems(request.requested_fields ?? []);
+      // Filed as the kind of document the person said they were sending, with
+      // the expiry date when one was given, so it can be chased before it lapses.
+      const chosenType = str(body.document_type, 40);
+      const docKind = chosenType
+        ? rtwDocumentFiledAs(chosenType)
+        : documentKindForItems(request.requested_fields ?? []);
       const rawExpiry = str(body.expires_at, 10);
       const expiresAt = rawExpiry && /^\d{4}-\d{2}-\d{2}$/.test(rawExpiry) ? rawExpiry : null;
 
@@ -195,13 +201,17 @@ Deno.serve(async (req) => {
         tenant_id: request.tenant_id,
         employee_id: request.employee_id,
         document_type: docKind,
-        document_name: str(body.document_label, 120) || "Right to work (staff upload)",
+        document_name:
+          str(body.document_label, 120) ||
+          (chosenType ? `${rtwDocumentLabel(chosenType)} (staff upload)` : "Right to work (staff upload)"),
         file_path: path,
         file_size: bytes.byteLength,
         mime_type: mime,
         document_status: "uploaded",
         ...(expiresAt ? { expires_at: expiresAt } : {}),
-        notes: "Uploaded by the employee from their details link — awaiting manager review",
+        notes: `Uploaded by the employee from their details link${
+          chosenType ? ` as: ${rtwDocumentLabel(chosenType)}` : ""
+        } — awaiting manager review`,
       });
       if (docErr) throw docErr;
 
@@ -233,7 +243,9 @@ Deno.serve(async (req) => {
         candidates.forename = str(personal.forename, 80);
         candidates.surname = str(personal.surname, 80);
         candidates.preferred_name = str(personal.preferred_name, 80);
-        candidates.email = str(personal.email, 160);
+        // The email we already hold cannot be changed from the staff page — a
+        // wrong address has to go through the manager.
+        if (!emp?.email) candidates.email = str(personal.email, 160);
         candidates.date_of_birth = str(personal.date_of_birth, 10);
         candidates.ni_number = str(personal.ni_number, 20);
       }
@@ -246,6 +258,16 @@ Deno.serve(async (req) => {
         candidates.passport_no = str(rtw.passport_no, 40);
         candidates.sharing_code = str(rtw.sharing_code, 40);
         candidates.settlement_status = str(rtw.settlement_status, 60);
+        const basis = str(rtw.rtw_basis, 40);
+        if (rtwBasisNeedsExpiry(basis) && !str(rtw.expires_at, 10)) {
+          return json(
+            {
+              error: "rtw_expiry_required",
+              message: "Please give the date your permission to work runs out before sending.",
+            },
+            400,
+          );
+        }
         if (!candidates.ni_number) candidates.ni_number = str(rtw.ni_number, 20);
       }
 
@@ -370,6 +392,9 @@ Deno.serve(async (req) => {
               passport_no: str(rtw.passport_no, 40),
               sharing_code: str(rtw.sharing_code, 40),
               settlement_status: str(rtw.settlement_status, 60),
+              rtw_basis: str(rtw.rtw_basis, 40),
+              rtw_document_type: str(rtw.document_type, 40),
+              rtw_expires_at: str(rtw.expires_at, 10),
               ...(str(rtw.ni_number, 20) ? { ni_number: str(rtw.ni_number, 20) } : {}),
             }
           : {}),
@@ -405,6 +430,7 @@ Deno.serve(async (req) => {
             emergency_contact: emergencyContact,
             bank_details: bankDetails,
             ...(rtwPending ? { rtw_status: "submitted" } : {}),
+            ...(str(rtw.expires_at, 10) ? { rtw_expires_on: str(rtw.expires_at, 10) } : {}),
           })
           .eq("id", existingOnb.id);
       } else {
@@ -415,6 +441,7 @@ Deno.serve(async (req) => {
           emergency_contact: emergencyContact,
           bank_details: bankDetails,
           ...(rtwPending ? { rtw_status: "submitted" } : {}),
+          ...(str(rtw.expires_at, 10) ? { rtw_expires_on: str(rtw.expires_at, 10) } : {}),
         });
       }
 

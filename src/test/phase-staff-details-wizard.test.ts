@@ -9,7 +9,7 @@ describe("staff details form asks a little at a time and ends with a check scree
     // Screens are now built from the exact items that were requested.
     expect(portal).toContain("function buildSteps");
     expect(portal).toContain("interface StepDef");
-    expect(portal).toContain("buildSteps(items)");
+    expect(portal).toContain("buildSteps(items");
   });
 
   it("keeps each screen to a small group of questions", () => {
@@ -24,7 +24,7 @@ describe("staff details form asks a little at a time and ends with a check scree
         if (portal[i] === "[") depth++;
         else if (portal[i] === "]") { depth--; if (depth === 0) break; }
       }
-      counts.push((portal.slice(start, i).match(/\{ key:/g) ?? []).length);
+      counts.push((portal.slice(start, i).match(/key: "/g) ?? []).length);
       from = i + 1;
     }
     expect(counts.length).toBeGreaterThan(4);
