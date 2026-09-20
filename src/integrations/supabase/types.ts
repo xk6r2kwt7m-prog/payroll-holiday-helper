@@ -7593,6 +7593,7 @@ export type Database = {
           display_photo_path: string | null
           display_required: boolean
           dps_authorisation_document_id: string | null
+          dps_email: string | null
           dps_name: string | null
           dps_personal_licence_number: string | null
           id: string
@@ -7636,6 +7637,7 @@ export type Database = {
           display_photo_path?: string | null
           display_required?: boolean
           dps_authorisation_document_id?: string | null
+          dps_email?: string | null
           dps_name?: string | null
           dps_personal_licence_number?: string | null
           id?: string
@@ -7679,6 +7681,7 @@ export type Database = {
           display_photo_path?: string | null
           display_required?: boolean
           dps_authorisation_document_id?: string | null
+          dps_email?: string | null
           dps_name?: string | null
           dps_personal_licence_number?: string | null
           id?: string
