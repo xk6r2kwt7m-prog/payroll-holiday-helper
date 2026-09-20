@@ -346,6 +346,18 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
               </div>
             </div>
             <div className="space-y-1.5">
+              <Label>DPS email address</Label>
+              <Input
+                type="email"
+                value={form.dps_email ?? ""}
+                onChange={(e) => set("dps_email", e.target.value)}
+                placeholder="Used when asking for his signature"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Saved so it is filled in for you. Nothing is sent to it until you choose to send.
+              </p>
+            </div>
+            <div className="space-y-1.5">
               <Label>Opening hours</Label>
               <Input value={form.opening_hours ?? ""} onChange={(e) => set("opening_hours", e.target.value)} />
             </div>
