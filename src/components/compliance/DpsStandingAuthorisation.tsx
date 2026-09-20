@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Download, PenLine, Send, ShieldCheck } from "lucide-react";
-import { toast as _unused } from "sonner";
 import { usePremisesLicences, useSendLicenceSignature, useLicenceSignatureRequests } from "@/hooks/usePremisesLicences";
 import {
   ALL_SITES_BRANCH, buildDpsAuthorisationAllSites, groupAwaitingConfirmation, isGroupReadyToSend,
