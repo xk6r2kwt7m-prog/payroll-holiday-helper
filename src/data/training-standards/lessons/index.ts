@@ -21,6 +21,7 @@ import { udKitchenStandardsLesson } from "./ud-kitchen-standards";
 import { udFoodSafetyHaccpLesson } from "./ud-food-safety-haccp";
 import { udQualityControlLesson } from "./ud-quality-control";
 import { udManagerOperationsLesson } from "./ud-manager-operations";
+import { udTableServiceStepsLesson } from "./ud-table-service-steps";
 
 // ─── Canonical registry keyed by lesson module_title ───
 
@@ -40,6 +41,7 @@ const CANONICAL_REGISTRY: Record<string, LessonContent> = {
   [udFoodSafetyHaccpLesson.module_title]: udFoodSafetyHaccpLesson,
   [udQualityControlLesson.module_title]: udQualityControlLesson,
   [udManagerOperationsLesson.module_title]: udManagerOperationsLesson,
+  [udTableServiceStepsLesson.module_title]: udTableServiceStepsLesson,
 };
 
 // ─── Title alias mapping ───

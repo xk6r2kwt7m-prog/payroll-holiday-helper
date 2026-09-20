@@ -22,9 +22,8 @@ export const serviceSteps: ServiceStep[] = [
     icon: SmilePlus,
     timing: "Immediately on arrival",
     substeps: [
-      { text: "Greet the customer with a warm and friendly smile — maintain eye contact to make them feel welcome the moment they walk in." },
-      { text: "Ask if they have a reservation or if they are a walk-in." },
-      { text: "Use their name if they have a reservation: \"Welcome, Mr./Ms. [Name]! Great to see you.\"", tip: "Personal touch makes a big difference." },
+      { text: "Greet every guest promptly with a warm, friendly smile and natural eye contact so they feel welcome as soon as they enter." },
+      { text: "Ask whether they have a reservation or are visiting as a walk-in." },
     ],
   },
   {
@@ -32,11 +31,9 @@ export const serviceSteps: ServiceStep[] = [
     title: "Reservation & Walk-Ins",
     icon: BookOpen,
     substeps: [
-      { text: "If the customer has a reservation, escort them to their table." },
-      { text: "Let them know they can scan the QR code on the table to view the menu." },
-      { text: "Inform them that allergen information is available online and ask if anyone at the table has allergies.", allergenNote: true },
-      { text: "If the customer is a walk-in, check table availability and let them know the estimated wait time." },
-      { text: "For walk-ins with a wait, offer to take their name and phone number and suggest the bar area if available." },
+      { text: "For a reservation, show the guests to their table and explain that they can scan the QR code to view the menu." },
+      { text: "Explain that allergen information is available online and ask guests to tell you about any allergies.", allergenNote: true },
+      { text: "For a walk-in, explain whether a table is available and give an estimated waiting time when necessary." },
     ],
   },
   {
@@ -45,14 +42,12 @@ export const serviceSteps: ServiceStep[] = [
     icon: ClipboardList,
     timing: "Allow 5–10 minutes to browse",
     substeps: [
-      { text: "Let the customer know: \"I'll be back shortly to take your order — take your time!\"" },
-      { text: "Return and ask: \"Are you ready to order, or do you need a little more time?\"" },
-      { text: "Before taking the order, ask about allergies. If they have one, ask how severe it is.", allergenNote: true },
-      { text: "Repeat all stated allergies back to the customer clearly: \"So you have an allergy to [X] and [Y] — is that correct?\" Wait for confirmation before proceeding.", allergenNote: true },
-      { text: "Help the customer place their order. If they haven't selected a side, suggest one: \"Would you like to add our house rice or steamed greens?\"" },
-      { text: "Repeat the entire order back to confirm accuracy." },
-      { text: "If there is any change to an existing order, reprint a new ticket and verbally inform the kitchen it's a replacement — not a new order — to prevent duplicates.", allergenNote: true },
-      { text: "Let the customer know: \"Your food should be with you in about 15 minutes.\"" },
+      { text: "Tell the guests that you will return shortly to take their order." },
+      { text: "When you return, ask whether they need any help or are ready to order." },
+      { text: "Before taking the order, ask about allergies. Check with the manager or kitchen team whenever confirmation is needed; never guess.", allergenNote: true },
+      { text: "Help the guests place their order and suggest a side dish if they have not selected one." },
+      { text: "Repeat the complete order back to the guests to confirm it is correct." },
+      { text: "Let the guests know that their food should arrive in approximately 15 minutes." },
     ],
   },
   {
@@ -61,9 +56,8 @@ export const serviceSteps: ServiceStep[] = [
     icon: Utensils,
     timing: "Immediately after order",
     substeps: [
-      { text: "Bring homemade chilli sauce, gluten-free soy sauce, and regular soy sauce to the table." },
-      { text: "Offer chopsticks and ensure standard cutlery is also available." },
-      { text: "Mention which sauces are gluten-free for customers with dietary requirements.", allergenNote: true },
+      { text: "Immediately after taking the order, bring the appropriate homemade chilli sauce, soy sauce and chopsticks to the table." },
+      { text: "Make sure guests receive the correct sauce option for any stated dietary requirement. Check with the manager or kitchen team if you are unsure.", allergenNote: true },
     ],
   },
   {
@@ -72,10 +66,9 @@ export const serviceSteps: ServiceStep[] = [
     icon: Clock,
     timing: "10–15 min after ordering, then ongoing",
     substeps: [
-      { text: "After 10–15 minutes, check if the food is on the way from the kitchen." },
-      { text: "If there's a delay, proactively inform the customer: \"Your meal is being freshly prepared and will be with you shortly.\"" },
-      { text: "During their stay, check back on the table at least 4 times to see if they need anything." },
-      { text: "Keep checks natural — don't interrupt mid-conversation. A quick glance and eye contact is often enough.", tip: "Read the table: some guests prefer minimal interaction." },
+      { text: "After 10 to 15 minutes, check whether the food is on its way from the kitchen." },
+      { text: "If there is a delay, tell the guests that their meal is being prepared and will arrive shortly." },
+      { text: "Check the table four times during the visit to see whether the guests need anything." },
     ],
   },
   {
@@ -83,10 +76,9 @@ export const serviceSteps: ServiceStep[] = [
     title: "Food Delivery",
     icon: UtensilsCrossed,
     substeps: [
-      { text: "Bring the food to the table and place each dish in front of the correct guest if possible." },
-      { text: "Explain each dish one by one as you place it down." },
-      { text: "Highlight any allergen information or special dietary accommodations made for that dish.", allergenNote: true },
-      { text: "Wish them \"Bon appétit!\" with a genuine smile." },
+      { text: "Bring the food to the table and explain each dish as you place it down." },
+      { text: "Pay particular attention to stated allergies and special dietary requirements, and make sure the correct dish reaches the correct guest.", allergenNote: true },
+      { text: "Wish the guests ‘bon appétit’ once the dishes have been served." },
     ],
   },
   {
@@ -95,11 +87,11 @@ export const serviceSteps: ServiceStep[] = [
     icon: Lightbulb,
     timing: "After main course is finished",
     substeps: [
-      { text: "Once finished, clear the dirty plates promptly." },
-      { text: "If they haven't tried the dumplings, suggest them: \"Have you had a chance to try our dumplings? They're one of our most popular dishes!\"" },
-      { text: "If they don't want more food, suggest desserts: \"Can I tempt you with our homemade pecan pie?\"" },
-      { text: "Check if they'd like more drinks." },
-      { text: "If needed, politely advise how long they have at the table: \"Just to let you know, we have the table reserved from [time], so no rush but wanted to keep you informed.\"", tip: "Always frame time limits politely." },
+      { text: "When the guests have finished, clear the dirty plates promptly." },
+      { text: "If they have not tried the dumplings, ask whether they would like to order some." },
+      { text: "If they do not want more savoury food, offer dessert, such as pecan pie." },
+      { text: "Ask whether they would like another drink." },
+      { text: "When necessary, politely explain how long the table is available for." },
     ],
   },
   {
@@ -107,10 +99,9 @@ export const serviceSteps: ServiceStep[] = [
     title: "Bill & Feedback",
     icon: Receipt,
     substeps: [
-      { text: "When ready, bring the bill to the table." },
-      { text: "Before taking payment, kindly ask them to scan the QR code on the bill to leave a quick review." },
-      { text: "Thank them warmly: \"It was a pleasure serving you today!\"" },
-      { text: "Wish them a good afternoon or evening as they leave." },
+      { text: "Bring the bill when requested." },
+      { text: "Before taking payment, politely invite the guests to scan the QR code on the bill and review their experience." },
+      { text: "Thank the guests for visiting, say that it was a pleasure to serve them, and wish them a good afternoon or evening." },
     ],
   },
 ];

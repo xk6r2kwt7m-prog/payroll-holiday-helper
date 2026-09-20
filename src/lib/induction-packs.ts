@@ -59,6 +59,13 @@ const FOH_STANDARDS: InductionLessonRef = {
   estimated_minutes: 14,
 };
 
+const TABLE_SERVICE_STEPS: InductionLessonRef = {
+  key: "ud-table-service-steps",
+  title: "Table Service Steps",
+  summary: "The eight-stage guest journey, from welcome to bill and farewell.",
+  estimated_minutes: 10,
+};
+
 const KITCHEN_STANDARDS: InductionLessonRef = {
   key: "ud-kitchen-standards",
   title: "Kitchen Standards",
@@ -95,7 +102,7 @@ export const INDUCTION_PACKS: InductionPackDefinition[] = [
     description:
       "Everything a new front of house team member needs before their first shift on the floor.",
     restricted_to_managers: false,
-    lessons: [WELCOME, FOH_STANDARDS, ALLERGY],
+    lessons: [WELCOME, FOH_STANDARDS, TABLE_SERVICE_STEPS, ALLERGY],
   },
   {
     role: "kitchen",

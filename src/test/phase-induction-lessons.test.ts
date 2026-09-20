@@ -27,6 +27,12 @@ describe("induction pack definitions", () => {
     expect(getInductionPack("manager").restricted_to_managers).toBe(true);
   });
 
+  it("includes Table Service Steps only in the Front of House pack", () => {
+    expect(getInductionPack("foh").lessons.map((l) => l.key)).toContain("ud-table-service-steps");
+    expect(getInductionPack("kitchen").lessons.map((l) => l.key)).not.toContain("ud-table-service-steps");
+    expect(getInductionPack("manager").lessons.map((l) => l.key)).not.toContain("ud-table-service-steps");
+  });
+
   it("every lesson in every pack has written content behind it", () => {
     for (const lesson of allInductionLessons()) {
       const content = lessonContentFor(lesson);
