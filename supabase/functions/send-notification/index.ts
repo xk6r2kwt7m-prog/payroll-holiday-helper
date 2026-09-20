@@ -26,7 +26,7 @@ interface EmailProvider {
 interface NotificationRequest {
   to: string;
   subject: string;
-  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "contract_email_verification" | "induction_pack" | "induction_reminder" | "inspection_pack" | "licence_signature" | "test";
+  type: "holiday_request" | "holiday_approved" | "holiday_rejected" | "payroll_reminder" | "shift_update" | "document_expiry" | "compliance_certificate_expiry" | "employee_invitation" | "schedule_published" | "schedule_published_setup_required" | "payroll_approved" | "contract_signing" | "contract_signature_received" | "contract_fully_signed" | "contract_employer_action_required" | "contract_employer_sign_now" | "contract_fully_signed_manager" | "contract_email_verification" | "induction_pack" | "induction_reminder" | "inspection_pack" | "licence_signature" | "dps_signature_request" | "test";
   data: Record<string, string>;
   tenant_id?: string;
 }
