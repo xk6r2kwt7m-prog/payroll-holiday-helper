@@ -9,10 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   AlertCircle, Camera, CheckCircle2, ChevronLeft, ClipboardCheck, FileCheck2, HeartPulse,
-  Landmark, Loader2, MapPin, MessageSquare, Paperclip, Pencil, Phone, ShieldCheck, User,
+  Eye, EyeOff, Landmark, Loader2, MapPin, MessageSquare, Paperclip, Pencil, Phone, ShieldCheck, User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { expandRequestedFields } from "@/lib/info-request-items";
+import {
+  expandRequestedFields,
+  RTW_BASIS_OPTIONS,
+  RTW_DOCUMENT_TYPES,
+  rtwBasisNeedsExpiry,
+} from "@/lib/info-request-items";
 
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/staff-details-portal`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -36,6 +41,20 @@ export const isValidPhoneNumber = (raw: string) => {
   return digits.length >= 7 && digits.length <= 15;
 };
 
+/**
+ * The email we already hold is shown back only partly, and cannot be changed
+ * here — a wrong address has to go through the manager.
+ */
+export const maskEmail = (raw: string): string => {
+  const email = (raw || "").trim();
+  const at = email.lastIndexOf("@");
+  if (at < 1) return email;
+  const name = email.slice(0, at);
+  const domain = email.slice(at);
+  const keep = name.slice(0, Math.min(2, name.length));
+  return `${keep}${"\u2022".repeat(Math.max(name.length - keep.length, 3))}${domain}`;
+};
+
 interface FieldDef {
   key: string;
   label: string;
@@ -46,6 +65,12 @@ interface FieldDef {
   hint?: string;
   /** Confirmation fields are only used to catch typing mistakes — never shown on the check screen. */
   confirmOnly?: boolean;
+  /** Hidden as it is typed, with a show button — used for bank numbers. */
+  masked?: boolean;
+  /** A short list to choose from instead of a free-text box. */
+  options?: readonly { value: string; label: string }[];
+  /** Shown back but not changeable here. */
+  readOnly?: boolean;
 }
 
 interface StepDef {
@@ -67,8 +92,9 @@ interface StepDef {
  * Screens are built from the item keys on the request, so someone already on
  * the team who is only asked for a visa never sees the rest.
  */
-function buildSteps(items: readonly string[]): StepDef[] {
+function buildSteps(items: readonly string[], held?: { email?: string | null }): StepDef[] {
   const has = (k: string) => items.includes(k);
+  const heldEmail = (held?.email ?? "").trim();
   const steps: StepDef[] = [];
 
   if (has("legal_name")) {
@@ -104,8 +130,18 @@ function buildSteps(items: readonly string[]): StepDef[] {
   if (has("email")) {
     steps.push({
       id: "email", section: "personal", title: "Your email address",
-      blurb: "Payslips and important messages go here.", icon: User,
-      fields: [{ key: "email", label: "Email address", type: "email", required: true }],
+      blurb: heldEmail
+        ? "This is the email we hold for you."
+        : "Payslips and important messages go here.", icon: User,
+      fields: [{
+        key: "email", label: "Email address", type: "email", required: true,
+        ...(heldEmail
+          ? {
+              readOnly: true,
+              hint: "This is the email we hold for you. If it is wrong, please speak to your manager before continuing — we cannot change it here.",
+            }
+          : {}),
+      }],
     });
   }
 
@@ -139,7 +175,11 @@ function buildSteps(items: readonly string[]): StepDef[] {
       blurb: "Required by law before you can work in the UK.", icon: ShieldCheck,
       fields: [
         { key: "nationality", label: "Nationality", required: true },
-        { key: "settlement_status", label: "Immigration status (optional)", placeholder: "e.g. British citizen, settled status" },
+        {
+          key: "rtw_basis", label: "How are you entitled to work in the UK?", required: true,
+          options: RTW_BASIS_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
+        },
+        { key: "settlement_status", label: "Anything else about your status (optional)", placeholder: "e.g. skilled worker visa" },
       ],
     });
   }
@@ -156,11 +196,16 @@ function buildSteps(items: readonly string[]): StepDef[] {
       blurb: "Take a photo or upload a file you already have, and tell us when it runs out.", icon: Camera,
       upload: true,
       fields: [
+        {
+          key: "document_type", label: "Which document are you sending?", required: true,
+          options: RTW_DOCUMENT_TYPES.map((d) => ({ value: d.value, label: d.label })),
+          hint: "Please choose before taking a photo, so it is filed correctly.",
+        },
         ...(has("passport") ? [{ key: "passport_no", label: "Passport number (optional)" }] : []),
         ...(has("share_code") ? [{ key: "sharing_code", label: "Share code", placeholder: "e.g. W12 3AB 456" }] : []),
         {
-          key: "expires_at", label: "Expiry date (leave blank if it does not expire)", type: "date",
-          hint: "We use this only to remind you before it runs out.",
+          key: "expires_at", label: "Date your permission runs out", type: "date",
+          hint: "British and Irish citizens and people with settled status can leave this blank — there is nothing that expires.",
         },
       ],
     });
@@ -173,10 +218,11 @@ function buildSteps(items: readonly string[]): StepDef[] {
         blurb: "Where your wages are paid. Only your payroll administrator can see these.", icon: Landmark,
         fields: [
           { key: "account_holder", label: "Account holder name", required: true },
-          { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true },
+          { key: "sort_code", label: "Sort code", placeholder: "00-00-00", required: true, masked: true },
           {
             key: "confirm_sort_code", label: "Re-enter sort code", placeholder: "00-00-00",
-            required: true, confirmOnly: true, hint: "We ask twice so a typing mistake cannot delay your pay.",
+            required: true, confirmOnly: true, masked: true,
+            hint: "Hidden as you type, and asked twice so a typing mistake cannot delay your pay.",
           },
         ],
       },
@@ -184,8 +230,8 @@ function buildSteps(items: readonly string[]): StepDef[] {
         id: "bank_account", section: "bank", title: "Your account number",
         blurb: "Please type it twice so we know it is exactly right.", icon: Landmark,
         fields: [
-          { key: "account_number", label: "Account number", placeholder: "8 digits", required: true },
-          { key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits", required: true, confirmOnly: true },
+          { key: "account_number", label: "Account number", placeholder: "8 digits", required: true, masked: true },
+          { key: "confirm_account_number", label: "Re-enter account number", placeholder: "8 digits", required: true, confirmOnly: true, masked: true },
         ],
       },
     );
