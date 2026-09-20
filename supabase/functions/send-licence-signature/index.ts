@@ -236,18 +236,26 @@ Deno.serve(async (req) => {
 
     for (const t of targets) {
       const token = makeToken();
-      const title = `${SUBJECT_LABELS[subjectType]} — ${licence.premises_name || branch}`;
+      const homeBranch = t.branches[0] ?? branch;
+      const homeLicence = subjectType === "staff_alcohol"
+        ? (licenceForBranch(homeBranch) ?? licence)
+        : licence;
+      const title = `${SUBJECT_LABELS[subjectType]} — ${
+        allSites ? "all sites" : (homeLicence?.premises_name || homeBranch)
+      }`;
 
       const { data: request, error: insertErr } = await admin
         .from("licence_signature_requests")
         .insert({
           tenant_id: tenantId,
-          branch,
-          branch_location_id: licence.branch_location_id,
-          licence_id: licence.id,
+          branch: subjectType === "staff_alcohol" ? homeBranch : branch,
+          branch_location_id: homeLicence?.branch_location_id ?? null,
+          licence_id: homeLicence?.id ?? licence.id,
           subject_type: subjectType,
           document_title: title,
-          document_body: t.document,
+          // The covered sites are stored with the document so the signed record
+          // always shows exactly which premises the signature applied to.
+          document_body: { ...t.document, covered_branches: t.branches },
           token,
           recipient_name: t.name,
           recipient_email: t.email,
@@ -271,25 +279,30 @@ Deno.serve(async (req) => {
       }
 
       // Staff signing creates the pending authorisation record straight away, so
-      // the existing approve / revoke workflow picks it up unchanged.
+      // the existing approve / revoke workflow picks it up unchanged. Somebody who
+      // works at more than one site gets one record per site from the one signature.
       if (subjectType === "staff_alcohol" && t.employeeId) {
-        const { data: auth } = await admin
-          .from("alcohol_authorisations")
-          .insert({
-            tenant_id: tenantId,
-            employee_id: t.employeeId,
-            branch,
-            licence_id: licence.id,
-            request_id: request.id,
-            status: "pending",
-            notes: `Sent for signature by ${senderName}`,
-          })
-          .select("id")
-          .single();
-        if (auth) {
+        let firstAuthId: string | null = null;
+        for (const b of t.branches) {
+          const { data: auth } = await admin
+            .from("alcohol_authorisations")
+            .insert({
+              tenant_id: tenantId,
+              employee_id: t.employeeId,
+              branch: b,
+              licence_id: licenceForBranch(b)?.id ?? null,
+              request_id: request.id,
+              status: "pending",
+              notes: `Sent for signature by ${senderName}`,
+            })
+            .select("id")
+            .single();
+          if (auth && !firstAuthId) firstAuthId = auth.id;
+        }
+        if (firstAuthId) {
           await admin
             .from("licence_signature_requests")
-            .update({ authorisation_id: auth.id })
+            .update({ authorisation_id: firstAuthId })
             .eq("id", request.id);
         }
       }
