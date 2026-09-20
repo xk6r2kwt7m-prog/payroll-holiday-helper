@@ -14,7 +14,7 @@ Validation note: 45 focused compliance/allergen checks passed. One existing addi
 - [x] Verify the corrected flow with isolated checks and confirm no staff contact occurred.
 
 ## Table Service Steps
-- [ ] Polish the supplied eight-step service guide without adding unsupported procedures.
-- [ ] Add it as a source-backed Front of House induction lesson, held for approval.
-- [ ] Keep the standalone and printable guides aligned.
-- [ ] Verify lesson controls, tests, preview health, and phone/desktop presentation.
+- [x] Polish the supplied eight-step service guide without adding unsupported procedures.
+- [x] Add it as a source-backed Front of House induction lesson, held for approval.
+- [x] Keep the standalone and printable guides aligned.
+- [x] Verify lesson controls and tests; protected phone/desktop preview awaits an available test login.
