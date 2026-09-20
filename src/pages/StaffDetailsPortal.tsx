@@ -337,6 +337,7 @@ export default function StaffDetailsPortal() {
           rtw: {
             nationality: json.prefill.nationality ?? "",
             passport_no: "", sharing_code: "", settlement_status: "",
+            rtw_basis: "", document_type: "", expires_at: "",
             ...(json.saved?.rtw ?? {}),
           },
           notes: { staff_notes: "", ...(json.saved?.notes ?? {}) },
@@ -378,7 +379,10 @@ export default function StaffDetailsPortal() {
     () => expandRequestedFields(data?.request.items ?? data?.request.sections ?? []),
     [data?.request.items, data?.request.sections],
   );
-  const steps = useMemo(() => [...buildSteps(items), NOTES_STEP], [items]);
+  const steps = useMemo(
+    () => [...buildSteps(items, { email: data?.prefill.email ?? "" }), NOTES_STEP],
+    [items, data?.prefill.email],
+  );
   const isReview = steps.length > 0 && step >= steps.length;
   const current = steps[step];
 
@@ -425,6 +429,17 @@ export default function StaffDetailsPortal() {
         }
         if (phone && !isValidPhoneNumber(phone)) {
           list.push("That phone number does not look right — include the country code for a number outside the UK");
+        }
+      }
+      if (s.section === "rtw") {
+        if (s.id === "rtw_doc") {
+          if (!(a.document_type ?? "").trim()) {
+            list.push("Please choose which document you are sending");
+          }
+          const basis = (answers.rtw?.rtw_basis ?? "").trim();
+          if (rtwBasisNeedsExpiry(basis) && !(a.expires_at ?? "").trim()) {
+            list.push("Please give the date your permission to work runs out");
+          }
         }
       }
       if (s.section === "bank") {
@@ -511,6 +526,7 @@ export default function StaffDetailsPortal() {
       const res = await post({
         action: "upload_rtw",
         file_name: file.name,
+        document_type: (answers.rtw?.document_type ?? "").trim() || null,
         expires_at: (answers.rtw?.expires_at ?? "").trim() || null,
         mime_type: file.type || "application/octet-stream",
         file_base64: btoa(binary),
@@ -645,11 +661,12 @@ export default function StaffDetailsPortal() {
     ? "Tap anything to change it. When it all looks right, send it."
     : current?.blurb ?? "";
 
+  const docTypeChosen = Boolean((answers.rtw?.document_type ?? "").trim());
   const uploadInput = (label: string, capture: boolean) => (
     <label
       className={cn(
         "flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-4 text-sm font-medium text-foreground",
-        busy && "opacity-60",
+        (busy || !docTypeChosen) && "opacity-60 pointer-events-none",
       )}
     >
       {capture ? <Camera className="h-4 w-4" /> : <Paperclip className="h-4 w-4" />}
@@ -659,7 +676,7 @@ export default function StaffDetailsPortal() {
         accept="image/*,application/pdf"
         {...(capture ? { capture: "environment" as const } : {})}
         className="hidden"
-        disabled={busy}
+        disabled={busy || !docTypeChosen}
         onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.currentTarget.value = ""; }}
       />
     </label>
@@ -706,6 +723,9 @@ export default function StaffDetailsPortal() {
                 multiline={f.multiline}
                 hint={f.hint}
                 placeholder={f.placeholder}
+                masked={f.masked}
+                options={f.options}
+                readOnly={f.readOnly}
                 value={answers[current.section]?.[f.key]}
                 onChange={(v) => set(current.section, f.key, v)}
               />
@@ -744,6 +764,11 @@ export default function StaffDetailsPortal() {
             {current.upload && (
               <div className="pt-2 space-y-2">
                 <Label className="text-sm">Photo or file of your document</Label>
+                {!(answers.rtw?.document_type ?? "").trim() && (
+                  <p className="text-xs text-warning">
+                    Choose which document you are sending first, then take a photo or attach a file.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Make sure all four corners and the text are clear. A PDF or a photo already on your phone is fine.
                 </p>
@@ -772,7 +797,14 @@ export default function StaffDetailsPortal() {
                   {s.fields.filter((f) => !f.confirmOnly).map((f) => {
                     const rowId = `${s.section}.${f.key}`;
                     const value = answers[s.section]?.[f.key] ?? "";
-                    const editing = editingRow === rowId;
+                    const editing = editingRow === rowId && !f.readOnly;
+                    const shown = f.masked && value
+                      ? `${"\u2022".repeat(Math.max(value.replace(/\D/g, "").length - 2, 2))}${value.replace(/\D/g, "").slice(-2)}`
+                      : f.options
+                        ? (f.options.find((o) => o.value === value)?.label ?? value)
+                        : f.readOnly && f.key === "email" && value
+                          ? maskEmail(value)
+                          : value;
                     return (
                       <div key={rowId} className="px-4 py-3">
                         {editing ? (
@@ -782,6 +814,8 @@ export default function StaffDetailsPortal() {
                               label={f.label}
                               type={f.type}
                               multiline={f.multiline}
+                              masked={f.masked}
+                              options={f.options}
                               placeholder={f.placeholder}
                               value={value}
                               onChange={(v) => set(s.section, f.key, v)}
@@ -794,15 +828,16 @@ export default function StaffDetailsPortal() {
                           <button
                             type="button"
                             className="w-full text-left flex items-center gap-3"
+                            disabled={f.readOnly}
                             onClick={() => setEditingRow(rowId)}
                           >
                             <span className="flex-1 min-w-0">
                               <span className="block text-xs text-muted-foreground">{f.label}</span>
                               <span className={cn("block text-sm truncate", value ? "text-foreground" : "text-destructive")}>
-                                {value || (f.required ? "Still needed" : "Not given")}
+                                {shown || (f.required ? "Still needed" : "Not given")}
                               </span>
                             </span>
-                            <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            {!f.readOnly && <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
                           </button>
                         )}
                       </div>
@@ -856,7 +891,7 @@ export default function StaffDetailsPortal() {
   );
 }
 
-function Field({ id, label, value, onChange, type = "text", placeholder, multiline, hint }: {
+function Field({ id, label, value, onChange, type = "text", placeholder, multiline, hint, masked, options, readOnly }: {
   id?: string;
   label: string;
   value?: string;
@@ -865,8 +900,76 @@ function Field({ id, label, value, onChange, type = "text", placeholder, multili
   placeholder?: string;
   multiline?: boolean;
   hint?: string;
+  masked?: boolean;
+  options?: readonly { value: string; label: string }[];
+  readOnly?: boolean;
 }) {
   const inputId = id ?? `field-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const [show, setShow] = useState(false);
+
+  if (options) {
+    return (
+      <div className="space-y-1">
+        <Label htmlFor={inputId} className="text-sm">{label}</Label>
+        <select
+          id={inputId}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-11 w-full rounded-md border border-input bg-background px-3 text-base text-foreground"
+        >
+          <option value="">Please choose…</option>
+          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+    );
+  }
+
+  if (readOnly) {
+    const display = type === "email" ? maskEmail(value ?? "") : (value ?? "");
+    return (
+      <div className="space-y-1">
+        <Label className="text-sm">{label}</Label>
+        <div
+          data-testid={`readonly-${inputId}`}
+          className="h-11 flex items-center rounded-md border border-input bg-muted px-3 text-base text-muted-foreground"
+        >
+          {display}
+        </div>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+    );
+  }
+
+  if (masked) {
+    return (
+      <div className="space-y-1">
+        <Label htmlFor={inputId} className="text-sm">{label}</Label>
+        <div className="relative">
+          <Input
+            id={inputId}
+            type={show ? "text" : "password"}
+            inputMode="numeric"
+            autoComplete="off"
+            value={value ?? ""}
+            placeholder={placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-11 text-base pr-11"
+          />
+          <button
+            type="button"
+            aria-label={show ? "Hide the numbers" : "Show the numbers"}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            onClick={() => setShow((v) => !v)}
+          >
+            {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-1">
       <Label htmlFor={inputId} className="text-sm">{label}</Label>
