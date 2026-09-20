@@ -1463,14 +1463,6 @@ Deno.serve(async (req) => {
       // ════════════════════════════════════════════
       if (body?.action === "submit_details") {
         const details = (body.details ?? {}) as Record<string, string>;
-        const required = ["full_name", "address", "date_of_birth", "phone"];
-        const missing = required.filter((k) => !String(details[k] || "").trim());
-        if (missing.length) {
-          return new Response(JSON.stringify({ error: "Please complete all required fields.", error_code: "missing_details", missing }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
 
         const { data: detailsToken } = await supabase
           .from("signing_tokens")
@@ -1491,6 +1483,56 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+
+        // Only what is genuinely not already held may be required here. An
+        // address typed when the contract was created counts as held, and a
+        // telephone number is never required for a contract.
+        const { data: detailsEmployee } = await supabase
+          .from("employees")
+          .select("date_of_birth, forename, surname")
+          .eq("id", detailsToken.employee_id)
+          .maybeSingle();
+        const { data: detailsDocument } = await supabase
+          .from("employee_documents")
+          .select("terms_snapshot")
+          .eq("id", detailsToken.employee_document_id)
+          .maybeSingle();
+        const { data: detailsOnboardingHeld } = await supabase
+          .from("employee_onboarding_data")
+          .select("personal_info")
+          .eq("employee_id", detailsToken.employee_id)
+          .maybeSingle();
+
+        const heldPersonal = (detailsOnboardingHeld?.personal_info as Record<string, unknown> | null) ?? {};
+        const snapshotHeld =
+          ((detailsDocument?.terms_snapshot as any)?.variables as Record<string, unknown> | undefined) ?? {};
+        const heldValue = (...keys: string[]): string => {
+          for (const k of keys) {
+            const v = heldPersonal[k] ?? snapshotHeld[k];
+            if (typeof v === "string" && v.trim()) return v.trim();
+          }
+          return "";
+        };
+
+        const alreadyHeld: Record<string, string> = {
+          full_name:
+            heldValue("full_name", "legal_name") ||
+            `${detailsEmployee?.forename ?? ""} ${detailsEmployee?.surname ?? ""}`.trim(),
+          date_of_birth:
+            (detailsEmployee?.date_of_birth as string | null) || heldValue("date_of_birth", "dob"),
+          address: heldValue("address", "home_address", "full_address", "homeAddress"),
+        };
+
+        const missing = ["full_name", "date_of_birth", "address"].filter(
+          (k) => !String(details[k] || "").trim() && !alreadyHeld[k],
+        );
+        if (missing.length) {
+          return new Response(JSON.stringify({ error: "Please complete all required fields.", error_code: "missing_details", missing }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
 
         const { data: existingOnboarding } = await supabase
           .from("employee_onboarding_data")
