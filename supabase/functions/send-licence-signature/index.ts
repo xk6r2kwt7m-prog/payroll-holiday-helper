@@ -310,16 +310,24 @@ Deno.serve(async (req) => {
       const signingUrl = `${APP_URL}/sign-licence/${token}`;
       const subject = `${testSend ? "[TEST] " : ""}Please sign: ${title}`;
 
+      const siteLabel = allSites
+        ? t.branches.join(", ")
+        : subjectType === "staff_alcohol"
+          ? t.branches.map((b) => licenceForBranch(b)?.premises_name?.trim() || b).join(", ")
+          : (licence.premises_name || branch);
+
       const { error: mailErr } = await admin.functions.invoke("send-notification", {
         body: {
           to: t.email,
           subject,
-          type: "licence_signature",
+          // The all-sites DPS request has its own wording: it asks for that one
+          // signature and nothing else.
+          type: allSites ? "dps_signature_request" : "licence_signature",
           tenant_id: tenantId,
           data: {
             recipient_name: t.name,
             document_title: title,
-            branch: licence.premises_name || branch,
+            branch: siteLabel,
             signing_url: signingUrl,
             sender_name: senderName,
             expiry_days: String(expiryDays),
