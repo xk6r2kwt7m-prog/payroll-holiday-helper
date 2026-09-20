@@ -168,3 +168,23 @@ export function buildDpsAuthorisationAllSites(
     document_date: documentDate ?? null,
   };
 }
+
+/**
+ * Names the other premises a staff authorisation also covers, so one signature
+ * can stand for every site that person works at. The original wording is kept.
+ */
+export function withAdditionalSites(
+  doc: LicensingDocument,
+  otherSiteNames: string[]
+): LicensingDocument {
+  const names = otherSiteNames.filter((n) => (n ?? "").trim().length > 0);
+  if (names.length === 0) return doc;
+  return {
+    ...doc,
+    facts: [...doc.facts, { label: "Also covers", value: names.join(", ") }],
+    paragraphs: [
+      ...doc.paragraphs,
+      `You also work at ${names.join(" and ")}. This authorisation covers the sale of alcohol at those premises on the same terms and under each premises licence, so you only need to sign once.`,
+    ],
+  };
+}
