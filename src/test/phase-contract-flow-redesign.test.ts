@@ -220,3 +220,22 @@ describe("wired behaviour", () => {
     }
   });
 });
+
+describe("the details step only insists on what is genuinely missing", () => {
+  const page = readFileSync("src/pages/SignContract.tsx", "utf8");
+  const fn = readFileSync("supabase/functions/sign-contract/index.ts", "utf8");
+
+  it("checks only the details actually asked for", () => {
+    expect(page).toContain("const askedKeys = contractInfo?.missing_fields");
+    expect(page).toContain("(!askedKeys || askedKeys.includes(f.key))");
+  });
+
+  it("never requires a telephone number to save the details", () => {
+    expect(fn).not.toContain('const required = ["full_name", "address", "date_of_birth", "phone"]');
+  });
+
+  it("treats an address held on the contract as already provided", () => {
+    expect(fn).toContain('heldValue("address", "home_address", "full_address", "homeAddress")');
+    expect(fn).toContain("!String(details[k] || \"\").trim() && !alreadyHeld[k]");
+  });
+});
