@@ -169,19 +169,17 @@ export function AlcoholAuthorisationBoard() {
         ) : (
           <>
             <div className="grid grid-cols-1 min-[360px]:grid-cols-3 gap-2">
-              <Stat label="Covered by the authorisation" value={totals.covered} tone="green" />
-              <Stat label="Signed" value={totals.signed} tone="green" />
-              <Stat label="Awaiting signature" value={totals.awaitingSignature} tone="amber" />
+              <Stat label="Authorised to sell alcohol" value={totals.covered} tone="green" />
+              <Stat label="Signed as well" value={totals.signed} tone="green" />
+              <Stat label="Listed, no signature" value={totals.awaitingSignature} tone="grey" />
             </div>
 
             {outstandingCount > 0 && (
-              <p className="rounded-lg bg-warning/10 text-warning text-xs p-2.5 flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>
-                  {outstandingCount} front-of-house {outstandingCount === 1 ? "person has" : "people have"} not
-                  signed the authorisation yet at {outstandingSites.map((s) => s.branch).join(", ")}. They are
-                  covered by the licence holder's written authorisation — only the signature is outstanding.
-                </span>
+              <p className="rounded-lg bg-muted/50 text-muted-foreground text-xs p-2.5">
+                {outstandingCount} {outstandingCount === 1 ? "person has" : "people have"} not added their
+                own signature at {outstandingSites.map((s) => s.branch).join(", ")}. That is not a gap: a
+                staff signature is not required by law. They are authorised by the Designated Premises
+                Supervisor's signature on this list. Collect signatures only if you want the extra record.
               </p>
             )}
 
@@ -212,8 +210,8 @@ export function AlcoholAuthorisationBoard() {
 
                     {!isCollapsed && (
                       <div className="px-3 pb-3 space-y-3">
-                        <Group title="Signed the authorisation" rows={group("signed")} tone="green" showApproval />
-                        <Group title="Awaiting signature" rows={group("awaiting_signature")} tone="amber" showReason />
+                        <Group title="Signed as well" rows={group("signed")} tone="green" showApproval />
+                        <Group title="Listed — signature not required" rows={group("awaiting_signature")} tone="grey" showReason />
 
 
                         {site.unclassified.length > 0 && (
