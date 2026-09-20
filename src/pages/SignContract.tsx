@@ -120,7 +120,16 @@ export default function SignContract() {
 
   const submitDetails = async () => {
     setDetailsError(null);
-    const missing = DETAIL_FIELDS.filter((f) => f.required && !String(details[f.key] || "").trim());
+    // Only the details actually asked for are checked. Anything already held
+    // (for example an address typed when the contract was created) is never
+    // demanded again, and never shown back to the signer.
+    const askedKeys = contractInfo?.missing_fields;
+    const missing = DETAIL_FIELDS.filter(
+      (f) =>
+        f.required &&
+        (!askedKeys || askedKeys.includes(f.key)) &&
+        !String(details[f.key] || "").trim(),
+    );
     if (missing.length) {
       setDetailsError(`Please complete: ${missing.map((f) => f.label).join(", ")}.`);
       return;
