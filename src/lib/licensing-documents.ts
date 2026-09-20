@@ -239,3 +239,59 @@ export function clampExpiryDays(days: unknown): number {
   if (!Number.isFinite(n)) return SIGNING_EXPIRY_DAYS_DEFAULT;
   return Math.min(90, Math.max(1, Math.round(n)));
 }
+
+/* ─────────── One DPS authorisation covering every site ─────────── */
+
+/**
+ * Marker used as the `branch` of the single, all-sites DPS authorisation.
+ * Per-site requests keep their own branch, so nothing existing changes.
+ */
+export const ALL_SITES_BRANCH = "All sites";
+
+/** Premises details each site must have confirmed before the group document is sent. */
+export function groupAwaitingConfirmation(sites: LicenceSite[]): string[] {
+  const out: string[] = [];
+  for (const site of sites) {
+    for (const missing of awaitingConfirmation(site)) out.push(`${site.branch}: ${missing}`);
+  }
+  return out;
+}
+
+export function isGroupReadyToSend(sites: LicenceSite[]): boolean {
+  return sites.length > 0 && groupAwaitingConfirmation(sites).length === 0;
+}
+
+/**
+ * One written authorisation signed once by the DPS, covering the front-of-house
+ * staff register at every site he supervises. It is a standing authorisation:
+ * it keeps applying as people join or leave until it is withdrawn in writing.
+ */
+export function buildDpsAuthorisationAllSites(
+  sites: LicenceSite[],
+  documentDate?: string | null
+): LicensingDocument {
+  const first = sites[0] ?? { branch: "" };
+  const dps = value(first.dps_name);
+  const names = sites.map((s) => (s.premises_name?.trim() || s.branch)).join(", ");
+  return {
+    subject_type: "dps_authorisation",
+    title: "DPS WRITTEN AUTHORISATION FOR THE SALE OF ALCOHOL — ALL PREMISES",
+    subtitle: "Licensing Act 2003",
+    facts: sites.map((s) => ({
+      label: s.branch,
+      value: [value(s.premises_name), value(s.premises_address), `Licence ${value(s.licence_number)}`].join(" · "),
+    })),
+    paragraphs: [
+      `I, ${dps}, being the Designated Premises Supervisor and holder of a Personal Licence for ${names}, hereby authorise the front-of-house members of staff recorded in the staff register for each of those premises to make sales of alcohol in accordance with each Premises Licence and the Licensing Act 2003.`,
+      "This is a standing authorisation. It applies to each person recorded as front of house in the register for these premises, including those who join after the date below, and remains in force until it is withdrawn in writing.",
+      "This authorisation applies only while the individual remains employed or engaged at the premises and is subject to compliance with all conditions of the Premises Licence, the premises' age-verification policy and all relevant licensing procedures.",
+    ],
+    signature_block: [
+      { label: "DPS Name", value: dps },
+      { label: "Personal Licence Number", value: value(first.dps_personal_licence_number) },
+      { label: "Issuing Authority", value: value(first.issuing_authority) },
+      { label: "Premises covered", value: names },
+    ],
+    document_date: documentDate ?? null,
+  };
+}
