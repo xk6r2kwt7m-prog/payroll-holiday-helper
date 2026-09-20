@@ -234,8 +234,17 @@ function TrainingAdminView() {
                         <div className="grid grid-cols-2 gap-3">
                           <div><Label>Date Obtained</Label><Input type="date" value={form.date_obtained} onChange={e => setForm(f => ({ ...f, date_obtained: e.target.value }))} /></div>
                           <div><Label>Expiry Date</Label><Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} /></div>
-                        </div>
-                        <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+                         </div>
+                         {!form.expiry_date && (
+                           <div>
+                             <Label>Refresher review due (no legal expiry)</Label>
+                             <Input type="date" value={form.review_due_date} onChange={e => setForm(f => ({ ...f, review_due_date: e.target.value }))} />
+                             <p className="text-xs text-muted-foreground mt-1">
+                               Use this for qualifications that never expire, such as Level 2 Food Safety — three years is the usual refresher.
+                             </p>
+                           </div>
+                         )}
+                         <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
                         <Button onClick={handleSubmit} disabled={addRecord.isPending} className="w-full">
                           {addRecord.isPending ? "Saving..." : "Add Record"}
                         </Button>
