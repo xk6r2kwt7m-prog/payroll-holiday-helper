@@ -90,7 +90,7 @@ function TrainingAdminView() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
     employee_id: "", certification_name: "", certification_type: "food_hygiene",
-    provider: "", date_obtained: "", expiry_date: "", notes: "",
+    provider: "", date_obtained: "", expiry_date: "", review_due_date: "", notes: "",
   });
 
   const activeEmployees = employees.filter(e => e.status === "active" || e.status === "starter");
@@ -111,17 +111,38 @@ function TrainingAdminView() {
       provider: form.provider || undefined,
       date_obtained: form.date_obtained,
       expiry_date: form.expiry_date || undefined,
+      review_due_date: form.review_due_date || undefined,
       notes: form.notes || undefined,
     }, {
       onSuccess: () => {
         setDialogOpen(false);
-        setForm({ employee_id: "", certification_name: "", certification_type: "food_hygiene", provider: "", date_obtained: "", expiry_date: "", notes: "" });
+        setForm({ employee_id: "", certification_name: "", certification_type: "food_hygiene", provider: "", date_obtained: "", expiry_date: "", review_due_date: "", notes: "" });
       },
     });
   };
 
-  const getExpiryBadge = (expiryDate: string | null) => {
-    if (!expiryDate) return <Badge variant="outline" className="text-muted-foreground text-xs">No expiry</Badge>;
+  /**
+   * Some qualifications carry no legal expiry (Level 2 Food Safety, for example).
+   * Those show the refresher review date instead, never an expiry.
+   */
+  const getExpiryBadge = (expiryDate: string | null, reviewDue?: string | null) => {
+    if (!expiryDate) {
+      if (reviewDue) {
+        const reviewDays = differenceInDays(parseISO(reviewDue), new Date());
+        return (
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-xs",
+              reviewDays <= 90 ? "text-warning border-warning/30" : "text-muted-foreground"
+            )}
+          >
+            No expiry — refresher review due {format(parseISO(reviewDue), "d MMM yyyy")}
+          </Badge>
+        );
+      }
+      return <Badge variant="outline" className="text-muted-foreground text-xs">No expiry</Badge>;
+    }
     const days = differenceInDays(parseISO(expiryDate), new Date());
     if (days < 0) return <Badge variant="destructive" className="text-xs">Expired {Math.abs(days)}d ago</Badge>;
     if (days <= 30) return <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs"><AlertTriangle className="h-3 w-3 mr-1" />Expires in {days}d</Badge>;
@@ -213,8 +234,17 @@ function TrainingAdminView() {
                         <div className="grid grid-cols-2 gap-3">
                           <div><Label>Date Obtained</Label><Input type="date" value={form.date_obtained} onChange={e => setForm(f => ({ ...f, date_obtained: e.target.value }))} /></div>
                           <div><Label>Expiry Date</Label><Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} /></div>
-                        </div>
-                        <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+                         </div>
+                         {!form.expiry_date && (
+                           <div>
+                             <Label>Refresher review due (no legal expiry)</Label>
+                             <Input type="date" value={form.review_due_date} onChange={e => setForm(f => ({ ...f, review_due_date: e.target.value }))} />
+                             <p className="text-xs text-muted-foreground mt-1">
+                               Use this for qualifications that never expire, such as Level 2 Food Safety — three years is the usual refresher.
+                             </p>
+                           </div>
+                         )}
+                         <div><Label>Notes</Label><Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
                         <Button onClick={handleSubmit} disabled={addRecord.isPending} className="w-full">
                           {addRecord.isPending ? "Saving..." : "Add Record"}
                         </Button>
@@ -272,7 +302,7 @@ function TrainingAdminView() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          {getExpiryBadge(r.expiry_date)}
+                          {getExpiryBadge(r.expiry_date, (r as any).review_due_date)}
                           <Badge variant="outline" className="text-xs hidden sm:inline-flex">{certType?.label || r.certification_type}</Badge>
                           {canManageTraining && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => deleteRecord.mutate(r.id)}>
