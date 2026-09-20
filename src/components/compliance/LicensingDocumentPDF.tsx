@@ -128,6 +128,11 @@ export function LicensingDocumentPDF({
                 </View>
               ))}
             </View>
+            <Text style={s.note}>
+              The people named above are authorised to sell alcohol by the Designated Premises
+              Supervisor's signature below. Individual staff signatures are not required by law and
+              are shown only where one has been collected.
+            </Text>
           </View>
         )}
 
