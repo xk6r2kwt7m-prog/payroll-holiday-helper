@@ -132,14 +132,22 @@ export function AlcoholAuthorisationBoard() {
   };
 
   const downloadDocument = async (site: (typeof sites)[number]) => {
-    const doc = buildDpsAuthorisation(siteFor(site.branch), site.licence?.issue_date ?? null);
+    const sig = signatureFor(site.branch);
+    const doc = withAuthoriserLicence(
+      buildDpsAuthorisation(siteFor(site.branch), site.licence?.issue_date ?? null),
+      sig,
+    );
     const blob = await pdf(
       <LicensingDocumentPDF
         doc={doc}
         staff={registerPdfRows(site.rows)}
         summaryLine={site.summaryLine}
         warningLine={outstandingSignatureLine(site.rows, site.branch)}
-        auditLine="Produced from the live staff register in UglyOps HR."
+        authoriserSignature={sig?.signature ?? null}
+        authoriserSignedAt={sig?.signed_at ?? null}
+        auditLine={sig
+          ? `Signed electronically by ${sig.signer_name} on ${new Date(sig.signed_at).toLocaleString("en-GB")}${sig.covers_all_sites ? " as the standing authorisation covering every site" : ""}. Produced from the live staff register in UglyOps HR.`
+          : "Produced from the live staff register in UglyOps HR. Not yet signed by the Designated Premises Supervisor."}
       />
     ).toBlob();
     const url = URL.createObjectURL(blob);
