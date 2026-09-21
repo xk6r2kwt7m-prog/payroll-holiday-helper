@@ -48,6 +48,8 @@ export interface TermsComparisonRow {
   rateMismatch: boolean;
   departmentMismatch: boolean;
   isBackfillOnly: boolean;
+  /** Contract terms exist but carry no pay rate (payroll would read £0.00). */
+  missingPayRate: boolean;
   hasScheduledChange: boolean;
   status: TermsComparisonStatus;
   warnings: string[];
