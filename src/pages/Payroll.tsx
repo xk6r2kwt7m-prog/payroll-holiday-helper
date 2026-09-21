@@ -785,7 +785,7 @@ const Payroll = () => {
       toast.info(t("payroll.generating_pdf"));
       const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
       const entryEmployeeIds = new Set(entries.map((e: any) => e.employee_id));
-      const starterEmployees = allEmployees.filter(emp => {
+      const starterEmployees = allEmployeesForReports.filter(emp => {
         const inEntries = entryEmployeeIds.has(emp.id);
         const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
         if (!inEntries && !hasHolidayPayment) return false;
