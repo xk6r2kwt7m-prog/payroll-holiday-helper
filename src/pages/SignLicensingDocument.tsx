@@ -29,6 +29,17 @@ interface RequestView {
   signer_name: string | null;
   expires_at: string;
   sent_by_name: string | null;
+  personal_licence_number?: string | null;
+  personal_licence_authority?: string | null;
+  personal_licence_confirmed_at?: string | null;
+  personal_licence_file_on_record?: boolean;
+}
+
+const BLANK_MARK = "____";
+
+function blockValue(doc: LicensingDocument, label: string): string {
+  const found = doc.signature_block?.find((f) => f.label === label)?.value ?? "";
+  return found.includes(BLANK_MARK) ? "" : found;
 }
 
 export default function SignLicensingDocument() {
@@ -37,12 +48,16 @@ export default function SignLicensingDocument() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [step, setStep] = useState<"read" | "sign">("read");
+  const [step, setStep] = useState<"read" | "licence" | "sign">("read");
   const [confirmed, setConfirmed] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
   const [signerName, setSignerName] = useState("");
   const [notReadyNote, setNotReadyNote] = useState("");
   const [notReadyOpen, setNotReadyOpen] = useState(false);
+  const [licenceNumber, setLicenceNumber] = useState("");
+  const [licenceAuthority, setLicenceAuthority] = useState("");
+  const [licenceFile, setLicenceFile] = useState<{ name: string; data: string } | null>(null);
+
 
   const load = useCallback(async () => {
     if (!token) return;
