@@ -78,10 +78,27 @@ export function DpsStandingAuthorisation() {
   );
   const ready = coveredSites.length > 0;
 
-  const allSiteRequests = (requests as any[]).filter((r) => r.branch === ALL_SITES_BRANCH);
-  const signed = allSiteRequests.find((r) => r.signed_at);
+  const allSiteRequests = (requests as any[])
+    .filter((r) => r.branch === ALL_SITES_BRANCH && r.status !== "cancelled" && !r.is_test_record);
+  // Only a real signature counts — test copies and voided requests never do.
+  const signed = allSiteRequests.find((r) => isLiveDpsSignature(r));
   const latest = allSiteRequests[0] ?? null;
   const status = latest ? resolveRequestStatus(latest) : null;
+  /** The open request he still has to sign — used for the copyable link. */
+  const awaitingSignature = allSiteRequests.find((r) => !r.signed_at && r.token);
+  const signingLink = awaitingSignature
+    ? `https://udp.lovable.app/sign-licensing/${awaitingSignature.token}`
+    : null;
+
+  const copyLink = async () => {
+    if (!signingLink) return;
+    try {
+      await navigator.clipboard.writeText(signingLink);
+      toast.success("Signing link copied. Nothing was emailed.");
+    } catch {
+      toast.error("Could not copy the link — select and copy it by hand.");
+    }
+  };
 
   const doc = useMemo(
     () => buildDpsAuthorisationAllSites(coveredSites.length > 0 ? coveredSites : sites, null),
