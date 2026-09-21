@@ -50,12 +50,12 @@ interface EmployeeCardProps {
   canViewSensitive?: boolean;
   onArchive: (employee: Employee) => void;
   onMarkLeaver: (employee: Employee) => void;
-  
+  onRestore?: (employee: Employee) => void;
   onViewDetails: (employee: Employee) => void;
   index: number;
 }
 
-export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onViewDetails, index }: EmployeeCardProps) {
+export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onRestore, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
