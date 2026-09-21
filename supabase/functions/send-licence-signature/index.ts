@@ -17,7 +17,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const APP_URL = "https://udp.lovable.app";
+const APP_URL = "https://hr.uglyops.com";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

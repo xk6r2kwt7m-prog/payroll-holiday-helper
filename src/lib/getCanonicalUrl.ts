@@ -9,7 +9,7 @@
  * preview / editor URL ever leaks to end-users.
  */
 
-const PRODUCTION_APP_URL = "https://udp.lovable.app";
+const PRODUCTION_APP_URL = "https://hr.uglyops.com";
 
 /** Domains that must never appear in staff-facing links. */
 const BLOCKED_PATTERNS = [

@@ -87,7 +87,7 @@ export function DpsStandingAuthorisation() {
   /** The open request he still has to sign — used for the copyable link. */
   const awaitingSignature = allSiteRequests.find((r) => !r.signed_at && r.token);
   const signingLink = awaitingSignature
-    ? `https://udp.lovable.app/sign-licence/${awaitingSignature.token}`
+    ? `https://hr.uglyops.com/sign-licence/${awaitingSignature.token}`
     : null;
 
   const copyLink = async () => {
