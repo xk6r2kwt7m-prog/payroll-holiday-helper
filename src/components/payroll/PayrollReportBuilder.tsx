@@ -21,6 +21,8 @@ import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
 import { useEmploymentTermsComparison } from "@/hooks/useEmploymentTermsComparison";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 import { buildPdfAdjustmentRows } from "@/lib/payroll-pdf-adjustments";
+import { useTenantSensitiveFields } from "@/hooks/useSensitiveEmployeeFields";
+
 
 interface PayrollReportBuilderProps {
   open: boolean;
@@ -95,6 +97,30 @@ export function PayrollReportBuilder({
   );
   const { data: rawPeriodNotes = [] } = usePayrollPeriodNotes(period?.id);
   const { data: rawAdjustments = [] } = usePayrollAdjustments(period?.id);
+
+  // Protected values (National Insurance, bank details, identity documents) are
+  // never part of an ordinary staff query. They are read here through the same
+  // administrator-only route the direct payroll download uses, so the
+  // Starters & Leavers page shows what is genuinely on file. Anyone who is not
+  // an administrator receives an empty map and the columns stay masked.
+  const { data: protectedFields = {} } = useTenantSensitiveFields(open);
+  const withProtectedFields = useMemo(
+    () => (list: any[]) =>
+      list.map((emp: any) => {
+        const held = protectedFields[emp.id];
+        return {
+          ...emp,
+          ni_number: held?.ni_number ?? null,
+          sort_code: held?.sort_code ?? null,
+          bank_account_no: held?.bank_account_no ?? null,
+          passport_no: held?.passport_no ?? null,
+          sharing_code: held?.sharing_code ?? null,
+          residence_permit: held?.residence_permit ?? null,
+        };
+      }),
+    [protectedFields]
+  );
+
 
   const periodNotes = useMemo(() => {
     const empById = new Map(allEmployees.map((e: any) => [e.id, e]));

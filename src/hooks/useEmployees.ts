@@ -87,7 +87,10 @@ export function useCreateEmployee() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
+      queryClient.invalidateQueries({ queryKey: ["employee-sensitive"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-sensitive"] });
     },
+
   });
 }
 
@@ -120,7 +123,13 @@ export function useUpdateEmployee() {
       queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
       queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
       queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
+      // Protected values (NI, bank, identity documents) live in a separate,
+      // admin-only cache. Without this, a payroll report generated straight
+      // after a save would still read the pre-save copy and show "Missing".
+      queryClient.invalidateQueries({ queryKey: ["employee-sensitive"] });
+      queryClient.invalidateQueries({ queryKey: ["tenant-sensitive"] });
     },
+
   });
 }
 

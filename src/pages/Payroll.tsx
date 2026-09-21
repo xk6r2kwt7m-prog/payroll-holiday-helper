@@ -795,7 +795,11 @@ const Payroll = () => {
         ni_number: held(emp.id)?.ni_number ?? null,
         sort_code: held(emp.id)?.sort_code ?? null,
         bank_account_no: held(emp.id)?.bank_account_no ?? null,
+        passport_no: held(emp.id)?.passport_no ?? null,
+        sharing_code: held(emp.id)?.sharing_code ?? null,
+        residence_permit: held(emp.id)?.residence_permit ?? null,
       }));
+
 
       const logoUrl = `${window.location.origin}/logo.jpeg`;
       const blob = await pdf(
