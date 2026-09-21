@@ -140,6 +140,7 @@ Deno.serve(async (req) => {
       if (existing.length === 0) {
         await admin.from("induction_modules").insert(
           INDUCTION_MODULE_SEED.map((m, i) => ({
+            tenant_id: pack.tenant_id,
             pack_id: pack.id,
             module_key: m.key,
             title: m.title,
@@ -156,6 +157,7 @@ Deno.serve(async (req) => {
         const tasks = PRACTICAL_SEED.filter((t) => !t.roles || !role || t.roles.includes(role));
         await admin.from("induction_practical_items").insert(
           tasks.map((t, i) => ({
+            tenant_id: pack.tenant_id,
             pack_id: pack.id,
             employee_id: pack.employee_id,
             group_key: t.group,
