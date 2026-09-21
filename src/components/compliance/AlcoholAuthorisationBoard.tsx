@@ -403,13 +403,15 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
 }
 
 function Group({
-  title, rows, tone, showApproval, showReason,
+  title, rows, tone, showApproval, showReason, onAsk,
 }: {
   title: string;
   rows: RegisterRow[];
   tone: string;
   showApproval?: boolean;
   showReason?: boolean;
+  /** Offers an individual signature request for each person in the group. */
+  onAsk?: (employeeId: string) => void;
 }) {
   if (rows.length === 0) return null;
   const badgeTone: Record<string, string> = {
