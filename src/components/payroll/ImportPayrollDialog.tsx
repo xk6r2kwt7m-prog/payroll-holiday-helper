@@ -23,6 +23,7 @@ import { remainingForMatching as remainingForMatchingList } from "@/lib/payroll-
 import { findMissingFromFile, linkMissingToUnresolvedRows } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
+import { useContractedRates, resolveEffectiveRate } from "@/hooks/useContractedRates";
 import { sanitisePayrollPeriodUpdate, normalisePayrollStatus } from "@/lib/payroll-status";
 import { CreateEmployeeFromImport } from "./CreateEmployeeFromImport";
 
@@ -160,6 +161,10 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   const { data: periods = [] } = usePayrollPeriods();
   const { tenantId } = useTenant();
   const { activeAliases, saveAlias } = usePayrollImportAliases();
+  // A blank rate on the staff record falls back to the rate in their active
+  // employment terms, so an import can never write £0.00 for somebody whose
+  // contract states a rate.
+  const { rateByEmployee } = useContractedRates();
 
   // Default to selected draft period if available; otherwise auto-suggest next
   useEffect(() => {
@@ -226,23 +231,26 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   }, [periods, periodName]);
 
   const matchableEmployees: MatchableEmployee[] = useMemo(() =>
-    employees.map(e => ({
-      id: e.id,
-      forename: e.forename,
-      surname: e.surname,
-      department: e.department,
-      hourly_rate: e.hourly_rate,
-      service_charge: e.service_charge,
-      status: e.status,
-      email: e.email,
-      preferred_name: (e as any).preferred_name ?? null,
-      import_aliases: (e as any).import_aliases ?? [],
-      start_date: (e as any).start_date ?? null,
-      end_date: (e as any).end_date ?? null,
-      branch_id: (e as any).branch_id ?? null,
-      archived_at: (e as any).archived_at ?? null,
-    })),
-  [employees]);
+    employees.map(e => {
+      const rate = resolveEffectiveRate(e as any, rateByEmployee);
+      return {
+        id: e.id,
+        forename: e.forename,
+        surname: e.surname,
+        department: e.department,
+        hourly_rate: rate.hourly_rate,
+        service_charge: rate.service_charge,
+        status: e.status,
+        email: e.email,
+        preferred_name: (e as any).preferred_name ?? null,
+        import_aliases: (e as any).import_aliases ?? [],
+        start_date: (e as any).start_date ?? null,
+        end_date: (e as any).end_date ?? null,
+        branch_id: (e as any).branch_id ?? null,
+        archived_at: (e as any).archived_at ?? null,
+      };
+    }),
+  [employees, rateByEmployee]);
 
   const periodCtx = useMemo(
     () => ({ start_date: startDate || null, end_date: endDate || null }),
@@ -382,8 +390,8 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
             matchedForename: matchedEmp.forename,
             matchedSurname: matchedEmp.surname,
             department: matchedEmp.department,
-            hourlyRate: matchedEmp.hourly_rate,
-            serviceCharge: matchedEmp.service_charge ?? 0,
+            hourlyRate: resolveEffectiveRate(matchedEmp as any, rateByEmployee).hourly_rate,
+            serviceCharge: resolveEffectiveRate(matchedEmp as any, rateByEmployee).service_charge,
             unmatched: false,
             resolution: "matched",
             matchMethod: "none" as const,
