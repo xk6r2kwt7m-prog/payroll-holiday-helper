@@ -28,7 +28,29 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { cn } from "@/lib/utils";
 import { InvestigateLedgerDialog } from "./InvestigateLedgerDialog";
-import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
+import { isLeaverInPeriod } from "@/lib/employee-period-relevance";
+
+/**
+ * Period-scoped "Starter" marker for the holiday dialog only.
+ * True only when the employee's own recorded start date falls inside the
+ * selected payroll period. Never true for a leaver, and never guessed from
+ * missing data — a blank start date means "unknown", not "new starter".
+ * Display-only: no record, balance or payroll figure depends on this.
+ */
+export function isStarterMarkerForHolidayDialog(
+  employee: { status?: string | null; start_date?: string | null },
+  period: { start_date?: string | null; end_date?: string | null } | null,
+): boolean {
+  if (!period?.start_date || !period?.end_date) return false;
+  if (employee?.status === "leaver") return false;
+  if (!employee?.start_date) return false;
+  const start = new Date(employee.start_date);
+  const from = new Date(period.start_date);
+  const to = new Date(period.end_date);
+  if ([start, from, to].some((d) => Number.isNaN(d.getTime()))) return false;
+  return start >= from && start <= to;
+}
+
 interface AddHolidayPaymentDialogProps {
   defaultEmployeeId?: string;
   onSuccess?: () => void;
@@ -248,9 +270,12 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                   const periodCtx = selectedPeriod?.start_date && selectedPeriod?.end_date
                     ? { start_date: selectedPeriod.start_date, end_date: selectedPeriod.end_date }
                     : null;
-                  const starterHere = periodCtx
-                    ? isStarterInPeriod(emp as any, periodCtx)
-                    : false;
+                  // Period-scoped starter marker: only when the employee's own
+                  // recorded start date falls inside the selected period. The
+                  // "not seen in a prior period" fallback is deliberately NOT
+                  // used here — this dialog has no prior-period context, so it
+                  // would label every employee without a start date a starter.
+                  const starterHere = isStarterMarkerForHolidayDialog(emp as any, periodCtx);
                   const leaverHere = periodCtx
                     ? isLeaverInPeriod(emp as any, periodCtx)
                     : emp.status === "leaver";
