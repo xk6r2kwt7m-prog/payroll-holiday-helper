@@ -168,6 +168,7 @@ export function SendPayrollEmailDialog({
       setEmailInput("");
       setIncludeBankDetails(false);
       setAttachmentBytes(null);
+      setPresetKey("full");
     }
     setOpen(isOpen);
   };
