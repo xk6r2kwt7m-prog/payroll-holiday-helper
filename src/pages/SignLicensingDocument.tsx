@@ -229,9 +229,18 @@ export default function SignLicensingDocument() {
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">{request.document_title}</p>
             <p className="text-xs text-muted-foreground">
-              {step === "read" ? "Step 1 of 2 — read the document" : "Step 2 of 2 — sign"}
+              {totalSteps === 3
+                ? step === "read"
+                  ? "Step 1 of 3 — read the document"
+                  : step === "licence"
+                    ? "Step 2 of 3 — confirm your personal licence"
+                    : "Step 3 of 3 — sign"
+                : step === "read"
+                  ? "Step 1 of 2 — read the document"
+                  : "Step 2 of 2 — sign"}
             </p>
           </div>
+
         </div>
       </header>
 
