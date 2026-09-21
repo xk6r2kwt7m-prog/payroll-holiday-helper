@@ -213,8 +213,14 @@ export function SendPayrollEmailDialog({
         binary += String.fromCharCode(bytes[i]);
       }
       const pdfBase64 = btoa(binary);
+      setAttachmentBytes(bytes.byteLength);
 
-      const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}.pdf`;
+      if (bytes.byteLength > MAX_PDF_ATTACHMENT_BYTES) {
+        toast.error(
+          `This payroll PDF is ${formatAttachmentSize(bytes.byteLength)} — too large to attach to an email. Nothing has been sent.`
+        );
+        return;
+      }
 
       toast.info("Sending email…");
 
@@ -223,6 +229,8 @@ export function SendPayrollEmailDialog({
         {
           body: {
             recipients,
+            cc: ccList,
+            attachPdf: true,
             subject: subject || defaultSubject,
             message: message || defaultMessage,
             periodName: period.period_name,
@@ -237,7 +245,7 @@ export function SendPayrollEmailDialog({
 
       if (data?.success) {
         toast.success(
-          `Payroll sent to ${recipients.length} recipient${recipients.length > 1 ? "s" : ""}`
+          `Payroll sent to ${recipients.length} recipient${recipients.length > 1 ? "s" : ""}, copied to ${PAYROLL_ALWAYS_CC}`
         );
         setOpen(false);
       } else {
