@@ -21,6 +21,8 @@ import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
 import { useEmploymentTermsComparison } from "@/hooks/useEmploymentTermsComparison";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 import { buildPdfAdjustmentRows } from "@/lib/payroll-pdf-adjustments";
+import { useTenantSensitiveFields } from "@/hooks/useSensitiveEmployeeFields";
+
 
 interface PayrollReportBuilderProps {
   open: boolean;
