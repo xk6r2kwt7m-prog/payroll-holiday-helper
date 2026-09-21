@@ -28,7 +28,29 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useHolidayYearSummary } from "@/hooks/useHolidayYearSummary";
 import { cn } from "@/lib/utils";
 import { InvestigateLedgerDialog } from "./InvestigateLedgerDialog";
-import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
+import { isLeaverInPeriod } from "@/lib/employee-period-relevance";
+
+/**
+ * Period-scoped "Starter" marker for the holiday dialog only.
+ * True only when the employee's own recorded start date falls inside the
+ * selected payroll period. Never true for a leaver, and never guessed from
+ * missing data — a blank start date means "unknown", not "new starter".
+ * Display-only: no record, balance or payroll figure depends on this.
+ */
+export function isStarterMarkerForHolidayDialog(
+  employee: { status?: string | null; start_date?: string | null },
+  period: { start_date?: string | null; end_date?: string | null } | null,
+): boolean {
+  if (!period?.start_date || !period?.end_date) return false;
+  if (employee?.status === "leaver") return false;
+  if (!employee?.start_date) return false;
+  const start = new Date(employee.start_date);
+  const from = new Date(period.start_date);
+  const to = new Date(period.end_date);
+  if ([start, from, to].some((d) => Number.isNaN(d.getTime()))) return false;
+  return start >= from && start <= to;
+}
+
 interface AddHolidayPaymentDialogProps {
   defaultEmployeeId?: string;
   onSuccess?: () => void;
