@@ -132,9 +132,26 @@ export function SendPayrollEmailDialog({
     if (isOpen) {
       // Philipp is the standing recipient — pre-filled every time, removable
       // for a one-off send. His details are a fixed constant, never automatic.
-      setRecipients([{ ...PAYROLL_DEFAULT_RECIPIENT }]);
-      setSubject("");
-      setMessage("");
+      const standing = { ...PAYROLL_DEFAULT_RECIPIENT };
+      setRecipients([standing]);
+      const totalHours = entries.reduce(
+        (sum: number, e: any) => sum + (Number(e.timesheet_hours) || 0),
+        0
+      );
+      const opening = buildPayrollEmailDraft({
+        periodName: period.period_name,
+        companyName: tenantName,
+        senderName: (user?.user_metadata as any)?.full_name ?? null,
+        employeeCount: entries.length,
+        totalHours,
+        grandTotal: Number(period.grand_total) || 0,
+        payDate: period.pay_date ?? null,
+        periodStart: period.start_date,
+        periodEnd: period.end_date,
+        recipientName: standing.name,
+      });
+      setSubject(opening.subject);
+      setMessage(opening.message);
       setEmailInput("");
       setIncludeBankDetails(false);
       setAttachmentBytes(null);
