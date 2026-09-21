@@ -271,7 +271,7 @@ export function SendPayrollEmailDialog({
         "send-payroll-email",
         {
           body: {
-            recipients,
+            recipients: recipients.map((r) => r.email),
             cc: ccList,
             attachPdf: true,
             subject: subject || defaultSubject,
@@ -359,15 +359,15 @@ export function SendPayrollEmailDialog({
             </div>
             {recipients.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {recipients.map((email) => (
+                {recipients.map((r) => (
                   <Badge
-                    key={email}
+                    key={r.email}
                     variant="secondary"
                     className="text-xs gap-1 pr-1"
                   >
-                    {email}
+                    {r.name ? `${r.name} — ${r.email}` : r.email}
                     <button
-                      onClick={() => removeEmail(email)}
+                      onClick={() => removeEmail(r.email)}
                       className="ml-0.5 hover:text-destructive"
                     >
                       <X className="h-3 w-3" />
@@ -467,7 +467,9 @@ export function SendPayrollEmailDialog({
             <div className="text-xs space-y-1">
               <p>
                 <span className="text-muted-foreground">To: </span>
-                {recipients.length ? recipients.join(", ") : "— no recipient added yet"}
+                {recipients.length
+                  ? recipients.map((r) => (r.name ? `${r.name} <${r.email}>` : r.email)).join(", ")
+                  : "— no recipient added yet"}
               </p>
               <p>
                 <span className="text-muted-foreground">Copy: </span>
