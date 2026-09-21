@@ -896,11 +896,13 @@ export function PayrollPDF({
             const isLeaver = starter.status === 'leaver';
             const rowStyle = isLeaver ? styles.starterRowLeaver : styles.starterRowStarter;
             const notesParts: string[] = [];
+            let hasNoteIssue = false;
             if (!hasNI && starter.passport_no) notesParts.push(`PP: ${starter.passport_no}`);
             if (!hasNI && !starter.passport_no && starter.sharing_code) notesParts.push(`Share code: ${starter.sharing_code}`);
-            if (!hasNI && !starter.passport_no && !starter.sharing_code) notesParts.push("No NI/PP");
+            if (!hasNI && !starter.passport_no && !starter.sharing_code) { notesParts.push("No NI/PP"); hasNoteIssue = true; }
 
-            if (!starter.sort_code || !starter.bank_account_no) notesParts.push("Bank missing");
+            if (!starter.sort_code || !starter.bank_account_no) { notesParts.push("Bank missing"); hasNoteIssue = true; }
+
 
             return (
               <View key={starter.id} style={[styles.starterRow, rowStyle, idx % 2 === 1 ? { backgroundColor: "#fffdf0" } : {}]} wrap={false}>
