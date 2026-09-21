@@ -147,20 +147,26 @@ serve(async (req: Request) => {
 
     const downloadUrl = signedUrlData.signedUrl;
 
-    // Build email HTML
-    const html = buildPayrollEmailHtml(periodName, message, downloadUrl);
+    // Build email HTML — when the PDF is attached the body carries no link.
+    const html = buildPayrollEmailHtml(periodName, message, attachPdf ? null : downloadUrl);
 
     // Send to each recipient via existing email provider
     const providerName = (Deno.env.get("EMAIL_PROVIDER") || "postmark").toLowerCase();
     const results: { email: string; success: boolean; error?: string }[] = [];
+    const attachment = attachPdf
+      ? { fileName: fileName || "payroll.pdf", contentBase64: pdfBase64, contentType: "application/pdf" }
+      : undefined;
 
     for (const recipient of recipients) {
       try {
         const sendResult = await sendEmail(providerName, {
           to: recipient.trim(),
+          cc,
           subject,
           html,
           from: "UglyOps HR <support@uglyops.com>",
+          replyTo: body.replyTo,
+          attachment,
         });
         results.push({ email: recipient, success: sendResult.success, error: sendResult.error });
 
