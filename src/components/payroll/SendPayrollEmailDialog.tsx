@@ -285,9 +285,9 @@ export function SendPayrollEmailDialog({
             Send Payroll by Email
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
-            Generate and send the payroll PDF for{" "}
-            <strong>{period.period_name}</strong> via email with a secure
-            download link (expires in 7 days).
+            The payroll PDF for <strong>{period.period_name}</strong> is attached
+            to the email, and you are always copied in. Nothing is sent until you
+            press Send.
           </p>
         </DialogHeader>
 
