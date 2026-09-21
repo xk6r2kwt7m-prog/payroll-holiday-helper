@@ -5,8 +5,8 @@
  * auth redirects) MUST use this function — never raw `window.location.origin`.
  *
  * The canonical domain is defined once here.  If it cannot be resolved the
- * function logs a clear error and returns a safe fallback so no Lovable
- * preview / editor URL ever leaks to end-users.
+ * function logs a clear error and returns a safe fallback so no preview,
+ * editor or build-platform URL ever leaks to end-users.
  */
 
 const PRODUCTION_APP_URL = "https://hr.uglyops.com";
@@ -15,9 +15,15 @@ const PRODUCTION_APP_URL = "https://hr.uglyops.com";
 const BLOCKED_PATTERNS = [
   /id-preview--/i,
   /\.lovableusercontent\./i,
+  /\.lovable\.app$/i,
+  /\.lovable\.app\b/i,
+  /lovableproject/i,
+  /gptengineer/i,
+  /gpt-eng/i,
   /localhost/i,
   /127\.0\.0\.1/i,
 ];
+
 
 export function getCanonicalOrigin(): string {
   const origin =
