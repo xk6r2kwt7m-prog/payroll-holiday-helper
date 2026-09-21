@@ -329,8 +329,66 @@ export default function SignLicensingDocument() {
               </div>
             )}
           </>
+        ) : step === "licence" ? (
+          <>
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <p className="text-sm font-semibold">Your personal licence</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                These details are printed on the authorisation you are signing, so a licensing officer or
+                police officer can check them. Please confirm they are correct, or correct them here.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Personal licence number</Label>
+                <Input
+                  value={licenceNumber}
+                  onChange={(e) => setLicenceNumber(e.target.value)}
+                  placeholder="e.g. 17/05171/LIPERS"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Council that issued it</Label>
+                <Input
+                  value={licenceAuthority}
+                  onChange={(e) => setLicenceAuthority(e.target.value)}
+                  placeholder="e.g. City of Westminster"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Photo or copy of your personal licence (optional)</Label>
+                <Input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => pickFile(e.target.files?.[0])}
+                />
+                {licenceFile && (
+                  <p className="text-xs text-success flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> {licenceFile.name} ready to send
+                  </p>
+                )}
+                {!licenceFile && request.personal_licence_file_on_record && (
+                  <p className="text-xs text-muted-foreground">A copy is already on record.</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  A photo of the badge or card is kept with the premises records so it can be produced at an inspection.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Button className="w-full" size="lg" onClick={confirmLicence} disabled={busy}>
+                {busy ? "Saving..." : "Confirm and continue to sign"}
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => setStep("read")}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> Back to reading
+              </Button>
+            </div>
+          </>
         ) : (
           <>
+
             <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
