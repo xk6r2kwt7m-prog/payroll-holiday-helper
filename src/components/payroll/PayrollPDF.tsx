@@ -938,7 +938,7 @@ export function PayrollPDF({
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.td, { width: "10%", fontSize: 5.5, color: notesParts.length > 0 ? RED : GRAY }]}>
+                <Text style={[styles.td, { width: "10%", fontSize: 5.5, color: hasNoteIssue ? RED : GRAY }]}>
                   {notesParts.length > 0 ? notesParts.join("; ") : "✓"}
                 </Text>
               </View>
