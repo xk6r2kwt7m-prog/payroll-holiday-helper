@@ -355,30 +355,29 @@ Deno.serve(async (req) => {
           ? t.branches.map((b) => licenceForBranch(b)?.premises_name?.trim() || b).join(", ")
           : (licence.premises_name || branch);
 
-      const { error: mailErr } = await admin.functions.invoke("send-notification", {
-        body: {
-          to: t.email,
-          subject,
-          // The all-sites DPS request has its own wording: it asks for that one
-          // signature and nothing else.
-          type: allSites ? "dps_signature_request" : "licence_signature",
-          tenant_id: tenantId,
-          data: {
-            recipient_name: t.name,
-            document_title: title,
-            branch: siteLabel,
-            signing_url: signingUrl,
-            sender_name: senderName,
-            expiry_days: String(expiryDays),
-            is_staff: subjectType === "staff_alcohol" ? "yes" : "no",
-          },
+      const mail = await sendNotificationEmail(url, serviceKey, {
+        to: t.email,
+        subject,
+        // The all-sites DPS request has its own wording: it asks for that one
+        // signature and nothing else.
+        type: allSites ? "dps_signature_request" : "licence_signature",
+        tenant_id: tenantId,
+        data: {
+          recipient_name: t.name,
+          document_title: title,
+          branch: siteLabel,
+          signing_url: signingUrl,
+          sender_name: senderName,
+          expiry_days: String(expiryDays),
+          is_staff: subjectType === "staff_alcohol" ? "yes" : "no",
         },
       });
 
-      if (mailErr) {
-        failed.push(`${t.name}: ${mailErr.message}`);
+      if (!mail.ok) {
+        failed.push(`${t.name}: ${mail.detail}`);
         continue;
       }
+
       sent += 1;
 
       await admin.from("audit_log").insert({
