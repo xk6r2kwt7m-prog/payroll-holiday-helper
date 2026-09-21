@@ -22,6 +22,7 @@ export type TermsComparisonStatus =
   | "rate_mismatch"
   | "department_mismatch"
   | "multiple_mismatch"
+  | "missing_pay_rate"
   | "no_active_terms"
   | "backfill_only";
 
