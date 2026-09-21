@@ -64,27 +64,43 @@ export function DpsStandingAuthorisation() {
     [licences],
   );
 
-  const outstanding = groupAwaitingConfirmation(sites);
-  const ready = isGroupReadyToSend(sites);
+  const readiness = useMemo(() => siteReadiness(sites), [sites]);
+  const eligible = readiness.filter((r) => r.ready);
+  const waiting = readiness.filter((r) => !r.ready);
+
+  /** The sites actually covered by this request: chosen, and confirmed. */
+  const coveredSites = useMemo(
+    () => eligible.filter((r) => chosen.includes(r.branch)).map((r) => r.site),
+    [eligible, chosen],
+  );
+  const ready = coveredSites.length > 0;
 
   const allSiteRequests = (requests as any[]).filter((r) => r.branch === ALL_SITES_BRANCH);
   const signed = allSiteRequests.find((r) => r.signed_at);
   const latest = allSiteRequests[0] ?? null;
   const status = latest ? resolveRequestStatus(latest) : null;
 
-  const doc = useMemo(() => buildDpsAuthorisationAllSites(sites, null), [sites]);
-  const siteNames = sites.map((s) => s.branch).join(", ");
+  const doc = useMemo(
+    () => buildDpsAuthorisationAllSites(coveredSites.length > 0 ? coveredSites : sites, null),
+    [coveredSites, sites],
+  );
+  const siteNames = (coveredSites.length > 0 ? coveredSites : sites).map((s) => s.branch).join(", ");
   const savedEmail = (licences as any[]).find((l) => (l.dps_email ?? "").trim())?.dps_email ?? "";
   const defaultName = sites.find((s) => (s.dps_name ?? "").trim())?.dps_name ?? "";
+
+  const toggleSite = (branch: string) =>
+    setChosen((prev) => prev.includes(branch) ? prev.filter((b) => b !== branch) : [...prev, branch]);
 
   const start = () => {
     setName(defaultName);
     setEmail(savedEmail);
     setExpiryDays(30);
     setTestSend(false);
+    setChosen(eligible.map((r) => r.branch));
     setStep("details");
     setOpen(true);
   };
+
 
   const expiryDate = new Date(Date.now() + expiryDays * 86400000).toLocaleDateString("en-GB");
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
