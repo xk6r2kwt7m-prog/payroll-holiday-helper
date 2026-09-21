@@ -245,9 +245,43 @@ export function DpsStandingAuthorisation() {
           {step === "details" ? (
             <div className="space-y-3">
               <div className="space-y-1.5">
+                <Label>Sites this signature covers</Label>
+                <div className="rounded-md border divide-y">
+                  {readiness.map((r) => (
+                    <label
+                      key={r.branch}
+                      className={cn(
+                        "flex items-start gap-2.5 p-2.5",
+                        r.ready ? "cursor-pointer" : "opacity-70",
+                      )}
+                    >
+                      <Checkbox
+                        checked={r.ready && chosen.includes(r.branch)}
+                        disabled={!r.ready}
+                        onCheckedChange={() => r.ready && toggleSite(r.branch)}
+                        className="mt-0.5"
+                      />
+                      <span className="min-w-0 text-xs">
+                        <span className="font-medium">{r.branch}</span>
+                        <span className="block text-[11px] text-muted-foreground">
+                          {r.ready
+                            ? "Licence details confirmed — can be included."
+                            : `Waiting on: ${r.missing.join("; ")}.`}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Only sites with confirmed licence details can be included. The others stay out
+                  until their details are filled in — they do not hold the rest back.
+                </p>
+              </div>
+              <div className="space-y-1.5">
                 <Label>His name</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} />
               </div>
+
               <div className="space-y-1.5">
                 <Label>His email address</Label>
                 <div className="flex gap-2">
