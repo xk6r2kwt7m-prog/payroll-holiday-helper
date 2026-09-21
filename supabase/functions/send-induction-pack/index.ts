@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const APP_URL = "https://udp.lovable.app";
+const APP_URL = "https://hr.uglyops.com";
 
 const FINAL_STATEMENT =
   "I confirm that I have received, read and understood the documents and instructions provided to me. I agree to follow the procedures relevant to my role.";

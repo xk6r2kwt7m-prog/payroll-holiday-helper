@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const CANONICAL_APP_URL = "https://udp.lovable.app";
+const CANONICAL_APP_URL = "https://hr.uglyops.com";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {

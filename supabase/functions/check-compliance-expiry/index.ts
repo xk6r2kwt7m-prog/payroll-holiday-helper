@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 const REMINDER_DAYS = [90, 60, 30, 0];
-const APP_URL = "https://udp.lovable.app";
+const APP_URL = "https://hr.uglyops.com";
 
 function daysUntil(dateStr: string): number {
   const target = new Date(`${dateStr}T00:00:00Z`);

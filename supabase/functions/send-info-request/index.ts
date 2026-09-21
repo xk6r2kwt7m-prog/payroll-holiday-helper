@@ -10,7 +10,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const APP_URL = "https://udp.lovable.app";
+const APP_URL = "https://hr.uglyops.com";
 
 const LEGACY_SECTIONS = ["personal", "emergency", "bank", "rtw"];
 const ALLOWED_FIELDS = [...INFO_ITEM_KEYS, ...LEGACY_SECTIONS];

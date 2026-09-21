@@ -15,7 +15,7 @@ const corsHeaders = {
 
 const REMINDER_DAYS = [3, 7, 14];
 const WEEKLY_AFTER = 14;
-const APP_URL = "https://udp.lovable.app";
+const APP_URL = "https://hr.uglyops.com";
 
 const daysBetween = (from: string, to: Date) =>
   Math.floor((to.getTime() - new Date(from).getTime()) / 86_400_000);

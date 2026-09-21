@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-const CANONICAL_APP_URL = "https://udp.lovable.app";
+const CANONICAL_APP_URL = "https://hr.uglyops.com";
 
 async function sha256(content: string): Promise<string> {
   const encoder = new TextEncoder();
