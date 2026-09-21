@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Mail, Plus, X, Send, AlertCircle } from "lucide-react";
+import { Mail, Plus, X, Send, AlertCircle, Copy, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,8 +20,16 @@ import { useTenantSensitiveFields } from "@/hooks/useSensitiveEmployeeFields";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "./PayrollPDF";
 import { useTenant } from "@/hooks/useTenant";
+import { useAuth } from "@/hooks/useAuth";
 import { defaultReportConfig, type PayrollReportConfig } from "./PayrollReportConfig";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
+import {
+  PAYROLL_ALWAYS_CC,
+  buildPayrollEmailDraft,
+  mergeCcRecipients,
+  formatAttachmentSize,
+  MAX_PDF_ATTACHMENT_BYTES,
+} from "@/lib/payroll-email-draft";
 
 interface SendPayrollEmailDialogProps {
   period: {
@@ -34,6 +42,7 @@ interface SendPayrollEmailDialogProps {
     tenant_id: string;
     timesheet_total?: number;
     grand_total?: number;
+    pay_date?: string | null;
   };
   entries: any[];
   holidayPayments: any[];
@@ -52,7 +61,8 @@ export function SendPayrollEmailDialog({
   priorEntryRates = new Map(),
   disabled,
 }: SendPayrollEmailDialogProps) {
-  const { tenantId } = useTenant();
+  const { tenantId, tenantName } = useTenant();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [recipients, setRecipients] = useState<string[]>([]);
   const [emailInput, setEmailInput] = useState("");
@@ -63,9 +73,36 @@ export function SendPayrollEmailDialog({
   // administrators only, and only when the manager asks to include them.
   const { data: protectedFields = {} } = useTenantSensitiveFields(includeBankDetails);
   const [sending, setSending] = useState(false);
+  const [attachmentBytes, setAttachmentBytes] = useState<number | null>(null);
 
-  const defaultSubject = `Payroll – ${period.period_name}`;
-  const defaultMessage = `Please find the payroll report for ${period.period_name} attached.\n\nThis is a confidential document. Please review and file accordingly.`;
+  const draft = useMemo(() => {
+    const totalHours = entries.reduce(
+      (sum: number, e: any) => sum + (Number(e.timesheet_hours) || 0),
+      0
+    );
+    return buildPayrollEmailDraft({
+      periodName: period.period_name,
+      companyName: tenantName,
+      senderName: (user?.user_metadata as any)?.full_name ?? null,
+      employeeCount: entries.length,
+      totalHours,
+      grandTotal: Number(period.grand_total) || 0,
+      payDate: period.pay_date ?? null,
+    });
+  }, [entries, period.period_name, period.grand_total, period.pay_date, tenantName, user]);
+
+  const defaultSubject = draft.subject;
+  const defaultMessage = draft.message;
+
+  /** Always-copied address, shown exactly as it will be applied when sending. */
+  const ccList = useMemo(() => mergeCcRecipients(recipients), [recipients]);
+
+  const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}.pdf`;
+
+  const resetWording = () => {
+    setSubject(defaultSubject);
+    setMessage(defaultMessage);
+  };
 
   const handleOpen = (isOpen: boolean) => {
     if (isOpen) {
@@ -74,6 +111,7 @@ export function SendPayrollEmailDialog({
       setRecipients([]);
       setEmailInput("");
       setIncludeBankDetails(false);
+      setAttachmentBytes(null);
     }
     setOpen(isOpen);
   };
@@ -175,8 +213,14 @@ export function SendPayrollEmailDialog({
         binary += String.fromCharCode(bytes[i]);
       }
       const pdfBase64 = btoa(binary);
+      setAttachmentBytes(bytes.byteLength);
 
-      const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}.pdf`;
+      if (bytes.byteLength > MAX_PDF_ATTACHMENT_BYTES) {
+        toast.error(
+          `This payroll PDF is ${formatAttachmentSize(bytes.byteLength)} — too large to attach to an email. Nothing has been sent.`
+        );
+        return;
+      }
 
       toast.info("Sending email…");
 
@@ -185,6 +229,8 @@ export function SendPayrollEmailDialog({
         {
           body: {
             recipients,
+            cc: ccList,
+            attachPdf: true,
             subject: subject || defaultSubject,
             message: message || defaultMessage,
             periodName: period.period_name,
@@ -199,7 +245,7 @@ export function SendPayrollEmailDialog({
 
       if (data?.success) {
         toast.success(
-          `Payroll sent to ${recipients.length} recipient${recipients.length > 1 ? "s" : ""}`
+          `Payroll sent to ${recipients.length} recipient${recipients.length > 1 ? "s" : ""}, copied to ${PAYROLL_ALWAYS_CC}`
         );
         setOpen(false);
       } else {
@@ -239,9 +285,9 @@ export function SendPayrollEmailDialog({
             Send Payroll by Email
           </DialogTitle>
           <p className="text-xs text-muted-foreground">
-            Generate and send the payroll PDF for{" "}
-            <strong>{period.period_name}</strong> via email with a secure
-            download link (expires in 7 days).
+            The payroll PDF for <strong>{period.period_name}</strong> is attached
+            to the email, and you are always copied in. Nothing is sent until you
+            press Send.
           </p>
         </DialogHeader>
 
@@ -294,9 +340,32 @@ export function SendPayrollEmailDialog({
             )}
           </div>
 
+          {/* Always copied — fixed, applied when sending */}
+          <div
+            className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3"
+            data-testid="payroll-email-always-cc"
+          >
+            <Copy className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Always copied: {PAYROLL_ALWAYS_CC}</p>
+              <p className="text-xs text-muted-foreground">
+                Every payroll email is copied to this address. It cannot be left off.
+              </p>
+            </div>
+          </div>
+
           {/* Subject */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Subject</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm font-medium">Subject</Label>
+              <button
+                type="button"
+                onClick={resetWording}
+                className="text-xs text-muted-foreground underline hover:text-foreground"
+              >
+                Reset to the standard wording
+              </button>
+            </div>
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
@@ -311,8 +380,12 @@ export function SendPayrollEmailDialog({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={defaultMessage}
-              rows={3}
+              rows={10}
+              className="text-sm"
             />
+            <p className="text-xs text-muted-foreground">
+              This wording is a draft — edit it however you like before sending.
+            </p>
           </div>
 
           {/* Bank details toggle */}
@@ -342,6 +415,40 @@ export function SendPayrollEmailDialog({
             </div>
           )}
 
+          {/* Preview of exactly what goes out */}
+          <div
+            className="rounded-lg border border-border p-3 space-y-2"
+            data-testid="payroll-email-preview"
+          >
+            <p className="text-xs font-semibold text-foreground">Preview</p>
+            <div className="text-xs space-y-1">
+              <p>
+                <span className="text-muted-foreground">To: </span>
+                {recipients.length ? recipients.join(", ") : "— no recipient added yet"}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Copy: </span>
+                {ccList.join(", ")}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Subject: </span>
+                {subject || defaultSubject}
+              </p>
+            </div>
+            <div className="rounded-md bg-muted/40 p-2.5 text-xs whitespace-pre-wrap break-words">
+              {message || defaultMessage}
+            </div>
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Paperclip className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span>
+                {fileName}
+                {attachmentBytes
+                  ? ` — ${formatAttachmentSize(attachmentBytes)}`
+                  : " — generated and attached when you press Send"}
+              </span>
+            </div>
+          </div>
+
           {/* Summary */}
           <div className="rounded-lg bg-muted/40 p-3 space-y-1">
             <p className="text-xs font-medium text-foreground">
@@ -349,9 +456,10 @@ export function SendPayrollEmailDialog({
             </p>
             <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
               <li>
-                Payroll PDF for {period.period_name} (sorted A–Z by first name)
+                Payroll PDF for {period.period_name} (sorted A–Z by first name),
+                attached to the email
               </li>
-              <li>Secure download link valid for 7 days</li>
+              <li>A copy is filed in the system for the audit trail</li>
               <li>
                 {includeBankDetails
                   ? "Bank details included"

