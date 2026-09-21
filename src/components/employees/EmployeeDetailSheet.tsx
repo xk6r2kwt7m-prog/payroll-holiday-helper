@@ -119,7 +119,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
   // The database does not return bank details, National Insurance numbers or
   // identity document numbers with an ordinary staff query. They are read here
   // only when this sheet is open, and only for administrators.
-  const { data: heldSensitive } = useSensitiveEmployeeFields(employee.id, open && canViewSensitive);
+  const { data: heldSensitive } = useSensitiveEmployeeFields(employee?.id, open && canViewSensitive);
 
   if (!employee) return null;
 
