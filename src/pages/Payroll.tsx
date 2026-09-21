@@ -161,6 +161,11 @@ const Payroll = () => {
   }, [priorEntries]);
   const { data: holidayPayments = [] } = useHolidayPayments(selectedPeriod?.id);
   const { data: allEmployees = [] } = useEmployees();
+  // Anyone recorded as a leaver is moved to the archive, so the ordinary team
+  // list no longer contains them. Payroll reports must still show the leavers
+  // who belong to this period, so the reporting views read the full list
+  // (archive included). Nothing else on the page uses this list.
+  const { data: allEmployeesForReports = [] } = useEmployees(true);
   // Bank details and National Insurance numbers are not part of an ordinary
   // staff query. Payroll files need the real values, so they are fetched
   // separately and only ever returned to an administrator.
@@ -780,7 +785,7 @@ const Payroll = () => {
       toast.info(t("payroll.generating_pdf"));
       const holidayPaymentEmployeeIds = new Set(holidayPayments.map((hp: any) => hp.employee_id).filter(Boolean));
       const entryEmployeeIds = new Set(entries.map((e: any) => e.employee_id));
-      const starterEmployees = allEmployees.filter(emp => {
+      const starterEmployees = allEmployeesForReports.filter(emp => {
         const inEntries = entryEmployeeIds.has(emp.id);
         const hasHolidayPayment = holidayPaymentEmployeeIds.has(emp.id);
         if (!inEntries && !hasHolidayPayment) return false;
@@ -889,7 +894,7 @@ const Payroll = () => {
                   period={selectedPeriod as any}
                   entries={entries as any}
                   holidayPayments={holidayPayments as any}
-                  allEmployees={allEmployees as any}
+                  allEmployees={allEmployeesForReports as any}
                   priorPeriodEmployeeIds={priorPeriodEmployeeIds}
                   priorEntryRates={priorEntryRates}
                   disabled={!isAdmin}
@@ -1417,7 +1422,7 @@ const Payroll = () => {
             period={selectedPeriod}
             entries={entries as any}
             holidayPayments={holidayPayments as any}
-            allEmployees={allEmployees}
+            allEmployees={allEmployeesForReports}
             priorPeriodEmployeeIds={priorPeriodEmployeeIds}
             priorEntryRates={priorEntryRates}
             companyName={companySettings?.company_name}
