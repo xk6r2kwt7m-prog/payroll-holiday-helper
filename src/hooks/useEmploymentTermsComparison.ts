@@ -227,6 +227,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
         rateMismatch,
         departmentMismatch,
         isBackfillOnly,
+        missingPayRate,
         hasScheduledChange: !!scheduled,
         status,
         warnings,
