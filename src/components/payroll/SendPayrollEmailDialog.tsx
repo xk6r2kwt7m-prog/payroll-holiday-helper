@@ -415,6 +415,40 @@ export function SendPayrollEmailDialog({
             </div>
           )}
 
+          {/* Preview of exactly what goes out */}
+          <div
+            className="rounded-lg border border-border p-3 space-y-2"
+            data-testid="payroll-email-preview"
+          >
+            <p className="text-xs font-semibold text-foreground">Preview</p>
+            <div className="text-xs space-y-1">
+              <p>
+                <span className="text-muted-foreground">To: </span>
+                {recipients.length ? recipients.join(", ") : "— no recipient added yet"}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Copy: </span>
+                {ccList.join(", ")}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Subject: </span>
+                {subject || defaultSubject}
+              </p>
+            </div>
+            <div className="rounded-md bg-muted/40 p-2.5 text-xs whitespace-pre-wrap break-words">
+              {message || defaultMessage}
+            </div>
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Paperclip className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+              <span>
+                {fileName}
+                {attachmentBytes
+                  ? ` — ${formatAttachmentSize(attachmentBytes)}`
+                  : " — generated and attached when you press Send"}
+              </span>
+            </div>
+          </div>
+
           {/* Summary */}
           <div className="rounded-lg bg-muted/40 p-3 space-y-1">
             <p className="text-xs font-medium text-foreground">
@@ -422,9 +456,10 @@ export function SendPayrollEmailDialog({
             </p>
             <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
               <li>
-                Payroll PDF for {period.period_name} (sorted A–Z by first name)
+                Payroll PDF for {period.period_name} (sorted A–Z by first name),
+                attached to the email
               </li>
-              <li>Secure download link valid for 7 days</li>
+              <li>A copy is filed in the system for the audit trail</li>
               <li>
                 {includeBankDetails
                   ? "Bank details included"
