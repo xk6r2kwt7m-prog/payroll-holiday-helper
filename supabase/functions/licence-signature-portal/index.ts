@@ -258,6 +258,13 @@ Deno.serve(async (req) => {
       if (!request.read_at) {
         return json({ error: "not_read", message: "Please read the document and confirm before signing." }, 400);
       }
+      if (request.subject_type === "dps_authorisation" && !request.personal_licence_confirmed_at) {
+        return json({
+          error: "licence_not_confirmed",
+          message: "Please confirm your personal licence number and issuing council before signing.",
+        }, 400);
+      }
+
       const signature = String(body?.signature || "");
       const signerName = String(body?.signer_name || "").trim();
       if (!signature.startsWith("data:image/")) {
