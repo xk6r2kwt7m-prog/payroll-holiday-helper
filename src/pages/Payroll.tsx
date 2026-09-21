@@ -173,20 +173,50 @@ const Payroll = () => {
   const { unresolvedIssues, excludedNames } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
   const blockingIssues = unresolvedIssues.filter(i => !reviewedIssueNames.has(i.csvName));
 
-  // Authoritative UK Minimum Wage compliance check for this period
-  const nmw = usePayrollMinimumWageCheck({
-    periodId: selectedPeriod?.id,
-    periodStartDate: selectedPeriod?.start_date,
-    entries,
-  });
-  const recordNmwAudit = useRecordNmwAudit();
-
   // Phase 2B — read-only comparison of payroll vs employee_contract_terms.
   // Does NOT change calculations, totals, or approval logic.
   const termsComparison = useEmploymentTermsComparison({
     periodStartDate: selectedPeriod?.start_date,
     entries,
   });
+
+  // Apprenticeship status and contracted base rate come from the active
+  // employment terms. Read-only inputs to the minimum wage check.
+  const apprenticeByEmployee = useMemo(() => {
+    const map: Record<string, boolean | null | undefined> = {};
+    for (const r of termsComparison.rows) {
+      if (r.terms) map[r.employee_id] = !!(r.terms as any).is_apprentice;
+    }
+    return map;
+  }, [termsComparison.rows]);
+
+  const contractedRateByEmployee = useMemo(() => {
+    const map: Record<string, number | null> = {};
+    for (const r of termsComparison.rows) {
+      if (!r.terms) continue;
+      const raw =
+        (r.terms as any).base_hourly_rate ?? (r.terms as any).hourly_rate ?? null;
+      map[r.employee_id] = raw === null || raw === undefined ? null : Number(raw);
+    }
+    return map;
+  }, [termsComparison.rows]);
+
+  const holidayPaymentEmployeeIds = useMemo(
+    () => new Set((holidayPayments as any[]).map((p) => p.employee_id).filter(Boolean)),
+    [holidayPayments],
+  );
+
+  // Authoritative UK Minimum Wage compliance check for this period
+  const nmw = usePayrollMinimumWageCheck({
+    periodId: selectedPeriod?.id,
+    periodStartDate: selectedPeriod?.start_date,
+    periodEndDate: selectedPeriod?.end_date,
+    entries,
+    apprenticeByEmployee,
+    contractedRateByEmployee,
+    holidayPaymentEmployeeIds,
+  });
+  const recordNmwAudit = useRecordNmwAudit();
 
   // Phase 5A — Approval readiness checklist assembly. Read-only; never
   // mutates payroll data. Service charge stays excluded from NMW.
@@ -1170,9 +1200,7 @@ const Payroll = () => {
             results={nmw.results}
             summary={nmw.summary}
             canCheck={nmw.canCheck}
-            termsByEmployee={Object.fromEntries(
-              termsComparison.rows.map((r) => [r.employee_id, r.terms])
-            )}
+            excluded={nmw.excluded}
             periodId={selectedPeriod.id}
             periodStatus={selectedPeriod.status}
             entriesById={Object.fromEntries(

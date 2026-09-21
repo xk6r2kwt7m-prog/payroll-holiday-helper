@@ -111,6 +111,20 @@ export function isLeaverInPeriod(
   return false;
 }
 
+/**
+ * True if the employee's employment starts AFTER this period ends — a future
+ * starter, who must never appear in the period's checks or issue counts.
+ */
+export function isFutureStarterAfterPeriod(
+  employee: PeriodRelevanceEmployee,
+  period: RelevancePeriod,
+): boolean {
+  const start = toDate(employee?.start_date ?? null);
+  const periodEnd = toDate(period.end_date);
+  if (!start || !periodEnd) return false;
+  return start > periodEnd;
+}
+
 /** True if the employee left before this period started. */
 export function isFormerBeforePeriod(
   employee: PeriodRelevanceEmployee,
@@ -161,6 +175,8 @@ export function isRelevantToPayrollPeriod(
   if (withinPeriod(employee.end_date, period)) return true;
 
   if (isFormerBeforePeriod(employee, period)) return false;
+  // Future starters have no pay, hours or adjustment due in this period.
+  if (isFutureStarterAfterPeriod(employee, period)) return false;
 
   return employee.status === "active" || employee.status === "starter";
 }
