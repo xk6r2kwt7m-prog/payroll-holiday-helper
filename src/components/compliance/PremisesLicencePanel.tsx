@@ -230,11 +230,19 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
 
   const auditLineFor = (signedRequest: any) =>
     signedRequest
-      ? `Signed electronically by ${signedRequest.signer_name} on ${new Date(signedRequest.signed_at).toLocaleString("en-GB")}. Recorded in UglyOps HR.`
+      ? `Signed electronically by ${signedRequest.signer_name} on ${new Date(signedRequest.signed_at).toLocaleString("en-GB")}${signedRequest.branch === ALL_SITES_BRANCH ? " as the standing authorisation covering every site" : ""}. Recorded in UglyOps HR.`
       : "Not yet signed — this is a draft copy.";
 
-  const signedRequestFor = (subject: LicenceSubjectType) =>
-    (requests as any[]).find((r) => r.subject_type === subject && r.signed_at);
+  const signedRequestFor = (subject: LicenceSubjectType) => {
+    const own = (requests as any[]).find((r) => r.subject_type === subject && r.signed_at);
+    if (own || subject !== "dps_authorisation") return own;
+    // Fall back to his live standing signature — test copies and cancelled
+    // requests never count as an authorisation.
+    return (dpsRequests as any[])
+      .filter((r) => isLiveDpsSignature(r) && r.branch === ALL_SITES_BRANCH)
+      .sort((a, b) => new Date(b.signed_at).getTime() - new Date(a.signed_at).getTime())[0];
+  };
+
 
   const downloadPdf = async (subject: LicenceSubjectType) => {
     const signedRequest = signedRequestFor(subject);
