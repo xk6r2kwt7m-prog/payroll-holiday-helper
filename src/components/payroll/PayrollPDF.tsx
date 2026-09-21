@@ -897,7 +897,9 @@ export function PayrollPDF({
             const rowStyle = isLeaver ? styles.starterRowLeaver : styles.starterRowStarter;
             const notesParts: string[] = [];
             if (!hasNI && starter.passport_no) notesParts.push(`PP: ${starter.passport_no}`);
-            if (!hasNI && !starter.passport_no) notesParts.push("No NI/PP");
+            if (!hasNI && !starter.passport_no && starter.sharing_code) notesParts.push(`Share code: ${starter.sharing_code}`);
+            if (!hasNI && !starter.passport_no && !starter.sharing_code) notesParts.push("No NI/PP");
+
             if (!starter.sort_code || !starter.bank_account_no) notesParts.push("Bank missing");
 
             return (
