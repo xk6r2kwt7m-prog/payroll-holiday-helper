@@ -240,6 +240,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
       rate_mismatch: rows.filter((r) => r.rateMismatch).length,
       department_mismatch: rows.filter((r) => r.departmentMismatch).length,
       no_active_terms: rows.filter((r) => r.status === "no_active_terms").length,
+      missing_pay_rate: rows.filter((r) => r.missingPayRate).length,
       backfill_only: rows.filter((r) => r.isBackfillOnly).length,
       scheduled_pending: rows.filter((r) => r.hasScheduledChange).length,
     };
