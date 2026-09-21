@@ -175,6 +175,8 @@ export function isRelevantToPayrollPeriod(
   if (withinPeriod(employee.end_date, period)) return true;
 
   if (isFormerBeforePeriod(employee, period)) return false;
+  // Future starters have no pay, hours or adjustment due in this period.
+  if (isFutureStarterAfterPeriod(employee, period)) return false;
 
   return employee.status === "active" || employee.status === "starter";
 }
