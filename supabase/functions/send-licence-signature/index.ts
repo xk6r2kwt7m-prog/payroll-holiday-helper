@@ -41,6 +41,42 @@ function clampExpiryDays(days: unknown): number {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
+ * Sends the notification email and reports back exactly what went wrong.
+ * `functions.invoke` hides the reason behind "non-2xx status code", which tells
+ * the administrator nothing, so the response body is read and passed through.
+ */
+async function sendNotificationEmail(
+  supabaseUrl: string,
+  serviceKey: string,
+  payload: Record<string, unknown>,
+): Promise<{ ok: true } | { ok: false; detail: string }> {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const raw = await res.text();
+    if (res.ok) return { ok: true };
+    let detail = raw;
+    try {
+      const parsed = JSON.parse(raw);
+      detail = parsed?.error ? String(parsed.error) : raw;
+    } catch { /* keep the raw text */ }
+    console.error(`send-notification failed [${res.status}]: ${raw}`);
+    return { ok: false, detail: detail || `email service returned ${res.status}` };
+  } catch (e) {
+    console.error("send-notification could not be reached", e);
+    return { ok: false, detail: (e as Error).message };
+  }
+}
+
+
+/**
  * Sends a licensing document for signature by secure link.
  * - dps_authorisation / section_57 → one request for the licence holder or DPS
  * - staff_alcohol                  → one request per selected staff member,
@@ -319,30 +355,29 @@ Deno.serve(async (req) => {
           ? t.branches.map((b) => licenceForBranch(b)?.premises_name?.trim() || b).join(", ")
           : (licence.premises_name || branch);
 
-      const { error: mailErr } = await admin.functions.invoke("send-notification", {
-        body: {
-          to: t.email,
-          subject,
-          // The all-sites DPS request has its own wording: it asks for that one
-          // signature and nothing else.
-          type: allSites ? "dps_signature_request" : "licence_signature",
-          tenant_id: tenantId,
-          data: {
-            recipient_name: t.name,
-            document_title: title,
-            branch: siteLabel,
-            signing_url: signingUrl,
-            sender_name: senderName,
-            expiry_days: String(expiryDays),
-            is_staff: subjectType === "staff_alcohol" ? "yes" : "no",
-          },
+      const mail = await sendNotificationEmail(url, serviceKey, {
+        to: t.email,
+        subject,
+        // The all-sites DPS request has its own wording: it asks for that one
+        // signature and nothing else.
+        type: allSites ? "dps_signature_request" : "licence_signature",
+        tenant_id: tenantId,
+        data: {
+          recipient_name: t.name,
+          document_title: title,
+          branch: siteLabel,
+          signing_url: signingUrl,
+          sender_name: senderName,
+          expiry_days: String(expiryDays),
+          is_staff: subjectType === "staff_alcohol" ? "yes" : "no",
         },
       });
 
-      if (mailErr) {
-        failed.push(`${t.name}: ${mailErr.message}`);
+      if (!mail.ok) {
+        failed.push(`${t.name}: ${mail.detail}`);
         continue;
       }
+
       sent += 1;
 
       await admin.from("audit_log").insert({
