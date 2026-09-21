@@ -25,11 +25,18 @@ import { defaultReportConfig, type PayrollReportConfig } from "./PayrollReportCo
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 import {
   PAYROLL_ALWAYS_CC,
+  PAYROLL_DEFAULT_RECIPIENT,
   buildPayrollEmailDraft,
   mergeCcRecipients,
   formatAttachmentSize,
   MAX_PDF_ATTACHMENT_BYTES,
 } from "@/lib/payroll-email-draft";
+
+/** A recipient may carry a display name (used for the greeting) or just an address. */
+interface PayrollRecipient {
+  name?: string | null;
+  email: string;
+}
 
 interface SendPayrollEmailDialogProps {
   period: {
@@ -64,7 +71,7 @@ export function SendPayrollEmailDialog({
   const { tenantId, tenantName } = useTenant();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [recipients, setRecipients] = useState<string[]>([]);
+  const [recipients, setRecipients] = useState<PayrollRecipient[]>([]);
   const [emailInput, setEmailInput] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -80,6 +87,7 @@ export function SendPayrollEmailDialog({
       (sum: number, e: any) => sum + (Number(e.timesheet_hours) || 0),
       0
     );
+    const singleNamed = recipients.length === 1 ? recipients[0]?.name ?? null : null;
     return buildPayrollEmailDraft({
       periodName: period.period_name,
       companyName: tenantName,
@@ -88,14 +96,30 @@ export function SendPayrollEmailDialog({
       totalHours,
       grandTotal: Number(period.grand_total) || 0,
       payDate: period.pay_date ?? null,
+      periodStart: period.start_date,
+      periodEnd: period.end_date,
+      recipientName: singleNamed,
     });
-  }, [entries, period.period_name, period.grand_total, period.pay_date, tenantName, user]);
+  }, [
+    entries,
+    recipients,
+    period.period_name,
+    period.grand_total,
+    period.pay_date,
+    period.start_date,
+    period.end_date,
+    tenantName,
+    user,
+  ]);
 
   const defaultSubject = draft.subject;
   const defaultMessage = draft.message;
 
   /** Always-copied address, shown exactly as it will be applied when sending. */
-  const ccList = useMemo(() => mergeCcRecipients(recipients), [recipients]);
+  const ccList = useMemo(
+    () => mergeCcRecipients(recipients.map((r) => r.email)),
+    [recipients]
+  );
 
   const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}.pdf`;
 
@@ -106,9 +130,28 @@ export function SendPayrollEmailDialog({
 
   const handleOpen = (isOpen: boolean) => {
     if (isOpen) {
-      setSubject(defaultSubject);
-      setMessage(defaultMessage);
-      setRecipients([]);
+      // Philipp is the standing recipient — pre-filled every time, removable
+      // for a one-off send. His details are a fixed constant, never automatic.
+      const standing = { ...PAYROLL_DEFAULT_RECIPIENT };
+      setRecipients([standing]);
+      const totalHours = entries.reduce(
+        (sum: number, e: any) => sum + (Number(e.timesheet_hours) || 0),
+        0
+      );
+      const opening = buildPayrollEmailDraft({
+        periodName: period.period_name,
+        companyName: tenantName,
+        senderName: (user?.user_metadata as any)?.full_name ?? null,
+        employeeCount: entries.length,
+        totalHours,
+        grandTotal: Number(period.grand_total) || 0,
+        payDate: period.pay_date ?? null,
+        periodStart: period.start_date,
+        periodEnd: period.end_date,
+        recipientName: standing.name,
+      });
+      setSubject(opening.subject);
+      setMessage(opening.message);
       setEmailInput("");
       setIncludeBankDetails(false);
       setAttachmentBytes(null);
@@ -124,16 +167,16 @@ export function SendPayrollEmailDialog({
       toast.error("Please enter a valid email address");
       return;
     }
-    if (recipients.includes(email)) {
+    if (recipients.some((r) => r.email === email)) {
       toast.error("Email already added");
       return;
     }
-    setRecipients([...recipients, email]);
+    setRecipients([...recipients, { email }]);
     setEmailInput("");
   };
 
   const removeEmail = (email: string) => {
-    setRecipients(recipients.filter((r) => r !== email));
+    setRecipients(recipients.filter((r) => r.email !== email));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -228,7 +271,7 @@ export function SendPayrollEmailDialog({
         "send-payroll-email",
         {
           body: {
-            recipients,
+            recipients: recipients.map((r) => r.email),
             cc: ccList,
             attachPdf: true,
             subject: subject || defaultSubject,
@@ -316,15 +359,15 @@ export function SendPayrollEmailDialog({
             </div>
             {recipients.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
-                {recipients.map((email) => (
+                {recipients.map((r) => (
                   <Badge
-                    key={email}
+                    key={r.email}
                     variant="secondary"
                     className="text-xs gap-1 pr-1"
                   >
-                    {email}
+                    {r.name ? `${r.name} — ${r.email}` : r.email}
                     <button
-                      onClick={() => removeEmail(email)}
+                      onClick={() => removeEmail(r.email)}
                       className="ml-0.5 hover:text-destructive"
                     >
                       <X className="h-3 w-3" />
@@ -424,7 +467,9 @@ export function SendPayrollEmailDialog({
             <div className="text-xs space-y-1">
               <p>
                 <span className="text-muted-foreground">To: </span>
-                {recipients.length ? recipients.join(", ") : "— no recipient added yet"}
+                {recipients.length
+                  ? recipients.map((r) => (r.name ? `${r.name} <${r.email}>` : r.email)).join(", ")
+                  : "— no recipient added yet"}
               </p>
               <p>
                 <span className="text-muted-foreground">Copy: </span>
