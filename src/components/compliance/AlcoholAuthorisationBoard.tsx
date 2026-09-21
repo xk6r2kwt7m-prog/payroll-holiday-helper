@@ -374,6 +374,15 @@ export function AlcoholAuthorisationBoard() {
             auditLine="Produced from the live staff register in UglyOps HR."
           />
         )}
+
+        {askSignature && (
+          <SendStaffAlcoholDialog
+            open={!!askSignature}
+            onOpenChange={(v) => !v && setAskSignature(null)}
+            initialBranch={askSignature.branch}
+            initialEmployeeId={askSignature.employeeId}
+          />
+        )}
       </CardContent>
     </Card>
   );
