@@ -124,7 +124,7 @@ export function DpsStandingAuthorisation() {
 
   const submit = async () => {
     if (step === "details") { setStep("confirm"); return; }
-    if (!ready) { toast.error("Confirm the licence details first"); return; }
+    if (!ready) { toast.error("Choose at least one site whose licence details are confirmed"); return; }
     if (!name.trim()) { toast.error("Enter his name"); return; }
     if (!emailValid) { toast.error("Enter a valid email address"); return; }
     setBusy(true);
@@ -132,8 +132,9 @@ export function DpsStandingAuthorisation() {
       const res = await send.mutateAsync({
         subject_type: "dps_authorisation",
         all_sites: true,
-        branches: sites.map((s) => s.branch),
+        branches: coveredSites.map((s) => s.branch),
         branch: ALL_SITES_BRANCH,
+
         recipient_name: name.trim(),
         recipient_email: email.trim(),
         recipient_role: "Designated Premises Supervisor",
