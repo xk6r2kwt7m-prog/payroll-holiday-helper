@@ -106,6 +106,12 @@ export function AlcoholAuthorisationBoard() {
   );
   const outstandingCount = outstandingSites.reduce((n, s) => n + s.summary.awaitingSignature, 0);
 
+  /** Front-of-house staff with no site on their record — no register can list them. */
+  const noSite = useMemo(
+    () => staffWithoutSite({ employees, decisions: decisions as any }),
+    [employees, decisions],
+  );
+
 
   const siteFor = (branch: string): LicenceSite => {
     const l = (licences as any[]).find((x) => x.branch === branch);
@@ -204,6 +210,26 @@ export function AlcoholAuthorisationBoard() {
                 staff signature is not required by law. They are authorised by the Designated Premises
                 Supervisor's signature on this list. Collect signatures only if you want the extra record.
               </p>
+            )}
+
+            {noSite.length > 0 && (
+              <div className="rounded-lg border p-2.5 text-xs">
+                <p className="font-medium">
+                  {noSite.length} front-of-house {noSite.length === 1 ? "person has" : "people have"} no
+                  site on their record
+                </p>
+                <p className="text-muted-foreground mt-1">
+                  They cannot appear on any site list until a site is set on their staff record. Open
+                  their record and add the site they work at.
+                </p>
+                <ul className="mt-2 space-y-0.5">
+                  {noSite.map((p) => (
+                    <li key={p.employee_id} className="text-muted-foreground">
+                      {p.name}{p.role ? ` · ${p.role}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             <div className="space-y-3">
