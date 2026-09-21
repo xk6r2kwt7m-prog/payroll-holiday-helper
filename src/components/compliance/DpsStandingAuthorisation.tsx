@@ -15,9 +15,10 @@ import {
   useSavePremisesLicence,
 } from "@/hooks/usePremisesLicences";
 import {
-  ALL_SITES_BRANCH, buildDpsAuthorisationAllSites, groupAwaitingConfirmation, isGroupReadyToSend,
+  ALL_SITES_BRANCH, buildDpsAuthorisationAllSites, siteReadiness,
   resolveRequestStatus, requestStatusLabel, type LicenceSite,
 } from "@/lib/licensing-documents";
+
 import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentPDF";
 
 /**
