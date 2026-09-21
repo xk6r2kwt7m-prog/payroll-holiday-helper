@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Mail, Plus, X, Send, AlertCircle } from "lucide-react";
+import { Mail, Plus, X, Send, AlertCircle, Copy, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
