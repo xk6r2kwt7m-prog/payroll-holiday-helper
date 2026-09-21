@@ -325,12 +325,27 @@ async function sendEmail(provider: string, payload: EmailPayload): Promise<Email
 
 // ─── Email HTML ──────────────────────────────────────────────────────────────
 
-function buildPayrollEmailHtml(periodName: string, message: string, downloadUrl: string): string {
+function buildPayrollEmailHtml(
+  periodName: string,
+  message: string,
+  downloadUrl: string | null
+): string {
   const escapedMessage = message
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/\n/g, "<br/>");
+
+  const linkBlock = downloadUrl
+    ? `
+    <p style="text-align:center;margin:24px 0;">
+      <a href="${downloadUrl}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">
+        Download Payroll PDF
+      </a>
+    </p>
+    <p style="color:#888;font-size:12px;">This download link will expire in 7 days. Please download and save the file for your records.</p>`
+    : `
+    <p style="color:#888;font-size:12px;">The payroll report is attached to this email as a PDF.</p>`;
 
   return `
 <div style="max-width:600px;margin:0 auto;background:#ffffff;font-family:sans-serif;">
