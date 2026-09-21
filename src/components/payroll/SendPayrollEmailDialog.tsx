@@ -60,7 +60,8 @@ export function SendPayrollEmailDialog({
   priorEntryRates = new Map(),
   disabled,
 }: SendPayrollEmailDialogProps) {
-  const { tenantId } = useTenant();
+  const { tenantId, tenantName } = useTenant();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [recipients, setRecipients] = useState<string[]>([]);
   const [emailInput, setEmailInput] = useState("");
@@ -71,9 +72,36 @@ export function SendPayrollEmailDialog({
   // administrators only, and only when the manager asks to include them.
   const { data: protectedFields = {} } = useTenantSensitiveFields(includeBankDetails);
   const [sending, setSending] = useState(false);
+  const [attachmentBytes, setAttachmentBytes] = useState<number | null>(null);
 
-  const defaultSubject = `Payroll – ${period.period_name}`;
-  const defaultMessage = `Please find the payroll report for ${period.period_name} attached.\n\nThis is a confidential document. Please review and file accordingly.`;
+  const draft = useMemo(() => {
+    const totalHours = entries.reduce(
+      (sum: number, e: any) => sum + (Number(e.timesheet_hours) || 0),
+      0
+    );
+    return buildPayrollEmailDraft({
+      periodName: period.period_name,
+      companyName: tenantName,
+      senderName: (user?.user_metadata as any)?.full_name ?? null,
+      employeeCount: entries.length,
+      totalHours,
+      grandTotal: Number(period.grand_total) || 0,
+      payDate: period.pay_date ?? null,
+    });
+  }, [entries, period.period_name, period.grand_total, period.pay_date, tenantName, user]);
+
+  const defaultSubject = draft.subject;
+  const defaultMessage = draft.message;
+
+  /** Always-copied address, shown exactly as it will be applied when sending. */
+  const ccList = useMemo(() => mergeCcRecipients(recipients), [recipients]);
+
+  const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}.pdf`;
+
+  const resetWording = () => {
+    setSubject(defaultSubject);
+    setMessage(defaultMessage);
+  };
 
   const handleOpen = (isOpen: boolean) => {
     if (isOpen) {
@@ -82,6 +110,7 @@ export function SendPayrollEmailDialog({
       setRecipients([]);
       setEmailInput("");
       setIncludeBankDetails(false);
+      setAttachmentBytes(null);
     }
     setOpen(isOpen);
   };
