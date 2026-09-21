@@ -46,10 +46,11 @@ describe("NMW — sub-penny rounding must not report underpayment", () => {
     expect(r.shortfall).toBeGreaterThan(0);
   });
 
-  it("flags a missing hourly rate as non-compliant with the full shortfall", () => {
+  it("reports a missing hourly rate as information missing, not non-compliant", () => {
     const r = entry({ timesheet_hours: 23.07, hourly_rate: 0, service_charge: 0 });
-    expect(r.status).toBe("non_compliant");
-    expect(r.shortfall).toBeCloseTo(23.07 * r.required_rate, 2);
+    expect(r.status).toBe("insufficient_data");
+    expect(r.missing).toContain("base_rate");
+    expect(r.shortfall).toBe(0);
   });
 
   it("only flags reliance on service charge when there is a real shortfall", () => {
