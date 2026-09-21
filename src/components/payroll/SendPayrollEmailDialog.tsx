@@ -22,6 +22,13 @@ import { PayrollPDF } from "./PayrollPDF";
 import { useTenant } from "@/hooks/useTenant";
 import { defaultReportConfig, type PayrollReportConfig } from "./PayrollReportConfig";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
+import {
+  PAYROLL_ALWAYS_CC,
+  buildPayrollEmailDraft,
+  mergeCcRecipients,
+  formatAttachmentSize,
+  MAX_PDF_ATTACHMENT_BYTES,
+} from "@/lib/payroll-email-draft";
 
 interface SendPayrollEmailDialogProps {
   period: {
