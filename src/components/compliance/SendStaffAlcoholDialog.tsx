@@ -122,9 +122,19 @@ export function SendStaffAlcoholDialog({
   useEffect(() => {
     if (!branch) return;
     setStep("choose");
-    setSelected(missing.map((e) => e.id));
+    // Asked for one person: only that person is ticked.
+    setSelected(initialEmployeeId ? [initialEmployeeId] : missing.map((e) => e.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branch, showEveryone, staff.length]);
+  }, [branch, showEveryone, staff.length, initialEmployeeId]);
+
+  // Reopening from a person's row or a site button starts from that choice.
+  useEffect(() => {
+    if (!open) return;
+    if (initialBranch) setBranch(initialBranch);
+    if (initialEmployeeId) setShowEveryone(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialBranch, initialEmployeeId]);
+
 
   const review = () => {
     if (!branch) { toast.error("Choose the site"); return; }
