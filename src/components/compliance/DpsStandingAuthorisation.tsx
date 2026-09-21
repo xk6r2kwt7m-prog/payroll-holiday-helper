@@ -43,6 +43,9 @@ export function DpsStandingAuthorisation() {
   const [testSend, setTestSend] = useState(false);
   const [busy, setBusy] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
+  /** Which sites this request covers. Only sites with confirmed details can be chosen. */
+  const [chosen, setChosen] = useState<string[]>([]);
+
 
   const sites: LicenceSite[] = useMemo(
     () => (licences as any[])
