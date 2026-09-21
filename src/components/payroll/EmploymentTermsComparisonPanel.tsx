@@ -96,6 +96,7 @@ export function EmploymentTermsComparisonPanel({
           <div className="flex items-center gap-2 flex-wrap">
             <Pill kind="ok" label="Match" value={summary.matches} />
             <Pill kind="warn" label="Rate mismatch" value={summary.rate_mismatch} />
+            <Pill kind="warn" label="No pay rate on contract" value={summary.missing_pay_rate} />
             <Pill kind="warn" label="Dept mismatch" value={summary.department_mismatch} />
             <Pill kind="muted" label="No active terms" value={summary.no_active_terms} />
             <Pill kind="muted" label="Backfill only" value={summary.backfill_only} />
