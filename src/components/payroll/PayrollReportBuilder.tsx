@@ -260,13 +260,16 @@ export function PayrollReportBuilder({
         });
         return isGenuineStarter || isLeaver;
       });
+      const startersForPdf = withProtectedFields(starterEmployees);
+
       const logoUrl = config.showLogo ? `${window.location.origin}/logo.jpeg` : undefined;
       const blob = await pdf(
         <PayrollPDF
           period={period}
           entries={filteredEntries}
           holidayPayments={holidayPayments}
-          starters={starterEmployees}
+          starters={startersForPdf}
+
           priorPeriodEmployeeIds={priorPeriodEmployeeIds}
           priorEntryRates={priorEntryRates}
           isCorrection={!!period.notes?.includes("[CORRECTED]")}
@@ -340,7 +343,7 @@ export function PayrollReportBuilder({
           period={period}
           entries={filteredEntries}
           holidayPayments={holidayPayments}
-          starters={starterEmployees}
+          starters={withProtectedFields(starterEmployees)}
           priorPeriodEmployeeIds={priorPeriodEmployeeIds}
           priorEntryRates={priorEntryRates}
           isCorrection={!!period.notes?.includes("[CORRECTED]")}
