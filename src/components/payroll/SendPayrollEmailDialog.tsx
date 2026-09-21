@@ -87,6 +87,7 @@ export function SendPayrollEmailDialog({
       (sum: number, e: any) => sum + (Number(e.timesheet_hours) || 0),
       0
     );
+    const singleNamed = recipients.length === 1 ? recipients[0]?.name ?? null : null;
     return buildPayrollEmailDraft({
       periodName: period.period_name,
       companyName: tenantName,
@@ -95,14 +96,30 @@ export function SendPayrollEmailDialog({
       totalHours,
       grandTotal: Number(period.grand_total) || 0,
       payDate: period.pay_date ?? null,
+      periodStart: period.start_date,
+      periodEnd: period.end_date,
+      recipientName: singleNamed,
     });
-  }, [entries, period.period_name, period.grand_total, period.pay_date, tenantName, user]);
+  }, [
+    entries,
+    recipients,
+    period.period_name,
+    period.grand_total,
+    period.pay_date,
+    period.start_date,
+    period.end_date,
+    tenantName,
+    user,
+  ]);
 
   const defaultSubject = draft.subject;
   const defaultMessage = draft.message;
 
   /** Always-copied address, shown exactly as it will be applied when sending. */
-  const ccList = useMemo(() => mergeCcRecipients(recipients), [recipients]);
+  const ccList = useMemo(
+    () => mergeCcRecipients(recipients.map((r) => r.email)),
+    [recipients]
+  );
 
   const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}.pdf`;
 
@@ -113,9 +130,11 @@ export function SendPayrollEmailDialog({
 
   const handleOpen = (isOpen: boolean) => {
     if (isOpen) {
-      setSubject(defaultSubject);
-      setMessage(defaultMessage);
-      setRecipients([]);
+      // Philipp is the standing recipient — pre-filled every time, removable
+      // for a one-off send. His details are a fixed constant, never automatic.
+      setRecipients([{ ...PAYROLL_DEFAULT_RECIPIENT }]);
+      setSubject("");
+      setMessage("");
       setEmailInput("");
       setIncludeBankDetails(false);
       setAttachmentBytes(null);
