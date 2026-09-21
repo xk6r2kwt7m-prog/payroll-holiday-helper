@@ -330,11 +330,19 @@ function buildPayrollEmailHtml(
   message: string,
   downloadUrl: string | null
 ): string {
+  const noReplyParagraph =
+    "This is an automated email — replies to this address are not monitored. If you have any questions, please contact us through the usual channel.";
+  const noReplyPlaceholder = "__PAYROLL_NO_REPLY_PARAGRAPH__";
   const escapedMessage = message
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br/>");
+    .replace(noReplyParagraph, noReplyPlaceholder)
+    .replace(/\n/g, "<br/>")
+    .replace(
+      noReplyPlaceholder,
+      `<span style="color:#888;font-size:12px;line-height:1.5;">${noReplyParagraph}</span>`
+    );
 
   const linkBlock = downloadUrl
     ? `

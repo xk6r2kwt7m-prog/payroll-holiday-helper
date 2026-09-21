@@ -72,6 +72,41 @@ export function groupByDepartment(entries: PayrollEntryForReport[]): GroupSectio
 }
 
 /**
+ * Group entries by the role recorded in the employment terms active for the
+ * payroll period. Missing role titles stay visible under "Role not recorded".
+ */
+export function groupByRole(
+  entries: PayrollEntryForReport[],
+  roleByEmployee: ReadonlyMap<string, string>
+): GroupSection[] {
+  const roleMap = new Map<string, PayrollEntryForReport[]>();
+  for (const entry of entries) {
+    const role = roleByEmployee.get(entry.employee_id)?.trim() || "Role not recorded";
+    const rows = roleMap.get(role) ?? [];
+    rows.push(entry);
+    roleMap.set(role, rows);
+  }
+
+  return Array.from(roleMap.entries())
+    .sort(([a], [b]) => {
+      if (a === "Role not recorded") return 1;
+      if (b === "Role not recorded") return -1;
+      return a.localeCompare(b);
+    })
+    .map(([role, rows]) => ({
+      groupLabel: role,
+      entries: [...rows].sort((a, b) => {
+        const forename = (a.employees?.forename || "").localeCompare(
+          b.employees?.forename || ""
+        );
+        return forename || (a.employees?.surname || "").localeCompare(b.employees?.surname || "");
+      }),
+      subtotalHours: rows.reduce((sum, entry) => sum + Number(entry.timesheet_hours), 0),
+      subtotalPay: rows.reduce((sum, entry) => sum + Number(entry.total_pay), 0),
+    }));
+}
+
+/**
  * Group entries by location using payroll_entry_locations data.
  * Each employee appears under every location they worked at, with location-specific hours shown.
  * Total pay is NOT split — it stays on the employee's main entry — but subtotals

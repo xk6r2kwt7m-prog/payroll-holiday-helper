@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { usePayrollPeriodNotes } from "@/hooks/usePayrollPeriodNotes";
 import { usePayrollAdjustments } from "@/hooks/usePayrollAdjustments";
+import { useEmploymentTermsComparison } from "@/hooks/useEmploymentTermsComparison";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 import { buildPdfAdjustmentRows } from "@/lib/payroll-pdf-adjustments";
 
@@ -80,6 +81,18 @@ export function PayrollReportBuilder({
 
   // Fetch location data for this period
   const { data: locationData = [] } = usePayrollEntryLocations(period?.id);
+  const termsComparison = useEmploymentTermsComparison({
+    periodStartDate: period?.start_date,
+    entries,
+  });
+  const roleByEmployee = useMemo(
+    () => new Map(
+      termsComparison.rows
+        .filter((row) => row.terms?.role_title)
+        .map((row) => [row.employee_id, row.terms?.role_title?.trim() || ""])
+    ),
+    [termsComparison.rows]
+  );
   const { data: rawPeriodNotes = [] } = usePayrollPeriodNotes(period?.id);
   const { data: rawAdjustments = [] } = usePayrollAdjustments(period?.id);
 
@@ -236,6 +249,7 @@ export function PayrollReportBuilder({
           reportConfig={config}
           companyName={companyName}
           locationData={locationData}
+          roleByEmployee={roleByEmployee}
           periodNotes={periodNotes}
           adjustments={config.columns.adjustments && config.financial.includeAdjustments ? adjustments : []}
         />

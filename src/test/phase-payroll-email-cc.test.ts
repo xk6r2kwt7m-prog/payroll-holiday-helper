@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { REPORT_PRESETS, defaultReportConfig } from "@/components/payroll/PayrollReportConfig";
+import { groupByRole } from "@/lib/payroll-report-transform";
 import {
   PAYROLL_ALWAYS_CC,
   PAYROLL_DEFAULT_RECIPIENT,
@@ -161,5 +162,32 @@ describe("payroll email — report type presets", () => {
     const full = { ...defaultReportConfig, ...REPORT_PRESETS.full.config };
     expect(hr.financial.hideFinancialAmounts).toBe(true);
     expect(full.financial.hideFinancialAmounts).toBe(false);
+  });
+});
+
+describe("payroll email — Full Payroll grouping", () => {
+  it("applies grouping only to the Full Payroll report", () => {
+    const selectedGroup = "department" as const;
+    const full = {
+      ...defaultReportConfig,
+      ...REPORT_PRESETS.full.config,
+      groupBy: selectedGroup,
+    };
+    const condensed = {
+      ...defaultReportConfig,
+      ...REPORT_PRESETS.condensed.config,
+      groupBy: defaultReportConfig.groupBy,
+    };
+    expect(full.groupBy).toBe("department");
+    expect(condensed.groupBy).toBe("none");
+  });
+
+  it("groups employees by their recorded contract role", () => {
+    const entries = [
+      { id: "1", employee_id: "a", hourly_rate: 12, service_charge: 0, timesheet_hours: 10, performance_bonus: 0, special_bonus: 0, holiday_accrued_hours: 0, total_pay: 120, notes: null, employees: { forename: "Ana", surname: "A", department: "FOH", status: "active", ni_number: null, hourly_rate: 12, service_charge: 0 } },
+      { id: "2", employee_id: "b", hourly_rate: 13, service_charge: 0, timesheet_hours: 10, performance_bonus: 0, special_bonus: 0, holiday_accrued_hours: 0, total_pay: 130, notes: null, employees: { forename: "Ben", surname: "B", department: "BOH", status: "active", ni_number: null, hourly_rate: 13, service_charge: 0 } },
+    ];
+    const sections = groupByRole(entries, new Map([["a", "Waiter"], ["b", "Sous Chef"]]));
+    expect(sections.map((section) => section.groupLabel)).toEqual(["Sous Chef", "Waiter"]);
   });
 });

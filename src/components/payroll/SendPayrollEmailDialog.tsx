@@ -22,6 +22,8 @@ import { PayrollPDF } from "./PayrollPDF";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
 import { defaultReportConfig, REPORT_PRESETS, type PayrollReportConfig } from "./PayrollReportConfig";
+import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
+import { useEmploymentTermsComparison } from "@/hooks/useEmploymentTermsComparison";
 import {
   Select,
   SelectContent,
@@ -90,6 +92,20 @@ export function SendPayrollEmailDialog({
   const [attachmentBytes, setAttachmentBytes] = useState<number | null>(null);
   /** Which report type is attached — same four options as the PDF window. */
   const [presetKey, setPresetKey] = useState<string>("full");
+  const [groupBy, setGroupBy] = useState<PayrollReportConfig["groupBy"]>("none");
+  const { data: locationData = [] } = usePayrollEntryLocations(period.id);
+  const termsComparison = useEmploymentTermsComparison({
+    periodStartDate: period.start_date,
+    entries,
+  });
+  const roleByEmployee = useMemo(
+    () => new Map(
+      termsComparison.rows
+        .filter((row) => row.terms?.role_title)
+        .map((row) => [row.employee_id, row.terms?.role_title?.trim() || ""])
+    ),
+    [termsComparison.rows]
+  );
 
   const draft = useMemo(() => {
     const totalHours = entries.reduce(
@@ -169,6 +185,7 @@ export function SendPayrollEmailDialog({
       setIncludeBankDetails(false);
       setAttachmentBytes(null);
       setPresetKey("full");
+      setGroupBy("none");
     }
     setOpen(isOpen);
   };
@@ -229,6 +246,7 @@ export function SendPayrollEmailDialog({
         ...defaultReportConfig,
         ...preset,
         sortBy: "alphabetical",
+        groupBy: presetKey === "full" ? groupBy : defaultReportConfig.groupBy,
         showLogo: true,
         showNotes: false, // Never include internal notes
       };
@@ -262,6 +280,8 @@ export function SendPayrollEmailDialog({
           }
           logoUrl={logoUrl}
           reportConfig={reportConfig}
+          locationData={locationData}
+          roleByEmployee={roleByEmployee}
         />
       ).toBlob();
 
@@ -355,7 +375,13 @@ export function SendPayrollEmailDialog({
           {/* Report type — same four options as the PDF window */}
           <div className="space-y-1.5" data-testid="payroll-email-report-type">
             <Label className="text-sm font-medium">Report type</Label>
-            <Select value={presetKey} onValueChange={setPresetKey}>
+            <Select
+              value={presetKey}
+              onValueChange={(value) => {
+                setPresetKey(value);
+                if (value !== "full") setGroupBy("none");
+              }}
+            >
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
@@ -371,6 +397,31 @@ export function SendPayrollEmailDialog({
               {REPORT_PRESETS[presetKey]?.description}
             </p>
           </div>
+
+          {presetKey === "full" && (
+            <div className="space-y-1.5" data-testid="payroll-email-group-by">
+              <Label className="text-sm font-medium">Group by</Label>
+              <Select
+                value={groupBy}
+                onValueChange={(value) => setGroupBy(value as PayrollReportConfig["groupBy"])}
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No grouping</SelectItem>
+                  <SelectItem value="department">Department</SelectItem>
+                  <SelectItem value="location">Location</SelectItem>
+                  <SelectItem value="role">Role</SelectItem>
+                </SelectContent>
+              </Select>
+              {groupBy === "location" && locationData.length === 0 && (
+                <p className="text-xs text-warning">
+                  No location breakdown is available for this period. The PDF will use employee-level view.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Recipients */}
           <div className="space-y-2">
@@ -524,6 +575,9 @@ export function SendPayrollEmailDialog({
               <Paperclip className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>
                 {presetLabel} — {fileName}
+                {presetKey === "full" && groupBy !== "none"
+                  ? ` — grouped by ${groupBy}`
+                  : ""}
                 {attachmentBytes
                   ? ` — ${formatAttachmentSize(attachmentBytes)}`
                   : " — generated and attached when you press Send"}
@@ -539,7 +593,7 @@ export function SendPayrollEmailDialog({
             <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
               <li>
                 {presetLabel} for {period.period_name} (sorted A–Z by first
-                name), attached to the email
+                name{presetKey === "full" && groupBy !== "none" ? `, grouped by ${groupBy}` : ""}), attached to the email
               </li>
               <li>A copy is filed in the system for the audit trail</li>
               <li>

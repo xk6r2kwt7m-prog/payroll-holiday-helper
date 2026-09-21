@@ -7,7 +7,7 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import type { PayrollEntryLocation } from "@/hooks/usePayrollLocations";
-import { groupByDepartment, groupByLocation, groupByEmployee, type GroupSection } from "@/lib/payroll-report-transform";
+import { groupByDepartment, groupByLocation, groupByEmployee, groupByRole, type GroupSection } from "@/lib/payroll-report-transform";
 
 const TEAL = "#5a9e91";
 const DARK = "#1e2a2f";
@@ -359,6 +359,7 @@ interface PayrollPDFProps {
   logoUrl?: string;
   reportConfig?: PayrollReportConfig;
   locationData?: PayrollEntryLocation[];
+  roleByEmployee?: ReadonlyMap<string, string>;
   periodNotes?: PayrollPDFPeriodNote[];
   adjustments?: PayrollPDFAdjustment[];
 }
@@ -385,6 +386,7 @@ export function PayrollPDF({
   logoUrl,
   reportConfig,
   locationData = [],
+  roleByEmployee = new Map(),
   periodNotes = [],
   adjustments = [],
 }: PayrollPDFProps) {
@@ -591,6 +593,8 @@ export function PayrollPDF({
             isLocationGrouped = true;
           } else if (groupMode === "none") {
             sections = groupByEmployee(sortedEntries as any);
+          } else if (groupMode === "role") {
+            sections = groupByRole(sortedEntries as any, roleByEmployee);
           } else {
             sections = groupByDepartment(sortedEntries as any);
           }
