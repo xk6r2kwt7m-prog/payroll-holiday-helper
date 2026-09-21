@@ -71,7 +71,9 @@ export default function SignLicensingDocument() {
         const r = json.request as RequestView;
         setRequest(r);
         setSignerName(r.signer_name || r.recipient_name || "");
-        setLicenceNumber(r.personal_licence_number || blockValue(r.document, "Personal Licence Number"));
+        // Only a value the DPS has confirmed himself is pre-filled. We never pre-fill a
+        // personal licence number from the premises paperwork — they are different licences.
+        setLicenceNumber(r.personal_licence_number || "");
         setLicenceAuthority(r.personal_licence_authority || blockValue(r.document, "Issuing Authority"));
         if (r.signed_at) setStep("sign");
       }
