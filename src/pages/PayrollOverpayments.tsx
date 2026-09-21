@@ -159,7 +159,7 @@ const handlePrint = (mode: "admin" | "staff", overpayments: any[]) => {
     printWindow.document.close();
     // Remove any injected Lovable badge elements before printing
     printWindow.onload = () => {
-      const badges = printWindow.document.querySelectorAll('[id*="lovable"], [class*="lovable"], a[href*="lovable"]');
+      const badges = printWindow.document.querySelectorAll('[id*="lovable"], [class*="lovable"], a[href*="lovable"], [id*="gptengineer"], [class*="gptengineer"], a[href*="gptengineer"]');
       badges.forEach(el => el.remove());
       printWindow.print();
     };
