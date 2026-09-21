@@ -203,6 +203,15 @@ const Employees = () => {
     }
   };
 
+  const handleRestore = async (employee: Employee) => {
+    try {
+      await restoreEmployee.mutateAsync(employee.id);
+      toast.success(`${employee.forename} ${employee.surname} is back on the active team.`);
+    } catch {
+      toast.error("Failed to restore employee");
+    }
+  };
+
   const handleViewDetails = (employee: Employee) => {
     setSelectedEmployee(employee);
     setDetailSheetOpen(true);
