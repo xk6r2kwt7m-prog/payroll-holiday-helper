@@ -202,6 +202,8 @@ export default function SignLicensingDocument() {
   }
 
   const doc = request.document;
+  const totalSteps = request.subject_type === "dps_authorisation" ? 3 : 2;
+
 
   if (request.signed_at) {
     return (
