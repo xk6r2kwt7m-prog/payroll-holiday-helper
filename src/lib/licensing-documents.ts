@@ -63,6 +63,11 @@ export function isReadyToSend(site: LicenceSite, subject: LicenceSubjectType): b
     // A Section 57 notice needs the premises, the holder and where the licence is kept.
     return !missing.includes("Premises address") && !missing.includes("Premises licence holder");
   }
+  if (subject === "dps_authorisation") {
+    // The DPS confirms his own personal licence number on the signing page, so a
+    // blank personal licence number on the premises record is not a blocker here.
+    return missing.filter((m) => m !== "DPS personal licence number").length === 0;
+  }
   return missing.length === 0;
 }
 
