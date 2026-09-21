@@ -222,9 +222,12 @@ export function SendPayrollEmailDialog({
         return isGenuineStarter || isLeaver;
       });
 
-      // Build report config using defaults — bank details excluded from starters if toggle is off
+      // Build the report from the chosen report type — the same four presets as
+      // the PDF window. Notes stay off and sorting stays A–Z for every preset.
+      const preset = REPORT_PRESETS[presetKey]?.config ?? {};
       const reportConfig: PayrollReportConfig = {
         ...defaultReportConfig,
+        ...preset,
         sortBy: "alphabetical",
         showLogo: true,
         showNotes: false, // Never include internal notes
