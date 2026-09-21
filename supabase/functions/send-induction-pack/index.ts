@@ -195,31 +195,22 @@ Deno.serve(async (req) => {
       const inductionUrl = `${APP_URL}/induction/${token}`;
       const subject = `${testSend ? "[TEST] " : ""}Your induction documents`;
 
-      let sent = false;
-      let sendError: string | undefined;
-      try {
-        const { data: mail, error: mailErr } = await admin.functions.invoke("send-notification", {
-          body: {
-            to: recipient,
-            subject,
-            type: "induction_pack",
-            tenant_id: tenantId,
-            data: {
-              employee_name: `${emp.forename} ${emp.surname}`,
-              first_name: emp.forename,
-              induction_url: inductionUrl,
-              document_count: String(items.length),
-              branch: branch || "",
-              staff_role: staffRole || "",
-            },
-          },
-        });
-        if (mailErr) sendError = mailErr.message;
-        else if (mail?.success === false) sendError = mail?.error || "Email provider rejected the message";
-        else sent = true;
-      } catch (e) {
-        sendError = (e as Error).message;
-      }
+      const mail = await sendNotificationEmail(url, serviceKey, {
+        to: recipient,
+        subject,
+        type: "induction_pack",
+        tenant_id: tenantId,
+        data: {
+          employee_name: `${emp.forename} ${emp.surname}`,
+          first_name: emp.forename,
+          induction_url: inductionUrl,
+          document_count: String(items.length),
+          branch: branch || "",
+          staff_role: staffRole || "",
+        },
+      });
+      const sent = mail.ok;
+      const sendError = mail.ok ? undefined : mail.detail;
 
       await admin.from("audit_log").insert({
         tenant_id: tenantId,
