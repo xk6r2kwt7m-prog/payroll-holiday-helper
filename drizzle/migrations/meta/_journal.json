@@ -225,6 +225,13 @@
       "when": 1789932910786,
       "tag": "0031_training_records_review_due_date",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789978631916,
+      "tag": "0032_add_hafiz_rahim_level2_food_safety_record",
+      "breakpoints": true
     }
   ]
 }
