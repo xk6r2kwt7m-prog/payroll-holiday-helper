@@ -1,30 +1,40 @@
-# Read-only investigation: missing September payroll details
+# Fix the payroll report showing saved staff details as "Missing"
 
-## Confirmed so far
-The photograph shows the September 2026 Starters & Leavers report marking NI number, bank details and right-to-work information as missing for all five listed starters.
+## What I confirmed (no records changed)
 
-A read-only database check at 21 September 2026 confirms:
-- Franki, Lotanna and Pyae currently have NI and bank details on their staff records.
-- Hsin Yu currently has bank details but no NI number on the staff record.
-- Daniel currently has none of those fields on the staff record.
-- Right-to-work information is present on Lotanna and Pyae's staff records, but not on Franki, Hsin Yu or Daniel's staff records.
-- No data has been changed during this investigation.
+The details are genuinely saved. Checked just now for the five September starters:
 
-This proves that at least part of the photographed report does not reflect the information currently held on the staff records. The exact report-side cause is still being traced and will not be guessed.
+| Person | Start date | NI number | Bank details | Right-to-work evidence |
+|---|---|---|---|---|
+| Franki Lee Templeman | 11 Sep 2026 | saved | saved | not saved |
+| Hsin Yu Tsai | 29 Aug 2026 | not saved | saved | not saved |
+| Lotanna Moore-Okoli | 25 Aug 2026 | saved | saved | saved |
+| Pyae Hmue Pan Pan | 28 Aug 2026 | saved | saved | saved |
+| Sang Hyun Daniel Lee | 5 Sep 2026 | saved | saved | saved |
 
-## Investigation plan
-1. Trace each column in the Starters & Leavers report to its exact source, including the protected-data retrieval used for NI and bank details.
-2. Check whether the PDF used stale report data, omitted the protected-data lookup, or generated before the latest staff updates.
-3. Compare only these five September starters across staff records, approved onboarding details, signed-contract evidence and the generated report. Sensitive values will never be displayed or copied into logs; only present/missing status will be compared.
-4. Check the start dates separately against the contract's printed Start/Effective date. A signature date will never be treated as a start date.
-5. Report the confirmed cause and a person-by-person discrepancy list to the administrator.
+So the report is wrong, not the records. Two separate causes in the report code:
 
-## Approval gate
-Stop after the investigation and show the findings. Make no record, payroll, PDF, contract, onboarding, status or report-logic changes until the administrator gives specific approval for the proposed corrections.
+1. The window opened from the "PDF" button builds the Starters & Leavers page from the ordinary staff list, which by design never carries the protected NI and bank values. That page therefore shows "Missing" for everyone, every time, no matter what is saved. This is the cause of what you photographed.
+2. The other download route does load the protected values, but keeps them in a short-lived memory copy that is not refreshed when a staff record is saved. A report generated shortly after an edit can still use the pre-edit copy.
 
-## Safeguards
-- No emails, links, notifications or staff contact.
-- No signed-contract changes or reissues.
-- No changes to previous employees or previous payroll periods.
-- No automatic copying between records.
-- Payroll remains administrator-only and confidential.
+Right-to-work on the report is derived from those same protected values, so it inherits the same fault.
+
+## Fix
+
+1. Make the "PDF" window load the protected NI, bank and right-to-work values through the existing admin-only protected-data route, and merge them into the Starters & Leavers rows exactly as the other download route already does. Same for the Print route in that window.
+2. Refresh the protected-data copy whenever a staff record is saved, so reports generated straight after an edit use the current values.
+3. Keep the admin-only protection intact: if the person generating the report is not an administrator, the protected columns stay masked rather than silently blank.
+4. Regenerate the September 2026 report and verify the five starters against the table above.
+
+No calculation, pay, holiday or contract logic changes. No records are edited. Nothing is emailed.
+
+## Two things for you to confirm separately
+
+- Hsin Yu Tsai still has no NI number saved, and Franki and Hsin Yu have no right-to-work evidence saved. After the fix the report will correctly show those as missing.
+- Daniel's saved start date is now 5 September 2026, while his employment-terms and contract records previously indicated 17 or 18 September. I have not changed anything — please confirm which date is correct before any report is treated as final.
+
+## Technical details
+
+- `PayrollReportBuilder.tsx` `handleGeneratePDF` / `handlePrint`: merge `ni_number`, `sort_code`, `bank_account_no`, `passport_no`, `sharing_code`, `residence_permit` from `useTenantSensitiveFields` into `starterEmployees`, mirroring `Payroll.tsx` `handleDownloadPDF`.
+- `useUpdateEmployee` in `useEmployees.ts`: also invalidate the `tenant-sensitive` and `employee-sensitive` query keys on success.
+- No schema, RLS or RPC changes; the existing `tenant_sensitive_fields` admin gate remains the sole access path.
