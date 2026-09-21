@@ -190,8 +190,10 @@ export function DpsStandingAuthorisation() {
                 ? `Sent to ${latest.recipient_name} — not signed yet.`
                 : "Not requested yet. He signs once and it covers every site."}
           </p>
-          {sites.length > 0 && (
-            <p className="text-[11px] text-muted-foreground">Covers {siteNames}</p>
+          {eligible.length > 0 && (
+            <p className="text-[11px] text-muted-foreground">
+              Ready to send for {eligible.map((r) => r.branch).join(", ")}
+            </p>
           )}
           <p className="text-[11px] text-muted-foreground">
             {savedEmail
@@ -206,12 +208,17 @@ export function DpsStandingAuthorisation() {
         )}
       </div>
 
-      {!ready && sites.length > 0 && (
-        <p className="text-xs text-muted-foreground">
-          You can read and check the document now. Before it can be sent, confirm these licence
-          details: {outstanding.join("; ")}.
-        </p>
+      {waiting.length > 0 && (
+        <div className="space-y-1">
+          {waiting.map((r) => (
+            <p key={r.branch} className="text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{r.branch}</span> is not included yet —
+              still to confirm: {r.missing.join("; ")}.
+            </p>
+          ))}
+        </div>
       )}
+
 
       <div className="flex flex-wrap gap-2">
         <Button size="sm" onClick={start} disabled={sites.length === 0}>
