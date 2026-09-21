@@ -167,6 +167,13 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
                   <Archive className="h-4 w-4 mr-2" /> Archive
                 </DropdownMenuItem>
               )}
+              {(isAlreadyArchived || isLeaver) && onRestore && (
+                <DropdownMenuItem
+                  onClick={(e) => { e.stopPropagation(); onRestore(employee); }}
+                >
+                  <ArchiveRestore className="h-4 w-4 mr-2" /> Restore to Active
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
