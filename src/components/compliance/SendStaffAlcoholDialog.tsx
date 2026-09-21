@@ -28,17 +28,21 @@ import { useAlcoholListDecisions } from "@/hooks/useDpsRegister";
  * or personal licence holder is unchanged and still required afterwards.
  */
 export function SendStaffAlcoholDialog({
-  open, onOpenChange,
+  open, onOpenChange, initialBranch, initialEmployeeId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** Opens with this site already chosen. */
+  initialBranch?: string;
+  /** Opens with only this person ticked — used by the per-person button. */
+  initialEmployeeId?: string;
 }) {
   const { data: branchData } = useComplianceBranches();
   const branches = branchData?.selectable ?? [];
-  const [branch, setBranch] = useState("");
+  const [branch, setBranch] = useState(initialBranch ?? "");
   const [selected, setSelected] = useState<string[]>([]);
   const [testSend, setTestSend] = useState(false);
-  const [showEveryone, setShowEveryone] = useState(false);
+  const [showEveryone, setShowEveryone] = useState(!!initialEmployeeId);
   const [busy, setBusy] = useState(false);
   // Nothing is ever sent from the first step — the recipient list must be
   // confirmed on the second step first.
