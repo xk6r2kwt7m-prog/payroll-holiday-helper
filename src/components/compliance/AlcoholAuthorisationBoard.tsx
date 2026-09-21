@@ -233,8 +233,38 @@ export function AlcoholAuthorisationBoard() {
 
                     {!isCollapsed && (
                       <div className="px-3 pb-3 space-y-3">
-                        <Group title="Signed as well" rows={group("signed")} tone="green" showApproval />
-                        <Group title="Listed — signature not required" rows={group("awaiting_signature")} tone="grey" showReason />
+                        {signatureFor(site.branch) ? (
+                          <p className="rounded-md bg-success/5 text-[11px] text-muted-foreground p-2.5">
+                            Signed by {signatureFor(site.branch)!.signer_name} on{" "}
+                            {formatDate(signatureFor(site.branch)!.signed_at)}
+                            {signatureFor(site.branch)!.personal_licence_number
+                              ? ` · personal licence ${signatureFor(site.branch)!.personal_licence_number}`
+                              : ""}
+                            {signatureFor(site.branch)!.personal_licence_authority
+                              ? ` · ${signatureFor(site.branch)!.personal_licence_authority}`
+                              : ""}
+                            . His signature is printed on this site's authorisation.
+                          </p>
+                        ) : (
+                          <p className="rounded-md bg-muted/50 text-[11px] text-muted-foreground p-2.5">
+                            The Designated Premises Supervisor has not signed yet, so this site's
+                            authorisation prints unsigned. His signature appears here automatically
+                            once he signs.
+                          </p>
+                        )}
+                        <Group
+                          title="Signed as well"
+                          rows={group("signed")}
+                          tone="green"
+                          showApproval
+                        />
+                        <Group
+                          title="Listed — signature not required"
+                          rows={group("awaiting_signature")}
+                          tone="grey"
+                          showReason
+                          onAsk={(employeeId) => setAskSignature({ branch: site.branch, employeeId })}
+                        />
 
 
                         {site.unclassified.length > 0 && (
