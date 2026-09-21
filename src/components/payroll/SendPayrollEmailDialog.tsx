@@ -538,8 +538,8 @@ export function SendPayrollEmailDialog({
             </p>
             <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
               <li>
-                Payroll PDF for {period.period_name} (sorted A–Z by first name),
-                attached to the email
+                {presetLabel} for {period.period_name} (sorted A–Z by first
+                name), attached to the email
               </li>
               <li>A copy is filed in the system for the audit trail</li>
               <li>
