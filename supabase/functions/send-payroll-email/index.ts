@@ -9,12 +9,35 @@ const corsHeaders = {
 
 interface SendPayrollRequest {
   recipients: string[];
+  cc?: string[];
   subject: string;
   message: string;
   periodName: string;
   tenantId: string;
   pdfBase64: string;
   fileName: string;
+  attachPdf?: boolean;
+  replyTo?: string;
+}
+
+/**
+ * Every payroll email is always copied to this address. Enforced server-side so
+ * it cannot be omitted by the caller. Changing it is a deliberate edit.
+ */
+const PAYROLL_ALWAYS_CC = "barros.aderito@hotmail.com";
+
+/** Providers reject very large attachments — refuse clearly instead of failing silently. */
+const MAX_PDF_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+
+function resolveCc(recipients: string[], requested: string[] = []): string[] {
+  const directRecipients = new Set(recipients.map((r) => r.trim().toLowerCase()).filter(Boolean));
+  const out: string[] = [];
+  for (const address of [...requested, PAYROLL_ALWAYS_CC]) {
+    const email = address?.trim().toLowerCase();
+    if (!email || directRecipients.has(email) || out.includes(email)) continue;
+    out.push(email);
+  }
+  return out;
 }
 
 serve(async (req: Request) => {
