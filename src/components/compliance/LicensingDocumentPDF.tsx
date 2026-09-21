@@ -1,37 +1,61 @@
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import type { LicensingDocument } from "@/lib/licensing-documents";
 
-const DARK = "#1a2630";
-const BODY = "#333";
-const SUBTLE = "#6b7280";
-const RULE = "#d1d5db";
+/**
+ * Printed licensing paperwork. Deliberately plain: black on white, ruled
+ * headings and a formal execution block, so it reads as an official document
+ * when printed or shown to a licensing officer.
+ */
+const INK = "#111111";
+const BODY = "#1f1f1f";
+const SUBTLE = "#555555";
+const RULE = "#9a9a9a";
+const HAIRLINE = "#cccccc";
 
 const s = StyleSheet.create({
-  page: { paddingTop: 44, paddingBottom: 48, paddingHorizontal: 48, fontSize: 10, fontFamily: "Helvetica", lineHeight: 1.5, color: BODY },
-  title: { fontSize: 14, fontFamily: "Helvetica-Bold", color: DARK, textAlign: "center", letterSpacing: 0.4 },
-  subtitle: { fontSize: 9, color: SUBTLE, textAlign: "center", marginTop: 3, marginBottom: 16 },
-  factRow: { flexDirection: "row", marginBottom: 2 },
-  factLabel: { width: 150, fontFamily: "Helvetica-Bold", color: DARK },
-  factValue: { flex: 1 },
-  para: { marginTop: 10 },
-  sectionTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", color: DARK, marginTop: 16, marginBottom: 6 },
-  nominee: { marginBottom: 3 },
-  table: { marginTop: 10, borderWidth: 1, borderColor: RULE },
-  tr: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: RULE },
-  trLast: { flexDirection: "row" },
-  th: { fontFamily: "Helvetica-Bold", color: DARK, fontSize: 9, padding: 6 },
-  td: { padding: 6, fontSize: 9 },
-  colName: { width: "40%", borderRightWidth: 1, borderRightColor: RULE },
-  colRole: { width: "22%", borderRightWidth: 1, borderRightColor: RULE },
-  colSig: { width: "24%", borderRightWidth: 1, borderRightColor: RULE },
-  colDate: { width: "14%" },
-  sigImage: { width: 80, height: 26, objectFit: "contain" },
-  signBlock: { marginTop: 22, paddingTop: 12, borderTopWidth: 1, borderTopColor: RULE },
-  statement: { marginTop: 14, padding: 8, borderWidth: 1, borderColor: RULE, fontSize: 9 },
-  summary: { marginTop: 12, fontSize: 9, fontFamily: "Helvetica-Bold", color: DARK },
-  note: { marginTop: 6, fontSize: 9, color: SUBTLE },
+  page: {
+    paddingTop: 42, paddingBottom: 44, paddingHorizontal: 52,
+    fontSize: 9.5, fontFamily: "Helvetica", lineHeight: 1.45, color: BODY,
+  },
+  header: { borderBottomWidth: 1.2, borderBottomColor: INK, paddingBottom: 8, marginBottom: 14 },
+  title: { fontSize: 12.5, fontFamily: "Helvetica-Bold", color: INK, textAlign: "center", letterSpacing: 0.8 },
+  subtitle: { fontSize: 8.5, color: SUBTLE, textAlign: "center", marginTop: 4, letterSpacing: 0.6 },
 
-  footNote: { marginTop: 18, fontSize: 8, color: SUBTLE },
+  sectionTitle: {
+    fontSize: 8.5, fontFamily: "Helvetica-Bold", color: INK, letterSpacing: 1,
+    marginTop: 14, marginBottom: 5, borderBottomWidth: 0.5, borderBottomColor: HAIRLINE, paddingBottom: 3,
+  },
+  factRow: { flexDirection: "row", marginBottom: 2.5 },
+  factLabel: { width: 138, fontFamily: "Helvetica-Bold", color: INK, fontSize: 9 },
+  factValue: { flex: 1 },
+  para: { marginTop: 8, textAlign: "justify" },
+  nominee: { marginBottom: 2.5 },
+
+  table: { marginTop: 8, borderWidth: 0.7, borderColor: RULE },
+  headRow: { flexDirection: "row", borderBottomWidth: 0.7, borderBottomColor: RULE, backgroundColor: "#f2f2f2" },
+  tr: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: HAIRLINE, minHeight: 20, alignItems: "center" },
+  trLast: { flexDirection: "row", minHeight: 20, alignItems: "center" },
+  th: { fontFamily: "Helvetica-Bold", color: INK, fontSize: 8, padding: 5, letterSpacing: 0.3 },
+  td: { padding: 5, fontSize: 8.5 },
+  colName: { width: "40%", borderRightWidth: 0.5, borderRightColor: HAIRLINE },
+  colRole: { width: "22%", borderRightWidth: 0.5, borderRightColor: HAIRLINE },
+  colSig: { width: "24%", borderRightWidth: 0.5, borderRightColor: HAIRLINE },
+  colDate: { width: "14%" },
+  sigImage: { width: 78, height: 24, objectFit: "contain" },
+
+  signBlock: { marginTop: 18, borderWidth: 0.7, borderColor: RULE, padding: 10 },
+  signHeading: { fontSize: 8.5, fontFamily: "Helvetica-Bold", color: INK, letterSpacing: 1, marginBottom: 6 },
+  sigLine: { marginTop: 10, borderTopWidth: 0.7, borderTopColor: INK, width: 190, paddingTop: 3, fontSize: 8, color: SUBTLE },
+
+  statement: { marginTop: 12, padding: 8, borderWidth: 0.7, borderColor: RULE, fontSize: 8.5 },
+  summary: { marginTop: 8, fontSize: 8.5, fontFamily: "Helvetica-Bold", color: INK },
+  note: { marginTop: 5, fontSize: 8, color: SUBTLE, lineHeight: 1.35 },
+
+  footNote: {
+    marginTop: 14, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: HAIRLINE,
+    fontSize: 7.5, color: SUBTLE, lineHeight: 1.3,
+  },
+  pageNo: { position: "absolute", bottom: 24, left: 52, right: 52, textAlign: "center", fontSize: 7.5, color: SUBTLE },
 });
 
 export interface SignedStaffRow {
@@ -80,23 +104,30 @@ export function LicensingDocumentPDF({
   return (
     <Document>
       <Page size="A4" style={s.page}>
-        <Text style={s.title}>{doc.title}</Text>
-        {doc.subtitle && <Text style={s.subtitle}>{doc.subtitle}</Text>}
+        <View style={s.header}>
+          <Text style={s.title}>{doc.title}</Text>
+          {doc.subtitle && <Text style={s.subtitle}>{doc.subtitle.toUpperCase()}</Text>}
+        </View>
 
-        {doc.facts.filter((f) => !isBlank(f.value)).map((f) => (
-          <View key={f.label} style={s.factRow}>
-            <Text style={s.factLabel}>{f.label}:</Text>
-            <Text style={s.factValue}>{f.value}</Text>
+        {doc.facts.filter((f) => !isBlank(f.value)).length > 0 && (
+          <View>
+            <Text style={s.sectionTitle}>PREMISES DETAILS</Text>
+            {doc.facts.filter((f) => !isBlank(f.value)).map((f) => (
+              <View key={f.label} style={s.factRow}>
+                <Text style={s.factLabel}>{f.label}</Text>
+                <Text style={s.factValue}>{f.value}</Text>
+              </View>
+            ))}
           </View>
-        ))}
+        )}
 
-
+        <Text style={s.sectionTitle}>AUTHORISATION</Text>
         {doc.paragraphs.map((p, i) => (
           <Text key={i} style={s.para}>{p}</Text>
         ))}
 
         {doc.nominated && doc.nominated.length > 0 && (
-          <View>
+          <View style={{ marginTop: 8 }}>
             {doc.nominated.map((n, i) => (
               <Text key={i} style={s.nominee}>{n.name} — {n.job_title}</Text>
             ))}
@@ -105,26 +136,26 @@ export function LicensingDocumentPDF({
 
         {doc.subject_type === "dps_authorisation" && showStaffRegister && (
           <View>
-            <Text style={s.sectionTitle}>Staff register for this premises</Text>
+            <Text style={s.sectionTitle}>STAFF REGISTER FOR THIS PREMISES</Text>
             {summaryLine && <Text style={s.summary}>{summaryLine}</Text>}
             {warningLine && <Text style={s.note}>{warningLine}</Text>}
             <View style={s.table}>
-              <View style={s.tr}>
-                <Text style={[s.th, s.colName]}>Name of Staff Member</Text>
+              <View style={s.headRow}>
+                <Text style={[s.th, s.colName]}>Name of staff member</Text>
                 <Text style={[s.th, s.colRole]}>Role</Text>
                 <Text style={[s.th, s.colSig]}>Signature</Text>
                 <Text style={[s.th, s.colDate]}>Date</Text>
               </View>
               {rows.map((r, i) => (
                 <View key={i} style={i === rows.length - 1 ? s.trLast : s.tr}>
-                  <Text style={[s.td, s.colName]}>{r.name || "______________________"}</Text>
-                  <Text style={[s.td, s.colRole]}>{r.job_title || "____________"}</Text>
+                  <Text style={[s.td, s.colName]}>{r.name || ""}</Text>
+                  <Text style={[s.td, s.colRole]}>{r.job_title || ""}</Text>
                   <View style={[s.td, s.colSig]}>
                     {r.signature
                       ? <Image src={r.signature} style={s.sigImage} />
-                      : <Text>______________</Text>}
+                      : <Text> </Text>}
                   </View>
-                  <Text style={[s.td, s.colDate]}>{gbDate(r.signed_at) || "________"}</Text>
+                  <Text style={[s.td, s.colDate]}>{gbDate(r.signed_at) || ""}</Text>
                 </View>
               ))}
             </View>
@@ -136,30 +167,30 @@ export function LicensingDocumentPDF({
           </View>
         )}
 
-
-
         {doc.statement && <Text style={s.statement}>{doc.statement}</Text>}
 
         <View style={s.signBlock}>
-          <Text style={{ fontFamily: "Helvetica-Bold", color: DARK, marginBottom: 6 }}>AUTHORISED BY</Text>
+          <Text style={s.signHeading}>SIGNED BY THE DESIGNATED PREMISES SUPERVISOR</Text>
           {doc.signature_block.filter((f) => !isBlank(f.value)).map((f) => (
             <View key={f.label} style={s.factRow}>
-              <Text style={s.factLabel}>{f.label}:</Text>
+              <Text style={s.factLabel}>{f.label}</Text>
               <Text style={s.factValue}>{f.value}</Text>
             </View>
           ))}
 
           <View style={{ marginTop: 10 }}>
-            {authoriserSignature
-              ? <Image src={authoriserSignature} style={s.sigImage} />
-              : <Text>Signature: __________________________</Text>}
+            {authoriserSignature && <Image src={authoriserSignature} style={s.sigImage} />}
+            <Text style={s.sigLine}>Signature</Text>
           </View>
-          <Text style={{ marginTop: 6 }}>
-            Date: {gbDate(authoriserSignedAt || doc.document_date) || "__________"}
-          </Text>
+          <View style={{ marginTop: 8 }}>
+            <Text style={s.sigLine}>
+              Date: {gbDate(authoriserSignedAt || doc.document_date) || ""}
+            </Text>
+          </View>
         </View>
 
         {auditLine && <Text style={s.footNote}>{auditLine}</Text>}
+        <Text style={s.pageNo} render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`} fixed />
       </Page>
     </Document>
   );
