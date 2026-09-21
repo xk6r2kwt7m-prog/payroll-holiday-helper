@@ -161,6 +161,10 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
   const { data: periods = [] } = usePayrollPeriods();
   const { tenantId } = useTenant();
   const { activeAliases, saveAlias } = usePayrollImportAliases();
+  // A blank rate on the staff record falls back to the rate in their active
+  // employment terms, so an import can never write £0.00 for somebody whose
+  // contract states a rate.
+  const { rateByEmployee } = useContractedRates();
 
   // Default to selected draft period if available; otherwise auto-suggest next
   useEffect(() => {
