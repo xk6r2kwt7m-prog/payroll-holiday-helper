@@ -161,6 +161,11 @@ const Payroll = () => {
   }, [priorEntries]);
   const { data: holidayPayments = [] } = useHolidayPayments(selectedPeriod?.id);
   const { data: allEmployees = [] } = useEmployees();
+  // Anyone recorded as a leaver is moved to the archive, so the ordinary team
+  // list no longer contains them. Payroll reports must still show the leavers
+  // who belong to this period, so the reporting views read the full list
+  // (archive included). Nothing else on the page uses this list.
+  const { data: allEmployeesForReports = [] } = useEmployees(true);
   // Bank details and National Insurance numbers are not part of an ordinary
   // staff query. Payroll files need the real values, so they are fetched
   // separately and only ever returned to an administrator.
