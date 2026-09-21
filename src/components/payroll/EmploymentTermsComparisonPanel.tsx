@@ -294,6 +294,8 @@ function StatusBadge({ row }: { row: TermsComparisonRow }) {
 
 function rank(r: TermsComparisonRow): number {
   switch (r.status) {
+    case "missing_pay_rate":
+      return -1;
     case "no_active_terms":
       return 0;
     case "multiple_mismatch":
