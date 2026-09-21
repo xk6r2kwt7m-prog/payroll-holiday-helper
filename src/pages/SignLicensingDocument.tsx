@@ -57,6 +57,7 @@ export default function SignLicensingDocument() {
   const [licenceNumber, setLicenceNumber] = useState("");
   const [licenceAuthority, setLicenceAuthority] = useState("");
   const [licenceFile, setLicenceFile] = useState<{ name: string; data: string } | null>(null);
+  const [detailsConfirmed, setDetailsConfirmed] = useState(false);
 
 
   const load = useCallback(async () => {
@@ -339,9 +340,7 @@ export default function SignLicensingDocument() {
                 <p className="text-sm font-semibold">Your personal licence</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                This is your own personal licence — not the premises licence. The number and council are
-                printed on the authorisation you are signing, so a licensing officer or police officer can
-                check them. Please enter them exactly as they appear on your personal licence.
+                Please enter your personal licence details as they appear on your licence.
               </p>
               <div className="space-y-1.5">
                 <Label>Personal licence number</Label>
@@ -398,6 +397,37 @@ export default function SignLicensingDocument() {
                 <p className="text-sm font-semibold">Your signature</p>
               </div>
               {doc.statement && <p className="text-sm text-muted-foreground">{doc.statement}</p>}
+
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-1.5">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Details to be submitted
+                </p>
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-muted-foreground">Personal licence number</span>
+                  <span className="font-medium text-right">{licenceNumber || "—"}</span>
+                </div>
+                <div className="flex justify-between gap-3 text-sm">
+                  <span className="text-muted-foreground">Issuing council</span>
+                  <span className="font-medium text-right">{licenceAuthority || "—"}</span>
+                </div>
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => { setDetailsConfirmed(false); setStep("licence"); }}
+                >
+                  Change these details
+                </button>
+              </div>
+
+              <label className="flex items-start gap-2 text-sm">
+                <Checkbox
+                  checked={detailsConfirmed}
+                  onCheckedChange={(v) => setDetailsConfirmed(v === true)}
+                  className="mt-0.5"
+                />
+                <span>I confirm these details are correct.</span>
+              </label>
+
               <div className="space-y-1.5">
                 <Label>Your full name</Label>
                 <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} />
@@ -409,7 +439,7 @@ export default function SignLicensingDocument() {
             </div>
 
             <div className="space-y-2">
-              <Button className="w-full" size="lg" onClick={sign} disabled={busy || !signature}>
+              <Button className="w-full" size="lg" onClick={sign} disabled={busy || !signature || !detailsConfirmed}>
                 {busy ? "Saving..." : "Sign and submit"}
               </Button>
               <Button variant="ghost" className="w-full" onClick={() => setStep("read")}>
