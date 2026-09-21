@@ -1202,18 +1202,34 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
                                 value="__none__"
                                 onValueChange={(val) => handleManualMatch(emp.csvName, val)}
                               >
-                                <SelectTrigger className="h-7 text-xs w-[200px]">
-                                  <SelectValue placeholder="Match to employee…" />
+                                <SelectTrigger className="h-7 text-xs w-[220px]">
+                                  <SelectValue
+                                    placeholder={
+                                      remainingForMatching.length > 0
+                                        ? `Match to staff (${remainingForMatching.length} left)…`
+                                        : "No staff left to match"
+                                    }
+                                  />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="__none__">— Select employee —</SelectItem>
-                                  {employees
-                                    .sort((a, b) => a.forename.localeCompare(b.forename))
-                                    .map(e => (
-                                      <SelectItem key={e.id} value={e.id}>
-                                        {e.forename} {e.surname} ({e.department}){e.status === "starter" ? " • Starter" : e.status === "leaver" ? " • Leaver" : ""}
-                                      </SelectItem>
-                                    ))}
+                                  {remainingForMatching.length === 0 && (
+                                    <div className="px-2 py-2 text-xs text-muted-foreground max-w-[220px]">
+                                      No remaining staff to match — create the person or exclude this row.
+                                    </div>
+                                  )}
+                                  {remainingForMatching.map((e: any) => (
+                                    <SelectItem key={e.id} value={e.id}>
+                                      {e.forename} {e.surname} ({e.department})
+                                      {e.status === "starter"
+                                        ? " • Starter"
+                                        : e.status === "onboarding"
+                                          ? " • Onboarding"
+                                          : e.status === "leaver"
+                                            ? " • Leaver — final pay in this period"
+                                            : ""}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
