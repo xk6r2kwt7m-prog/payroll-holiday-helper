@@ -480,11 +480,14 @@ export function PayrollPDF({
     const hasPassport = !!starter.passport_no;
     const hasSettlement = !!starter.settlement_status;
     const hasResidence = !!starter.residence_permit;
+    const hasShareCode = !!starter.sharing_code;
     if (hasNI) return { status: "ok", label: "NI Number on file" };
+    if (hasShareCode) return { status: "pending", label: "Awaiting NI — Home Office share code on file" };
     if (hasPassport && (hasSettlement || hasResidence)) return { status: "pending", label: "Awaiting NI — documents on file" };
     if (hasPassport) return { status: "warning", label: "Passport on file — no settlement/permit details" };
     return { status: "missing", label: "Missing NI & ID documents" };
   };
+
 
   const Header = ({ subtitle }: { subtitle?: string }) => (
     <View>
@@ -893,9 +896,13 @@ export function PayrollPDF({
             const isLeaver = starter.status === 'leaver';
             const rowStyle = isLeaver ? styles.starterRowLeaver : styles.starterRowStarter;
             const notesParts: string[] = [];
+            let hasNoteIssue = false;
             if (!hasNI && starter.passport_no) notesParts.push(`PP: ${starter.passport_no}`);
-            if (!hasNI && !starter.passport_no) notesParts.push("No NI/PP");
-            if (!starter.sort_code || !starter.bank_account_no) notesParts.push("Bank missing");
+            if (!hasNI && !starter.passport_no && starter.sharing_code) notesParts.push(`Share code: ${starter.sharing_code}`);
+            if (!hasNI && !starter.passport_no && !starter.sharing_code) { notesParts.push("No NI/PP"); hasNoteIssue = true; }
+
+            if (!starter.sort_code || !starter.bank_account_no) { notesParts.push("Bank missing"); hasNoteIssue = true; }
+
 
             return (
               <View key={starter.id} style={[styles.starterRow, rowStyle, idx % 2 === 1 ? { backgroundColor: "#fffdf0" } : {}]} wrap={false}>
@@ -931,7 +938,7 @@ export function PayrollPDF({
                     </Text>
                   </View>
                 </View>
-                <Text style={[styles.td, { width: "10%", fontSize: 5.5, color: notesParts.length > 0 ? RED : GRAY }]}>
+                <Text style={[styles.td, { width: "10%", fontSize: 5.5, color: hasNoteIssue ? RED : GRAY }]}>
                   {notesParts.length > 0 ? notesParts.join("; ") : "✓"}
                 </Text>
               </View>
