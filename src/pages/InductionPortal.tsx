@@ -137,8 +137,6 @@ export default function InductionPortal() {
       title: m.title,
       done: !!m.acknowledged_at,
     }));
-    list.push({ kind: "declaration", key: "declaration", title: "Health declaration", done: !!data.declaration?.signed_at });
-    list.push({ kind: "quiz", key: "quiz", title: "Knowledge check", done: !!data.assessment?.passed });
     if (data.items.length > 0) {
       list.push({
         kind: "documents",
@@ -147,6 +145,9 @@ export default function InductionPortal() {
         done: data.items.every((i) => !!i.acknowledged_at),
       });
     }
+    list.push({ kind: "declaration", key: "declaration", title: "Health declaration", done: !!data.declaration?.signed_at });
+    list.push({ kind: "quiz", key: "quiz", title: "Knowledge check", done: !!data.assessment?.passed });
+
     if (data.pack.includes_alcohol) {
       list.push({ kind: "alcohol", key: "alcohol", title: "Alcohol sales", done: !!data.alcohol?.employee_signed_at });
     }
