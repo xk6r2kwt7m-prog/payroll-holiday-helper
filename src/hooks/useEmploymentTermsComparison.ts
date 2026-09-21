@@ -197,7 +197,8 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
           warnings.push("Terms are backfilled from employee profile, not a signed contract.");
         }
 
-        if (rateMismatch && departmentMismatch) status = "multiple_mismatch";
+        if (missingPayRate) status = "missing_pay_rate";
+        else if (rateMismatch && departmentMismatch) status = "multiple_mismatch";
         else if (rateMismatch) status = "rate_mismatch";
         else if (departmentMismatch) status = "department_mismatch";
         else if (isBackfillOnly) status = "backfill_only";
