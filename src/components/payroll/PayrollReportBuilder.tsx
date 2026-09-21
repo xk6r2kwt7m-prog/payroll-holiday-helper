@@ -260,6 +260,8 @@ export function PayrollReportBuilder({
         });
         return isGenuineStarter || isLeaver;
       });
+      const startersForPdf = withProtectedFields(starterEmployees);
+
       const logoUrl = config.showLogo ? `${window.location.origin}/logo.jpeg` : undefined;
       const blob = await pdf(
         <PayrollPDF
