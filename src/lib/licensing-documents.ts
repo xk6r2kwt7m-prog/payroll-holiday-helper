@@ -261,6 +261,30 @@ export function isGroupReadyToSend(sites: LicenceSite[]): boolean {
   return sites.length > 0 && groupAwaitingConfirmation(sites).length === 0;
 }
 
+export interface SiteReadiness {
+  site: LicenceSite;
+  branch: string;
+  ready: boolean;
+  missing: string[];
+}
+
+/**
+ * Judges each site on its own, so a signature can be requested for the sites
+ * whose licence details are confirmed while the others simply wait. Nothing is
+ * inferred: a site is only ready when every field it needs is actually filled in.
+ */
+export function siteReadiness(sites: LicenceSite[]): SiteReadiness[] {
+  return sites.map((site) => {
+    const missing = awaitingConfirmation(site);
+    return { site, branch: site.branch, ready: missing.length === 0, missing };
+  });
+}
+
+export function readySites(sites: LicenceSite[]): LicenceSite[] {
+  return siteReadiness(sites).filter((s) => s.ready).map((s) => s.site);
+}
+
+
 /**
  * One written authorisation signed once by the DPS, covering the front-of-house
  * staff register at every site he supervises. It is a standing authorisation:
