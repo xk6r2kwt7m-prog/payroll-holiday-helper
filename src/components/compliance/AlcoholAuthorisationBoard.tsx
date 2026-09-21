@@ -212,6 +212,26 @@ export function AlcoholAuthorisationBoard() {
               </p>
             )}
 
+            {noSite.length > 0 && (
+              <div className="rounded-lg border p-2.5 text-xs">
+                <p className="font-medium">
+                  {noSite.length} front-of-house {noSite.length === 1 ? "person has" : "people have"} no
+                  site on their record
+                </p>
+                <p className="text-muted-foreground mt-1">
+                  They cannot appear on any site list until a site is set on their staff record. Open
+                  their record and add the site they work at.
+                </p>
+                <ul className="mt-2 space-y-0.5">
+                  {noSite.map((p) => (
+                    <li key={p.employee_id} className="text-muted-foreground">
+                      {p.name}{p.role ? ` · ${p.role}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="space-y-3">
               {sites.map((site) => {
                 const isCollapsed = !!collapsed[site.branch];
