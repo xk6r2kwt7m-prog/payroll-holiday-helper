@@ -352,6 +352,26 @@ export function SendPayrollEmailDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Report type — same four options as the PDF window */}
+          <div className="space-y-1.5" data-testid="payroll-email-report-type">
+            <Label className="text-sm font-medium">Report type</Label>
+            <Select value={presetKey} onValueChange={setPresetKey}>
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(REPORT_PRESETS).map(([key, preset]) => (
+                  <SelectItem key={key} value={key}>
+                    {preset.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {REPORT_PRESETS[presetKey]?.description}
+            </p>
+          </div>
+
           {/* Recipients */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Recipients</Label>
