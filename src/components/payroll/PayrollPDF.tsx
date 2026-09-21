@@ -480,11 +480,14 @@ export function PayrollPDF({
     const hasPassport = !!starter.passport_no;
     const hasSettlement = !!starter.settlement_status;
     const hasResidence = !!starter.residence_permit;
+    const hasShareCode = !!starter.sharing_code;
     if (hasNI) return { status: "ok", label: "NI Number on file" };
+    if (hasShareCode) return { status: "pending", label: "Awaiting NI — Home Office share code on file" };
     if (hasPassport && (hasSettlement || hasResidence)) return { status: "pending", label: "Awaiting NI — documents on file" };
     if (hasPassport) return { status: "warning", label: "Passport on file — no settlement/permit details" };
     return { status: "missing", label: "Missing NI & ID documents" };
   };
+
 
   const Header = ({ subtitle }: { subtitle?: string }) => (
     <View>
