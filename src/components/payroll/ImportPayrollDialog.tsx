@@ -23,6 +23,7 @@ import { remainingForMatching as remainingForMatchingList } from "@/lib/payroll-
 import { findMissingFromFile, linkMissingToUnresolvedRows } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
+import { useContractedRates, resolveEffectiveRate } from "@/hooks/useContractedRates";
 import { sanitisePayrollPeriodUpdate, normalisePayrollStatus } from "@/lib/payroll-status";
 import { CreateEmployeeFromImport } from "./CreateEmployeeFromImport";
 
