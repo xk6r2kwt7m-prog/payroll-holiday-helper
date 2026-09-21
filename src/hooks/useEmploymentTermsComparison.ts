@@ -103,6 +103,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
         rate_mismatch: 0,
         department_mismatch: 0,
         no_active_terms: 0,
+        missing_pay_rate: 0,
         backfill_only: 0,
         scheduled_pending: 0,
       } as TermsComparisonSummary,
