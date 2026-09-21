@@ -251,19 +251,22 @@ export function SendPayrollEmailDialog({
         showNotes: false, // Never include internal notes
       };
 
-      // If bank details are excluded, filter them from starters
-      const filteredStarters = includeBankDetails
-        ? starterEmployees.map((s: any) => ({
-            ...s,
-            bank_account_no: protectedFields[s.id]?.bank_account_no ?? null,
-            sort_code: protectedFields[s.id]?.sort_code ?? null,
-            ni_number: protectedFields[s.id]?.ni_number ?? null,
-          }))
-        : starterEmployees.map((s: any) => ({
-            ...s,
-            bank_account_no: null,
-            sort_code: null,
-          }));
+      // National Insurance and right-to-work evidence always come from the
+      // administrator-only protected route. Bank details are included only when
+      // the administrator has chosen to include them.
+      const filteredStarters = starterEmployees.map((s: any) => {
+        const held = protectedFields[s.id];
+        return {
+          ...s,
+          ni_number: held?.ni_number ?? null,
+          passport_no: held?.passport_no ?? null,
+          sharing_code: held?.sharing_code ?? null,
+          residence_permit: held?.residence_permit ?? null,
+          bank_account_no: includeBankDetails ? held?.bank_account_no ?? null : null,
+          sort_code: includeBankDetails ? held?.sort_code ?? null : null,
+        };
+      });
+
 
       const logoUrl = `${window.location.origin}/logo.jpeg`;
       const blob = await pdf(
