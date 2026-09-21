@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   PAYROLL_ALWAYS_CC,
+  PAYROLL_DEFAULT_RECIPIENT,
   MAX_PDF_ATTACHMENT_BYTES,
   mergeCcRecipients,
   buildPayrollEmailDraft,
@@ -58,6 +59,63 @@ describe("payroll email — standard draft wording", () => {
     expect(sparse.subject).toBe("Payroll — August 2026");
     expect(sparse.message).not.toContain("It covers");
     expect(sparse.message).not.toContain("Pay date");
+  });
+});
+
+describe("payroll email — standing recipient", () => {
+  it("is Philipp Chaykin at his outlook address", () => {
+    expect(PAYROLL_DEFAULT_RECIPIENT).toEqual({
+      name: "Philipp Chaykin",
+      email: "philipp.chaykin@outlook.com",
+    });
+  });
+
+  it("is not also copied when he is the direct recipient", () => {
+    // He is a recipient, not part of the standing copy — the always-CC
+    // address must never be confused with him.
+    expect(mergeCcRecipients([PAYROLL_DEFAULT_RECIPIENT.email])).toEqual([PAYROLL_ALWAYS_CC]);
+  });
+});
+
+describe("payroll email — period dates and wording", () => {
+  const draft = buildPayrollEmailDraft({
+    periodName: "September 2026",
+    companyName: "Ugly Dumpling",
+    senderName: "Aderito Barros",
+    employeeCount: 34,
+    totalHours: 4004.41,
+    grandTotal: 59163.15,
+    payDate: "2026-09-24",
+    periodStart: "2026-08-25",
+    periodEnd: "2026-09-21",
+    recipientName: "Philipp Chaykin",
+  });
+
+  it("greets a single named recipient by first name", () => {
+    expect(draft.message.startsWith("Dear Philipp,")).toBe(true);
+  });
+
+  it("states the exact pay period the payroll covers", () => {
+    expect(draft.message).toContain(
+      "covering the pay period 25 August 2026 – 21 September 2026."
+    );
+  });
+
+  it("tells the recipient the mailbox is not monitored", () => {
+    expect(draft.message).toContain("replies to this address are not monitored");
+    expect(draft.message).toContain("usual channel");
+  });
+
+  it("falls back to a plain greeting without a named recipient", () => {
+    const anon = buildPayrollEmailDraft({
+      periodName: "September 2026",
+      employeeCount: 1,
+      totalHours: 10,
+      grandTotal: 100,
+    });
+    expect(anon.message.startsWith("Hello,")).toBe(true);
+    expect(anon.message).toContain("payroll report for September 2026.");
+    expect(anon.message).not.toContain("covering the pay period");
   });
 });
 
