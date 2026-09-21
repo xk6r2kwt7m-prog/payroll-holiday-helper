@@ -523,7 +523,7 @@ export function SendPayrollEmailDialog({
             <div className="flex items-start gap-2 text-xs text-muted-foreground">
               <Paperclip className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>
-                {fileName}
+                {presetLabel} — {fileName}
                 {attachmentBytes
                   ? ` — ${formatAttachmentSize(attachmentBytes)}`
                   : " — generated and attached when you press Send"}
