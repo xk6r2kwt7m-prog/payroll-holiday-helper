@@ -102,10 +102,21 @@ export function useUpdateEmployee() {
       // Marking someone a leaver removes them from the working team list
       // straight away. Their records stay intact in the archive so payroll,
       // holiday and settle-leaver work is unaffected.
-      const payload: EmployeeUpdate =
-        updates.status === "leaver" && !updates.archived_at
-          ? { ...updates, archived_at: new Date().toISOString() }
-          : updates;
+      let payload: EmployeeUpdate = updates;
+
+      if (updates.status === "leaver" && !updates.archived_at) {
+        // Marking someone a leaver archives them straight away.
+        payload = { ...updates, archived_at: new Date().toISOString() };
+      } else if (
+        updates.status &&
+        updates.status !== "leaver" &&
+        updates.archived_at === undefined
+      ) {
+        // Putting someone back on an active status must also lift the archive
+        // mark, otherwise they stay hidden from the working team list and from
+        // pickers such as "add employee to payroll".
+        payload = { ...updates, archived_at: null, end_date: null };
+      }
 
       const { data, error } = await supabase
         .from("employees")
