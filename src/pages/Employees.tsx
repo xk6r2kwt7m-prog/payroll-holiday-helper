@@ -77,6 +77,7 @@ const Employees = () => {
   const { data: employees = [], isLoading, error } = useEmployees(includeArchived);
   const deleteEmployee = useDeleteEmployee();
   const archiveEmployee = useArchiveEmployee();
+  const restoreEmployee = useRestoreEmployee();
   const updateEmployee = useUpdateEmployee();
   const { isAdmin } = useAuth();
   const canEdit = usePermission("edit_employees");
