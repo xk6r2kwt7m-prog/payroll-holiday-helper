@@ -277,16 +277,29 @@ export interface SiteReadiness {
  * Judges each site on its own, so a signature can be requested for the sites
  * whose licence details are confirmed while the others simply wait. Nothing is
  * inferred: a site is only ready when every field it needs is actually filled in.
+ *
+ * For a DPS authorisation the supervisor's own personal licence number is
+ * supplied by him on the signing page, so it is not required of the premises
+ * record here — it is still listed as outstanding for information.
  */
-export function siteReadiness(sites: LicenceSite[]): SiteReadiness[] {
+export function siteReadiness(
+  sites: LicenceSite[],
+  subject: LicenceSubjectType = "dps_authorisation",
+): SiteReadiness[] {
   return sites.map((site) => {
     const missing = awaitingConfirmation(site);
-    return { site, branch: site.branch, ready: missing.length === 0, missing };
+    const blocking = subject === "dps_authorisation"
+      ? missing.filter((m) => m !== "DPS personal licence number")
+      : missing;
+    return { site, branch: site.branch, ready: blocking.length === 0, missing: blocking };
   });
 }
 
-export function readySites(sites: LicenceSite[]): LicenceSite[] {
-  return siteReadiness(sites).filter((s) => s.ready).map((s) => s.site);
+export function readySites(
+  sites: LicenceSite[],
+  subject: LicenceSubjectType = "dps_authorisation",
+): LicenceSite[] {
+  return siteReadiness(sites, subject).filter((s) => s.ready).map((s) => s.site);
 }
 
 
