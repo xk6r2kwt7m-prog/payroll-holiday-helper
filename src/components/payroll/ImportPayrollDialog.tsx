@@ -18,7 +18,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateAccrual, useLeaveRules } from "@/hooks/useLeaveRules";
 import { useTenant } from "@/hooks/useTenant";
-import { matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMethod, type SavedAlias } from "@/lib/payroll-matching";
+import { leaverPayableInPeriod, matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMethod, type SavedAlias } from "@/lib/payroll-matching";
 import { findMissingFromFile, linkMissingToUnresolvedRows } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
