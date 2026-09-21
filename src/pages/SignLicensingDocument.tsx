@@ -68,10 +68,14 @@ export default function SignLicensingDocument() {
       const json = await res.json();
       if (!res.ok) setError(json?.message || json?.error || "This link could not be opened.");
       else {
-        setRequest(json.request);
-        setSignerName(json.request.signer_name || json.request.recipient_name || "");
-        if (json.request.signed_at) setStep("sign");
+        const r = json.request as RequestView;
+        setRequest(r);
+        setSignerName(r.signer_name || r.recipient_name || "");
+        setLicenceNumber(r.personal_licence_number || blockValue(r.document, "Personal Licence Number"));
+        setLicenceAuthority(r.personal_licence_authority || blockValue(r.document, "Issuing Authority"));
+        if (r.signed_at) setStep("sign");
       }
+
     } catch {
       setError("This link could not be opened. Please check your connection and try again.");
     } finally {
