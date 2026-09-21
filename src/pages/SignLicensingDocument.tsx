@@ -57,6 +57,7 @@ export default function SignLicensingDocument() {
   const [licenceNumber, setLicenceNumber] = useState("");
   const [licenceAuthority, setLicenceAuthority] = useState("");
   const [licenceFile, setLicenceFile] = useState<{ name: string; data: string } | null>(null);
+  const [detailsConfirmed, setDetailsConfirmed] = useState(false);
 
 
   const load = useCallback(async () => {
@@ -339,9 +340,7 @@ export default function SignLicensingDocument() {
                 <p className="text-sm font-semibold">Your personal licence</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                This is your own personal licence — not the premises licence. The number and council are
-                printed on the authorisation you are signing, so a licensing officer or police officer can
-                check them. Please enter them exactly as they appear on your personal licence.
+                Please enter your personal licence details as they appear on your licence.
               </p>
               <div className="space-y-1.5">
                 <Label>Personal licence number</Label>
