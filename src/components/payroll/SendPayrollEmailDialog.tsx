@@ -130,7 +130,11 @@ export function SendPayrollEmailDialog({
     [recipients]
   );
 
-  const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}.pdf`;
+  const presetLabel = REPORT_PRESETS[presetKey]?.label ?? REPORT_PRESETS.full.label;
+
+  const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}${
+    presetKey === "full" ? "" : `-${presetKey.replace(/_/g, "-")}`
+  }.pdf`;
 
   const resetWording = () => {
     setSubject(defaultSubject);
