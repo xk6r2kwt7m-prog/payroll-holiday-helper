@@ -248,6 +248,11 @@ export function DpsStandingAuthorisation() {
         <Button size="sm" variant="outline" onClick={download} disabled={sites.length === 0}>
           <Download className="h-3.5 w-3.5 mr-1.5" /> Download the authorisation
         </Button>
+        {signingLink && (
+          <Button size="sm" variant="outline" onClick={copyLink}>
+            <Link2 className="h-3.5 w-3.5 mr-1.5" /> Copy signing link
+          </Button>
+        )}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
