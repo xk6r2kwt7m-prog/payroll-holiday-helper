@@ -344,3 +344,112 @@ export function withAdditionalSites(
     ],
   };
 }
+
+/* ─────────── The DPS signature that every site inherits ─────────── */
+
+/**
+ * A signature request as stored, reduced to the fields that decide whether it
+ * is the live authorising signature for a site.
+ */
+export interface DpsSignatureSource {
+  subject_type?: string | null;
+  branch?: string | null;
+  status?: string | null;
+  signature?: string | null;
+  signed_at?: string | null;
+  signer_name?: string | null;
+  is_test_record?: boolean | null;
+  personal_licence_number?: string | null;
+  personal_licence_authority?: string | null;
+  document_body?: unknown;
+}
+
+export interface DpsAuthoriserSignature {
+  signature: string;
+  signed_at: string;
+  signer_name: string;
+  personal_licence_number: string | null;
+  personal_licence_authority: string | null;
+  /** The branch the request was filed under — the all-sites marker or one site. */
+  branch: string;
+  covers_all_sites: boolean;
+}
+
+/** A test copy or a cancelled request is never treated as an authorisation. */
+export function isLiveDpsSignature(r: DpsSignatureSource): boolean {
+  return (
+    r.subject_type === "dps_authorisation" &&
+    !!r.signed_at &&
+    !!r.signature &&
+    r.is_test_record !== true &&
+    r.status !== "cancelled"
+  );
+}
+
+/**
+ * The signature that authorises alcohol sales at a site.
+ *
+ * A signature given for that very site is used first. Otherwise the standing
+ * all-sites authorisation applies, so one signature carries onto every site's
+ * document without anything being copied or inferred.
+ */
+export function liveDpsSignature(
+  requests: DpsSignatureSource[],
+  branch?: string,
+): DpsAuthoriserSignature | null {
+  const live = (requests ?? []).filter(isLiveDpsSignature);
+  const newest = (rows: DpsSignatureSource[]) =>
+    rows.slice().sort((a, b) =>
+      new Date(b.signed_at!).getTime() - new Date(a.signed_at!).getTime())[0] ?? null;
+
+  const wanted = (branch ?? "").trim().toLowerCase();
+  const own = wanted
+    ? newest(live.filter((r) => (r.branch ?? "").trim().toLowerCase() === wanted))
+    : null;
+  const allSites = newest(live.filter((r) => r.branch === ALL_SITES_BRANCH));
+  const chosenRow = own ?? allSites;
+  if (!chosenRow) return null;
+
+  return {
+    signature: chosenRow.signature!,
+    signed_at: chosenRow.signed_at!,
+    signer_name: (chosenRow.signer_name ?? "").trim(),
+    personal_licence_number: (chosenRow.personal_licence_number ?? "").trim() || null,
+    personal_licence_authority: (chosenRow.personal_licence_authority ?? "").trim() || null,
+    branch: chosenRow.branch ?? "",
+    covers_all_sites: chosenRow.branch === ALL_SITES_BRANCH,
+  };
+}
+
+/**
+ * Prints the personal licence details the supervisor confirmed when signing
+ * onto a site document. Details already on the document are only replaced by
+ * ones he confirmed himself — nothing is invented.
+ */
+export function withAuthoriserLicence(
+  doc: LicensingDocument,
+  sig: DpsAuthoriserSignature | null,
+): LicensingDocument {
+  if (!sig) return doc;
+  const replace = (label: string, next: string | null) =>
+    next
+      ? (block: { label: string; value: string }) =>
+          block.label === label ? { label, value: next } : block
+      : (block: { label: string; value: string }) => block;
+
+  let block = doc.signature_block
+    .map(replace("Personal Licence Number", sig.personal_licence_number))
+    .map(replace("Issuing Authority", sig.personal_licence_authority));
+
+  if (sig.signer_name) {
+    block = block.map((f) =>
+      (f.label === "DPS Name" || f.label === "Authorised by") && isBlankValue(f.value)
+        ? { ...f, value: sig.signer_name }
+        : f);
+  }
+  return { ...doc, signature_block: block };
+}
+
+function isBlankValue(v: string): boolean {
+  return !v || /^_+$/.test(v.trim());
+}

@@ -12,13 +12,13 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Download, PenLine, Send, ShieldCheck, Eye } from "lucide-react";
+import { Download, PenLine, Send, ShieldCheck, Eye, Link2 } from "lucide-react";
 import {
   usePremisesLicences, useSendLicenceSignature, useLicenceSignatureRequests,
   useSavePremisesLicence,
 } from "@/hooks/usePremisesLicences";
 import {
-  ALL_SITES_BRANCH, buildDpsAuthorisationAllSites, siteReadiness,
+  ALL_SITES_BRANCH, buildDpsAuthorisationAllSites, siteReadiness, isLiveDpsSignature,
   resolveRequestStatus, requestStatusLabel, type LicenceSite,
 } from "@/lib/licensing-documents";
 
@@ -78,10 +78,27 @@ export function DpsStandingAuthorisation() {
   );
   const ready = coveredSites.length > 0;
 
-  const allSiteRequests = (requests as any[]).filter((r) => r.branch === ALL_SITES_BRANCH);
-  const signed = allSiteRequests.find((r) => r.signed_at);
+  const allSiteRequests = (requests as any[])
+    .filter((r) => r.branch === ALL_SITES_BRANCH && r.status !== "cancelled" && !r.is_test_record);
+  // Only a real signature counts — test copies and voided requests never do.
+  const signed = allSiteRequests.find((r) => isLiveDpsSignature(r));
   const latest = allSiteRequests[0] ?? null;
   const status = latest ? resolveRequestStatus(latest) : null;
+  /** The open request he still has to sign — used for the copyable link. */
+  const awaitingSignature = allSiteRequests.find((r) => !r.signed_at && r.token);
+  const signingLink = awaitingSignature
+    ? `https://udp.lovable.app/sign-licence/${awaitingSignature.token}`
+    : null;
+
+  const copyLink = async () => {
+    if (!signingLink) return;
+    try {
+      await navigator.clipboard.writeText(signingLink);
+      toast.success("Signing link copied. Nothing was emailed.");
+    } catch {
+      toast.error("Could not copy the link — select and copy it by hand.");
+    }
+  };
 
   const doc = useMemo(
     () => buildDpsAuthorisationAllSites(coveredSites.length > 0 ? coveredSites : sites, null),
@@ -231,6 +248,11 @@ export function DpsStandingAuthorisation() {
         <Button size="sm" variant="outline" onClick={download} disabled={sites.length === 0}>
           <Download className="h-3.5 w-3.5 mr-1.5" /> Download the authorisation
         </Button>
+        {signingLink && (
+          <Button size="sm" variant="outline" onClick={copyLink}>
+            <Link2 className="h-3.5 w-3.5 mr-1.5" /> Copy signing link
+          </Button>
+        )}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

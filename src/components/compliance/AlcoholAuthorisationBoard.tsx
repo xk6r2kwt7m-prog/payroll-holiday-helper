@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Wine, Printer, ChevronDown, ChevronRight, Download, Mail,
+  Wine, Printer, ChevronDown, ChevronRight, Download, Mail, Send,
 } from "lucide-react";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
-import { usePremisesLicences } from "@/hooks/usePremisesLicences";
+import { usePremisesLicences, useLicenceSignatureRequests } from "@/hooks/usePremisesLicences";
 import {
   useEmployeesWithBranches, useRecordLicenceDocumentIssue,
   useAlcoholListDecisions, useSetAlcoholListDecision,
@@ -18,10 +18,14 @@ import {
   type RegisterAuthorisation, type RegisterRow, type UnclassifiedPerson,
 } from "@/lib/dps-register";
 
-import { buildDpsAuthorisation, type LicenceSite } from "@/lib/licensing-documents";
+import {
+  buildDpsAuthorisation, liveDpsSignature, withAuthoriserLicence,
+  type DpsAuthoriserSignature, type LicenceSite,
+} from "@/lib/licensing-documents";
 import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentPDF";
 import { EmailLicensingDocumentDialog } from "@/components/compliance/EmailLicensingDocumentDialog";
 import { DpsStandingAuthorisation } from "@/components/compliance/DpsStandingAuthorisation";
+import { SendStaffAlcoholDialog } from "@/components/compliance/SendStaffAlcoholDialog";
 import { cn } from "@/lib/utils";
 
 function formatDate(value: string | null): string {
@@ -42,8 +46,19 @@ export function AlcoholAuthorisationBoard() {
   const recordIssue = useRecordLicenceDocumentIssue();
   const { data: decisions = [] } = useAlcoholListDecisions();
   const setDecision = useSetAlcoholListDecision();
+  const { data: dpsRequests = [] } = useLicenceSignatureRequests({ subjectType: "dps_authorisation" });
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [emailSite, setEmailSite] = useState<string | null>(null);
+  /** Who to ask for a staff signature: one person, or everyone at a site. */
+  const [askSignature, setAskSignature] =
+    useState<{ branch: string; employeeId?: string } | null>(null);
+
+  /**
+   * The supervisor's signature for a site: his own for that site if there is
+   * one, otherwise the standing all-sites authorisation he signed.
+   */
+  const signatureFor = (branch: string): DpsAuthoriserSignature | null =>
+    liveDpsSignature(dpsRequests as any[], branch);
 
   const sites = useMemo(() => {
     const branches = new Set<string>();
@@ -117,14 +132,22 @@ export function AlcoholAuthorisationBoard() {
   };
 
   const downloadDocument = async (site: (typeof sites)[number]) => {
-    const doc = buildDpsAuthorisation(siteFor(site.branch), site.licence?.issue_date ?? null);
+    const sig = signatureFor(site.branch);
+    const doc = withAuthoriserLicence(
+      buildDpsAuthorisation(siteFor(site.branch), site.licence?.issue_date ?? null),
+      sig,
+    );
     const blob = await pdf(
       <LicensingDocumentPDF
         doc={doc}
         staff={registerPdfRows(site.rows)}
         summaryLine={site.summaryLine}
         warningLine={outstandingSignatureLine(site.rows, site.branch)}
-        auditLine="Produced from the live staff register in UglyOps HR."
+        authoriserSignature={sig?.signature ?? null}
+        authoriserSignedAt={sig?.signed_at ?? null}
+        auditLine={sig
+          ? `Signed electronically by ${sig.signer_name} on ${new Date(sig.signed_at).toLocaleString("en-GB")}${sig.covers_all_sites ? " as the standing authorisation covering every site" : ""}. Produced from the live staff register in UglyOps HR.`
+          : "Produced from the live staff register in UglyOps HR. Not yet signed by the Designated Premises Supervisor."}
       />
     ).toBlob();
     const url = URL.createObjectURL(blob);
@@ -210,8 +233,38 @@ export function AlcoholAuthorisationBoard() {
 
                     {!isCollapsed && (
                       <div className="px-3 pb-3 space-y-3">
-                        <Group title="Signed as well" rows={group("signed")} tone="green" showApproval />
-                        <Group title="Listed — signature not required" rows={group("awaiting_signature")} tone="grey" showReason />
+                        {signatureFor(site.branch) ? (
+                          <p className="rounded-md bg-success/5 text-[11px] text-muted-foreground p-2.5">
+                            Signed by {signatureFor(site.branch)!.signer_name} on{" "}
+                            {formatDate(signatureFor(site.branch)!.signed_at)}
+                            {signatureFor(site.branch)!.personal_licence_number
+                              ? ` · personal licence ${signatureFor(site.branch)!.personal_licence_number}`
+                              : ""}
+                            {signatureFor(site.branch)!.personal_licence_authority
+                              ? ` · ${signatureFor(site.branch)!.personal_licence_authority}`
+                              : ""}
+                            . His signature is printed on this site's authorisation.
+                          </p>
+                        ) : (
+                          <p className="rounded-md bg-muted/50 text-[11px] text-muted-foreground p-2.5">
+                            The Designated Premises Supervisor has not signed yet, so this site's
+                            authorisation prints unsigned. His signature appears here automatically
+                            once he signs.
+                          </p>
+                        )}
+                        <Group
+                          title="Signed as well"
+                          rows={group("signed")}
+                          tone="green"
+                          showApproval
+                        />
+                        <Group
+                          title="Listed — signature not required"
+                          rows={group("awaiting_signature")}
+                          tone="grey"
+                          showReason
+                          onAsk={(employeeId) => setAskSignature({ branch: site.branch, employeeId })}
+                        />
 
 
                         {site.unclassified.length > 0 && (
@@ -281,6 +334,13 @@ export function AlcoholAuthorisationBoard() {
                           <Button size="sm" variant="outline" onClick={() => setEmailSite(site.branch)}>
                             <Mail className="h-3.5 w-3.5 mr-1.5" /> Email a copy
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setAskSignature({ branch: site.branch })}
+                          >
+                            <Send className="h-3.5 w-3.5 mr-1.5" /> Ask staff to sign
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => downloadCsv(site.branch, site.rows)}>
                             Register CSV
                           </Button>
@@ -306,12 +366,30 @@ export function AlcoholAuthorisationBoard() {
             onOpenChange={(v) => setEmailSite(v ? emailSite : null)}
             branch={emailing.branch}
             licenceId={emailing.licence?.id ?? null}
-            doc={buildDpsAuthorisation(siteFor(emailing.branch), emailing.licence?.issue_date ?? null)}
+            doc={withAuthoriserLicence(
+              buildDpsAuthorisation(siteFor(emailing.branch), emailing.licence?.issue_date ?? null),
+              signatureFor(emailing.branch),
+            )}
             rows={emailing.rows}
             summaryLine={emailing.summaryLine}
             warningLine={outstandingSignatureLine(emailing.rows, emailing.branch)}
+            authoriserSignature={signatureFor(emailing.branch)?.signature ?? null}
+            authoriserSignedAt={signatureFor(emailing.branch)?.signed_at ?? null}
+            auditLine={(() => {
+              const sig = signatureFor(emailing.branch);
+              return sig
+                ? `Signed electronically by ${sig.signer_name} on ${new Date(sig.signed_at).toLocaleString("en-GB")}${sig.covers_all_sites ? " as the standing authorisation covering every site" : ""}. Produced from the live staff register in UglyOps HR.`
+                : "Produced from the live staff register in UglyOps HR. Not yet signed by the Designated Premises Supervisor.";
+            })()}
+          />
+        )}
 
-            auditLine="Produced from the live staff register in UglyOps HR."
+        {askSignature && (
+          <SendStaffAlcoholDialog
+            open={!!askSignature}
+            onOpenChange={(v) => !v && setAskSignature(null)}
+            initialBranch={askSignature.branch}
+            initialEmployeeId={askSignature.employeeId}
           />
         )}
       </CardContent>
@@ -334,13 +412,15 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
 }
 
 function Group({
-  title, rows, tone, showApproval, showReason,
+  title, rows, tone, showApproval, showReason, onAsk,
 }: {
   title: string;
   rows: RegisterRow[];
   tone: string;
   showApproval?: boolean;
   showReason?: boolean;
+  /** Offers an individual signature request for each person in the group. */
+  onAsk?: (employeeId: string) => void;
 }) {
   if (rows.length === 0) return null;
   const badgeTone: Record<string, string> = {
@@ -377,9 +457,21 @@ function Group({
               <p className="text-[11px] text-muted-foreground">Reason: {r.revoked_reason}</p>
             )}
           </div>
-          <Badge variant="outline" className={cn("text-[10px] shrink-0", badgeTone[tone])}>
-            {tone === "green" ? "Signed" : tone === "amber" ? "In progress" : "Authorised"}
-          </Badge>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onAsk && !r.no_longer_employed && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => onAsk(r.employee_id)}
+              >
+                Ask to sign
+              </Button>
+            )}
+            <Badge variant="outline" className={cn("text-[10px]", badgeTone[tone])}>
+              {tone === "green" ? "Signed" : tone === "amber" ? "In progress" : "Authorised"}
+            </Badge>
+          </div>
         </div>
       ))}
     </div>

@@ -28,17 +28,21 @@ import { useAlcoholListDecisions } from "@/hooks/useDpsRegister";
  * or personal licence holder is unchanged and still required afterwards.
  */
 export function SendStaffAlcoholDialog({
-  open, onOpenChange,
+  open, onOpenChange, initialBranch, initialEmployeeId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  /** Opens with this site already chosen. */
+  initialBranch?: string;
+  /** Opens with only this person ticked — used by the per-person button. */
+  initialEmployeeId?: string;
 }) {
   const { data: branchData } = useComplianceBranches();
   const branches = branchData?.selectable ?? [];
-  const [branch, setBranch] = useState("");
+  const [branch, setBranch] = useState(initialBranch ?? "");
   const [selected, setSelected] = useState<string[]>([]);
   const [testSend, setTestSend] = useState(false);
-  const [showEveryone, setShowEveryone] = useState(false);
+  const [showEveryone, setShowEveryone] = useState(!!initialEmployeeId);
   const [busy, setBusy] = useState(false);
   // Nothing is ever sent from the first step — the recipient list must be
   // confirmed on the second step first.
@@ -118,9 +122,19 @@ export function SendStaffAlcoholDialog({
   useEffect(() => {
     if (!branch) return;
     setStep("choose");
-    setSelected(missing.map((e) => e.id));
+    // Asked for one person: only that person is ticked.
+    setSelected(initialEmployeeId ? [initialEmployeeId] : missing.map((e) => e.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branch, showEveryone, staff.length]);
+  }, [branch, showEveryone, staff.length, initialEmployeeId]);
+
+  // Reopening from a person's row or a site button starts from that choice.
+  useEffect(() => {
+    if (!open) return;
+    if (initialBranch) setBranch(initialBranch);
+    if (initialEmployeeId) setShowEveryone(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialBranch, initialEmployeeId]);
+
 
   const review = () => {
     if (!branch) { toast.error("Choose the site"); return; }

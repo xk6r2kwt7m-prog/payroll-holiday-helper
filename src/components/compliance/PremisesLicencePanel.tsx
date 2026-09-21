@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 import {
   awaitingConfirmation, buildDpsAuthorisation, buildSection57,
-  buildStaffAlcoholAuthorisation, isReadyToSend, requestStatusLabel, requestStatusTone,
-  resolveRequestStatus, SUBJECT_LABELS, type LicenceSite, type LicenceSubjectType,
-  type NominatedPerson,
+  buildStaffAlcoholAuthorisation, isReadyToSend, isLiveDpsSignature, requestStatusLabel,
+  requestStatusTone, resolveRequestStatus, SUBJECT_LABELS, ALL_SITES_BRANCH,
+  type LicenceSite, type LicenceSubjectType, type NominatedPerson,
 } from "@/lib/licensing-documents";
 import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentPDF";
 import {
@@ -62,6 +62,9 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
   const { data: licence, isLoading } = usePremisesLicence(branch);
   const { data: conditions = [] } = useLicenceConditions(licence?.id);
   const { data: requests = [] } = useLicenceSignatureRequests({ branch });
+  // The supervisor signs once for every site, so this tab must also see the
+  // standing all-sites authorisation, not only requests filed under this site.
+  const { data: allSiteDpsRequests = [] } = useLicenceSignatureRequests({ subjectType: "dps_authorisation" });
   const { data: authorisations = [] } = useAlcoholAuthorisations();
   const saveLicence = useSavePremisesLicence();
   const saveCondition = useSaveLicenceCondition();
@@ -227,11 +230,19 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
 
   const auditLineFor = (signedRequest: any) =>
     signedRequest
-      ? `Signed electronically by ${signedRequest.signer_name} on ${new Date(signedRequest.signed_at).toLocaleString("en-GB")}. Recorded in UglyOps HR.`
+      ? `Signed electronically by ${signedRequest.signer_name} on ${new Date(signedRequest.signed_at).toLocaleString("en-GB")}${signedRequest.branch === ALL_SITES_BRANCH ? " as the standing authorisation covering every site" : ""}. Recorded in UglyOps HR.`
       : "Not yet signed — this is a draft copy.";
 
-  const signedRequestFor = (subject: LicenceSubjectType) =>
-    (requests as any[]).find((r) => r.subject_type === subject && r.signed_at);
+  const signedRequestFor = (subject: LicenceSubjectType) => {
+    const own = (requests as any[]).find((r) => r.subject_type === subject && r.signed_at);
+    if (own || subject !== "dps_authorisation") return own;
+    // Fall back to his live standing signature — test copies and cancelled
+    // requests never count as an authorisation.
+    return (allSiteDpsRequests as any[])
+      .filter((r) => isLiveDpsSignature(r) && r.branch === ALL_SITES_BRANCH)
+      .sort((a, b) => new Date(b.signed_at).getTime() - new Date(a.signed_at).getTime())[0];
+  };
+
 
   const downloadPdf = async (subject: LicenceSubjectType) => {
     const signedRequest = signedRequestFor(subject);
