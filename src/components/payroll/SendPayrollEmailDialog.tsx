@@ -85,9 +85,11 @@ export function SendPayrollEmailDialog({
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [includeBankDetails, setIncludeBankDetails] = useState(false);
-  // Bank details for the payroll file are fetched deliberately, for
-  // administrators only, and only when the manager asks to include them.
-  const { data: protectedFields = {} } = useTenantSensitiveFields(includeBankDetails);
+  // Protected values are fetched deliberately, for administrators only.
+  // National Insurance and right-to-work evidence are needed for the HMRC
+  // starter page; bank details are added to the file only when asked for.
+  const { data: protectedFields = {} } = useTenantSensitiveFields(open);
+
   const [sending, setSending] = useState(false);
   const [attachmentBytes, setAttachmentBytes] = useState<number | null>(null);
   /** Which report type is attached — same four options as the PDF window. */
