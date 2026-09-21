@@ -12,13 +12,13 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Download, PenLine, Send, ShieldCheck, Eye } from "lucide-react";
+import { Download, PenLine, Send, ShieldCheck, Eye, Link2 } from "lucide-react";
 import {
   usePremisesLicences, useSendLicenceSignature, useLicenceSignatureRequests,
   useSavePremisesLicence,
 } from "@/hooks/usePremisesLicences";
 import {
-  ALL_SITES_BRANCH, buildDpsAuthorisationAllSites, siteReadiness,
+  ALL_SITES_BRANCH, buildDpsAuthorisationAllSites, siteReadiness, isLiveDpsSignature,
   resolveRequestStatus, requestStatusLabel, type LicenceSite,
 } from "@/lib/licensing-documents";
 
