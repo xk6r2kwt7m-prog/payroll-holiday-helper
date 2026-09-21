@@ -66,7 +66,12 @@ Deno.serve(async (req) => {
       signer_name: r.signer_name,
       expires_at: r.expires_at,
       sent_by_name: r.sent_by_name,
+      personal_licence_number: r.personal_licence_number,
+      personal_licence_authority: r.personal_licence_authority,
+      personal_licence_confirmed_at: r.personal_licence_confirmed_at,
+      personal_licence_file_on_record: !!r.personal_licence_file_path,
     });
+
 
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
     const ua = req.headers.get("user-agent") || null;
