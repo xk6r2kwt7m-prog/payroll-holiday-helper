@@ -71,7 +71,9 @@ export default function SignLicensingDocument() {
         const r = json.request as RequestView;
         setRequest(r);
         setSignerName(r.signer_name || r.recipient_name || "");
-        setLicenceNumber(r.personal_licence_number || blockValue(r.document, "Personal Licence Number"));
+        // Only a value the DPS has confirmed himself is pre-filled. We never pre-fill a
+        // personal licence number from the premises paperwork — they are different licences.
+        setLicenceNumber(r.personal_licence_number || "");
         setLicenceAuthority(r.personal_licence_authority || blockValue(r.document, "Issuing Authority"));
         if (r.signed_at) setStep("sign");
       }
@@ -337,15 +339,16 @@ export default function SignLicensingDocument() {
                 <p className="text-sm font-semibold">Your personal licence</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                These details are printed on the authorisation you are signing, so a licensing officer or
-                police officer can check them. Please confirm they are correct, or correct them here.
+                This is your own personal licence — not the premises licence. The number and council are
+                printed on the authorisation you are signing, so a licensing officer or police officer can
+                check them. Please enter them exactly as they appear on your personal licence.
               </p>
               <div className="space-y-1.5">
                 <Label>Personal licence number</Label>
                 <Input
                   value={licenceNumber}
                   onChange={(e) => setLicenceNumber(e.target.value)}
-                  placeholder="e.g. 17/05171/LIPERS"
+                  placeholder="As printed on your personal licence"
                 />
               </div>
               <div className="space-y-1.5">
