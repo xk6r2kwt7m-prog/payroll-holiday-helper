@@ -88,6 +88,8 @@ export function SendPayrollEmailDialog({
   const { data: protectedFields = {} } = useTenantSensitiveFields(includeBankDetails);
   const [sending, setSending] = useState(false);
   const [attachmentBytes, setAttachmentBytes] = useState<number | null>(null);
+  /** Which report type is attached — same four options as the PDF window. */
+  const [presetKey, setPresetKey] = useState<string>("full");
 
   const draft = useMemo(() => {
     const totalHours = entries.reduce(
