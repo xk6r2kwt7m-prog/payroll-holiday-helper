@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 import {
   awaitingConfirmation, buildDpsAuthorisation, buildSection57,
-  buildStaffAlcoholAuthorisation, isReadyToSend, requestStatusLabel, requestStatusTone,
-  resolveRequestStatus, SUBJECT_LABELS, type LicenceSite, type LicenceSubjectType,
-  type NominatedPerson,
+  buildStaffAlcoholAuthorisation, isReadyToSend, isLiveDpsSignature, requestStatusLabel,
+  requestStatusTone, resolveRequestStatus, SUBJECT_LABELS, ALL_SITES_BRANCH,
+  type LicenceSite, type LicenceSubjectType, type NominatedPerson,
 } from "@/lib/licensing-documents";
 import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentPDF";
 import {
