@@ -14,7 +14,7 @@ import {
 } from "@/hooks/useDpsRegister";
 import {
   buildDpsRegister, registerCsv, registerPdfRows, registerSummary, registerSummaryLine,
-  outstandingSignatureLine, unclassifiedForSite,
+  outstandingSignatureLine, unclassifiedForSite, staffWithoutSite,
   type RegisterAuthorisation, type RegisterRow, type UnclassifiedPerson,
 } from "@/lib/dps-register";
 

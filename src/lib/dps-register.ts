@@ -241,6 +241,28 @@ export function unclassifiedForSite(opts: {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * Front-of-house staff who are not assigned to any site, so no site register
+ * can list them. They are never dropped quietly — the board shows them so the
+ * manager can put them on their site. Nothing is inferred or changed here.
+ */
+export function staffWithoutSite(opts: {
+  employees: RegisterEmployee[];
+  decisions?: AlcoholListDecision[];
+}): UnclassifiedPerson[] {
+  const { employees, decisions = [] } = opts;
+  return employees
+    .filter((e) => !e.is_test_record && stillEmployed(e))
+    .filter((e) => (e.branches ?? []).length === 0)
+    .filter((e) => belongsOnAlcoholList(e as any, null, decisions))
+    .map((e) => ({
+      employee_id: e.id,
+      name: personName(e),
+      role: (e.job_title || e.department || "").trim() || null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function registerSummary(rows: RegisterRow[]): RegisterSummary {
   const count = (s: RegisterStatus) => rows.filter((r) => r.status === s).length;
   const signed = count("signed");
