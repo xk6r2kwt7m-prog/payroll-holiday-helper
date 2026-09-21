@@ -59,7 +59,10 @@ export function EmploymentTermsComparisonPanel({
   // Phase A — only true drift (rate / department mismatches) drives the amber
   // headline. "No active terms" and "backfill only" are informational and
   // render neutral so they do not compete visually with real blockers.
-  const hasDrift = summary.rate_mismatch > 0 || summary.department_mismatch > 0;
+  const hasDrift =
+    summary.rate_mismatch > 0 ||
+    summary.department_mismatch > 0 ||
+    summary.missing_pay_rate > 0;
   const hasInfoOnly =
     !hasDrift && (summary.no_active_terms > 0 || summary.backfill_only > 0);
   const [open, setOpen] = useState(hasDrift);
