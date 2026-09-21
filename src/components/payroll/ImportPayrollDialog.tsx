@@ -248,43 +248,20 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
     [startDate, endDate],
   );
 
-  // Who may still be offered for an unmatched timesheet name.
-  //
-  // People already in the archive, practice records and anyone who has left are
-  // never offered — hours must not be attached to a record that is no longer in
-  // use. The single exception is someone whose last day falls inside the period
-  // being imported: their final pay is still owed, so they stay selectable and
-  // are labelled as such.
-  const availableForMatching = useMemo(() => {
-    const employable = new Set(["active", "starter", "onboarding"]);
-    return employees
-      .filter((e: any) => {
-        if (e.archived_at) return false;
-        if (e.is_test_record === true) return false;
-        if (employable.has(e.status)) return true;
-        if (e.status === "leaver") {
-          return leaverPayableInPeriod({ end_date: e.end_date ?? null }, periodCtx);
-        }
-        return false;
-      })
-      .sort((a: any, b: any) => a.forename.localeCompare(b.forename));
-  }, [employees, periodCtx]);
-
   // Anyone already attached to a row in this same upload drops out of the list,
   // so the same person cannot be picked twice.
   const alreadyMatchedIds = useMemo(
     () =>
-      new Set(
-        aggregated
-          .filter((a) => a.matchedId && a.resolution !== "excluded")
-          .map((a) => a.matchedId as string),
-      ),
+      aggregated
+        .filter((a) => a.matchedId && a.resolution !== "excluded")
+        .map((a) => a.matchedId as string),
     [aggregated],
   );
 
+  // Archived records, practice records and past leavers are never offered.
   const remainingForMatching = useMemo(
-    () => availableForMatching.filter((e: any) => !alreadyMatchedIds.has(e.id)),
-    [availableForMatching, alreadyMatchedIds],
+    () => remainingForMatchingList(employees as any, periodCtx, alreadyMatchedIds),
+    [employees, periodCtx, alreadyMatchedIds],
   );
 
 
