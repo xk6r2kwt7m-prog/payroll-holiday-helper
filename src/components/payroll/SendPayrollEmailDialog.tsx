@@ -21,7 +21,14 @@ import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "./PayrollPDF";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
-import { defaultReportConfig, type PayrollReportConfig } from "./PayrollReportConfig";
+import { defaultReportConfig, REPORT_PRESETS, type PayrollReportConfig } from "./PayrollReportConfig";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 import {
   PAYROLL_ALWAYS_CC,
