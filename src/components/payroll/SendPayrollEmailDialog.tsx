@@ -167,16 +167,16 @@ export function SendPayrollEmailDialog({
       toast.error("Please enter a valid email address");
       return;
     }
-    if (recipients.includes(email)) {
+    if (recipients.some((r) => r.email === email)) {
       toast.error("Email already added");
       return;
     }
-    setRecipients([...recipients, email]);
+    setRecipients([...recipients, { email }]);
     setEmailInput("");
   };
 
   const removeEmail = (email: string) => {
-    setRecipients(recipients.filter((r) => r !== email));
+    setRecipients(recipients.filter((r) => r.email !== email));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
