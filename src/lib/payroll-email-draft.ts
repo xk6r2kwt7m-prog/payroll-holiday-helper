@@ -1,14 +1,21 @@
 /**
  * Payroll email drafting helpers.
  *
- * The standard wording and the always-copied address live here so the dialog,
- * the preview and the tests all use exactly the same values. Changing the
- * copied-in address is a deliberate one-line edit — it is never derived from
- * user input or altered automatically.
+ * The standard wording, the always-copied address and the standing recipient
+ * live here so the dialog, the preview and the tests all use exactly the same
+ * values. Changing the copied-in address or the standing recipient is a
+ * deliberate one-line edit — they are never derived from user input or
+ * altered automatically.
  */
 
 /** Every payroll email is always copied to this address. */
 export const PAYROLL_ALWAYS_CC = "barros.aderito@hotmail.com";
+
+/** Standing recipient, pre-filled every time the Send window opens. */
+export const PAYROLL_DEFAULT_RECIPIENT = {
+  name: "Philipp Chaykin",
+  email: "philipp.chaykin@outlook.com",
+} as const;
 
 /** Providers reject very large attachments; refuse before sending instead. */
 export const MAX_PDF_ATTACHMENT_BYTES = 8 * 1024 * 1024;
@@ -34,6 +41,11 @@ export interface PayrollDraftInput {
   totalHours: number;
   grandTotal: number;
   payDate?: string | null;
+  /** ISO dates for the pay period the payroll covers. */
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  /** First name used for the greeting when a single named recipient is known. */
+  recipientName?: string | null;
 }
 
 function formatDate(value?: string | null): string | null {
@@ -55,7 +67,22 @@ export function buildPayrollEmailSubject(input: PayrollDraftInput): string {
 }
 
 export function buildPayrollEmailMessage(input: PayrollDraftInput): string {
-  const lines: string[] = ["Hello,", "", `Please find attached the payroll report for ${input.periodName}.`, ""];
+  const firstName = input.recipientName?.trim().split(/\s+/)[0];
+  const greeting = firstName ? `Dear ${firstName},` : "Hello,";
+
+  const periodStart = formatDate(input.periodStart);
+  const periodEnd = formatDate(input.periodEnd);
+
+  const lines: string[] = [greeting, ""];
+
+  if (periodStart && periodEnd) {
+    lines.push(
+      `Please find attached the payroll report for ${input.periodName}, covering the pay period ${periodStart} – ${periodEnd}.`
+    );
+  } else {
+    lines.push(`Please find attached the payroll report for ${input.periodName}.`);
+  }
+  lines.push("");
 
   const figures: string[] = [];
   if (input.employeeCount > 0) {
@@ -69,7 +96,12 @@ export function buildPayrollEmailMessage(input: PayrollDraftInput): string {
   if (payDate) lines.push(`Pay date: ${payDate}.`);
   if (figures.length || payDate) lines.push("");
 
-  lines.push("This is a confidential document. Please do not forward it.", "");
+  lines.push(
+    "This is a confidential document. Please do not forward it.",
+    "",
+    "This is an automated email — replies to this address are not monitored. If you have any questions, please contact us through the usual channel.",
+    ""
+  );
   if (input.senderName?.trim()) lines.push(input.senderName.trim());
   if (input.companyName?.trim()) lines.push(input.companyName.trim());
 
