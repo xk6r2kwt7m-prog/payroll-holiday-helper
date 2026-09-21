@@ -74,6 +74,8 @@ serve(async (req: Request) => {
 
     const body: SendPayrollRequest = await req.json();
     const { recipients, subject, message, periodName, tenantId, pdfBase64, fileName } = body;
+    const attachPdf = body.attachPdf !== false;
+    const cc = resolveCc(recipients ?? [], body.cc ?? []);
 
     if (!recipients?.length || !subject || !pdfBase64 || !tenantId) {
       return new Response(
