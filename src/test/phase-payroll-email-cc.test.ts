@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { REPORT_PRESETS, defaultReportConfig } from "@/components/payroll/PayrollReportConfig";
 import {
   PAYROLL_ALWAYS_CC,
   PAYROLL_DEFAULT_RECIPIENT,
@@ -129,5 +130,36 @@ describe("payroll email — attachment size", () => {
     expect(formatAttachmentSize(900)).toBe("900 B");
     expect(formatAttachmentSize(204800)).toBe("200 KB");
     expect(formatAttachmentSize(3 * 1024 * 1024)).toBe("3.0 MB");
+  });
+});
+
+describe("payroll email — report type presets", () => {
+  it("offers exactly the same four report types as the PDF window", () => {
+    expect(Object.keys(REPORT_PRESETS).sort()).toEqual(
+      ["accounting", "condensed", "full", "hr_review"].sort()
+    );
+  });
+
+  it("resolves every preset into a valid report config with notes always off", () => {
+    for (const key of Object.keys(REPORT_PRESETS)) {
+      const config = {
+        ...defaultReportConfig,
+        ...REPORT_PRESETS[key].config,
+        sortBy: "alphabetical" as const,
+        showLogo: true,
+        showNotes: false,
+      };
+      expect(config.showNotes).toBe(false);
+      expect(config.sortBy).toBe("alphabetical");
+      expect(config.columns.employeeName).toBe(true);
+      expect(typeof config.layoutStyle).toBe("string");
+    }
+  });
+
+  it("hides financial amounts only for the HR review type", () => {
+    const hr = { ...defaultReportConfig, ...REPORT_PRESETS.hr_review.config };
+    const full = { ...defaultReportConfig, ...REPORT_PRESETS.full.config };
+    expect(hr.financial.hideFinancialAmounts).toBe(true);
+    expect(full.financial.hideFinancialAmounts).toBe(false);
   });
 });
