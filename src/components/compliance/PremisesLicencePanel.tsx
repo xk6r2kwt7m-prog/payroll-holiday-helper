@@ -238,7 +238,7 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
     if (own || subject !== "dps_authorisation") return own;
     // Fall back to his live standing signature — test copies and cancelled
     // requests never count as an authorisation.
-    return (dpsRequests as any[])
+    return (allSiteDpsRequests as any[])
       .filter((r) => isLiveDpsSignature(r) && r.branch === ALL_SITES_BRANCH)
       .sort((a, b) => new Date(b.signed_at).getTime() - new Date(a.signed_at).getTime())[0];
   };
