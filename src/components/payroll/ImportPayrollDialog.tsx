@@ -19,6 +19,7 @@ import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { calculateAccrual, useLeaveRules } from "@/hooks/useLeaveRules";
 import { useTenant } from "@/hooks/useTenant";
 import { matchEmployee, matchEmployeeRow, type MatchableEmployee, type MatchMethod, type SavedAlias } from "@/lib/payroll-matching";
+import { remainingForMatching as remainingForMatchingList } from "@/lib/payroll-import-assignable";
 import { findMissingFromFile, linkMissingToUnresolvedRows } from "@/lib/payroll-import-trace";
 import { suggestNextPeriod } from "@/lib/payroll-period-suggestion";
 import { usePayrollImportAliases } from "@/hooks/usePayrollImportAliases";
@@ -247,6 +248,24 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
     () => ({ start_date: startDate || null, end_date: endDate || null }),
     [startDate, endDate],
   );
+
+  // Anyone already attached to a row in this same upload drops out of the list,
+  // so the same person cannot be picked twice.
+  const alreadyMatchedIds = useMemo(
+    () =>
+      aggregated
+        .filter((a) => a.matchedId && a.resolution !== "excluded")
+        .map((a) => a.matchedId as string),
+    [aggregated],
+  );
+
+  // Archived records, practice records and past leavers are never offered.
+  const remainingForMatching = useMemo(
+    () => remainingForMatchingList(employees as any, periodCtx, alreadyMatchedIds),
+    [employees, periodCtx, alreadyMatchedIds],
+  );
+
+
 
   // Re-evaluate unmatched entries when employee list changes (e.g. starter created outside dialog)
   useEffect(() => {
@@ -1161,18 +1180,34 @@ export function ImportPayrollDialog({ onImportComplete, selectedPeriod: incoming
                                 value="__none__"
                                 onValueChange={(val) => handleManualMatch(emp.csvName, val)}
                               >
-                                <SelectTrigger className="h-7 text-xs w-[200px]">
-                                  <SelectValue placeholder="Match to employee…" />
+                                <SelectTrigger className="h-7 text-xs w-[220px]">
+                                  <SelectValue
+                                    placeholder={
+                                      remainingForMatching.length > 0
+                                        ? `Match to staff (${remainingForMatching.length} left)…`
+                                        : "No staff left to match"
+                                    }
+                                  />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="__none__">— Select employee —</SelectItem>
-                                  {employees
-                                    .sort((a, b) => a.forename.localeCompare(b.forename))
-                                    .map(e => (
-                                      <SelectItem key={e.id} value={e.id}>
-                                        {e.forename} {e.surname} ({e.department}){e.status === "starter" ? " • Starter" : e.status === "leaver" ? " • Leaver" : ""}
-                                      </SelectItem>
-                                    ))}
+                                  {remainingForMatching.length === 0 && (
+                                    <div className="px-2 py-2 text-xs text-muted-foreground max-w-[220px]">
+                                      No remaining staff to match — create the person or exclude this row.
+                                    </div>
+                                  )}
+                                  {remainingForMatching.map((e: any) => (
+                                    <SelectItem key={e.id} value={e.id}>
+                                      {e.forename} {e.surname} ({e.department})
+                                      {e.status === "starter"
+                                        ? " • Starter"
+                                        : e.status === "onboarding"
+                                          ? " • Onboarding"
+                                          : e.status === "leaver"
+                                            ? " • Leaver — final pay in this period"
+                                            : ""}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
