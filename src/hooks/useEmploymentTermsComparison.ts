@@ -59,6 +59,7 @@ export interface TermsComparisonSummary {
   rate_mismatch: number;
   department_mismatch: number;
   no_active_terms: number;
+  missing_pay_rate: number;
   backfill_only: number;
   scheduled_pending: number;
 }
