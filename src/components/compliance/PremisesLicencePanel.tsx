@@ -62,6 +62,9 @@ export function PremisesLicencePanel({ branch }: { branch: string }) {
   const { data: licence, isLoading } = usePremisesLicence(branch);
   const { data: conditions = [] } = useLicenceConditions(licence?.id);
   const { data: requests = [] } = useLicenceSignatureRequests({ branch });
+  // The supervisor signs once for every site, so this tab must also see the
+  // standing all-sites authorisation, not only requests filed under this site.
+  const { data: dpsRequests = [] } = useLicenceSignatureRequests({ subjectType: "dps_authorisation" });
   const { data: authorisations = [] } = useAlcoholAuthorisations();
   const saveLicence = useSavePremisesLicence();
   const saveCondition = useSaveLicenceCondition();
