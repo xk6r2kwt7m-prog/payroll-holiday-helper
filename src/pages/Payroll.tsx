@@ -1200,9 +1200,7 @@ const Payroll = () => {
             results={nmw.results}
             summary={nmw.summary}
             canCheck={nmw.canCheck}
-            termsByEmployee={Object.fromEntries(
-              termsComparison.rows.map((r) => [r.employee_id, r.terms])
-            )}
+            excluded={nmw.excluded}
             periodId={selectedPeriod.id}
             periodStatus={selectedPeriod.status}
             entriesById={Object.fromEntries(
