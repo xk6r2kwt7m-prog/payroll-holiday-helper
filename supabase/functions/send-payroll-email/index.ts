@@ -102,6 +102,19 @@ serve(async (req: Request) => {
 
     // Decode base64 PDF and upload to storage
     const pdfBytes = Uint8Array.from(atob(pdfBase64), (c) => c.charCodeAt(0));
+
+    if (attachPdf && pdfBytes.byteLength > MAX_PDF_ATTACHMENT_BYTES) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "This payroll PDF is too large to attach to an email. Send it as a secure download link instead.",
+          sizeBytes: pdfBytes.byteLength,
+          maxBytes: MAX_PDF_ATTACHMENT_BYTES,
+        }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const storagePath = `${tenantId}/email-exports/${Date.now()}_${fileName}`;
 
     const { error: uploadError } = await supabase.storage
