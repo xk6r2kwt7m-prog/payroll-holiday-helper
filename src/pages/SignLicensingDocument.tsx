@@ -96,19 +96,61 @@ export default function SignLicensingDocument() {
     return json;
   };
 
+  const needsLicenceStep = (r: RequestView | null) =>
+    !!r && r.subject_type === "dps_authorisation" && !r.personal_licence_confirmed_at;
+
   const goToSignature = async () => {
     if (!confirmed) { toast.error("Please confirm you have read the document first"); return; }
     setBusy(true);
     try {
       const json = await post({ action: "mark_read" });
       setRequest(json.request);
-      setStep("sign");
+      setStep(needsLicenceStep(json.request) ? "licence" : "sign");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setBusy(false);
     }
   };
+
+  const pickFile = async (file: File | undefined) => {
+    if (!file) { setLicenceFile(null); return; }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("That file is larger than 10MB — please use a smaller photo");
+      return;
+    }
+    const data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("read failed"));
+      reader.readAsDataURL(file);
+    }).catch(() => null);
+    if (!data) { toast.error("That file could not be read"); return; }
+    setLicenceFile({ name: file.name, data });
+  };
+
+  const confirmLicence = async () => {
+    if (!licenceNumber.trim()) { toast.error("Please enter your personal licence number"); return; }
+    if (!licenceAuthority.trim()) { toast.error("Please enter the council that issued your licence"); return; }
+    setBusy(true);
+    try {
+      const json = await post({
+        action: "confirm_licence",
+        personal_licence_number: licenceNumber.trim(),
+        issuing_authority: licenceAuthority.trim(),
+        file_data: licenceFile?.data,
+      });
+      setRequest(json.request);
+      setStep("sign");
+      toast.success("Licence details confirmed");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+
 
   const sign = async () => {
     if (!signature) { toast.error("Please add your signature"); return; }
