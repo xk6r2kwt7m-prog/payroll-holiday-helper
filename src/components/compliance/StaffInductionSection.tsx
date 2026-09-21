@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,23 +12,24 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Send, Users, CheckCircle2, Clock, Mail, ArrowLeft, ArrowRight } from "lucide-react";
+import { Send, Users, CheckCircle2, Clock, Mail, Search, Settings2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useTenantBranches } from "@/hooks/useBranches";
+import { useTenantBranches, useAllEmployeeBranches } from "@/hooks/useBranches";
 import { useComplianceDocuments, useInductionPacks, useSendInduction } from "@/hooks/useCompliance";
 import { isAvailableToStaff } from "@/lib/compliance-document-fields";
 import { STAFF_ROLES, suggestStaffRole, roleMaySellAlcohol } from "@/lib/compliance-taxonomy";
-import { selectInductionDocuments, summariseSelection } from "@/lib/induction-pack-selection";
+import { selectInductionDocuments } from "@/lib/induction-pack-selection";
 import { cn } from "@/lib/utils";
 import { InductionReviewDialog } from "./InductionReviewDialog";
 
-type Step = "who" | "branch" | "role" | "email" | "review";
-const STEPS: Step[] = ["who", "branch", "role", "email", "review"];
+/** What is being sent: the standard pack for the role, or one chosen document. */
+type SendMode = "standard" | "single";
 
 export function StaffInductionSection() {
   const { data: employees = [] } = useEmployees();
   const { data: branches = [] } = useTenantBranches();
+  const { data: allAssignments = [] } = useAllEmployeeBranches();
   const { data: allDocuments = [] } = useComplianceDocuments();
   /** Drafts and rejected documents are never sent to staff. */
   const documents = useMemo(
@@ -39,15 +40,16 @@ export function StaffInductionSection() {
   const sendInduction = useSendInduction();
 
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>("who");
+  const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [mode, setMode] = useState<SendMode>("standard");
+  const [singleDocId, setSingleDocId] = useState<string>("");
   const [branch, setBranch] = useState<string>("");
   const [staffRole, setStaffRole] = useState<string>("");
   const [emails, setEmails] = useState<Record<string, string>>({});
-  const [excluded, setExcluded] = useState<string[]>([]);
-  const [extra, setExtra] = useState<string[]>([]);
   const [includeAlcohol, setIncludeAlcohol] = useState(false);
   const [testSend, setTestSend] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [sending, setSending] = useState(false);
   const [reviewPack, setReviewPack] = useState<{ id: string; name: string } | null>(null);
 
@@ -56,56 +58,79 @@ export function StaffInductionSection() {
     [employees]
   );
 
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return active;
+    return active.filter((e: any) =>
+      `${e.forename} ${e.surname} ${e.department ?? ""}`.toLowerCase().includes(q)
+    );
+  }, [active, search]);
+
+  /** The site on a person's record: primary assignment first, then any assignment. */
+  const siteFor = (employeeId: string): string => {
+    const rows = (allAssignments as any[]).filter(a => a.employee_id === employeeId);
+    return rows.find(r => r.is_primary)?.branch ?? rows[0]?.branch ?? "";
+  };
+
+  /**
+   * Everything the send needs is already on the staff record, so it is filled in
+   * automatically as soon as somebody is chosen. It stays editable under "Details".
+   */
+  useEffect(() => {
+    if (selectedIds.length === 0) return;
+    const first: any = active.find((e: any) => e.id === selectedIds[0]);
+    const site = siteFor(selectedIds[0]);
+    setBranch(prev => prev || site || branches[0] || "");
+    setStaffRole(prev => {
+      if (prev) return prev;
+      const guess = suggestStaffRole(first?.department, first?.job_title);
+      if (guess) setIncludeAlcohol(roleMaySellAlcohol(guess));
+      return guess ?? "";
+    });
+    setEmails(prev => {
+      const next = { ...prev };
+      selectedIds.forEach(id => {
+        const emp: any = active.find((e: any) => e.id === id);
+        if (next[id] === undefined) next[id] = emp?.email ?? "";
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIds, active, allAssignments, branches]);
+
   const autoSelected = useMemo(
     () => selectInductionDocuments({ documents: documents as any[], branch, role: staffRole, includeAlcohol }),
     [documents, branch, staffRole, includeAlcohol]
   );
 
   const finalDocIds = useMemo(() => {
-    const base = autoSelected.filter(d => !excluded.includes(d.id)).map(d => d.id);
-    return [...new Set([...base, ...extra])];
-  }, [autoSelected, excluded, extra]);
+    if (mode === "single") return singleDocId ? [singleDocId] : [];
+    return autoSelected.map(d => d.id);
+  }, [mode, singleDocId, autoSelected]);
+
+  const missingEmail = selectedIds.filter(id => !emails[id]?.includes("@"));
 
   const reset = () => {
-    setStep("who"); setSelectedIds([]); setBranch(""); setStaffRole("");
-    setEmails({}); setExcluded([]); setExtra([]); setIncludeAlcohol(false); setTestSend(false);
+    setSearch(""); setSelectedIds([]); setMode("standard"); setSingleDocId("");
+    setBranch(""); setStaffRole(""); setEmails({});
+    setIncludeAlcohol(false); setTestSend(false); setShowDetails(false);
   };
-
-  const startWizard = () => { reset(); setOpen(true); };
 
   const pickEmployee = (id: string) => {
     setSelectedIds(prev => (prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]));
   };
 
-  const goNext = () => {
-    if (step === "who") {
-      if (selectedIds.length === 0) { toast.error("Choose at least one staff member"); return; }
-      const first: any = active.find((e: any) => e.id === selectedIds[0]);
-      if (!branch) setBranch(branches[0] ?? "");
-      if (!staffRole) {
-        const guess = suggestStaffRole(first?.department, undefined);
-        if (guess) { setStaffRole(guess); setIncludeAlcohol(roleMaySellAlcohol(guess)); }
-      }
-      const seeded: Record<string, string> = {};
-      selectedIds.forEach(id => {
-        const emp: any = active.find((e: any) => e.id === id);
-        seeded[id] = emails[id] ?? emp?.email ?? "";
-      });
-      setEmails(seeded);
-    }
-    if (step === "branch" && !branch) { toast.error("Choose the branch they work at"); return; }
-    if (step === "role" && !staffRole) { toast.error("Choose their role"); return; }
-    if (step === "email") {
-      const missing = selectedIds.filter(id => !emails[id]?.includes("@"));
-      if (missing.length > 0) { toast.error("Every selected person needs a valid email address"); return; }
-    }
-    setStep(STEPS[Math.min(STEPS.indexOf(step) + 1, STEPS.length - 1)]);
-  };
-
-  const goBack = () => setStep(STEPS[Math.max(STEPS.indexOf(step) - 1, 0)]);
-
   const handleSend = async () => {
-    if (finalDocIds.length === 0) { toast.error("No documents selected"); return; }
+    if (selectedIds.length === 0) { toast.error("Choose at least one staff member"); return; }
+    if (finalDocIds.length === 0) {
+      toast.error(mode === "single" ? "Choose the document to send" : "No documents match this site and role");
+      return;
+    }
+    if (!testSend && missingEmail.length > 0) {
+      toast.error("Every selected person needs a valid email address");
+      setShowDetails(true);
+      return;
+    }
     setSending(true);
     try {
       // Save any corrected email addresses to the staff record first (visible action).
@@ -121,12 +146,12 @@ export function StaffInductionSection() {
         branch,
         staffRole,
         documentIds: finalDocIds,
-        includesAlcohol: includeAlcohol,
+        includesAlcohol: mode === "standard" && includeAlcohol,
         testSend,
       });
       const failed = (result?.results ?? []).filter((r: any) => !r.sent);
       if (result?.sent > 0) {
-        toast.success(`Induction sent to ${result.sent} ${result.sent === 1 ? "person" : "people"}`);
+        toast.success(`Sent to ${result.sent} ${result.sent === 1 ? "person" : "people"}`);
       }
       if (failed.length > 0) {
         toast.error(`${failed.length} could not be sent: ${failed[0]?.error ?? "unknown reason"}`);
@@ -142,24 +167,18 @@ export function StaffInductionSection() {
   const incomplete = packs.filter((p: any) => !p.completed_at);
   const completed = packs.filter((p: any) => p.completed_at);
 
-  const stepTitle: Record<Step, string> = {
-    who: "Who is this induction for?",
-    branch: "Which branch do they work at?",
-    role: "What is their role?",
-    email: "Confirm their email address",
-    review: "Review and send",
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold">Staff induction</h2>
           <p className="text-xs text-muted-foreground">
-            Pick the person, branch and role — the right documents are chosen for you.
+            Pick the person, send the standard pack or a single document to read and confirm.
           </p>
         </div>
-        <Button className="w-full sm:w-auto" onClick={startWizard}><Send className="h-4 w-4 mr-1.5" /> Send induction</Button>
+        <Button className="w-full sm:w-auto" onClick={() => { reset(); setOpen(true); }}>
+          <Send className="h-4 w-4 mr-1.5" /> Send induction
+        </Button>
       </div>
 
       {incomplete.length > 0 && (
@@ -234,166 +253,192 @@ export function StaffInductionSection() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{stepTitle[step]}</DialogTitle>
+            <DialogTitle>Send documents to read and confirm</DialogTitle>
           </DialogHeader>
 
-          {step === "who" && (
-            <div className="space-y-1 max-h-[50vh] overflow-y-auto">
-              {active.map((e: any) => (
-                <label
-                  key={e.id}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg border p-3 cursor-pointer",
-                    selectedIds.includes(e.id) ? "border-primary bg-primary/5" : "border-border"
-                  )}
-                >
-                  <Checkbox checked={selectedIds.includes(e.id)} onCheckedChange={() => pickEmployee(e.id)} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{e.forename} {e.surname}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {e.department}{e.email ? ` · ${e.email}` : " · no email on record"}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          )}
-
-          {step === "branch" && (
+          <div className="space-y-4">
+            {/* 1 — who */}
             <div className="space-y-2">
-              {branches.map((b: string) => (
-                <button
-                  key={b}
-                  onClick={() => setBranch(b)}
-                  className={cn(
-                    "w-full text-left rounded-lg border p-3 text-sm",
-                    branch === b ? "border-primary bg-primary/5 font-medium" : "border-border"
-                  )}
-                >
-                  {b}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {step === "role" && (
-            <div className="space-y-2">
-              {STAFF_ROLES.map(r => (
-                <button
-                  key={r}
-                  onClick={() => { setStaffRole(r); setIncludeAlcohol(roleMaySellAlcohol(r)); }}
-                  className={cn(
-                    "w-full text-left rounded-lg border p-3 text-sm",
-                    staffRole === r ? "border-primary bg-primary/5 font-medium" : "border-border"
-                  )}
-                >
-                  {r}
-                </button>
-              ))}
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">Will sell alcohol</p>
-                  <p className="text-xs text-muted-foreground">Adds age verification and written authorisation.</p>
-                </div>
-                <Switch checked={includeAlcohol} onCheckedChange={setIncludeAlcohol} />
+              <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Who is it for?
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-8"
+                  placeholder="Search by name"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
-            </div>
-          )}
-
-          {step === "email" && (
-            <div className="space-y-3">
-              {selectedIds.map(id => {
-                const emp: any = active.find((e: any) => e.id === id);
-                return (
-                  <div key={id} className="space-y-1.5">
-                    <Label className="text-sm">{emp?.forename} {emp?.surname}</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        className="pl-8"
-                        value={emails[id] ?? ""}
-                        placeholder="name@example.com"
-                        onChange={(e) => setEmails(m => ({ ...m, [id]: e.target.value }))}
-                      />
-                    </div>
-                    {emails[id] && emp?.email && emails[id] !== emp.email && (
-                      <p className="text-xs text-warning">This will be saved to their staff record.</p>
+              <div className="space-y-1 max-h-[32vh] overflow-y-auto">
+                {visible.map((e: any) => (
+                  <label
+                    key={e.id}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg border p-2.5 cursor-pointer",
+                      selectedIds.includes(e.id) ? "border-primary bg-primary/5" : "border-border"
                     )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {step === "review" && (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-border p-3 text-sm space-y-1">
-                <p><span className="text-muted-foreground">People:</span> {selectedIds.length}</p>
-                <p><span className="text-muted-foreground">Branch:</span> {branch}</p>
-                <p><span className="text-muted-foreground">Role:</span> {staffRole}</p>
-                <p><span className="text-muted-foreground">Alcohol sales:</span> {includeAlcohol ? "Yes" : "No"}</p>
-              </div>
-
-              <div>
-                <p className="text-sm font-medium mb-2">{summariseSelection(finalDocIds.length)}</p>
-                <div className="space-y-1 max-h-[32vh] overflow-y-auto">
-                  {autoSelected.map(d => (
-                    <label key={d.id} className="flex items-start gap-2 rounded-lg border border-border p-2.5 text-sm">
-                      <Checkbox
-                        checked={!excluded.includes(d.id)}
-                        onCheckedChange={(v) =>
-                          setExcluded(list => (v === true ? list.filter(i => i !== d.id) : [...list, d.id]))
-                        }
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate">{d.name}</span>
-                        <span className="block text-xs text-muted-foreground">
-                          {d.category}{d.requires_signature ? " · signature" : ""}
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5">Add another document (optional)</p>
-                <Select value="" onValueChange={(v) => setExtra(list => [...new Set([...list, v])])}>
-                  <SelectTrigger><SelectValue placeholder="Choose a document" /></SelectTrigger>
-                  <SelectContent>
-                    {(documents as any[])
-                      .filter(d => !autoSelected.some(a => a.id === d.id))
-                      .map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {extra.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1.5">{extra.length} extra document(s) added.</p>
+                  >
+                    <Checkbox checked={selectedIds.includes(e.id)} onCheckedChange={() => pickEmployee(e.id)} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{e.forename} {e.surname}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {[e.department, siteFor(e.id) || "no site on record", e.email || "no email on record"]
+                          .filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                  </label>
+                ))}
+                {visible.length === 0 && (
+                  <p className="p-3 text-sm text-muted-foreground">No one matches that name.</p>
                 )}
               </div>
-
-              <div className="flex items-center justify-between rounded-lg border border-dashed border-border p-3">
-                <div>
-                  <p className="text-sm font-medium">Send to me instead (test run)</p>
-                  <p className="text-xs text-muted-foreground">Nothing is recorded as sent to staff.</p>
-                </div>
-                <Switch checked={testSend} onCheckedChange={setTestSend} />
-              </div>
             </div>
-          )}
+
+            {selectedIds.length > 0 && (
+              <>
+                {/* 2 — what to send */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    What should they read?
+                  </Label>
+                  <button
+                    onClick={() => setMode("standard")}
+                    className={cn(
+                      "w-full text-left rounded-lg border p-3",
+                      mode === "standard" ? "border-primary bg-primary/5" : "border-border"
+                    )}
+                  >
+                    <p className="text-sm font-medium">Standard pack</p>
+                    <p className="text-xs text-muted-foreground">
+                      {autoSelected.length === 0
+                        ? "No documents match this site and role yet"
+                        : `${autoSelected.length} document${autoSelected.length === 1 ? "" : "s"} for ${staffRole || "this role"} at ${branch || "this site"}`}
+                    </p>
+                  </button>
+                  <button
+                    onClick={() => setMode("single")}
+                    className={cn(
+                      "w-full text-left rounded-lg border p-3",
+                      mode === "single" ? "border-primary bg-primary/5" : "border-border"
+                    )}
+                  >
+                    <p className="text-sm font-medium">Just one document</p>
+                    <p className="text-xs text-muted-foreground">Send a single guide or policy to confirm.</p>
+                  </button>
+                  {mode === "single" && (
+                    <Select value={singleDocId} onValueChange={setSingleDocId}>
+                      <SelectTrigger><SelectValue placeholder="Choose the document" /></SelectTrigger>
+                      <SelectContent>
+                        {(documents as any[]).map(d => (
+                          <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {mode === "standard" && autoSelected.length > 0 && (
+                    <ul className="space-y-0.5 pl-1">
+                      {autoSelected.map(d => (
+                        <li key={d.id} className="text-xs text-muted-foreground truncate">• {d.name}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {/* 3 — details, filled in from their record */}
+                <div className="rounded-lg border border-border p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 text-xs text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground">
+                        {selectedIds.length} {selectedIds.length === 1 ? "person" : "people"}
+                      </p>
+                      <p className="truncate">
+                        {branch || "no site"} · {staffRole || "no role"}
+                        {missingEmail.length > 0 ? ` · ${missingEmail.length} without an email` : ""}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => setShowDetails(v => !v)}>
+                      <Settings2 className="h-4 w-4 mr-1" /> {showDetails ? "Hide" : "Details"}
+                    </Button>
+                  </div>
+
+                  {showDetails && (
+                    <div className="space-y-3 pt-1">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Site</Label>
+                          <Select value={branch} onValueChange={setBranch}>
+                            <SelectTrigger><SelectValue placeholder="Choose a site" /></SelectTrigger>
+                            <SelectContent>
+                              {branches.map((b: string) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Role</Label>
+                          <Select
+                            value={staffRole}
+                            onValueChange={(r) => { setStaffRole(r); setIncludeAlcohol(roleMaySellAlcohol(r)); }}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Choose a role" /></SelectTrigger>
+                            <SelectContent>
+                              {STAFF_ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {mode === "standard" && (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">Will sell alcohol</p>
+                            <p className="text-xs text-muted-foreground">Adds age verification and authorisation.</p>
+                          </div>
+                          <Switch checked={includeAlcohol} onCheckedChange={setIncludeAlcohol} />
+                        </div>
+                      )}
+
+                      {selectedIds.map(id => {
+                        const emp: any = active.find((e: any) => e.id === id);
+                        return (
+                          <div key={id} className="space-y-1">
+                            <Label className="text-xs">{emp?.forename} {emp?.surname}</Label>
+                            <div className="relative">
+                              <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                className="pl-8"
+                                value={emails[id] ?? ""}
+                                placeholder="name@example.com"
+                                onChange={(e) => setEmails(m => ({ ...m, [id]: e.target.value }))}
+                              />
+                            </div>
+                            {emails[id] && emp?.email && emails[id] !== emp.email && (
+                              <p className="text-xs text-warning">This will be saved to their staff record.</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-dashed border-border p-3">
+                  <div>
+                    <p className="text-sm font-medium">Send to me instead (test run)</p>
+                    <p className="text-xs text-muted-foreground">Nothing is recorded as sent to staff.</p>
+                  </div>
+                  <Switch checked={testSend} onCheckedChange={setTestSend} />
+                </div>
+              </>
+            )}
+          </div>
 
           <DialogFooter className="gap-2">
-            {step !== "who" && (
-              <Button variant="outline" onClick={goBack}>
-                <ArrowLeft className="h-4 w-4 mr-1" /> Back
-              </Button>
-            )}
-            {step !== "review" ? (
-              <Button onClick={goNext}>Next <ArrowRight className="h-4 w-4 ml-1" /></Button>
-            ) : (
-              <Button onClick={handleSend} disabled={sending}>
-                {sending ? "Sending..." : "Send induction"}
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={handleSend} disabled={sending || selectedIds.length === 0}>
+              {sending ? "Sending..." : testSend ? "Send test to me" : "Send now"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
