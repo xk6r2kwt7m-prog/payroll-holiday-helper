@@ -340,9 +340,32 @@ export function SendPayrollEmailDialog({
             )}
           </div>
 
+          {/* Always copied — fixed, applied when sending */}
+          <div
+            className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3"
+            data-testid="payroll-email-always-cc"
+          >
+            <Copy className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium">Always copied: {PAYROLL_ALWAYS_CC}</p>
+              <p className="text-xs text-muted-foreground">
+                Every payroll email is copied to this address. It cannot be left off.
+              </p>
+            </div>
+          </div>
+
           {/* Subject */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Subject</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-sm font-medium">Subject</Label>
+              <button
+                type="button"
+                onClick={resetWording}
+                className="text-xs text-muted-foreground underline hover:text-foreground"
+              >
+                Reset to the standard wording
+              </button>
+            </div>
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
@@ -357,8 +380,12 @@ export function SendPayrollEmailDialog({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={defaultMessage}
-              rows={3}
+              rows={10}
+              className="text-sm"
             />
+            <p className="text-xs text-muted-foreground">
+              This wording is a draft — edit it however you like before sending.
+            </p>
           </div>
 
           {/* Bank details toggle */}
