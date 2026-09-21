@@ -894,7 +894,7 @@ const Payroll = () => {
                   period={selectedPeriod as any}
                   entries={entries as any}
                   holidayPayments={holidayPayments as any}
-                  allEmployees={allEmployees as any}
+                  allEmployees={allEmployeesForReports as any}
                   priorPeriodEmployeeIds={priorPeriodEmployeeIds}
                   priorEntryRates={priorEntryRates}
                   disabled={!isAdmin}
