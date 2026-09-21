@@ -89,6 +89,8 @@ const BAND_LABELS: Record<UkWageBand, string> = {
 };
 
 const AT_RISK_MARGIN = 0.25;
+/** Sub-penny arithmetic noise must never be reported as underpayment. */
+export const PENNY_TOLERANCE = 0.005;
 
 export function evaluatePayrollEntryNmw(
   entry: NmwPayrollEntryInput,
@@ -164,28 +166,39 @@ export function evaluatePayrollEntryNmw(
   const effective = eligiblePay / hours;
   const delta = effective - required;
 
+  // A shortfall only exists if the employee is genuinely short by at least one
+  // penny across the whole period. Comparing raw floating-point hourly rates
+  // wrongly flagged staff paid EXACTLY the legal minimum (e.g. 95.49h × £12.71)
+  // as non-compliant because of sub-penny binary rounding.
+  const rawShortfall = (required - effective) * hours;
+  const isShort = round2(rawShortfall) >= 0.01;
+
   let status: NmwStatus;
   let message: string;
   let shortfall = 0;
 
-  if (delta < 0) {
+  if (isShort) {
     status = "non_compliant";
-    shortfall = round2((required - effective) * hours);
+    shortfall = round2(rawShortfall);
     message = `Below legal minimum (£${effective.toFixed(2)} vs £${required.toFixed(2)}). Short by £${shortfall.toFixed(2)} for the period.`;
   } else if (delta < AT_RISK_MARGIN) {
     status = "at_risk";
-    message = `Within £${AT_RISK_MARGIN.toFixed(2)} of legal minimum (£${effective.toFixed(2)} vs £${required.toFixed(2)}).`;
+    message =
+      Math.abs(delta) < PENNY_TOLERANCE
+        ? `Paid exactly the legal minimum (£${required.toFixed(2)}). Compliant, but any deduction would breach it.`
+        : `Within £${AT_RISK_MARGIN.toFixed(2)} of legal minimum (£${effective.toFixed(2)} vs £${required.toFixed(2)}).`;
   } else {
     status = "compliant";
     message = `Compliant — effective £${effective.toFixed(2)} vs required £${required.toFixed(2)}.`;
   }
 
   // "Relies on service charge" — would the entry be compliant if SC was added?
-  // SC is NEVER counted in `eligible_pay`; this is a diagnostic flag only.
+  // SC is NEVER counted in `eligible_pay`; this is a diagnostic flag only and
+  // only applies when there is a genuine shortfall.
   const sc = Number(entry.service_charge) || 0;
   const effectiveWithSc = hours > 0 ? (eligiblePay + sc * hours) / hours : effective;
   const relies_on_service_charge =
-    sc > 0 && effective < required && effectiveWithSc >= required;
+    sc > 0 && isShort && effectiveWithSc + PENNY_TOLERANCE >= required;
 
   return {
     payroll_entry_id: entry.payroll_entry_id ?? null,

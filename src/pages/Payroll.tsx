@@ -1173,7 +1173,20 @@ const Payroll = () => {
             termsByEmployee={Object.fromEntries(
               termsComparison.rows.map((r) => [r.employee_id, r.terms])
             )}
+            periodId={selectedPeriod.id}
+            periodStatus={selectedPeriod.status}
+            entriesById={Object.fromEntries(
+              entries.map((e: any) => [e.id, e])
+            )}
+            correctedEmployeeIds={
+              new Set(
+                payrollAdjustments
+                  .filter((a) => (a.note || "").toLowerCase().includes("minimum wage"))
+                  .map((a) => a.employee_id)
+              )
+            }
           />
+
         )}
 
         {/* Phase 2B — Employment Terms comparison — collapsed by default (Phase B).

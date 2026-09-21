@@ -17,6 +17,10 @@ import {
 import { formatCurrency } from "@/hooks/useHolidays";
 import type { NmwResult, NmwSummary, NmwStatus } from "@/lib/payroll-nmw";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  NmwAdjustmentDialog,
+  type NmwAdjustableEntry,
+} from "@/components/payroll/NmwAdjustmentDialog";
 
 type TermsRow = Database["public"]["Tables"]["employee_contract_terms"]["Row"];
 
@@ -26,6 +30,12 @@ interface Props {
   canCheck: boolean;
   /** Phase 2B — optional read-only map of active terms per employee. Display only. */
   termsByEmployee?: Record<string, TermsRow | null>;
+  /** Payroll entries for this period, keyed by entry id — enables the Adjust action. */
+  entriesById?: Record<string, NmwAdjustableEntry>;
+  periodId?: string;
+  periodStatus?: string | null;
+  /** Employee ids that already carry a recorded minimum wage correction. */
+  correctedEmployeeIds?: Set<string>;
 }
 
 const STATUS_META: Record<
@@ -54,8 +64,18 @@ const STATUS_META: Record<
   },
 };
 
-export function MinimumWageCompliancePanel({ results, summary, canCheck, termsByEmployee }: Props) {
+export function MinimumWageCompliancePanel({
+  results,
+  summary,
+  canCheck,
+  termsByEmployee,
+  entriesById,
+  periodId,
+  periodStatus,
+  correctedEmployeeIds,
+}: Props) {
   const [open, setOpen] = useState(summary.hasBlockers);
+  const [adjusting, setAdjusting] = useState<NmwResult | null>(null);
 
   if (!canCheck) return null;
 
@@ -174,28 +194,52 @@ export function MinimumWageCompliancePanel({ results, summary, canCheck, termsBy
                           )}
                         </td>
                         <td className="py-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge variant="outline" className={`gap-1 ${meta.cls}`}>
-                                  <Icon className="h-3 w-3" />
-                                  {meta.label}
-                                  {r.status === "non_compliant" && r.shortfall > 0 && (
-                                    <span className="ml-1">· short {formatCurrency(r.shortfall)}</span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className={`gap-1 ${meta.cls}`}>
+                                    <Icon className="h-3 w-3" />
+                                    {meta.label}
+                                    {r.status === "non_compliant" && r.shortfall > 0 && (
+                                      <span className="ml-1">· short {formatCurrency(r.shortfall)}</span>
+                                    )}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs text-xs">
+                                  {r.message}
+                                  {r.relies_on_service_charge && (
+                                    <div className="mt-1 text-destructive">
+                                      Compliance would only be met if service charge / tips were added to basic pay.
+                                      Service charge cannot be used to make up National Minimum Wage.
+                                    </div>
                                   )}
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs text-xs">
-                                {r.message}
-                                {r.relies_on_service_charge && (
-                                  <div className="mt-1 text-destructive">
-                                    Compliance would only be met if service charge / tips were added to basic pay.
-                                    Service charge cannot be used to make up National Minimum Wage.
-                                  </div>
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                            {correctedEmployeeIds?.has(r.employee_id) && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-success/10 text-success border-success/20"
+                              >
+                                Corrected
+                              </Badge>
+                            )}
+                            {r.status === "non_compliant" &&
+                              periodId &&
+                              r.payroll_entry_id &&
+                              entriesById?.[r.payroll_entry_id] && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="h-auto p-0 text-[11px] font-medium"
+                                  onClick={() => setAdjusting(r)}
+                                  data-testid={`nmw-adjust-${r.employee_id}`}
+                                >
+                                  Click here to adjust
+                                </Button>
+                              )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -212,6 +256,21 @@ export function MinimumWageCompliancePanel({ results, summary, canCheck, termsBy
           </p>
         </CollapsibleContent>
       </Collapsible>
+
+      {periodId && (
+        <NmwAdjustmentDialog
+          open={!!adjusting}
+          onOpenChange={(v) => !v && setAdjusting(null)}
+          result={adjusting}
+          entry={
+            adjusting?.payroll_entry_id
+              ? entriesById?.[adjusting.payroll_entry_id] ?? null
+              : null
+          }
+          periodId={periodId}
+          periodStatus={periodStatus}
+        />
+      )}
     </Card>
   );
 }
