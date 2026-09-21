@@ -366,12 +366,21 @@ export function AlcoholAuthorisationBoard() {
             onOpenChange={(v) => setEmailSite(v ? emailSite : null)}
             branch={emailing.branch}
             licenceId={emailing.licence?.id ?? null}
-            doc={buildDpsAuthorisation(siteFor(emailing.branch), emailing.licence?.issue_date ?? null)}
+            doc={withAuthoriserLicence(
+              buildDpsAuthorisation(siteFor(emailing.branch), emailing.licence?.issue_date ?? null),
+              signatureFor(emailing.branch),
+            )}
             rows={emailing.rows}
             summaryLine={emailing.summaryLine}
             warningLine={outstandingSignatureLine(emailing.rows, emailing.branch)}
-
-            auditLine="Produced from the live staff register in UglyOps HR."
+            authoriserSignature={signatureFor(emailing.branch)?.signature ?? null}
+            authoriserSignedAt={signatureFor(emailing.branch)?.signed_at ?? null}
+            auditLine={(() => {
+              const sig = signatureFor(emailing.branch);
+              return sig
+                ? `Signed electronically by ${sig.signer_name} on ${new Date(sig.signed_at).toLocaleString("en-GB")}${sig.covers_all_sites ? " as the standing authorisation covering every site" : ""}. Produced from the live staff register in UglyOps HR.`
+                : "Produced from the live staff register in UglyOps HR. Not yet signed by the Designated Premises Supervisor.";
+            })()}
           />
         )}
 
