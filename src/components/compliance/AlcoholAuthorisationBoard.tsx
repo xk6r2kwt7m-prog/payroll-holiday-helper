@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Wine, Printer, ChevronDown, ChevronRight, Download, Mail,
+  Wine, Printer, ChevronDown, ChevronRight, Download, Mail, Send,
 } from "lucide-react";
 import { useAlcoholAuthorisations } from "@/hooks/useCompliance";
-import { usePremisesLicences } from "@/hooks/usePremisesLicences";
+import { usePremisesLicences, useLicenceSignatureRequests } from "@/hooks/usePremisesLicences";
 import {
   useEmployeesWithBranches, useRecordLicenceDocumentIssue,
   useAlcoholListDecisions, useSetAlcoholListDecision,
@@ -18,10 +18,14 @@ import {
   type RegisterAuthorisation, type RegisterRow, type UnclassifiedPerson,
 } from "@/lib/dps-register";
 
-import { buildDpsAuthorisation, type LicenceSite } from "@/lib/licensing-documents";
+import {
+  buildDpsAuthorisation, liveDpsSignature, withAuthoriserLicence,
+  type DpsAuthoriserSignature, type LicenceSite,
+} from "@/lib/licensing-documents";
 import { LicensingDocumentPDF } from "@/components/compliance/LicensingDocumentPDF";
 import { EmailLicensingDocumentDialog } from "@/components/compliance/EmailLicensingDocumentDialog";
 import { DpsStandingAuthorisation } from "@/components/compliance/DpsStandingAuthorisation";
+import { SendStaffAlcoholDialog } from "@/components/compliance/SendStaffAlcoholDialog";
 import { cn } from "@/lib/utils";
 
 function formatDate(value: string | null): string {
@@ -42,8 +46,19 @@ export function AlcoholAuthorisationBoard() {
   const recordIssue = useRecordLicenceDocumentIssue();
   const { data: decisions = [] } = useAlcoholListDecisions();
   const setDecision = useSetAlcoholListDecision();
+  const { data: dpsRequests = [] } = useLicenceSignatureRequests({ subjectType: "dps_authorisation" });
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [emailSite, setEmailSite] = useState<string | null>(null);
+  /** Who to ask for a staff signature: one person, or everyone at a site. */
+  const [askSignature, setAskSignature] =
+    useState<{ branch: string; employeeId?: string } | null>(null);
+
+  /**
+   * The supervisor's signature for a site: his own for that site if there is
+   * one, otherwise the standing all-sites authorisation he signed.
+   */
+  const signatureFor = (branch: string): DpsAuthoriserSignature | null =>
+    liveDpsSignature(dpsRequests as any[], branch);
 
   const sites = useMemo(() => {
     const branches = new Set<string>();
