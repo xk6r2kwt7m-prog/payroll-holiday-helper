@@ -343,7 +343,7 @@ export function PayrollReportBuilder({
           period={period}
           entries={filteredEntries}
           holidayPayments={holidayPayments}
-          starters={starterEmployees}
+          starters={withProtectedFields(starterEmployees)}
           priorPeriodEmployeeIds={priorPeriodEmployeeIds}
           priorEntryRates={priorEntryRates}
           isCorrection={!!period.notes?.includes("[CORRECTED]")}
