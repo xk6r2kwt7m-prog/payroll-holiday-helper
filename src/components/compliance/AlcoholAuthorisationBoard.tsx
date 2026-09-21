@@ -448,9 +448,21 @@ function Group({
               <p className="text-[11px] text-muted-foreground">Reason: {r.revoked_reason}</p>
             )}
           </div>
-          <Badge variant="outline" className={cn("text-[10px] shrink-0", badgeTone[tone])}>
-            {tone === "green" ? "Signed" : tone === "amber" ? "In progress" : "Authorised"}
-          </Badge>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {onAsk && !r.no_longer_employed && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => onAsk(r.employee_id)}
+              >
+                Ask to sign
+              </Button>
+            )}
+            <Badge variant="outline" className={cn("text-[10px]", badgeTone[tone])}>
+              {tone === "green" ? "Signed" : tone === "amber" ? "In progress" : "Authorised"}
+            </Badge>
+          </div>
         </div>
       ))}
     </div>
