@@ -106,6 +106,12 @@ export function AlcoholAuthorisationBoard() {
   );
   const outstandingCount = outstandingSites.reduce((n, s) => n + s.summary.awaitingSignature, 0);
 
+  /** Front-of-house staff with no site on their record — no register can list them. */
+  const noSite = useMemo(
+    () => staffWithoutSite({ employees, decisions: decisions as any }),
+    [employees, decisions],
+  );
+
 
   const siteFor = (branch: string): LicenceSite => {
     const l = (licences as any[]).find((x) => x.branch === branch);
