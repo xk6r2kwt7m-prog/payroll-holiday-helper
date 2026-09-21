@@ -334,6 +334,13 @@ export function AlcoholAuthorisationBoard() {
                           <Button size="sm" variant="outline" onClick={() => setEmailSite(site.branch)}>
                             <Mail className="h-3.5 w-3.5 mr-1.5" /> Email a copy
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setAskSignature({ branch: site.branch })}
+                          >
+                            <Send className="h-3.5 w-3.5 mr-1.5" /> Ask staff to sign
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => downloadCsv(site.branch, site.rows)}>
                             Register CSV
                           </Button>
