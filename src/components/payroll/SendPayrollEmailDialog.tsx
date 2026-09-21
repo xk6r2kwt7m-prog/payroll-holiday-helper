@@ -21,7 +21,14 @@ import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "./PayrollPDF";
 import { useTenant } from "@/hooks/useTenant";
 import { useAuth } from "@/hooks/useAuth";
-import { defaultReportConfig, type PayrollReportConfig } from "./PayrollReportConfig";
+import { defaultReportConfig, REPORT_PRESETS, type PayrollReportConfig } from "./PayrollReportConfig";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 import {
   PAYROLL_ALWAYS_CC,
@@ -81,6 +88,8 @@ export function SendPayrollEmailDialog({
   const { data: protectedFields = {} } = useTenantSensitiveFields(includeBankDetails);
   const [sending, setSending] = useState(false);
   const [attachmentBytes, setAttachmentBytes] = useState<number | null>(null);
+  /** Which report type is attached — same four options as the PDF window. */
+  const [presetKey, setPresetKey] = useState<string>("full");
 
   const draft = useMemo(() => {
     const totalHours = entries.reduce(
@@ -121,7 +130,11 @@ export function SendPayrollEmailDialog({
     [recipients]
   );
 
-  const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}.pdf`;
+  const presetLabel = REPORT_PRESETS[presetKey]?.label ?? REPORT_PRESETS.full.label;
+
+  const fileName = `payroll-${period.period_name.replace(/\s+/g, "-")}${
+    presetKey === "full" ? "" : `-${presetKey.replace(/_/g, "-")}`
+  }.pdf`;
 
   const resetWording = () => {
     setSubject(defaultSubject);
@@ -155,6 +168,7 @@ export function SendPayrollEmailDialog({
       setEmailInput("");
       setIncludeBankDetails(false);
       setAttachmentBytes(null);
+      setPresetKey("full");
     }
     setOpen(isOpen);
   };
@@ -208,9 +222,12 @@ export function SendPayrollEmailDialog({
         return isGenuineStarter || isLeaver;
       });
 
-      // Build report config using defaults — bank details excluded from starters if toggle is off
+      // Build the report from the chosen report type — the same four presets as
+      // the PDF window. Notes stay off and sorting stays A–Z for every preset.
+      const preset = REPORT_PRESETS[presetKey]?.config ?? {};
       const reportConfig: PayrollReportConfig = {
         ...defaultReportConfig,
+        ...preset,
         sortBy: "alphabetical",
         showLogo: true,
         showNotes: false, // Never include internal notes
@@ -335,6 +352,26 @@ export function SendPayrollEmailDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Report type — same four options as the PDF window */}
+          <div className="space-y-1.5" data-testid="payroll-email-report-type">
+            <Label className="text-sm font-medium">Report type</Label>
+            <Select value={presetKey} onValueChange={setPresetKey}>
+              <SelectTrigger className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(REPORT_PRESETS).map(([key, preset]) => (
+                  <SelectItem key={key} value={key}>
+                    {preset.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {REPORT_PRESETS[presetKey]?.description}
+            </p>
+          </div>
+
           {/* Recipients */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Recipients</Label>
@@ -486,7 +523,7 @@ export function SendPayrollEmailDialog({
             <div className="flex items-start gap-2 text-xs text-muted-foreground">
               <Paperclip className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>
-                {fileName}
+                {presetLabel} — {fileName}
                 {attachmentBytes
                   ? ` — ${formatAttachmentSize(attachmentBytes)}`
                   : " — generated and attached when you press Send"}
@@ -501,8 +538,8 @@ export function SendPayrollEmailDialog({
             </p>
             <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
               <li>
-                Payroll PDF for {period.period_name} (sorted A–Z by first name),
-                attached to the email
+                {presetLabel} for {period.period_name} (sorted A–Z by first
+                name), attached to the email
               </li>
               <li>A copy is filed in the system for the audit trail</li>
               <li>
