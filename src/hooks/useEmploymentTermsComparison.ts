@@ -22,6 +22,7 @@ export type TermsComparisonStatus =
   | "rate_mismatch"
   | "department_mismatch"
   | "multiple_mismatch"
+  | "missing_pay_rate"
   | "no_active_terms"
   | "backfill_only";
 
@@ -47,6 +48,8 @@ export interface TermsComparisonRow {
   rateMismatch: boolean;
   departmentMismatch: boolean;
   isBackfillOnly: boolean;
+  /** Contract terms exist but carry no pay rate (payroll would read £0.00). */
+  missingPayRate: boolean;
   hasScheduledChange: boolean;
   status: TermsComparisonStatus;
   warnings: string[];
@@ -58,6 +61,7 @@ export interface TermsComparisonSummary {
   rate_mismatch: number;
   department_mismatch: number;
   no_active_terms: number;
+  missing_pay_rate: number;
   backfill_only: number;
   scheduled_pending: number;
 }
@@ -101,6 +105,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
         rate_mismatch: 0,
         department_mismatch: 0,
         no_active_terms: 0,
+        missing_pay_rate: 0,
         backfill_only: 0,
         scheduled_pending: 0,
       } as TermsComparisonSummary,
@@ -146,6 +151,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
       let rateMismatch = false;
       let departmentMismatch = false;
       let isBackfillOnly = false;
+      let missingPayRate = false;
       let status: TermsComparisonStatus = "match";
 
       if (!terms) {
@@ -158,7 +164,16 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
         const termsBase =
           (terms as any).base_hourly_rate ?? terms.hourly_rate ?? null;
         const termsRate = termsBase !== null ? Number(termsBase) : null;
-        if (termsRate !== null) {
+        // A signed contract that produced no pay rate is a traceability gap, not
+        // a rate mismatch: payroll would read £0.00 with nothing to compare to.
+        const termsSalary = Number((terms as any).annual_salary ?? 0) || 0;
+        const hasPayRate = termsRate !== null && termsRate > 0;
+        if (!hasPayRate && termsSalary <= 0) {
+          missingPayRate = true;
+          warnings.push(
+            "No pay rate was recorded with this contract, so payroll reads £0.00 per hour. Check the agreed rate in the signed contract and record it on the employee.",
+          );
+        } else if (termsRate !== null) {
           rateDiff = +(payrollRate - termsRate).toFixed(4);
           if (Math.abs(rateDiff) > RATE_EPSILON) {
             rateMismatch = true;
@@ -184,7 +199,8 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
           warnings.push("Terms are backfilled from employee profile, not a signed contract.");
         }
 
-        if (rateMismatch && departmentMismatch) status = "multiple_mismatch";
+        if (missingPayRate) status = "missing_pay_rate";
+        else if (rateMismatch && departmentMismatch) status = "multiple_mismatch";
         else if (rateMismatch) status = "rate_mismatch";
         else if (departmentMismatch) status = "department_mismatch";
         else if (isBackfillOnly) status = "backfill_only";
@@ -213,6 +229,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
         rateMismatch,
         departmentMismatch,
         isBackfillOnly,
+        missingPayRate,
         hasScheduledChange: !!scheduled,
         status,
         warnings,
@@ -225,6 +242,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
       rate_mismatch: rows.filter((r) => r.rateMismatch).length,
       department_mismatch: rows.filter((r) => r.departmentMismatch).length,
       no_active_terms: rows.filter((r) => r.status === "no_active_terms").length,
+      missing_pay_rate: rows.filter((r) => r.missingPayRate).length,
       backfill_only: rows.filter((r) => r.isBackfillOnly).length,
       scheduled_pending: rows.filter((r) => r.hasScheduledChange).length,
     };

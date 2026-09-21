@@ -59,7 +59,10 @@ export function EmploymentTermsComparisonPanel({
   // Phase A — only true drift (rate / department mismatches) drives the amber
   // headline. "No active terms" and "backfill only" are informational and
   // render neutral so they do not compete visually with real blockers.
-  const hasDrift = summary.rate_mismatch > 0 || summary.department_mismatch > 0;
+  const hasDrift =
+    summary.rate_mismatch > 0 ||
+    summary.department_mismatch > 0 ||
+    summary.missing_pay_rate > 0;
   const hasInfoOnly =
     !hasDrift && (summary.no_active_terms > 0 || summary.backfill_only > 0);
   const [open, setOpen] = useState(hasDrift);
@@ -93,6 +96,7 @@ export function EmploymentTermsComparisonPanel({
           <div className="flex items-center gap-2 flex-wrap">
             <Pill kind="ok" label="Match" value={summary.matches} />
             <Pill kind="warn" label="Rate mismatch" value={summary.rate_mismatch} />
+            <Pill kind="warn" label="No pay rate on contract" value={summary.missing_pay_rate} />
             <Pill kind="warn" label="Dept mismatch" value={summary.department_mismatch} />
             <Pill kind="muted" label="No active terms" value={summary.no_active_terms} />
             <Pill kind="muted" label="Backfill only" value={summary.backfill_only} />
@@ -238,6 +242,14 @@ function Pill({
 }
 
 function StatusBadge({ row }: { row: TermsComparisonRow }) {
+  if (row.status === "missing_pay_rate") {
+    return (
+      <Badge variant="outline" className="gap-1 bg-warning/10 text-warning border-warning/20">
+        <AlertTriangle className="h-3 w-3" />
+        No pay rate on contract
+      </Badge>
+    );
+  }
   if (row.status === "no_active_terms") {
     // Phase A — informational (missing contract terms), rendered neutral so it
     // does not visually compete with real blockers. Detection unchanged.
@@ -282,6 +294,8 @@ function StatusBadge({ row }: { row: TermsComparisonRow }) {
 
 function rank(r: TermsComparisonRow): number {
   switch (r.status) {
+    case "missing_pay_rate":
+      return -1;
     case "no_active_terms":
       return 0;
     case "multiple_mismatch":
