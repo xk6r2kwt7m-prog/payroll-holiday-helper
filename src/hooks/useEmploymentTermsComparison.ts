@@ -149,6 +149,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
       let rateMismatch = false;
       let departmentMismatch = false;
       let isBackfillOnly = false;
+      let missingPayRate = false;
       let status: TermsComparisonStatus = "match";
 
       if (!terms) {
