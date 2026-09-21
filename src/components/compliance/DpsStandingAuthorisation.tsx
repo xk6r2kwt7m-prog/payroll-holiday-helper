@@ -329,10 +329,17 @@ export function DpsStandingAuthorisation() {
             <div className="space-y-3">
               {!ready && (
                 <p className="rounded-md border border-warning/40 bg-warning/5 p-2.5 text-xs text-warning">
-                  Sending is held until these licence details are confirmed: {outstanding.join("; ")}.
-                  Open that site's premises licence and fill them in, then come back here.
+                  Choose at least one site whose licence details are confirmed. Go back and tick a
+                  site, or fill in the missing licence details for the ones still waiting.
                 </p>
               )}
+              {waiting.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  Not included: {waiting.map((r) => r.branch).join(", ")} — their licence details are
+                  not confirmed yet.
+                </p>
+              )}
+
               <div className="rounded-md border p-2.5 space-y-1 text-xs">
                 <p><span className="text-muted-foreground">To:</span> {name} — {email}</p>
                 <p><span className="text-muted-foreground">Sites covered:</span> {siteNames}</p>
