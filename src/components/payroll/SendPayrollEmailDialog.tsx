@@ -41,6 +41,7 @@ interface SendPayrollEmailDialogProps {
     tenant_id: string;
     timesheet_total?: number;
     grand_total?: number;
+    pay_date?: string | null;
   };
   entries: any[];
   holidayPayments: any[];
