@@ -25,11 +25,18 @@ import { defaultReportConfig, type PayrollReportConfig } from "./PayrollReportCo
 import { isStarterInPeriod, isLeaverInPeriod } from "@/lib/employee-period-relevance";
 import {
   PAYROLL_ALWAYS_CC,
+  PAYROLL_DEFAULT_RECIPIENT,
   buildPayrollEmailDraft,
   mergeCcRecipients,
   formatAttachmentSize,
   MAX_PDF_ATTACHMENT_BYTES,
 } from "@/lib/payroll-email-draft";
+
+/** A recipient may carry a display name (used for the greeting) or just an address. */
+interface PayrollRecipient {
+  name?: string | null;
+  email: string;
+}
 
 interface SendPayrollEmailDialogProps {
   period: {
@@ -64,7 +71,7 @@ export function SendPayrollEmailDialog({
   const { tenantId, tenantName } = useTenant();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [recipients, setRecipients] = useState<string[]>([]);
+  const [recipients, setRecipients] = useState<PayrollRecipient[]>([]);
   const [emailInput, setEmailInput] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
