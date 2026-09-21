@@ -354,13 +354,7 @@ function buildPayrollEmailHtml(
   </div>
   <div style="padding:24px;color:#333;line-height:1.6;">
     <h2 style="color:#1a1a2e;margin:0 0 16px;">Payroll Report – ${periodName}</h2>
-    <p>${escapedMessage}</p>
-    <p style="text-align:center;margin:24px 0;">
-      <a href="${downloadUrl}" style="display:inline-block;padding:14px 32px;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">
-        Download Payroll PDF
-      </a>
-    </p>
-    <p style="color:#888;font-size:12px;">This download link will expire in 7 days. Please download and save the file for your records.</p>
+    <p>${escapedMessage}</p>${linkBlock}
   </div>
   <div style="padding:16px;text-align:center;color:#888;font-size:12px;font-family:sans-serif;">
     This is a confidential payroll document from UglyOps HR. Do not forward this email.
