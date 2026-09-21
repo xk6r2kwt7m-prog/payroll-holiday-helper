@@ -1,34 +1,30 @@
-# September starter details review and correction
+# Read-only investigation: missing September payroll details
 
-## Scope
-Review only the five first-time starters in the 24 August–20 September 2026 payroll period:
-- Hsin Yu Tsai
-- Pyae Hmue Pan Pan
-- Franki Lee Templeman
-- Lotanna Oyokomino Moore-Okoli
-- Sang Hyun Daniel Lee
+## Confirmed so far
+The photograph shows the September 2026 Starters & Leavers report marking NI number, bank details and right-to-work information as missing for all five listed starters.
 
-Previous employees and previous payroll periods remain untouched.
+A read-only database check at 21 September 2026 confirms:
+- Franki, Lotanna and Pyae currently have NI and bank details on their staff records.
+- Hsin Yu currently has bank details but no NI number on the staff record.
+- Daniel currently has none of those fields on the staff record.
+- Right-to-work information is present on Lotanna and Pyae's staff records, but not on Franki, Hsin Yu or Daniel's staff records.
+- No data has been changed during this investigation.
 
-## Plan
-1. Identify the newly uploaded details and match them to these five staff members without importing or altering anything.
-2. Compare each uploaded record against:
-   - the existing staff start date;
-   - the Start/Effective date printed in the immutable signed contract;
-   - the active employment terms for discrepancy checking only.
-3. Treat the contract's printed Start/Effective date as the authoritative evidence. Never substitute the signature date. Where evidence conflicts or cannot be read reliably, flag it for administrator confirmation instead of guessing.
-4. Present a five-person review showing the current date, evidence-supported date, source document, and any conflict. Require individual administrator approval for every proposed correction.
-5. Update only approved missing or incorrect staff start dates. Keep signed contracts byte-for-byte unchanged and do not reissue, migrate, archive, merge, or change any status.
-6. Record an immutable audit entry for each approved correction containing the previous value, new value, evidence reference, payroll period, approving administrator, and timestamp.
-7. Regenerate the September 2026 Starters & Leavers report from the corrected staff records and verify the five relevant entries.
-8. Add a future administrator review warning when a newly signed contract's Start/Effective date is missing from or differs from the staff record. This warning will never change data automatically.
+This proves that at least part of the photographed report does not reflect the information currently held on the staff records. The exact report-side cause is still being traced and will not be guessed.
+
+## Investigation plan
+1. Trace each column in the Starters & Leavers report to its exact source, including the protected-data retrieval used for NI and bank details.
+2. Check whether the PDF used stale report data, omitted the protected-data lookup, or generated before the latest staff updates.
+3. Compare only these five September starters across staff records, approved onboarding details, signed-contract evidence and the generated report. Sensitive values will never be displayed or copied into logs; only present/missing status will be compared.
+4. Check the start dates separately against the contract's printed Start/Effective date. A signature date will never be treated as a start date.
+5. Report the confirmed cause and a person-by-person discrepancy list to the administrator.
+
+## Approval gate
+Stop after the investigation and show the findings. Make no record, payroll, PDF, contract, onboarding, status or report-logic changes until the administrator gives specific approval for the proposed corrections.
 
 ## Safeguards
-- No manual re-entry where uploaded or signed evidence is sufficient.
-- No emails, links, notifications, or staff contact.
-- No NI-number changes unless separately reviewed and approved.
-- Payroll access remains administrator-only and confidential.
-- No changes to closed-period calculations or historical records.
-
-## Technical details
-Use tenant-scoped reads and writes, existing administrator permissions, and the existing audit system. Evidence comparison must remain deterministic and source-linked; unresolved conflicts remain visible and unmodified.
+- No emails, links, notifications or staff contact.
+- No signed-contract changes or reissues.
+- No changes to previous employees or previous payroll periods.
+- No automatic copying between records.
+- Payroll remains administrator-only and confidential.
