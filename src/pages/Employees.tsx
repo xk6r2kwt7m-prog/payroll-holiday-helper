@@ -521,6 +521,7 @@ const Employees = () => {
                     canViewSensitive={canViewSensitive}
                     onArchive={handleArchive}
                     onMarkLeaver={handleMarkLeaver}
+                    onRestore={handleRestore}
                     onViewDetails={handleViewDetails}
                     index={index}
                   />
