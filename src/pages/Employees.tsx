@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useEmployees, useDeleteEmployee, useArchiveEmployee, useUpdateEmployee, type Employee } from "@/hooks/useEmployees";
+import { useEmployees, useDeleteEmployee, useArchiveEmployee, useRestoreEmployee, useUpdateEmployee, type Employee } from "@/hooks/useEmployees";
 import { EmployeeFormDialog } from "@/components/employees/EmployeeFormDialog";
 import { InviteEmployeeDialog } from "@/components/employees/InviteEmployeeDialog";
 import { EmployeeCard } from "@/components/employees/EmployeeCard";
@@ -77,6 +77,7 @@ const Employees = () => {
   const { data: employees = [], isLoading, error } = useEmployees(includeArchived);
   const deleteEmployee = useDeleteEmployee();
   const archiveEmployee = useArchiveEmployee();
+  const restoreEmployee = useRestoreEmployee();
   const updateEmployee = useUpdateEmployee();
   const { isAdmin } = useAuth();
   const canEdit = usePermission("edit_employees");
@@ -200,6 +201,15 @@ const Employees = () => {
       toast.success(`${employee.forename} ${employee.surname} has been marked as a leaver.`);
     } catch {
       toast.error("Failed to update employee status");
+    }
+  };
+
+  const handleRestore = async (employee: Employee) => {
+    try {
+      await restoreEmployee.mutateAsync(employee.id);
+      toast.success(`${employee.forename} ${employee.surname} is back on the active team.`);
+    } catch {
+      toast.error("Failed to restore employee");
     }
   };
 
@@ -511,6 +521,7 @@ const Employees = () => {
                     canViewSensitive={canViewSensitive}
                     onArchive={handleArchive}
                     onMarkLeaver={handleMarkLeaver}
+                    onRestore={handleRestore}
                     onViewDetails={handleViewDetails}
                     index={index}
                   />

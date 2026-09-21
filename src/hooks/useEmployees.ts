@@ -269,6 +269,41 @@ export function useArchiveEmployee() {
 }
 
 /**
+ * Undo a leaver / archive marking. Brings the person back into the working
+ * team list so they are picked up again by payroll, holiday and scheduling.
+ * Sets status back to 'active', clears the archive stamp and removes the
+ * leaving date (a returning employee must not keep an end date, otherwise the
+ * leaver rules would archive them again).
+ * Nothing else on the record is touched.
+ */
+export function useRestoreEmployee() {
+  const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await assertPermission("edit_employees", tenantId!);
+      const { error } = await supabase
+        .from("employees")
+        .update({
+          status: "active" as any,
+          archived_at: null,
+          end_date: null,
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employee_readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["team_readiness"] });
+      queryClient.invalidateQueries({ queryKey: ["account-linkage"] });
+    },
+  });
+}
+
+/**
  * Hard delete — only for employees with ZERO linked records.
  * The caller MUST check useEmployeeDependencies first.
  * If FK constraints block the delete, a human-readable error is thrown.

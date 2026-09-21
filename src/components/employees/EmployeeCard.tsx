@@ -1,4 +1,4 @@
-import { Eye, MoreHorizontal, MapPin, Clock, Archive, UserMinus, MailWarning, Send } from "lucide-react";
+import { Eye, MoreHorizontal, MapPin, Clock, Archive, ArchiveRestore, UserMinus, MailWarning, Send } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,12 +50,12 @@ interface EmployeeCardProps {
   canViewSensitive?: boolean;
   onArchive: (employee: Employee) => void;
   onMarkLeaver: (employee: Employee) => void;
-  
+  onRestore?: (employee: Employee) => void;
   onViewDetails: (employee: Employee) => void;
   index: number;
 }
 
-export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onViewDetails, index }: EmployeeCardProps) {
+export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onArchive, onMarkLeaver, onRestore, onViewDetails, index }: EmployeeCardProps) {
   const { data: branches = [] } = useEmployeeBranches(employee.id);
   const isNewStarter = employee.status === "starter" || (employee.status as string) === "onboarding";
   const { data: readiness } = useEmployeeReadiness(isNewStarter ? employee.id : undefined);
@@ -165,6 +165,13 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
                   onClick={(e) => { e.stopPropagation(); onArchive(employee); }}
                 >
                   <Archive className="h-4 w-4 mr-2" /> Archive
+                </DropdownMenuItem>
+              )}
+              {(isAlreadyArchived || isLeaver) && onRestore && (
+                <DropdownMenuItem
+                  onClick={(e) => { e.stopPropagation(); onRestore(employee); }}
+                >
+                  <ArchiveRestore className="h-4 w-4 mr-2" /> Restore to Active
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
