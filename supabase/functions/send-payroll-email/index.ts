@@ -227,11 +227,20 @@ serve(async (req: Request) => {
 
 // ─── Email sending (reuses same provider logic as send-notification) ─────────
 
+interface EmailAttachment {
+  fileName: string;
+  contentBase64: string;
+  contentType: string;
+}
+
 interface EmailPayload {
   to: string;
+  cc?: string[];
   subject: string;
   html: string;
   from: string;
+  replyTo?: string;
+  attachment?: EmailAttachment;
 }
 
 interface EmailResult {
@@ -239,33 +248,47 @@ interface EmailResult {
   error?: string;
 }
 
+async function sendViaPostmark(payload: EmailPayload): Promise<EmailResult> {
+  const key = Deno.env.get("POSTMARK_SERVER_TOKEN");
+  if (!key) throw new Error("POSTMARK_SERVER_TOKEN not configured");
+  const res = await fetch("https://api.postmarkapp.com/email", {
+    method: "POST",
+    headers: {
+      "X-Postmark-Server-Token": key,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      From: payload.from,
+      To: payload.to,
+      ...(payload.cc?.length ? { Cc: payload.cc.join(",") } : {}),
+      ...(payload.replyTo ? { ReplyTo: payload.replyTo } : {}),
+      Subject: payload.subject,
+      HtmlBody: payload.html,
+      TextBody: "",
+      MessageStream: "outbound",
+      ...(payload.attachment
+        ? {
+            Attachments: [
+              {
+                Name: payload.attachment.fileName,
+                Content: payload.attachment.contentBase64,
+                ContentType: payload.attachment.contentType,
+              },
+            ],
+          }
+        : {}),
+    }),
+  });
+  const data = await res.json();
+  if (data.ErrorCode && data.ErrorCode !== 0) {
+    return { success: false, error: data.Message };
+  }
+  return { success: true };
+}
+
 async function sendEmail(provider: string, payload: EmailPayload): Promise<EmailResult> {
   switch (provider) {
-    case "postmark": {
-      const key = Deno.env.get("POSTMARK_SERVER_TOKEN");
-      if (!key) throw new Error("POSTMARK_SERVER_TOKEN not configured");
-      const res = await fetch("https://api.postmarkapp.com/email", {
-        method: "POST",
-        headers: {
-          "X-Postmark-Server-Token": key,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          From: payload.from,
-          To: payload.to,
-          Subject: payload.subject,
-          HtmlBody: payload.html,
-          TextBody: "",
-          MessageStream: "outbound",
-        }),
-      });
-      const data = await res.json();
-      if (data.ErrorCode && data.ErrorCode !== 0) {
-        return { success: false, error: data.Message };
-      }
-      return { success: true };
-    }
     case "resend": {
       const key = Deno.env.get("RESEND_API_KEY");
       if (!key) throw new Error("RESEND_API_KEY not configured");
@@ -275,8 +298,17 @@ async function sendEmail(provider: string, payload: EmailPayload): Promise<Email
         body: JSON.stringify({
           from: payload.from,
           to: [payload.to],
+          ...(payload.cc?.length ? { cc: payload.cc } : {}),
+          ...(payload.replyTo ? { reply_to: payload.replyTo } : {}),
           subject: payload.subject,
           html: payload.html,
+          ...(payload.attachment
+            ? {
+                attachments: [
+                  { filename: payload.attachment.fileName, content: payload.attachment.contentBase64 },
+                ],
+              }
+            : {}),
         }),
       });
       if (!res.ok) {
@@ -285,30 +317,9 @@ async function sendEmail(provider: string, payload: EmailPayload): Promise<Email
       }
       return { success: true };
     }
-    default: {
-      const key = Deno.env.get("POSTMARK_SERVER_TOKEN");
-      if (!key) throw new Error("POSTMARK_SERVER_TOKEN not configured");
-      const res = await fetch("https://api.postmarkapp.com/email", {
-        method: "POST",
-        headers: {
-          "X-Postmark-Server-Token": key,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          From: payload.from,
-          To: payload.to,
-          Subject: payload.subject,
-          HtmlBody: payload.html,
-          MessageStream: "outbound",
-        }),
-      });
-      const data = await res.json();
-      if (data.ErrorCode && data.ErrorCode !== 0) {
-        return { success: false, error: data.Message };
-      }
-      return { success: true };
-    }
+    case "postmark":
+    default:
+      return await sendViaPostmark(payload);
   }
 }
 
