@@ -29,6 +29,17 @@ interface RequestView {
   signer_name: string | null;
   expires_at: string;
   sent_by_name: string | null;
+  personal_licence_number?: string | null;
+  personal_licence_authority?: string | null;
+  personal_licence_confirmed_at?: string | null;
+  personal_licence_file_on_record?: boolean;
+}
+
+const BLANK_MARK = "____";
+
+function blockValue(doc: LicensingDocument, label: string): string {
+  const found = doc.signature_block?.find((f) => f.label === label)?.value ?? "";
+  return found.includes(BLANK_MARK) ? "" : found;
 }
 
 export default function SignLicensingDocument() {
@@ -37,12 +48,16 @@ export default function SignLicensingDocument() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [step, setStep] = useState<"read" | "sign">("read");
+  const [step, setStep] = useState<"read" | "licence" | "sign">("read");
   const [confirmed, setConfirmed] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
   const [signerName, setSignerName] = useState("");
   const [notReadyNote, setNotReadyNote] = useState("");
   const [notReadyOpen, setNotReadyOpen] = useState(false);
+  const [licenceNumber, setLicenceNumber] = useState("");
+  const [licenceAuthority, setLicenceAuthority] = useState("");
+  const [licenceFile, setLicenceFile] = useState<{ name: string; data: string } | null>(null);
+
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -53,10 +68,14 @@ export default function SignLicensingDocument() {
       const json = await res.json();
       if (!res.ok) setError(json?.message || json?.error || "This link could not be opened.");
       else {
-        setRequest(json.request);
-        setSignerName(json.request.signer_name || json.request.recipient_name || "");
-        if (json.request.signed_at) setStep("sign");
+        const r = json.request as RequestView;
+        setRequest(r);
+        setSignerName(r.signer_name || r.recipient_name || "");
+        setLicenceNumber(r.personal_licence_number || blockValue(r.document, "Personal Licence Number"));
+        setLicenceAuthority(r.personal_licence_authority || blockValue(r.document, "Issuing Authority"));
+        if (r.signed_at) setStep("sign");
       }
+
     } catch {
       setError("This link could not be opened. Please check your connection and try again.");
     } finally {
@@ -77,19 +96,61 @@ export default function SignLicensingDocument() {
     return json;
   };
 
+  const needsLicenceStep = (r: RequestView | null) =>
+    !!r && r.subject_type === "dps_authorisation" && !r.personal_licence_confirmed_at;
+
   const goToSignature = async () => {
     if (!confirmed) { toast.error("Please confirm you have read the document first"); return; }
     setBusy(true);
     try {
       const json = await post({ action: "mark_read" });
       setRequest(json.request);
-      setStep("sign");
+      setStep(needsLicenceStep(json.request) ? "licence" : "sign");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setBusy(false);
     }
   };
+
+  const pickFile = async (file: File | undefined) => {
+    if (!file) { setLicenceFile(null); return; }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("That file is larger than 10MB — please use a smaller photo");
+      return;
+    }
+    const data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("read failed"));
+      reader.readAsDataURL(file);
+    }).catch(() => null);
+    if (!data) { toast.error("That file could not be read"); return; }
+    setLicenceFile({ name: file.name, data });
+  };
+
+  const confirmLicence = async () => {
+    if (!licenceNumber.trim()) { toast.error("Please enter your personal licence number"); return; }
+    if (!licenceAuthority.trim()) { toast.error("Please enter the council that issued your licence"); return; }
+    setBusy(true);
+    try {
+      const json = await post({
+        action: "confirm_licence",
+        personal_licence_number: licenceNumber.trim(),
+        issuing_authority: licenceAuthority.trim(),
+        file_data: licenceFile?.data,
+      });
+      setRequest(json.request);
+      setStep("sign");
+      toast.success("Licence details confirmed");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+
 
   const sign = async () => {
     if (!signature) { toast.error("Please add your signature"); return; }
@@ -141,6 +202,8 @@ export default function SignLicensingDocument() {
   }
 
   const doc = request.document;
+  const totalSteps = request.subject_type === "dps_authorisation" ? 3 : 2;
+
 
   if (request.signed_at) {
     return (
@@ -168,9 +231,18 @@ export default function SignLicensingDocument() {
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">{request.document_title}</p>
             <p className="text-xs text-muted-foreground">
-              {step === "read" ? "Step 1 of 2 — read the document" : "Step 2 of 2 — sign"}
+              {totalSteps === 3
+                ? step === "read"
+                  ? "Step 1 of 3 — read the document"
+                  : step === "licence"
+                    ? "Step 2 of 3 — confirm your personal licence"
+                    : "Step 3 of 3 — sign"
+                : step === "read"
+                  ? "Step 1 of 2 — read the document"
+                  : "Step 2 of 2 — sign"}
             </p>
           </div>
+
         </div>
       </header>
 
@@ -257,8 +329,66 @@ export default function SignLicensingDocument() {
               </div>
             )}
           </>
+        ) : step === "licence" ? (
+          <>
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <p className="text-sm font-semibold">Your personal licence</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                These details are printed on the authorisation you are signing, so a licensing officer or
+                police officer can check them. Please confirm they are correct, or correct them here.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Personal licence number</Label>
+                <Input
+                  value={licenceNumber}
+                  onChange={(e) => setLicenceNumber(e.target.value)}
+                  placeholder="e.g. 17/05171/LIPERS"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Council that issued it</Label>
+                <Input
+                  value={licenceAuthority}
+                  onChange={(e) => setLicenceAuthority(e.target.value)}
+                  placeholder="e.g. City of Westminster"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Photo or copy of your personal licence (optional)</Label>
+                <Input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => pickFile(e.target.files?.[0])}
+                />
+                {licenceFile && (
+                  <p className="text-xs text-success flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> {licenceFile.name} ready to send
+                  </p>
+                )}
+                {!licenceFile && request.personal_licence_file_on_record && (
+                  <p className="text-xs text-muted-foreground">A copy is already on record.</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  A photo of the badge or card is kept with the premises records so it can be produced at an inspection.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Button className="w-full" size="lg" onClick={confirmLicence} disabled={busy}>
+                {busy ? "Saving..." : "Confirm and continue to sign"}
+              </Button>
+              <Button variant="ghost" className="w-full" onClick={() => setStep("read")}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> Back to reading
+              </Button>
+            </div>
+          </>
         ) : (
           <>
+
             <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />

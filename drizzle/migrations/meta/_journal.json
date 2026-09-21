@@ -239,6 +239,13 @@
       "when": 1789980194026,
       "tag": "0033_contract_terms_prefer_contract_snapshot_pay",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790013831881,
+      "tag": "0034_licence_signature_personal_licence_confirmation",
+      "breakpoints": true
     }
   ]
 }

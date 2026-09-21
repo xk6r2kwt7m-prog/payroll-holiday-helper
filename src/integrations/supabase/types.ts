@@ -6227,6 +6227,9 @@ export type Database = {
           id: string
           is_test_record: boolean
           licence_id: string | null
+          personal_licence_authority: string | null
+          personal_licence_confirmed_at: string | null
+          personal_licence_file_path: string | null
           personal_licence_number: string | null
           read_at: string | null
           recipient_email: string
@@ -6259,6 +6262,9 @@ export type Database = {
           id?: string
           is_test_record?: boolean
           licence_id?: string | null
+          personal_licence_authority?: string | null
+          personal_licence_confirmed_at?: string | null
+          personal_licence_file_path?: string | null
           personal_licence_number?: string | null
           read_at?: string | null
           recipient_email: string
@@ -6291,6 +6297,9 @@ export type Database = {
           id?: string
           is_test_record?: boolean
           licence_id?: string | null
+          personal_licence_authority?: string | null
+          personal_licence_confirmed_at?: string | null
+          personal_licence_file_path?: string | null
           personal_licence_number?: string | null
           read_at?: string | null
           recipient_email?: string
