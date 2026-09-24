@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { PendingDetailDecisions } from "@/components/employees/PendingDetailDecisions";
 
 const categoryIcons: Record<string, any> = {
   documents: FileText, training: GraduationCap, equipment: Wrench, general: LayoutList,
