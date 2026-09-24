@@ -40,6 +40,8 @@ export interface GuardOptions {
   tenantId?: string | null;
   /** Require company_admin (or platform admin) rather than any membership. */
   adminOnly?: boolean;
+  /** Require manager, supervisor-lead or admin — used for personal / identity data. */
+  managerOrAbove?: boolean;
   /** Allow trusted service-role / scheduler calls. Defaults to true. */
   allowServiceRole?: boolean;
   /** Extra CORS headers to merge into failure responses. */
@@ -47,6 +49,7 @@ export interface GuardOptions {
 }
 
 const ADMIN_ROLES = new Set(["company_admin", "admin", "owner"]);
+const MANAGER_ROLES = new Set([...ADMIN_ROLES, "manager", "platform_admin"]);
 
 function deny(status: number, error: string, cors?: Record<string, string>): GuardFail {
   return {
