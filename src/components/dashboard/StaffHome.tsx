@@ -444,8 +444,10 @@ export function StaffHome() {
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
           </Link>
-        </motion.div>
+      </motion.div>
       )}
+
+      {employeeId && <MyAvailabilityCard employeeId={employeeId} />}
 
       {/* Shift Countdown */}
       {!activeEntry && nextShiftTime && (
