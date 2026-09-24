@@ -214,11 +214,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     if (selectedSourcePeriod) applySuggestion(selectedSourcePeriod, weeks);
   };
 
-  const endDateIsSunday = (() => {
-    if (!endDate) return true;
-    const d = new Date(endDate);
-    return Number.isNaN(d.getTime()) ? true : d.getUTCDay() === 0;
-  })();
+  const endDateIsSunday = isSundayDateStr(endDate);
 
 
 
@@ -253,7 +249,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           <TabsContent value="copy" className="space-y-4 mt-4">
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
               <p className="text-sm text-muted-foreground">
-                Copy employee rates and bonuses from a previous period. <strong>Timesheet hours will be reset to 0</strong> for you to enter.
+                Copy the employee list and their pay rates from a previous period. <strong>Timesheet hours, bonuses and incentives all start at 0</strong> for you to enter.
               </p>
             </div>
 
