@@ -73,10 +73,10 @@ export default function Onboarding() {
       const { data, error } = await supabase
         .from("employee_documents")
         .select("employee_id, document_type, document_status")
-        .in("document_type", ["passport", "visa", "biometric_residence_permit", "right_to_work"])
+        .in("document_type", ["passport", "visa", "biometric_residence_permit", "right_to_work"] as any)
         .in("employee_id", reviewEmployeeIds);
       if (error) throw error;
-      return data as { employee_id: string; document_type: string; document_status: string }[];
+      return (data || []) as any[];
     },
     enabled: reviewEmployeeIds.length > 0,
   });
