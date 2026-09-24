@@ -488,6 +488,63 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── Recipient allow-list ────────────────────────────────────────────────────
+
+/**
+ * True when the address is one the company already holds: a member of staff, a
+ * pending invitation, a recorded recipient of a contract / induction / licensing
+ * document, the company's own or signatory address, the supervisor's address, or
+ * the signed-in person's own address. Anything else is refused, so the company's
+ * email account cannot be used to mail strangers.
+ */
+async function recipientBelongsToTenant(
+  to: string,
+  tenantId: string | null,
+  userId: string | null,
+): Promise<boolean> {
+  const address = String(to || "").trim().toLowerCase();
+  if (!address) return false;
+
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+
+  // The sender's own address is always allowed (test sends to yourself).
+  if (userId) {
+    const { data: me } = await admin.auth.admin.getUserById(userId);
+    if (String(me?.user?.email || "").trim().toLowerCase() === address) return true;
+  }
+
+  if (!tenantId) return false;
+
+  const checks: Array<[string, string]> = [
+    ["employees", "email"],
+    ["tenant_invitations", "email"],
+    ["employee_info_requests", "recipient_email"],
+    ["induction_packs", "recipient_email"],
+    ["licence_signature_requests", "recipient_email"],
+    ["licence_document_issues", "recipient_email"],
+    ["contract_delivery_attempts", "recipient_email"],
+    ["premises_licences", "dps_email"],
+    ["company_settings", "company_email"],
+    ["company_settings", "default_signatory_email"],
+  ];
+
+  for (const [table, column] of checks) {
+    const { data } = await admin
+      .from(table)
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .ilike(column, address)
+      .limit(1);
+    if (data && data.length > 0) return true;
+  }
+
+  return false;
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 const handler = async (req: Request): Promise<Response> => {
