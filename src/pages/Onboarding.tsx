@@ -206,7 +206,7 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: nu
   );
 }
 
-function OnboardingReviewCard({ record }: { record: any }) {
+function OnboardingReviewCard({ record, rtwDocuments }: { record: any; rtwDocuments: { employee_id: string; document_type: string; document_status: string }[] }) {
   const [expanded, setExpanded] = useState(false);
   const [rtwNotes, setRtwNotes] = useState("");
   const [rtwConfirmOpen, setRtwConfirmOpen] = useState(false);
@@ -223,7 +223,8 @@ function OnboardingReviewCard({ record }: { record: any }) {
   const personalInfo = record.personal_info || {};
   const bankDetails = record.bank_details || {};
   const emergencyContact = record.emergency_contact || {};
-  const canApprove = rtwStatus === "approved";
+  const rtwClearance = isRightToWorkCleared(record, rtwDocuments);
+  const canApprove = rtwClearance === "cleared";
 
   const today = format(new Date(), "yyyy-MM-dd");
   const rtwDateInvalid = !rtwCheckDate || rtwCheckDate > today;
