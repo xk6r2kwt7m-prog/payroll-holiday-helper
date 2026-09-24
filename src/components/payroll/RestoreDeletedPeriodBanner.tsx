@@ -27,7 +27,7 @@ export function RestoreDeletedPeriodBanner({ onRestored }: RestoreDeletedPeriodB
     <div className="space-y-2">
       {deletions.map((deletion) => (
         <div
-          key={deletion.auditId}
+          key={deletion.recoveryId}
           className="rounded-md border border-primary/30 bg-primary/5 p-3 flex flex-col sm:flex-row sm:items-center gap-3"
         >
           <div className="flex-1 min-w-0">
@@ -46,9 +46,9 @@ export function RestoreDeletedPeriodBanner({ onRestored }: RestoreDeletedPeriodB
             size="sm"
             variant="outline"
             className="min-h-[44px] w-full sm:w-auto"
-            disabled={busyId === deletion.auditId}
+            disabled={busyId === deletion.recoveryId}
             onClick={async () => {
-              setBusyId(deletion.auditId);
+              setBusyId(deletion.recoveryId);
               try {
                 const periodId = await restore.mutateAsync(deletion);
                 toast.success(`Restored "${deletion.periodName}"`);
@@ -60,7 +60,7 @@ export function RestoreDeletedPeriodBanner({ onRestored }: RestoreDeletedPeriodB
               }
             }}
           >
-            {busyId === deletion.auditId ? (
+            {busyId === deletion.recoveryId ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Undo2 className="mr-2 h-4 w-4" />

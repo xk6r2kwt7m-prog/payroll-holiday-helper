@@ -1,21 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
-import { assertPermission } from "@/lib/permission-guard";
 import { invalidateHolidayDerivedQueries } from "@/lib/holiday-cache";
 import {
-  DELETE_OPERATION,
-  RESTORE_OPERATION,
-  RESTORE_WINDOW_MS,
+  LIST_RESTORABLE_RPC,
+  RESTORE_RPC,
+  describeRecoveryRpcError,
   isRestorable,
-  restoreExpiryFrom,
-  type PeriodSnapshot,
+  toRestorableDeletion,
   type RestorableDeletion,
 } from "@/lib/payroll-period-restore";
 
 /**
  * Draft payroll periods deleted in the last two hours that can still be
- * reversed. Read-only — reads the audit log snapshot written at delete time.
+ * reversed. Summary details only — the snapshot itself never leaves the
+ * database.
  */
 export function useRestorablePayrollDeletions() {
   const { tenantId } = useTenant();
@@ -25,50 +24,25 @@ export function useRestorablePayrollDeletions() {
     enabled: !!tenantId,
     refetchInterval: 60_000,
     queryFn: async (): Promise<RestorableDeletion[]> => {
-      const since = new Date(Date.now() - RESTORE_WINDOW_MS).toISOString();
-
-      const { data, error } = await supabase
-        .from("audit_log")
-        .select("id, record_id, created_at, old_data, new_data")
-        .eq("tenant_id", tenantId!)
-        .eq("table_name", "payroll_periods")
-        .gte("created_at", since)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      const rows = (data || []) as any[];
-      const restoredPeriodIds = new Set(
-        rows
-          .filter((r) => r.new_data?.operation === RESTORE_OPERATION)
-          .map((r) => String(r.record_id)),
-      );
-
-      return rows
-        .filter(
-          (r) =>
-            r.new_data?.operation === DELETE_OPERATION &&
-            !restoredPeriodIds.has(String(r.record_id)) &&
-            isRestorable(r.created_at) &&
-            !!r.old_data?.period?.id,
-        )
-        .map((r) => ({
-          auditId: String(r.id),
-          periodId: String(r.record_id),
-          periodName: String(r.new_data?.period_name ?? r.old_data?.period?.period_name ?? "Payroll period"),
-          deletedAt: String(r.created_at),
-          reason: r.new_data?.reason ?? null,
-          entryCount: Number(r.new_data?.deleted_entry_count ?? 0),
-          expiresAt: restoreExpiryFrom(r.created_at).toISOString(),
-          snapshot: r.old_data as PeriodSnapshot,
-        }));
+      const { data, error } = await supabase.rpc(LIST_RESTORABLE_RPC as any, {
+        _tenant_id: tenantId!,
+      });
+      if (error) {
+        // Not installed yet: nothing can be restored, so show no banner.
+        if (error.code === "PGRST202" || /could not find the function/i.test(error.message || "")) {
+          return [];
+        }
+        throw error;
+      }
+      return ((data as any[]) || []).map(toRestorableDeletion);
     },
   });
 }
 
 /**
- * Reverses a deletion inside the two-hour window by re-inserting the exact
- * snapshot rows (same ids), so payroll figures and holiday balances return to
- * their pre-delete state. Nothing is recalculated or invented.
+ * Reverses a deletion inside the two-hour window. The database puts back the
+ * exact same rows (same ids) in one transaction, or refuses and changes
+ * nothing. Nothing is recalculated or invented, and there is no fallback.
  */
 export function useRestorePayrollPeriod() {
   const queryClient = useQueryClient();
@@ -76,132 +50,20 @@ export function useRestorePayrollPeriod() {
 
   return useMutation({
     mutationFn: async (deletion: RestorableDeletion) => {
-      await assertPermission("view_pay_data", tenantId!);
-
       if (!isRestorable(deletion.deletedAt)) {
-        throw new Error("The two-hour reversal window for this deletion has expired.");
+        throw new Error("The two-hour window to undo this deletion has passed.");
       }
-      const snapshot = deletion.snapshot;
-      if (!snapshot?.period?.id) {
-        throw new Error("No snapshot is available for this deletion, so it cannot be reversed.");
-      }
-
-      // Preferred path: one database transaction. Every snapshot row returns
-      // together, or none of them do — a part-restored period would leave
-      // payroll totals and holiday balances disagreeing with each other.
-      const atomic = await supabase.rpc("payroll_period_restore_atomic" as any, {
-        _audit_id: deletion.auditId,
+      const { error } = await supabase.rpc(RESTORE_RPC as any, {
+        _recovery_id: deletion.recoveryId,
       });
-
-      if (!atomic.error) return deletion.periodId;
-
-      const missingFunction =
-        atomic.error.code === "PGRST202" ||
-        /could not find the function|does not exist/i.test(atomic.error.message || "");
-      if (!missingFunction) throw new Error(atomic.error.message);
-
-      // Fallback for a backend where the transaction has not been installed yet.
-
-
-      const { data: { user } } = await supabase.auth.getUser();
-
-      // 1. Period shell
-      const { error: periodError } = await supabase
-        .from("payroll_periods")
-        .insert(snapshot.period as any);
-      if (periodError) throw periodError;
-
-      // 2. Entries
-      if (snapshot.entries.length > 0) {
-        const { error } = await supabase
-          .from("payroll_entries")
-          .insert(snapshot.entries as any);
-        if (error) throw error;
-      }
-
-      // 3. Location splits
-      if (snapshot.entryLocations.length > 0) {
-        const { error } = await supabase
-          .from("payroll_entry_locations")
-          .insert(snapshot.entryLocations as any);
-        if (error) throw error;
-      }
-
-      // 4. Holiday payments
-      if (snapshot.holidayPayments.length > 0) {
-        const { error } = await supabase
-          .from("holiday_payments")
-          .insert(snapshot.holidayPayments as any);
-        if (error) throw error;
-      }
-
-      // 5. Holiday ledger — clear any rows regenerated by database triggers on
-      //    insert, then restore the original rows verbatim.
-      const entryIds = snapshot.entries.map((e: any) => e.id);
-      const paymentIds = snapshot.holidayPayments.map((p: any) => p.id);
-      if (entryIds.length > 0) {
-        await supabase
-          .from("holiday_ledger")
-          .delete()
-          .eq("source_table", "payroll_entries")
-          .in("source_id", entryIds);
-      }
-      if (paymentIds.length > 0) {
-        await supabase
-          .from("holiday_ledger")
-          .delete()
-          .eq("source_table", "holiday_payments")
-          .in("source_id", paymentIds);
-      }
-      if (snapshot.holidayLedger.length > 0) {
-        const { error } = await supabase
-          .from("holiday_ledger")
-          .insert(snapshot.holidayLedger as any);
-        if (error) throw error;
-      }
-
-      // 6. Internal notes
-      if (snapshot.notes.length > 0) {
-        const { error } = await supabase
-          .from("payroll_period_notes")
-          .insert(snapshot.notes as any);
-        if (error) throw error;
-      }
-
-      // 7. Restore the stored totals (triggers may have recalculated them)
-      await supabase
-        .from("payroll_periods")
-        .update({
-          timesheet_total: (snapshot.period as any).timesheet_total,
-          incentives_total: (snapshot.period as any).incentives_total,
-          holidays_total: (snapshot.period as any).holidays_total,
-          grand_total: (snapshot.period as any).grand_total,
-          status: (snapshot.period as any).status,
-        })
-        .eq("id", deletion.periodId);
-
-      await supabase.from("audit_log").insert({
-        user_id: user?.id || null,
-        action: "create" as const,
-        table_name: "payroll_periods",
-        record_id: deletion.periodId,
-        tenant_id: tenantId,
-        new_data: {
-          operation: RESTORE_OPERATION,
-          period_name: deletion.periodName,
-          reversed_delete_audit_id: deletion.auditId,
-          restored_entry_count: snapshot.entries.length,
-          restored_holiday_payment_count: snapshot.holidayPayments.length,
-          restored_ledger_rows: snapshot.holidayLedger.length,
-        },
-      });
-
+      if (error) throw new Error(describeRecoveryRpcError(error));
       return deletion.periodId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["payroll_period_restorable", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
       invalidateHolidayDerivedQueries(queryClient);
     },
   });

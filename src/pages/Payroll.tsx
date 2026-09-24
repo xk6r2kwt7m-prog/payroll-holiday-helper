@@ -649,7 +649,7 @@ const Payroll = () => {
     }
   };
 
-  const handleDeletePeriod = async (args?: { reason?: string; impact?: Record<string, any> | null }) => {
+  const handleDeletePeriod = async (args?: { reason?: string; requestId?: string }) => {
     if (!selectedPeriod) return;
     if (selectedPeriod.status !== "draft") {
       toast.error(t("payroll.only_draft_delete"));
@@ -657,12 +657,12 @@ const Payroll = () => {
     }
     try {
       const deletedId = selectedPeriod.id;
-      await deletePeriod.mutateAsync({ id: deletedId, reason: args?.reason, impact: args?.impact ?? null });
+      await deletePeriod.mutateAsync({ id: deletedId, reason: args?.reason, requestId: args?.requestId });
       const remaining = periods.filter(p => p.id !== deletedId);
       setSelectedPeriodId(remaining.length > 0 ? remaining[0].id : null);
       toast.success(t("payroll.deleted_period", { name: selectedPeriod.period_name }));
-    } catch {
-      toast.error(t("payroll.failed_delete"));
+    } catch (e: any) {
+      toast.error(e?.message || t("payroll.failed_delete"));
     }
   };
 
