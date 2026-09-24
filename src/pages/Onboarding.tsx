@@ -132,7 +132,11 @@ export default function Onboarding() {
               </div>
             ) : (
               pendingReview.map(record => (
-                <OnboardingReviewCard key={record.id} record={record} />
+                <OnboardingReviewCard
+                  key={record.id}
+                  record={record}
+                  rtwDocuments={rtwDocuments.filter(d => d.employee_id === record.employee_id)}
+                />
               ))
             )}
           </TabsContent>
