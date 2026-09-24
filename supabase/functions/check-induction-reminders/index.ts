@@ -34,6 +34,11 @@ function reminderDue(pack: any, now: Date): boolean {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Chasing runs send email to staff. Only the scheduler (service role) or a
+  // signed-in company administrator may start one — never an anonymous caller.
+  const guard = await guardRequest(req, { adminOnly: true, cors: corsHeaders });
+  if (!guard.ok) return guard.response;
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
