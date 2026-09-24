@@ -11,6 +11,17 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ClipboardCheck, UserPlus, ChevronDown, ChevronUp, FileText, GraduationCap,
   Wrench, LayoutList, Shield, CheckCircle2, XCircle, AlertTriangle, Clock,
@@ -174,6 +185,10 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: nu
 function OnboardingReviewCard({ record }: { record: any }) {
   const [expanded, setExpanded] = useState(false);
   const [rtwNotes, setRtwNotes] = useState("");
+  const [rtwConfirmOpen, setRtwConfirmOpen] = useState(false);
+  const [rtwMethod, setRtwMethod] = useState<"online" | "manual">("online");
+  const [rtwCheckDate, setRtwCheckDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [rtwConfirmed, setRtwConfirmed] = useState(false);
   const reviewRtw = useReviewRtw();
   const approveOnboarding = useApproveOnboarding();
   const emp = record.employee;
@@ -184,7 +199,27 @@ function OnboardingReviewCard({ record }: { record: any }) {
   const personalInfo = record.personal_info || {};
   const bankDetails = record.bank_details || {};
   const emergencyContact = record.emergency_contact || {};
-  const canApprove = rtwStatus === "approved" || rtwStatus === "not_submitted";
+  const canApprove = rtwStatus === "approved";
+
+  const today = format(new Date(), "yyyy-MM-dd");
+  const rtwDateInvalid = !rtwCheckDate || rtwCheckDate > today;
+  const rtwMethodLabel =
+    rtwMethod === "online"
+      ? "Online share code check on gov.uk"
+      : "Manual check of original passport or document";
+  const canConfirmRtw = rtwConfirmed && !rtwDateInvalid && !reviewRtw.isPending;
+
+  const handleConfirmRtw = () => {
+    if (!canConfirmRtw) return;
+    reviewRtw.mutate(
+      {
+        employeeId: record.employee_id,
+        status: "approved",
+        notes: `Confirmed by manager: ${rtwMethodLabel}, checked on ${format(new Date(rtwCheckDate), "d MMM yyyy")}`,
+      },
+      { onSuccess: () => setRtwConfirmOpen(false) },
+    );
+  };
 
   return (
     <div className="rounded-xl bg-card border border-border shadow-card overflow-hidden">
@@ -234,6 +269,98 @@ function OnboardingReviewCard({ record }: { record: any }) {
                 { label: "Relationship", value: emergencyContact.relationship || "—" },
                 { label: "Phone", value: emergencyContact.phone || "—" },
               ]} />
+
+              {/* RTW — Confirm checked (not yet submitted/uploaded) */}
+              {rtwStatus === "not_submitted" && (
+                <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-muted-foreground" />
+                    <h4 className="font-semibold text-foreground text-sm">Right to Work — Not yet recorded</h4>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Confirm you have checked this employee's right to work before their first shift and kept a copy of the evidence.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    onClick={() => setRtwConfirmOpen(true)}
+                  >
+                    <Shield className="h-3.5 w-3.5" /> Confirm right to work checked
+                  </Button>
+
+                  <Dialog open={rtwConfirmOpen} onOpenChange={setRtwConfirmOpen}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Confirm right to work checked</DialogTitle>
+                        <DialogDescription>
+                          Record how you checked this employee's right to work before their first shift.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">How it was checked</Label>
+                          <RadioGroup
+                            value={rtwMethod}
+                            onValueChange={(v) => setRtwMethod(v as "online" | "manual")}
+                            className="space-y-2"
+                          >
+                            <div className="flex items-start gap-2">
+                              <RadioGroupItem value="online" id="rtw-online" className="mt-0.5" />
+                              <Label htmlFor="rtw-online" className="text-sm font-normal leading-tight cursor-pointer">
+                                Online share code check on gov.uk
+                              </Label>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <RadioGroupItem value="manual" id="rtw-manual" className="mt-0.5" />
+                              <Label htmlFor="rtw-manual" className="text-sm font-normal leading-tight cursor-pointer">
+                                Manual check of original passport or document
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="rtw-date" className="text-sm font-medium">Date checked</Label>
+                          <Input
+                            id="rtw-date"
+                            type="date"
+                            value={rtwCheckDate}
+                            max={today}
+                            onChange={e => setRtwCheckDate(e.target.value)}
+                          />
+                          {rtwDateInvalid && (
+                            <p className="text-xs text-destructive">Date cannot be empty or in the future.</p>
+                          )}
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Checkbox
+                            id="rtw-confirm-tick"
+                            checked={rtwConfirmed}
+                            onCheckedChange={(c) => setRtwConfirmed(!!c)}
+                            className="mt-0.5"
+                          />
+                          <Label htmlFor="rtw-confirm-tick" className="text-sm font-normal leading-snug cursor-pointer">
+                            I checked their right to work before their first shift and have kept a copy of the evidence.
+                          </Label>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setRtwConfirmOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleConfirmRtw} disabled={!canConfirmRtw} className="gap-1.5">
+                          {reviewRtw.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4" />
+                          )}
+                          Confirm & approve RTW
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
 
               {/* RTW Review */}
               {(rtwStatus === "pending_review" || rtwStatus === "submitted") && (
