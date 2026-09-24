@@ -53,8 +53,14 @@ serve(async (req) => {
       );
     }
 
-    // Identity data: only signed-in members of that company may read it.
-    const guard = await guardRequest(req, { tenantId, cors: corsHeaders });
+    // Identity data (passports, visas, share codes). Reading it is restricted to
+    // a manager or administrator of that company — never any signed-in member,
+    // and never an anonymous caller.
+    const guard = await guardRequest(req, {
+      tenantId,
+      managerOrAbove: true,
+      cors: corsHeaders,
+    });
     if (!guard.ok) return guard.response;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

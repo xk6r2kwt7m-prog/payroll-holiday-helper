@@ -144,5 +144,9 @@ export async function guardRequest(req: Request, opts: GuardOptions = {}): Promi
     return deny(403, "Administrator access required", cors);
   }
 
+  if (opts.managerOrAbove && !isPlatformAdmin && !MANAGER_ROLES.has(String(role))) {
+    return deny(403, "Manager or administrator access required", cors);
+  }
+
   return { ok: true, internal: false, userId: user.id, tenantId: resolvedTenant, role, isPlatformAdmin };
 }
