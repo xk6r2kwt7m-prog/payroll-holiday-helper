@@ -26,4 +26,4 @@ Validation note: 45 focused compliance/allergen checks passed. One existing addi
 
 ## Payroll delete/restore migration
 - [x] Rewrite revised SQL in the project, remove browser fallback, rerun tests
-- [ ] Apply the migration — awaiting "apply it"
+- [x] Apply the migration — applied 24 Sep 2026

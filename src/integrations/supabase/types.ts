@@ -7393,6 +7393,65 @@ export type Database = {
           },
         ]
       }
+      payroll_period_recoveries: {
+        Row: {
+          counts: Json
+          deleted_at: string
+          deleted_by: string
+          id: string
+          period_id: string
+          period_name: string
+          reason: string | null
+          request_id: string
+          restore_expires_at: string
+          restored_at: string | null
+          restored_by: string | null
+          snapshot: Json
+          snapshot_sha256: string
+          tenant_id: string
+        }
+        Insert: {
+          counts: Json
+          deleted_at?: string
+          deleted_by: string
+          id?: string
+          period_id: string
+          period_name: string
+          reason?: string | null
+          request_id: string
+          restore_expires_at: string
+          restored_at?: string | null
+          restored_by?: string | null
+          snapshot: Json
+          snapshot_sha256: string
+          tenant_id: string
+        }
+        Update: {
+          counts?: Json
+          deleted_at?: string
+          deleted_by?: string
+          id?: string
+          period_id?: string
+          period_name?: string
+          reason?: string | null
+          request_id?: string
+          restore_expires_at?: string
+          restored_at?: string | null
+          restored_by?: string | null
+          snapshot?: Json
+          snapshot_sha256?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_period_recoveries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll_periods: {
         Row: {
           approved_at: string | null
@@ -11593,6 +11652,10 @@ export type Database = {
         Args: { _confidentiality: string; _tenant_id: string }
         Returns: boolean
       }
+      delete_draft_payroll_period: {
+        Args: { _period_id: string; _reason?: string; _request_id: string }
+        Returns: Json
+      }
       employee_sensitive_fields: {
         Args: { _employee_id: string }
         Returns: {
@@ -11740,15 +11803,40 @@ export type Database = {
         Args: { _email: string; _user_id: string }
         Returns: Json
       }
+      list_restorable_payroll_deletions: {
+        Args: { _tenant_id: string }
+        Returns: {
+          counts: Json
+          deleted_at: string
+          period_id: string
+          period_name: string
+          reason: string
+          recovery_id: string
+          restore_expires_at: string
+        }[]
+      }
       mark_talent_messages_read: {
         Args: { _conversation_id: string; _reader_sender_type: string }
         Returns: undefined
       }
       my_branches: { Args: { _tenant_id: string }; Returns: string[] }
+      payroll_recovery_is_company_admin: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
+      payroll_recovery_snapshot_problems: {
+        Args: { _snap: Json; _tenant_id: string }
+        Returns: string[]
+      }
+      payroll_recovery_unknown_dependents: { Args: never; Returns: string }
       purchase_talent_credits: { Args: { _pack_id: string }; Returns: Json }
       reconcile_talent_wallet: { Args: { _tenant_id: string }; Returns: Json }
       respond_to_contact_request: {
         Args: { _block_reason?: string; _response: string; _unlock_id: string }
+        Returns: Json
+      }
+      restore_draft_payroll_period: {
+        Args: { _recovery_id: string }
         Returns: Json
       }
       rotate_pending_invitation: {
