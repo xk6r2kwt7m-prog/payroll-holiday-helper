@@ -162,7 +162,8 @@ RESET ROLE;
 SELECT t('validation refusals changed nothing', (SELECT count(*) FROM payroll_periods WHERE id IN
   ('50000000-0000-0000-0000-000000000005','50000000-0000-0000-0000-000000000006','50000000-0000-0000-0000-000000000007')) = 3
   AND (SELECT count(*) FROM payroll_period_recoveries) = 0);
--- put period 8 back so it can be used later
+-- put periods 6 and 8 back so balances and later tests use clean data
+UPDATE holiday_ledger SET employee_id = 'e2000000-0000-0000-0000-000000000002' WHERE source_id = 'ac000600-0000-0000-0000-000000000001';
 UPDATE payroll_overpayments SET recovered_in_period_id = '50000000-0000-0000-0000-000000000008' WHERE payroll_period_id = '50000000-0000-0000-0000-000000000008';
 
 -- ================================================================ private recovery table
@@ -209,8 +210,9 @@ INSERT INTO audit_log(user_id, action, table_name, record_id, tenant_id, old_dat
 VALUES ('a0000000-0000-0000-0000-00000000000a', 'delete', 'payroll_periods', '5f000000-0000-0000-0000-000000000001', '11111111-0000-0000-0000-000000000001',
   '{"period":{"id":"5f000000-0000-0000-0000-000000000001","tenant_id":"11111111-0000-0000-0000-000000000001","period_name":"Forged","start_date":"2025-01-01","end_date":"2025-01-28","status":"draft"}}',
   '{"operation":"delete_draft_period"}');
+DO $$ BEGIN PERFORM set_config('t.forged', (SELECT id::text FROM audit_log WHERE record_id = '5f000000-0000-0000-0000-000000000001'), false); END $$;
 SET ROLE authenticated;
-SELECT t_err('forged audit id cannot be restored', $$SELECT restore_draft_payroll_period((SELECT id FROM audit_log WHERE record_id = '5f000000-0000-0000-0000-000000000001'))$$, 'no recoverable');
+SELECT t_err('forged audit id cannot be restored', format('SELECT restore_draft_payroll_period(%L)', current_setting('t.forged')), 'no recoverable');
 SELECT t('forged audit record not listed', (SELECT count(*) FROM list_restorable_payroll_deletions('11111111-0000-0000-0000-000000000001')) = 1);
 RESET ROLE;
 SELECT t('forged period not created', NOT EXISTS (SELECT 1 FROM payroll_periods WHERE id = '5f000000-0000-0000-0000-000000000001'));
