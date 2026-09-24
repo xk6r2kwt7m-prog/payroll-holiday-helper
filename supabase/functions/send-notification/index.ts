@@ -492,6 +492,14 @@ const corsHeaders = {
 // ─── Recipient allow-list ────────────────────────────────────────────────────
 
 /**
+ * Templates that are addressed to someone outside the company by design — an
+ * inspection file for a licensing or environmental health officer, and a test
+ * message. An administrator may type these addresses in; nobody else can.
+ */
+const OUTSIDE_RECIPIENT_TYPES = new Set(["inspection_pack", "test"]);
+const ADMIN_ROLE_NAMES = new Set(["company_admin", "admin", "owner", "platform_admin"]);
+
+/**
  * True when the address is one the company already holds: a member of staff, a
  * pending invitation, a recorded recipient of a contract / induction / licensing
  * document, the company's own or signatory address, the supervisor's address, or
