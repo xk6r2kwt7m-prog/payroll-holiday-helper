@@ -331,7 +331,12 @@ Deno.serve(async (req) => {
       }));
       if (changeRows.length > 0) {
         const { error: changeErr } = await admin.from("staff_detail_changes").insert(changeRows);
-        if (changeErr) console.error("could not record submitted changes:", changeErr.message);
+        // This insert is the first write of the submission: if it fails, stop
+        // before the employees update or marking the request as submitted, so
+        // nothing is partly saved.
+        if (changeErr) {
+          throw new Error("We couldn't save your details. Nothing was changed — please try again.");
+        }
       }
       const empUpdates: Record<string, unknown> = { ...allocation.updates };
       if (Object.keys(empUpdates).length > 0) {
