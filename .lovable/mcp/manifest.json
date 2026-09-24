@@ -35,7 +35,7 @@
       {
         "name": "list_employees",
         "title": "List employees",
-        "description": "List employees visible to the signed-in user. Tenant isolation, manager scoping, and role permissions are enforced by the database via RLS.",
+        "description": "List employees visible to the signed-in user. Tenant isolation, manager scoping, and role permissions are enforced by the database via RLS. Never returns personal identifiers such as National Insurance number or bank details.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -53,8 +53,13 @@
               "maximum": 200
             },
             "search": {
-              "description": "Case-insensitive match on first or last name.",
+              "description": "Case-insensitive match on forename or surname.",
               "type": "string"
+            },
+            "include_archived": {
+              "default": false,
+              "description": "Include archived (former) employees. Off by default.",
+              "type": "boolean"
             }
           }
         },
@@ -63,7 +68,7 @@
       {
         "name": "get_employee",
         "title": "Get employee",
-        "description": "Return a single employee record by id. RLS enforces tenant, branch, and role visibility.",
+        "description": "Return a single employee record by id. RLS enforces tenant, branch, and role visibility. Never returns personal identifiers such as National Insurance number, passport number or bank details.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -122,7 +127,7 @@
       {
         "name": "list_payroll_periods",
         "title": "List payroll periods",
-        "description": "List payroll periods visible to the signed-in user. Read-only. RLS restricts to the user's tenant; typically only admins see rows.",
+        "description": "List payroll periods visible to the signed-in user. Read-only. RLS restricts to the user's tenant; typically only admins see rows. Returns period totals only — never an individual's pay.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
