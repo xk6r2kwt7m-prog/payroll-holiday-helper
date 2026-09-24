@@ -506,13 +506,34 @@ const handler = async (req: Request): Promise<Response> => {
     log.template = type;
     log.tenant_id = tenant_id || "unknown";
 
-    // Only signed-in members of the named company (or trusted internal
-    // callers) may send mail from the company's account.
-    const guard = await guardRequest(req, { tenantId: tenant_id ?? null, cors: corsHeaders });
+    // Only trusted internal callers, or a signed-in manager/administrator of the
+    // named company, may send mail from the company's account.
+    const guard = await guardRequest(req, {
+      tenantId: tenant_id ?? null,
+      managerOrAbove: true,
+      cors: corsHeaders,
+    });
     if (!guard.ok) return guard.response;
 
     if (!to || !subject || !type) {
       throw new Error("Missing required fields: to, subject, type");
+    }
+
+    // The company's email account may not be used to mail arbitrary addresses.
+    // A person signed in to the app may only send to an address the company
+    // already holds (a member of staff, a colleague's sign-in address) or to
+    // their own address. Scheduled and internal runs are exempt.
+    if (!guard.internal) {
+      const allowed = await recipientBelongsToTenant(to, guard.tenantId, guard.userId);
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "That email address is not held by this company, so nothing was sent. Add the address to the person's record first.",
+          }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        );
+      }
     }
 
     const html = buildHtml(type, data || {});
