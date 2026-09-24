@@ -149,6 +149,7 @@ export default function Schedule() {
         forename: e.forename,
         surname: e.surname,
         contracted_weekly_hours: e.contracted_weekly_hours ?? null,
+        date_of_birth: e.date_of_birth ?? null,
       })),
       availability: [],
       approvedLeave: [],
