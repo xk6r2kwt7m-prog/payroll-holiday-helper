@@ -1,14 +1,24 @@
 import { describe, it, expect } from "vitest";
 import {
   isRightToWorkCleared,
+  rightToWorkFollowUp,
   type RtwDocument,
   type RtwOnboardingData,
+  type RtwCheck,
 } from "@/lib/right-to-work-status";
 
 const mkDoc = (
   document_type: RtwDocument["document_type"],
   document_status: RtwDocument["document_status"]
 ): RtwDocument => ({ document_type, document_status });
+
+const mkCheck = (
+  result: RtwCheck["result"],
+  opts: Partial<RtwCheck> = {}
+): RtwCheck => ({
+  result,
+  ...opts,
+});
 
 describe("isRightToWorkCleared", () => {
   // --- cleared ---
@@ -173,5 +183,212 @@ describe("isRightToWorkCleared", () => {
         mkDoc("visa", "expired"),
       ])
     ).toBe("pending");
+  });
+
+  // --- checks parameter ---
+  describe("with checks", () => {
+    const today = new Date("2026-09-24T12:00:00Z");
+
+    it("returns cleared for an unlimited check", () => {
+      expect(
+        isRightToWorkCleared(null, [], [mkCheck("unlimited")], today)
+      ).toBe("cleared");
+    });
+
+    it("returns cleared for a valid time-limited check (expiry today)", () => {
+      expect(
+        isRightToWorkCleared(
+          null,
+          [],
+          [mkCheck("time_limited", { permission_expires_on: "2026-09-24" })],
+          today
+        )
+      ).toBe("cleared");
+    });
+
+    it("returns cleared for a valid time-limited check (expiry in future)", () => {
+      expect(
+        isRightToWorkCleared(
+          null,
+          [],
+          [mkCheck("time_limited", { permission_expires_on: "2026-12-01" })],
+          today
+        )
+      ).toBe("cleared");
+    });
+
+    it("returns missing for an expired time-limited check", () => {
+      expect(
+        isRightToWorkCleared(
+          null,
+          [],
+          [mkCheck("time_limited", { permission_expires_on: "2026-09-23" })],
+          today
+        )
+      ).toBe("missing");
+    });
+
+    it("returns missing for a time-limited check with no permission_expires_on", () => {
+      expect(
+        isRightToWorkCleared(null, [], [mkCheck("time_limited")], today)
+      ).toBe("missing");
+    });
+
+    it("returns rejected for a no_right_to_work check", () => {
+      expect(
+        isRightToWorkCleared(null, [], [mkCheck("no_right_to_work")], today)
+      ).toBe("rejected");
+    });
+
+    it("uses only the latest check (by checked_on)", () => {
+      const checks = [
+        mkCheck("no_right_to_work", { checked_on: "2026-09-01" }),
+        mkCheck("unlimited", { checked_on: "2026-09-15" }),
+      ];
+      expect(isRightToWorkCleared(null, [], checks, today)).toBe("cleared");
+    });
+
+    it("a newer check replacing an older one: unlimited supersedes no_right_to_work", () => {
+      const checks = [
+        mkCheck("no_right_to_work", { checked_on: "2026-08-01" }),
+        mkCheck("unlimited", { checked_on: "2026-09-10" }),
+      ];
+      expect(isRightToWorkCleared(null, [], checks, today)).toBe("cleared");
+    });
+
+    it("two checks on the same date: later created_at wins", () => {
+      const checks = [
+        mkCheck("no_right_to_work", {
+          checked_on: "2026-09-10",
+          created_at: "2026-09-10T08:00:00Z",
+        }),
+        mkCheck("unlimited", {
+          checked_on: "2026-09-10",
+          created_at: "2026-09-10T10:00:00Z",
+        }),
+      ];
+      expect(isRightToWorkCleared(null, [], checks, today)).toBe("cleared");
+    });
+
+    it("two checks on the same date: earlier created_at loses", () => {
+      const checks = [
+        mkCheck("unlimited", {
+          checked_on: "2026-09-10",
+          created_at: "2026-09-10T08:00:00Z",
+        }),
+        mkCheck("no_right_to_work", {
+          checked_on: "2026-09-10",
+          created_at: "2026-09-10T10:00:00Z",
+        }),
+      ];
+      expect(isRightToWorkCleared(null, [], checks, today)).toBe("rejected");
+    });
+
+    it("checks override documents and onboarding data", () => {
+      // even with approved onboarding + verified doc, a no_right_to_work check wins
+      expect(
+        isRightToWorkCleared(
+          { rtw_status: "approved" },
+          [mkDoc("passport", "verified")],
+          [mkCheck("no_right_to_work", { checked_on: "2026-09-10" })],
+          today
+        )
+      ).toBe("rejected");
+    });
+
+    it("no checks: existing behaviour unchanged (approved onboarding)", () => {
+      expect(
+        isRightToWorkCleared({ rtw_status: "approved" }, [], [], today)
+      ).toBe("cleared");
+    });
+
+    it("no checks: existing behaviour unchanged (missing)", () => {
+      expect(isRightToWorkCleared(null, [], [], today)).toBe("missing");
+    });
+
+    it("no checks: existing behaviour unchanged (pending)", () => {
+      expect(
+        isRightToWorkCleared({ rtw_status: "submitted" }, [], [], today)
+      ).toBe("pending");
+    });
+
+    it("null checks treated as empty (existing behaviour)", () => {
+      expect(isRightToWorkCleared(null, [], null, today)).toBe("missing");
+    });
+  });
+});
+
+describe("rightToWorkFollowUp", () => {
+  const today = new Date("2026-09-24T12:00:00Z");
+
+  it("returns null when checks is empty", () => {
+    expect(rightToWorkFollowUp([], today)).toBeNull();
+  });
+
+  it("returns null when checks is null", () => {
+    expect(rightToWorkFollowUp(null, today)).toBeNull();
+  });
+
+  it("returns null for an unlimited check", () => {
+    expect(
+      rightToWorkFollowUp([mkCheck("unlimited", { checked_on: "2026-09-10" })], today)
+    ).toBeNull();
+  });
+
+  it("returns null for a no_right_to_work check", () => {
+    expect(
+      rightToWorkFollowUp([mkCheck("no_right_to_work", { checked_on: "2026-09-10" })], today)
+    ).toBeNull();
+  });
+
+  it("returns follow-up for a time-limited check expiring in future", () => {
+    const result = rightToWorkFollowUp(
+      [mkCheck("time_limited", { checked_on: "2026-09-10", permission_expires_on: "2026-12-01" })],
+      today
+    );
+    expect(result).not.toBeNull();
+    expect(result!.dueOn).toBe("2026-12-01");
+    expect(result!.daysLeft).toBe(68);
+    expect(result!.overdue).toBe(false);
+  });
+
+  it("returns follow-up with overdue=true when expiry is in the past", () => {
+    const result = rightToWorkFollowUp(
+      [mkCheck("time_limited", { checked_on: "2026-09-10", permission_expires_on: "2026-09-20" })],
+      today
+    );
+    expect(result).not.toBeNull();
+    expect(result!.dueOn).toBe("2026-09-20");
+    expect(result!.daysLeft).toBe(-4);
+    expect(result!.overdue).toBe(true);
+  });
+
+  it("returns daysLeft=0 when expiry is today (not overdue)", () => {
+    const result = rightToWorkFollowUp(
+      [mkCheck("time_limited", { checked_on: "2026-09-10", permission_expires_on: "2026-09-24" })],
+      today
+    );
+    expect(result).not.toBeNull();
+    expect(result!.dueOn).toBe("2026-09-24");
+    expect(result!.daysLeft).toBe(0);
+    expect(result!.overdue).toBe(false);
+  });
+
+  it("uses only the latest check for follow-up", () => {
+    const checks = [
+      mkCheck("time_limited", { checked_on: "2026-08-01", permission_expires_on: "2026-08-31" }),
+      mkCheck("unlimited", { checked_on: "2026-09-10" }),
+    ];
+    expect(rightToWorkFollowUp(checks, today)).toBeNull();
+  });
+
+  it("uses the latest time-limited check for follow-up", () => {
+    const checks = [
+      mkCheck("unlimited", { checked_on: "2026-08-01" }),
+      mkCheck("time_limited", { checked_on: "2026-09-10", permission_expires_on: "2026-10-15" }),
+    ];
+    const result = rightToWorkFollowUp(checks, today);
+    expect(result).not.toBeNull();
+    expect(result!.dueOn).toBe("2026-10-15");
   });
 });
