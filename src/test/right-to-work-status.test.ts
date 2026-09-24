@@ -76,11 +76,12 @@ describe("isRightToWorkCleared", () => {
   });
 
   it("returns rejected when rtw_status is rejected and qualifying doc is expired", () => {
+    // rejected status with no verified doc wins over "doc exists but not verified"
     expect(
       isRightToWorkCleared({ rtw_status: "rejected" }, [
         mkDoc("right_to_work", "expired"),
       ])
-    ).toBe("pending"); // pending because a qualifying doc exists but isn't verified
+    ).toBe("rejected");
   });
 
   // --- pending ---
