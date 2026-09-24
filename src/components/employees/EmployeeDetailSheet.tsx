@@ -23,6 +23,7 @@ import { SubmittedDetailsReview } from "./SubmittedDetailsReview";
 import { StaffChangesReview } from "./StaffChangesReview";
 import { EmployeePrivacyLog } from "./EmployeePrivacyLog";
 import { useSensitiveEmployeeFields } from "@/hooks/useSensitiveEmployeeFields";
+import { RecordRightToWorkCheck } from "./RecordRightToWorkCheck";
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
@@ -353,6 +354,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
             <EmployeeComplianceRecords employeeId={employee.id} />
           </Section>
 
+          {canViewSensitive && <RecordRightToWorkCheck employeeId={employee.id} employeeName={`${employee.forename} ${employee.surname}`} />}
           {/* Documents */}
           <Section title="Documents" icon={FolderOpen}>
             {isAdmin && (
