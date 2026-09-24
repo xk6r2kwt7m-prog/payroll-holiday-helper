@@ -341,7 +341,7 @@ export default function EmployeeOnboarding() {
             {currentStep === 1 && <BankDetailsStep bank={bank} setBank={setBank} />}
             {currentStep === 2 && <RightToWorkStep onUpload={handleFileUpload} uploadedDocs={uploadedDocs} uploading={uploadingDoc} />}
             {currentStep === 3 && <AdditionalDocsStep onUpload={handleFileUpload} uploadedDocs={uploadedDocs} uploading={uploadingDoc} />}
-            {currentStep === 4 && <AvailabilityStep availability={availability} setAvailability={setAvailability} />}
+            {currentStep === 4 && <AvailabilityPicker availability={availability} setAvailability={setAvailability} />}
             {currentStep === 5 && <ConfirmationStep personal={personal} bank={bank} emergency={emergency} uploadedDocs={uploadedDocs} confirmed={confirmed} setConfirmed={setConfirmed} hasRtwDocs={hasRtwDocs} />}
           </motion.div>
         </AnimatePresence>
