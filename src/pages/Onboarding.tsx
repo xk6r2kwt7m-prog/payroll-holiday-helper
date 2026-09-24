@@ -241,7 +241,7 @@ function OnboardingReviewCard({ record, rtwDocuments, rtwChecks }: { record: any
   const personalInfo = record.personal_info || {};
   const bankDetails = record.bank_details || {};
   const emergencyContact = record.emergency_contact || {};
-  const rtwClearance = isRightToWorkCleared(record, rtwDocuments);
+  const rtwClearance = isRightToWorkCleared(record, rtwDocuments, rtwChecks);
   const canApprove = rtwClearance === "cleared";
 
   const today = format(new Date(), "yyyy-MM-dd");
