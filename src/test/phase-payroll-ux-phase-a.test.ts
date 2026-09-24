@@ -64,7 +64,7 @@ describe("Phase A — single canonical approve action", () => {
   it("keeps Submit / Reopen / Delete controls in the workflow", () => {
     expect(workflow).toMatch(/Submit for Review/);
     expect(workflow).toMatch(/Reopen/);
-    expect(workflow).toMatch(/Delete Period/);
+    expect(workflow).toMatch(/<DeletePeriodDialog/);
   });
 });
 
@@ -145,7 +145,7 @@ describe("Phase A — mobile admin actions menu", () => {
 
 describe("Phase A — logic surfaces unchanged", () => {
   it("does not alter the approve write path (still calls handleApprove via checklist)", () => {
-    expect(payrollPage).toMatch(/onApproveRequested=\{handleApprove\}/);
+    expect(payrollPage).toMatch(/onApproveRequested=\{\(\) => handleApprove\(\)\}/);
   });
 
   it("does not remove NMW / employment terms / holiday sections", () => {

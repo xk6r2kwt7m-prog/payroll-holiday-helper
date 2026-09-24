@@ -216,8 +216,8 @@ describe("Phase 5D — Payroll page wires the helper into the component", () => 
   });
 
   it("passes the built evidence object as a single prop", () => {
-    const block = payrollPage.match(/<PayrollApprovalEvidence[\s\S]*?\/>/)?.[0] ?? "";
-    expect(block).toMatch(/evidence=\{buildPayrollApprovalEvidence\(/);
+    const block = payrollPage.match(/<PayrollApprovalChecklist[\s\S]*?\/>/)?.[0] ?? "";
+    expect(block).toMatch(/evidence=\{[\s\S]*?buildPayrollApprovalEvidence\(/);
   });
 });
 
