@@ -19,6 +19,7 @@ import { useMyOnboardingData, useUpdateOnboardingData, useSubmitOnboarding, useI
 import { useUploadDocument, DOCUMENT_TYPES, type DocumentType } from "@/hooks/useEmployeeDocuments";
 import { useUpsertAvailability, DAY_NAMES } from "@/hooks/useAvailability";
 import { cn } from "@/lib/utils";
+import { AvailabilityPicker } from "@/components/staff-portal/AvailabilityPicker";
 import ugloIcon from "@/assets/uglo-icon.png";
 
 const STEPS = [
