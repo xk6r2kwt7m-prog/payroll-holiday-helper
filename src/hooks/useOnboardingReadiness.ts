@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EMPLOYEE_COLUMNS } from "@/lib/employee-columns";
 import { useTenant } from "@/hooks/useTenant";
 import type { Employee } from "@/hooks/useEmployees";
+import { isRightToWorkCleared } from "@/lib/right-to-work-status";
 
 // ─── Criticality classification ───────────────────────────────────────
 // legal_critical   → blocks work clearance (RTW)
