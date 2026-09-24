@@ -115,5 +115,3 @@ export function MyAvailabilityCard({ employeeId }: { employeeId: string }) {
     </div>
   );
 }
-
-import { Clock } from "lucide-react";
