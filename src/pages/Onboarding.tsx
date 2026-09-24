@@ -185,6 +185,10 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: nu
 function OnboardingReviewCard({ record }: { record: any }) {
   const [expanded, setExpanded] = useState(false);
   const [rtwNotes, setRtwNotes] = useState("");
+  const [rtwConfirmOpen, setRtwConfirmOpen] = useState(false);
+  const [rtwMethod, setRtwMethod] = useState<"online" | "manual">("online");
+  const [rtwCheckDate, setRtwCheckDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [rtwConfirmed, setRtwConfirmed] = useState(false);
   const reviewRtw = useReviewRtw();
   const approveOnboarding = useApproveOnboarding();
   const emp = record.employee;
@@ -195,7 +199,27 @@ function OnboardingReviewCard({ record }: { record: any }) {
   const personalInfo = record.personal_info || {};
   const bankDetails = record.bank_details || {};
   const emergencyContact = record.emergency_contact || {};
-  const canApprove = rtwStatus === "approved" || rtwStatus === "not_submitted";
+  const canApprove = rtwStatus === "approved";
+
+  const today = format(new Date(), "yyyy-MM-dd");
+  const rtwDateInvalid = !rtwCheckDate || rtwCheckDate > today;
+  const rtwMethodLabel =
+    rtwMethod === "online"
+      ? "Online share code check on gov.uk"
+      : "Manual check of original passport or document";
+  const canConfirmRtw = rtwConfirmed && !rtwDateInvalid && !reviewRtw.isPending;
+
+  const handleConfirmRtw = () => {
+    if (!canConfirmRtw) return;
+    reviewRtw.mutate(
+      {
+        employeeId: record.employee_id,
+        status: "approved",
+        notes: `Confirmed by manager: ${rtwMethodLabel}, checked on ${format(new Date(rtwCheckDate), "d MMM yyyy")}`,
+      },
+      { onSuccess: () => setRtwConfirmOpen(false) },
+    );
+  };
 
   return (
     <div className="rounded-xl bg-card border border-border shadow-card overflow-hidden">
