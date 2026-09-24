@@ -427,7 +427,7 @@ export function useTeamReadiness(employees: Employee[]) {
     queryFn: async () => {
       if (!tenantId || nonActiveIds.length === 0) return [];
 
-      const [docsRes, sigRes, onbRes, availRes, libRes, assignRes] = await Promise.all([
+      const [docsRes, sigRes, onbRes, availRes, libRes, assignRes, rtwChecksRes] = await Promise.all([
         supabase.from("employee_documents").select("*").eq("tenant_id", tenantId).in("employee_id", nonActiveIds),
         supabase.from("contract_signatures").select("*").eq("tenant_id", tenantId).in("employee_id", nonActiveIds),
         supabase.from("employee_onboarding_data" as any).select("*").eq("tenant_id", tenantId).in("employee_id", nonActiveIds),
@@ -442,6 +442,10 @@ export function useTeamReadiness(employees: Employee[]) {
           .eq("tenant_id", tenantId)
           .in("employee_id", nonActiveIds)
           .not("status", "eq", "cancelled"),
+        supabase.from("right_to_work_checks" as any)
+          .select("employee_id, result, checked_on, created_at, permission_expires_on")
+          .eq("tenant_id", tenantId)
+          .in("employee_id", nonActiveIds),
       ]);
 
       const docs = docsRes.data || [];
@@ -450,6 +454,7 @@ export function useTeamReadiness(employees: Employee[]) {
       const avail = availRes.data || [];
       const libraryItems = (libRes.data || []) as unknown as LibraryItemForReadiness[];
       const allAssignments = assignRes.data || [];
+      const allRtwChecks = rtwChecksRes.data || [];
 
       return nonActiveIds.map(empId => {
         const employee = employees.find(e => e.id === empId)!;
@@ -458,9 +463,10 @@ export function useTeamReadiness(employees: Employee[]) {
         const empOnb = (onbData as any[]).find((o: any) => o.employee_id === empId);
         const empAvail = avail.filter((a: any) => a.employee_id === empId);
         const empAssignments = (allAssignments as any[]).filter((a: any) => a.employee_id === empId);
+        const empRtwChecks = (allRtwChecks as any[]).filter((c: any) => c.employee_id === empId);
 
         const standardChecks: RequirementCheck[] = requirements.map(req => {
-          const status = checkRequirement(req.requirement_key, employee, empOnb, empDocs, empSigs, empAvail, []);
+          const status = checkRequirement(req.requirement_key, employee, empOnb, empDocs, empSigs, empAvail, [], empRtwChecks);
           const criticality = getCriticality(req.requirement_key);
           return {
             key: req.requirement_key,
