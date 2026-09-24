@@ -4,11 +4,7 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase
 import { useTenant } from "@/hooks/useTenant";
 import { invalidateHolidayDerivedQueries } from "@/lib/holiday-cache";
 import { assertPermission } from "@/lib/permission-guard";
-import {
-  DELETE_OPERATION,
-  RESTORE_WINDOW_MS,
-  type PeriodSnapshot,
-} from "@/lib/payroll-period-restore";
+import { DELETE_RPC, describeRecoveryRpcError } from "@/lib/payroll-period-restore";
 
 
 export type PayrollPeriod = Tables<"payroll_periods">;
@@ -479,185 +475,23 @@ export function useDeletePayrollPeriod() {
 
   return useMutation({
     mutationFn: async (
-      input: string | { id: string; reason?: string; impact?: Record<string, any> | null },
+      input: string | { id: string; reason?: string; requestId?: string },
     ) => {
       const id = typeof input === "string" ? input : input.id;
       const reason = typeof input === "string" ? null : input.reason?.trim() || null;
-      const impact = typeof input === "string" ? null : input.impact ?? null;
+      // One id per delete click. Retrying with the same id never deletes twice.
+      const requestId =
+        (typeof input === "string" ? undefined : input.requestId) || crypto.randomUUID();
 
-      await assertPermission("view_pay_data", tenantId!);
-
-      // Check period status before attempting delete
-      const { data: period } = await supabase
-        .from("payroll_periods")
-        .select("status, period_name")
-        .eq("id", id)
-        .maybeSingle();
-
-      if (period?.status === "approved") {
-        throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
-      }
-
-      // Preferred path: one database transaction. Either the period, its
-      // entries, location splits, holiday payments, derived holiday ledger rows
-      // and notes all go, or nothing does — no half-deleted period can be left
-      // behind to corrupt holiday balances or payroll totals. The snapshot used
-      // to reverse it is written before anything is removed.
-      const atomic = await supabase.rpc("payroll_period_delete_atomic" as any, {
+      // The only path: one database transaction that checks the period is a
+      // draft, snapshots every linked record privately, and removes them
+      // together — or changes nothing. There is no browser fallback.
+      const { error } = await supabase.rpc(DELETE_RPC as any, {
         _period_id: id,
+        _request_id: requestId,
         _reason: reason,
-        _impact: impact as any,
       });
-
-      if (!atomic.error) return;
-
-      // If the transaction refused the deletion (locked period, not an admin),
-      // surface that reason — never fall back and do it step by step.
-      const missingFunction =
-        atomic.error.code === "PGRST202" ||
-        /could not find the function|does not exist/i.test(atomic.error.message || "");
-      if (!missingFunction) throw new Error(atomic.error.message);
-
-      // Fallback for a backend where the transaction has not been installed yet.
-      const { data: { user } } = await supabase.auth.getUser();
-
-
-      // Collect dependent records BEFORE deleting anything so no holiday
-      // ledger row is ever left orphaned (which would corrupt balances) and so
-      // the deletion can be reversed within the two-hour window.
-      const { data: entryRows, error: entryReadError } = await supabase
-        .from("payroll_entries")
-        .select("*")
-        .eq("payroll_period_id", id);
-      if (entryReadError) throw entryReadError;
-      const entryIds = (entryRows || []).map((e) => e.id);
-
-      const { data: paymentRows, error: paymentReadError } = await supabase
-        .from("holiday_payments")
-        .select("*")
-        .eq("payroll_period_id", id);
-      if (paymentReadError) throw paymentReadError;
-      const paymentIds = (paymentRows || []).map((p) => p.id);
-
-      const { data: periodFull } = await supabase
-        .from("payroll_periods")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-
-      let entryLocations: any[] = [];
-      if (entryIds.length > 0) {
-        const { data } = await supabase
-          .from("payroll_entry_locations")
-          .select("*")
-          .in("payroll_entry_id", entryIds);
-        entryLocations = data || [];
-      }
-
-      let ledgerRows: any[] = [];
-      if (paymentIds.length > 0) {
-        const { data } = await supabase
-          .from("holiday_ledger")
-          .select("*")
-          .eq("source_table", "holiday_payments")
-          .in("source_id", paymentIds);
-        ledgerRows = ledgerRows.concat(data || []);
-      }
-      if (entryIds.length > 0) {
-        const { data } = await supabase
-          .from("holiday_ledger")
-          .select("*")
-          .eq("source_table", "payroll_entries")
-          .in("source_id", entryIds);
-        ledgerRows = ledgerRows.concat(data || []);
-      }
-
-      const { data: noteRows } = await supabase
-        .from("payroll_period_notes")
-        .select("*")
-        .eq("payroll_period_id", id);
-
-      const snapshot: PeriodSnapshot = {
-        period: (periodFull || {}) as any,
-        entries: (entryRows || []) as any[],
-        entryLocations,
-        holidayPayments: (paymentRows || []) as any[],
-        holidayLedger: ledgerRows,
-        notes: (noteRows || []) as any[],
-      };
-
-      // 1. Remove holiday ledger rows derived from this period (accruals from
-      //    payroll entries, and "holiday taken" rows from holiday payments).
-      if (paymentIds.length > 0) {
-        const { error } = await supabase
-          .from("holiday_ledger")
-          .delete()
-          .eq("source_table", "holiday_payments")
-          .in("source_id", paymentIds);
-        if (error) throw error;
-      }
-      if (entryIds.length > 0) {
-        const { error } = await supabase
-          .from("holiday_ledger")
-          .delete()
-          .eq("source_table", "payroll_entries")
-          .in("source_id", entryIds);
-        if (error) throw error;
-      }
-
-      // 2. Delete entries (foreign key constraint)
-      const { error: entriesError } = await supabase
-        .from("payroll_entries")
-        .delete()
-        .eq("payroll_period_id", id);
-      if (entriesError) {
-        if (entriesError.message?.includes("locked")) throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
-        throw entriesError;
-      }
-
-      // 3. Delete holiday payments linked to this period
-      const { error: holError } = await supabase
-        .from("holiday_payments")
-        .delete()
-        .eq("payroll_period_id", id);
-      if (holError) {
-        if (holError.message?.includes("locked")) throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
-        throw holError;
-      }
-
-      // 4. Delete the period itself
-      const { error } = await supabase
-        .from("payroll_periods")
-        .delete()
-        .eq("id", id);
-      if (error) {
-        if (error.message?.includes("locked")) throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
-        throw error;
-      }
-
-      // Audit log — permanent record of the deletion, its blast radius, and the
-      // snapshot used to reverse it inside the two-hour window.
-      await supabase.from("audit_log").insert({
-        user_id: user?.id || null,
-        action: "delete" as const,
-        table_name: "payroll_periods",
-        record_id: id,
-        tenant_id: tenantId,
-        old_data: snapshot as any,
-        new_data: {
-          operation: DELETE_OPERATION,
-          period_name: period?.period_name ?? null,
-          reason,
-          deleted_entry_count: entryIds.length,
-          deleted_holiday_payment_count: paymentIds.length,
-          reversed_ledger_sources: {
-            payroll_entries: entryIds.length,
-            holiday_payments: paymentIds.length,
-          },
-          restorable_until: new Date(Date.now() + RESTORE_WINDOW_MS).toISOString(),
-          impact,
-        },
-      });
+      if (error) throw new Error(describeRecoveryRpcError(error));
     },
 
     onSuccess: () => {
@@ -666,6 +500,7 @@ export function useDeletePayrollPeriod() {
       invalidateHolidayDerivedQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["holiday_payments", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["payroll_period_delete_impact", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_period_restorable", tenantId] });
     },
   });
 }
