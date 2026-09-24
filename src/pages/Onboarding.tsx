@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { isRightToWorkCleared } from "@/lib/right-to-work-status";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useOnboardingTemplates, useOnboardingProgress, useInitOnboarding, useToggleOnboardingItem, type OnboardingTemplate } from "@/hooks/useOnboarding";
 import { useOnboardingReviewQueue, useReviewRtw, useApproveOnboarding, type RtwStatus } from "@/hooks/useEmployeeOnboarding";
@@ -61,6 +64,23 @@ export default function Onboarding() {
   const awaitingRtw = reviewQueue.filter(r => r.rtw_status === "pending_review");
   const inProgress = reviewQueue.filter(r => !r.submitted_at);
 
+  // One query: right-to-work documents for every employee in the review queue
+  const reviewEmployeeIds = reviewQueue.map(r => r.employee_id);
+  const { data: rtwDocuments = [] } = useQuery({
+    queryKey: ["onboarding_rtw_documents", reviewEmployeeIds.join(",")],
+    queryFn: async () => {
+      if (reviewEmployeeIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("employee_documents")
+        .select("employee_id, document_type, document_status")
+        .in("document_type", ["passport", "visa", "biometric_residence_permit", "right_to_work"] as any)
+        .in("employee_id", reviewEmployeeIds);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: reviewEmployeeIds.length > 0,
+  });
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -112,7 +132,11 @@ export default function Onboarding() {
               </div>
             ) : (
               pendingReview.map(record => (
-                <OnboardingReviewCard key={record.id} record={record} />
+                <OnboardingReviewCard
+                  key={record.id}
+                  record={record}
+                  rtwDocuments={rtwDocuments.filter(d => d.employee_id === record.employee_id)}
+                />
               ))
             )}
           </TabsContent>
@@ -182,7 +206,7 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: nu
   );
 }
 
-function OnboardingReviewCard({ record }: { record: any }) {
+function OnboardingReviewCard({ record, rtwDocuments }: { record: any; rtwDocuments: any[] }) {
   const [expanded, setExpanded] = useState(false);
   const [rtwNotes, setRtwNotes] = useState("");
   const [rtwConfirmOpen, setRtwConfirmOpen] = useState(false);
@@ -199,7 +223,8 @@ function OnboardingReviewCard({ record }: { record: any }) {
   const personalInfo = record.personal_info || {};
   const bankDetails = record.bank_details || {};
   const emergencyContact = record.emergency_contact || {};
-  const canApprove = rtwStatus === "approved";
+  const rtwClearance = isRightToWorkCleared(record, rtwDocuments);
+  const canApprove = rtwClearance === "cleared";
 
   const today = format(new Date(), "yyyy-MM-dd");
   const rtwDateInvalid = !rtwCheckDate || rtwCheckDate > today;
@@ -270,8 +295,8 @@ function OnboardingReviewCard({ record }: { record: any }) {
                 { label: "Phone", value: emergencyContact.phone || "—" },
               ]} />
 
-              {/* RTW — Confirm checked (not yet submitted/uploaded) */}
-              {rtwStatus === "not_submitted" && (
+              {/* RTW — Confirm checked (no cleared record yet) */}
+              {(rtwClearance === "missing" || rtwClearance === "rejected") && (
                 <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Shield className="h-5 w-5 text-muted-foreground" />
