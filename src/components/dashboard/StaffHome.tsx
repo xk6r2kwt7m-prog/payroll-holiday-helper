@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ReadinessBanner } from "@/components/staff-portal/ReadinessBanner";
+import { MyAvailabilityCard } from "@/components/staff-portal/MyAvailabilityCard";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
@@ -443,8 +444,10 @@ export function StaffHome() {
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
           </Link>
-        </motion.div>
+      </motion.div>
       )}
+
+      {employeeId && <MyAvailabilityCard employeeId={employeeId} />}
 
       {/* Shift Countdown */}
       {!activeEntry && nextShiftTime && (
