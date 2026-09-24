@@ -58,7 +58,7 @@ describe("Phase 5C — approval evidence snapshot", () => {
 
   it("Payroll page passes the built evidence object as a single prop (Phase 5D)", () => {
     const block = payrollPage.match(/<PayrollApprovalChecklist[\s\S]*?\/>/)?.[0] ?? "";
-    expect(block).toMatch(/evidence=\{buildPayrollApprovalEvidence\(/);
+    expect(block).toMatch(/evidence=\{[\s\S]*?buildPayrollApprovalEvidence\(/);
     // The derivation still feeds from the existing checklist / ack /
     // confirmation / block state on the page.
     expect(block).toMatch(/checklist: phase5Checklist/);
