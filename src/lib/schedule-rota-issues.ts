@@ -267,7 +267,6 @@ export function aggregateRotaIssues(input: AggregateRotaIssuesInput): RotaIssue[
           }
         }
         // Fewer than 2 days off in the week
-        const workedDates = new Set(young.map((s) => s.shift_date));
         const weekDates = new Set(sorted.map((s) => s.shift_date));
         const daysOff = 7 - weekDates.size;
         if (daysOff < 2) {
@@ -278,7 +277,6 @@ export function aggregateRotaIssues(input: AggregateRotaIssuesInput): RotaIssue[
             employeeId: empId,
           });
         }
-        void workedDates;
         // Any shift over 4.5 hours — 30-minute break required
         for (const s of young) {
           if (shiftDurationHours(s) > 4.5) {
