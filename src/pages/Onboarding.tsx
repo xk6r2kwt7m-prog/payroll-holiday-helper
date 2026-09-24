@@ -82,6 +82,21 @@ export default function Onboarding() {
     enabled: reviewEmployeeIds.length > 0,
   });
 
+  // One query: right-to-work checks for every employee in the review queue
+  const { data: rtwChecks = [] } = useQuery({
+    queryKey: ["onboarding_rtw_checks", reviewEmployeeIds.join(",")],
+    queryFn: async () => {
+      if (reviewEmployeeIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("right_to_work_checks")
+        .select("employee_id, result, checked_on, created_at, permission_expires_on")
+        .in("employee_id", reviewEmployeeIds);
+      if (error) return [];
+      return (data || []) as any[];
+    },
+    enabled: reviewEmployeeIds.length > 0,
+  });
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -138,6 +153,7 @@ export default function Onboarding() {
                   key={record.id}
                   record={record}
                   rtwDocuments={rtwDocuments.filter(d => d.employee_id === record.employee_id)}
+                  rtwChecks={rtwChecks.filter(c => c.employee_id === record.employee_id)}
                 />
               ))
             )}
@@ -208,7 +224,7 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: nu
   );
 }
 
-function OnboardingReviewCard({ record, rtwDocuments }: { record: any; rtwDocuments: any[] }) {
+function OnboardingReviewCard({ record, rtwDocuments, rtwChecks }: { record: any; rtwDocuments: any[]; rtwChecks: any[] }) {
   const [expanded, setExpanded] = useState(false);
   const [rtwNotes, setRtwNotes] = useState("");
   const [rtwConfirmOpen, setRtwConfirmOpen] = useState(false);
@@ -225,7 +241,7 @@ function OnboardingReviewCard({ record, rtwDocuments }: { record: any; rtwDocume
   const personalInfo = record.personal_info || {};
   const bankDetails = record.bank_details || {};
   const emergencyContact = record.emergency_contact || {};
-  const rtwClearance = isRightToWorkCleared(record, rtwDocuments);
+  const rtwClearance = isRightToWorkCleared(record, rtwDocuments, rtwChecks);
   const canApprove = rtwClearance === "cleared";
 
   const today = format(new Date(), "yyyy-MM-dd");
