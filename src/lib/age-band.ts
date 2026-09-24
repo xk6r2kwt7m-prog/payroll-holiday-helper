@@ -1,15 +1,8 @@
 /**
  * UK National Minimum Wage age bands.
  *
- * The `minWage` values are derived from `getApplicableRateSet()` in
- * `uk-minimum-wage.ts`, so this file and that file always use the same
- * rates. Update the rates once, in `UK_WAGE_RATES`, and both the
- * age-band pay-risk checks and the wage-compliance checks stay in sync.
- *
- * Source: https://www.gov.uk/national-minimum-wage-rates
- *
- * ⚠️ These are WARNING thresholds only — not legal advice and not a
- *    compliance guarantee. Always verify against official HMRC guidance.
+ * The rates come from src/lib/uk-minimum-wage.ts and must be updated
+ * there each April when HMRC publishes new NMW/NLW rates.
  */
 
 import { getApplicableRateSet } from "./uk-minimum-wage";
