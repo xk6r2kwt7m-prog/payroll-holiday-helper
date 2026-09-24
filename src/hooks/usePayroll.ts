@@ -498,7 +498,29 @@ export function useDeletePayrollPeriod() {
         throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
       }
 
+      // Preferred path: one database transaction. Either the period, its
+      // entries, location splits, holiday payments, derived holiday ledger rows
+      // and notes all go, or nothing does — no half-deleted period can be left
+      // behind to corrupt holiday balances or payroll totals. The snapshot used
+      // to reverse it is written before anything is removed.
+      const atomic = await supabase.rpc("payroll_period_delete_atomic" as any, {
+        _period_id: id,
+        _reason: reason,
+        _impact: impact as any,
+      });
+
+      if (!atomic.error) return;
+
+      // If the transaction refused the deletion (locked period, not an admin),
+      // surface that reason — never fall back and do it step by step.
+      const missingFunction =
+        atomic.error.code === "PGRST202" ||
+        /could not find the function|does not exist/i.test(atomic.error.message || "");
+      if (!missingFunction) throw new Error(atomic.error.message);
+
+      // Fallback for a backend where the transaction has not been installed yet.
       const { data: { user } } = await supabase.auth.getUser();
+
 
       // Collect dependent records BEFORE deleting anything so no holiday
       // ledger row is ever left orphaned (which would corrupt balances) and so

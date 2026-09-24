@@ -76,7 +76,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           periodWeeks: parseFloat(periodWeeks) || 4,
           salesTotal: parseFloat(salesTotal) || 0,
         });
-        toast.success("Payroll period created from previous period. Timesheet hours reset to 0.");
+        toast.success("Payroll period created from previous period. Hours and bonuses start at 0.");
       } else {
         // Create new period and add all active employees
         const { data: { user } } = await supabase.auth.getUser();
