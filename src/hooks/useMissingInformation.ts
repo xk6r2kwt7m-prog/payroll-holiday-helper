@@ -102,10 +102,18 @@ export function useMissingInformation() {
           .eq("tenant_id", tenantId!)
           .in("employee_id", ids)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("staff_detail_changes" as any)
+          .select("employee_id, field_name")
+          .eq("tenant_id", tenantId!)
+          .eq("state", "pending")
+          .eq("needs_review", true)
+          .in("employee_id", ids),
       ]);
       if (ob.error) throw ob.error;
       if (docs.error) throw docs.error;
       if (reqs.error) throw reqs.error;
+      if (changes.error) throw changes.error;
 
       const obById = new Map<string, any>();
       for (const r of (ob.data ?? []) as any[]) obById.set(r.employee_id, r);
@@ -118,6 +126,14 @@ export function useMissingInformation() {
       const reqById = new Map<string, LatestInfoRequest>();
       for (const r of (reqs.data ?? []) as any[]) {
         if (!reqById.has(r.employee_id)) reqById.set(r.employee_id, r);
+      }
+      const pendingById = new Map<string, Set<MissingItemKey>>();
+      for (const c of (changes.data ?? []) as any[]) {
+        const item = FIELD_TO_ITEM[c.field_name as string];
+        if (!item) continue;
+        const set = pendingById.get(c.employee_id) ?? new Set<MissingItemKey>();
+        set.add(item);
+        pendingById.set(c.employee_id, set);
       }
 
       return employees
