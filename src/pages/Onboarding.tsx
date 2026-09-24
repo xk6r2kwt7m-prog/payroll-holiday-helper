@@ -34,6 +34,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { PendingDetailDecisions } from "@/components/employees/PendingDetailDecisions";
+import { MissingInformationBoard } from "@/components/employees/MissingInformationBoard";
 
 const categoryIcons: Record<string, any> = {
   documents: FileText, training: GraduationCap, equipment: Wrench, general: LayoutList,
@@ -85,6 +86,7 @@ export default function Onboarding() {
     <AppLayout>
       <div className="space-y-6">
         <PendingDetailDecisions />
+        <MissingInformationBoard />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Onboarding</h1>
