@@ -34,9 +34,27 @@ export interface MissingInformationRow {
   status: string;
   missing: MissingItemKey[];
   latestRequest: LatestInfoRequest | null;
+  /** Missing items that already have a pending staff_detail_changes decision. */
+  pendingDecision: MissingItemKey[];
 }
 
 const RTW_TYPES = ["passport", "visa", "biometric_residence_permit", "right_to_work"];
+
+/** staff_detail_changes field_name values that cover each missing item. */
+const FIELD_TO_ITEM: Record<string, MissingItemKey> = {
+  bank_account_no: "bank",
+  sort_code: "bank",
+  ni_number: "ni_number",
+  date_of_birth: "dob",
+  dob: "dob",
+  address: "address",
+  home_address: "address",
+  full_address: "address",
+  address_line1: "address",
+  emergency_contact_name: "emergency",
+  emergency_contact_phone: "emergency",
+  emergency_contact: "emergency",
+};
 
 /**
  * What each current employee (active, starter, onboarding; test records
@@ -61,7 +79,7 @@ export function useMissingInformation() {
       const ids = employees.map((e) => e.id as string);
       if (ids.length === 0) return [];
 
-      const [ob, docs, reqs] = await Promise.all([
+      const [ob, docs, reqs, changes] = await Promise.all([
         supabase
           .from("employee_onboarding_data" as any)
           .select(
