@@ -9,7 +9,7 @@ export default defineTool({
     "List holiday requests visible to the signed-in user. Staff see their own; managers/admins see requests in scope. RLS enforces the boundary.",
   inputSchema: {
     status: z
-      .enum(["pending", "approved", "rejected", "cancelled"]) 
+      .enum(["pending", "approved", "rejected", "cancelled"])
       .optional()
       .describe("Filter by request status."),
     limit: z.number().int().min(1).max(200).default(50),
@@ -22,7 +22,9 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     let q = supabase
       .from("holiday_requests")
-      .select("id, employee_id, start_date, end_date, status, hours, request_type, created_at")
+      .select(
+        "id, employee_id, start_date, end_date, status, hours_requested, reason, reviewed_at, created_at",
+      )
       .order("start_date", { ascending: false })
       .limit(limit);
     if (status) q = q.eq("status", status);

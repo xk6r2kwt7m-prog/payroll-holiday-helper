@@ -6,7 +6,7 @@ export default defineTool({
   name: "list_payroll_periods",
   title: "List payroll periods",
   description:
-    "List payroll periods visible to the signed-in user. Read-only. RLS restricts to the user's tenant; typically only admins see rows.",
+    "List payroll periods visible to the signed-in user. Read-only. RLS restricts to the user's tenant; typically only admins see rows. Returns period totals only — never an individual's pay.",
   inputSchema: {
     limit: z.number().int().min(1).max(100).default(20),
   },
@@ -18,8 +18,10 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase
       .from("payroll_periods")
-      .select("id, period_start, period_end, pay_date, status, name")
-      .order("period_start", { ascending: false })
+      .select(
+        "id, period_name, start_date, end_date, pay_date, status, period_weeks, timesheet_total, incentives_total, holidays_total, grand_total",
+      )
+      .order("start_date", { ascending: false })
       .limit(limit);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {
