@@ -429,8 +429,6 @@ export function useCopyPayrollPeriod() {
         );
 
         const newEntries = eligibleEntries.map((entry: any) => {
-          const perfBonus = entry.performance_bonus || 0;
-          const specBonus = entry.special_bonus || 0;
           const defaults = resolveRateSource(termsMap.get(entry.employee_id), {
             id: entry.employee_id,
             hourly_rate: entry.hourly_rate,
@@ -443,10 +441,13 @@ export function useCopyPayrollPeriod() {
             service_charge: defaults.service_charge,
             timesheet_hours: 0,
             imported_hours: null,
-            performance_bonus: entry.performance_bonus,
-            special_bonus: entry.special_bonus,
+            // A bonus belongs to the period it was earned in. Carrying one
+            // forward would silently pay it twice, so a copied period always
+            // starts at zero and the admin enters any bonus deliberately.
+            performance_bonus: 0,
+            special_bonus: 0,
             holiday_accrued_hours: 0,
-            total_pay: perfBonus + specBonus,
+            total_pay: 0,
             bank_details_exported: false,
             adjustment_note: null,
             tenant_id: tenantId!,
