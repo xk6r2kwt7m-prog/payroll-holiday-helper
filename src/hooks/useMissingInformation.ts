@@ -79,7 +79,7 @@ export function useMissingInformation() {
       const ids = employees.map((e) => e.id as string);
       if (ids.length === 0) return [];
 
-      const [ob, docs, reqs, changes] = await Promise.all([
+      const [ob, docs, reqs, changes, checks] = await Promise.all([
         supabase
           .from("employee_onboarding_data" as any)
           .select(
@@ -109,11 +109,16 @@ export function useMissingInformation() {
           .eq("state", "pending")
           .eq("needs_review", true)
           .in("employee_id", ids),
+        supabase
+          .from("right_to_work_checks" as any)
+          .select("employee_id, result, checked_on, created_at, permission_expires_on")
+          .in("employee_id", ids),
       ]);
       if (ob.error) throw ob.error;
       if (docs.error) throw docs.error;
       if (reqs.error) throw reqs.error;
       if (changes.error) throw changes.error;
+      // checks error is non-fatal: treat as empty so the board still works
 
       const obById = new Map<string, any>();
       for (const r of (ob.data ?? []) as any[]) obById.set(r.employee_id, r);
