@@ -25,4 +25,5 @@ Validation note: 45 focused compliance/allergen checks passed. One existing addi
 - [ ] Run full tests and production build; migration applied only after checks pass and approval
 
 ## Payroll delete/restore migration
-- [ ] Rewrite revised SQL in the project, remove browser fallback, rerun tests — awaiting "apply it"
+- [x] Rewrite revised SQL in the project, remove browser fallback, rerun tests
+- [ ] Apply the migration — awaiting "apply it"
