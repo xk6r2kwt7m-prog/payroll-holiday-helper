@@ -19,6 +19,7 @@ const GROUP_TITLES: Record<RotaIssue["code"], string> = {
   overlapping_shift: "Overlapping shifts",
   missing_break: "Insufficient rest between shifts",
   insufficient_cover: "Insufficient cover",
+  young_worker_limit: "Under-18 working time limits",
 };
 
 export function RotaIssuesPanel({ issues, className }: RotaIssuesPanelProps) {
