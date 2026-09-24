@@ -34,8 +34,9 @@ describe("Phase 5C — approval evidence snapshot", () => {
   });
 
   it("Payroll page imports and renders PayrollApprovalEvidence", () => {
-    expect(payrollPage).toMatch(/from "@\/components\/payroll\/PayrollApprovalEvidence"/);
-    expect(payrollPage).toMatch(/<PayrollApprovalEvidence/);
+    // Phase A merged the standalone evidence card into the checklist footer.
+    expect(payrollPage).toMatch(/from "@\/lib\/payroll-approval-evidence"/);
+    expect(payrollPage).toMatch(/<PayrollApprovalChecklist[\s\S]*?evidence=\{/);
   });
 
   it("evidence snapshot is derived from existing in-memory state only", () => {
@@ -56,7 +57,7 @@ describe("Phase 5C — approval evidence snapshot", () => {
   });
 
   it("Payroll page passes the built evidence object as a single prop (Phase 5D)", () => {
-    const block = payrollPage.match(/<PayrollApprovalEvidence[\s\S]*?\/>/)?.[0] ?? "";
+    const block = payrollPage.match(/<PayrollApprovalChecklist[\s\S]*?\/>/)?.[0] ?? "";
     expect(block).toMatch(/evidence=\{buildPayrollApprovalEvidence\(/);
     // The derivation still feeds from the existing checklist / ack /
     // confirmation / block state on the page.
@@ -123,8 +124,11 @@ describe("Phase 5C — draft periods remain informational only", () => {
 
   it("workflow only renders the Approve & Lock control under pending status", () => {
     // Approve & Lock button lives inside the pending status block.
-    const pendingBlock = workflow.match(/period\.status === "pending"[\s\S]*?period\.status === "approved"/)?.[0] ?? "";
-    expect(pendingBlock).toMatch(/Approve & Lock/);
+    // Phase A: the single canonical approve control lives in the checklist,
+    // which hides it once the period is approved; the workflow has none.
+    expect(workflow).not.toMatch(/>\s*Approve & Lock\s*</);
+    expect(checklist).toMatch(/Approve & lock period/);
+    expect(checklist).toMatch(/!result\.period_already_approved/);
     // It must NOT appear inside the draft status block.
     const draftBlock = workflow.match(/period\.status === "draft"[\s\S]*?period\.status === "pending"/)?.[0] ?? "";
     expect(draftBlock).not.toMatch(/Approve & Lock/);

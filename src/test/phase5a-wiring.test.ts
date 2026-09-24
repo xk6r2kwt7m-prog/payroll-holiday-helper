@@ -47,7 +47,7 @@ describe("Phase 5A — checklist wired into Payroll page", () => {
   });
 
   it("routes onApproveRequested to the existing handleApprove mutation", () => {
-    expect(payrollPage).toMatch(/onApproveRequested=\{handleApprove\}/);
+    expect(payrollPage).toMatch(/onApproveRequested=\{\(\) => handleApprove\(\)\}/);
   });
 
   it("wires manual adjustments from usePayrollAdjustments", () => {

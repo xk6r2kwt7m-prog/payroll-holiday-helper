@@ -77,7 +77,7 @@ describe("Phase 5B — approval gate behaviour preserved", () => {
   });
 
   it("still routes onApproveRequested to the existing handleApprove", () => {
-    expect(payrollPage).toMatch(/onApproveRequested=\{handleApprove\}/);
+    expect(payrollPage).toMatch(/onApproveRequested=\{\(\) => handleApprove\(\)\}/);
   });
 });
 
