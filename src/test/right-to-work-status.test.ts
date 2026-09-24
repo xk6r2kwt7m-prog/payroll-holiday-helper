@@ -64,13 +64,15 @@ describe("isRightToWorkCleared", () => {
     expect(isRightToWorkCleared({ rtw_status: "rejected" }, [])).toBe("rejected");
   });
 
-  it("returns rejected when rtw_status is rejected and a non-RTW document is verified", () => {
-    // non-qualifying document types don't count
-    expect(
-      isRightToWorkCleared({ rtw_status: "rejected" }, [
-        mkDoc("passport", "verified") as unknown as RtwDocument,
-      ])
-    ).toBe("cleared"); // passport qualifies, so this is cleared, not rejected
+  it("returns rejected when rtw_status is rejected and only a non-qualifying verified doc", () => {
+    // non-qualifying document types don't count toward clearance
+    const nonRtw = {
+      document_type: "id_document" as unknown as RtwDocument["document_type"],
+      document_status: "verified" as RtwDocument["document_status"],
+    };
+    expect(isRightToWorkCleared({ rtw_status: "rejected" }, [nonRtw])).toBe(
+      "rejected"
+    );
   });
 
   it("returns rejected when rtw_status is rejected and qualifying doc is expired", () => {
