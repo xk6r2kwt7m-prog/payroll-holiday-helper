@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDown, Clock, Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useEmployeeAvailability, useUpsertAvailability } from "@/hooks/useAvailability";
