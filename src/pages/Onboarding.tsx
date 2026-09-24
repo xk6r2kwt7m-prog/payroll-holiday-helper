@@ -295,8 +295,8 @@ function OnboardingReviewCard({ record, rtwDocuments }: { record: any; rtwDocume
                 { label: "Phone", value: emergencyContact.phone || "—" },
               ]} />
 
-              {/* RTW — Confirm checked (not yet submitted/uploaded) */}
-              {rtwStatus === "not_submitted" && (
+              {/* RTW — Confirm checked (no cleared record yet) */}
+              {(rtwClearance === "missing" || rtwClearance === "rejected") && (
                 <div className="rounded-xl bg-muted/30 border border-border p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Shield className="h-5 w-5 text-muted-foreground" />
