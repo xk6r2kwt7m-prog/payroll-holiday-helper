@@ -12,6 +12,7 @@
  *  - overlapping_shift
  *  - missing_break
  *  - insufficient_cover
+ *  - young_worker_limit (under-18 Working Time limits)
  */
 
 import type {
@@ -29,7 +30,8 @@ export type RotaIssueCode =
   | "over_contracted_hours"
   | "overlapping_shift"
   | "missing_break"
-  | "insufficient_cover";
+  | "insufficient_cover"
+  | "young_worker_limit";
 
 export interface RotaIssue {
   code: RotaIssueCode;
@@ -42,7 +44,7 @@ export interface RotaIssue {
 
 export interface AggregateRotaIssuesInput {
   shifts: AutoAssignShift[];
-  employees: (AutoAssignEmployee & { forename?: string; surname?: string })[];
+  employees: (AutoAssignEmployee & { forename?: string; surname?: string; date_of_birth?: string | null })[];
   availability: AutoAssignAvailabilitySlot[];
   approvedLeave: AutoAssignLeaveRange[];
   coverageRequirements?: Array<{
