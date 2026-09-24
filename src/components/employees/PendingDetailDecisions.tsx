@@ -8,12 +8,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * Shows the values a member of staff has sent in that still need a manager to
- * accept or reject them, grouped by employee.
- *
- * There is no direct route to an employee profile in this app — the Employees
- * page opens a profile through local component state, not a URL — so the rows
- * are shown without links. Open the employee on the Employees page to review
- * and decide each value.
+ * accept or reject them, grouped by employee. Each row links to that
+ * employee's profile on the Employees page.
  */
 export function PendingDetailDecisions() {
   const { data: decisions = [], isLoading } = usePendingDetailDecisions();
