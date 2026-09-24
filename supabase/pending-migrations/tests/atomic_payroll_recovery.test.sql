@@ -81,8 +81,8 @@ BEGIN
   INSERT INTO payroll_entry_locations(id, payroll_entry_id, payroll_period_id, employee_id, location_name, department, hours, tenant_id)
   VALUES (('a1' || x || '00-0000-0000-0000-000000000001')::uuid, ('f1' || x || '00-0000-0000-0000-000000000001')::uuid, _pid, e1, 'Carnaby', 'FOH', 60.25, ta),
          (('a2' || x || '00-0000-0000-0000-000000000002')::uuid, ('f1' || x || '00-0000-0000-0000-000000000001')::uuid, _pid, e1, 'Brixton', 'FOH', 40, ta);
-  INSERT INTO payroll_adjustments(id, payroll_period_id, payroll_entry_id, employee_id, tenant_id, field_name, old_value, new_value, delta, note)
-  VALUES (('ad' || x || '00-0000-0000-0000-000000000001')::uuid, _pid, ('f1' || x || '00-0000-0000-0000-000000000001')::uuid, e1, ta, 'timesheet_hours', 99, 100.25, 1.25, 'late shift');
+  INSERT INTO payroll_adjustments(id, payroll_period_id, payroll_entry_id, employee_id, tenant_id, field_name, old_value, new_value, note)
+  VALUES (('ad' || x || '00-0000-0000-0000-000000000001')::uuid, _pid, ('f1' || x || '00-0000-0000-0000-000000000001')::uuid, e1, ta, 'timesheet_hours', 99, 100.25, 'late shift');
   INSERT INTO payroll_nmw_audit(id, tenant_id, payroll_period_id, payroll_entry_id, employee_id, age_band, is_apprentice, required_rate, effective_rate, eligible_pay, actual_hours, status, calculation_basis)
   VALUES (('ab' || x || '00-0000-0000-0000-000000000001')::uuid, ta, _pid, ('f1' || x || '00-0000-0000-0000-000000000001')::uuid, e1, '21+', false, 12.21, 12.21, 1224.05, 100.25, 'compliant', '{"k":1}');
   INSERT INTO payroll_period_notes(id, payroll_period_id, employee_id, tenant_id, note, show_on_pdf, category)
