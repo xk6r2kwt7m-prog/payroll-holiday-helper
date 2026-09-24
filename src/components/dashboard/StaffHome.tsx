@@ -416,6 +416,29 @@ export function StaffHome() {
     enabled: !!employeeId,
   });
 
+  // Active staff info request (sent but not yet completed, token still valid)
+  const { data: activeInfoRequest } = useQuery({
+    queryKey: ["staff_active_info_request", employeeId],
+    queryFn: async () => {
+      if (!employeeId) return null;
+      const { data, error } = await supabase
+        .from("employee_info_requests")
+        .select("token, token_expires_at, status")
+        .eq("employee_id", employeeId)
+        .is("submitted_at", null)
+        .is("cancelled_at", null)
+        .not("status", "eq", "revoked")
+        .not("status", "eq", "prepared")
+        .gt("token_expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!employeeId,
+  });
+
   // Today's worked hours from active entry only (not full timesheet history)
   const todayWorkedDisplay = activeEntry
     ? elapsedTime?.slice(0, 5) || "0:00"
@@ -431,19 +454,21 @@ export function StaffHome() {
       {employeeId && isOnboarding && (
         <motion.div {...anim} transition={{ duration: 0.25, delay: 0.01 }}>
           <ReadinessBanner employeeId={employeeId} />
-          <Link
-            to="/employee-onboarding"
-            className="mt-2 flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 active:bg-primary/10 transition-colors"
-          >
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <ClipboardList className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">Complete your onboarding</p>
-              <p className="text-xs text-muted-foreground">Finish your setup to get ready for work</p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-          </Link>
+            {activeInfoRequest?.token && (
+              <Link
+                to={`/my-details/${activeInfoRequest.token}`}
+                className="mt-2 flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20 active:bg-primary/10 transition-colors"
+              >
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">Complete your details</p>
+                  <p className="text-xs text-muted-foreground">Finish your setup to get ready for work</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+              </Link>
+            )}
       </motion.div>
       )}
 
