@@ -1,26 +1,18 @@
 /**
  * UK National Minimum Wage age bands.
  *
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │  ANNUAL REVIEW REQUIRED                                           │
- * │                                                                   │
- * │  These rates must be updated every April when HMRC publishes new  │
- * │  National Minimum Wage / National Living Wage rates.              │
- * │                                                                   │
- * │  Source: https://www.gov.uk/national-minimum-wage-rates            │
- * │                                                                   │
- * │  Last updated: April 2024                                         │
- * │  Next review due: April 2025                                      │
- * │                                                                   │
- * │  To update: change ONLY the `minWage` values in UK_AGE_BANDS      │
- * │  below and update the "Last updated" / "Next review" dates above. │
- * │  No other files need changing — all pay-risk checks derive from   │
- * │  this single array.                                               │
- * └─────────────────────────────────────────────────────────────────────┘
+ * The `minWage` values are derived from `getApplicableRateSet()` in
+ * `uk-minimum-wage.ts`, so this file and that file always use the same
+ * rates. Update the rates once, in `UK_WAGE_RATES`, and both the
+ * age-band pay-risk checks and the wage-compliance checks stay in sync.
+ *
+ * Source: https://www.gov.uk/national-minimum-wage-rates
  *
  * ⚠️ These are WARNING thresholds only — not legal advice and not a
  *    compliance guarantee. Always verify against official HMRC guidance.
  */
+
+import { getApplicableRateSet } from "./uk-minimum-wage";
 
 export interface AgeBand {
   label: string;
@@ -29,12 +21,15 @@ export interface AgeBand {
   minWage: number; // £ per hour
 }
 
-// ── UPDATE THESE RATES ANNUALLY (April each year) ──────────────────────
-export const UK_AGE_BANDS: AgeBand[] = [
-  { label: "Under 18", minAge: 0, maxAge: 17, minWage: 6.40 },   // Apr 2024
-  { label: "18–20",    minAge: 18, maxAge: 20, minWage: 8.60 },   // Apr 2024
-  { label: "21+",      minAge: 21, maxAge: null, minWage: 11.44 }, // Apr 2024 (NLW)
-];
+// ── Rates come from uk-minimum-wage.ts (single source of truth) ────────
+export const UK_AGE_BANDS: AgeBand[] = (() => {
+  const rates = getApplicableRateSet().rates;
+  return [
+    { label: "Under 18", minAge: 0, maxAge: 17, minWage: rates.under_18 },
+    { label: "18–20",    minAge: 18, maxAge: 20, minWage: rates["18_20"] },
+    { label: "21+",      minAge: 21, maxAge: null, minWage: rates["21_over"] },
+  ];
+})();
 
 /**
  * Calculate age from date of birth.
