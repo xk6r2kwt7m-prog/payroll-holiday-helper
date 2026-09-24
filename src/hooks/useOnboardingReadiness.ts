@@ -170,13 +170,10 @@ function checkRequirement(
         ? "complete" : "missing";
 
     case "right_to_work": {
-      const rtwDocs = documents.filter((d: any) =>
-        ["passport", "visa", "biometric_residence_permit", "right_to_work"].includes(d.document_type)
-      );
-      if (rtwDocs.length === 0) return "missing";
-      const verified = rtwDocs.some((d: any) => d.document_status === "verified");
-      if (verified) return "complete";
-      return "pending_verification";
+      const clearance = isRightToWorkCleared(onboardingData, documents);
+      if (clearance === "cleared") return "complete";
+      if (clearance === "pending") return "pending_verification";
+      return "missing"; // "missing" or "rejected"
     }
 
     case "contract_signed":
