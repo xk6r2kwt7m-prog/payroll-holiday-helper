@@ -515,6 +515,7 @@ DECLARE
   v_entry_ids uuid[];
   v_pay_ids   uuid[];
   v_led_ids   uuid[];
+  v_cols      text;
 BEGIN
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'You need to be signed in to restore a payroll period' USING ERRCODE = '42501';
@@ -593,23 +594,30 @@ BEGIN
       USING ERRCODE = '55000';
   END IF;
 
-  -- Re-insert with original ids, parents first.
-  INSERT INTO public.payroll_periods
-    SELECT * FROM jsonb_populate_record(NULL::public.payroll_periods, v_snap->'period');
-  INSERT INTO public.payroll_entries
-    SELECT * FROM jsonb_populate_recordset(NULL::public.payroll_entries, v_snap->'entries');
-  INSERT INTO public.payroll_entry_locations
-    SELECT * FROM jsonb_populate_recordset(NULL::public.payroll_entry_locations, v_snap->'entryLocations');
-  INSERT INTO public.payroll_adjustments
-    SELECT * FROM jsonb_populate_recordset(NULL::public.payroll_adjustments, v_snap->'adjustments');
-  INSERT INTO public.payroll_nmw_audit
-    SELECT * FROM jsonb_populate_recordset(NULL::public.payroll_nmw_audit, v_snap->'nmwAudit');
-  INSERT INTO public.payroll_period_notes
-    SELECT * FROM jsonb_populate_recordset(NULL::public.payroll_period_notes, v_snap->'notes');
-  INSERT INTO public.holiday_payments
-    SELECT * FROM jsonb_populate_recordset(NULL::public.holiday_payments, v_snap->'holidayPayments');
-  INSERT INTO public.payroll_overpayments
-    SELECT * FROM jsonb_populate_recordset(NULL::public.payroll_overpayments, v_snap->'overpayments');
+  -- Re-insert with original ids, parents first. Generated columns (for
+  -- example payroll_adjustments.delta) are left for the database to compute;
+  -- the verification step below proves they come out identical.
+  FOR v_item IN
+    SELECT * FROM (VALUES
+      (1, 'payroll_periods',         jsonb_build_array(v_snap->'period')),
+      (2, 'payroll_entries',         v_snap->'entries'),
+      (3, 'payroll_entry_locations', v_snap->'entryLocations'),
+      (4, 'payroll_adjustments',     v_snap->'adjustments'),
+      (5, 'payroll_nmw_audit',       v_snap->'nmwAudit'),
+      (6, 'payroll_period_notes',    v_snap->'notes'),
+      (7, 'holiday_payments',        v_snap->'holidayPayments'),
+      (8, 'payroll_overpayments',    v_snap->'overpayments')
+    ) AS v(ord, tbl, rows_json)
+    ORDER BY ord
+  LOOP
+    SELECT string_agg(quote_ident(a.attname), ', ' ORDER BY a.attnum) INTO v_cols
+      FROM pg_attribute a
+     WHERE a.attrelid = ('public.' || v_item.tbl)::regclass
+       AND a.attnum > 0 AND NOT a.attisdropped AND a.attgenerated = '';
+    EXECUTE format('INSERT INTO public.%I (%s) SELECT %s FROM jsonb_populate_recordset(NULL::public.%I, $1)',
+                   v_item.tbl, v_cols, v_cols, v_item.tbl)
+      USING coalesce(v_item.rows_json, '[]');
+  END LOOP;
 
   -- Holiday ledger: remove only rows generated inside this transaction by
   -- existing triggers for these sources, then put the originals back verbatim.
@@ -621,8 +629,13 @@ BEGIN
      AND NOT (id = ANY (v_led_ids))
      AND ((source_table = 'payroll_entries'  AND source_id = ANY (v_entry_ids))
        OR (source_table = 'holiday_payments' AND source_id = ANY (v_pay_ids)));
-  INSERT INTO public.holiday_ledger
-    SELECT * FROM jsonb_populate_recordset(NULL::public.holiday_ledger, v_snap->'holidayLedger');
+  SELECT string_agg(quote_ident(a.attname), ', ' ORDER BY a.attnum) INTO v_cols
+    FROM pg_attribute a
+   WHERE a.attrelid = 'public.holiday_ledger'::regclass
+     AND a.attnum > 0 AND NOT a.attisdropped AND a.attgenerated = '';
+  EXECUTE format('INSERT INTO public.holiday_ledger (%s) SELECT %s FROM jsonb_populate_recordset(NULL::public.holiday_ledger, $1)',
+                 v_cols, v_cols)
+    USING coalesce(v_snap->'holidayLedger', '[]');
 
   -- Re-link kept evidence.
   UPDATE public.payroll_imports SET payroll_period_id = r.period_id
