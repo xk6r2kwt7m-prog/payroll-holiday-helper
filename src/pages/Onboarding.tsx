@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { isRightToWorkCleared } from "@/lib/right-to-work-status";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useOnboardingTemplates, useOnboardingProgress, useInitOnboarding, useToggleOnboardingItem, type OnboardingTemplate } from "@/hooks/useOnboarding";
 import { useOnboardingReviewQueue, useReviewRtw, useApproveOnboarding, type RtwStatus } from "@/hooks/useEmployeeOnboarding";
