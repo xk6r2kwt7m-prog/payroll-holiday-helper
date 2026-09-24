@@ -18,3 +18,11 @@ Validation note: 45 focused compliance/allergen checks passed. One existing addi
 - [x] Add it as a source-backed Front of House induction lesson, held for approval.
 - [x] Keep the standalone and printable guides aligned.
 - [x] Verify lesson controls and tests; protected phone/desktop preview awaits an available test login.
+
+## Staff-information compliance (brief received 24 Sep, awaiting review tonight)
+- [ ] Show files to change, additive migration, assumptions and test plan (before any change)
+- [ ] Implement: staging-only onboarding data, NI double-entry + statuses, RTW states + student route, security preserved
+- [ ] Run full tests and production build; migration applied only after checks pass and approval
+
+## Payroll delete/restore migration
+- [ ] Rewrite revised SQL in the project, remove browser fallback, rerun tests — awaiting "apply it"
