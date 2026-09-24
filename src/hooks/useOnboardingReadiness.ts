@@ -159,7 +159,8 @@ function checkRequirement(
   documents: any[],
   contractSignatures: any[],
   availability: any[],
-  trainingRecords: any[]
+  trainingRecords: any[],
+  checks: any[] = []
 ): "complete" | "pending_verification" | "missing" {
   switch (key) {
     case "personal_information":
@@ -171,7 +172,7 @@ function checkRequirement(
         ? "complete" : "missing";
 
     case "right_to_work": {
-      const clearance = isRightToWorkCleared(onboardingData, documents);
+      const clearance = isRightToWorkCleared(onboardingData, documents, checks);
       if (clearance === "cleared") return "complete";
       if (clearance === "pending") return "pending_verification";
       return "missing"; // "missing" or "rejected"
