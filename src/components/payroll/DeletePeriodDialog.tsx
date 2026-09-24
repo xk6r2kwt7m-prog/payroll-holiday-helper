@@ -22,7 +22,7 @@ interface DeletePeriodDialogProps {
   periodId: string;
   periodName: string;
   isDeleting?: boolean;
-  onConfirm: (args: { reason: string; impact: Record<string, any> | null }) => void;
+  onConfirm: (args: { reason: string; requestId: string }) => void;
 }
 
 /**
@@ -40,6 +40,8 @@ export function DeletePeriodDialog({
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<"review" | "confirm">("review");
   const [reason, setReason] = useState("");
+  // One id per opened dialog, so a repeated click is treated as the same request.
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const { data: impact, isLoading } = usePayrollPeriodDeleteImpact(periodId, open);
 
   const lines = impact ? describeDeleteImpact(impact) : [];
@@ -47,6 +49,7 @@ export function DeletePeriodDialog({
   const reset = () => {
     setStep("review");
     setReason("");
+    setRequestId(crypto.randomUUID());
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -55,7 +58,7 @@ export function DeletePeriodDialog({
   };
 
   const handleConfirm = () => {
-    onConfirm({ reason: reason.trim(), impact: impact ? { ...impact } : null });
+    onConfirm({ reason: reason.trim(), requestId });
     setOpen(false);
     reset();
   };

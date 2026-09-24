@@ -40,7 +40,7 @@ interface PayrollApprovalWorkflowProps {
   onSubmitForReview: () => void;
   onApprove: () => void;
   onReopen: () => void;
-  onDelete?: (args: { reason: string; impact: Record<string, any> | null }) => void;
+  onDelete?: (args: { reason: string; requestId: string }) => void;
   isSubmitting: boolean;
   isApproving: boolean;
   isReopening: boolean;
@@ -380,7 +380,7 @@ export function PayrollApprovalWorkflow({
                 periodId={period.id}
                 periodName={period.period_name}
                 isDeleting={isDeleting}
-                onConfirm={({ reason, impact }) => onDelete({ reason, impact })}
+                onConfirm={({ reason, requestId }) => onDelete({ reason, requestId })}
               />
             )}
 
