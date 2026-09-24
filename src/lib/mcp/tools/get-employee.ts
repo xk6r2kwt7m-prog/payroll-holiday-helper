@@ -6,7 +6,7 @@ export default defineTool({
   name: "get_employee",
   title: "Get employee",
   description:
-    "Return a single employee record by id. RLS enforces tenant, branch, and role visibility.",
+    "Return a single employee record by id. RLS enforces tenant, branch, and role visibility. Never returns personal identifiers such as National Insurance number, passport number or bank details.",
   inputSchema: {
     employee_id: z.string().uuid().describe("Employee UUID."),
   },
@@ -19,7 +19,7 @@ export default defineTool({
     const { data, error } = await supabase
       .from("employees")
       .select(
-        "id, first_name, last_name, email, employee_status, branch_id, role, employment_start_date, employment_end_date",
+        "id, employee_ref, forename, surname, preferred_name, email, status, department, start_date, end_date, archived_at, employing_entity, contract_country, work_country",
       )
       .eq("id", employee_id)
       .maybeSingle();

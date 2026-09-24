@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { guardRequest } from "../_shared/auth-guard.ts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -488,6 +489,71 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ─── Recipient allow-list ────────────────────────────────────────────────────
+
+/**
+ * Templates that are addressed to someone outside the company by design — an
+ * inspection file for a licensing or environmental health officer, and a test
+ * message. An administrator may type these addresses in; nobody else can.
+ */
+const OUTSIDE_RECIPIENT_TYPES = new Set(["inspection_pack", "test"]);
+const ADMIN_ROLE_NAMES = new Set(["company_admin", "admin", "owner", "platform_admin"]);
+
+/**
+ * True when the address is one the company already holds: a member of staff, a
+ * pending invitation, a recorded recipient of a contract / induction / licensing
+ * document, the company's own or signatory address, the supervisor's address, or
+ * the signed-in person's own address. Anything else is refused, so the company's
+ * email account cannot be used to mail strangers.
+ */
+async function recipientBelongsToTenant(
+  to: string,
+  tenantId: string | null,
+  userId: string | null,
+): Promise<boolean> {
+  const address = String(to || "").trim().toLowerCase();
+  if (!address) return false;
+
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+
+  // The sender's own address is always allowed (test sends to yourself).
+  if (userId) {
+    const { data: me } = await admin.auth.admin.getUserById(userId);
+    if (String(me?.user?.email || "").trim().toLowerCase() === address) return true;
+  }
+
+  if (!tenantId) return false;
+
+  const checks: Array<[string, string]> = [
+    ["employees", "email"],
+    ["tenant_invitations", "email"],
+    ["employee_info_requests", "recipient_email"],
+    ["induction_packs", "recipient_email"],
+    ["licence_signature_requests", "recipient_email"],
+    ["licence_document_issues", "recipient_email"],
+    ["contract_delivery_attempts", "recipient_email"],
+    ["premises_licences", "dps_email"],
+    ["company_settings", "company_email"],
+    ["company_settings", "default_signatory_email"],
+  ];
+
+  for (const [table, column] of checks) {
+    const { data } = await admin
+      .from(table)
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .ilike(column, address)
+      .limit(1);
+    if (data && data.length > 0) return true;
+  }
+
+  return false;
+}
+
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 const handler = async (req: Request): Promise<Response> => {
@@ -506,13 +572,38 @@ const handler = async (req: Request): Promise<Response> => {
     log.template = type;
     log.tenant_id = tenant_id || "unknown";
 
-    // Only signed-in members of the named company (or trusted internal
-    // callers) may send mail from the company's account.
-    const guard = await guardRequest(req, { tenantId: tenant_id ?? null, cors: corsHeaders });
+    // Only trusted internal callers, or a signed-in manager/administrator of the
+    // named company, may send mail from the company's account.
+    const guard = await guardRequest(req, {
+      tenantId: tenant_id ?? null,
+      managerOrAbove: true,
+      cors: corsHeaders,
+    });
     if (!guard.ok) return guard.response;
 
     if (!to || !subject || !type) {
       throw new Error("Missing required fields: to, subject, type");
+    }
+
+    // The company's email account may not be used to mail arbitrary addresses.
+    // A person signed in to the app may only send to an address the company
+    // already holds (a member of staff, a colleague's sign-in address) or to
+    // their own address. Scheduled and internal runs are exempt.
+    const adminDirected =
+      OUTSIDE_RECIPIENT_TYPES.has(type) &&
+      (guard.isPlatformAdmin || ADMIN_ROLE_NAMES.has(String(guard.role)));
+
+    if (!guard.internal && !adminDirected) {
+      const allowed = await recipientBelongsToTenant(to, guard.tenantId, guard.userId);
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({
+            error:
+              "That email address is not held by this company, so nothing was sent. Add the address to the person's record first.",
+          }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        );
+      }
     }
 
     const html = buildHtml(type, data || {});

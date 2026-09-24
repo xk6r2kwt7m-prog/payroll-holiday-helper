@@ -429,8 +429,6 @@ export function useCopyPayrollPeriod() {
         );
 
         const newEntries = eligibleEntries.map((entry: any) => {
-          const perfBonus = entry.performance_bonus || 0;
-          const specBonus = entry.special_bonus || 0;
           const defaults = resolveRateSource(termsMap.get(entry.employee_id), {
             id: entry.employee_id,
             hourly_rate: entry.hourly_rate,
@@ -443,10 +441,13 @@ export function useCopyPayrollPeriod() {
             service_charge: defaults.service_charge,
             timesheet_hours: 0,
             imported_hours: null,
-            performance_bonus: entry.performance_bonus,
-            special_bonus: entry.special_bonus,
+            // A bonus belongs to the period it was earned in. Carrying one
+            // forward would silently pay it twice, so a copied period always
+            // starts at zero and the admin enters any bonus deliberately.
+            performance_bonus: 0,
+            special_bonus: 0,
             holiday_accrued_hours: 0,
-            total_pay: perfBonus + specBonus,
+            total_pay: 0,
             bank_details_exported: false,
             adjustment_note: null,
             tenant_id: tenantId!,
@@ -497,7 +498,29 @@ export function useDeletePayrollPeriod() {
         throw new Error("This payroll period is locked and cannot be deleted. Reopen the period first.");
       }
 
+      // Preferred path: one database transaction. Either the period, its
+      // entries, location splits, holiday payments, derived holiday ledger rows
+      // and notes all go, or nothing does — no half-deleted period can be left
+      // behind to corrupt holiday balances or payroll totals. The snapshot used
+      // to reverse it is written before anything is removed.
+      const atomic = await supabase.rpc("payroll_period_delete_atomic" as any, {
+        _period_id: id,
+        _reason: reason,
+        _impact: impact as any,
+      });
+
+      if (!atomic.error) return;
+
+      // If the transaction refused the deletion (locked period, not an admin),
+      // surface that reason — never fall back and do it step by step.
+      const missingFunction =
+        atomic.error.code === "PGRST202" ||
+        /could not find the function|does not exist/i.test(atomic.error.message || "");
+      if (!missingFunction) throw new Error(atomic.error.message);
+
+      // Fallback for a backend where the transaction has not been installed yet.
       const { data: { user } } = await supabase.auth.getUser();
+
 
       // Collect dependent records BEFORE deleting anything so no holiday
       // ledger row is ever left orphaned (which would corrupt balances) and so

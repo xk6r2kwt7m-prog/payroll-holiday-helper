@@ -49,20 +49,24 @@ function supabaseForUser(ctx) {
 var list_employees_default = defineTool2({
   name: "list_employees",
   title: "List employees",
-  description: "List employees visible to the signed-in user. Tenant isolation, manager scoping, and role permissions are enforced by the database via RLS.",
+  description: "List employees visible to the signed-in user. Tenant isolation, manager scoping, and role permissions are enforced by the database via RLS. Never returns personal identifiers such as National Insurance number or bank details.",
   inputSchema: {
     limit: z.number().int().min(1).max(200).default(50).describe("Max rows to return."),
-    search: z.string().optional().describe("Case-insensitive match on first or last name.")
+    search: z.string().optional().describe("Case-insensitive match on forename or surname."),
+    include_archived: z.boolean().default(false).describe("Include archived (former) employees. Off by default.")
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit, search }, ctx) => {
+  handler: async ({ limit, search, include_archived }, ctx) => {
     if (!ctx.isAuthenticated()) {
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const supabase = supabaseForUser(ctx);
-    let q = supabase.from("employees").select("id, first_name, last_name, email, employee_status, branch_id, role").limit(limit);
+    let q = supabase.from("employees").select(
+      "id, employee_ref, forename, surname, preferred_name, email, status, department, start_date, end_date, archived_at"
+    ).order("surname", { ascending: true }).limit(limit);
+    if (!include_archived) q = q.is("archived_at", null);
     if (search) {
-      q = q.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
+      q = q.or(`forename.ilike.%${search}%,surname.ilike.%${search}%`);
     }
     const { data, error } = await q;
     if (error) {
@@ -81,7 +85,7 @@ import { z as z2 } from "npm:zod@^4.4.3";
 var get_employee_default = defineTool3({
   name: "get_employee",
   title: "Get employee",
-  description: "Return a single employee record by id. RLS enforces tenant, branch, and role visibility.",
+  description: "Return a single employee record by id. RLS enforces tenant, branch, and role visibility. Never returns personal identifiers such as National Insurance number, passport number or bank details.",
   inputSchema: {
     employee_id: z2.string().uuid().describe("Employee UUID.")
   },
@@ -92,7 +96,7 @@ var get_employee_default = defineTool3({
     }
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase.from("employees").select(
-      "id, first_name, last_name, email, employee_status, branch_id, role, employment_start_date, employment_end_date"
+      "id, employee_ref, forename, surname, preferred_name, email, status, department, start_date, end_date, archived_at, employing_entity, contract_country, work_country"
     ).eq("id", employee_id).maybeSingle();
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     if (!data) {
@@ -125,7 +129,9 @@ var list_holiday_requests_default = defineTool4({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const supabase = supabaseForUser(ctx);
-    let q = supabase.from("holiday_requests").select("id, employee_id, start_date, end_date, status, hours, request_type, created_at").order("start_date", { ascending: false }).limit(limit);
+    let q = supabase.from("holiday_requests").select(
+      "id, employee_id, start_date, end_date, status, hours_requested, reason, reviewed_at, created_at"
+    ).order("start_date", { ascending: false }).limit(limit);
     if (status) q = q.eq("status", status);
     const { data, error } = await q;
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
@@ -142,7 +148,7 @@ import { z as z4 } from "npm:zod@^4.4.3";
 var list_payroll_periods_default = defineTool5({
   name: "list_payroll_periods",
   title: "List payroll periods",
-  description: "List payroll periods visible to the signed-in user. Read-only. RLS restricts to the user's tenant; typically only admins see rows.",
+  description: "List payroll periods visible to the signed-in user. Read-only. RLS restricts to the user's tenant; typically only admins see rows. Returns period totals only \u2014 never an individual's pay.",
   inputSchema: {
     limit: z4.number().int().min(1).max(100).default(20)
   },
@@ -152,7 +158,9 @@ var list_payroll_periods_default = defineTool5({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     }
     const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase.from("payroll_periods").select("id, period_start, period_end, pay_date, status, name").order("period_start", { ascending: false }).limit(limit);
+    const { data, error } = await supabase.from("payroll_periods").select(
+      "id, period_name, start_date, end_date, pay_date, status, period_weeks, timesheet_total, incentives_total, holidays_total, grand_total"
+    ).order("start_date", { ascending: false }).limit(limit);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {
       content: [{ type: "text", text: JSON.stringify(data) }],

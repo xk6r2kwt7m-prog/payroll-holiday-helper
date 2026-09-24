@@ -10,7 +10,11 @@ import { toast } from "sonner";
 import { useCreatePayrollPeriod, useCopyPayrollPeriod, usePayrollPeriods } from "@/hooks/usePayroll";
 import { useEmployees } from "@/hooks/useEmployees";
 import { supabase } from "@/integrations/supabase/client";
-import { suggestNextPeriod, getLastThursday } from "@/lib/payroll-period-suggestion";
+import {
+  suggestNextPeriod,
+  derivePeriodFromDates,
+  isSundayDateStr,
+} from "@/lib/payroll-period-suggestion";
 import { isRelevantToPayrollPeriod } from "@/lib/employee-period-relevance";
 
 interface CreatePayrollDialogProps {
@@ -72,7 +76,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           periodWeeks: parseFloat(periodWeeks) || 4,
           salesTotal: parseFloat(salesTotal) || 0,
         });
-        toast.success("Payroll period created from previous period. Timesheet hours reset to 0.");
+        toast.success("Payroll period created from previous period. Hours and bonuses start at 0.");
       } else {
         // Create new period and add all active employees
         const { data: { user } } = await supabase.auth.getUser();
@@ -155,16 +159,13 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
   };
 
   const deriveFromDates = (start: string, end: string) => {
-    if (!start || !end) return;
-    const s = new Date(start);
-    const e = new Date(end);
-    const days = (e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24) + 1;
-    setPeriodWeeks((Math.round((days / 7) * 10) / 10).toString());
-    const monthNames = ["January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"];
-    setPeriodName(`${monthNames[e.getMonth()]} ${e.getFullYear()}`);
-    const payThu = getLastThursday(e.getFullYear(), e.getMonth());
-    setPayDate(payThu.toISOString().split('T')[0]);
+    // Calendar dates only — derived in UTC so the pay date never lands a day
+    // early or late depending on the clock (British Summer Time included).
+    const derived = derivePeriodFromDates(start, end);
+    if (!derived) return;
+    setPeriodWeeks(derived.periodWeeks.toString());
+    setPeriodName(derived.periodName);
+    setPayDate(derived.payDate);
   };
 
   const handleStartDateChange = (val: string) => {
@@ -213,11 +214,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
     if (selectedSourcePeriod) applySuggestion(selectedSourcePeriod, weeks);
   };
 
-  const endDateIsSunday = (() => {
-    if (!endDate) return true;
-    const d = new Date(endDate);
-    return Number.isNaN(d.getTime()) ? true : d.getUTCDay() === 0;
-  })();
+  const endDateIsSunday = isSundayDateStr(endDate);
 
 
 
@@ -252,7 +249,7 @@ export function CreatePayrollDialog({ onSuccess }: CreatePayrollDialogProps) {
           <TabsContent value="copy" className="space-y-4 mt-4">
             <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
               <p className="text-sm text-muted-foreground">
-                Copy employee rates and bonuses from a previous period. <strong>Timesheet hours will be reset to 0</strong> for you to enter.
+                Copy the employee list and their pay rates from a previous period. <strong>Timesheet hours, bonuses and incentives all start at 0</strong> for you to enter.
               </p>
             </div>
 

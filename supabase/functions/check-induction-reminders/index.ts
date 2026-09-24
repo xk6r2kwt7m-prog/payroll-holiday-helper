@@ -7,6 +7,7 @@ import {
   SUBJECT_LABELS,
 } from "../_shared/licensing-documents.ts";
 import { isFrontOfHouse, hasLiveAlcoholRecord } from "../_shared/front-of-house.ts";
+import { guardRequest } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +34,11 @@ function reminderDue(pack: any, now: Date): boolean {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Chasing runs send email to staff. Only the scheduler (service role) or a
+  // signed-in company administrator may start one — never an anonymous caller.
+  const guard = await guardRequest(req, { adminOnly: true, cors: corsHeaders });
+  if (!guard.ok) return guard.response;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

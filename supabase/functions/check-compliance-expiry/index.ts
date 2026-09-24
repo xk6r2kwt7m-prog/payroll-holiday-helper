@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { guardRequest } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,6 +41,11 @@ function statusLine(days: number): string {
  */
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Reminder runs send email. Only the scheduler (service role) or a signed-in
+  // company administrator may start one — never an anonymous caller.
+  const guard = await guardRequest(req, { adminOnly: true, cors: corsHeaders });
+  if (!guard.ok) return guard.response;
 
   try {
     const admin = createClient(

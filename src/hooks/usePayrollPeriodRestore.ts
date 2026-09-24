@@ -86,6 +86,23 @@ export function useRestorePayrollPeriod() {
         throw new Error("No snapshot is available for this deletion, so it cannot be reversed.");
       }
 
+      // Preferred path: one database transaction. Every snapshot row returns
+      // together, or none of them do — a part-restored period would leave
+      // payroll totals and holiday balances disagreeing with each other.
+      const atomic = await supabase.rpc("payroll_period_restore_atomic" as any, {
+        _audit_id: deletion.auditId,
+      });
+
+      if (!atomic.error) return deletion.periodId;
+
+      const missingFunction =
+        atomic.error.code === "PGRST202" ||
+        /could not find the function|does not exist/i.test(atomic.error.message || "");
+      if (!missingFunction) throw new Error(atomic.error.message);
+
+      // Fallback for a backend where the transaction has not been installed yet.
+
+
       const { data: { user } } = await supabase.auth.getUser();
 
       // 1. Period shell
