@@ -17,7 +17,7 @@ export function PendingDetailDecisions() {
   const rows = useMemo(() => {
     const byEmployee = new Map<
       string,
-      { name: string; labels: string[]; oldest: string }
+      { employee_id: string; name: string; labels: string[]; oldest: string }
     >();
     for (const d of decisions) {
       const existing = byEmployee.get(d.employee_id);
@@ -26,6 +26,7 @@ export function PendingDetailDecisions() {
         if (new Date(d.created_at) < new Date(existing.oldest)) existing.oldest = d.created_at;
       } else {
         byEmployee.set(d.employee_id, {
+          employee_id: d.employee_id,
           name: d.employee_name,
           labels: [d.field_label],
           oldest: d.created_at,
