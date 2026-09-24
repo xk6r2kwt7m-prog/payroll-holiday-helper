@@ -180,7 +180,7 @@ export function useMissingInformation() {
             onboarding,
           );
           const missing: MissingItemKey[] = [];
-          if (isRightToWorkCleared(o ? { rtw_status: o.rtw_status } : null, docsById.get(e.id) ?? []) !== "cleared")
+          if (isRightToWorkCleared(o ? { rtw_status: o.rtw_status } : null, docsById.get(e.id) ?? [], checksById.get(e.id) ?? []) !== "cleared")
             missing.push("right_to_work");
           if (!cov.bank) missing.push("bank");
           if (!cov.ni_number) missing.push("ni_number");
