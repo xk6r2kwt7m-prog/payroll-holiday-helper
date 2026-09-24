@@ -53,10 +53,11 @@ export function PendingDetailDecisions() {
           <p className="text-sm text-muted-foreground">Nothing waiting</p>
         ) : (
           rows.map((r, i) => (
-            <div
+            <Link
               key={i}
+              to={`/employees?edit=${r.employee_id}`}
               className={cn(
-                "flex items-start justify-between gap-3 rounded-md border px-3 py-2",
+                "flex items-start justify-between gap-3 rounded-md border px-3 py-2 transition-colors hover:bg-accent",
                 r.daysWaiting > 3
                   ? "border-warning/40 bg-warning/5"
                   : "border-border bg-card",
@@ -74,13 +75,8 @@ export function PendingDetailDecisions() {
                   {r.daysWaiting} day{r.daysWaiting === 1 ? "" : "s"}
                 </Badge>
               </div>
-            </div>
+            </Link>
           ))
-        )}
-        {rows.length > 0 && (
-          <p className="text-xs text-muted-foreground pt-1">
-            Open the employee on the Employees page to review and decide each value.
-          </p>
         )}
       </CardContent>
     </Card>
