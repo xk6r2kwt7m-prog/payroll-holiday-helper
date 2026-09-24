@@ -7,6 +7,7 @@ import {
   SUBJECT_LABELS,
 } from "../_shared/licensing-documents.ts";
 import { isFrontOfHouse, hasLiveAlcoholRecord } from "../_shared/front-of-house.ts";
+import { guardRequest } from "../_shared/auth-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
