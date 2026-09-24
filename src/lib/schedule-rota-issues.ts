@@ -204,6 +204,96 @@ export function aggregateRotaIssues(input: AggregateRotaIssuesInput): RotaIssue[
         });
       }
     }
+
+    // Young worker (under 18) Working Time limits — skipped without a date of birth
+    if (emp?.date_of_birth) {
+      const name = emp.forename ? `${emp.forename} ${emp.surname ?? ""}`.trim() : "Employee";
+      const dob = new Date(emp.date_of_birth + "T00:00:00");
+      const ageOn = (iso: string): number => {
+        const d = new Date(iso + "T00:00:00");
+        let age = d.getFullYear() - dob.getFullYear();
+        const hadBirthday =
+          d.getMonth() > dob.getMonth() ||
+          (d.getMonth() === dob.getMonth() && d.getDate() >= dob.getDate());
+        if (!hadBirthday) age -= 1;
+        return age;
+      };
+      const young = sorted.filter((s) => ageOn(s.shift_date) < 18);
+      if (young.length > 0) {
+        // More than 8 hours in a day
+        const hoursByDate = new Map<string, number>();
+        for (const s of young) {
+          hoursByDate.set(s.shift_date, (hoursByDate.get(s.shift_date) ?? 0) + shiftDurationHours(s));
+        }
+        for (const [date, hours] of hoursByDate) {
+          if (hours > 8) {
+            issues.push({
+              code: "young_worker_limit",
+              severity: "critical",
+              message: `${name} is under 18 and scheduled ${hours.toFixed(1)}h on ${date} (max 8h/day)`,
+              employeeId: empId,
+              date,
+            });
+          }
+        }
+        // More than 40 hours in the week
+        const weekTotal = young.reduce((sum, s) => sum + shiftDurationHours(s), 0);
+        if (weekTotal > 40) {
+          issues.push({
+            code: "young_worker_limit",
+            severity: "critical",
+            message: `${name} is under 18 and scheduled ${weekTotal.toFixed(1)}h this week (max 40h/week)`,
+            employeeId: empId,
+          });
+        }
+        // Less than 12 hours' rest between shifts
+        for (let i = 0; i < sorted.length - 1; i++) {
+          const a = sorted[i];
+          const b = sorted[i + 1];
+          if (a.shift_date === b.shift_date) continue;
+          if (ageOn(b.shift_date) >= 18) continue;
+          const aEnd = new Date(`${a.shift_date}T${a.end_time.slice(0, 5)}:00`).getTime();
+          const bStart = new Date(`${b.shift_date}T${b.start_time.slice(0, 5)}:00`).getTime();
+          const restH = (bStart - aEnd) / 3_600_000;
+          if (restH > 0 && restH < 12) {
+            issues.push({
+              code: "young_worker_limit",
+              severity: "critical",
+              message: `${name} is under 18 with only ${restH.toFixed(1)}h rest between ${a.shift_date} and ${b.shift_date} (min 12h)`,
+              shiftId: b.id,
+              employeeId: empId,
+              date: b.shift_date,
+            });
+          }
+        }
+        // Fewer than 2 days off in the week
+        const workedDates = new Set(young.map((s) => s.shift_date));
+        const weekDates = new Set(sorted.map((s) => s.shift_date));
+        const daysOff = 7 - weekDates.size;
+        if (daysOff < 2) {
+          issues.push({
+            code: "young_worker_limit",
+            severity: "critical",
+            message: `${name} is under 18 with only ${daysOff} day${daysOff === 1 ? "" : "s"} off this week (min 2)`,
+            employeeId: empId,
+          });
+        }
+        void workedDates;
+        // Any shift over 4.5 hours — 30-minute break required
+        for (const s of young) {
+          if (shiftDurationHours(s) > 4.5) {
+            issues.push({
+              code: "young_worker_limit",
+              severity: "warning",
+              message: `${name} is under 18 with a ${shiftDurationHours(s).toFixed(1)}h shift on ${s.shift_date} — a 30-minute break is required`,
+              shiftId: s.id,
+              employeeId: empId,
+              date: s.shift_date,
+            });
+          }
+        }
+      }
+    }
   }
 
   // Coverage requirements
