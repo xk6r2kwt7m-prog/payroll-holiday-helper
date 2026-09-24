@@ -224,7 +224,7 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: nu
   );
 }
 
-function OnboardingReviewCard({ record, rtwDocuments }: { record: any; rtwDocuments: any[] }) {
+function OnboardingReviewCard({ record, rtwDocuments, rtwChecks }: { record: any; rtwDocuments: any[]; rtwChecks: any[] }) {
   const [expanded, setExpanded] = useState(false);
   const [rtwNotes, setRtwNotes] = useState("");
   const [rtwConfirmOpen, setRtwConfirmOpen] = useState(false);
