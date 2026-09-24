@@ -64,6 +64,23 @@ export default function Onboarding() {
   const awaitingRtw = reviewQueue.filter(r => r.rtw_status === "pending_review");
   const inProgress = reviewQueue.filter(r => !r.submitted_at);
 
+  // One query: right-to-work documents for every employee in the review queue
+  const reviewEmployeeIds = reviewQueue.map(r => r.employee_id);
+  const { data: rtwDocuments = [] } = useQuery({
+    queryKey: ["onboarding_rtw_documents", reviewEmployeeIds.join(",")],
+    queryFn: async () => {
+      if (reviewEmployeeIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("employee_documents")
+        .select("employee_id, document_type, document_status")
+        .in("document_type", ["passport", "visa", "biometric_residence_permit", "right_to_work"])
+        .in("employee_id", reviewEmployeeIds);
+      if (error) throw error;
+      return data as { employee_id: string; document_type: string; document_status: string }[];
+    },
+    enabled: reviewEmployeeIds.length > 0,
+  });
+
   return (
     <AppLayout>
       <div className="space-y-6">
