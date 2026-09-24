@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ReadinessBanner } from "@/components/staff-portal/ReadinessBanner";
+import { MyAvailabilityCard } from "@/components/staff-portal/MyAvailabilityCard";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
