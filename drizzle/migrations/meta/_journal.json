@@ -253,6 +253,13 @@
       "when": 1790280246451,
       "tag": "0035_atomic_payroll_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1790287572517,
+      "tag": "0036_create_right_to_work_checks",
+      "breakpoints": true
     }
   ]
 }
