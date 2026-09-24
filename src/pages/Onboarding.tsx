@@ -153,6 +153,7 @@ export default function Onboarding() {
                   key={record.id}
                   record={record}
                   rtwDocuments={rtwDocuments.filter(d => d.employee_id === record.employee_id)}
+                  rtwChecks={rtwChecks.filter(c => c.employee_id === record.employee_id)}
                 />
               ))
             )}
