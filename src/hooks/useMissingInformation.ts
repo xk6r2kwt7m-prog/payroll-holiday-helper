@@ -185,6 +185,7 @@ export function useMissingInformation() {
             status: e.status,
             missing,
             latestRequest: reqById.get(e.id) ?? null,
+            pendingDecision: missing.filter((m) => pendingById.get(e.id)?.has(m)),
           } as MissingInformationRow;
         })
         .filter((r) => r.missing.length > 0)

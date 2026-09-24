@@ -84,6 +84,7 @@ export function MissingInformationBoard() {
           <ul className="divide-y divide-border rounded-md border border-border">
             {rows.map((r) => {
               const state = requestState(r);
+              const awaitingDecision = r.shown.some((m) => r.pendingDecision.includes(m));
               return (
                 <li key={r.employee_id} className="flex items-center justify-between gap-3 px-3 py-2">
                   <div className="min-w-0">
@@ -93,7 +94,14 @@ export function MissingInformationBoard() {
                     </p>
                   </div>
                   <div className="shrink-0">
-                    {state === "submitted" ? (
+                    {awaitingDecision ? (
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">Awaiting your decision</Badge>
+                        <Button asChild size="sm" variant="outline">
+                          <Link to={`/employees?edit=${r.employee_id}`}>Review</Link>
+                        </Button>
+                      </div>
+                    ) : state === "submitted" ? (
                       <Button asChild size="sm" variant="outline">
                         <Link to={`/employees?edit=${r.employee_id}`}>Review</Link>
                       </Button>
@@ -108,7 +116,7 @@ export function MissingInformationBoard() {
                         employeeId={r.employee_id}
                         employeeName={r.name}
                         employeeEmail={r.email}
-                        kind={r.status === "starter" ? "onboarding" : "existing_staff_update"}
+                        kind={r.status === "starter" || r.status === "onboarding" ? "onboarding" : "existing_staff_update"}
                         trigger={<Button size="sm">Request</Button>}
                       />
                     )}
