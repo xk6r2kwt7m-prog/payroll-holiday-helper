@@ -429,7 +429,10 @@ Deno.serve(async (req) => {
             personal_info: personalInfo,
             emergency_contact: emergencyContact,
             bank_details: bankDetails,
-            ...(rtwPending ? { rtw_status: "submitted" } : {}),
+            ...(rtwPending ? { rtw_status: "pending_review" } : {}),
+            ...(!request.request_kind || request.request_kind === "onboarding"
+              ? { submitted_at: submittedAtIso }
+              : {}),
             ...(str(rtw.expires_at, 10) ? { rtw_expires_on: str(rtw.expires_at, 10) } : {}),
           })
           .eq("id", existingOnb.id);
@@ -440,7 +443,10 @@ Deno.serve(async (req) => {
           personal_info: personalInfo,
           emergency_contact: emergencyContact,
           bank_details: bankDetails,
-          ...(rtwPending ? { rtw_status: "submitted" } : {}),
+          ...(rtwPending ? { rtw_status: "pending_review" } : {}),
+          ...(!request.request_kind || request.request_kind === "onboarding"
+            ? { submitted_at: submittedAtIso }
+            : {}),
           ...(str(rtw.expires_at, 10) ? { rtw_expires_on: str(rtw.expires_at, 10) } : {}),
         });
       }
