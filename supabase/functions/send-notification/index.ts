@@ -581,7 +581,11 @@ const handler = async (req: Request): Promise<Response> => {
     // A person signed in to the app may only send to an address the company
     // already holds (a member of staff, a colleague's sign-in address) or to
     // their own address. Scheduled and internal runs are exempt.
-    if (!guard.internal) {
+    const adminDirected =
+      OUTSIDE_RECIPIENT_TYPES.has(type) &&
+      (guard.isPlatformAdmin || ADMIN_ROLE_NAMES.has(String(guard.role)));
+
+    if (!guard.internal && !adminDirected) {
       const allowed = await recipientBelongsToTenant(to, guard.tenantId, guard.userId);
       if (!allowed) {
         return new Response(
