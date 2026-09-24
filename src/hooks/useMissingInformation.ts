@@ -34,9 +34,27 @@ export interface MissingInformationRow {
   status: string;
   missing: MissingItemKey[];
   latestRequest: LatestInfoRequest | null;
+  /** Missing items that already have a pending staff_detail_changes decision. */
+  pendingDecision: MissingItemKey[];
 }
 
 const RTW_TYPES = ["passport", "visa", "biometric_residence_permit", "right_to_work"];
+
+/** staff_detail_changes field_name values that cover each missing item. */
+const FIELD_TO_ITEM: Record<string, MissingItemKey> = {
+  bank_account_no: "bank",
+  sort_code: "bank",
+  ni_number: "ni_number",
+  date_of_birth: "dob",
+  dob: "dob",
+  address: "address",
+  home_address: "address",
+  full_address: "address",
+  address_line1: "address",
+  emergency_contact_name: "emergency",
+  emergency_contact_phone: "emergency",
+  emergency_contact: "emergency",
+};
 
 /**
  * What each current employee (active, starter, onboarding; test records
@@ -61,7 +79,7 @@ export function useMissingInformation() {
       const ids = employees.map((e) => e.id as string);
       if (ids.length === 0) return [];
 
-      const [ob, docs, reqs] = await Promise.all([
+      const [ob, docs, reqs, changes] = await Promise.all([
         supabase
           .from("employee_onboarding_data" as any)
           .select(
@@ -84,10 +102,18 @@ export function useMissingInformation() {
           .eq("tenant_id", tenantId!)
           .in("employee_id", ids)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("staff_detail_changes" as any)
+          .select("employee_id, field_name")
+          .eq("tenant_id", tenantId!)
+          .eq("state", "pending")
+          .eq("needs_review", true)
+          .in("employee_id", ids),
       ]);
       if (ob.error) throw ob.error;
       if (docs.error) throw docs.error;
       if (reqs.error) throw reqs.error;
+      if (changes.error) throw changes.error;
 
       const obById = new Map<string, any>();
       for (const r of (ob.data ?? []) as any[]) obById.set(r.employee_id, r);
@@ -100,6 +126,14 @@ export function useMissingInformation() {
       const reqById = new Map<string, LatestInfoRequest>();
       for (const r of (reqs.data ?? []) as any[]) {
         if (!reqById.has(r.employee_id)) reqById.set(r.employee_id, r);
+      }
+      const pendingById = new Map<string, Set<MissingItemKey>>();
+      for (const c of (changes.data ?? []) as any[]) {
+        const item = FIELD_TO_ITEM[c.field_name as string];
+        if (!item) continue;
+        const set = pendingById.get(c.employee_id) ?? new Set<MissingItemKey>();
+        set.add(item);
+        pendingById.set(c.employee_id, set);
       }
 
       return employees
@@ -151,6 +185,7 @@ export function useMissingInformation() {
             status: e.status,
             missing,
             latestRequest: reqById.get(e.id) ?? null,
+            pendingDecision: missing.filter((m) => pendingById.get(e.id)?.has(m)),
           } as MissingInformationRow;
         })
         .filter((r) => r.missing.length > 0)
