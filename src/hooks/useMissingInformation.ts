@@ -132,6 +132,12 @@ export function useMissingInformation() {
       for (const r of (reqs.data ?? []) as any[]) {
         if (!reqById.has(r.employee_id)) reqById.set(r.employee_id, r);
       }
+      const checksById = new Map<string, any[]>();
+      for (const c of (checks.data ?? []) as any[]) {
+        const list = checksById.get(c.employee_id) ?? [];
+        list.push(c);
+        checksById.set(c.employee_id, list);
+      }
       const pendingById = new Map<string, Set<MissingItemKey>>();
       for (const c of (changes.data ?? []) as any[]) {
         const item = FIELD_TO_ITEM[c.field_name as string];
