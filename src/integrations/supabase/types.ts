@@ -7955,6 +7955,76 @@ export type Database = {
           },
         ]
       }
+      right_to_work_checks: {
+        Row: {
+          check_method: string
+          checked_by: string
+          checked_by_name: string | null
+          checked_on: string
+          created_at: string
+          employee_id: string
+          evidence_document_id: string | null
+          id: string
+          notes: string | null
+          permission_expires_on: string | null
+          result: string
+          tenant_id: string
+          work_restrictions: string | null
+        }
+        Insert: {
+          check_method: string
+          checked_by: string
+          checked_by_name?: string | null
+          checked_on: string
+          created_at?: string
+          employee_id: string
+          evidence_document_id?: string | null
+          id?: string
+          notes?: string | null
+          permission_expires_on?: string | null
+          result: string
+          tenant_id: string
+          work_restrictions?: string | null
+        }
+        Update: {
+          check_method?: string
+          checked_by?: string
+          checked_by_name?: string | null
+          checked_on?: string
+          created_at?: string
+          employee_id?: string
+          evidence_document_id?: string | null
+          id?: string
+          notes?: string | null
+          permission_expires_on?: string | null
+          result?: string
+          tenant_id?: string
+          work_restrictions?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "right_to_work_checks_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "right_to_work_checks_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "right_to_work_checks_evidence_document_id_fkey"
+            columns: ["evidence_document_id"]
+            isOneToOne: false
+            referencedRelation: "employee_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           granted: boolean
