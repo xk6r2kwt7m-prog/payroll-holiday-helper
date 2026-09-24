@@ -82,6 +82,21 @@ export default function Onboarding() {
     enabled: reviewEmployeeIds.length > 0,
   });
 
+  // One query: right-to-work checks for every employee in the review queue
+  const { data: rtwChecks = [] } = useQuery({
+    queryKey: ["onboarding_rtw_checks", reviewEmployeeIds.join(",")],
+    queryFn: async () => {
+      if (reviewEmployeeIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("right_to_work_checks")
+        .select("employee_id, result, checked_on, created_at, permission_expires_on")
+        .in("employee_id", reviewEmployeeIds);
+      if (error) return [];
+      return (data || []) as any[];
+    },
+    enabled: reviewEmployeeIds.length > 0,
+  });
+
   return (
     <AppLayout>
       <div className="space-y-6">
