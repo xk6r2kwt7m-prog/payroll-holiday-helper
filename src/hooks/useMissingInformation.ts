@@ -79,7 +79,7 @@ export function useMissingInformation() {
       const ids = employees.map((e) => e.id as string);
       if (ids.length === 0) return [];
 
-      const [ob, docs, reqs, changes] = await Promise.all([
+      const [ob, docs, reqs, changes, checks] = await Promise.all([
         supabase
           .from("employee_onboarding_data" as any)
           .select(
@@ -109,11 +109,16 @@ export function useMissingInformation() {
           .eq("state", "pending")
           .eq("needs_review", true)
           .in("employee_id", ids),
+        supabase
+          .from("right_to_work_checks" as any)
+          .select("employee_id, result, checked_on, created_at, permission_expires_on")
+          .in("employee_id", ids),
       ]);
       if (ob.error) throw ob.error;
       if (docs.error) throw docs.error;
       if (reqs.error) throw reqs.error;
       if (changes.error) throw changes.error;
+      // checks error is non-fatal: treat as empty so the board still works
 
       const obById = new Map<string, any>();
       for (const r of (ob.data ?? []) as any[]) obById.set(r.employee_id, r);
@@ -126,6 +131,12 @@ export function useMissingInformation() {
       const reqById = new Map<string, LatestInfoRequest>();
       for (const r of (reqs.data ?? []) as any[]) {
         if (!reqById.has(r.employee_id)) reqById.set(r.employee_id, r);
+      }
+      const checksById = new Map<string, any[]>();
+      for (const c of (checks.data ?? []) as any[]) {
+        const list = checksById.get(c.employee_id) ?? [];
+        list.push(c);
+        checksById.set(c.employee_id, list);
       }
       const pendingById = new Map<string, Set<MissingItemKey>>();
       for (const c of (changes.data ?? []) as any[]) {
@@ -169,7 +180,7 @@ export function useMissingInformation() {
             onboarding,
           );
           const missing: MissingItemKey[] = [];
-          if (isRightToWorkCleared(o ? { rtw_status: o.rtw_status } : null, docsById.get(e.id) ?? []) !== "cleared")
+          if (isRightToWorkCleared(o ? { rtw_status: o.rtw_status } : null, docsById.get(e.id) ?? [], checksById.get(e.id) ?? []) !== "cleared")
             missing.push("right_to_work");
           if (!cov.bank) missing.push("bank");
           if (!cov.ni_number) missing.push("ni_number");
