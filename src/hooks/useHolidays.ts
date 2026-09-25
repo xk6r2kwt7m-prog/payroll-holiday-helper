@@ -256,7 +256,9 @@ function useHolidayPaymentTransaction() {
   const queryClient = useQueryClient();
   const { tenantId } = useTenant();
   const runner = useRef<ReturnType<typeof createHolidayPaymentRunner>>();
-  if (!runner.current) runner.current = createHolidayPaymentRunner(args => supabase.rpc(HOLIDAY_PAYMENT_RPC as any, args));
+  if (!runner.current) runner.current = createHolidayPaymentRunner(args => 
+    // @ts-expect-error -- function type is added when the pending database change is installed and types are regenerated
+    supabase.rpc(HOLIDAY_PAYMENT_RPC, args));
   return {
     run: runner.current,
     tenantId,
