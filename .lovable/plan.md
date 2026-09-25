@@ -1,41 +1,69 @@
-# Findings: why the two hotmail emails never arrived
+# Integration plan: payroll and holiday corrections (PR #2)
 
-Investigation only, read-only Postmark calls. Nothing was sent, and no files or data were changed.
+Nothing is applied, installed, deployed or published by this plan. Onboarding PR #1 stays separate.
 
-## 1. The two messages
-- The ids are `01042601-ec64-4d18-97d2-02c2770eb664` (Ada's request) and `e302607e-9b3f-46d6-8042-534904e04eb5` (Akhil's reminder).
-- Our email step logged both as "sent" with these ids at 06:56 and 06:53 UTC.
-- The Postmark server the project key opens ("UGLO HR Platform", type **Live**) answers **"This message was not found"** for both ids.
-- That same server shows **no emails at all since 24 Sep**. The last email to that hotmail address was on 21 Sep ("Your induction documents").
-- So there are no delivery, bounce or spam events for these messages on the Live server.
+## What was checked
 
-## 2. Suppression
-- The hotmail address is **not suppressed** on the `outbound` stream.
+- I read PR #2 at commit `345f883`, including the audit document (43 files).
+- Base commit `b0ca8b2`: all 29 files the PR edits are **byte-for-byte identical** in the current app. There is no newer work to merge around, and no conflicts are expected in the app code.
+- 14 files are new. There are no name clashes. The existing payroll delete/undo files stay as they are.
+- In the live database I read only the list of triggers (no records). The PR replaces three live steps that already exist and adds one new one. See the risks below.
 
-## 3. Sender and stream
-- In the code, emails go out from `UglyOps HR <support@uglyops.com>` on the `outbound` stream.
-- Past emails on the Live server show a sender at `uglyops.com`.
-- DKIM and Return-Path could **not be checked**. Postmark only shows these with an account-level key, and the project only holds a server-level key.
+## Step 1 — Bring in the app code as reviewed (no database change)
 
-## 4. Last 7 days on the Live server (56 emails, all from before 24 Sep)
-| Recipient domain | Sent | Bounced |
-|---|---|---|
-| hotmail.com | 26 | 0 |
-| outlook.com | 15 | 1 soft bounce |
-| gmail.com | 12 | 0 |
-| icloud.com | 3 | 0 |
-| uglydumpling.co.uk | 1 | 0 |
+The exact PR contents, not a rewrite:
 
-Hotmail and Outlook delivery was working normally up to 21 Sep.
+- **Complete reads:** new `src/lib/fetch-all-rows.ts`. Paged reads in `usePayroll`, `useHolidays`, `useHolidayLedger`, `usePayrollLocations`, `usePayrollImportStatus`, `usePayrollImportAliases` and `useEmploymentTermsComparison`.
+- **Loading/error and Retry states:** `Payroll`, `Holidays`, `PayrollAnalytics`, `LocationDashboard`, `PayrollInlineAnalytics` and `EmployeePayrollExport`.
+- **Approval/export safeguards:** `usePayrollApprovalGuardrails` and new `src/lib/payroll-data-readiness.ts`. Confirmations reset when figures change.
+- **One holiday calculation:** new `holiday-year-summary.ts` and `holiday-carry-over.ts`, used by `useHolidayYearSummary`, `AddHolidayPaymentDialog` and `holiday-ledger-integrity.ts`. A recorded zero carry-over is respected. Differences from past figures are only flagged for review, never repaired.
+- **Payments and settlements:** new `holiday-payment-transaction.ts`, plus `AddHolidayPaymentDialog`, `SettleLeaverDialog` and `useHolidays`. The browser does step-by-step writes today; these go through the single database step instead. **There is no fallback.**
+- **No archiving on read:** `useEmployees` together with `EmployeeTable`, `AdminHome` and `AdminDesktopDashboard`.
+- The CSV type fix in `payroll-timesheet-csv.ts`.
+- The audit document, 5 new test files and 4 updated test files.
 
-## Most likely reason
-Today's emails were accepted by a **different Postmark server** from the Live one that holds the delivery history. That server gave back message ids, but it has no record of delivering them. This fits a Postmark **sandbox or test server**, which accepts emails and returns ids but never delivers them. It could also be a different server whose key was swapped in.
+**Release blocker:** holiday payment, edit, delete and leaver settlement depend on the database step in Step 2. Until that step is installed they will show an error instead of saving. So the Step 1 code must **not be published** before Step 2 is approved and installed. Both go live together, as with payroll delete/undo.
 
-This is **not confirmed**. I can't read which key the live email step uses, only that it is a different server from the one the project key opens. The key probably changed between 21 and 24 Sep. It is not the recent sign-in fix, because that only runs after the key has been chosen.
+### Other screens that could be affected by shared hooks
+- `useEmployees`: every staff list (rota, contracts, training, alcohol lists, onboarding). The "working team" view now leaves leavers out; the view that includes everyone is unchanged.
+- `usePayroll` / `useHolidays`: the dashboard widgets, Reports (Payroll Summary, Holiday Pay), Financial and the Settle Leaver candidates.
+- `usePayrollLocations`: the location splits in PDFs and CSVs.
 
-## What would fix it (needs your approval)
-1. In Postmark, find the server that holds these two ids and check whether it is a Sandbox server.
-2. Set the project's email key (Postmark server token) to the Live "UGLO HR Platform" server's token.
-3. Then send one test request to yourself, and confirm it shows in Postmark's activity log as Delivered.
-4. Optional: make the email step also log the Postmark server name, so a wrong key shows up at once.
-5. Anything that should have gone out since about 24 Sep was never delivered. It would need resending, but only with your approval.
+## Step 2 — Proposed database change (kept in the pending folder only)
+
+The file `supabase/pending-migrations/20260925090000_atomic_holiday_payments.sql` is copied in unchanged. It is **not** placed where changes install automatically. It would:
+- add a private receipts table so a retried request is not saved twice
+- add one tenant-checked step, `mutate_holiday_payment_atomic` (create/update/delete/settle)
+- **replace** the live `trg_protect_approved_payroll_entries` and `trg_protect_approved_holiday_payments` with one combined guard that locks the period
+- **replace** the live `sync_payroll_period_totals` so totals include holiday pay, and add a new totals trigger on holiday payments
+- **replace** the live `protect_approved_payroll_periods`
+- remove direct browser writes to `holiday_payments`
+
+## Step 3 — Checks (before any release)
+
+1. Compare the PR's assumed versions of the three replaced live steps with the real ones. Report any logic that would be lost, for example the current accrual-ledger triggers.
+2. Check that the installed payroll delete/undo still works with the new guards. Undo puts holiday payments back into a draft period. Do the new totals trigger and receipts table interfere?
+3. Run the database tests **only on a private throwaway copy with made-up records**. A code branch alone does not give a separate database, so the live backend is never used. The cases covered:
+   - duplicate or interrupted saves
+   - approval at the same moment as a payment
+   - manual and zero-balance leaver settlements
+   - totals after payroll edits
+   - locked-period refusal
+   - cross-tenant refusal
+   - delete/undo interaction
+4. Run the full app test suite, the TypeScript check and the production build. Report exact counts and any failures without weakening tests. The PR reported 1 existing failure, which I will name.
+5. Check that the screen, CSV and PDF totals agree, using test fixtures.
+
+## Deliverable at the end
+
+A report that keeps four groups apart:
+- code prepared in the app
+- what was tested and how
+- what was deployed (nothing)
+- the exact SQL awaiting your approval, with unresolved risks
+
+## Not included
+- No live data repairs, balance resets or entitlement changes.
+- No publishing.
+- No moving the SQL into the automatic folder.
+- No changes to onboarding, contracts, training or compliance.
