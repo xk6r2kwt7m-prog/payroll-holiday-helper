@@ -1,35 +1,41 @@
-# Findings: Ada Feliz details request — no email arrived
+# Findings: why the two hotmail emails never arrived
 
-Investigation only. No files or data were changed.
+Investigation only, read-only Postmark calls. Nothing was sent, and no files or data were changed.
 
-## 1. The request
-- Latest request `c9271d56…`: existing staff update, status **sent**, sent_at **25 Sep 2026 06:56:20 UTC**.
-- Sent to **\*\*\*@hotmail.com**.
+## 1. The two messages
+- The ids are `01042601-ec64-4d18-97d2-02c2770eb664` (Ada's request) and `e302607e-9b3f-46d6-8042-534904e04eb5` (Akhil's reminder).
+- Our email step logged both as "sent" with these ids at 06:56 and 06:53 UTC.
+- The Postmark server the project key opens ("UGLO HR Platform", type **Live**) answers **"This message was not found"** for both ids.
+- That same server shows **no emails at all since 24 Sep**. The last email to that hotmail address was on 21 Sep ("Your induction documents").
+- So there are no delivery, bounce or spam events for these messages on the Live server.
 
-## 2. Sign-in check
-- `send-notification` accepted the call; there was no 401 for this send.
-- The only `[auth-guard]` line is at 06:48:46 ("401: no key sent"). That was my own check, a call made without signing in, after the earlier fix. It is not related to this send.
+## 2. Suppression
+- The hotmail address is **not suppressed** on the `outbound` stream.
 
-## 3. Rules after the sign-in check
-- The recipient allow-list did not block it. The email went on to the provider.
-- It was not a test send (`test_send: false`), so no "[TEST]" was added to the subject.
-- `send-notification` has no suppression list or skip rule on this path. Nothing held the email back.
+## 3. Sender and stream
+- In the code, emails go out from `UglyOps HR <support@uglyops.com>` on the `outbound` stream.
+- Past emails on the Live server show a sender at `uglyops.com`.
+- DKIM and Return-Path could **not be checked**. Postmark only shows these with an account-level key, and the project only holds a server-level key.
 
-## 4. Email provider
-- Postmark **accepted** it: `status=sent`, message id `01042601-ec64-4d18-97d2-02c2770eb664` (06:56:22 UTC).
-- One more thing: at 06:53 a **reminder** for Akhil Vidukula's request also went to the same hotmail address. Postmark accepted it too (id `e302607e…`). So today's earlier failed request has now been resent as a reminder, after the fix.
+## 4. Last 7 days on the Live server (56 emails, all from before 24 Sep)
+| Recipient domain | Sent | Bounced |
+|---|---|---|
+| hotmail.com | 26 | 0 |
+| outlook.com | 15 | 1 soft bounce |
+| gmail.com | 12 | 0 |
+| icloud.com | 3 | 0 |
+| uglydumpling.co.uk | 1 | 0 |
 
-## 5. Audit log
-- `employee_info_request_sent` for this request, 06:56:22 UTC, no error.
+Hotmail and Outlook delivery was working normally up to 21 Sep.
 
-## 6. Was the email change saved?
-- **No.** Ada's staff record still holds a **\*\*\*@gmail.com** address. The record was last updated on 18 Sep.
-- So the hotmail address was not taken from her record. It came from the "send to a different address" option in the send dialog (`recipientOverride`, send-info-request line 245). That option sends to the typed address without changing her record.
+## Most likely reason
+Today's emails were accepted by a **different Postmark server** from the Live one that holds the delivery history. That server gave back message ids, but it has no record of delivering them. This fits a Postmark **sandbox or test server**, which accepts emails and returns ids but never delivers them. It could also be a different server whose key was swapped in.
 
-## Most likely reason it didn't arrive
-Our side worked and Postmark accepted the email. The problem is between Postmark and the hotmail inbox. Most likely it is in Junk or Other, delayed, or filtered/bounced by Outlook/Hotmail.
+This is **not confirmed**. I can't read which key the live email step uses, only that it is a different server from the one the project key opens. The key probably changed between 21 and 24 Sep. It is not the recent sign-in fix, because that only runs after the key has been chosen.
 
-## Suggested next checks (not done)
-1. Search Junk and Other in that inbox for the subject "We need a couple of details from you".
-2. Look up the two message ids in Postmark's activity log for delivered, bounced or spam-complaint status. We could also start recording Postmark's delivery results, if you want that.
-3. If Ada's record should hold that address, it has to be saved on her profile. The send dialog doesn't change it.
+## What would fix it (needs your approval)
+1. In Postmark, find the server that holds these two ids and check whether it is a Sandbox server.
+2. Set the project's email key (Postmark server token) to the Live "UGLO HR Platform" server's token.
+3. Then send one test request to yourself, and confirm it shows in Postmark's activity log as Delivered.
+4. Optional: make the email step also log the Postmark server name, so a wrong key shows up at once.
+5. Anything that should have gone out since about 24 Sep was never delivered. It would need resending, but only with your approval.
