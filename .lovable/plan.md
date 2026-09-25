@@ -1,40 +1,35 @@
-# Findings: "1 could not be sent" on the staff details request
+# Findings: Ada Feliz details request — no email arrived
 
 Investigation only. No files or data were changed.
 
-## 1. What failed (06:39 UTC today)
+## 1. The request
+- Latest request `c9271d56…`: existing staff update, status **sent**, sent_at **25 Sep 2026 06:56:20 UTC**.
+- Sent to **\*\*\*@hotmail.com**.
 
-- One request was sent from the profile of employee `898f680e…`, to **barros.aderito@hotmail.com**. It was an "existing staff update" asking for 8 items (phone, address, passport, share code, emergency contact, date of birth, legal name, visa). The sender was recorded as "Aderito test Barros". It was not a test send.
-- `send-info-request` **succeeded (200)**. It checked permission, created the request and link, and closed any older open link.
-- It then passed the email to `send-notification`, which **refused it with 401 (not signed in)** after 596 ms. No email went out.
-- The failure is filed in the audit log as `employee_info_request_send_failed`. The error saved there is "Edge Function returned a non-2xx status code".
-- The function logs only show start-up and shutdown lines. There is no error text in them, because `send-notification` stops at its sign-in check before it writes any log line.
+## 2. Sign-in check
+- `send-notification` accepted the call; there was no 401 for this send.
+- The only `[auth-guard]` line is at 06:48:46 ("401: no key sent"). That was my own check, a call made without signing in, after the earlier fix. It is not related to this send.
 
-## 2. Cause in plain English
+## 3. Rules after the sign-in check
+- The recipient allow-list did not block it. The email went on to the provider.
+- It was not a test send (`test_send: false`), so no "[TEST]" was added to the subject.
+- `send-notification` has no suppression list or skip rule on this path. Nothing held the email back.
 
-The details request itself was fine. The step that sends the email refused a call from our own system.
+## 4. Email provider
+- Postmark **accepted** it: `status=sent`, message id `01042601-ec64-4d18-97d2-02c2770eb664` (06:56:22 UTC).
+- One more thing: at 06:53 a **reminder** for Akhil Vidukula's request also went to the same hotmail address. Postmark accepted it too (id `e302607e…`). So today's earlier failed request has now been resent as a reminder, after the fix.
 
-- `send-info-request` hands the email on using the system's internal key (`admin.functions.invoke`, line 319).
-- `send-notification` now checks every caller with `guardRequest` (lines 577–582). This check was added in the recent security hardening.
-- A 401 from that check comes from `_shared/auth-guard.ts`, line 82 ("no key sent"), 85, 90 or 99. The internal key should match at line 84 and be allowed through. Getting a 401 means the key that arrived was either missing or not recognised as the internal key.
-- Not yet confirmed: which of those lines fired. A likely cause is that the internal call does not put the key where the check looks for it. The logs can't prove this, because nothing is logged before the check.
-- Ruled out: a missing email address (one was on record), the manager's own permission (passed with 200), the provider (never reached), and the recipient allow-list (it runs after the sign-in check).
-- Side effect: a request row now exists but was never emailed. Any earlier open link for this person was closed and replaced by it.
+## 5. Audit log
+- `employee_info_request_sent` for this request, 06:56:22 UTC, no error.
 
-## 3. Is the real reason hidden?
+## 6. Was the email change saved?
+- **No.** Ada's staff record still holds a **\*\*\*@gmail.com** address. The record was last updated on 18 Sep.
+- So the hotmail address was not taken from her record. It came from the "send to a different address" option in the send dialog (`recipientOverride`, send-info-request line 245). That option sends to the typed address without changing her record.
 
-Yes, partly.
-- When a function answers with an error, the app library replaces its reply with the fixed text "Edge Function returned a non-2xx status code". `send-info-request` saves that text as `mailErr.message` (line 341), without reading the real reply from `send-notification` (which was "Sign-in required").
-- The app then shows it through `useSendInfoRequest` in `src/hooks/useInfoRequests.ts` (line 125) as "1 could not be sent: …".
-- The same pattern is used for reminders (line 172) and "Send now" on prepared requests (line 102), so those buttons would fail in the same way.
+## Most likely reason it didn't arrive
+Our side worked and Postmark accepted the email. The problem is between Postmark and the hotmail inbox. Most likely it is in Junk or Other, delayed, or filtered/bounced by Outlook/Hotmail.
 
-## 4. Sandbox and test records
-
-- **Sandbox workspaces:** found in Platform Admin > Sandbox tab (`src/pages/PlatformAdmin.tsx`, `src/hooks/useSandbox.ts`). This is for platform administrators only. It creates separate demo companies with sample staff. "Reset" deletes the operational data of the chosen sandbox company (staff-related tables, company settings, locations, departments, payroll periods, vacancies) and logs `sandbox_reset`. It works on whichever company it is given, so it should only ever be used on a sandbox company, never on UD.
-- **Test staff records:** each staff record has an `is_test_record` flag. It is switched on by creating the test staff member from the test card on the Contracts page (`TestStaffCard.tsx`, `buildTestEmployeeInsert`). As a fallback, the name "Aderito test Barros" is also treated as a test record. Test records are left out of payroll import, minimum wage checks, missing information, alcohol/DPS lists, training automation and the allergen pilot. The card can hard-delete only records that have this flag.
-- **Contract test mode:** `src/lib/contract-test-mode.ts` adds "[TEST]" to the subject of rehearsal emails. The details request has its own `testSend` option, which does the same.
-
-## Suggested next step (needs your approval, not done)
-
-1. Record what `send-notification` actually receives and which guard line refuses it.
-2. Then fix the internal handover, and pass the real refusal reason through to the manager instead of the generic text.
+## Suggested next checks (not done)
+1. Search Junk and Other in that inbox for the subject "We need a couple of details from you".
+2. Look up the two message ids in Postmark's activity log for delivered, bounced or spam-complaint status. We could also start recording Postmark's delivery results, if you want that.
+3. If Ada's record should hold that address, it has to be saved on her profile. The send dialog doesn't change it.
