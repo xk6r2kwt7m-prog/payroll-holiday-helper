@@ -256,7 +256,7 @@ function useHolidayPaymentTransaction() {
   const queryClient = useQueryClient();
   const { tenantId } = useTenant();
   const runner = useRef<ReturnType<typeof createHolidayPaymentRunner>>();
-  if (!runner.current) runner.current = createHolidayPaymentRunner(args => supabase.rpc(HOLIDAY_PAYMENT_RPC, args));
+  if (!runner.current) runner.current = createHolidayPaymentRunner(args => (supabase.rpc as any)(HOLIDAY_PAYMENT_RPC, args));
   return {
     run: runner.current,
     tenantId,
