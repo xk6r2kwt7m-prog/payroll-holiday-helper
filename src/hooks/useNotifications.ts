@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTenant } from "@/hooks/useTenant";
 
 type EmailEventType =
   | "holiday_request"
@@ -35,6 +36,7 @@ interface EmailDiagnostics {
 }
 
 export function useNotifications() {
+  const { tenantId } = useTenant();
   /**
    * Send an email notification via the edge function.
    */
@@ -77,7 +79,7 @@ export function useNotifications() {
   const sendTestEmail = async (
     recipientEmail: string
   ): Promise<{ success: boolean; diagnostics?: EmailDiagnostics; error?: string }> => {
-    console.log("[EMAIL_CLIENT] Sending test email to:", recipientEmail);
+    console.log("[EMAIL_CLIENT] Sending test email");
 
     try {
       const { data, error } = await supabase.functions.invoke("send-notification", {
@@ -86,10 +88,22 @@ export function useNotifications() {
           subject: "UglyOps HR Platform – Email Test",
           type: "test",
           data: {},
+          tenant_id: tenantId ?? undefined,
         },
       });
 
-      if (error) return { success: false, error: error.message };
+      if (error) {
+        // Show the function's real reason instead of the generic status text.
+        let reason = error.message;
+        try {
+          const ctx = (error as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = await ctx.json();
+            if (body?.error) reason = String(body.error);
+          }
+        } catch { /* keep generic message */ }
+        return { success: false, error: reason };
+      }
       if (data?.error) return { success: false, diagnostics: data.diagnostics, error: data.error };
       return { success: true, diagnostics: data?.diagnostics };
     } catch (err: unknown) {
