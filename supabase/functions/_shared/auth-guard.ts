@@ -79,15 +79,28 @@ export async function guardRequest(req: Request, opts: GuardOptions = {}): Promi
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
   const token = bearerToken(req);
-  if (!token) return deny(401, "Sign-in required", cors);
+  const apiKeyHeader = (req.headers.get("apikey") || "").trim();
 
-  if (token === serviceKey) {
-    if (!allowServiceRole) return deny(401, "Sign-in required", cors);
+  // Trusted internal caller: service key as Bearer token, or in the apikey
+  // header (newer secret key format sent by admin.functions.invoke).
+  if (serviceKey && (token === serviceKey || apiKeyHeader === serviceKey)) {
+    if (!allowServiceRole) {
+      console.log("[auth-guard] 401: service key not allowed for this function");
+      return deny(401, "Sign-in required", cors);
+    }
     return { ok: true, internal: true, userId: null, tenantId: opts.tenantId ?? null, role: null, isPlatformAdmin: true };
   }
 
+  if (!token) {
+    console.log("[auth-guard] 401: no key sent");
+    return deny(401, "Sign-in required", cors);
+  }
+
   // Reject the publishable/anon key on its own — it identifies no user.
-  if (token === anonKey) return deny(401, "Sign-in required", cors);
+  if (token === anonKey) {
+    console.log("[auth-guard] 401: anon key");
+    return deny(401, "Sign-in required", cors);
+  }
 
   const userClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
@@ -96,7 +109,10 @@ export async function guardRequest(req: Request, opts: GuardOptions = {}): Promi
 
   const { data: userData, error: userErr } = await userClient.auth.getUser();
   const user = userData?.user;
-  if (userErr || !user) return deny(401, "Sign-in required", cors);
+  if (userErr || !user) {
+    console.log("[auth-guard] 401: invalid user token");
+    return deny(401, "Sign-in required", cors);
+  }
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
