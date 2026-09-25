@@ -31,7 +31,7 @@ export function EmployeePayrollExport() {
 
   const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
 
-  const { data: entries = [], isLoading } = usePayrollEntries(selectedPeriodId);
+  const { data: entries = [], isLoading } = usePayrollEntries(selectedPeriodId, { enabled: !!(selectedPeriodId) });
   const { data: locationData = [] } = usePayrollEntryLocations(selectedPeriodId);
 
   const departments = useMemo(() => {

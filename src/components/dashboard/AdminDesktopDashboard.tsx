@@ -31,7 +31,7 @@ export default function AdminDesktopDashboard() {
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriod = periods[0];
-  const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
+  const { data: entries = [] } = usePayrollEntries(latestPeriod?.id, { enabled: !!(latestPeriod?.id) });
   const { data: audit } = usePayrollAudit(true, tenantId);
   const { data: employeeBranches = [] } = useAllEmployeeBranches();
   const { data: tenantBranches = [] } = useTenantBranches();

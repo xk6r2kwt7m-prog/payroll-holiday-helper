@@ -1,3 +1,4 @@
+import { addComputedCarryOver } from "@/lib/holiday-carry-over";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Calendar, DollarSign, Clock, Scale, LayoutGrid, TableIcon, Search, Users, AlertTriangle, History, BarChart3, UserSearch, ShieldCheck, Bug } from "lucide-react";
@@ -21,14 +22,14 @@ import { EmployeeHolidayLookup } from "@/components/holidays/EmployeeHolidayLook
 import { HolidayFormulaBreakdown, type FormulaBreakdownData } from "@/components/holidays/HolidayFormulaBreakdown";
 import { HolidayIntegrityCheck } from "@/components/holidays/HolidayIntegrityCheck";
 import {
-  useHolidayPaymentsByYear,
+  useAllHolidayPayments,
   useAllPayrollEntriesWithHoliday,
   useAllHolidayAdjustments,
   formatCurrency,
   formatHours,
 } from "@/hooks/useHolidays";
 import { useLeaveRules } from "@/hooks/useLeaveRules";
-import { useHolidayBalancesByYear } from "@/hooks/useHolidays";
+import { useHolidayBalances } from "@/hooks/useHolidays";
 import { usePayrollPeriods } from "@/hooks/usePayroll";
 import { DepartmentFilter } from "@/components/ui/DepartmentFilter";
 import {
@@ -55,7 +56,7 @@ const HOLIDAY_DISPLAY_DEFAULTS = {
 };
 type ViewMode = "cards" | "table";
 type DepartmentFilter = "all" | "FOH" | "BOH" | "CPU";
-type LeaveYear = "2022" | "2023" | "2024" | "2025" | "2026";
+type LeaveYear = string;
 type SubTab = "overview" | "alerts" | "history" | "departments" | "lookup" | "integrity" | "audit" | "requests";
 
 interface EmployeeSummary {
@@ -83,7 +84,7 @@ const Holidays = () => {
   const [viewModeInit, setViewModeInit] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
-  const [selectedYear, setSelectedYear] = useState<LeaveYear>("2025");
+  const [selectedYear, setSelectedYear] = useState<LeaveYear>(() => String(new Date().getFullYear()));
   const [subTab, setSubTab] = useState<SubTab>((searchParams.get("tab") as SubTab) || "overview");
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [formulaBreakdownData, setFormulaBreakdownData] = useState<FormulaBreakdownData | null>(null);
@@ -116,34 +117,33 @@ const Holidays = () => {
     }
   }, [holidayPrefs, viewModeInit]);
 
-  const { data: periods = [] } = usePayrollPeriods();
-
-  // Holiday payments by year
-  const { data: payments2022 = [] } = useHolidayPaymentsByYear(2022);
-  const { data: payments2023 = [] } = useHolidayPaymentsByYear(2023);
-  const { data: payments2024 = [] } = useHolidayPaymentsByYear(2024);
-  const { data: payments2025 = [] } = useHolidayPaymentsByYear(2025);
-  const { data: payments2026 = [] } = useHolidayPaymentsByYear(2026);
-
-  // Holiday balances for integrity check
-  const { data: balances2022 = [] } = useHolidayBalancesByYear(2022);
-  const { data: balances2023 = [] } = useHolidayBalancesByYear(2023);
-  const { data: balances2024 = [] } = useHolidayBalancesByYear(2024);
-  const { data: balances2025 = [] } = useHolidayBalancesByYear(2025);
-  const { data: balances2026 = [] } = useHolidayBalancesByYear(2026);
-
-  // Ledger taken/correction rows per year (reconciliation against holiday_payments)
-  const { data: ledgerRows2022 = [] } = useLedgerTakenRowsByYear(2022);
-  const { data: ledgerRows2023 = [] } = useLedgerTakenRowsByYear(2023);
-  const { data: ledgerRows2024 = [] } = useLedgerTakenRowsByYear(2024);
-  const { data: ledgerRows2025 = [] } = useLedgerTakenRowsByYear(2025);
-  const { data: ledgerRows2026 = [] } = useLedgerTakenRowsByYear(2026);
-
-  // All payroll entries for accrual calculation
-  const { data: payrollEntries = [], isLoading: entriesLoading } = useAllPayrollEntriesWithHoliday();
-
-  // All holiday adjustments
-  const { data: adjustments = [] } = useAllHolidayAdjustments();
+  const periodsQuery = usePayrollPeriods();
+  const { data: periods = [] } = periodsQuery;
+  // Fetch each source once, across all pages. Historical years still feed carry-over.
+  const paymentsQuery = useAllHolidayPayments();
+  const balancesQuery = useHolidayBalances();
+  const ledgerQuery = useLedgerTakenRowsByYear();
+  const entriesQuery = useAllPayrollEntriesWithHoliday();
+  const adjustmentsQuery = useAllHolidayAdjustments();
+  const { data: payrollEntries = [], isLoading: entriesLoading } = entriesQuery;
+  const { data: adjustments = [] } = adjustmentsQuery;
+  const sourceQueries = [periodsQuery, paymentsQuery, balancesQuery, ledgerQuery, entriesQuery, adjustmentsQuery];
+  const sourceError = sourceQueries.some(query => query.isError);
+  const sourceLoading = sourceQueries.some(query => query.isLoading);
+  const retrySources = () => { sourceQueries.forEach(query => { void query.refetch(); }); };
+  const yearData = useMemo(() => {
+    const byYear: Record<string, { payments: any[]; balances: any[]; ledgerRows: any[] }> = {};
+    const ensure = (year: string) => byYear[year] ??= { payments: [], balances: [], ledgerRows: [] };
+    const currentYear = new Date().getFullYear();
+    for (let year = 2022; year <= currentYear + 1; year++) ensure(String(year));
+    for (const period of periods) ensure(period.start_date.slice(0, 4));
+    for (const row of paymentsQuery.data ?? []) ensure(row.leave_year_start?.slice(0, 4) || String(currentYear)).payments.push(row);
+    for (const row of balancesQuery.data ?? []) ensure(row.leave_year_start.slice(0, 4)).balances.push(row);
+    for (const row of ledgerQuery.data ?? []) ensure(row.leave_year_start.slice(0, 4)).ledgerRows.push(row);
+    return byYear;
+  }, [periods, paymentsQuery.data, balancesQuery.data, ledgerQuery.data]);
+  const availableYears = Object.keys(yearData).sort();
+  const currentPayments = yearData[selectedYear]?.payments ?? [];
 
   // Build summaries from payroll entries (accrual) + holiday payments (taken)
   // SOURCE OF TRUTH:
@@ -181,9 +181,9 @@ const Holidays = () => {
       // Skip the ORIGINAL period if a [Corrected] version exists
       if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return;
 
-      const periodStart = new Date(entry.payroll_periods.start_date);
+      const periodStartYear = Number(entry.payroll_periods.start_date.slice(0, 4));
       // Match periods to leave year by START date (source of truth rule)
-      if (periodStart.getFullYear() !== year) return;
+      if (periodStartYear !== year) return;
 
       const empId = entry.employee_id;
       const empName = `${entry.employees.forename} ${entry.employees.surname}`;
@@ -318,50 +318,19 @@ const Holidays = () => {
     });
   };
 
-  // 2022: no prior year carry-over possible, use holiday_balances carry-over only
-  const summaries2022 = useMemo(() => buildSummaries(2022, payments2022, balances2022, ledgerRows2022), [payrollEntries, payments2022, balances2022, ledgerRows2022, adjustments]);
-
-  // Helper: add computed carry-over from prior year for employees NOT already having carry-over from holiday_balances
-  const addComputedCarryOver = (base: EmployeeSummary[], prevSummaries: EmployeeSummary[], balances: any[]): EmployeeSummary[] => {
-    const balanceEmployeeIds = new Set(balances.map((b: any) => b.employee_id));
-    return base.map(s => {
-      // If employee already has carry-over from holiday_balances, keep it
-      if (balanceEmployeeIds.has(s.employeeId) && s.hoursCarriedOver > 0) return s;
-      // Otherwise compute from prior year balance
-      const prev = prevSummaries.find(p => p.employeeId === s.employeeId);
-      const computedCarry = prev ? Math.max(0, prev.balance) : 0;
-      if (computedCarry === 0) return s;
-      return {
-        ...s,
-        hoursCarriedOver: s.hoursCarriedOver + computedCarry,
-        balance: s.hoursAccrued + s.hoursCarriedOver + computedCarry - s.hoursTaken,
-      };
-    });
-  };
-
-  const summaries2023 = useMemo(() => {
-    const base = buildSummaries(2023, payments2023, balances2023, ledgerRows2023);
-    return addComputedCarryOver(base, summaries2022, balances2023);
-  }, [payrollEntries, payments2023, balances2023, ledgerRows2023, summaries2022, adjustments]);
-
-  const summaries2024 = useMemo(() => {
-    const base = buildSummaries(2024, payments2024, balances2024, ledgerRows2024);
-    return addComputedCarryOver(base, summaries2023, balances2024);
-  }, [payrollEntries, payments2024, balances2024, ledgerRows2024, summaries2023, adjustments]);
-
-  const summaries2025 = useMemo(() => {
-    const base = buildSummaries(2025, payments2025, balances2025, ledgerRows2025);
-    return addComputedCarryOver(base, summaries2024, balances2025);
-  }, [payrollEntries, payments2025, balances2025, ledgerRows2025, summaries2024, adjustments]);
-
-  const summaries2026 = useMemo(() => {
-    const base = buildSummaries(2026, payments2026, balances2026, ledgerRows2026);
-    return addComputedCarryOver(base, summaries2025, balances2026);
-  }, [payrollEntries, payments2026, balances2026, ledgerRows2026, summaries2025, adjustments]);
-
-  const allYearSummaries = { "2022": summaries2022, "2023": summaries2023, "2024": summaries2024, "2025": summaries2025, "2026": summaries2026 };
+  const allYearSummaries = useMemo(() => {
+    const result: Record<string, EmployeeSummary[]> = {};
+    for (const year of Object.keys(yearData).sort()) {
+      const data = yearData[year];
+      result[year] = addComputedCarryOver(
+        buildSummaries(Number(year), data.payments, data.balances, data.ledgerRows),
+        result[String(Number(year) - 1)] ?? [],
+        data.balances,
+      );
+    }
+    return result;
+  }, [yearData, payrollEntries, adjustments]);
   const currentSummaries = allYearSummaries[selectedYear] || [];
-  const currentPayments = selectedYear === "2022" ? payments2022 : selectedYear === "2023" ? payments2023 : selectedYear === "2024" ? payments2024 : selectedYear === "2025" ? payments2025 : payments2026;
 
   // Build formula breakdown for a specific employee
   const openFormulaBreakdown = useCallback((employeeId: string) => {
@@ -383,8 +352,8 @@ const Holidays = () => {
     const periodDetails = payrollEntries
       .filter((entry: any) => {
         if (!entry.employees || !entry.payroll_periods || entry.employee_id !== employeeId) return false;
-        const periodStart = new Date(entry.payroll_periods.start_date);
-        return periodStart.getFullYear() === year;
+        const periodStartYear = Number(entry.payroll_periods.start_date.slice(0, 4));
+        return periodStartYear === year;
       })
       .map((entry: any) => {
         const periodName = entry.payroll_periods.period_name || "";
@@ -437,7 +406,7 @@ const Holidays = () => {
   // Integrity check data
   const integrityRows = useMemo(() => {
     const rows: any[] = [];
-    const allBalances = { 2023: balances2023, 2024: balances2024, 2025: balances2025, 2026: balances2026 };
+    const allBalances = Object.fromEntries(Object.entries(yearData).map(([year, data]) => [year, data.balances]));
     
     // Build corrected set
     const correctedBaseNames = new Set<string>();
@@ -463,8 +432,8 @@ const Holidays = () => {
             if (!entry.payroll_periods || entry.employee_id !== bal.employee_id) return false;
             const periodName = entry.payroll_periods.period_name || "";
             if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
-            const periodStart = new Date(entry.payroll_periods.start_date);
-            return periodStart.getFullYear() === year;
+            const periodStartYear = Number(entry.payroll_periods.start_date.slice(0, 4));
+            return periodStartYear === year;
           })
           .reduce((sum: number, entry: any) => sum + (Number(entry.holiday_accrued_hours) || 0), 0);
 
@@ -505,7 +474,7 @@ const Holidays = () => {
     });
 
     return rows;
-  }, [balances2023, balances2024, balances2025, balances2026, payrollEntries]);
+  }, [yearData, payrollEntries]);
 
   // Filter summaries
   const filteredSummaries = useMemo(() => {
@@ -547,12 +516,12 @@ const Holidays = () => {
       if (!entry.employees || !entry.payroll_periods) return false;
       const periodName = entry.payroll_periods.period_name || "";
       if (!periodName.includes("[Corrected]") && correctedBaseNames.has(periodName.trim())) return false;
-      const periodStart = new Date(entry.payroll_periods.start_date);
-      return periodStart.getFullYear() === year;
+      const periodStartYear = Number(entry.payroll_periods.start_date.slice(0, 4));
+      return periodStartYear === year;
     });
 
     const totalWorkedHours = yearEntries.reduce((sum: number, e: any) =>
-      sum + (Number(e.imported_hours) ?? Number(e.timesheet_hours) ?? 0), 0);
+      sum + Number(e.imported_hours ?? e.timesheet_hours ?? 0), 0);
 
     const totalAccruedFromEntries = yearEntries.reduce((sum: number, e: any) =>
       sum + (Number(e.holiday_accrued_hours) || 0), 0);
@@ -561,7 +530,7 @@ const Holidays = () => {
     const uniquePeriodIds = new Set(yearEntries.map((e: any) => e.payroll_period_id));
 
     // Data completeness: compare employees with payroll entries vs employees with holiday_balances
-    const currentBalances = { 2022: balances2022, 2023: balances2023, 2024: balances2024, 2025: balances2025, 2026: balances2026 }[year] || [];
+    const currentBalances = yearData[String(year)]?.balances ?? [];
     const balanceEmployeeCount = currentBalances.length;
     const payrollEmployeeCount = uniqueEmployeeIds.size;
     const paymentsEmployeeCount = new Set(currentPayments.filter((p: any) => p.employee_id).map((p: any) => p.employee_id)).size;
@@ -597,7 +566,7 @@ const Holidays = () => {
         employeeCount: "Union of employees in payroll_entries and holiday_payments for the year",
       },
     };
-  }, [selectedYear, payrollEntries, currentSummaries, currentPayments, totals, overdrawnCount, leaveRules, balances2022, balances2023, balances2024, balances2025, balances2026]);
+  }, [selectedYear, payrollEntries, currentSummaries, currentPayments, totals, overdrawnCount, leaveRules, yearData]);
 
   // Alerts
   const alerts = useMemo(() => {
@@ -675,6 +644,20 @@ const Holidays = () => {
     return paymentHistory.filter(p => p.employeeId === selectedEmployeeId);
   }, [selectedEmployeeId, paymentHistory]);
 
+  if (!tenantReady || sourceLoading || sourceError) {
+    return (
+      <AppLayout>
+        <div className="space-y-3 max-w-7xl mx-auto" role="status">
+          <h1 className="text-lg font-bold">Holidays</h1>
+          {sourceError ? (
+            <><p>Holiday balances could not be loaded completely. Please retry before recording a payment.</p>
+              <Button onClick={retrySources}>Retry</Button></>
+          ) : <><p>Loading holiday balances…</p><Skeleton className="h-40 w-full" /></>}
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-5 max-w-7xl mx-auto">
@@ -703,12 +686,10 @@ const Holidays = () => {
           <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="rounded-lg border border-border/60 bg-muted/40 p-1">
-                <TabsList className="grid w-full sm:w-auto grid-cols-5 h-auto bg-transparent gap-0.5">
-                  <TabsTrigger value="2022" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2022</TabsTrigger>
-                  <TabsTrigger value="2023" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2023</TabsTrigger>
-                  <TabsTrigger value="2024" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2024</TabsTrigger>
-                  <TabsTrigger value="2025" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2025</TabsTrigger>
-                  <TabsTrigger value="2026" className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border-border/60">2026</TabsTrigger>
+                <TabsList className="flex flex-wrap w-full sm:w-auto h-auto bg-transparent gap-0.5">
+                  {availableYears.map(year => (
+                    <TabsTrigger key={year} value={year} className="text-xs px-3 py-1.5 rounded-md data-[state=active]:bg-card data-[state=active]:shadow-sm">{year}</TabsTrigger>
+                  ))}
                 </TabsList>
               </div>
 

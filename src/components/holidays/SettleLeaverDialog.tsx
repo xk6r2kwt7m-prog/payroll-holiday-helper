@@ -137,7 +137,7 @@ export function SettleLeaverDialog() {
   const selectedEmployee = employees.find((e) => e.id === employeeId);
 
   // Canonical hook (year-scoped ledger) — still used for the headline summary card
-  const { summary: employeeSummaryRaw, isLoading: summaryLoading } = useHolidayYearSummary(
+  const { summary: employeeSummaryRaw, isLoading: summaryLoading, isError: summaryError, refetch: retrySummary } = useHolidayYearSummary(
     employeeId || undefined,
     leaveYear,
   );
@@ -346,6 +346,10 @@ export function SettleLeaverDialog() {
       toast.error("Please fill in all required fields");
       return;
     }
+    if (summaryLoading || summaryError || !employeeSummaryRaw) {
+      toast.error("The holiday balance must load successfully before settlement.");
+      return;
+    }
     if (!approved) {
       toast.error("Please approve the settlement before recording");
       return;
@@ -464,6 +468,7 @@ export function SettleLeaverDialog() {
   };
 
   const canSubmit =
+    !summaryLoading && !summaryError && !!employeeSummaryRaw &&
     employeeId &&
     periodId &&
     holidayDate &&
@@ -478,6 +483,8 @@ export function SettleLeaverDialog() {
     if (createPayment.isPending || manualAdjust.isPending) return null;
     if (!periodId) return "Select a draft payroll period.";
     if (!employeeId) return "Select an employee to settle.";
+    if (summaryError) return "The holiday balance could not be loaded. Retry before settling.";
+    if (summaryLoading || !employeeSummaryRaw) return "Waiting for the complete holiday balance.";
     if (!holidayDate) return "Set the settlement date.";
     if (alreadySettled)
       return describeBlockingSettlement(existingSettlement!, existingSettlementPeriodName);
@@ -591,6 +598,12 @@ export function SettleLeaverDialog() {
             </div>
           )}
 
+          {employeeId && summaryError && (
+            <div role="alert" className="rounded-lg border p-3 text-sm">
+              The holiday balance could not be loaded. Settlement is paused.
+              <Button type="button" variant="outline" size="sm" onClick={retrySummary}>Retry</Button>
+            </div>
+          )}
           {employeeId && summaryLoading && (
             <div className="rounded-lg border border-border bg-muted/30 p-4 text-center">
               <p className="text-sm text-muted-foreground animate-pulse">Loading holiday balance...</p>

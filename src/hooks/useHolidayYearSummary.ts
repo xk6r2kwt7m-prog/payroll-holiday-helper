@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useMemo } from "react";
 import { useHolidayLedger } from "@/hooks/useHolidayLedger";
 import { useQuery } from "@tanstack/react-query";
@@ -34,39 +35,39 @@ export interface HolidayYearSummary {
 export function useHolidayYearSummary(
   employeeId?: string,
   leaveYear?: number
-): { summary: HolidayYearSummary | null; isLoading: boolean } {
+): { summary: HolidayYearSummary | null; isLoading: boolean; isError: boolean; refetch: () => void } {
   const { tenantId } = useTenant();
   const year = leaveYear ?? new Date().getFullYear();
   const leaveYearStart = `${year}-01-01`;
 
-  const { data: ledgerEntries, isLoading: ledgerLoading } = useHolidayLedger(
+  const ledgerQuery = useHolidayLedger(
     employeeId,
     leaveYearStart
   );
 
   // Fetch paid amount from holiday_payments for the year
-  const { data: payments, isLoading: paymentsLoading } = useQuery({
+  const paymentsQuery = useQuery({
     queryKey: ["holiday_payments_year_total", tenantId, employeeId, year],
     enabled: !!employeeId && !!tenantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      return fetchAllRows((from, to) => supabase
         .from("holiday_payments")
         .select("total")
         .eq("employee_id", employeeId!)
         .eq("leave_year_start", leaveYearStart)
-        .eq("leave_year_end", `${year}-12-31`);
-      if (error) throw error;
-      return data;
+        .eq("leave_year_end", `${year}-12-31`)
+        .eq("tenant_id", tenantId!)
+        .order("id").range(from, to));
     },
   });
 
   // Accrual from payroll periods that are NOT yet approved — this has not
   // reached the ledger yet, so it is reported as "pending".
-  const { data: pendingRows, isLoading: pendingLoading } = useQuery({
+  const pendingQuery = useQuery({
     queryKey: ["holiday_pending_accrual", tenantId, employeeId, year],
     enabled: !!employeeId && !!tenantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      return fetchAllRows((from, to) => supabase
         .from("payroll_entries")
         .select(
           "holiday_accrued_hours, payroll_periods!inner(period_name, status, start_date, end_date)"
@@ -75,15 +76,21 @@ export function useHolidayYearSummary(
         .eq("employee_id", employeeId!)
         .eq("tenant_id", tenantId!)
         .gte("payroll_periods.start_date", leaveYearStart)
-        .lte("payroll_periods.start_date", `${year}-12-31`);
-      if (error) throw error;
-      return data;
+        .lte("payroll_periods.start_date", `${year}-12-31`)
+        .order("id").range(from, to));
     },
   });
 
 
+  const ledgerEntries = ledgerQuery.data;
+  const payments = paymentsQuery.data;
+  const pendingRows = pendingQuery.data;
+  const queries = [ledgerQuery, paymentsQuery, pendingQuery];
+  const isLoading = queries.some(query => query.isFetching);
+  const isError = queries.some(query => query.isError);
+
   const summary = useMemo<HolidayYearSummary | null>(() => {
-    if (!employeeId || !ledgerEntries) return null;
+    if (!employeeId || !tenantId || isLoading || isError || !ledgerEntries || !payments || !pendingRows) return null;
 
     let accrued = 0;
     let carryOver = 0;
@@ -158,10 +165,12 @@ export function useHolidayYearSummary(
       accruedIncludingPendingHours: accrued + pendingAccrued,
       availableIncludingPendingHours: availableHours + pendingAccrued,
     };
-  }, [employeeId, ledgerEntries, payments, pendingRows, year]);
+  }, [employeeId, tenantId, isLoading, isError, ledgerEntries, payments, pendingRows, year]);
 
   return {
     summary,
-    isLoading: ledgerLoading || paymentsLoading || pendingLoading,
+    isLoading,
+    isError,
+    refetch: () => { queries.forEach(query => { void query.refetch(); }); },
   };
 }

@@ -64,7 +64,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const [hours, setHours] = useState("");
   const [rate, setRate] = useState("");
   const [holidayDate, setHolidayDate] = useState(todayStr);
-  const [summaryYear, setSummaryYear] = useState<string>(new Date().getFullYear().toString());
+  const summaryYear = holidayDate.slice(0, 4) || new Date().getFullYear().toString();
   const [notes, setNotes] = useState("");
   const [leaverApproved, setLeaverApproved] = useState(false);
 
@@ -75,7 +75,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
   const { data: companySettings } = useCompanySettings();
 
   // Shared single-source-of-truth balance from the holiday ledger
-  const { summary: employeeSummaryRaw } = useHolidayYearSummary(
+  const { summary: employeeSummaryRaw, isLoading: summaryLoading, isError: summaryError, refetch: retrySummary } = useHolidayYearSummary(
     employeeId || undefined,
     parseInt(summaryYear)
   );
@@ -134,6 +134,11 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
 
   const [overdrawConfirmed, setOverdrawConfirmed] = useState(false);
 
+  useEffect(() => {
+    setOverdrawConfirmed(false);
+    setLeaverApproved(false);
+  }, [employeeId, holidayDate, hours, rate, employeeSummary?.balance]);
+
   // Check if this payment would overdraw the employee's balance
   const wouldOverdraw = useMemo(() => {
     if (!employeeSummary || !hours) return false;
@@ -146,6 +151,15 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
 
     if (!employeeId || !periodId || !hours || !rate || !holidayDate) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (summaryLoading || summaryError || !employeeSummary) {
+      toast.error("Wait for the holiday balance to load successfully before recording a payment.");
+      return;
+    }
+    if (![Number(hours), Number(rate), total].every(Number.isFinite) || Number(hours) <= 0 || Number(rate) <= 0) {
+      toast.error("Enter valid hours and an hourly rate greater than zero.");
       return;
     }
 
@@ -167,8 +181,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     }
 
     try {
-      const holidayDateObj = new Date(holidayDate);
-      const leaveYear = holidayDateObj.getFullYear();
+      const leaveYear = Number(summaryYear);
 
       await createPayment.mutateAsync({
         employee_id: employeeId,
@@ -215,7 +228,6 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
     setHours("");
     setRate("");
     setHolidayDate(todayStr);
-    setSummaryYear(new Date().getFullYear().toString());
     setNotes("");
     setLeaverApproved(false);
     setOverdrawConfirmed(false);
@@ -302,6 +314,12 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
             </Select>
           </div>
 
+          {employeeId && (summaryLoading || summaryError) && (
+            <div role="status" className="rounded-lg border p-3 text-sm">
+              {summaryError ? "The holiday balance could not be loaded. Payment is paused until it is available." : "Loading the holiday balance…"}
+              {summaryError && <Button type="button" variant="outline" size="sm" onClick={retrySummary}>Retry</Button>}
+            </div>
+          )}
           {/* Holiday Summary Card */}
           {employeeId && employeeSummary && (
             <div className={cn(
@@ -313,16 +331,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
                 <span className="text-sm font-semibold">
                   {selectedEmployee?.forename} {selectedEmployee?.surname}
                 </span>
-                <Select value={summaryYear} onValueChange={setSummaryYear}>
-                  <SelectTrigger className="h-6 w-[80px] text-[10px] px-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[2024, 2025, 2026].map(y => (
-                      <SelectItem key={y} value={y.toString()} className="text-xs">{y}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Badge variant="outline">Leave year {summaryYear}</Badge>
                 {isLeaver && (
                   <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs">
                     <AlertTriangle className="h-3 w-3 mr-1" />
@@ -429,9 +438,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
               value={holidayDate}
               onChange={(e) => {
                 setHolidayDate(e.target.value);
-                if (e.target.value) {
-                  setSummaryYear(new Date(e.target.value).getFullYear().toString());
-                }
+
               }}
               required
             />
@@ -581,7 +588,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
             </Button>
             <Button
               type="submit"
-              disabled={createPayment.isPending || (isLeaver && !leaverApproved && (employeeSummary?.balance ?? 0) > 0) || (wouldOverdraw && !overdrawConfirmed)}
+              disabled={summaryLoading || summaryError || !employeeSummary || createPayment.isPending || (isLeaver && !leaverApproved && (employeeSummary?.balance ?? 0) > 0) || (wouldOverdraw && !overdrawConfirmed)}
               className={isLeaver ? "bg-destructive hover:bg-destructive/90" : ""}
             >
               {createPayment.isPending ? "Recording..." : isLeaver ? "Record Settlement" : "Record Holiday"}

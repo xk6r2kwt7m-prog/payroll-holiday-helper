@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useTenant } from "@/hooks/useTenant";
 import { invalidateHolidayDerivedQueries } from "@/lib/holiday-cache";
 import { assertPermission } from "@/lib/permission-guard";
@@ -21,13 +22,12 @@ export function usePayrollPeriods() {
     queryKey: ["payroll_periods", tenantId],
     queryFn: async () => {
       if (!tenantId) return [] as PayrollPeriod[];
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("payroll_periods")
         .select("*")
         .eq("tenant_id", tenantId)
-        .order("start_date", { ascending: false });
+        .order("start_date", { ascending: false }).order("id").range(from, to));
       
-      if (error) throw error;
       return data as PayrollPeriod[];
     },
     enabled: !!tenantId,
@@ -52,10 +52,10 @@ export function usePayrollPeriod(id: string) {
   });
 }
 
-export function usePayrollEntries(periodId?: string) {
+export function usePayrollEntries(periodId?: string, options: { enabled?: boolean } = {}) {
   const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["payroll_entries", tenantId, periodId],
+    queryKey: ["payroll_entries", tenantId, periodId ?? (options.enabled === false ? "no-period" : undefined)],
     queryFn: async () => {
       if (!tenantId) return [];
       let query = supabase
@@ -68,6 +68,9 @@ export function usePayrollEntries(periodId?: string) {
             surname,
             department,
             status,
+            start_date,
+            end_date,
+            is_test_record,
             hourly_rate,
             service_charge,
             date_of_birth,
@@ -86,12 +89,11 @@ export function usePayrollEntries(periodId?: string) {
         query = query.eq("payroll_period_id", periodId);
       }
       
-      const { data, error } = await query;
+      const data = await fetchAllRows((from, to) => query.order("id").range(from, to));
       
-      if (error) throw error;
       return data;
     },
-    enabled: !!tenantId,
+    enabled: !!tenantId && options.enabled !== false,
   });
 }
 
@@ -317,7 +319,7 @@ export function useBulkUpdatePayrollEntries() {
   return useMutation({
     mutationFn: async (entries: { id: string; updates: PayrollEntryUpdate }[]) => {
       await assertPermission("view_pay_data", tenantId!);
-      const results = await Promise.all(
+      const results = await Promise.allSettled(
         entries.map(async ({ id, updates }) => {
           const { data, error } = await supabase
             .from("payroll_entries")
@@ -333,9 +335,13 @@ export function useBulkUpdatePayrollEntries() {
           return data;
         })
       );
-      return results;
+      const failures = results.filter(result => result.status === "rejected");
+      if (failures.length) {
+        throw new Error(`${failures.length} of ${results.length} payroll updates failed. Other rows may have saved; the table will refresh. Review it before retrying.`);
+      }
+      return results.map(result => (result as PromiseFulfilledResult<PayrollEntry>).value);
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_entries", tenantId] });
       invalidateHolidayDerivedQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });

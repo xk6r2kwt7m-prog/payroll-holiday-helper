@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -21,13 +22,12 @@ export function usePayrollEntryLocations(periodId?: string) {
     queryKey: ["payroll_entry_locations", tenantId, periodId],
     queryFn: async () => {
       if (!tenantId || !periodId) return [] as PayrollEntryLocation[];
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("payroll_entry_locations")
         .select("*")
         .eq("payroll_period_id", periodId)
         .eq("tenant_id", tenantId)
-        .order("location_name");
-      if (error) throw error;
+        .order("location_name").order("id").range(from, to));
       return (data || []) as PayrollEntryLocation[];
     },
     enabled: !!tenantId && !!periodId,
@@ -40,14 +40,13 @@ export function useEmployeeLocationSplit(periodId?: string, employeeId?: string)
     queryKey: ["payroll_entry_locations", tenantId, periodId, employeeId],
     queryFn: async () => {
       if (!tenantId || !periodId || !employeeId) return [] as PayrollEntryLocation[];
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("payroll_entry_locations")
         .select("*")
         .eq("payroll_period_id", periodId)
         .eq("employee_id", employeeId)
         .eq("tenant_id", tenantId)
-        .order("hours", { ascending: false });
-      if (error) throw error;
+        .order("hours", { ascending: false }).order("id").range(from, to));
       return (data || []) as PayrollEntryLocation[];
     },
     enabled: !!tenantId && !!periodId && !!employeeId,

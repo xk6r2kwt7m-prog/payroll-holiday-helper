@@ -36,7 +36,7 @@ export function usePayrollImportAliases(sourceSystem: string = "uploaded_timeshe
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: aliases = [], isLoading } = useQuery({
+  const { data: aliases = [], isLoading, isError } = useQuery({
     queryKey: ["payroll_import_aliases", tenantId, sourceSystem],
     queryFn: async () => {
       if (!tenantId) return [] as PayrollImportAlias[];
@@ -147,6 +147,7 @@ export function usePayrollImportAliases(sourceSystem: string = "uploaded_timeshe
     aliases,
     activeAliases,
     isLoading,
+    isError,
     saveAlias: saveAlias.mutateAsync,
     deactivateAlias: deactivateAlias.mutateAsync,
     recordUsage,

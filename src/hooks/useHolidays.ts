@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useTenant } from "@/hooks/useTenant";
 import { assertPermission } from "@/lib/permission-guard";
 
@@ -42,9 +43,8 @@ export function useHolidayPayments(periodId?: string) {
         query = query.eq("payroll_period_id", periodId);
       }
       
-      const { data, error } = await query;
+      const data = await fetchAllRows((from, to) => query.order("id").range(from, to));
       
-      if (error) throw error;
       return data;
     },
     enabled: !!tenantId,
@@ -58,7 +58,7 @@ export function useAllHolidayPayments() {
     queryKey: ["holiday_payments", tenantId, "all"],
     queryFn: async () => {
       if (!tenantId) return [];
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("holiday_payments")
         .select(`
           *,
@@ -78,9 +78,8 @@ export function useAllHolidayPayments() {
           )
         `)
         .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }).order("id").range(from, to));
       
-      if (error) throw error;
       return data;
     },
     enabled: !!tenantId,
@@ -112,9 +111,8 @@ export function useHolidayBalances(employeeId?: string) {
         query = query.eq("employee_id", employeeId);
       }
       
-      const { data, error } = await query;
+      const data = await fetchAllRows((from, to) => query.order("id").range(from, to));
       
-      if (error) throw error;
       return data;
     },
     enabled: !!tenantId,
@@ -131,7 +129,7 @@ export function useHolidayBalancesByYear(year: number) {
     queryKey: ["holiday_balances", tenantId, "year", year],
     queryFn: async () => {
       if (!tenantId) return [];
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("holiday_balances")
         .select(`
           *,
@@ -147,9 +145,8 @@ export function useHolidayBalancesByYear(year: number) {
         .eq("tenant_id", tenantId)
         .eq("leave_year_start", leaveYearStart)
         .eq("leave_year_end", leaveYearEnd)
-        .order("hours_accrued", { ascending: false });
+        .order("hours_accrued", { ascending: false }).order("id").range(from, to));
       
-      if (error) throw error;
       return data;
     },
     enabled: !!tenantId,
@@ -166,7 +163,7 @@ export function useHolidayPaymentsByYear(year: number) {
     queryKey: ["holiday_payments", tenantId, "year", year],
     queryFn: async () => {
       if (!tenantId) return [];
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("holiday_payments")
         .select(`
           *,
@@ -186,9 +183,8 @@ export function useHolidayPaymentsByYear(year: number) {
         .eq("tenant_id", tenantId)
         .eq("leave_year_start", leaveYearStart)
         .eq("leave_year_end", leaveYearEnd)
-        .order("holiday_taken_date", { ascending: false });
+        .order("holiday_taken_date", { ascending: false }).order("id").range(from, to));
       
-      if (error) throw error;
       return data;
     },
     enabled: !!tenantId,
@@ -236,6 +232,7 @@ export function useAllPayrollEntriesWithHoliday() {
           `)
           .eq("tenant_id", tenantId)
           .order("created_at", { ascending: true })
+          .order("id")
           .range(from, from + PAGE_SIZE - 1);
 
         if (error) throw error;
@@ -751,19 +748,17 @@ export function useInsertLedgerManualAdjustment() {
 // Shared helper: recalculate a payroll period's holidays_total and grand_total
 export async function recalcPayrollPeriodTotals(periodId: string) {
   // Sum all holiday payments for this period
-  const { data: payments, error: paymentsErr } = await supabase
+  const payments = await fetchAllRows((from, to) => supabase
     .from("holiday_payments")
     .select("total")
-    .eq("payroll_period_id", periodId);
-  if (paymentsErr) throw paymentsErr;
+    .eq("payroll_period_id", periodId).order("id").range(from, to));
   const holidaysTotal = (payments || []).reduce((s, p) => s + Number(p.total), 0);
 
   // Sum all payroll entries for this period
-  const { data: entries, error: entriesErr } = await supabase
+  const entries = await fetchAllRows((from, to) => supabase
     .from("payroll_entries")
     .select("total_pay")
-    .eq("payroll_period_id", periodId);
-  if (entriesErr) throw entriesErr;
+    .eq("payroll_period_id", periodId).order("id").range(from, to));
   const timesheetTotal = (entries || []).reduce((s, e) => s + Number(e.total_pay), 0);
 
   const grandTotal = timesheetTotal + holidaysTotal;
@@ -847,8 +842,7 @@ export function useHolidayAdjustments(year?: number) {
           .eq("leave_year_end", `${year}-12-31`);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      const data = await fetchAllRows((from, to) => query.order("id").range(from, to));
       return data;
     },
     enabled: !!tenantId,
@@ -861,12 +855,11 @@ export function useAllHolidayAdjustments() {
     queryKey: ["holiday_adjustments", tenantId, "all"],
     queryFn: async () => {
       if (!tenantId) return [];
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("holiday_adjustments")
         .select("*")
         .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
+        .order("created_at", { ascending: false }).order("id").range(from, to));
       return data;
     },
     enabled: !!tenantId,
