@@ -49,18 +49,18 @@ const PayrollAnalytics = () => {
   const recentPeriods = periods.slice(0, 12);
   
   // We need entries for each period - use individual hooks for compare periods
-  const period1Entries = usePayrollEntries(recentPeriods[0]?.id);
-  const period2Entries = usePayrollEntries(recentPeriods[1]?.id);
-  const period3Entries = usePayrollEntries(recentPeriods[2]?.id);
-  const period4Entries = usePayrollEntries(recentPeriods[3]?.id);
-  const period5Entries = usePayrollEntries(recentPeriods[4]?.id);
-  const period6Entries = usePayrollEntries(recentPeriods[5]?.id);
-  const period7Entries = usePayrollEntries(recentPeriods[6]?.id);
-  const period8Entries = usePayrollEntries(recentPeriods[7]?.id);
-  const period9Entries = usePayrollEntries(recentPeriods[8]?.id);
-  const period10Entries = usePayrollEntries(recentPeriods[9]?.id);
-  const period11Entries = usePayrollEntries(recentPeriods[10]?.id);
-  const period12Entries = usePayrollEntries(recentPeriods[11]?.id);
+  const period1Entries = usePayrollEntries(recentPeriods[0]?.id, { enabled: !!(recentPeriods[0]?.id) });
+  const period2Entries = usePayrollEntries(recentPeriods[1]?.id, { enabled: !!(recentPeriods[1]?.id) });
+  const period3Entries = usePayrollEntries(recentPeriods[2]?.id, { enabled: !!(recentPeriods[2]?.id) });
+  const period4Entries = usePayrollEntries(recentPeriods[3]?.id, { enabled: !!(recentPeriods[3]?.id) });
+  const period5Entries = usePayrollEntries(recentPeriods[4]?.id, { enabled: !!(recentPeriods[4]?.id) });
+  const period6Entries = usePayrollEntries(recentPeriods[5]?.id, { enabled: !!(recentPeriods[5]?.id) });
+  const period7Entries = usePayrollEntries(recentPeriods[6]?.id, { enabled: !!(recentPeriods[6]?.id) });
+  const period8Entries = usePayrollEntries(recentPeriods[7]?.id, { enabled: !!(recentPeriods[7]?.id) });
+  const period9Entries = usePayrollEntries(recentPeriods[8]?.id, { enabled: !!(recentPeriods[8]?.id) });
+  const period10Entries = usePayrollEntries(recentPeriods[9]?.id, { enabled: !!(recentPeriods[9]?.id) });
+  const period11Entries = usePayrollEntries(recentPeriods[10]?.id, { enabled: !!(recentPeriods[10]?.id) });
+  const period12Entries = usePayrollEntries(recentPeriods[11]?.id, { enabled: !!(recentPeriods[11]?.id) });
 
   const allEntries = [
     period1Entries, period2Entries, period3Entries, period4Entries,

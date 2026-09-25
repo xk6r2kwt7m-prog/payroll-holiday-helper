@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useState, useMemo, useEffect } from "react";
 import { UserMinus, AlertTriangle, Calculator, ShieldCheck, Info, User, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  useCreateHolidayPayment,
-  useInsertLedgerManualAdjustment,
+  useSettleHolidayPayment,
   formatCurrency,
   formatHours,
 } from "@/hooks/useHolidays";
@@ -61,15 +61,14 @@ export function SettleLeaverDialog() {
   const [holidayDate, setHolidayDate] = useState("");
   const [notes, setNotes] = useState("");
   const [approved, setApproved] = useState(false);
-  const [basis, setBasis] = useState<EntitlementBasis>("full_employment");
+  const [basis, setBasis] = useState<EntitlementBasis>("live_accrual");
   const [mismatchAck, setMismatchAck] = useState(false);
   const [manualReason, setManualReason] = useState("");
   const [manualNote, setManualNote] = useState("");
 
-  const { data: employees = [] } = useEmployees(true);
-  const { data: periods = [] } = usePayrollPeriods();
-  const createPayment = useCreateHolidayPayment();
-  const manualAdjust = useInsertLedgerManualAdjustment();
+  const { data: employees = [], isFetching: employeesLoading, isError: employeesError } = useEmployees(true);
+  const { data: periods = [], isFetching: periodsLoading, isError: periodsError } = usePayrollPeriods();
+  const settlePayment = useSettleHolidayPayment();
   const queryClient = useQueryClient();
   const { isAdmin } = useAuth();
   const { tenantId } = useTenant();
@@ -77,31 +76,32 @@ export function SettleLeaverDialog() {
   const leaveYear = new Date().getFullYear();
 
   // Employee IDs in the selected payroll period
-  const { data: periodEmployeeIds = [] } = useQuery({
-    queryKey: ["payroll-period-employees", periodId],
+  const { data: periodEmployeeIds = [], isFetching: periodEmployeeIdsLoading, isError: periodEmployeeIdsError } = useQuery({
+    queryKey: ["payroll-period-employees", tenantId, periodId],
     queryFn: async () => {
       if (!periodId) return [];
-      const { data } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("payroll_entries")
         .select("employee_id")
-        .eq("payroll_period_id", periodId);
+        .eq("payroll_period_id", periodId).eq("tenant_id", tenantId!).order("id").range(from, to));
       return (data ?? []).map((r) => r.employee_id);
     },
-    enabled: !!periodId,
+    enabled: !!tenantId && !!periodId,
   });
 
-  const { data: settledEmployeeIds = [] } = useQuery({
-    queryKey: ["settled-employees", periodId],
+  const { data: settledEmployeeIds = [], isFetching: settledEmployeeIdsLoading, isError: settledEmployeeIdsError } = useQuery({
+    queryKey: ["settled-employees", tenantId, periodId],
     queryFn: async () => {
       if (!periodId) return [];
-      const { data } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("holiday_payments")
         .select("employee_id")
         .eq("payroll_period_id", periodId)
-        .not("employee_id", "is", null);
+        .not("employee_id", "is", null).eq("tenant_id", tenantId!)
+        .ilike("notes", "%leaver settlement%").order("id").range(from, to));
       return (data ?? []).map((r) => r.employee_id).filter(Boolean) as string[];
     },
-    enabled: !!periodId,
+    enabled: !!tenantId && !!periodId,
     staleTime: 0,
     refetchOnMount: "always",
   });
@@ -137,47 +137,45 @@ export function SettleLeaverDialog() {
   const selectedEmployee = employees.find((e) => e.id === employeeId);
 
   // Canonical hook (year-scoped ledger) — still used for the headline summary card
-  const { summary: employeeSummaryRaw, isLoading: summaryLoading } = useHolidayYearSummary(
+  const { summary: employeeSummaryRaw, isLoading: summaryLoading, isError: summaryError, refetch: retrySummary } = useHolidayYearSummary(
     employeeId || undefined,
     leaveYear,
   );
 
   // For Basis C (full employment) we need the full ledger across years
-  const { data: fullLedger = [] } = useHolidayLedger(
+  const { data: fullLedger = [], isFetching: fullLedgerLoading, isError: fullLedgerError } = useHolidayLedger(
     employeeId || undefined,
     undefined, // no year filter
   );
 
   // Payments for this employee (all leave years)
-  const { data: allPayments = [] } = useQuery({
+  const { data: allPayments = [], isFetching: allPaymentsLoading, isError: allPaymentsError } = useQuery({
     queryKey: ["settle-leaver-payments", tenantId, employeeId],
     enabled: !!tenantId && !!employeeId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("holiday_payments")
         .select(
           "id, payroll_period_id, hours, total, holiday_taken_date, leave_year_start, notes, created_at",
         )
         .eq("tenant_id", tenantId!)
-        .eq("employee_id", employeeId);
-      if (error) throw error;
+        .eq("employee_id", employeeId).order("id").range(from, to));
       return (data ?? []) as PaymentRow[];
     },
   });
 
   // Payroll entries for this employee (all years, joined to periods)
-  const { data: allPayrollEntries = [] } = useQuery({
+  const { data: allPayrollEntries = [], isFetching: allPayrollEntriesLoading, isError: allPayrollEntriesError } = useQuery({
     queryKey: ["settle-leaver-entries", tenantId, employeeId],
     enabled: !!tenantId && !!employeeId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("payroll_entries")
         .select(
           "id, payroll_period_id, holiday_accrued_hours, timesheet_hours, payroll_periods(start_date, end_date, status)",
         )
         .eq("tenant_id", tenantId!)
-        .eq("employee_id", employeeId);
-      if (error) throw error;
+        .eq("employee_id", employeeId).order("id").range(from, to));
       return (data ?? []).map((e: any) => ({
         id: e.id,
         payroll_period_id: e.payroll_period_id,
@@ -190,7 +188,7 @@ export function SettleLeaverDialog() {
   });
 
   // Snapshot for current leave year
-  const { data: snapshot } = useQuery({
+  const { data: snapshot, isFetching: snapshotLoading, isError: snapshotError } = useQuery({
     queryKey: ["settle-leaver-snapshot", tenantId, employeeId, leaveYear],
     enabled: !!tenantId && !!employeeId,
     queryFn: async () => {
@@ -205,6 +203,9 @@ export function SettleLeaverDialog() {
       return (data ?? null) as BalanceSnapshotRow | null;
     },
   });
+
+  const evidenceLoading = periodEmployeeIdsLoading || settledEmployeeIdsLoading || allPaymentsLoading || allPayrollEntriesLoading || fullLedgerLoading || snapshotLoading || employeesLoading || periodsLoading;
+  const evidenceError = periodEmployeeIdsError || settledEmployeeIdsError || allPaymentsError || allPayrollEntriesError || fullLedgerError || snapshotError || employeesError || periodsError;
 
   // Pure basis computation
   const basisResult = useMemo(() => {
@@ -222,6 +223,9 @@ export function SettleLeaverDialog() {
           : undefined,
     });
   }, [employeeId, basis, leaveYear, periodId, fullLedger, allPayments, allPayrollEntries, hours, rate]);
+
+  const reviewVersion = JSON.stringify([employeeId, periodId, hours, rate, holidayDate, basis, fullLedger, allPayments, allPayrollEntries, snapshot]);
+  useEffect(() => { setApproved(false); setMismatchAck(false); }, [reviewVersion]);
 
   const sourceRows = useMemo(() => {
     if (!basisResult) return [];
@@ -255,7 +259,7 @@ export function SettleLeaverDialog() {
     setEmployeeId(id);
     setApproved(false);
     setMismatchAck(false);
-    setBasis("full_employment");
+    setBasis("live_accrual");
     setManualReason("");
     setManualNote("");
     setHours("");
@@ -346,13 +350,21 @@ export function SettleLeaverDialog() {
       toast.error("Please fill in all required fields");
       return;
     }
+    if (summaryLoading || summaryError || evidenceLoading || evidenceError || employeeSummaryRaw?.requiresReview || !employeeSummaryRaw) {
+      toast.error("The holiday balance must load successfully before settlement.");
+      return;
+    }
+    if (!["current_year", "live_accrual", "manual"].includes(basis) || holidayDate.slice(0, 4) !== String(leaveYear)) {
+      toast.error("Select the reviewed leave year and settle it separately from historical years.");
+      return;
+    }
     if (!approved) {
       toast.error("Please approve the settlement before recording");
       return;
     }
     if (alreadySettled) {
       toast.error(
-        "This employee already has a recorded leaver settlement for this leave year. Reverse the existing settlement before recording a new one.",
+        "This employee already has a recorded leaver settlement for this leave year. Arrange a reviewed settlement reversal before recording a new one.",
       );
       return;
     }
@@ -374,57 +386,19 @@ export function SettleLeaverDialog() {
     if (!employee) return;
 
     try {
-      // If basis is manual, write an audited manual_adjustment ledger row first
-      if (basis === "manual" && parseFloat(hours) !== 0) {
-        await manualAdjust.mutateAsync({
-          employeeId,
-          leaveYear,
-          hours: parseFloat(hours),
-          amount: total || null,
-          reason: manualReason,
-          note: manualNote,
-        });
-      }
-
-      const d = new Date(holidayDate);
-
-      if (parseFloat(hours) > 0) {
-        await createPayment.mutateAsync({
-          employee_id: employeeId,
-          employee_name: `${employee.forename} ${employee.surname}`,
-          payroll_period_id: periodId,
-          hours: parseFloat(hours),
-          rate: parseFloat(rate),
-          total,
-          holiday_taken_date: holidayDate,
-          leave_year_start: `${d.getFullYear()}-01-01`,
-          leave_year_end: `${d.getFullYear()}-12-31`,
-          notes: notes || `Leaver settlement (basis: ${basis})`,
-        });
-      }
-
-      if (employee.status !== "leaver") {
-        const { error: statusError } = await supabase
-          .from("employees")
-          .update({ status: "leaver" as any, end_date: holidayDate })
-          .eq("id", employeeId);
-        if (statusError) {
-          console.error("Failed to update employee status:", statusError);
-          toast.error("Settlement recorded but failed to update employee status");
-        } else {
-          await supabase.from("employee_changes").insert({
-            employee_id: employeeId,
-            change_type: "update",
-            field_name: "status",
-            old_value: employee.status,
-            new_value: "leaver",
-            notes: `Settled via Settle Leaver dialog (basis: ${basis}). End date: ${holidayDate}${
-              mismatch.hasMismatch ? " — mismatch acknowledged" : ""
-            }`,
-          } as any);
-          queryClient.invalidateQueries({ queryKey: ["employees"] });
-        }
-      }
+      await settlePayment.mutateAsync({
+        employee_id: employeeId,
+        payroll_period_id: periodId,
+        hours: Number(hours),
+        rate: Number(rate),
+        holiday_taken_date: holidayDate,
+        notes,
+        settlement_basis: basis,
+        adjustment_reason: [manualReason, manualNote].filter(Boolean).join(" — "),
+        expected_balance: Number((basis === "current_year"
+          ? employeeSummaryRaw.availableHours
+          : employeeSummaryRaw.availableIncludingPendingHours).toFixed(2)),
+      });
 
       queryClient.invalidateQueries({ queryKey: ["settled-employees"] });
       queryClient.invalidateQueries({ queryKey: ["settle-leaver-payments"] });
@@ -445,7 +419,7 @@ export function SettleLeaverDialog() {
     setNotes("");
     setApproved(false);
     setMismatchAck(false);
-    setBasis("full_employment");
+    setBasis("live_accrual");
     setManualReason("");
     setManualNote("");
   };
@@ -464,6 +438,8 @@ export function SettleLeaverDialog() {
   };
 
   const canSubmit =
+    ["current_year", "live_accrual", "manual"].includes(basis) && holidayDate.slice(0, 4) === String(leaveYear) &&
+    !summaryLoading && !summaryError && !evidenceLoading && !evidenceError && !employeeSummaryRaw?.requiresReview && !!employeeSummaryRaw &&
     employeeId &&
     periodId &&
     holidayDate &&
@@ -475,9 +451,16 @@ export function SettleLeaverDialog() {
     (isZeroBalance || (parseFloat(hours) > 0 && parseFloat(rate) > 0));
 
   const disabledReason: string | null = (() => {
-    if (createPayment.isPending || manualAdjust.isPending) return null;
+    if (settlePayment.isPending) return null;
+    if (!["current_year", "live_accrual", "manual"].includes(basis)) return "Historical and period-only figures are for comparison. Select Current Year, Live Accrual or a verified manual amount to settle.";
+    if (holidayDate && holidayDate.slice(0, 4) !== String(leaveYear)) return "The settlement date must match the leave year under review.";
     if (!periodId) return "Select a draft payroll period.";
     if (!employeeId) return "Select an employee to settle.";
+    if (employeeSummaryRaw?.requiresReview) return "Review missing payment or accrual ledger records before settlement.";
+    if (evidenceError) return "Some settlement evidence could not be loaded. Retry before settling.";
+    if (evidenceLoading) return "Loading the complete settlement evidence.";
+    if (summaryError) return "The holiday balance could not be loaded. Retry before settling.";
+    if (summaryLoading || !employeeSummaryRaw) return "Waiting for the complete holiday balance.";
     if (!holidayDate) return "Set the settlement date.";
     if (alreadySettled)
       return describeBlockingSettlement(existingSettlement!, existingSettlementPeriodName);
@@ -591,6 +574,13 @@ export function SettleLeaverDialog() {
             </div>
           )}
 
+          {employeeId && evidenceError && <div role="alert" className="rounded-lg border p-3 text-sm">Settlement evidence could not be loaded. <Button type="button" variant="outline" onClick={() => { void queryClient.refetchQueries({ type: "active" }); }}>Retry</Button></div>}
+          {employeeId && summaryError && (
+            <div role="alert" className="rounded-lg border p-3 text-sm">
+              The holiday balance could not be loaded. Settlement is paused.
+              <Button type="button" variant="outline" size="sm" onClick={retrySummary}>Retry</Button>
+            </div>
+          )}
           {employeeId && summaryLoading && (
             <div className="rounded-lg border border-border bg-muted/30 p-4 text-center">
               <p className="text-sm text-muted-foreground animate-pulse">Loading holiday balance...</p>
@@ -767,10 +757,10 @@ export function SettleLeaverDialog() {
             <Button type="button" variant="outline" onClick={() => { setOpen(false); resetForm(); }}>Cancel</Button>
             <Button
               type="submit"
-              disabled={createPayment.isPending || manualAdjust.isPending || !canSubmit}
+              disabled={settlePayment.isPending || !canSubmit}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {createPayment.isPending || manualAdjust.isPending ? "Settling..." : isZeroBalance && total === 0 ? "Mark as Leaver" : "Settle & Record"}
+              {settlePayment.isPending ? "Settling..." : isZeroBalance && total === 0 ? "Mark as Leaver" : "Settle & Record"}
             </Button>
           </div>
         </form>

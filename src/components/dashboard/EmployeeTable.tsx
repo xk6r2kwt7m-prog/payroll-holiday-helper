@@ -24,7 +24,7 @@ const departmentStyles: Record<string, string> = {
 export function EmployeeTable() {
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriodId = periods[0]?.id;
-  const { data: entries = [], isLoading } = usePayrollEntries(latestPeriodId);
+  const { data: entries = [], isLoading } = usePayrollEntries(latestPeriodId, { enabled: !!(latestPeriodId) });
 
   const formatCurrency = (v: number) => `£${v.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 

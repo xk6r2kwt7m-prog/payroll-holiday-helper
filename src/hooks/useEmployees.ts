@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
@@ -22,16 +23,7 @@ export function useEmployees(includeArchived = false) {
     queryFn: async () => {
       if (!tenantId) return [] as Employee[];
       
-      // Anyone marked as a leaver is moved to the archive so they no longer
-      // appear in the working team list. Their records are kept in full.
-      await supabase
-        .from("employees")
-        .update({ archived_at: new Date().toISOString() })
-        .eq("tenant_id", tenantId)
-        .eq("status", "leaver")
-        .is("archived_at", null);
-
-
+      // Reading the staff list must never archive or change staff records.
       let query = supabase
         .from("employees")
         .select(EMPLOYEE_COLUMNS)
@@ -39,11 +31,10 @@ export function useEmployees(includeArchived = false) {
         .order("forename");
 
       if (!includeArchived) {
-        query = query.is("archived_at", null);
+        query = query.is("archived_at", null).neq("status", "leaver");
       }
       
-      const { data, error } = await query;
-      if (error) throw error;
+      const data = await fetchAllRows((from, to) => query.order("id").range(from, to));
       return data as Employee[];
     },
     enabled: !!tenantId,

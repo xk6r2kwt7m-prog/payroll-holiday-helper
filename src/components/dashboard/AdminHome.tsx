@@ -34,7 +34,7 @@ export function AdminHome() {
   const { data: employees = [] } = useEmployees();
   const { data: periods = [] } = usePayrollPeriods();
   const latestPeriod = periods[0];
-  const { data: entries = [] } = usePayrollEntries(latestPeriod?.id);
+  const { data: entries = [] } = usePayrollEntries(latestPeriod?.id, { enabled: !!(latestPeriod?.id) });
   const { data: holidayRequests = [] } = useAllHolidayRequests();
 
   const todayStr = format(new Date(), "yyyy-MM-dd");

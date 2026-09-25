@@ -54,7 +54,9 @@ import { useI18n } from "@/hooks/useI18n";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
-import { useQuery } from "@tanstack/react-query";
+import { fetchAllRows } from "@/lib/fetch-all-rows";
+import { payrollDataBlock } from "@/lib/payroll-data-readiness";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { pdf } from "@react-pdf/renderer";
 import { PayrollPDF } from "@/components/payroll/PayrollPDF";
 import { PayrollReportBuilder } from "@/components/payroll/PayrollReportBuilder";
@@ -91,6 +93,7 @@ const PAYROLL_DISPLAY_DEFAULTS = {
 const Payroll = () => {
   const { t } = useI18n();
   const { tenantId } = useTenant();
+  const queryClient = useQueryClient();
   
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
@@ -105,9 +108,9 @@ const Payroll = () => {
   }, []);
   const { tenantReady, assertTenantMatch } = useTenantGuard(resetPageState);
 
-  const { data: periods = [], isLoading: loadingPeriods } = usePayrollPeriods();
+  const { data: periods = [], isFetching: loadingPeriods, isError: periodsError } = usePayrollPeriods();
   const selectedPeriod = periods.find(p => p.id === selectedPeriodId) || periods[0];
-  const { data: entries = [], isLoading: loadingEntries } = usePayrollEntries(selectedPeriod?.id);
+  const { data: entries = [], isFetching: loadingEntries, isError: entriesError } = usePayrollEntries(selectedPeriod?.id, { enabled: !!selectedPeriod?.id });
   // Get ALL prior period entries to determine first-time payroll employees
   const priorPeriodIds = useMemo(() => {
     if (!selectedPeriod || !periods.length) return [];
@@ -126,19 +129,18 @@ const Payroll = () => {
       .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
     return prior[0];
   }, [periods, selectedPeriod]);
-  const { data: priorEntries = [] } = usePayrollEntries(immediatePriorPeriod?.id);
+  const { data: priorEntries = [], isFetching: priorLoading, isError: priorError } = usePayrollEntries(immediatePriorPeriod?.id, { enabled: !!immediatePriorPeriod?.id });
 
   // Build set of ALL employee IDs that appeared in ANY prior period
-  const { data: allPriorEntries = [] } = useQuery({
+  const { data: allPriorEntries = [], isFetching: historyLoading, isError: historyError } = useQuery({
     queryKey: ["all_prior_payroll_employee_ids", tenantId, priorPeriodIds],
     queryFn: async () => {
       if (!tenantId || priorPeriodIds.length === 0) return [];
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("payroll_entries")
         .select("employee_id")
         .eq("tenant_id", tenantId)
-        .in("payroll_period_id", priorPeriodIds);
-      if (error) throw error;
+        .in("payroll_period_id", priorPeriodIds).order("id").range(from, to));
       return data || [];
     },
     enabled: !!tenantId && priorPeriodIds.length > 0,
@@ -159,13 +161,13 @@ const Payroll = () => {
     }
     return map;
   }, [priorEntries]);
-  const { data: holidayPayments = [] } = useHolidayPayments(selectedPeriod?.id);
-  const { data: allEmployees = [] } = useEmployees();
+  const { data: holidayPayments = [], isFetching: paymentsLoading, isError: paymentsError } = useHolidayPayments(selectedPeriod?.id);
+  const { data: allEmployees = [], isFetching: employeesLoading, isError: employeesError } = useEmployees();
   // Anyone recorded as a leaver is moved to the archive, so the ordinary team
   // list no longer contains them. Payroll reports must still show the leavers
   // who belong to this period, so the reporting views read the full list
   // (archive included). Nothing else on the page uses this list.
-  const { data: allEmployeesForReports = [] } = useEmployees(true);
+  const { data: allEmployeesForReports = [], isFetching: reportEmployeesLoading, isError: reportEmployeesError } = useEmployees(true);
   // Bank details and National Insurance numbers are not part of an ordinary
   // staff query. Payroll files need the real values, so they are fetched
   // separately and only ever returned to an administrator.
@@ -175,7 +177,7 @@ const Payroll = () => {
     [protectedFields],
   );
   const currentEmployeeIds = entries.map((entry: any) => entry.employee_id);
-  const { unresolvedIssues, excludedNames } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
+  const { unresolvedIssues, excludedNames, isLoading: importsLoading, isError: importsError } = usePayrollImportStatus(selectedPeriod?.id, currentEmployeeIds);
   const blockingIssues = unresolvedIssues.filter(i => !reviewedIssueNames.has(i.csvName));
 
   // Phase 2B — read-only comparison of payroll vs employee_contract_terms.
@@ -225,16 +227,9 @@ const Payroll = () => {
 
   // Phase 5A — Approval readiness checklist assembly. Read-only; never
   // mutates payroll data. Service charge stays excluded from NMW.
-  const { data: payrollAdjustments = [] } = usePayrollAdjustments(selectedPeriod?.id);
+  const { data: payrollAdjustments = [], isFetching: adjustmentsLoading, isError: adjustmentsError } = usePayrollAdjustments(selectedPeriod?.id);
   const [checklistAcks, setChecklistAcks] = useState<Set<string>>(new Set());
   const [checklistConfirmed, setChecklistConfirmed] = useState(false);
-  // Reset acks/confirmation when the selected period changes.
-  // Phase 5B — proper side-effect; previously incorrectly used useMemo.
-  useEffect(() => {
-    setChecklistAcks(new Set());
-    setChecklistConfirmed(false);
-  }, [selectedPeriod?.id]);
-
   const phase5Report = useMemo(() => {
     if (!selectedPeriod || entries.length === 0) return null;
     const termsMap = new Map<string, any[]>();
@@ -284,7 +279,7 @@ const Payroll = () => {
   });
 
   // Month-on-month change review (read-only, non-blocking)
-  const { data: periodNotesForCmp = [] } = usePayrollPeriodNotes(selectedPeriod?.id);
+  const { data: periodNotesForCmp = [], isFetching: notesLoading, isError: notesError } = usePayrollPeriodNotes(selectedPeriod?.id);
   const pdfVisibleNotesCount = useMemo(
     () => periodNotesForCmp.filter((n: any) => n.show_on_pdf).length,
     [periodNotesForCmp],
@@ -348,7 +343,33 @@ const Payroll = () => {
     importedHoursOverrides,
   ]);
 
+  // Confirmations cover the evidence actually reviewed, not later edits.
+  const approvalEvidenceVersion = JSON.stringify([
+    selectedPeriod, entries, holidayPayments, payrollAdjustments,
+    phase5Checklist, termsComparison.rows,
+  ]);
+  useEffect(() => {
+    setChecklistAcks(new Set());
+    setChecklistConfirmed(false);
+  }, [approvalEvidenceVersion]);
+
+  const { data: periodLocationData = [], isFetching: locationsLoading, isError: locationsError } = usePayrollEntryLocations(selectedPeriod?.id);
+  const approvalDataBlock = payrollDataBlock([
+    { label: "location allocations", isLoading: locationsLoading, isError: locationsError },
+    { label: "payroll periods", isLoading: loadingPeriods, isError: periodsError },
+    { label: "payroll entries", isLoading: loadingEntries, isError: entriesError },
+    { label: "holiday payments", isLoading: paymentsLoading, isError: paymentsError },
+    { label: "employee records", isLoading: employeesLoading || reportEmployeesLoading, isError: employeesError || reportEmployeesError },
+    { label: "payroll history", isLoading: priorLoading || historyLoading, isError: priorError || historyError },
+    { label: "import checks", isLoading: importsLoading, isError: importsError },
+    { label: "adjustments", isLoading: adjustmentsLoading, isError: adjustmentsError },
+    { label: "period notes", isLoading: notesLoading, isError: notesError },
+    { label: "employment terms", isLoading: termsComparison.isLoading, isError: termsComparison.isError },
+    { label: "approval safeguards", isLoading: approvalGuardrails.isLoading, isError: approvalGuardrails.isError },
+  ]);
+
   const phase5ApprovalBlock = useMemo<string | null>(() => {
+    if (approvalDataBlock) return approvalDataBlock;
     if (!phase5Checklist) return null;
     if (selectedPeriod?.status === "approved" || phase5Checklist.period_already_approved) {
       return null;
@@ -367,7 +388,7 @@ const Payroll = () => {
       return "The approval confirmation must be ticked on the checklist before approval.";
     }
     return null;
-  }, [phase5Checklist, selectedPeriod?.status, checklistAcks, checklistConfirmed]);
+  }, [approvalDataBlock, phase5Checklist, selectedPeriod?.status, checklistAcks, checklistConfirmed]);
 
   // Phase B — severity projection for status bar / Action Required / Review panels.
   const pageSeverity = useMemo(
@@ -444,7 +465,7 @@ const Payroll = () => {
   };
 
   const allExcludedNames = [...excludedNames, ...localExcludedNames];
-  const { data: periodLocationData = [] } = usePayrollEntryLocations(selectedPeriod?.id);
+
   const approvePeriod = useApprovePayrollPeriod();
   const submitForReview = useSubmitPayrollForReview();
   const reopenPeriod = useReopenPayrollPeriod();
@@ -533,6 +554,10 @@ const Payroll = () => {
 
   const handleSubmitForReview = async (override?: { reason: string }) => {
     if (!selectedPeriod) return;
+    if (approvalDataBlock) {
+      toast.error(approvalDataBlock);
+      return;
+    }
     if (!override && blockingIssues.length > 0) {
       toast.error("Cannot submit: unresolved blocking issues must be resolved first");
       return;
@@ -571,6 +596,10 @@ const Payroll = () => {
 
   const handleApprove = async (override?: { reason: string }) => {
     if (!selectedPeriod) return;
+    if (approvalDataBlock) {
+      toast.error(approvalDataBlock);
+      return;
+    }
     if (!override && blockingIssues.length > 0) {
       toast.error("Cannot approve: unresolved blocking issues must be resolved first");
       return;
@@ -579,6 +608,10 @@ const Payroll = () => {
       toast.error(
         `Cannot approve: ${nmw.summary.non_compliant} employee(s) below UK minimum wage. Correct with a top-up payment before approval.`,
       );
+      return;
+    }
+    if (!override && phase5ApprovalBlock) {
+      toast.error(phase5ApprovalBlock);
       return;
     }
     try {
@@ -667,6 +700,7 @@ const Payroll = () => {
   };
 
   const handleExport = async (includeBankDetails: boolean) => {
+    if (approvalDataBlock) { toast.error(approvalDataBlock); return; }
     if (!selectedPeriod || entries.length === 0) return;
 
     try {
@@ -860,6 +894,14 @@ const Payroll = () => {
   // DEV: assert tenant match on payroll data
   if (entries.length > 0) assertTenantMatch(entries, "payroll_entries");
 
+  if (periodsError || entriesError || paymentsError) {
+    return <AppLayout><div role="alert" className="space-y-3 p-4">
+      <h1 className="text-lg font-bold">Payroll data unavailable</h1>
+      <p>We could not load the complete payroll. Totals and approval are unavailable until this is resolved.</p>
+      <Button onClick={() => void queryClient.refetchQueries({ type: "active" })}>Retry</Button>
+    </div></AppLayout>;
+  }
+
   if (!tenantReady) {
     return (
       <AppLayout>
@@ -897,9 +939,9 @@ const Payroll = () => {
                   allEmployees={allEmployeesForReports as any}
                   priorPeriodEmployeeIds={priorPeriodEmployeeIds}
                   priorEntryRates={priorEntryRates}
-                  disabled={!isAdmin}
+                  disabled={!isAdmin || !!approvalDataBlock}
                 />
-                <Button variant="outline" size="sm" onClick={() => setReportBuilderOpen(true)} className="h-8 px-2.5 sm:px-3 text-xs">
+                <Button variant="outline" size="sm" disabled={!!approvalDataBlock} onClick={() => setReportBuilderOpen(true)} className="h-8 px-2.5 sm:px-3 text-xs">
                   <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
                   <span className="hidden sm:inline">PDF</span>
                 </Button>
@@ -909,6 +951,15 @@ const Payroll = () => {
         </div>
 
         <PayrollNavStrip />
+        {approvalDataBlock && (
+          <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+            <p>{approvalDataBlock}</p>
+            {approvalDataBlock.startsWith("Could not") && (
+              <Button variant="outline" size="sm" className="mt-2" onClick={() => void queryClient.refetchQueries({ type: "active" })}>Retry checks</Button>
+            )}
+          </div>
+        )}
+
 
         {/* Two-hour reversal window for recently deleted draft periods */}
         <RestoreDeletedPeriodBanner onRestored={(periodId) => setSelectedPeriodId(periodId)} />
