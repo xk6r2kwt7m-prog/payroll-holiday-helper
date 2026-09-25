@@ -79,7 +79,7 @@ export function parseTimesheetCSV(csvText: string): ParserResult {
 
   // Detect Timesheet Hour column from header row
   const headerLine = lines[0]?.toLowerCase() || "";
-  const headerCols = headerLine.match(/("(?:[^"]|"")*"|[^,]*)/g) || [];
+  const headerCols: string[] = headerLine.match(/("(?:[^"]|"")*"|[^,]*)/g) || [];
   let timesheetColIndex = headerCols.findIndex(
     (c) => c.replace(/"/g, "").trim() === "timesheet hour"
   );

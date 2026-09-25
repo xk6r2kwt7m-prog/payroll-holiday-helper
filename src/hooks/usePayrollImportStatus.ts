@@ -20,10 +20,10 @@ function toStringArray(value: unknown): string[] {
 
 export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: string[] = []) {
   const { tenantId } = useTenant();
-  const { data: employees = [] } = useEmployees(true);
-  const { activeAliases } = usePayrollImportAliases();
+  const { data: employees = [], isLoading: employeesLoading, isError: employeesError } = useEmployees(true);
+  const { activeAliases, isLoading: aliasesLoading, isError: aliasesError } = usePayrollImportAliases();
 
-  const { data: importRecord, isLoading } = useQuery({
+  const { data: importRecord, isFetching: isLoading, isError } = useQuery({
     queryKey: ["payroll_import_status", tenantId, periodId],
     queryFn: async () => {
       if (!tenantId || !periodId) return null;
@@ -112,6 +112,7 @@ export function usePayrollImportStatus(periodId?: string, currentEmployeeIds: st
     unresolvedIssues,
     excludedNames,
     hasBlockingUnresolvedIssues: unresolvedIssues.length > 0,
-    isLoading,
+    isLoading: isLoading || employeesLoading || aliasesLoading,
+    isError: isError || employeesError || aliasesError,
   };
 }

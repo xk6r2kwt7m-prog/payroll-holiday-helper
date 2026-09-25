@@ -81,7 +81,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
     [entries],
   );
 
-  const { data: termsRows = [], isLoading } = useQuery({
+  const { data: termsRows = [], isFetching: isLoading, isError } = useQuery({
     queryKey: ["employment_terms_comparison", tenantId, periodStartDate, employeeIds.sort().join(",")],
     enabled: !!tenantId && !!periodStartDate && employeeIds.length > 0,
     queryFn: async () => {
@@ -110,6 +110,7 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
         scheduled_pending: 0,
       } as TermsComparisonSummary,
       isLoading,
+      isError,
       canCheck: false,
     };
 
@@ -247,8 +248,8 @@ export function useEmploymentTermsComparison({ periodStartDate, entries }: Input
       scheduled_pending: rows.filter((r) => r.hasScheduledChange).length,
     };
 
-    return { rows, summary, isLoading, canCheck: true };
-  }, [entries, termsRows, periodStartDate, isLoading]);
+    return { rows, summary, isLoading, isError, canCheck: !isLoading && !isError };
+  }, [entries, termsRows, periodStartDate, isLoading, isError]);
 }
 
 export const TERMS_SOURCE_LABEL: Record<string, string> = {

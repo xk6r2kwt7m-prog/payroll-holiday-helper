@@ -1,15 +1,4 @@
-/**
- * Workflow contract regression test for the live "pay holiday in the
- * system" flow. Asserts the source-of-truth sequence in
- * `src/hooks/useHolidays.ts` and `supabase/functions/import-historical-payroll`.
- *
- * Because Vitest can't run a transactional fixture against the live
- * Postgres in this sandbox, the contract is locked by *source inspection*
- * — the same pattern used by `phase-holiday-orphan-ledger-reversal.test.ts`.
- * Together with `phase-holiday-carry-over-double-count.test.ts`, these
- * tests freeze the invariants the read-only investigation verified
- * end-to-end against the live DB.
- */
+// Wiring assertions complement the synthetic database transaction tests.
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -26,51 +15,26 @@ const importFnSrc = readFileSync(
   "utf8",
 );
 
-describe("useCreateHolidayPayment — live workflow contract", () => {
-  it("inserts a holiday_payments row and a matching ledger row", () => {
-    expect(useHolidaysSrc).toMatch(/\.from\(["']holiday_payments["']\)\s*\.insert/);
-    expect(useHolidaysSrc).toMatch(/\.from\(["']holiday_ledger["']\)\s*\.insert/);
+const paymentSql = readFileSync(resolve(__dirname, "../../supabase/pending-migrations/20260925090000_atomic_holiday_payments.sql"), "utf8");
+describe("holiday payment transaction wiring", () => {
+  it("routes create/update/delete through one RPC with no browser table-write fallback", () => {
+    const mutations = useHolidaysSrc.slice(useHolidaysSrc.indexOf("function useHolidayPaymentTransaction"), useHolidaysSrc.indexOf("export function useReverseOrphanLedgerEntry"));
+    expect(mutations).toContain("supabase.rpc(HOLIDAY_PAYMENT_RPC, args)");
+    expect(mutations).toContain('"create", values, id');
+    expect(mutations).toContain('"update", updates, id');
+    expect(mutations).toContain('"delete", {}, paymentId');
+    expect(mutations).not.toMatch(/\.from\(/);
   });
-
-  it("ledger row uses negative hours and the matching payment id", () => {
-    expect(useHolidaysSrc).toMatch(/hoursValue\s*=\s*-Math\.abs\(Number\(payment\.hours\)\)/);
-    expect(useHolidaysSrc).toMatch(/source_table:\s*["']holiday_payments["']/);
-    expect(useHolidaysSrc).toMatch(/source_id:\s*data\.id/);
-    expect(useHolidaysSrc).toMatch(/entry_type:\s*["']holiday_taken["']/);
+  it("keeps the permission check and refreshes derived data even after an uncertain response", () => {
+    expect(useHolidaysSrc).toContain('assertPermission("approve_holidays"');
+    expect(useHolidaysSrc).toContain("invalidateHolidayDerivedQueries(queryClient)");
+    expect(useHolidaysSrc).toContain("onSettled: refresh");
   });
-
-  it("recalculates the payroll period totals after every payment insert", () => {
-    expect(useHolidaysSrc).toMatch(/recalcPayrollPeriodTotals\(payment\.payroll_period_id\)/);
-  });
-
-  it("requires the approve_holidays permission", () => {
-    expect(useHolidaysSrc).toMatch(/assertPermission\(["']approve_holidays["']/);
-  });
-
-  it("invalidates ledger + payment + period queries on success", () => {
-    expect(useHolidaysSrc).toMatch(/invalidateQueries\(\{\s*queryKey:\s*\[["']holiday_payments["'],\s*tenantId\]\s*\}\)/);
-    expect(useHolidaysSrc).toMatch(/invalidateQueries\(\{\s*queryKey:\s*\[["']holiday_ledger["']\]\s*\}\)/);
-    expect(useHolidaysSrc).toMatch(/invalidateQueries\(\{\s*queryKey:\s*\[["']payroll_periods["'],\s*tenantId\]\s*\}\)/);
-  });
-});
-
-describe("useDeleteHolidayPayment — audited reversal contract", () => {
-  it("blocks deletion when the linked payroll period is approved/locked", () => {
-    expect(useHolidaysSrc).toMatch(/Cannot delete: payroll period is/);
-    expect(useHolidaysSrc).toMatch(/Reopen the period first/);
-  });
-
-  it("removes the linked ledger row BEFORE deleting the payment", () => {
-    const deleteFn = useHolidaysSrc.split("useDeleteHolidayPayment")[1] ?? "";
-    const ledgerDel = deleteFn.indexOf('from("holiday_ledger")');
-    const paymentDel = deleteFn.lastIndexOf('from("holiday_payments")');
-    expect(ledgerDel).toBeGreaterThan(0);
-    expect(paymentDel).toBeGreaterThan(ledgerDel); // ledger first, payment second
-  });
-
-  it("scopes the ledger delete to the source_id + entry_type pair", () => {
-    expect(useHolidaysSrc).toMatch(/\.eq\(["']source_table["'],\s*["']holiday_payments["']\)/);
-    expect(useHolidaysSrc).toMatch(/\.eq\(["']entry_type["'],\s*["']holiday_taken["']\)/);
+  it("installs server-side payment ledger and period safeguards", () => {
+    expect(paymentSql).toContain("BEFORE INSERT OR UPDATE OR DELETE");
+    expect(paymentSql).toContain("grand_total = worked + holidays");
+    expect(paymentSql).toContain("-saved.hours,-saved.total");
+    expect(paymentSql).toContain("REVOKE INSERT, UPDATE, DELETE ON public.holiday_payments");
   });
 });
 

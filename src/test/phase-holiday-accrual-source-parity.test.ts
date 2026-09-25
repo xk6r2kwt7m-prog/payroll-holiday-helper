@@ -72,7 +72,7 @@ describe("Holiday accrual source parity", () => {
   });
 
   it("summary hook excludes superseded [Corrected] periods from pending accrual", () => {
-    const src = read("hooks/useHolidayYearSummary.ts");
+    const src = read("lib/holiday-year-summary.ts");
     expect(src).toContain("[Corrected]");
     expect(src).toContain("isCommittedPayrollStatus");
   });
