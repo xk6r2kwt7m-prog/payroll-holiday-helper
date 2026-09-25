@@ -85,7 +85,7 @@ const LocationDashboard = () => {
 
   const latestPeriod = periods[0];
   const latestPeriodId = latestPeriod?.id;
-  const { data: entries = [] } = usePayrollEntries(latestPeriodId);
+  const { data: entries = [] } = usePayrollEntries(latestPeriodId, { enabled: !!(latestPeriodId) });
 
   const branchEntries = useMemo(() => {
     return entries.filter((e: any) => branchEmpIds.has(e.employee_id));

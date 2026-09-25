@@ -40,6 +40,7 @@ export interface ApprovalGuardrailsResult {
   scIneligibleEntryIds: Set<string>;
   scOverrideNoteEntryIds: Set<string>;
   isLoading: boolean;
+  isError: boolean;
 }
 
 export const SC_ELIGIBILITY_OVERRIDE_FIELD = "service_charge_eligibility_override";
@@ -56,7 +57,7 @@ export function usePayrollApprovalGuardrails({
   );
 
   // G1 — NMW overrides
-  const { data: contractOverrides = [], isLoading: loadingContractOverrides } = useQuery({
+  const { data: contractOverrides = [], isFetching: loadingContractOverrides, isError: errorContractOverrides } = useQuery({
     queryKey: ["nmw_contract_overrides", tenantId, employeeIds.sort().join(",")],
     queryFn: async () => {
       if (!tenantId || employeeIds.length === 0) return [];
@@ -71,7 +72,7 @@ export function usePayrollApprovalGuardrails({
     enabled: !!tenantId && employeeIds.length > 0,
   });
 
-  const { data: nmwAuditOverrides = [], isLoading: loadingAuditOverrides } = useQuery({
+  const { data: nmwAuditOverrides = [], isFetching: loadingAuditOverrides, isError: errorAuditOverrides } = useQuery({
     queryKey: ["nmw_audit_overrides", tenantId, periodId],
     queryFn: async () => {
       if (!tenantId || !periodId) return [];
@@ -89,7 +90,7 @@ export function usePayrollApprovalGuardrails({
   });
 
   // G4 — SC override notes (period-scoped adjustments)
-  const { data: scOverrideAdjustments = [], isLoading: loadingScOverrides } = useQuery({
+  const { data: scOverrideAdjustments = [], isFetching: loadingScOverrides, isError: errorScOverrides } = useQuery({
     queryKey: ["sc_eligibility_overrides", tenantId, periodId],
     queryFn: async () => {
       if (!tenantId || !periodId) return [];
@@ -135,6 +136,7 @@ export function usePayrollApprovalGuardrails({
       nmwOverrideEmployeeIds,
       scIneligibleEntryIds,
       scOverrideNoteEntryIds,
+      isError: errorContractOverrides || errorAuditOverrides || errorScOverrides,
       isLoading:
         loadingContractOverrides || loadingAuditOverrides || loadingScOverrides,
     };
@@ -143,6 +145,7 @@ export function usePayrollApprovalGuardrails({
     nmwAuditOverrides,
     scOverrideAdjustments,
     entries,
+    errorContractOverrides, errorAuditOverrides, errorScOverrides,
     loadingContractOverrides,
     loadingAuditOverrides,
     loadingScOverrides,

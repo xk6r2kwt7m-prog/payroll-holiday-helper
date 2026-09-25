@@ -81,11 +81,13 @@ describe("Holiday taken — ledger vs payments parity", () => {
 
   it("Holidays dashboard applies the ledger reconciliation", () => {
     const src = read("pages/Holidays.tsx");
-    expect(src).toContain("ledgerOnlyTakenByEmployee");
-    expect(src).toContain("useLedgerTakenRowsByYear");
-    for (const y of [2022, 2023, 2024, 2025, 2026]) {
-      expect(src).toContain(`ledgerRows${y}`);
-    }
+    expect(src).toContain("summariseHolidayYear(Number(year)");
+    expect(src).toContain("legacyBalance: row.balance");
+    expect(src).toContain("useHolidayLedgerRows");
+    // One paginated ledger read is grouped by its stored leave year, including future years.
+    expect(src).toContain("useHolidayLedgerRows()");
+    expect(src).toContain("ensure(row.leave_year_start.slice(0, 4)).ledgerRows.push(row)");
+    expect(src).toContain("data.balances, data.ledgerRows");
   });
 
   it("reconciliation module stays read-only", async () => {

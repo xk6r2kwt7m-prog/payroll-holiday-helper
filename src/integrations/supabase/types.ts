@@ -11649,6 +11649,12 @@ export type Database = {
       }
     }
     Functions: {
+      // Reviewed pending migration 20260925090000; regenerate from staging after application.
+      mutate_holiday_payment_atomic: {
+        Args: { _tenant_id: string; _request_id: string; _operation: string; _payment_id: string; _values?: Json }
+        Returns: Json
+      }
+
       activate_contract_terms: {
         Args: { _contract_id: string }
         Returns: {

@@ -19,6 +19,7 @@ export type LedgerEntryType =
   | "expiry";
 
 export interface LedgerRow {
+  leave_year_start?: string | null;
   id: string;
   entry_type: LedgerEntryType;
   entry_date: string;

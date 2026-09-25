@@ -23,10 +23,11 @@ const checklist = readFileSync(
 
 describe("Phase 5B — ack/confirm reset on period switch", () => {
   it("uses useEffect (not useMemo) to reset checklist state", () => {
-    // The reset block must run as an effect keyed on selectedPeriod.id.
+    // The reset block must run as an effect keyed on the period and the evidence reviewed.
     const block =
-      /useEffect\(\(\) => \{\s*setChecklistAcks\(new Set\(\)\);\s*setChecklistConfirmed\(false\);\s*\},\s*\[selectedPeriod\?\.id\]\);/;
+      /useEffect\(\(\) => \{\s*setChecklistAcks\(new Set\(\)\);\s*setChecklistConfirmed\(false\);\s*\},\s*\[approvalEvidenceVersion\]\);/;
     expect(payrollPage).toMatch(block);
+    expect(payrollPage).toMatch(/approvalEvidenceVersion = JSON.stringify\(\[\s*selectedPeriod, entries, holidayPayments, payrollAdjustments/);
   });
 
   it("imports useEffect from react", () => {

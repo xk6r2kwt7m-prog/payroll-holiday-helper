@@ -51,12 +51,12 @@ export function PayrollInlineAnalytics({ currentPeriodId, entries, holidayPaymen
   // Get previous period entries
   const currentIndex = allPeriods.findIndex(p => p.id === currentPeriodId);
   const prevPeriod = currentIndex >= 0 && currentIndex < allPeriods.length - 1 ? allPeriods[currentIndex + 1] : null;
-  const { data: prevEntries = [] } = usePayrollEntries(prevPeriod?.id);
+  const { data: prevEntries = [] } = usePayrollEntries(prevPeriod?.id, { enabled: !!(prevPeriod?.id) });
   const { data: prevHolidays = [] } = useHolidayPayments(prevPeriod?.id);
 
   // Also get 2 periods back for mini-trend
   const prevPeriod2 = currentIndex >= 0 && currentIndex < allPeriods.length - 2 ? allPeriods[currentIndex + 2] : null;
-  const { data: prevEntries2 = [] } = usePayrollEntries(prevPeriod2?.id);
+  const { data: prevEntries2 = [] } = usePayrollEntries(prevPeriod2?.id, { enabled: !!(prevPeriod2?.id) });
 
   const currentPeriod = allPeriods.find(p => p.id === currentPeriodId);
 

@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetch-all-rows";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -31,6 +32,7 @@ export function useHolidayLedger(employeeId?: string, leaveYearStart?: string) {
         .from("holiday_ledger")
         .select("*")
         .eq("employee_id", employeeId!)
+        .eq("tenant_id", tenantId!)
         .order("entry_date", { ascending: true })
         .order("created_at", { ascending: true });
 
@@ -38,8 +40,7 @@ export function useHolidayLedger(employeeId?: string, leaveYearStart?: string) {
         query = query.eq("leave_year_start", leaveYearStart);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      const data = await fetchAllRows((from, to) => query.order("id").range(from, to));
       return data as HolidayLedgerEntry[];
     },
   });
@@ -82,12 +83,11 @@ export function useHolidayLedgerBalancesByYear(year: number) {
     queryKey: ["holiday_ledger", tenantId, "year_balances", year],
     enabled: !!tenantId,
     queryFn: async (): Promise<HolidayLedgerYearBalance[]> => {
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("holiday_ledger")
         .select("employee_id, entry_type, hours, employees ( forename, surname, department, status )")
         .eq("tenant_id", tenantId!)
-        .eq("leave_year_start", leaveYearStart);
-      if (error) throw error;
+        .eq("leave_year_start", leaveYearStart).order("id").range(from, to));
 
       const byEmployee = new Map<string, HolidayLedgerYearBalance>();
       for (const row of (data || []) as any[]) {
@@ -145,22 +145,24 @@ export function useHolidayLedgerBalancesByYear(year: number) {
  * Raw ledger rows for a leave year (all employees) used for read-only
  * reconciliation of holiday taken against holiday_payments.
  */
-export function useLedgerTakenRowsByYear(year: number) {
+export function useLedgerTakenRowsByYear(year?: number) {
   const { tenantId } = useTenant();
   const leaveYearStart = `${year}-01-01`;
 
   return useQuery({
     queryKey: ["holiday_ledger", tenantId, "taken_recon_rows", year],
     enabled: !!tenantId,
-    queryFn: async (): Promise<ReconLedgerRow[]> => {
-      const { data, error } = await supabase
+    queryFn: async (): Promise<Array<ReconLedgerRow & { leave_year_start: string }>> => {
+      const data = await fetchAllRows((from, to) => {
+        let query = supabase
         .from("holiday_ledger")
-        .select("id, employee_id, entry_type, hours, source_table, source_id")
+        .select("id, employee_id, leave_year_start, entry_type, hours, source_table, source_id")
         .eq("tenant_id", tenantId!)
-        .eq("leave_year_start", leaveYearStart)
         .in("entry_type", ["holiday_taken", "payout_on_termination", "correction"]);
-      if (error) throw error;
-      return (data || []) as ReconLedgerRow[];
+        if (year !== undefined) query = query.eq("leave_year_start", leaveYearStart);
+        return query.order("id").range(from, to);
+      });
+      return (data || []) as Array<ReconLedgerRow & { leave_year_start: string }>;
     },
   });
 }
@@ -184,7 +186,7 @@ export function usePendingLedgerAccruals(employeeId?: string, year?: number) {
     queryKey: ["holiday_pending_accrual", tenantId, employeeId, year, "ledger_rows"],
     enabled: !!employeeId && !!tenantId && !!year,
     queryFn: async (): Promise<PendingLedgerAccrual[]> => {
-      const { data, error } = await supabase
+      const data = await fetchAllRows((from, to) => supabase
         .from("payroll_entries")
         .select(
           "holiday_accrued_hours, timesheet_hours, payroll_periods!inner(period_name, status, start_date, end_date)",
@@ -192,8 +194,7 @@ export function usePendingLedgerAccruals(employeeId?: string, year?: number) {
         .eq("employee_id", employeeId!)
         .eq("tenant_id", tenantId!)
         .gte("payroll_periods.start_date", `${year}-01-01`)
-        .lte("payroll_periods.start_date", `${year}-12-31`);
-      if (error) throw error;
+        .lte("payroll_periods.start_date", `${year}-12-31`).order("id").range(from, to));
 
       const rows = (data || []) as any[];
       // Periods superseded by a "[Corrected]" rebuild must not be double counted.
@@ -223,5 +224,17 @@ export function usePendingLedgerAccruals(employeeId?: string, year?: number) {
         }))
         .sort((a, b) => a.entryDate.localeCompare(b.entryDate));
     },
+  });
+}
+
+/** All ledger types are required for the canonical dashboard, including expiry and corrections. */
+export function useHolidayLedgerRows() {
+  const { tenantId } = useTenant();
+  return useQuery({
+    queryKey: ["holiday_ledger", tenantId, "dashboard_rows"],
+    enabled: !!tenantId,
+    queryFn: () => fetchAllRows((from, to) => supabase.from("holiday_ledger")
+      .select("*, employees(forename, surname, department)").eq("tenant_id", tenantId!)
+      .order("id").range(from, to)),
   });
 }
