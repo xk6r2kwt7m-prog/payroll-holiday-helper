@@ -79,7 +79,7 @@ describe("single request asks only for what is missing", () => {
   });
 
   it("says nothing more is needed when the record is complete", () => {
-    expect(single).toContain("We already hold everything on this list");
+    expect(single).toContain("Nothing further needs requesting on this list");
   });
 
   it("lets the administrator still tick anything", () => {

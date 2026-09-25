@@ -42,7 +42,7 @@ export const STAFF_FIELD_RULES: StaffFieldRule[] = [
   { column: "preferred_name", label: "Preferred name", critical: false },
   { column: "email", label: "Email address", critical: true },
   { column: "date_of_birth", label: "Date of birth", critical: true },
-  { column: "ni_number", label: "National Insurance number", critical: true },
+  { column: "ni_number", label: "National Insurance number", critical: true, alwaysReview: true },
   { column: "nationality", label: "Nationality", critical: false },
   { column: "passport_no", label: "Passport number", critical: false },
   { column: "sharing_code", label: "Share code", critical: false },

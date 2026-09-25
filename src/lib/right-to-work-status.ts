@@ -35,7 +35,7 @@ export type RightToWorkClearance =
   | "pending"
   | "missing";
 
-export type RtwCheckResult = "unlimited" | "time_limited" | "no_right_to_work";
+export type RtwCheckResult = "unlimited" | "time_limited" | "no_right_to_work" | "ecs_pending";
 
 export interface RtwCheck {
   check_method?: string;
@@ -92,6 +92,7 @@ export function isRightToWorkCleared(
       return bCreated.localeCompare(aCreated);
     })[0];
 
+    if (latest.result === "ecs_pending") return "pending";
     if (latest.result === "unlimited") return "cleared";
     if (latest.result === "no_right_to_work") return "rejected";
     // time_limited

@@ -6,9 +6,9 @@
  * reports "held" or "not held" per item so the request screens can pre-tick
  * the missing ones and label the rest as already on file.
  *
- * Sources, in order of authority:
- *  1. the staff record itself (employees)
- *  2. details the member of staff previously submitted (employee_onboarding_data)
+ * Accepted identity and pay details come from employees. Contact details are
+ * held in employee_onboarding_data. Pending reviews suppress repeat requests
+ * without marking the underlying detail as accepted.
  */
 
 import { INFO_ITEM_KEYS, type InfoItemKey } from "@/lib/info-request-items";
@@ -51,32 +51,34 @@ const pick = (bag: Record<string, any> | null | undefined, ...keys: string[]): b
   return keys.some((k) => has(bag[k]));
 };
 
-export type InfoCoverage = Record<InfoItemKey, boolean>;
+export type InfoCoverage = Record<InfoItemKey, boolean> & { pendingItems?: InfoItemKey[] };
+export function withPendingCoverage(coverage: InfoCoverage, fields: string[], niPending = false): InfoCoverage {
+  const map: Record<string, InfoItemKey> = { ni_number: "ni_number", bank_account_no: "bank", sort_code: "bank", forename: "legal_name", surname: "legal_name", date_of_birth: "dob", email: "email", passport_no: "passport", sharing_code: "share_code" };
+  return { ...coverage, pendingItems: [...new Set([...fields.map(f => map[f]).filter(Boolean), ...(niPending ? ["ni_number" as const] : [])])] };
+}
 
 export function computeInfoCoverage(
   employee: CoverageEmployee | null | undefined,
   onboarding: CoverageOnboarding | null | undefined,
 ): InfoCoverage {
   const personal = onboarding?.personal_info ?? null;
-  const bank = onboarding?.bank_details ?? null;
+  // Pending sensitive onboarding values must never satisfy accepted coverage.
   const emergency = onboarding?.emergency_contact ?? null;
 
   const held: InfoCoverage = {
     legal_name:
-      (has(employee?.forename) && has(employee?.surname)) ||
-      pick(personal, "full_name", "legal_name"),
-    dob: has(employee?.date_of_birth) || pick(personal, "date_of_birth", "dob"),
+      (has(employee?.forename) && has(employee?.surname)),
+    dob: has(employee?.date_of_birth),
     phone: pick(personal, "phone", "mobile", "phone_number"),
-    email: has(employee?.email) || pick(personal, "email"),
+    email: has(employee?.email),
     address: pick(personal, "address", "home_address", "full_address", "address_line1"),
-    ni_number: !!employee?.has_ni_number || pick(personal, "national_insurance", "ni_number"),
+    ni_number: !!employee?.has_ni_number,
     nationality: has(employee?.nationality) || pick(personal, "nationality"),
-    passport: !!employee?.has_passport || pick(personal, "passport_no", "passport_number"),
+    passport: !!employee?.has_passport,
     visa: has(employee?.settlement_status) || pick(personal, "residence_permit", "visa_number"),
-    share_code: !!employee?.has_share_code || pick(personal, "share_code", "sharing_code"),
+    share_code: !!employee?.has_share_code,
     bank:
-      !!employee?.has_bank_details ||
-      (pick(bank, "sort_code") && pick(bank, "account_number", "account_no")),
+      !!employee?.has_bank_details,
     emergency: pick(emergency, "name", "contact_name") && pick(emergency, "phone", "contact_number"),
   };
 
@@ -87,11 +89,11 @@ export function computeInfoCoverage(
 export const missingItems = (
   wanted: readonly InfoItemKey[],
   coverage: InfoCoverage,
-): InfoItemKey[] => wanted.filter((k) => !coverage[k]);
+): InfoItemKey[] => wanted.filter((k) => !coverage[k] && !coverage.pendingItems?.includes(k));
 
 /** Every item we could ask for that is still missing. */
 export const allMissingItems = (coverage: InfoCoverage): InfoItemKey[] =>
-  (INFO_ITEM_KEYS as InfoItemKey[]).filter((k) => !coverage[k]);
+  (INFO_ITEM_KEYS as InfoItemKey[]).filter((k) => !coverage[k] && !coverage.pendingItems?.includes(k));
 
 /**
  * Right-to-work items expire, so "held" is not the same as "still valid".

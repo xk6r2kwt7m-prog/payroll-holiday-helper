@@ -63,7 +63,7 @@ export function RequestStaffDetailsDialog({
     if (!coverage) return [] as InfoItemKey[];
     const missing = allMissingItems(coverage);
     return kind === "onboarding"
-      ? Array.from(new Set([...missing, ...REASKABLE_ITEMS]))
+      ? Array.from(new Set([...missing, ...REASKABLE_ITEMS.filter(k => !coverage.pendingItems?.includes(k))]))
       : missing;
   }, [coverage, kind]);
 
@@ -97,9 +97,9 @@ export function RequestStaffDetailsDialog({
     setTouched(true);
     setPreset(key);
     const trimmed = coverage
-      ? Array.from(new Set([...missingItems(items, coverage), ...items.filter((i) => REASKABLE_ITEMS.includes(i))]))
+      ? Array.from(new Set([...missingItems(items, coverage), ...items.filter((i) => REASKABLE_ITEMS.includes(i) && !coverage.pendingItems?.includes(i))]))
       : [...items];
-    setSelected(trimmed.length ? trimmed : [...items]);
+    setSelected(trimmed);
   };
 
 
@@ -141,6 +141,7 @@ export function RequestStaffDetailsDialog({
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-md">
+        {coverage?.pendingItems?.length ? <p className="text-sm text-muted-foreground">Awaiting review or follow-up: {INFO_ITEMS.filter(i => coverage.pendingItems?.includes(i.key)).map(i => i.label).join(", ")}. These are excluded from automatic requests.</p> : null}
         <DialogHeader>
           <DialogTitle>
             {confirming ? "Check before sending" : `Ask ${employeeName.split(" ")[0]} for information`}
@@ -292,7 +293,7 @@ export function RequestStaffDetailsDialog({
                   {coverageLoading
                     ? "Checking what we already hold..."
                     : missingKeys.length === 0
-                      ? "We already hold everything on this list. Only tick something if you want it checked or refreshed."
+                      ? "Nothing further needs requesting on this list. Submitted details may still be awaiting review."
                       : `Ticked below: the ${missingKeys.length} item${missingKeys.length > 1 ? "s" : ""} we don't hold yet. Items marked "already on file" aren't asked for again unless you tick them.`}
                 </p>
               </div>

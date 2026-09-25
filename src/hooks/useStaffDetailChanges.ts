@@ -130,6 +130,10 @@ export function useDecideStaffDetailChange() {
     },
     onSuccess: (_d, { accept, change }) => {
       qc.invalidateQueries({ queryKey: ["staff_detail_changes"] });
+      qc.invalidateQueries({ queryKey: ["info-coverage"] });
+      qc.invalidateQueries({ queryKey: ["info-coverage-bulk"] });
+      qc.invalidateQueries({ queryKey: ["missing_information"] });
+      qc.invalidateQueries({ queryKey: ["pending_detail_decisions"] });
       qc.invalidateQueries({ queryKey: ["employees"] });
       qc.invalidateQueries({ queryKey: ["employee-sensitive"] });
       toast.success(
@@ -213,6 +217,10 @@ export function useVerifyBankChange() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["staff_detail_changes"] });
+      qc.invalidateQueries({ queryKey: ["info-coverage"] });
+      qc.invalidateQueries({ queryKey: ["info-coverage-bulk"] });
+      qc.invalidateQueries({ queryKey: ["missing_information"] });
+      qc.invalidateQueries({ queryKey: ["pending_detail_decisions"] });
       qc.invalidateQueries({ queryKey: ["employees"] });
       qc.invalidateQueries({ queryKey: ["employee-sensitive"] });
       qc.invalidateQueries({ queryKey: ["tenant-sensitive"] });

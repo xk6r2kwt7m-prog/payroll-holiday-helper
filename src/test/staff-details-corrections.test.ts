@@ -76,12 +76,14 @@ describe("right to work", () => {
     expect(rtwBasisNeedsExpiry(null)).toBe(false);
   });
 
-  it("offers the four routes to working in the UK", () => {
+  it("offers the supported routes to working in the UK", () => {
     expect(RTW_BASIS_OPTIONS.map((o) => o.value)).toEqual([
       "british_irish",
       "settled",
       "pre_settled",
       "visa",
+      "student",
+      "ecs_pending",
       "other",
     ]);
   });

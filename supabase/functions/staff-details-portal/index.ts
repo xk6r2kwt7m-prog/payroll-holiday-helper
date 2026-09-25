@@ -9,6 +9,8 @@ import {
   sectionsForItems,
 } from "../_shared/info-request-items.ts";
 
+import { niProblems, withoutConfirmations, normaliseNi } from "./validation.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -138,7 +140,7 @@ Deno.serve(async (req) => {
           first_name: emp?.preferred_name || emp?.forename || "",
           full_name: emp ? `${emp.forename} ${emp.surname}` : "",
         },
-        saved: request.submitted_data ?? {},
+        saved: withoutConfirmations(request.submitted_data),
         prefill: {
           forename: emp?.forename ?? "",
           surname: emp?.surname ?? "",
@@ -157,15 +159,16 @@ Deno.serve(async (req) => {
 
     // ── Save progress ──
     if (action === "save") {
-      const answers = typeof body.answers === "object" && body.answers ? body.answers : {};
-      await admin
+      const answers = withoutConfirmations(body.answers);
+      const { error: saveError } = await admin
         .from("employee_info_requests")
         .update({
-          submitted_data: { ...(request.submitted_data ?? {}), ...answers },
+          submitted_data: withoutConfirmations({ ...(request.submitted_data ?? {}), ...answers }),
           status: "in_progress",
           last_saved_at: new Date().toISOString(),
         })
         .eq("id", request.id);
+      if (saveError) throw saveError;
       return json({ success: true });
     }
 
@@ -225,12 +228,18 @@ Deno.serve(async (req) => {
 
     // ── Final submission ──
     if (action === "submit") {
-      const answers = { ...(request.submitted_data ?? {}), ...(body.answers ?? {}) };
+      const answers = withoutConfirmations({ ...(request.submitted_data ?? {}), ...(body.answers ?? {}) });
       // Sections drive which answers are read; item-level requests map onto the
       // same sections, and only values the person actually typed are considered.
       const sections: string[] = sectionsForItems(request.requested_fields ?? []);
 
       const personal = answers.personal ?? {};
+      if (expandRequestedFields(request.requested_fields).includes("ni_number")) {
+        const errors = niProblems(personal, typeof body.ni_confirmation === "string" ? body.ni_confirmation : "");
+        if (errors.length) return json({ error: errors[0] }, 400);
+        personal.ni_status = personal.ni_number ? "provided" : personal.ni_status === "application_pending" ? "application_pending" : "not_provided";
+        if (personal.ni_number) personal.ni_number = normaliseNi(personal.ni_number);
+      }
       const emergency = answers.emergency ?? {};
       const bank = answers.bank ?? {};
       const rtw = answers.rtw ?? {};
@@ -259,6 +268,8 @@ Deno.serve(async (req) => {
         candidates.sharing_code = str(rtw.sharing_code, 40);
         candidates.settlement_status = str(rtw.settlement_status, 60);
         const basis = str(rtw.rtw_basis, 40);
+        if (basis === "ecs_pending" && !str(rtw.ecs_reason, 1000)) return json({ error: "Please explain why you need help with the check" }, 400);
+        if (basis === "student" && (!str(rtw.study_provider) || !str(rtw.study_dates, 2000) || !str(rtw.work_restrictions, 1000))) return json({ error: "Please provide your course, study dates and work restrictions" }, 400);
         if (rtwBasisNeedsExpiry(basis) && !str(rtw.expires_at, 10)) {
           return json(
             {
@@ -318,7 +329,7 @@ Deno.serve(async (req) => {
           needs_review: true,
           state: "pending",
           notes:
-            "Bank details are not used for pay until an administrator confirms them directly with the employee",
+            h.field === "ni_number" ? "NI number submitted — awaiting administrator review" : "Bank details are not used for pay until an administrator confirms them directly with the employee",
         })),
       ].map((row) => ({
         ...row,
@@ -385,10 +396,14 @@ Deno.serve(async (req) => {
               legal_surname: str(personal.surname, 80),
               preferred_name: str(personal.preferred_name, 80),
               date_of_birth: str(personal.date_of_birth, 10),
-              ni_number: str(personal.ni_number, 20),
+              // The submitted NI value lives only in the protected review trail.
+              ...(expandRequestedFields(request.requested_fields).includes("ni_number") ? {
+                ni_status: personal.ni_status,
+                ni_application_date: str(personal.ni_application_date, 10),
+              } : {}),
               // Contracts, letters and the staff profile each read a different
               // key shape — write them all so nothing is asked for twice.
-              ...aliases,
+              ...Object.fromEntries(Object.entries(aliases).filter(([, value]) => value !== null)),
             }
           : {}),
         ...(sections.includes("rtw")
@@ -398,9 +413,12 @@ Deno.serve(async (req) => {
               sharing_code: str(rtw.sharing_code, 40),
               settlement_status: str(rtw.settlement_status, 60),
               rtw_basis: str(rtw.rtw_basis, 40),
+              ecs_reason: str(rtw.ecs_reason, 1000),
+              study_provider: str(rtw.study_provider),
+              study_dates: str(rtw.study_dates, 2000),
+              work_restrictions: str(rtw.work_restrictions, 1000),
               rtw_document_type: str(rtw.document_type, 40),
               rtw_expires_at: str(rtw.expires_at, 10),
-              ...(str(rtw.ni_number, 20) ? { ni_number: str(rtw.ni_number, 20) } : {}),
             }
           : {}),
       };
@@ -419,16 +437,15 @@ Deno.serve(async (req) => {
         ? {
             ...((existingOnb?.bank_details as Record<string, unknown>) ?? {}),
             account_holder: str(bank.account_holder, 100),
-            account_number: str(bank.account_number, 20),
-            sort_code: str(bank.sort_code, 12),
+            review_status: "pending",
             bank_name: str(bank.bank_name, 80),
           }
         : ((existingOnb?.bank_details as Record<string, unknown>) ?? {});
 
-      const rtwPending = sections.includes("rtw") && (request.rtw_uploaded_count ?? 0) > 0;
+      const rtwPending = sections.includes("rtw") && ((request.rtw_uploaded_count ?? 0) > 0 || !!str(rtw.sharing_code, 40) || rtw.rtw_basis === "ecs_pending");
 
       if (existingOnb) {
-        await admin
+        const { error: onbError } = await admin
           .from("employee_onboarding_data")
           .update({
             personal_info: personalInfo,
@@ -441,8 +458,9 @@ Deno.serve(async (req) => {
             ...(str(rtw.expires_at, 10) ? { rtw_expires_on: str(rtw.expires_at, 10) } : {}),
           })
           .eq("id", existingOnb.id);
+        if (onbError) throw onbError;
       } else {
-        await admin.from("employee_onboarding_data").insert({
+        const { error: onbError } = await admin.from("employee_onboarding_data").insert({
           tenant_id: request.tenant_id,
           employee_id: request.employee_id,
           personal_info: personalInfo,
@@ -454,9 +472,10 @@ Deno.serve(async (req) => {
             : {}),
           ...(str(rtw.expires_at, 10) ? { rtw_expires_on: str(rtw.expires_at, 10) } : {}),
         });
+        if (onbError) throw onbError;
       }
 
-      await admin
+      const { error: submitError } = await admin
         .from("employee_info_requests")
         .update({
           submitted_data: answers,
@@ -464,6 +483,8 @@ Deno.serve(async (req) => {
           status: "submitted",
         })
         .eq("id", request.id);
+
+      if (submitError) throw submitError;
 
       // Notify managers in the app.
       const { data: managers } = await admin

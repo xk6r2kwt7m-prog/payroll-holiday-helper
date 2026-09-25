@@ -76,7 +76,7 @@ describe("staff form shows only what was asked", () => {
   });
 
   it("leaves the National Insurance number optional", () => {
-    const ni = buildPortalSteps(["ni_number"])[0].fields[0];
+    const ni = buildPortalSteps(["ni_number"])[0].fields.find(f => f.key === "ni_number")!;
     expect(ni.required).toBeUndefined();
   });
 

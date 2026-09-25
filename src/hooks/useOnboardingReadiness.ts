@@ -168,7 +168,7 @@ function checkRequirement(
         ? "complete" : "missing";
 
     case "bank_details":
-      return (employee.has_bank_details || onboardingData?.bank_details?.account_number)
+      return (employee.has_bank_details)
         ? "complete" : "missing";
 
     case "right_to_work": {
@@ -388,6 +388,7 @@ export function useEmployeeReadiness(employeeId?: string) {
       const training = trainRes.data || [];
       const libraryItems = (libRes.data || []) as unknown as LibraryItemForReadiness[];
       const assignments = assignRes.data || [];
+      if (rtwChecksRes.error) throw rtwChecksRes.error;
       const rtwChecks = rtwChecksRes.data || [];
 
       const standardChecks: RequirementCheck[] = requirements.map(req => {
@@ -454,6 +455,7 @@ export function useTeamReadiness(employees: Employee[]) {
       const avail = availRes.data || [];
       const libraryItems = (libRes.data || []) as unknown as LibraryItemForReadiness[];
       const allAssignments = assignRes.data || [];
+      if (rtwChecksRes.error) throw rtwChecksRes.error;
       const allRtwChecks = rtwChecksRes.data || [];
 
       return nonActiveIds.map(empId => {

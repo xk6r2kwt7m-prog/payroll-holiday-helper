@@ -83,7 +83,7 @@ export default function Onboarding() {
   });
 
   // One query: right-to-work checks for every employee in the review queue
-  const { data: rtwChecks = [] } = useQuery({
+  const { data: rtwChecks = [], isPending: checksLoading, isError: checksError } = useQuery({
     queryKey: ["onboarding_rtw_checks", reviewEmployeeIds.join(",")],
     queryFn: async () => {
       if (reviewEmployeeIds.length === 0) return [];
@@ -91,7 +91,7 @@ export default function Onboarding() {
         .from("right_to_work_checks")
         .select("employee_id, result, checked_on, created_at, permission_expires_on")
         .in("employee_id", reviewEmployeeIds);
-      if (error) return [];
+      if (error) throw error;
       return (data || []) as any[];
     },
     enabled: reviewEmployeeIds.length > 0,
@@ -154,6 +154,7 @@ export default function Onboarding() {
                   record={record}
                   rtwDocuments={rtwDocuments.filter(d => d.employee_id === record.employee_id)}
                   rtwChecks={rtwChecks.filter(c => c.employee_id === record.employee_id)}
+                  checksUnavailable={checksLoading || checksError}
                 />
               ))
             )}
@@ -224,7 +225,7 @@ function KpiCard({ label, value, icon: Icon, color }: { label: string; value: nu
   );
 }
 
-function OnboardingReviewCard({ record, rtwDocuments, rtwChecks }: { record: any; rtwDocuments: any[]; rtwChecks: any[] }) {
+function OnboardingReviewCard({ record, rtwDocuments, rtwChecks, checksUnavailable }: { record: any; rtwDocuments: any[]; rtwChecks: any[]; checksUnavailable: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const [rtwNotes, setRtwNotes] = useState("");
   const [rtwConfirmOpen, setRtwConfirmOpen] = useState(false);
@@ -242,7 +243,7 @@ function OnboardingReviewCard({ record, rtwDocuments, rtwChecks }: { record: any
   const bankDetails = record.bank_details || {};
   const emergencyContact = record.emergency_contact || {};
   const rtwClearance = isRightToWorkCleared(record, rtwDocuments, rtwChecks);
-  const canApprove = rtwClearance === "cleared";
+  const canApprove = !checksUnavailable && rtwClearance === "cleared";
 
   const today = format(new Date(), "yyyy-MM-dd");
   const rtwDateInvalid = !rtwCheckDate || rtwCheckDate > today;
@@ -290,6 +291,7 @@ function OnboardingReviewCard({ record, rtwDocuments, rtwChecks }: { record: any
         {expanded && (
           <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
             <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
+              {checksUnavailable && <p role="alert" className="text-sm text-destructive">Unable to confirm right-to-work checks. Approval is unavailable until the checks load.</p>}
               {/* Submitted info sections */}
               <div className="grid gap-3 sm:grid-cols-2">
                 <InfoSection title="Personal Details" items={[

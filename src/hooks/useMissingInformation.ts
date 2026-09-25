@@ -36,6 +36,7 @@ export interface MissingInformationRow {
   latestRequest: LatestInfoRequest | null;
   /** Missing items that already have a pending staff_detail_changes decision. */
   pendingDecision: MissingItemKey[];
+  niApplicationPending: boolean;
 }
 
 const RTW_TYPES = ["passport", "visa", "biometric_residence_permit", "right_to_work"];
@@ -83,7 +84,7 @@ export function useMissingInformation() {
         supabase
           .from("employee_onboarding_data" as any)
           .select(
-            "employee_id, rtw_status, " +
+            "employee_id, rtw_status, ni_status:personal_info->>ni_status, " +
               "dob:personal_info->>dob, date_of_birth:personal_info->>date_of_birth, " +
               "address:personal_info->>address, home_address:personal_info->>home_address, " +
               "full_address:personal_info->>full_address, address_line1:personal_info->>address_line1, " +
@@ -118,7 +119,7 @@ export function useMissingInformation() {
       if (docs.error) throw docs.error;
       if (reqs.error) throw reqs.error;
       if (changes.error) throw changes.error;
-      // checks error is non-fatal: treat as empty so the board still works
+      if (checks.error) throw checks.error;
 
       const obById = new Map<string, any>();
       for (const r of (ob.data ?? []) as any[]) obById.set(r.employee_id, r);
@@ -196,6 +197,7 @@ export function useMissingInformation() {
             status: e.status,
             missing,
             latestRequest: reqById.get(e.id) ?? null,
+            niApplicationPending: !cov.ni_number && o?.ni_status === "application_pending",
             pendingDecision: missing.filter((m) => pendingById.get(e.id)?.has(m)),
           } as MissingInformationRow;
         })
