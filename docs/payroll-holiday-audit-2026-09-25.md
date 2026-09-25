@@ -26,60 +26,60 @@ Base: `b0ca8b2e4ff97146d67e4fb323a6882a844607c9`. Branch: `fix/payroll-holiday-r
 
 The holiday dashboard now gates its main totals on all six financial source queries. The balance hook also withholds stale results during refresh. Pending accrual remains explicitly separate from committed ledger accrual.
 
-## Unresolved release risks
+## Second implementation round
 
-### High: holiday payment writes are not transactional
+The earlier transactional-write, total-trigger, insert-lock, divergent-balance and read-side-archiving findings now have proposed code fixes in this branch. They are **not deployed fixes**. The database portion is deliberately outside `supabase/migrations`, in `supabase/pending-migrations/20260925090000_atomic_holiday_payments.sql`, and requires exact-SQL approval before execution.
 
-Evidence: `src/hooks/useHolidays.ts`, `useCreateHolidayPayment`, `useUpdateHolidayPayment`, `useDeleteHolidayPayment`; manual leaver adjustments in `src/components/holidays/SettleLeaverDialog.tsx`.
+| Finding | Implemented correction |
+|---|---|
+| Payment, ledger, totals and audit could save only partly | Create/update/delete use one tenant-checked database RPC. An exception rolls back the transaction. No browser write fallback. |
+| Lost responses could create duplicate payments | Server stores request receipts; the mounted editor retains request IDs after errors and coalesces identical simultaneous calls. |
+| Editing payroll could erase holiday pay from period totals | Proposed trigger recalculates worked pay plus holiday pay and refreshes both parents when a privileged maintenance operation moves an entry. |
+| Approved periods could receive new child rows | Proposed insert/update/delete guards lock the parent and reject changes to locked periods, including privileged direct writes. Reopening cannot also alter locked totals. |
+| Leaver settlement used separate adjustment, payment and status writes | One settlement transaction validates the reviewed balance and saves its adjustment, payment/debit, employee status and audits together. Manual adjustments use the difference from the existing balance; zero balances create no payment. |
+| Ordinary payment edits could partially undo a settlement | These edits/deletes are refused for settlement payments. A dedicated reviewed settlement reversal is still required. |
+| Dashboard and payment form used different balances | Both consume `summariseHolidayYear`, using recorded ledger movements and separately identified unposted accrual. Posted open-period accrual is not counted twice. Missing posted evidence raises a review flag. |
+| Historical figures could be carried forward silently | The dashboard shows discrepancies against its previous calculation for review. No opening balances, historical records or entitlements are automatically deleted, converted or repaired. |
+| Opening the employee list archived leavers | Reads now only read, with paginated results. The working-team view excludes leavers; the existing inclusive view retains them. |
+| Settlement evidence could be incomplete | Required sources are paginated, tenant-scoped and checked for loading/errors. Refreshing evidence clears previous confirmations. Historical/full-employment comparisons cannot directly authorise a payout. |
 
-Creation, payment changes, ledger changes and period-total updates are separate requests. Creation currently discards ledger-insert errors; deletion removes the ledger debit before removing the payment. An interrupted request or permission failure can leave balances and payments inconsistent. A retry can duplicate a payment. The UI safeguards in this change do not resolve this.
+The proposal adds one private receipt table, a public transaction RPC, parent/total triggers and restrictive ledger policies. It replaces existing trigger functions and revokes direct client payment writes. Installation contains no backfill or update of existing payroll/employee records. Calling the RPC after installation does perform the explicitly requested operation.
 
-Required next implementation: one server-side transaction per operation, tenant/permission/status checks inside that transaction, idempotency keys, a locked parent period, ledger-source uniqueness, consistent totals, and audit records committed together. Test failures at each write, duplicate requests and simultaneous approve/edit/delete. Check compatibility with the existing atomic period recovery functions before applying SQL. Do not try to compensate by issuing more browser writes.
-
-### High: the committed total-sync trigger omits holiday payments
-
-Evidence: `supabase/migrations/20260321214616_1fb784e9-21a3-45c1-aa53-f9d8614df566.sql`, `sync_payroll_period_totals`.
-
-That definition assigns `grand_total` from payroll entry `total_pay` only. The client holiday helper adds holiday payments, so a later entry update can overwrite the combined total. No later replacement was found in the committed migrations searched. The deployed function definition still needs verification.
-
-Required acceptance test: add a holiday payment, edit payroll hours, and compare the persisted period total, displayed total, CSV and PDF against the same independent sum. Repeat after moving/deleting a payment and with concurrent edits. Fix both old and new parent periods when records can move.
-
-### High: approved-period holiday insertion needs a database guard
-
-The same committed migration attaches `protect_approved_holiday_payments` to UPDATE/DELETE, not INSERT. A client-side draft selector is insufficient protection against direct API calls and approval races. Inspect all deployed triggers and RLS, then enforce permitted status under a parent-period lock for insert, update and delete.
-
-### High: holiday balance calculations still have multiple sources
-
-The dashboard builds accrual from payroll entries and uses legacy balance/adjustment data, while `useHolidayYearSummary` derives committed values from the ledger. The legacy dashboard fallback still carries positive prior-year balance when there is no recorded balance row. This patch preserves existing policy rather than inventing eligibility or changing historical entitlement.
-
-Next: reconcile the sources per employee/year in a read-only report. Resolve differences explicitly, then make dashboard, payment form, leaver settlement and exports consume the same documented balance service. Include expiry, corrections, carry-over, imported history and superseded periods in fixtures. No automatic balance repair is included.
-
-### Unexpected writes during employee reads
-
-`src/hooks/useEmployees.ts` currently updates unarchived leavers before fetching employees. Opening a screen can therefore change employee records and repeat that request across consumers. This review did not execute those queries against production. Move archiving to an explicit authorised lifecycle operation and preserve clear active/archive views; do not silently rewrite historical staff status during reads.
-
-### Efficiency and user-experience follow-up
-
-- The production build still emits a main JavaScript chunk of roughly 7.1 MB minified (about 1.95 MB gzip). Lazy-load report/PDF and other heavy route features, then measure initial interaction on a representative phone.
-- Paginated history reads provide correctness, but still load all history. For growing datasets, use indexed server-side employee/year aggregates and only fetch detailed rows when expanded. Offset pagination does not itself provide a transactionally consistent snapshot under concurrent writes.
-- Consolidate duplicate review panels into one clear task list: resolve blockers, review changes, confirm, approve. Do not remove leavers with legitimate pay from a selected period.
-- Bulk updates remain multiple writes even though their error handling is improved.
-- Other reports/hooks can still have their own row limits. The new helper covers the listed reads, not every query in the application.
+The generated-type file contains a hand-added declaration for the proposed RPC. Regenerate it from the reviewed staging schema after installation; it has not been regenerated from production.
 
 ## Validation
 
-Baseline full suite: **1,727 passed, 1 failed**. The existing failure is the source-text assertion in `phase-personal-data-protection.test.ts` expecting an unbraced one-line token rejection; the guard currently includes logging in a braced branch. It also expects an unbraced anon-key rejection. This patch does not alter that guard or weaken that test.
+- Baseline: **1,727 passed, 1 failed**. First round: **1,752 passed, 1 failed**.
+- Second-round full application suite: **1,765 passed, 1 failed** across 121 files. The remaining failure is the same source-text assertion in `phase-personal-data-protection.test.ts`: it expects one-line unbraced token/anon-key rejection, while the actual guard includes logging in braced branches. The guard and that test were not changed. This does not independently validate the guard's security.
+- **32 database checks passed** against a disposable, synthetic PGlite PostgreSQL fixture, loading two relevant existing migrations and the proposed SQL. These exercise permissions, tenant isolation, retries, amount validation, year changes, total recalculation, locked periods, ledger/audit/payment/employee failure rollback, manual adjustment deltas, zero settlements, stale balances and partial-reversal refusal.
+- New behavioural unit cases exercise the RPC runner and common balance arithmetic. Updated source-wiring assertions complement them; they are not substitutes for database integration tests.
+- TypeScript application check passed. Production build passed; the existing large-bundle warning remains. Diff/whitespace checks passed.
 
-After fixes: **1,752 passed, 1 failed** (119 test files). The same baseline failure remains. The 25 added behavioural cases cover multi-page reads, failure instead of partial totals, page boundaries, zero/positive/negative carry-over, approval-data readiness, balance withholding/retry across each source, and isolation from cached all-company payroll when a period is absent. Two existing source-wiring tests were updated for dynamic year grouping and evidence-based confirmation resets.
+The database fixture is explicitly **not a clone of the deployed database**. It does not establish compatibility with all production triggers, recovery functions or permissions, or prove safety under multiple PostgreSQL sessions.
 
-TypeScript application check: passed. Production build: passed, with the bundle-size warning above. Whitespace/diff check: passed.
+Run the isolated database checks with a locally installed `@electric-sql/pglite@0.5.8` package (the tested version):
 
-Not performed: live record reconciliation, production schema verification, authenticated end-to-end mobile sessions, transaction/concurrency tests against an actual database, performance benchmarks, or an exhaustive security/legal audit. Passing unit tests does not prove payroll correctness.
+```sh
+PGLITE_MODULE=/absolute/path/to/@electric-sql/pglite/dist/index.js node supabase/pending-migrations/tests/holiday-payment-transactions.mjs
+```
+
+The test has no production URL and uses only synthetic data in memory.
+
+## Remaining release gates and limitations
+
+1. **Deployed-schema compatibility:** inspect the actual schema/grants/triggers and test this SQL with the draft-period deletion/restoration functions. Recovery reinsertion and ledger restoration can activate triggers; they must be exercised together before release. Preserve the existing source uniqueness constraint.
+2. **True concurrency:** run independent PostgreSQL sessions for approve versus payment writes, two settlements for one employee, entry moves, period recovery and simultaneous edits. PGlite tests here are single-session. A deadlock must roll back cleanly and return a useful retry message. No race-proof claim is made.
+3. **Other writers:** historical imports, merge/repair functions and service-role maintenance still have separate write paths. The new parent locks protect their period status and totals, but this PR does not make every such workflow atomic. Existing browser ledger repair tools may now be blocked by the restrictive policies. Audit or port these workflows before enabling them with the migration.
+4. **Settlement reversal:** ordinary edit/delete is intentionally blocked when it would leave a settlement's adjustment or lifecycle change behind. Implement and test a complete reversal workflow before promising self-service reversal in the UI. The period recovery interaction needs the compatibility check above.
+5. **Historical entitlement:** reconcile opening balances and previous-system records using original evidence. Missing ledger evidence and legacy-calculation differences are review items, not permission to erase accrued rights. No live employee balance has been verified in this code audit.
+6. **Retry lifetime:** the server receipt persists, but the editor's request ID currently survives errors only while mounted. Refreshing/reopening after an uncertain ordinary payment response can start a new request; operators must check recorded payments first. A durable client pending-operation journal is a follow-up.
+7. **Business-rule coverage:** the retained calendar-year and start-date accrual allocation assumptions need confirmation against configured leave-year policy. Snapshot comparisons do not resolve all legacy corrected-period or source discrepancies; mismatches refuse settlement.
+8. **Efficiency and usability:** the build still has a roughly 7.1 MB minified main chunk. Server aggregates, route/PDF lazy loading, phone performance measurements and authenticated end-to-end usability checks remain. Pagination prevents truncation, but it is not a database snapshot during concurrent changes. Bulk entry updates remain separate requests.
 
 ## Review and rollout
 
-1. Review the branch diff and confirm the revised screen messages and year behaviour in a test environment.
-2. Re-run the checks above on the integration branch, especially if PR #1 or Lovable has changed the same files.
-3. Verify deployed SQL and implement the transactional payment/total/status safeguards as a separately reviewed migration with rollback and recovery tests. No such migration is included or authorised for execution by this report.
-4. Reconcile a representative draft period and holiday year against original timesheets and payment evidence, including a starter, leaver, carry-over case and holiday-only payment.
-5. Exercise slow/failing network, more than 1,000 records, double-clicks, retry, and two concurrent administrators before release sign-off.
+Keep this PR in draft until the database and integration gates are satisfied. Do not merge the RPC client changes alone: without the new function holiday writes deliberately fail with a clear error. Review the exact pending SQL first, then install in staging, regenerate types and test the matching client. Verify old-client behaviour after direct payment grants are revoked, and prepare a rollback that preserves operation receipts rather than deleting audit evidence.
+
+After staging checks, reconcile a representative draft period and holiday year against timesheets/payment evidence, covering a starter, leaver, opening balance, zero balance, holiday-only payment and more than 1,000 source rows. Check persisted totals, UI, CSV and PDF together. Publish the database and compatible client in a coordinated release only after approval.
+
+No live database migration, staff/payroll record change, approval, email or deployment was performed for this implementation round.

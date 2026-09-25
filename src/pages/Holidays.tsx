@@ -1,3 +1,5 @@
+import { Badge } from "@/components/ui/badge";
+import { summariseHolidayYear } from "@/lib/holiday-year-summary";
 import { addComputedCarryOver } from "@/lib/holiday-carry-over";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -45,7 +47,7 @@ import { useTenantPreferences } from "@/hooks/useTenantPreferences";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isCommittedPayrollStatus } from "@/lib/payroll-status";
-import { useLedgerTakenRowsByYear } from "@/hooks/useHolidayLedger";
+import { useHolidayLedgerRows } from "@/hooks/useHolidayLedger";
 import { ledgerOnlyTakenByEmployee } from "@/lib/holiday-taken-reconciliation";
 
 
@@ -66,6 +68,8 @@ interface EmployeeSummary {
   hoursAccrued: number;
   /** Portion of hoursAccrued that sits in OPEN (not yet approved) payroll periods. */
   pendingAccrued: number;
+  requiresReview?: boolean;
+  legacyBalance?: number;
   hoursTaken: number;
   hoursCarriedOver: number;
   totalPaid: number;
@@ -122,7 +126,7 @@ const Holidays = () => {
   // Fetch each source once, across all pages. Historical years still feed carry-over.
   const paymentsQuery = useAllHolidayPayments();
   const balancesQuery = useHolidayBalances();
-  const ledgerQuery = useLedgerTakenRowsByYear();
+  const ledgerQuery = useHolidayLedgerRows();
   const entriesQuery = useAllPayrollEntriesWithHoliday();
   const adjustmentsQuery = useAllHolidayAdjustments();
   const { data: payrollEntries = [], isLoading: entriesLoading } = entriesQuery;
@@ -318,7 +322,7 @@ const Holidays = () => {
     });
   };
 
-  const allYearSummaries = useMemo(() => {
+  const legacyYearSummaries = useMemo(() => {
     const result: Record<string, EmployeeSummary[]> = {};
     for (const year of Object.keys(yearData).sort()) {
       const data = yearData[year];
@@ -330,7 +334,34 @@ const Holidays = () => {
     }
     return result;
   }, [yearData, payrollEntries, adjustments]);
+  const allYearSummaries = useMemo(() => {
+    const result: Record<string, EmployeeSummary[]> = {};
+    for (const [year, data] of Object.entries(yearData)) {
+      const employees = new Map((legacyYearSummaries[year] ?? []).map(row => [row.employeeId, row]));
+      for (const row of [...data.ledgerRows, ...data.balances]) {
+        if (!employees.has(row.employee_id)) employees.set(row.employee_id, {
+          employeeId: row.employee_id,
+          employeeName: `${row.employees?.forename ?? ""} ${row.employees?.surname ?? ""}`.trim() || "Employee record unavailable",
+          department: row.employees?.department ?? "",
+          hoursAccrued: 0, pendingAccrued: 0, hoursTaken: 0, hoursCarriedOver: 0, totalPaid: 0, balance: 0, periodBreakdown: [],
+        });
+      }
+      result[year] = [...employees.values()].map(row => {
+        const summary = summariseHolidayYear(Number(year),
+          data.ledgerRows.filter(e => e.employee_id === row.employeeId),
+          data.payments.filter(e => e.employee_id === row.employeeId),
+          payrollEntries.filter(e => e.employee_id === row.employeeId && e.payroll_periods?.start_date.slice(0, 4) === year));
+        return { ...row, legacyBalance: row.balance,
+          requiresReview: summary.requiresReview || Math.abs(row.balance - summary.availableIncludingPendingHours) > 0.01,
+          hoursAccrued: summary.accruedIncludingPendingHours, pendingAccrued: summary.pendingAccruedHours,
+          hoursTaken: summary.takenHours, hoursCarriedOver: summary.carryOverHours,
+          totalPaid: summary.paidAmount, balance: summary.availableIncludingPendingHours };
+      });
+    }
+    return result;
+  }, [yearData, legacyYearSummaries, payrollEntries]);
   const currentSummaries = allYearSummaries[selectedYear] || [];
+  const sourceReviewCount = currentSummaries.filter(row => row.requiresReview).length;
 
   // Build formula breakdown for a specific employee
   const openFormulaBreakdown = useCallback((employeeId: string) => {
@@ -374,14 +405,9 @@ const Holidays = () => {
       });
 
     // Get adjustments for this employee/year
-    const empAdjustments = adjustments
-      .filter((a: any) => a.employee_id === employeeId && a.leave_year_start === `${year}-01-01`)
-      .map((a: any) => ({
-        type: a.adjustment_type,
-        hours: Number(a.hours),
-        reason: a.reason,
-        date: new Date(a.created_at).toLocaleDateString("en-GB"),
-      }));
+    const empAdjustments = (yearData[selectedYear]?.ledgerRows ?? [])
+      .filter((row: any) => row.employee_id === employeeId && !["accrual", "holiday_taken", "payout_on_termination", "carry_over_in"].includes(row.entry_type))
+      .map((row: any) => ({ type: row.entry_type, hours: Number(row.hours), reason: row.notes ?? "Recorded ledger adjustment", date: row.entry_date }));
 
     const prevYear = year - 1;
     const prevSummary = allYearSummaries[String(prevYear) as LeaveYear]?.find((s: any) => s.employeeId === employeeId);
@@ -398,10 +424,10 @@ const Holidays = () => {
       totalPaid: summary.totalPaid,
       carryOver,
       balance: summary.balance,
-      carryOverSource: prevSummary ? `${prevYear} ending balance` : `Manual/historical data`,
+      carryOverSource: "Recorded carry-over in the holiday ledger",
     });
     setFormulaOpen(true);
-  }, [selectedYear, currentSummaries, payrollEntries, adjustments, allYearSummaries]);
+  }, [selectedYear, currentSummaries, payrollEntries, yearData, allYearSummaries]);
 
   // Integrity check data
   const integrityRows = useMemo(() => {
@@ -681,6 +707,13 @@ const Holidays = () => {
           </div>
         </div>
 
+        {sourceReviewCount > 0 && (
+          <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+            <strong>{sourceReviewCount} employee balance{sourceReviewCount === 1 ? " needs" : "s need"} review.</strong> The figures below use the holiday ledger plus unposted accrual. Historical records disagree or are incomplete; no entitlement has been deleted or automatically transferred.
+            <Button variant="outline" size="sm" className="ml-2" onClick={() => setSubTab("integrity")}>Review sources</Button>
+            <ul className="mt-2">{currentSummaries.filter(row => row.requiresReview).map(row => <li key={row.employeeId}>{row.employeeName}: ledger plus pending {formatHours(row.balance)}h; previous calculation {formatHours(row.legacyBalance ?? 0)}h.</li>)}</ul>
+          </div>
+        )}
         {/* Leave Year Selector */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <Tabs value={selectedYear} onValueChange={(v) => { setSelectedYear(v as LeaveYear); setSubTab("overview"); }} className="w-full">
@@ -843,6 +876,7 @@ const Holidays = () => {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredSummaries.map((summary, index) => (
                   <div key={summary.employeeId} onClick={() => setSelectedEmployeeId(summary.employeeId)} className="cursor-pointer">
+                    {summary.requiresReview && <Badge variant="outline">Balance needs review</Badge>}
                     <EmployeeHolidayCard
                       employeeName={summary.employeeName}
                       department={summary.department}

@@ -154,7 +154,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
       return;
     }
 
-    if (summaryLoading || summaryError || !employeeSummary) {
+    if (summaryLoading || summaryError || employeeSummaryRaw?.requiresReview || !employeeSummary) {
       toast.error("Wait for the holiday balance to load successfully before recording a payment.");
       return;
     }
@@ -320,6 +320,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
               {summaryError && <Button type="button" variant="outline" size="sm" onClick={retrySummary}>Retry</Button>}
             </div>
           )}
+          {employeeSummaryRaw?.requiresReview && <p role="alert" className="text-sm text-destructive">Some payment or accrued-leave records are missing from the holiday ledger. Review the source records before recording another payment.</p>}
           {/* Holiday Summary Card */}
           {employeeId && employeeSummary && (
             <div className={cn(
@@ -588,7 +589,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
             </Button>
             <Button
               type="submit"
-              disabled={summaryLoading || summaryError || !employeeSummary || createPayment.isPending || (isLeaver && !leaverApproved && (employeeSummary?.balance ?? 0) > 0) || (wouldOverdraw && !overdrawConfirmed)}
+              disabled={summaryLoading || summaryError || employeeSummaryRaw?.requiresReview || !employeeSummary || createPayment.isPending || (isLeaver && !leaverApproved && (employeeSummary?.balance ?? 0) > 0) || (wouldOverdraw && !overdrawConfirmed)}
               className={isLeaver ? "bg-destructive hover:bg-destructive/90" : ""}
             >
               {createPayment.isPending ? "Recording..." : isLeaver ? "Record Settlement" : "Record Holiday"}

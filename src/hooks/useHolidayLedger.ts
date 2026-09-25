@@ -226,3 +226,15 @@ export function usePendingLedgerAccruals(employeeId?: string, year?: number) {
     },
   });
 }
+
+/** All ledger types are required for the canonical dashboard, including expiry and corrections. */
+export function useHolidayLedgerRows() {
+  const { tenantId } = useTenant();
+  return useQuery({
+    queryKey: ["holiday_ledger", tenantId, "dashboard_rows"],
+    enabled: !!tenantId,
+    queryFn: () => fetchAllRows((from, to) => supabase.from("holiday_ledger")
+      .select("*, employees(forename, surname, department)").eq("tenant_id", tenantId!)
+      .order("id").range(from, to)),
+  });
+}

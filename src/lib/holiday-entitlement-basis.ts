@@ -85,13 +85,10 @@ const yearStartOf = (year: number) => `${year}-01-01`;
 
 function filterLedgerByYear(ledger: LedgerRow[], year: number): LedgerRow[] {
   const ys = yearStartOf(year);
-  // ledger rows do not carry leave_year_start in this type, so we use entry_date year as a proxy
-  // The canonical hook filters at query time by leave_year_start, so callers should ideally pass
-  // only-this-year rows. We add a defensive fallback here.
-  return ledger.filter((r) => {
-    const d = new Date(r.entry_date);
-    return !isNaN(d.getTime()) && d.getUTCFullYear() === year;
-  });
+  // The posting date may belong to a different year from the entitlement.
+  return ledger.filter(row => row.leave_year_start
+    ? row.leave_year_start === ys
+    : row.entry_date.slice(0, 4) === String(year));
 }
 
 function sumLedger(rows: LedgerRow[]): {
