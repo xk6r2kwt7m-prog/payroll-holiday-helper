@@ -19,6 +19,8 @@ import {
   rtwBasisNeedsExpiry,
 } from "@/lib/info-request-items";
 
+import { niProblems } from "../../supabase/functions/staff-details-portal/validation";
+
 const FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/staff-details-portal`;
 const ANON = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
@@ -92,7 +94,7 @@ interface StepDef {
  * Screens are built from the item keys on the request, so someone already on
  * the team who is only asked for a visa never sees the rest.
  */
-function buildSteps(items: readonly string[], held?: { email?: string | null }): StepDef[] {
+function buildSteps(items: readonly string[], held?: { email?: string | null }, basis = ""): StepDef[] {
   const has = (k: string) => items.includes(k);
   const heldEmail = (held?.email ?? "").trim();
   const steps: StepDef[] = [];
@@ -164,12 +166,13 @@ function buildSteps(items: readonly string[], held?: { email?: string | null }):
       blurb: "If you do not have one yet, tick the box — you can still carry on.", icon: ShieldCheck,
       noNiOption: true,
       fields: [
-        { key: "ni_number", label: "National Insurance number", placeholder: "AB123456C", hint: "Two letters, six numbers, then one letter — for example AB123456C." },
+        { key: "ni_number", label: "National Insurance number", placeholder: "AB123456C", masked: true, hint: "Two letters, six numbers, then one letter — for example AB123456C." },
+        { key: "confirm_ni_number", label: "Re-enter National Insurance number", masked: true, confirmOnly: true },
       ],
     });
   }
 
-  if (has("nationality")) {
+  if (has("nationality") || has("passport") || has("visa") || has("share_code")) {
     steps.push({
       id: "rtw_status", section: "rtw", title: "Your right to work",
       blurb: "Required by law before you can work in the UK.", icon: ShieldCheck,
@@ -185,7 +188,7 @@ function buildSteps(items: readonly string[], held?: { email?: string | null }):
   }
 
   const wantsDoc = has("passport") || has("visa") || has("share_code");
-  if (wantsDoc) {
+  if (wantsDoc && basis !== "ecs_pending") {
     const which = has("visa")
       ? "Your visa or permit"
       : has("passport")
@@ -211,6 +214,18 @@ function buildSteps(items: readonly string[], held?: { email?: string | null }):
     });
   }
 
+  if (wantsDoc && basis === "ecs_pending") {
+    steps.push({ id: "ecs", section: "rtw", title: "Help with your right-to-work check", blurb: "Your manager will review whether the Employer Checking Service can be used. Sending this form does not confirm permission to work.", icon: ShieldCheck,
+      fields: [{ key: "ecs_reason", label: "What is preventing the check?", required: true, multiline: true, hint: "For example: an outstanding application or a technical problem. Do not include passwords." }] });
+  }
+  if (wantsDoc && basis === "student") {
+    steps.push({ id: "student", section: "rtw", title: "Your course and study dates", blurb: "Your manager needs course evidence and term and vacation dates to check your work restrictions. Upload the provider's evidence with your documents.", icon: ShieldCheck,
+      fields: [
+        { key: "study_provider", label: "Education provider and course", required: true },
+        { key: "study_dates", label: "Term and vacation dates", multiline: true, required: true },
+        { key: "work_restrictions", label: "Work restrictions shown on your permission", required: true },
+      ] });
+  }
   if (has("bank")) {
     steps.push(
       {
@@ -331,6 +346,9 @@ export default function StaffDetailsPortal() {
             address_line2: json.saved?.personal?.address_line2 ?? "",
             city: json.saved?.personal?.city ?? "",
             postcode: json.saved?.personal?.postcode ?? "",
+            no_ni_number: json.saved?.personal?.no_ni_number ?? "",
+            ni_status: json.saved?.personal?.ni_status ?? "not_provided",
+            ni_application_date: json.saved?.personal?.ni_application_date ?? "",
           },
           emergency: { name: "", relationship: "", phone: "", ...(json.saved?.emergency ?? {}) },
           bank: { account_holder: "", bank_name: "", sort_code: "", account_number: "", ...(json.saved?.bank ?? {}) },
@@ -353,7 +371,7 @@ export default function StaffDetailsPortal() {
 
   useEffect(() => { load(); }, [load]);
 
-  /** Confirmation boxes never leave the phone — they only guard against typing mistakes. */
+  /** Confirmation boxes are excluded from saved drafts; NI confirmation is sent separately on submission for server validation. */
   const cleanAnswers = useCallback(() => {
     const out: Record<string, Record<string, string>> = {};
     for (const [section, values] of Object.entries(answers)) {
@@ -380,8 +398,8 @@ export default function StaffDetailsPortal() {
     [data?.request.items, data?.request.sections],
   );
   const steps = useMemo(
-    () => [...buildSteps(items, { email: data?.prefill.email ?? "" }), NOTES_STEP],
-    [items, data?.prefill.email],
+    () => [...buildSteps(items, { email: data?.prefill.email ?? "" }, answers.rtw?.rtw_basis), NOTES_STEP],
+    [items, data?.prefill.email, answers.rtw?.rtw_basis],
   );
   const isReview = steps.length > 0 && step >= steps.length;
   const current = steps[step];
@@ -390,7 +408,7 @@ export default function StaffDetailsPortal() {
     setNoNi(value);
     setAnswers((a) => ({
       ...a,
-      personal: { ...(a.personal ?? {}), no_ni_number: value ? "yes" : "", ...(value ? { ni_number: "" } : {}) },
+      personal: { ...(a.personal ?? {}), no_ni_number: value ? "yes" : "", ...(value ? { ni_number: "", confirm_ni_number: "" } : {}) },
     }));
   };
 
@@ -403,7 +421,9 @@ export default function StaffDetailsPortal() {
   };
 
   const set = (section: string, field: string, value: string) =>
-    setAnswers((a) => ({ ...a, [section]: { ...(a[section] ?? {}), [field]: value } }));
+    setAnswers((a) => ({ ...a, [section]: { ...(a[section] ?? {}), [field]: value,
+      ...(field === "rtw_basis" && value === "ecs_pending" ? { sharing_code: "", expires_at: "" } : {}),
+    } }));
 
   /** Format and match checks, written the way a person would read them. */
   const problems = useCallback((stepDefs: StepDef[]) => {
@@ -415,6 +435,7 @@ export default function StaffDetailsPortal() {
       }
       if (s.upload && uploads === 0) list.push("A photo or file of your document is needed");
 
+      if (s.id === "ni") list.push(...niProblems(answers.personal ?? {}, answers.personal?.confirm_ni_number));
       if (s.section === "personal") {
         const ni = (a.ni_number ?? "").trim();
         if (!ni && !noNi && s.noNiOption) {
@@ -498,7 +519,7 @@ export default function StaffDetailsPortal() {
     }
     setBusy(true);
     try {
-      const res = await post({ action: "submit", answers: cleanAnswers() });
+      const res = await post({ action: "submit", answers: cleanAnswers(), ni_confirmation: answers.personal?.confirm_ni_number });
       setSent({
         rtwPending: Boolean(res.rtw_pending),
         contractPath: (res.contract_sign_path as string | null) ?? data?.request.contract_sign_path ?? null,
@@ -548,7 +569,7 @@ export default function StaffDetailsPortal() {
           Thank you{firstName ? `, ${firstName}` : ""}
         </h1>
         <p className="text-sm text-foreground">
-          Everything has been sent to your manager, and it is now on your record — you will not be asked for it again.
+          Everything has been sent to your manager for review. We will ask you if anything needs correcting.
         </p>
         <p className="text-sm text-muted-foreground">
           {rtwPending
@@ -743,6 +764,15 @@ export default function StaffDetailsPortal() {
               </label>
             )}
 
+            {current.noNiOption && noNi && (
+              <div className="space-y-3">
+                <Field label="Have you applied?" value={answers.personal?.ni_status || "not_provided"}
+                  options={[{ value: "not_provided", label: "Not yet / cannot find my number" }, { value: "application_pending", label: "Applied — waiting for my number" }]}
+                  onChange={(v) => set("personal", "ni_status", v)} />
+                {answers.personal?.ni_status === "application_pending" && <Field label="Date you applied (optional)" type="date" value={answers.personal?.ni_application_date} onChange={(v) => set("personal", "ni_application_date", v)} />}
+                <p className="text-xs text-muted-foreground">You can submit this form while waiting. Your manager must separately check your right to work. Never enter a temporary or invented NI number.</p>
+              </div>
+            )}
             {current.noPhoneOption && (
               <label className="flex items-start gap-2 pt-1 text-sm text-foreground">
                 <input
@@ -799,7 +829,7 @@ export default function StaffDetailsPortal() {
                     const value = answers[s.section]?.[f.key] ?? "";
                     const editing = editingRow === rowId && !f.readOnly;
                     const shown = f.masked && value
-                      ? `${"\u2022".repeat(Math.max(value.replace(/\D/g, "").length - 2, 2))}${value.replace(/\D/g, "").slice(-2)}`
+                      ? `${"\u2022".repeat(Math.max(value.replace(/\s/g, "").length - 2, 2))}${value.replace(/\s/g, "").slice(-2)}`
                       : f.options
                         ? (f.options.find((o) => o.value === value)?.label ?? value)
                         : f.readOnly && f.key === "email" && value
@@ -949,7 +979,7 @@ function Field({ id, label, value, onChange, type = "text", placeholder, multili
           <Input
             id={inputId}
             type={show ? "text" : "password"}
-            inputMode="numeric"
+            inputMode={label.includes("Insurance") ? "text" : "numeric"}
             autoComplete="off"
             value={value ?? ""}
             placeholder={placeholder}

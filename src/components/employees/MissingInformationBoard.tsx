@@ -36,7 +36,7 @@ function requestState(row: MissingInformationRow): "none" | "open" | "submitted"
 }
 
 export function MissingInformationBoard() {
-  const { data = [], isLoading } = useMissingInformation();
+  const { data = [], isLoading, isError, refetch } = useMissingInformation();
   const [tab, setTab] = useState<TabKey>("rtw");
 
   const rows = useMemo(() => {
@@ -69,14 +69,14 @@ export function MissingInformationBoard() {
           </TabsList>
         </Tabs>
 
-        {rows.length > 0 && (
+        {!isError && rows.length > 0 && (
           <BulkRequestInfoDialog
             employees={bulkEmployees}
             trigger={<Button size="sm" variant="outline">Request from everyone in this tab</Button>}
           />
         )}
 
-        {isLoading ? (
+        {isError ? (<div role="alert">Unable to confirm staff information. <Button variant="outline" onClick={() => void refetch()}>Retry</Button></div>) : isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nothing missing</p>
@@ -94,7 +94,7 @@ export function MissingInformationBoard() {
                     </p>
                   </div>
                   <div className="shrink-0">
-                    {awaitingDecision ? (
+                    {r.niApplicationPending && r.shown.every(m => m === "ni_number") ? (<Badge variant="secondary">NI application pending — follow up</Badge>) : awaitingDecision ? (
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary">Awaiting your decision</Badge>
                         <Button asChild size="sm" variant="outline">

@@ -34,12 +34,14 @@ import {
 import { cn } from "@/lib/utils";
 
 const METHOD_LABELS: Record<string, string> = {
+  employer_checking_service: "Employer Checking Service (ECS)",
   online_share_code: "Online share code check (gov.uk)",
   manual_document: "Manual check of original document",
   digital_id_provider: "Certified digital ID provider (British or Irish citizens only)",
 };
 
 const RESULT_LABELS: Record<string, string> = {
+  ecs_pending: "ECS request pending — not yet cleared",
   unlimited: "Unlimited right to work",
   time_limited: "Time-limited permission",
   no_right_to_work: "No right to work",
@@ -57,12 +59,15 @@ interface CheckRow {
   check_method: string;
   checked_on: string;
   created_at: string;
-  result: "unlimited" | "time_limited" | "no_right_to_work";
+  result: "unlimited" | "time_limited" | "no_right_to_work" | "ecs_pending";
   permission_expires_on: string | null;
   work_restrictions: string | null;
   checked_by_name: string | null;
   evidence_document_id: string | null;
   notes: string | null;
+  is_student: boolean;
+  study_dates: string | null;
+  student_evidence_document_id: string | null;
 }
 
 interface Props {
@@ -80,14 +85,14 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
   const today = format(new Date(), "yyyy-MM-dd");
 
   const listKey = ["right_to_work_checks", tenantId, employeeId];
-  const { data: checks = [], isLoading } = useQuery({
+  const { data: checks = [], isLoading, isError, refetch } = useQuery({
     queryKey: listKey,
     enabled: !!tenantId && !!employeeId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("right_to_work_checks")
         .select(
-          "id, check_method, checked_on, created_at, result, permission_expires_on, work_restrictions, checked_by_name, evidence_document_id, notes"
+          "id, check_method, checked_on, created_at, result, permission_expires_on, work_restrictions, checked_by_name, evidence_document_id, notes, is_student, study_dates, student_evidence_document_id"
         )
         .eq("tenant_id", tenantId!)
         .eq("employee_id", employeeId)
@@ -98,6 +103,16 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
     },
   });
 
+  const { data: staffContext } = useQuery({
+    queryKey: ["staff_compliance_context", tenantId, employeeId], enabled: !!tenantId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("employee_onboarding_data" as any)
+        .select("ni_status:personal_info->>ni_status, ni_application_date:personal_info->>ni_application_date, ecs_reason:personal_info->>ecs_reason, study_provider:personal_info->>study_provider, study_dates:personal_info->>study_dates, work_restrictions:personal_info->>work_restrictions")
+        .eq("tenant_id", tenantId!).eq("employee_id", employeeId).maybeSingle();
+      if (error) throw error;
+      return data as unknown as Record<string, string | null> | null;
+    },
+  });
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState("");
   const [checkedOn, setCheckedOn] = useState(today);
@@ -107,6 +122,9 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [student, setStudent] = useState(false);
+  const [studyDates, setStudyDates] = useState("");
+  const [studentFile, setStudentFile] = useState<File | null>(null);
 
   const reset = () => {
     setMethod("");
@@ -116,6 +134,7 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
     setRestrictions("");
     setFile(null);
     setNotes("");
+    setStudent(false); setStudyDates(""); setStudentFile(null);
   };
 
   const status = isRightToWorkCleared(null, [], checks as RtwCheck[]);
@@ -127,7 +146,9 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
     checkedOn <= today &&
     !!result &&
     (result !== "time_limited" || !!expiresOn) &&
-    !!file &&
+    (result === "ecs_pending" ? method === "employer_checking_service" && !!notes.trim() : !!file) &&
+    (!student || !["unlimited", "time_limited"].includes(result) || (!!studentFile && !!studyDates.trim() && !!restrictions.trim())) &&
+    (result !== "time_limited" || expiresOn >= checkedOn) &&
     !saving;
 
   const openEvidence = async (documentId: string) => {
@@ -152,15 +173,17 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
     if (!canSave || !tenantId || !user) return;
     setSaving(true);
     let uploaded: { id: string } | null = null;
+    let studentDocument: { id: string } | null = null;
     try {
-      uploaded = (await uploadDocument.mutateAsync({
+      if (student && studentFile) studentDocument = await uploadDocument.mutateAsync({ employeeId, file: studentFile, documentType: "right_to_work", documentName: "Student course and term dates evidence" });
+      if (file) uploaded = (await uploadDocument.mutateAsync({
         employeeId,
         file: file!,
         documentType: "right_to_work",
         documentName: `Right to work check ${checkedOn}`,
       })) as { id: string };
     } catch (e: any) {
-      toast.error(`Evidence upload failed: ${e?.message ?? "unknown error"}. Nothing was saved.`);
+      toast.error(`Evidence upload failed: ${e?.message ?? "unknown error"}. The check was not recorded. Any file already uploaded remains in employee documents.`);
       setSaving(false);
       return;
     }
@@ -182,7 +205,10 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
       notes: notes.trim() || null,
       checked_by: user.id,
       checked_by_name: profile?.full_name ?? user.email ?? null,
-      evidence_document_id: uploaded.id,
+      evidence_document_id: uploaded?.id ?? null,
+      is_student: student,
+      study_dates: student ? studyDates.trim() || null : null,
+      student_evidence_document_id: studentDocument?.id ?? null,
     });
     setSaving(false);
 
@@ -215,7 +241,10 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
         </Button>
       </div>
 
-      {checks.length > 0 && (
+      {staffContext?.ni_status === "application_pending" && <p className="text-sm">NI application pending{staffContext.ni_application_date ? ` since ${staffContext.ni_application_date}` : ""}. Follow up with the employee; this is separate from right-to-work clearance.</p>}
+      {staffContext?.ecs_reason && <p className="text-sm">Employee needs checking assistance: {staffContext.ecs_reason}</p>}
+      {staffContext?.study_provider && <p className="text-sm">Submitted study details (awaiting verification): {staffContext.study_provider}; {staffContext.study_dates}; {staffContext.work_restrictions}</p>}
+      {!isError && checks.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Badge variant={status === "cleared" ? "default" : "destructive"}>
             {STATUS_LABELS[status] ?? status}
@@ -228,7 +257,7 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
         </div>
       )}
 
-      {isLoading ? (
+      {isError ? (<div role="alert">Unable to confirm checks. <Button variant="outline" onClick={() => void refetch()}>Retry</Button></div>) : isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : checks.length === 0 ? (
         <p className="text-sm text-muted-foreground">No right to work check recorded yet</p>
@@ -243,6 +272,8 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
                 <> · expires {fmt(c.permission_expires_on)}</>
               )}
               {c.work_restrictions && <> · {c.work_restrictions}</>}
+              {c.is_student && <span> · Student: {c.study_dates}</span>}
+              {c.student_evidence_document_id && <button className="text-primary underline" onClick={() => openEvidence(c.student_evidence_document_id!)}> Course evidence</button>}
               {c.checked_by_name && <> · checked by {c.checked_by_name}</>}
               {c.evidence_document_id && (
                 <>
@@ -268,6 +299,19 @@ export function RecordRightToWorkCheck({ employeeId, employeeName }: Props) {
           </DialogHeader>
 
           <div className="space-y-4">
+            <div className="text-sm space-x-3">
+              <a className="text-primary underline" href="https://www.gov.uk/view-right-to-work" target="_blank" rel="noreferrer">Check share code on GOV.UK</a>
+              <a className="text-primary underline" href="https://www.gov.uk/employee-immigration-employment-status" target="_blank" rel="noreferrer">Employer Checking Service</a>
+            </div>
+            <p className="text-xs text-muted-foreground">Complete the official check and confirm the result belongs to the employee before recording clearance. An ECS request alone is not clearance.</p>
+            <label className="flex gap-2 text-sm"><input type="checkbox" checked={student} onChange={(e) => setStudent(e.target.checked)} />Student with immigration work restrictions</label>
+            {student && <div className="space-y-2">
+              <Label>Course, term dates and vacation dates</Label>
+              <Textarea value={studyDates} onChange={(e) => setStudyDates(e.target.value)} placeholder="Record the education provider, course and confirmed dates for the academic year" />
+              <Label>Course and term-date evidence</Label>
+              <Input type="file" accept="application/pdf,image/*" onChange={(e) => setStudentFile(e.target.files?.[0] ?? null)} />
+              <p className="text-xs text-muted-foreground">Record the actual work restrictions below; no standard hours limit is assumed.</p>
+            </div>}
             <div className="space-y-1.5">
               <Label>How it was checked</Label>
               <Select value={method} onValueChange={setMethod}>

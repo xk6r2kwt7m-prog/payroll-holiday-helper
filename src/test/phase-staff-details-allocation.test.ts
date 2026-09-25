@@ -7,9 +7,10 @@ describe("allocateStaffDetails", () => {
       { ni_number: "QQ123456C", nationality: "British" },
       { ni_number: null, nationality: "" },
     );
-    expect(r.updates).toEqual({ ni_number: "QQ123456C", nationality: "British" });
+    expect(r.updates).toEqual({ nationality: "British" });
+    expect(r.held.map(h => h.field)).toEqual(["ni_number"]);
     expect(r.conflicts).toEqual([]);
-    expect(r.filled.map((f) => f.field).sort()).toEqual(["nationality", "ni_number"]);
+    expect(r.filled.map((f) => f.field).sort()).toEqual(["nationality"]);
   });
 
   it("never overwrites a critical value that differs", () => {
@@ -18,10 +19,10 @@ describe("allocateStaffDetails", () => {
       { ni_number: "QQ123456C", sort_code: "00-00-00", date_of_birth: "1991-05-02" },
     );
     expect(r.updates).toEqual({});
-    expect(r.conflicts.map((c) => c.field).sort()).toEqual(["date_of_birth", "ni_number"]);
+    expect(r.conflicts.map((c) => c.field).sort()).toEqual(["date_of_birth"]);
     expect(r.conflicts[0].current).toBeTruthy();
     // Bank details always wait for an administrator to confirm them directly.
-    expect(r.held.map((h) => h.field)).toEqual(["sort_code"]);
+    expect(r.held.map((h) => h.field)).toEqual(["ni_number", "sort_code"]);
   });
 
   it("updates descriptive fields when they differ", () => {

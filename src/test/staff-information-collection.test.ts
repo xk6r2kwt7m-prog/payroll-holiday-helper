@@ -43,7 +43,7 @@ describe("what may be saved automatically", () => {
     );
     expect(Object.keys(r.updates)).toHaveLength(0);
     expect(r.conflicts.map((c) => c.field).sort()).toEqual(
-      ["date_of_birth", "email", "forename", "ni_number"],
+      ["date_of_birth", "email", "forename"],
     );
   });
 

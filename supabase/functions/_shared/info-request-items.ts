@@ -120,6 +120,8 @@ export const RTW_BASIS_OPTIONS = [
   { value: "settled", label: "Settled status (EU Settlement Scheme)", expires: false },
   { value: "pre_settled", label: "Pre-settled status (EU Settlement Scheme)", expires: true },
   { value: "visa", label: "Visa or immigration permission", expires: true },
+  { value: "student", label: "Student immigration permission", expires: true },
+  { value: "ecs_pending", label: "I cannot provide a share code or documents — I need help", expires: false },
   { value: "other", label: "Other / not sure", expires: true },
 ] as const;
 

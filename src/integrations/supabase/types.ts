@@ -7964,6 +7964,9 @@ export type Database = {
           created_at: string
           employee_id: string
           evidence_document_id: string | null
+          is_student: boolean
+          study_dates: string | null
+          student_evidence_document_id: string | null
           id: string
           notes: string | null
           permission_expires_on: string | null
@@ -7979,6 +7982,9 @@ export type Database = {
           created_at?: string
           employee_id: string
           evidence_document_id?: string | null
+          is_student?: boolean
+          study_dates?: string | null
+          student_evidence_document_id?: string | null
           id?: string
           notes?: string | null
           permission_expires_on?: string | null
@@ -7994,6 +8000,9 @@ export type Database = {
           created_at?: string
           employee_id?: string
           evidence_document_id?: string | null
+          is_student?: boolean
+          study_dates?: string | null
+          student_evidence_document_id?: string | null
           id?: string
           notes?: string | null
           permission_expires_on?: string | null

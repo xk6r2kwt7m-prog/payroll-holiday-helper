@@ -52,7 +52,7 @@ export function BulkRequestInfoDialog({
           ? Array.from(
               new Set([
                 ...missingItems(selected, cover),
-                ...selected.filter((k) => REASKABLE_ITEMS.includes(k)),
+                ...selected.filter((k) => REASKABLE_ITEMS.includes(k) && !cover.pendingItems?.includes(k)),
               ]),
             )
           : [...selected];
