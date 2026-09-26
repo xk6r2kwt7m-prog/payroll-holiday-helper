@@ -1,7 +1,10 @@
 -- Restores the previous (unchecked) allocate_contract_reference and signed-out execute access. Counters untouched.
 BEGIN;
 CREATE OR REPLACE FUNCTION public.allocate_contract_reference(_tenant_id uuid, _prefix text DEFAULT 'UD-EC'::text)
- RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
 AS $function$
 DECLARE
   _year integer := EXTRACT(YEAR FROM now())::integer;
@@ -12,6 +15,7 @@ BEGIN
   ON CONFLICT (tenant_id, year)
   DO UPDATE SET last_number = public.contract_reference_counters.last_number + 1
   RETURNING last_number INTO _next;
+
   RETURN _prefix || '-' || _year::text || '-' || lpad(_next::text, 4, '0');
 END;
 $function$;
