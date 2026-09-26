@@ -19,6 +19,9 @@ function server(fixture: {
   };
   let handler: (req: Request) => Promise<Response>;
   const dataClient = {
+    rpc: async (name: string) => name === 'timesheet_history_ready'
+      ? { data: fixture.fail !== name, error: fixture.fail === name ? { message: 'audit unavailable' } : null }
+      : { data: null, error: { message: 'unknown RPC' } },
     from(table: string) {
       const filters: [string, any][] = [];
       const included: [string, any[]][] = [];
@@ -83,6 +86,12 @@ function server(fixture: {
 }
 
 describe('A02 clock server with synthetic rows', () => {
+  it('does not clock in when the atomic history trigger is unavailable', async () => {
+    const s = server({ fail: 'timesheet_history_ready' });
+    const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby' });
+    expect(r.status).toBe(503);
+    expect(s.rows.time_entries).toHaveLength(0);
+  });
   it('refuses an employee-linked request for a shift belonging to another workspace', async () => {
     const s = server({ rows: { shifts: [{ id: 'foreign', employee_id: 'employee-a', tenant_id: 'tenant-b', branch: 'Carnaby', status: 'scheduled' }] } });
     const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby', shift_id: 'foreign' });
