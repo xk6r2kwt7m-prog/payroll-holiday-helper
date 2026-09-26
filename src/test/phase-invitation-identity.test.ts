@@ -96,11 +96,12 @@ describe("one email address cannot serve two current staff records", () => {
 
 describe("management view of invitations", () => {
   it("reports a truthful state for each invitation", () => {
-    expect(invitationState(inv())).toBe("waiting");
-    expect(invitationState(inv({ opened_at: "2026-09-18T13:00:00Z" }))).toBe("opened");
-    expect(invitationState(inv({ accepted_at: "2026-09-18T13:00:00Z", status: "accepted" }))).toBe("joined");
-    expect(invitationState(inv({ status: "cancelled" }))).toBe("cancelled");
-    expect(invitationState(inv({ expires_at: "2026-09-01T12:00:00Z" }))).toBe("expired");
+    const now = new Date("2026-09-18T14:00:00Z");
+    expect(invitationState(inv(), now)).toBe("waiting");
+    expect(invitationState(inv({ opened_at: "2026-09-18T13:00:00Z" }), now)).toBe("opened");
+    expect(invitationState(inv({ accepted_at: "2026-09-18T13:00:00Z", status: "accepted" }), now)).toBe("joined");
+    expect(invitationState(inv({ status: "cancelled" }), now)).toBe("cancelled");
+    expect(invitationState(inv({ expires_at: "2026-09-01T12:00:00Z" }), now)).toBe("expired");
   });
 
   it("shows the attached staff name and flags invitations without one", () => {

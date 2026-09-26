@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs/promises";
+import ts from "typescript";
 
 const GUARDED = [
   "extract-document",
@@ -20,8 +21,19 @@ async function read(p: string) {
 describe("edge function auth gate", () => {
   it("shared guard requires a token and rejects the anon key on its own", async () => {
     const src = await read("supabase/functions/_shared/auth-guard.ts");
-    expect(src).toMatch(/if \(!token\) return deny\(401/);
-    expect(src).toMatch(/token === anonKey\) return deny\(401/);
+    // Execute the actual guard with a mocked SDK/environment. Formatting and
+    // logging are irrelevant; unauthenticated input must return before any SDK call.
+    const createClient = vi.fn(() => { throw new Error("Unexpected SDK access"); });
+    const output = ts.transpileModule(src, {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020}}).outputText;
+    const exports: Record<string, any> = {};
+    new Function("exports", "require", "Deno", "console", output)(exports,
+      () => ({createClient}), {env: {get: (name: string) => ({SUPABASE_URL:"https://example.test", SUPABASE_SERVICE_ROLE_KEY:"server-secret", SUPABASE_ANON_KEY:"public-key"}[name])}}, {log: () => {}});
+    for (const headers of [{}, {Authorization: "Bearer public-key"}]) {
+      const result = await exports.guardRequest(new Request("https://example.test", {headers}));
+      expect(result.ok).toBe(false);
+      expect(result.response.status).toBe(401);
+    }
+    expect(createClient).not.toHaveBeenCalled();
     expect(src).toMatch(/auth\.getUser\(\)/);
     expect(src).toMatch(/tenant_members/);
     expect(src).toMatch(/platform_admins/);

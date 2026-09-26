@@ -42,19 +42,21 @@ export function useEmployees(includeArchived = false) {
 }
 
 export function useEmployee(id: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["employees", id],
+    queryKey: ["employees", tenantId, id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
         .select(EMPLOYEE_COLUMNS)
         .eq("id", id)
+        .eq("tenant_id", tenantId!)
         .single();
       
       if (error) throw error;
       return data as Employee;
     },
-    enabled: !!id,
+    enabled: !!id && !!tenantId,
   });
 }
 
