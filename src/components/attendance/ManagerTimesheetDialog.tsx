@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,8 @@ import { toast } from "sonner";
 import { useManagerAddTimeEntry, useManagerEditTimeEntry } from "@/hooks/useTimeEntries";
 import { useBranchLocations } from "@/hooks/useSchedule";
 import { useEmployees } from "@/hooks/useEmployees";
-import { format } from "date-fns";
+import { useTenant } from "@/hooks/useTenant";
+import { timesheetWallParts, timesheetWallToIso } from "@/lib/timesheet-wall-time";
 
 interface ManagerTimesheetDialogProps {
   open: boolean;
@@ -20,27 +21,40 @@ interface ManagerTimesheetDialogProps {
 
 export function ManagerTimesheetDialog({ open, onClose, entry }: ManagerTimesheetDialogProps) {
   const isEdit = !!entry;
+  const { tenantTimezone } = useTenant();
+  const initialIn = entry?.clock_in_time && tenantTimezone ? timesheetWallParts(entry.clock_in_time, tenantTimezone) : null;
+  const initialOut = entry?.clock_out_time && tenantTimezone ? timesheetWallParts(entry.clock_out_time, tenantTimezone) : null;
+  const today = tenantTimezone ? timesheetWallParts(new Date(), tenantTimezone).date : "";
 
   const [employeeId, setEmployeeId] = useState(entry?.employee_id || "");
   const [branch, setBranch] = useState(entry?.branch || "");
-  const [clockInDate, setClockInDate] = useState(
-    entry?.clock_in_time ? format(new Date(entry.clock_in_time), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")
-  );
-  const [clockInTime, setClockInTime] = useState(
-    entry?.clock_in_time ? format(new Date(entry.clock_in_time), "HH:mm") : ""
-  );
-  const [clockOutTime, setClockOutTime] = useState(
-    entry?.clock_out_time ? format(new Date(entry.clock_out_time), "HH:mm") : ""
-  );
+  const [clockInDate, setClockInDate] = useState(initialIn?.date || today);
+  const [clockInTime, setClockInTime] = useState(initialIn?.time || "");
+  const [clockOutDate, setClockOutDate] = useState(initialOut?.date || initialIn?.date || today);
+  const [clockOutTime, setClockOutTime] = useState(initialOut?.time || "");
   const [breakMinutes, setBreakMinutes] = useState(String(entry?.break_minutes || "0"));
   const [reason, setReason] = useState("");
+
+  // The same dialog can be reopened for a different entry.
+  useEffect(() => {
+    if (!open) return;
+    setEmployeeId(entry?.employee_id || "");
+    setBranch(entry?.branch || "");
+    setClockInDate(initialIn?.date || today);
+    setClockInTime(initialIn?.time || "");
+    setClockOutDate(initialOut?.date || initialIn?.date || today);
+    setClockOutTime(initialOut?.time || "");
+    setBreakMinutes(String(entry?.break_minutes ?? 0));
+    setReason("");
+  }, [open, entry?.id, tenantTimezone]);
 
   const addEntry = useManagerAddTimeEntry();
   const editEntry = useManagerEditTimeEntry();
   const { data: branches = [] } = useBranchLocations();
   const { data: employees = [] } = useEmployees();
 
-  const canSubmit = reason.trim().length > 0 && (isEdit || (employeeId && branch && clockInTime));
+  const canSubmit = Boolean(tenantTimezone && clockInDate && clockInTime && reason.trim() &&
+    (!clockOutTime || clockOutDate) && (isEdit || (employeeId && branch)));
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -49,13 +63,27 @@ export function ManagerTimesheetDialog({ open, onClose, entry }: ManagerTimeshee
     }
 
     try {
+      if (!tenantTimezone) throw new Error("Workspace timezone is unavailable. Please try again later.");
+      if (initialOut && !clockOutTime) {
+        throw new Error("A recorded clock-out cannot be cleared here. Contact an administrator to review this entry.");
+      }
+      // Preserve an existing exact instant if its visible wall time was not edited,
+      // including the repeated hour at the end of British Summer Time.
+      const clockInIso = initialIn?.date === clockInDate && initialIn?.time === clockInTime
+        ? entry.clock_in_time
+        : timesheetWallToIso(clockInDate, clockInTime, tenantTimezone);
+      const clockOutIso = clockOutTime
+        ? initialOut?.date === clockOutDate && initialOut?.time === clockOutTime
+          ? entry.clock_out_time
+          : timesheetWallToIso(clockOutDate, clockOutTime, tenantTimezone)
+        : undefined;
+      if (clockOutIso && new Date(clockOutIso) <= new Date(clockInIso)) {
+        throw new Error("Clock-out must be after clock-in. For an overnight shift, choose the next date for clock-out.");
+      }
       if (isEdit) {
         const updates: Record<string, any> = {};
-        const clockInIso = `${clockInDate}T${clockInTime}:00`;
-        if (clockInTime) updates.clock_in_time = clockInIso;
-        if (clockOutTime) {
-          updates.clock_out_time = `${clockInDate}T${clockOutTime}:00`;
-        }
+        updates.clock_in_time = clockInIso;
+        if (clockOutIso) updates.clock_out_time = clockOutIso;
         updates.break_minutes = Math.max(0, parseInt(breakMinutes) || 0);
         if (branch) updates.branch = branch;
 
@@ -72,9 +100,6 @@ export function ManagerTimesheetDialog({ open, onClose, entry }: ManagerTimeshee
         });
         toast.success("Timesheet entry updated");
       } else {
-        const clockInIso = `${clockInDate}T${clockInTime}:00`;
-        const clockOutIso = clockOutTime ? `${clockInDate}T${clockOutTime}:00` : undefined;
-
         await addEntry.mutateAsync({
           employeeId,
           branch,
@@ -125,20 +150,23 @@ export function ManagerTimesheetDialog({ open, onClose, entry }: ManagerTimeshee
           </div>
 
           <div className="space-y-1.5">
-            <Label>Date</Label>
-            <Input type="date" value={clockInDate} onChange={(e) => setClockInDate(e.target.value)} />
+            <Label htmlFor="manager-clock-in-date">Clock-in date</Label>
+            <Input id="manager-clock-in-date" type="date" value={clockInDate} onChange={(e) => setClockInDate(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Clock-in time</Label>
-              <Input type="time" value={clockInTime} onChange={(e) => setClockInTime(e.target.value)} />
+              <Label htmlFor="manager-clock-in-time">Clock-in time</Label>
+              <Input id="manager-clock-in-time" type="time" value={clockInTime} onChange={(e) => setClockInTime(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Clock-out time</Label>
-              <Input type="time" value={clockOutTime} onChange={(e) => setClockOutTime(e.target.value)} />
+              <Label htmlFor="manager-clock-out-date">Clock-out date</Label>
+              <Input id="manager-clock-out-date" type="date" value={clockOutDate} onChange={(e) => setClockOutDate(e.target.value)} />
+              <Label htmlFor="manager-clock-out-time">Clock-out time (optional)</Label>
+              <Input id="manager-clock-out-time" type="time" value={clockOutTime} onChange={(e) => setClockOutTime(e.target.value)} />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">Times shown in {tenantTimezone || "workspace timezone loading"}. For overnight work, set the clock-out date to the following day.</p>
 
           <div className="space-y-1.5">
             <Label>Break (minutes)</Label>
