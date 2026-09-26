@@ -56,6 +56,7 @@ test('people search, location and former colleague history do not become current
   assert.doesNotMatch(text(), /Leon Ortiz/);
   click('person', 'maya');
   assert.match(text(), /Approved information stays on file/);
+  assert.equal(document.activeElement?.getAttribute('aria-label'), 'Colleague details');
 });
 
 test('payroll blockers remain visible and no approval mutation exists', () => {

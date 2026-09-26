@@ -71,6 +71,7 @@ function act(action, value) {
   render();
   if (action === 'navigate') app.querySelector('#main-content')?.focus();
   if (action === 'menu') app.querySelector(state.navOpen ? '.nav-close' : '.menu-button')?.focus();
+  if (action === 'person') app.querySelector('.detail-panel')?.focus();
 }
 
 app.addEventListener('click', event => {
