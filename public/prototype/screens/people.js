@@ -11,7 +11,7 @@ export function peopleScreen(s) {
     <div class="segmented" role="group" aria-label="Employment status">${['Active', 'Joining', 'Former', 'All'].map(x => button(x, 'people-filter', x, { active: s.peopleFilter === x })).join('')}</div></div>
     <div class="people-layout"><div class="panel people-list"><div class="panel-heading"><h2>${e(s.peopleFilter)} colleagues</h2><span class="subtle">${matching.length} shown</span></div>
     ${matching.length ? matching.map(p => `<button class="person-row ${s.selectedPerson === p.id ? 'selected' : ''}" data-action="person" data-value="${p.id}" aria-label="View ${e(p.name)}"><span class="avatar ${p.colour}">${p.initials}</span><span class="person-main"><strong>${e(p.name)}</strong><small>${e(p.role)} · ${e(p.location)}</small></span>${badge(p.status)}<span aria-hidden="true">›</span></button>`).join('') : emptyState('No matching colleagues', 'Try another status, location or name.')}
-    </div><aside class="panel detail-panel">${personDetail(s)}</aside></div>`;
+    </div><aside class="panel detail-panel" tabindex="-1" aria-label="Colleague details">${personDetail(s)}</aside></div>`;
 }
 
 function personDetail(s) {

@@ -56,6 +56,7 @@ test('people search, location and former colleague history do not become current
   assert.doesNotMatch(text(), /Leon Ortiz/);
   click('person', 'maya');
   assert.match(text(), /Approved information stays on file/);
+  assert.equal(document.activeElement?.getAttribute('aria-label'), 'Colleague details');
 });
 
 test('payroll blockers remain visible and no approval mutation exists', () => {
@@ -91,11 +92,19 @@ test('staff preview hides manager-only navigation and former colleague records',
   click('navigate', 'rota');
   assert.doesNotMatch(text(), /Leon Ortiz/);
   change('role-picker', 'Manager');
+  assert.equal(document.querySelector('[data-action="navigate"][data-value="payroll"]'), null);
+  assert.equal(document.querySelector('[data-action="navigate"][data-value="contracts"]'), null);
+  change('role-picker', 'Admin');
 });
 
 test('phone, theme and reset switches restore the starting state', () => {
   click('device', '');
   assert.ok(document.querySelector('.phone-frame'));
+  click('menu', '');
+  assert.ok(document.querySelector('.nav-close'));
+  assert.ok(document.querySelector('.nav-scrim'));
+  document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(document.querySelector('.nav-scrim'), null);
   click('theme', '');
   assert.equal(document.documentElement.dataset.theme, 'dark');
   click('reset', '');
