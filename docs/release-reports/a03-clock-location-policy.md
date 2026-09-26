@@ -2,6 +2,8 @@
 
 **Status:** code draft; do not deploy before an operational and privacy review. Stacked after A02 membership PR #17, independent of A01 database permissions.
 
+Lovable has now reported private rebuilt-PostgreSQL results of 27/27 for PR #16 and 29/29 for PR #17 with fictional staff (see `a02-pr16-pr17-isolated-check-2026-09-26.md` on main). Their harness required a correction so postgres.js reads rota DATE as a plain string; the matching script fix is included in this draft. These results do **not** test the A03 GPS behaviour.
+
 ## Decision implemented in the draft
 
 - Show a point-in-time location preview on opening the staff clock screen, then ask for a fresh reading at each clock action (`maximumAge: 0`). Never re-use a morning reading for an evening clock-out. This is not continuous tracking. Do not claim GPS proves attendance: coordinates supplied by a browser can be manipulated or inaccurate.
