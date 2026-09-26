@@ -1,5 +1,5 @@
 import { Users, DollarSign, Calendar, Clock, FileText, Percent, Search, CreditCard, Shield, TrendingUp, ChevronRight, ArrowRight, Utensils, ChefHat, Factory, MapPin, ChevronDown } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, MotionConfig } from "framer-motion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ExpiringDocumentsWidget } from "@/components/dashboard/ExpiringDocumentsWidget";
 import { PayrollDeadlineWidget } from "@/components/dashboard/PayrollDeadlineWidget";
@@ -77,11 +77,12 @@ export default function AdminDesktopDashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 sm:space-y-10 max-w-7xl mx-auto pb-8">
+      <MotionConfig reducedMotion="user">
+      <div className="space-y-7 sm:space-y-8 max-w-7xl mx-auto pb-8">
         {/* HEADER */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">{t("nav.dashboard")}</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">{t("nav.dashboard")}</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
               {latestPeriod ? latestPeriod.period_name : t("dashboard.welcome", { name: tenantName || "" })}
             </p>
@@ -100,13 +101,19 @@ export default function AdminDesktopDashboard() {
 
         <SetupHealthWidget />
 
+        {/* TODAY'S PRIORITIES */}
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
+          <h2 className="text-base font-semibold tracking-tight text-foreground mb-3">{t("dashboard.needs_attention")}</h2>
+          <TodayActions employees={employees} periods={periods} entries={entries} />
+        </motion.section>
+
         {/* MOBILE: KPI STRIP */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="sm:hidden">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {kpis.map((kpi) => (
-              <Link key={kpi.label} to={kpi.href} className="rounded-xl bg-card border border-border p-3 text-center transition-all active:bg-muted">
-                <p className={cn("text-lg font-bold tabular-nums leading-none", kpi.color)}>{kpi.value}</p>
-                <p className="text-[10px] font-medium text-muted-foreground mt-1.5 uppercase tracking-wider">{kpi.label}</p>
+              <Link key={kpi.label} to={kpi.href} className="rounded-xl bg-card border border-border p-4 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-muted">
+                <p className={cn("text-2xl font-semibold tabular-nums leading-tight break-words", kpi.color)}>{kpi.value}</p>
+                <p className="text-xs font-medium text-muted-foreground mt-2">{kpi.label}</p>
               </Link>
             ))}
           </div>
@@ -114,7 +121,7 @@ export default function AdminDesktopDashboard() {
 
         {/* DESKTOP: KPI CARDS */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="hidden sm:block">
-          <div className="grid gap-4 grid-cols-3 lg:grid-cols-5">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
             {[
               { label: t("dashboard.active_staff"), value: String(activeEmployees), sub: t("dashboard.total_incl_leavers", { count: employees.length }), icon: <Users className="h-5 w-5" />, color: "text-foreground", iconBg: "bg-secondary", href: "/employees" },
               { label: t("dashboard.total_payroll"), value: formatCurrency(totalPayroll), sub: t("dashboard.per_week", { amount: formatCurrency(payPerWeek) }), icon: <DollarSign className="h-5 w-5" />, color: "text-primary", iconBg: "bg-primary/10", href: "/payroll" },
@@ -122,16 +129,16 @@ export default function AdminDesktopDashboard() {
               { label: t("dashboard.holiday_accrued"), value: `${formatHours(totalHolidayAccrued)} ${t("common.hours")}`, sub: t("dashboard.accrual_rate", { rate: ((leaveRules?.accrualRate ?? 0.1207) * 100).toFixed(2) }), icon: <Calendar className="h-5 w-5" />, color: "text-accent", iconBg: "bg-accent/10", href: "/holidays" },
               { label: t("dashboard.hours_tracked"), value: `${formatHours(totalHours)} ${t("common.hours")}`, sub: `${formatHours(periodWeeks > 0 ? totalHours / periodWeeks : 0)} / ${t("common.week")}`, icon: <Clock className="h-5 w-5" />, color: "text-foreground", iconBg: "bg-secondary", href: "/timesheets" },
             ].map((kpi) => (
-              <Link key={kpi.label} to={kpi.href} className="rounded-xl bg-card border border-border p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group">
+              <Link key={kpi.label} to={kpi.href} className="rounded-xl bg-card border border-border p-5 shadow-sm transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group">
                 <div className="flex items-center justify-between mb-4">
                   <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg", kpi.iconBg)}>
                     <span className={cn(kpi.color)}>{kpi.icon}</span>
                   </div>
                   <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <p className={cn("text-[26px] font-bold tracking-tight leading-none tabular-nums", kpi.color)}>{kpi.value}</p>
-                <p className="text-[11px] font-semibold text-muted-foreground mt-3 uppercase tracking-widest">{kpi.label}</p>
-                <p className="text-[11px] text-muted-foreground/70 mt-1 truncate">{kpi.sub}</p>
+                <p className={cn("text-2xl font-semibold tracking-tight leading-tight tabular-nums break-words", kpi.color)}>{kpi.value}</p>
+                <p className="text-sm font-medium text-muted-foreground mt-3">{kpi.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{kpi.sub}</p>
               </Link>
             ))}
           </div>
@@ -142,15 +149,9 @@ export default function AdminDesktopDashboard() {
           <QuickActions />
         </motion.section>
 
-        {/* TODAY'S PRIORITIES */}
-        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">{t("dashboard.needs_attention")}</h2>
-          <TodayActions employees={employees} periods={periods} entries={entries} />
-        </motion.section>
-
         {/* OPERATIONS */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.15 }}>
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">{t("dashboard.operations")}</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground mb-3">{t("dashboard.operations")}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <PayrollDeadlineWidget periods={periods} />
             <ExpiringDocumentsWidget />
@@ -160,7 +161,7 @@ export default function AdminDesktopDashboard() {
 
         {/* OPERATIONAL INTELLIGENCE */}
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }}>
-          <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">{t("ops.operational_intelligence")}</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground mb-3">{t("ops.operational_intelligence")}</h2>
           <div className="space-y-4">
             <LabourCostDashboard />
             <div className="grid gap-4 sm:grid-cols-2">
@@ -172,8 +173,8 @@ export default function AdminDesktopDashboard() {
 
         {isMobile && (
           <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}>
-            <button onClick={() => setShowDetails(!showDetails)} className="flex items-center gap-2 w-full text-left py-2">
-              <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{t("dashboard.departments")}</h2>
+            <button onClick={() => setShowDetails(!showDetails)} aria-expanded={showDetails} aria-controls="department-overview" className="flex items-center gap-2 w-full text-left min-h-11 rounded-lg py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <h2 className="text-base font-semibold tracking-tight text-foreground">{t("dashboard.departments")}</h2>
               <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", showDetails && "rotate-180")} />
             </button>
           </motion.section>
@@ -181,9 +182,9 @@ export default function AdminDesktopDashboard() {
 
         {/* DEPARTMENT OVERVIEW + AUDIT */}
         {(!isMobile || showDetails) && (
-          <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }} className="grid gap-5 lg:grid-cols-12">
+          <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }} id="department-overview" className="grid gap-5 lg:grid-cols-12">
             <div className="lg:col-span-8">
-              {!isMobile && <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">{t("dashboard.department_overview")}</h2>}
+              {!isMobile && <h2 className="text-base font-semibold tracking-tight text-foreground mb-4">{t("dashboard.department_overview")}</h2>}
               <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
                 {(["FOH", "BOH", "CPU"] as const).map((dept) => {
                   const cfg = deptConfig[dept];
@@ -194,7 +195,7 @@ export default function AdminDesktopDashboard() {
                   const count = departmentStats[dept]?.count || 0;
 
                   return (
-                    <Link key={dept} to={`/employees?dept=${dept}`} className="rounded-xl bg-card border border-border p-4 sm:p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group">
+                    <Link key={dept} to={`/employees?dept=${dept}`} className="rounded-xl bg-card border border-border p-4 sm:p-5 shadow-sm transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group">
                       <div className="flex items-center gap-3 mb-3 sm:mb-5">
                         <div className={cn("flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-lg", cfg.bgColor)}>
                           <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", cfg.color)} />
@@ -231,8 +232,8 @@ export default function AdminDesktopDashboard() {
             </div>
 
             <div className="lg:col-span-4">
-              {!isMobile && <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">{t("dashboard.payroll_audit")}</h2>}
-              <Link to="/payroll/audit" className="flex flex-col rounded-xl bg-card border border-border p-5 sm:p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 sm:h-[calc(100%-2rem)]">
+              {!isMobile && <h2 className="text-base font-semibold tracking-tight text-foreground mb-4">{t("dashboard.payroll_audit")}</h2>}
+              <Link to="/payroll/audit" className="flex flex-col rounded-xl bg-card border border-border p-5 sm:p-6 shadow-sm transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-[calc(100%-2rem)]">
                 {auditScore !== null ? (
                   <div className="flex sm:flex-col items-center sm:justify-center gap-4 sm:gap-0 flex-1">
                     <div className="relative w-[80px] h-[80px] sm:w-[120px] sm:h-[120px] shrink-0 sm:mb-5">
@@ -266,6 +267,7 @@ export default function AdminDesktopDashboard() {
           </motion.section>
         )}
       </div>
+      </MotionConfig>
     </AppLayout>
   );
 }
