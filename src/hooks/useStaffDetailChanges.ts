@@ -1,3 +1,4 @@
+import { staffApprovalError } from "@/lib/staff-approval-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -59,6 +60,20 @@ export function useStaffDetailChanges(employeeId?: string) {
   });
 }
 
+/** Direct confirmation evidence, separate from an accepted review decision. */
+export function useBankDetailVerifications(employeeId: string) {
+  const { tenantId } = useTenant();
+  return useQuery({
+    queryKey: ["bank_detail_verifications", tenantId, employeeId], enabled: !!tenantId && !!employeeId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("bank_detail_verifications").select("change_id")
+        .eq("tenant_id", tenantId!).eq("employee_id", employeeId).eq("confirmed_directly", true);
+      if (error) throw error;
+      return (data ?? []).map(row => row.change_id);
+    },
+  });
+}
+
 /** Everything still waiting for a decision, across the team. */
 export function usePendingStaffDetailChanges() {
   const all = useStaffDetailChanges();
@@ -92,45 +107,16 @@ export function useDecideStaffDetailChange() {
     }) => {
       if (!deciderName.trim()) throw new Error("Please type your name so the decision is recorded");
 
-      if (accept && !isBankField(change.field_name) && change.new_value) {
-        const { error } = await supabase
-          .from("employees")
-          .update({ [change.field_name]: change.new_value } as never)
-          .eq("id", change.employee_id);
-        if (error) throw error;
-      }
-
-      const { error: updErr } = await supabase
-        .from("staff_detail_changes")
-        .update({
-          state: accept ? "accepted" : "rejected",
-          decided_by: user?.id ?? null,
-          decided_by_name: deciderName.trim(),
-          decided_at: new Date().toISOString(),
-          notes: notes?.trim() || change.notes,
-        } as never)
-        .eq("id", change.id);
-      if (updErr) throw updErr;
-
-      await supabase.from("audit_log").insert({
-        tenant_id: change.tenant_id,
-        action: "update",
-        table_name: "staff_detail_changes",
-        record_id: change.id,
-        old_data: { field: change.field_name, value: change.old_value },
-        new_data: {
-          field: change.field_name,
-          submitted: change.new_value,
-          decision: accept ? "accepted" : "rejected",
-          decided_by_name: deciderName.trim(),
-          applied_to_record: accept && !isBankField(change.field_name),
-          awaiting_direct_confirmation: accept && isBankField(change.field_name),
-        },
+      // The server re-reads the submission and commits value, decision and audit together.
+      const { error } = await supabase.rpc("decide_staff_detail_atomic" as never, {
+        _change_id: change.id, _accept: accept, _reviewer: deciderName.trim(), _notes: notes?.trim() || null,
       } as never);
+      if (error) throw new Error(staffApprovalError(error));
     },
     onSuccess: (_d, { accept, change }) => {
       qc.invalidateQueries({ queryKey: ["staff_detail_changes"] });
       qc.invalidateQueries({ queryKey: ["contract_auto_draft_record"] });
+      qc.invalidateQueries({ queryKey: ["bank_detail_verifications"] });
       qc.invalidateQueries({ queryKey: ["employees"] });
       qc.invalidateQueries({ queryKey: ["employee-sensitive"] });
       toast.success(
@@ -165,56 +151,15 @@ export function useVerifyBankChange() {
       if (!verifierName.trim()) throw new Error("Please type your name so the check is recorded");
       const bank = changes.filter((c) => isBankField(c.field_name));
       if (bank.length === 0) throw new Error("There are no bank details waiting");
-
-      const updates: Record<string, string> = {};
-      for (const c of bank) if (c.new_value) updates[c.field_name] = c.new_value;
-
-      const { error } = await supabase
-        .from("employees")
-        .update(updates as never)
-        .eq("id", bank[0].employee_id);
-      if (error) throw error;
-
-      for (const c of bank) {
-        const { error: vErr } = await supabase.from("bank_detail_verifications").insert({
-          tenant_id: c.tenant_id,
-          employee_id: c.employee_id,
-          change_id: c.id,
-          verified_by: user?.id ?? null,
-          verified_by_name: verifierName.trim(),
-          confirmed_directly: true,
-          notes: notes?.trim() || null,
-        } as never);
-        if (vErr) throw vErr;
-
-        await supabase
-          .from("staff_detail_changes")
-          .update({
-            state: "accepted",
-            decided_by: user?.id ?? null,
-            decided_by_name: verifierName.trim(),
-            decided_at: new Date().toISOString(),
-            notes: "Confirmed directly with the employee before pay used the new account",
-          } as never)
-          .eq("id", c.id);
-      }
-
-      await supabase.from("audit_log").insert({
-        tenant_id: bank[0].tenant_id,
-        action: "update",
-        table_name: "bank_detail_verifications",
-        record_id: bank[0].employee_id,
-        old_data: { fields: bank.map((c) => c.field_name) },
-        new_data: {
-          confirmed_directly: true,
-          verified_by_name: verifierName.trim(),
-          fields: bank.map((c) => c.field_name),
-        },
+      const { error } = await supabase.rpc("confirm_staff_bank_atomic" as never, {
+        _change_ids: bank.map(change => change.id), _reviewer: verifierName.trim(), _notes: notes?.trim() || null,
       } as never);
+      if (error) throw new Error(staffApprovalError(error));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["staff_detail_changes"] });
       qc.invalidateQueries({ queryKey: ["contract_auto_draft_record"] });
+      qc.invalidateQueries({ queryKey: ["bank_detail_verifications"] });
       qc.invalidateQueries({ queryKey: ["employees"] });
       qc.invalidateQueries({ queryKey: ["employee-sensitive"] });
       qc.invalidateQueries({ queryKey: ["tenant-sensitive"] });

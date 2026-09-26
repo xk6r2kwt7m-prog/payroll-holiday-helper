@@ -1,4 +1,4 @@
-import { quizCanCompleteAssignment } from "@/lib/staff-training-journey";
+import type { StaffAssessmentResult } from "@/hooks/useStaffAssessment";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -316,10 +316,8 @@ export interface SubmitQuizPayload {
   assignmentId: string;
   employeeId: string;
   documentId: string;
-  score: number;
-  passed: boolean;
-  attemptNumber: number;
-  answers?: Record<string, number>;
+  requestId: string;
+  answers: Record<string, number>;
 }
 
 export function useSubmitQuiz() {
@@ -328,64 +326,17 @@ export function useSubmitQuiz() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (payload: SubmitQuizPayload) => {
-      const { assignmentId, employeeId, documentId, score, passed, attemptNumber, answers } = payload;
       if (!tenantId) throw new Error("Choose a workspace before submitting training");
-      const { data: assignment, error: assignmentError } = await supabase.from("training_assignments")
-        .select("status, signoff_required, signed_off_at, acknowledged_at, training_library(requires_acknowledgement)")
-        .eq("tenant_id", tenantId).eq("id", assignmentId)
-        .eq("employee_id", employeeId).eq("document_id", documentId).single();
-      if (assignmentError) throw assignmentError;
-      if (!assignment || assignment.status === "cancelled") throw new Error("This training assignment is no longer available");
-      const canComplete = passed && quizCanCompleteAssignment(assignment as unknown as TrainingAssignment);
-
-
-      // 1. Persist the attempt
-      const { error: attemptErr } = await supabase.from("training_quiz_attempts").insert({
-        tenant_id: tenantId!,
-        assignment_id: assignmentId,
-        employee_id: employeeId,
-        document_id: documentId,
-        score,
-        passed,
-        attempt_number: attemptNumber,
-        answers_json: answers ? JSON.stringify(answers) : null,
-        completed_at: new Date().toISOString(),
-      });
-      if (attemptErr) throw attemptErr;
-
-      // 2. Update assignment
-      const updates: Record<string, unknown> = {
-        quiz_score: score,
-        quiz_passed: passed,
-        score,
-      };
-      if (canComplete) {
-        updates.status = "completed";
-        updates.completed_at = new Date().toISOString();
+      const { data, error } = await supabase.rpc("submit_staff_assessment" as never, {
+        _assignment_id: payload.assignmentId, _request_id: payload.requestId, _answers: payload.answers,
+      } as never);
+      if (error) {
+        if (error.code === "PGRST202" || error.code === "42883") throw new Error("Secure assessment submission is not available yet. Your answers remain on screen; ask your manager to finish the database update.");
+        throw error;
       }
-      if (passed && !canComplete) {
-        updates.status = "viewed";
-        updates.completed_at = null;
-      }
-      const { error } = await supabase
-        .from("training_assignments")
-        .update(updates as never)
-        .eq("tenant_id", tenantId).eq("employee_id", employeeId).eq("id", assignmentId);
-      if (error) throw error;
-
-      // 3. Audit
-      const action = passed ? "quiz_passed" : "quiz_failed";
-      await writeTrainingAudit({
-        tenant_id: tenantId!,
-        document_id: documentId,
-        assignment_id: assignmentId,
-        employee_id: employeeId,
-        action,
-        acting_user_id: user?.id,
-        metadata: { score, attempt_number: attemptNumber, passed },
-      });
+      return data as unknown as StaffAssessmentResult;
     },
-    onSuccess: (_, { passed }) => {
+    onSuccess: ({ passed }) => {
       qc.invalidateQueries({ queryKey: ["training_assignments"] });
       qc.invalidateQueries({ queryKey: ["my_training_assignments"] });
       qc.invalidateQueries({ queryKey: ["training_quiz_attempts"] });
