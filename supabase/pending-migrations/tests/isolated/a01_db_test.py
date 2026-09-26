@@ -16,7 +16,7 @@ INSERT INTO auth.users(id,email) VALUES ('{X}','two-workspaces@example.test');
 INSERT INTO tenant_members(tenant_id,user_id,role,is_active) VALUES ('{A}','{X}','manager',true),('{B}','{X}','employee',true);
 INSERT INTO user_roles(user_id,role,tenant_id) VALUES ('{ADM}','admin','{A}'),('{MGR}','manager','{A}'),('{STF}','staff','{A}'),('{SUP}','supervisor','{A}'),('{X}','manager','{A}');
 UPDATE employees SET user_id='{STF}' WHERE id='e1000000-0000-0000-0000-000000000001';
-INSERT INTO employees(id,tenant_id,forename,surname,department,status) VALUES ('eb000000-0000-0000-0000-00000000000b','{B}','Testc','Bee','FOH','active');
+INSERT INTO employees(id,tenant_id,forename,surname,department,status,hourly_rate) VALUES ('eb000000-0000-0000-0000-00000000000b','{B}','Testc','Bee','FOH','active',12.21);
 INSERT INTO time_entries(id,employee_id,tenant_id,branch,department,clock_in_time,clock_out_time,status) VALUES
  ('7e000000-0000-0000-0000-000000000001','e1000000-0000-0000-0000-000000000001','{A}','Carnaby','FOH',now()-interval '9 hours',now()-interval '1 hour','pending'),
  ('7e000000-0000-0000-0000-000000000002','e2000000-0000-0000-0000-000000000002','{A}','Carnaby','BOH',now()-interval '9 hours',now()-interval '1 hour','pending'),
