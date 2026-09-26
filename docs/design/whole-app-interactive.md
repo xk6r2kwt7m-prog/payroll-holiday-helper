@@ -20,7 +20,7 @@ This draft extends the earlier Home / Employees / Payroll [workspace preview](./
 
 | Path | Owns | Production integration destination |
 | --- | --- | --- |
-| `public/prototype/index.html`, `styles.css`, `app.js`, `ui.js`, `data.js` | Demo shell, tokens, route selection, local events, synthetic data | Review the visual system and extract shared primitives in a separate scoped change |
+| `public/prototype/index.html`, `styles/{tokens,shell,workflows,responsive}.css`, `app.js`, `ui.js`, `data.js` | Demo shell, tokens, route selection, local events, synthetic data | Review the visual system and extract shared primitives in a separate scoped change |
 | `public/prototype/screens/people.js` | People, joining, contracts | `src/pages/Employees.tsx` and existing onboarding/contract components |
 | `public/prototype/screens/work.js` | Home, rota, timesheets, holiday, payroll | Existing pages and domain components, one workflow per PR |
 | `public/prototype/screens/care.js` | Compliance, learning, absence, messages | Existing documents, training, absence and communication components |
