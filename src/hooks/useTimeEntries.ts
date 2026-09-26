@@ -4,6 +4,7 @@ import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
 import { assertPermission } from "@/lib/permission-guard";
 import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
+import { assertTimesheetHistoryReady } from "@/lib/timesheet-history-guard";
 
 export type TimeEntry = Tables<"time_entries">;
 export type TimeEntryUpdate = TablesUpdate<"time_entries">;
@@ -178,6 +179,7 @@ export function useManagerAddTimeEntry() {
       reason: string;
     }) => {
       await assertPermission("approve_timesheets", tenantId!);
+      await assertTimesheetHistoryReady();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -222,15 +224,7 @@ export function useManagerAddTimeEntry() {
         throw error;
       }
 
-      await supabase.from("audit_log").insert({
-        action: "approve" as const,
-        table_name: "time_entries" as const,
-        record_id: data.id,
-        tenant_id: tenantId!,
-        user_id: user.id,
-        new_data: { event: "manager_add", reason, ...insertData },
-      });
-
+      // Database trigger writes the history row in this insert's transaction.
       return data;
     },
     onSuccess: () => {
@@ -248,14 +242,13 @@ export function useManagerEditTimeEntry() {
       entryId,
       updates,
       reason,
-      oldValues,
     }: {
       entryId: string;
       updates: Record<string, any>;
       reason: string;
-      oldValues: Record<string, any>;
     }) => {
       await assertPermission("approve_timesheets", tenantId!);
+      await assertTimesheetHistoryReady();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -277,16 +270,7 @@ export function useManagerEditTimeEntry() {
 
       if (error) throw error;
 
-      await supabase.from("audit_log").insert({
-        action: "approve" as const,
-        table_name: "time_entries" as const,
-        record_id: entryId,
-        tenant_id: tenantId!,
-        user_id: user.id,
-        old_data: oldValues,
-        new_data: { event: "manager_edit", reason, ...updates },
-      });
-
+      // Database trigger writes old and new values in this update's transaction.
       return data;
     },
     onSuccess: () => {
@@ -297,30 +281,6 @@ export function useManagerEditTimeEntry() {
   });
 }
 
-async function writeTimeEntryAudit(
-  tenantId: string,
-  auditAction: "approve" | "reject",
-  entryIds: string[],
-  userId: string,
-  extra?: Record<string, any>
-) {
-  const actionValue: "approve" | "reject" = auditAction;
-  const { error } = await supabase.from("audit_log").insert(
-    entryIds.map((id) => ({
-      action: actionValue,
-      table_name: "time_entries" as const,
-      record_id: id,
-      tenant_id: tenantId,
-      user_id: userId,
-      new_data: {
-        status: auditAction === "approve" ? "approved" : "rejected",
-        ...extra,
-      },
-    }))
-  );
-  if (error) throw new Error(`Audit log failed: ${error.message}`);
-}
-
 export function useApproveTimeEntries() {
   const queryClient = useQueryClient();
   const { tenantId } = useTenant();
@@ -329,14 +289,13 @@ export function useApproveTimeEntries() {
       entryIds,
       mode = "approve_single",
       reviewReason,
-      reviewedFlags,
     }: {
       entryIds: string[];
       mode?: "approve_single" | "approve_batch_selected" | "approve_batch_daily";
       reviewReason?: string;
-      reviewedFlags?: string[];
     }) => {
       await assertPermission("approve_timesheets", tenantId!);
+      await assertTimesheetHistoryReady();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -346,16 +305,12 @@ export function useApproveTimeEntries() {
           status: "approved" as const,
           approved_by: user.id,
           approved_at: new Date().toISOString(),
-        })
+          approval_mode: mode,
+          approval_review_reason: reviewReason?.trim() || null,
+        } as any)
         .in("id", entryIds);
       if (error) throw error;
-
-      await writeTimeEntryAudit(tenantId!, "approve", entryIds, user.id, {
-        approval_mode: mode,
-        count: entryIds.length,
-        ...(reviewReason ? { review_reason: reviewReason, reviewed_flags: reviewedFlags || [] } : {}),
-      });
-
+      // The database trigger records each approval atomically with this update.
       return { approved: entryIds.length };
     },
     onSuccess: () => {
@@ -370,6 +325,7 @@ export function useRejectTimeEntry() {
   return useMutation({
     mutationFn: async ({ id, notes }: { id: string; notes?: string }) => {
       await assertPermission("approve_timesheets", tenantId!);
+      await assertTimesheetHistoryReady();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -379,8 +335,7 @@ export function useRejectTimeEntry() {
         .eq("id", id);
       if (error) throw error;
 
-      // Audit log
-      await writeTimeEntryAudit(tenantId!, "reject", [id], user.id, { notes });
+      // The database trigger records the rejection atomically with this update.
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["time_entries"] });
@@ -404,6 +359,7 @@ export function useManagerOverride() {
       reason: string;
     }) => {
       await assertPermission("approve_timesheets", tenantId);
+      await assertTimesheetHistoryReady();
       const { data: employee } = await supabase
         .from("employees")
         .select("department")

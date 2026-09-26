@@ -14,11 +14,19 @@ const A = 'aaaaaaaa-aaaa-aaaa-aaaa-00000000000a', B = 'bbbbbbbb-bbbb-bbbb-bbbb-0
 const E1 = 'e1000000-0000-0000-0000-000000000001', E2 = 'e2000000-0000-0000-0000-000000000002', EB = 'eb000000-0000-0000-0000-00000000000b';
 const U1 = '33333333-3333-3333-3333-333333333333', UX = '77777777-7777-7777-7777-777777777777', UB = '88888888-8888-8888-8888-888888888888';
 let failTable = null;
+let failHistory = false;
 const R = { pass: 0, fail: 0 }, fails = [];
 const check = (name, ok, info = '') => { ok ? R.pass++ : (R.fail++, fails.push(name + ' ' + info)); console.log((ok ? 'PASS ' : 'FAIL ') + name + (ok ? '' : ' :: ' + info)); };
 
 function client() {
-  return { from(table) {
+  return { rpc: async (name) => {
+    if (name !== 'timesheet_history_ready') return { data: null, error: { message: 'unknown RPC' } };
+    if (failHistory) return { data: false, error: { message: 'audit unavailable' } };
+    try {
+      const [row] = await sql`select public.timesheet_history_ready() as ready`;
+      return { data: row.ready, error: null };
+    } catch (error) { return { data: null, error: { message: error.message } }; }
+  }, from(table) {
     const f = []; let cols = '*', lim, mut, wantRows = false;
     const where = () => f.length ? sql`where ${f.map(([c, v], i) => sql`${i ? sql`and` : sql``} ${v?.inDates ? sql`${sql(c)} = ANY(${v.inDates}::date[])` : sql`${sql(c)} = ${v}`}`)}` : sql``;
     const run = async () => {
@@ -57,7 +65,7 @@ function load(nowIso, userId) {
   return async (body) => { const r = await handler(new Request('https://t/clock', { method: 'POST', headers: { Authorization: 'Bearer t' }, body: JSON.stringify(body) })); return { s: r.status, b: await r.json() }; };
 }
 const entries = (emp = E1) => sql`select * from time_entries where employee_id = ${emp} order by clock_in_time`;
-const reset = async () => { failTable = null; await sql`delete from time_entries`; await sql`delete from shifts`; };
+const reset = async () => { failTable = null; failHistory = false; await sql`delete from time_entries`; await sql`delete from shifts`; };
 
 // Fixtures (fictional)
 await sql`update employees set user_id = ${U1} where id = ${E1}`;
@@ -74,6 +82,11 @@ async function shift(emp, tenant, branch, date, st, en, status = 'scheduled') {
 
 // ---- 1. ownership and branch checks against real rows
 await reset();
+{ failHistory = true;
+  const r = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  check('missing audit gate -> 503 and no clock-in written', r.s === 503 && (await entries()).length === 0, JSON.stringify(r));
+  failHistory = false;
+}
 { const s = await shift(E1, B, 'Carnaby', D, '09:00', '17:00'); const r = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby', shift_id: s });
   check('shift from another workspace refused', r.s === 400 && (await entries()).length === 0, JSON.stringify(r)); }
 await reset();
