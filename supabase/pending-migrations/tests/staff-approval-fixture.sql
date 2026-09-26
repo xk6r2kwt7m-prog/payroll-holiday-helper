@@ -1,0 +1,24 @@
+-- Minimal synthetic schema for transaction behaviour, not a copy of production.
+CREATE ROLE anon; CREATE ROLE authenticated;
+CREATE SCHEMA auth;
+CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+CREATE TABLE tenant_members(tenant_id uuid,user_id uuid,role text,is_active boolean);
+CREATE TABLE employees(id uuid PRIMARY KEY,tenant_id uuid,forename text,surname text,preferred_name text,email text,date_of_birth date,ni_number text,nationality text,passport_no text,sharing_code text,settlement_status text,bank_account_no text,sort_code text);
+CREATE TABLE staff_detail_changes(id uuid PRIMARY KEY,tenant_id uuid,employee_id uuid,field_name text,old_value text,new_value text,state text DEFAULT 'pending',needs_review boolean DEFAULT true,decided_by uuid,decided_by_name text,decided_at timestamptz,notes text);
+CREATE TABLE bank_detail_verifications(id uuid DEFAULT gen_random_uuid(),tenant_id uuid,employee_id uuid,change_id uuid,verified_by uuid,verified_by_name text,confirmed_directly boolean,notes text);
+CREATE TABLE audit_log(id uuid DEFAULT gen_random_uuid(),tenant_id uuid,user_id uuid,action text,table_name text,record_id uuid,new_data jsonb);
+GRANT USAGE ON SCHEMA auth,public TO authenticated,anon;
+ALTER TABLE employees ADD COLUMN user_id uuid;
+CREATE FUNCTION is_tenant_manager_or_above(t uuid) RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$ SELECT EXISTS(SELECT 1 FROM tenant_members WHERE tenant_id=t AND user_id=auth.uid() AND role IN ('company_admin','manager') AND is_active) $$;
+CREATE TABLE training_library(id uuid PRIMARY KEY,tenant_id uuid,status text,is_active boolean DEFAULT true,requires_quiz boolean DEFAULT true,version int DEFAULT 1,retry_limit int DEFAULT 2,pass_mark int DEFAULT 80,requires_acknowledgement boolean DEFAULT false);
+CREATE TABLE training_assignments(id uuid PRIMARY KEY,tenant_id uuid,document_id uuid,employee_id uuid,status text DEFAULT 'assigned',module_version int DEFAULT 1,quiz_passed boolean,quiz_score int,score int,signoff_required boolean DEFAULT false,signed_off_at timestamptz,signed_off_by text,signoff_status text,acknowledged_at timestamptz,viewed_at timestamptz,completed_at timestamptz);
+CREATE TABLE training_quiz_questions(id uuid PRIMARY KEY,tenant_id uuid,document_id uuid,question text,options jsonb,correct_option int,display_order int);
+ALTER TABLE training_quiz_questions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY old_staff_answers ON training_quiz_questions FOR SELECT TO authenticated USING (true);
+CREATE TABLE training_quiz_attempts(id uuid DEFAULT gen_random_uuid(),tenant_id uuid,assignment_id uuid,employee_id uuid,document_id uuid,score int,passed boolean,attempt_number int,answers_json jsonb);
+CREATE TABLE training_audit_log(id uuid DEFAULT gen_random_uuid(),tenant_id uuid,document_id uuid,assignment_id uuid,employee_id uuid,action text,acting_user_id text,metadata jsonb);
+GRANT SELECT,UPDATE ON training_assignments TO authenticated;
+GRANT SELECT ON training_library,training_quiz_questions TO authenticated;
+GRANT INSERT ON training_quiz_attempts TO authenticated;
+GRANT INSERT,UPDATE,DELETE ON staff_detail_changes,bank_detail_verifications TO authenticated;
+GRANT SELECT ON employees,training_quiz_attempts TO authenticated;

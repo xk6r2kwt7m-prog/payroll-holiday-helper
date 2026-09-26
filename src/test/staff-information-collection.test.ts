@@ -200,9 +200,9 @@ describe("reviewing what came back", () => {
   });
 
   it("does not use a changed bank account until it is confirmed with the employee", () => {
-    expect(hooks).toContain("bank_detail_verifications");
-    expect(hooks).toContain("confirmed_directly");
-    expect(hooks).toMatch(/accept && !isBankField/);
+    expect(hooks).toContain("confirm_staff_bank_atomic");
+    expect(hooks).toContain("decide_staff_detail_atomic");
+    expect(hooks).not.toContain(".update(updates as never)");
   });
 
   it("gives right to work the five agreed states and records the checker", () => {

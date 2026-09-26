@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, XCircle, GraduationCap, ArrowRight, ArrowLeft, RotateCcw, Clock, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuizQuestions, type QuizQuestion } from "@/hooks/useTrainingLibrary";
+import { useStaffAssessmentQuestions, type StaffAssessmentResult } from "@/hooks/useStaffAssessment";
 import { useSubmitQuiz, useQuizAttempts } from "@/hooks/useTrainingModules";
 import { format, parseISO } from "date-fns";
 
@@ -19,7 +19,7 @@ interface QuizTakerProps {
 }
 
 export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryLimit = 3, quizPassed, onComplete }: QuizTakerProps) {
-  const questionsQuery = useQuizQuestions(moduleId);
+  const questionsQuery = useStaffAssessmentQuestions(assignmentId);
   const { data: questions = [], isLoading } = questionsQuery;
   const attemptsQuery = useQuizAttempts(assignmentId);
   const { data: attempts = [], isLoading: attemptsLoading } = attemptsQuery;
@@ -29,7 +29,8 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
   const [showResults, setShowResults] = useState(false);
   const [submittedAttempt, setSubmittedAttempt] = useState<number | null>(null);
   const submitted = submittedAttempt !== null;
-  const [showReview, setShowReview] = useState(false);
+  const [serverResult, setServerResult] = useState<StaffAssessmentResult | null>(null);
+  const request = useRef<{ key: string; id: string } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
 
   // Quiz lock: if already passed, show locked state
@@ -119,23 +120,16 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
   };
 
   const handleSubmit = () => {
-    const correct = questions.filter(q => answers[q.id] === q.correct_option).length;
-    const score = Math.round((correct / questions.length) * 100);
-    const passed = score >= passMark;
     if (submitQuiz.isPending) return;
+    const key = JSON.stringify([assignmentId, answers]);
+    if (request.current?.key !== key) request.current = { key, id: crypto.randomUUID() };
     submitQuiz.mutate({
-      assignmentId,
-      employeeId,
-      documentId: moduleId,
-      score,
-      passed,
-      attemptNumber: currentAttemptNumber,
-      answers,
+      assignmentId, employeeId, documentId: moduleId, answers, requestId: request.current.id,
     }, {
-      onSuccess: () => {
-        setSubmittedAttempt(currentAttemptNumber);
+      onSuccess: (result) => {
+        setServerResult(result);
+        setSubmittedAttempt(result.attempt_number);
         setShowResults(true);
-        if (passed) setTimeout(onComplete, 2000);
       },
     });
   };
@@ -145,14 +139,13 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
     setCurrentIndex(0);
     setShowResults(false);
     setSubmittedAttempt(null);
-    setShowReview(false);
+    setServerResult(null);
+    request.current = null;
   };
 
   // ─── Results View ───
-  if (showResults) {
-    const correct = questions.filter(q => answers[q.id] === q.correct_option).length;
-    const score = Math.round((correct / questions.length) * 100);
-    const passed = score >= passMark;
+  if (showResults && serverResult) {
+    const { correct, score, passed, attempts_remaining: attemptsRemaining } = serverResult;
 
     return (
       <div className="space-y-4">
@@ -170,11 +163,11 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
           </h3>
           <p className="text-3xl font-bold text-foreground mt-1 tabular-nums">{score}%</p>
           <p className="text-sm text-muted-foreground mt-1">
-            {correct} of {questions.length} correct · Pass mark: {passMark}%
+            {correct} of {serverResult.total} correct · Pass mark: {serverResult.pass_mark}%
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Attempt {currentAttemptNumber} of {retryLimit}</p>
+          <p className="text-xs text-muted-foreground mt-1">Attempt {serverResult.attempt_number}</p>
           {passed && (
-            <p className="text-xs text-success mt-2">Your training will be marked as completed.</p>
+            <p className="text-xs text-success mt-2">Your result has been saved. Check your plan for any remaining manager sign-off or acknowledgement.</p>
           )}
         </div>
 
@@ -196,38 +189,7 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
           </div>
         )}
 
-        {/* Review toggle */}
-        <Button variant="outline" onClick={() => setShowReview(!showReview)} className="w-full text-sm">
-          {showReview ? "Hide Review" : "Review Answers"}
-        </Button>
-
-        {/* Answer review */}
-        {showReview && (
-          <div className="space-y-2">
-            {questions.map((q, i) => {
-              const userAnswer = answers[q.id];
-              const isCorrect = userAnswer === q.correct_option;
-              return (
-                <div key={q.id} className={cn("p-3 rounded-lg border", isCorrect ? "border-success/20 bg-success/5" : "border-destructive/20 bg-destructive/5")}>
-                  <p className="text-xs font-medium text-foreground">{i + 1}. {q.question}</p>
-                  <div className="mt-1.5 space-y-0.5">
-                    {(q.options || []).map((opt: string, oi: number) => (
-                      <p key={oi} className={cn("text-[11px] pl-2",
-                        oi === q.correct_option ? "text-success font-medium" :
-                        oi === userAnswer && !isCorrect ? "text-destructive line-through" : "text-muted-foreground"
-                      )}>
-                        {oi === q.correct_option ? "✓" : oi === userAnswer ? "✗" : "○"} {opt}
-                      </p>
-                    ))}
-                  </div>
-                  {q.explanation && (
-                    <p className="text-[10px] text-muted-foreground mt-1.5 pl-2 border-l-2 border-primary/20">{q.explanation}</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {!passed && <p className="text-sm text-muted-foreground">Review the lesson before retrying. Ask your manager for help with anything unclear.</p>}
 
         {/* Attempt History */}
         {attempts.length > 0 && (
