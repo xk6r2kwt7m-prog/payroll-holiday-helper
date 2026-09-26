@@ -5,7 +5,7 @@
  * action rather than falling back to defaults. RLS still enforces each action.
  */
 import { supabase } from "@/integrations/supabase/client";
-import { decidePermission, toOverrideMap } from "@/lib/permission-policy";
+import { decidePermission, permissionRoleForMembership, toOverrideMap } from "@/lib/permission-policy";
 
 /** Throws if user does not hold the given permission key. */
 export async function assertPermission(
@@ -14,17 +14,6 @@ export async function assertPermission(
 ): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
-
-  const { data: roles, error: rolesError } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id);
-  if (rolesError) throw new Error("Could not check your permissions. Please try again.");
-
-  const userRoles = (roles || []).map((r: any) => r.role as string);
-
-  // Admin always passes (existing policy, unchanged)
-  if (userRoles.includes("admin")) return;
 
   const { data: platformAdmin, error: paError } = await supabase
     .from("platform_admins")
@@ -35,18 +24,28 @@ export async function assertPermission(
   if (paError) throw new Error("Could not check your permissions. Please try again.");
 
   if (!tenantId) throw new Error("Permission denied: no workspace");
-  if (userRoles.length === 0) throw new Error(`Permission denied: ${permissionKey} is required for this action.`);
+  const { data: membership, error: membershipError } = await supabase
+    .from("tenant_members")
+    .select("role")
+    .eq("tenant_id", tenantId)
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (membershipError) throw new Error("Could not check your permissions. Please try again.");
+  const role = permissionRoleForMembership(membership?.role ?? null);
+  if (!role) throw new Error(`Permission denied: ${permissionKey} is required for this action.`);
+  if (role === "admin") return;
 
   const { data: rows, error: permError } = await supabase
     .from("role_permissions")
     .select("role, permission_key, granted")
     .eq("tenant_id", tenantId)
     .eq("permission_key", permissionKey)
-    .in("role", userRoles);
+    .eq("role", role);
   if (permError) throw new Error("Could not check your permissions. Please try again.");
 
   const decision = decidePermission({
-    roles: userRoles,
+    roles: [role],
     key: permissionKey,
     overrides: toOverrideMap((rows || []) as any),
   });

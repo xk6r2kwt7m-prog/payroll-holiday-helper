@@ -7,6 +7,7 @@ import { ModuleUnavailable } from "@/components/ModuleUnavailable";
 import { TenantSuspended } from "@/components/TenantSuspended";
 import { type AppRole, getRoleLevel } from "@/lib/roles";
 import { usePermissionDecision, useRolePermissions, type PermissionKey } from "@/hooks/useRolePermissions";
+import { permissionRoleForMembership } from "@/lib/permission-policy";
 
 export type ModuleKey = "scheduling" | "payroll" | "training" | "documents" | "analytics";
 
@@ -28,11 +29,11 @@ export function ProtectedRoute({
   platformAdminOnly,
   requiredPermission,
 }: ProtectedRouteProps) {
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const {
     tenantId, isPlatformAdmin, enabledModules,
     loading: tenantLoading, tenantResolved, membershipCount,
-    showTenantPicker, tenantStatus,
+    showTenantPicker, tenantStatus, tenantRole,
   } = useTenant();
 
   // Permission check (safe to call unconditionally — returns allowed for admin/platform admin)
@@ -94,7 +95,7 @@ export function ProtectedRoute({
 
   // ─── GATE 8: Role check ───
   if (requiredRole && !isPlatformAdmin) {
-    const userLevel = getRoleLevel(role);
+    const userLevel = getRoleLevel(permissionRoleForMembership(tenantRole));
     const requiredLevel = getRoleLevel(requiredRole);
     if (userLevel < requiredLevel) {
       return <AccessDenied />;

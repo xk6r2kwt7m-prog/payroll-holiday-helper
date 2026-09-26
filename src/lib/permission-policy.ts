@@ -55,6 +55,13 @@ export type OverrideMap = Record<string, Record<string, boolean>>;
 
 export type PermissionDecision = "allowed" | "denied" | "unresolved";
 
+/** Translate active workspace membership roles to the screen permission roles. */
+export function permissionRoleForMembership(role: string | null): string | null {
+  if (role === "company_admin") return "admin";
+  if (role === "employee") return "staff";
+  return role && ["manager", "supervisor", "viewer"].includes(role) ? role : null;
+}
+
 export function roleAllows(role: string, key: string, overrides: OverrideMap): boolean {
   if ((FULL_ACCESS_ROLES as readonly string[]).includes(role)) return true;
   const stored = overrides[role]?.[key];
