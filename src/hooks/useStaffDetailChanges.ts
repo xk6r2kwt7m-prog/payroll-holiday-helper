@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { staffApprovalError } from "@/lib/staff-approval-error";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -191,13 +192,14 @@ export function useRightToWorkReview(employeeId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employee_onboarding_data")
-        .select("id, rtw_status, rtw_reviewed_at, rtw_reviewed_by, rtw_reviewed_by_name, rtw_review_notes, rtw_expires_on")
+        .select("id, updated_at, rtw_status, rtw_reviewed_at, rtw_reviewed_by, rtw_reviewed_by_name, rtw_review_notes, rtw_expires_on")
         .eq("tenant_id", tenantId!)
         .eq("employee_id", employeeId!)
         .maybeSingle();
       if (error) throw error;
       return data as {
         id: string;
+        updated_at: string;
         rtw_status: string | null;
         rtw_reviewed_at: string | null;
         rtw_reviewed_by: string | null;
@@ -212,8 +214,7 @@ export function useRightToWorkReview(employeeId?: string) {
 /** Records the right-to-work decision, who made it and when. Nothing is cancelled automatically. */
 export function useRecordRightToWorkDecision() {
   const qc = useQueryClient();
-  const { user } = useAuth();
-  const { tenantId } = useTenant();
+  const retry = useRef<{ key: string; id: string } | null>(null);
   return useMutation({
     mutationFn: async ({
       employeeId,
@@ -221,54 +222,34 @@ export function useRecordRightToWorkDecision() {
       checkedByName,
       notes,
       expiresOn,
+      expectedUpdatedAt,
     }: {
       employeeId: string;
       decision: RtwState;
       checkedByName: string;
       notes?: string;
       expiresOn?: string | null;
+      expectedUpdatedAt: string;
     }) => {
       if (!checkedByName.trim()) throw new Error("Please type your name so the check is recorded");
 
-      const { data: existing } = await supabase
-        .from("employee_onboarding_data")
-        .select("id")
-        .eq("employee_id", employeeId)
-        .maybeSingle();
-
+      if (!expectedUpdatedAt) throw new Error("Reload the evidence before recording a decision");
+      if (!notes?.trim()) throw new Error("Record what you checked and where the evidence is held");
       const payload = {
-        rtw_status: decision,
-        rtw_reviewed_at: new Date().toISOString(),
-        rtw_reviewed_by: user?.id ?? null,
-        rtw_reviewed_by_name: checkedByName.trim(),
-        rtw_review_notes: notes?.trim() || null,
-        ...(expiresOn ? { rtw_expires_on: expiresOn } : {}),
+        _employee_id: employeeId, _decision: decision, _reviewer: checkedByName.trim(),
+        _notes: notes.trim(), _expires_on: expiresOn || null, _expected_updated_at: expectedUpdatedAt,
       };
-
-      if (existing?.id) {
-        const { error } = await supabase
-          .from("employee_onboarding_data")
-          .update(payload as never)
-          .eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("employee_onboarding_data")
-          .insert({ tenant_id: tenantId, employee_id: employeeId, ...payload } as never);
-        if (error) throw error;
-      }
-
-      await supabase.from("audit_log").insert({
-        tenant_id: tenantId,
-        action: "update",
-        table_name: "right_to_work_review",
-        record_id: employeeId,
-        new_data: { decision, checked_by_name: checkedByName.trim(), notes: notes?.trim() || null },
+      const key = JSON.stringify(payload);
+      if (retry.current?.key !== key) retry.current = { key, id: crypto.randomUUID() };
+      const { error } = await supabase.rpc("record_rtw_decision_atomic" as never, {
+        ...payload, _request_id: retry.current.id,
       } as never);
+      if (error) throw new Error(staffApprovalError(error));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["rtw_review"] });
       qc.invalidateQueries({ queryKey: ["employee_readiness"] });
+      qc.invalidateQueries({ queryKey: ["contract_auto_draft_record"] });
       toast.success("Right-to-work check recorded");
     },
     onError: (e: Error) => toast.error(e.message),
