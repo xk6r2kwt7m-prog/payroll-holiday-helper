@@ -6,7 +6,7 @@ import {
   Coffee, CheckCircle2, AlertCircle, ArrowRight, Pause, Play, Navigation,
   ClipboardList, AlertTriangle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"; import { ClockStatusError } from "@/components/dashboard/ClockStatusError";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
@@ -251,7 +251,7 @@ function ShiftCountdown({ shiftStart }: { shiftStart: string }) {
 /* ─── Main component ─── */
 
 export function StaffHome() {
-  const { employee, employeeId, isLinked } = useCurrentEmployee();
+  const { employee, employeeId, isLinked, isError: employeeLookupFailed, refetch: retryEmployee } = useCurrentEmployee();
   const tenantId = employee?.tenant_id ?? null;
   const [gpsStatus, setGpsStatus] = useState<"loading" | "granted" | "denied" | "unavailable">("loading");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -261,7 +261,7 @@ export function StaffHome() {
   const [breakStartTime, setBreakStartTime] = useState<Date | null>(null);
   const [accumulatedBreakMs, setAccumulatedBreakMs] = useState(0);
 
-  const { data: activeEntry } = useActiveClockIn();
+  const { data: activeEntry, error: activeEntryError, refetch: retryActiveEntry } = useActiveClockIn();
   const clockInOut = useClockInOut();
   const updateBreak = useUpdateBreakMinutes();
   const { data: branches } = useBranchLocations();
@@ -489,7 +489,7 @@ export function StaffHome() {
             ? isOnBreak ? "border-warning/30 bg-warning/5" : "border-success/30 bg-success/5"
             : "border-border bg-card shadow-sm"
         )}>
-          {activeEntry ? (
+          {employeeLookupFailed || activeEntryError ? <ClockStatusError error={activeEntryError} onRetry={() => { retryEmployee(); retryActiveEntry(); }} /> : activeEntry ? (
             <ActiveShiftCard
               activeEntry={activeEntry}
               elapsedTime={elapsedTime}

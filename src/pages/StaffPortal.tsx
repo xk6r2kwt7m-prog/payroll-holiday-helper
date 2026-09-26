@@ -29,7 +29,7 @@ const sections: { id: Section; icon: any; label: string }[] = [
 
 export default function StaffPortal() {
   const { signOut } = useAuth();
-  const { employee, employeeId, employeeName, isLinked, isLoading } = useCurrentEmployee();
+  const { employee, employeeId, employeeName, isLinked, isLoading, isError, refetch } = useCurrentEmployee();
   const [activeSection, setActiveSection] = useState<Section>("profile");
 
   if (isLoading) {
@@ -37,6 +37,23 @@ export default function StaffPortal() {
       <AppLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh] p-4">
+          <div className="text-center max-w-sm" role="alert">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-3" />
+            <h2 className="text-lg font-semibold mb-2">Couldn't load your details</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Something went wrong checking your employee record. This doesn't mean your account is unlinked.
+            </p>
+            <Button variant="outline" onClick={() => refetch()}>Try again</Button>
+          </div>
         </div>
       </AppLayout>
     );

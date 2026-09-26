@@ -53,6 +53,11 @@ describe('auth session ordering', () => {
   it.each([{error:new Error('denied')},{data:{role:'unexpected'}}])('does not grant a role on invalid lookup: %j',async(response)=>{
     const {result}=mount();act(()=>event('SIGNED_IN',session('a')));await waitFor(()=>expect(roles.has('a')).toBe(true));
     await act(async()=>roles.get('a')!.resolve(response));expect(result.current.role).toBeNull();expect(result.current.loading).toBe(false);
+    expect(result.current.roleStatus).toBe('failed');
+  });
+  it('a missing role row is resolved, not failed',async()=>{
+    const {result}=mount();act(()=>event('SIGNED_IN',session('a')));await waitFor(()=>expect(roles.has('a')).toBe(true));
+    await act(async()=>roles.get('a')!.resolve({data:null,error:null}));expect(result.current.role).toBeNull();expect(result.current.roleStatus).toBe('resolved');
   });
   it('reports a failed sign-out instead of pretending the session ended',async()=>{
     const {result}=mount();const error=new Error('sign-out failed');mocks.signOut.mockResolvedValue({error});

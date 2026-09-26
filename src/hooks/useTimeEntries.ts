@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
 import { assertPermission } from "@/lib/permission-guard";
+import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
 
 export type TimeEntry = Tables<"time_entries">;
 export type TimeEntryUpdate = TablesUpdate<"time_entries">;
@@ -41,39 +42,64 @@ export function useTimeEntries(
   });
 }
 
+/** Own time entries only: scoped to the signed-in employee in the active workspace. */
 export function useMyTimeEntries() {
+  const { employee } = useCurrentEmployee();
+  const employeeId = employee?.id ?? null;
+  const tenantId = employee?.tenant_id ?? null;
   return useQuery({
-    queryKey: ["my_time_entries"],
+    queryKey: ["my_time_entries", tenantId, employeeId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("time_entries")
         .select(`*, shifts (id, start_time, end_time, shift_date)`)
+        .eq("employee_id", employeeId!)
+        .eq("tenant_id", tenantId!)
         .order("clock_in_time", { ascending: false })
         .limit(50);
       if (error) throw error;
       return data;
     },
+    enabled: !!employeeId && !!tenantId,
   });
 }
 
+export class ActiveClockInConflictError extends Error {
+  constructor() {
+    super("More than one open clock-in was found for you. Ask a manager to review your timesheet.");
+    this.name = "ActiveClockInConflictError";
+  }
+}
+
+/** Own open clock-in only. More than one open entry is reported, not guessed. */
 export function useActiveClockIn() {
+  const { employee } = useCurrentEmployee();
+  const employeeId = employee?.id ?? null;
+  const tenantId = employee?.tenant_id ?? null;
   return useQuery({
-    queryKey: ["active_clock_in"],
+    queryKey: ["active_clock_in", tenantId, employeeId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("time_entries")
         .select("*")
+        .eq("employee_id", employeeId!)
+        .eq("tenant_id", tenantId!)
         .eq("status", "clocked_in")
-        .maybeSingle();
+        .order("clock_in_time", { ascending: false })
+        .limit(2);
       if (error) throw error;
-      return data as TimeEntry | null;
+      if ((data?.length ?? 0) > 1) throw new ActiveClockInConflictError();
+      return (data?.[0] as TimeEntry | undefined) ?? null;
     },
+    enabled: !!employeeId && !!tenantId,
+    retry: (count, err) => !(err instanceof ActiveClockInConflictError) && count < 2,
     refetchInterval: 30000,
   });
 }
 
 export function useClockInOut() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (body: {
       action: "clock_in" | "clock_out";
@@ -87,8 +113,10 @@ export function useClockInOut() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
+      // tenant_id tells the server which workspace's employee record to use;
+      // the server verifies it against the signed-in user's own records.
       const response = await supabase.functions.invoke("clock-in-out", {
-        body,
+        body: { ...body, tenant_id: tenantId ?? undefined },
       });
 
       if (response.error) {

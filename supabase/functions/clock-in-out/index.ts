@@ -69,19 +69,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get employee record for this user — includes tenant_id as server-side source of truth
-    const { data: employee, error: empError } = await serviceClient
+    // Resolve the caller's OWN employee record, scoped to the requested workspace.
+    // The requested workspace is only a selector: it must match a record that
+    // belongs to this user. Never trust employee IDs from the body.
+    const requestedTenant = typeof body.tenant_id === "string" && body.tenant_id ? body.tenant_id : null;
+    const json = (payload: unknown, status: number) =>
+      new Response(JSON.stringify(payload), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    let empQuery = serviceClient
       .from("employees")
       .select("id, department, status, tenant_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
+      .eq("user_id", user.id);
+    if (requestedTenant) empQuery = empQuery.eq("tenant_id", requestedTenant);
+    const { data: empRows, error: empError } = await empQuery.limit(2);
 
-    if (empError || !employee) {
-      return new Response(
-        JSON.stringify({ error: "No employee record linked to this account" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (empError) {
+      console.error("clock-in-out employee lookup failed");
+      return json({ error: "Could not look up your employee record. Please try again." }, 503);
     }
+    if (!empRows || empRows.length === 0) {
+      return json({ error: "No employee record linked to this account" }, 404);
+    }
+    if (empRows.length > 1) {
+      return json({ error: "Your account is linked to more than one workspace. Open the workspace you work in and try again." }, 409);
+    }
+    const employee = empRows[0];
+
+    // NOTE (A02 review): an active-membership check is NOT added here, to preserve
+    // existing behaviour. Flagged for a separate decision.
 
     if (employee.status !== "active") {
       return new Response(
