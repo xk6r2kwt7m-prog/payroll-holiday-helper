@@ -100,6 +100,7 @@ export function useNotifications() {
           if (ctx && typeof ctx.json === "function") {
             const body = await ctx.json();
             if (body?.error) reason = String(body.error);
+            else if (body?.message) reason = String(body.message);
           }
         } catch { /* keep generic message */ }
         return { success: false, error: reason };
