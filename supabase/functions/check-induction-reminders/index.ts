@@ -1,3 +1,5 @@
+import { inductionReminderDue } from "../_shared/induction-reminder-policy.ts";
+import { londonDateKey } from "../_shared/training-reminder-policy.ts";
 // Daily job: chases unfinished inductions and (optionally) sends the induction
 // automatically to new starters. Never touches a completed induction, a test
 // record, or anything a manager has not switched on.
@@ -14,23 +16,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const REMINDER_DAYS = [3, 7, 14];
-const WEEKLY_AFTER = 14;
 const APP_URL = "https://hr.uglyops.com";
 
 const daysBetween = (from: string, to: Date) =>
   Math.floor((to.getTime() - new Date(from).getTime()) / 86_400_000);
-
-function reminderDue(pack: any, now: Date): boolean {
-  if (pack.is_test_send || pack.completed_at || !pack.sent_at) return false;
-  if (pack.token_expires_at && new Date(pack.token_expires_at).getTime() < now.getTime()) return false;
-  const since = daysBetween(pack.sent_at, now);
-  if (since < REMINDER_DAYS[0]) return false;
-  if (pack.reminder_sent_at && daysBetween(pack.reminder_sent_at, now) < 1) return false;
-  if (REMINDER_DAYS.includes(since)) return true;
-  if (since > WEEKLY_AFTER) return (since - WEEKLY_AFTER) % 7 === 0;
-  return false;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -65,23 +54,25 @@ Deno.serve(async (req) => {
     // ── 1. Chase unfinished inductions (only when the tenant opted in) ──────
     const { data: packs, error: packsError } = await supabase
       .from("induction_packs")
-      .select("id, tenant_id, employee_id, token, sent_at, completed_at, reminder_sent_at, reminder_count, token_expires_at, is_test_send, recipient_email, branch, staff_role, employees(forename, surname, email, status, archived_at)")
+      .select("id, tenant_id, employee_id, token, status, sent_at, completed_at, reminder_sent_at, reminder_count, token_expires_at, is_test_send, recipient_email, branch, staff_role, employees(forename, surname, email, status, archived_at, end_date, is_test_record)")
       .is("completed_at", null);
 
     if (packsError) throw packsError;
     for (const pack of packs ?? []) {
       if (prefsByTenant.get(pack.tenant_id)?.induction_reminders_enabled !== true) continue;
-      if (!reminderDue(pack, now)) continue;
+      if (!inductionReminderDue(pack, now)) continue;
       const emp: any = (pack as any).employees;
-      if (emp?.archived_at || emp?.status === "leaver") continue;
+      if (!emp || emp.is_test_record || emp.archived_at || (emp.end_date && emp.end_date < londonDateKey(now)) || (emp.status === "leaver" && !emp.end_date)) continue;
       const email = pack.recipient_email || emp?.email;
       if (!email) continue;
 
-      const { count } = await supabase
+      const { count, error: itemsReadError } = await supabase
         .from("induction_pack_items")
         .select("id", { count: "exact", head: true })
         .eq("pack_id", pack.id);
 
+      if (itemsReadError) throw itemsReadError;
+      if (!count) { notes.push(`Induction ${pack.id} has no documents; review before sending.`); continue; }
       const days = daysBetween(pack.sent_at, now);
       const delivery = await supabase.functions.invoke("send-notification", {
         body: {

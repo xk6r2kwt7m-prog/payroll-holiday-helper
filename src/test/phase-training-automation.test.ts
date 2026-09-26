@@ -21,7 +21,7 @@ describe("induction reminders", () => {
 
   it("then reminds weekly while outstanding", () => {
     expect(inductionReminderDue({ id: "1", employee_id: "e", sent_at: daysAgo(21) })).toBe(true);
-    expect(inductionReminderDue({ id: "1", employee_id: "e", sent_at: daysAgo(22) })).toBe(false);
+    expect(inductionReminderDue({ id: "1", employee_id: "e", sent_at: daysAgo(22), reminder_sent_at: daysAgo(1) })).toBe(false);
   });
 
   it("never reminds twice on the same day", () => {
