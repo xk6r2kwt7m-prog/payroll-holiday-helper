@@ -130,6 +130,7 @@ export function useDecideStaffDetailChange() {
     },
     onSuccess: (_d, { accept, change }) => {
       qc.invalidateQueries({ queryKey: ["staff_detail_changes"] });
+      qc.invalidateQueries({ queryKey: ["contract_auto_draft_record"] });
       qc.invalidateQueries({ queryKey: ["employees"] });
       qc.invalidateQueries({ queryKey: ["employee-sensitive"] });
       toast.success(
@@ -213,6 +214,7 @@ export function useVerifyBankChange() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["staff_detail_changes"] });
+      qc.invalidateQueries({ queryKey: ["contract_auto_draft_record"] });
       qc.invalidateQueries({ queryKey: ["employees"] });
       qc.invalidateQueries({ queryKey: ["employee-sensitive"] });
       qc.invalidateQueries({ queryKey: ["tenant-sensitive"] });
@@ -237,13 +239,15 @@ export const RTW_LABELS: Record<string, string> = {
 };
 
 export function useRightToWorkReview(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["rtw_review", employeeId],
-    enabled: !!employeeId,
+    queryKey: ["rtw_review", tenantId, employeeId],
+    enabled: !!tenantId && !!employeeId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employee_onboarding_data")
         .select("id, rtw_status, rtw_reviewed_at, rtw_reviewed_by, rtw_reviewed_by_name, rtw_review_notes, rtw_expires_on")
+        .eq("tenant_id", tenantId!)
         .eq("employee_id", employeeId!)
         .maybeSingle();
       if (error) throw error;

@@ -1,3 +1,4 @@
+import { quizCanCompleteAssignment } from "@/lib/staff-training-journey";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/hooks/useTenant";
@@ -328,6 +329,15 @@ export function useSubmitQuiz() {
   return useMutation({
     mutationFn: async (payload: SubmitQuizPayload) => {
       const { assignmentId, employeeId, documentId, score, passed, attemptNumber, answers } = payload;
+      if (!tenantId) throw new Error("Choose a workspace before submitting training");
+      const { data: assignment, error: assignmentError } = await supabase.from("training_assignments")
+        .select("status, signoff_required, signed_off_at, acknowledged_at, training_library(requires_acknowledgement)")
+        .eq("tenant_id", tenantId).eq("id", assignmentId)
+        .eq("employee_id", employeeId).eq("document_id", documentId).single();
+      if (assignmentError) throw assignmentError;
+      if (!assignment || assignment.status === "cancelled") throw new Error("This training assignment is no longer available");
+      const canComplete = passed && quizCanCompleteAssignment(assignment as unknown as TrainingAssignment);
+
 
       // 1. Persist the attempt
       const { error: attemptErr } = await supabase.from("training_quiz_attempts").insert({
@@ -341,7 +351,7 @@ export function useSubmitQuiz() {
         answers_json: answers ? JSON.stringify(answers) : null,
         completed_at: new Date().toISOString(),
       });
-      if (attemptErr && import.meta.env.DEV) console.warn("[quiz-attempt] insert error:", attemptErr);
+      if (attemptErr) throw attemptErr;
 
       // 2. Update assignment
       const updates: Record<string, unknown> = {
@@ -349,14 +359,18 @@ export function useSubmitQuiz() {
         quiz_passed: passed,
         score,
       };
-      if (passed) {
+      if (canComplete) {
         updates.status = "completed";
         updates.completed_at = new Date().toISOString();
+      }
+      if (passed && !canComplete) {
+        updates.status = "viewed";
+        updates.completed_at = null;
       }
       const { error } = await supabase
         .from("training_assignments")
         .update(updates as never)
-        .eq("id", assignmentId);
+        .eq("tenant_id", tenantId).eq("employee_id", employeeId).eq("id", assignmentId);
       if (error) throw error;
 
       // 3. Audit
@@ -375,7 +389,7 @@ export function useSubmitQuiz() {
       qc.invalidateQueries({ queryKey: ["training_assignments"] });
       qc.invalidateQueries({ queryKey: ["my_training_assignments"] });
       qc.invalidateQueries({ queryKey: ["training_quiz_attempts"] });
-      if (passed) toast.success("Quiz passed! Training completed.");
+      if (passed) toast.success("Quiz passed. Check your plan for any remaining acknowledgement or manager sign-off.");
       else toast.error("Quiz not passed. Please review and try again.");
     },
     onError: (e: Error) => toast.error(e.message),

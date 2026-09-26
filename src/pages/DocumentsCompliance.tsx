@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useTenantGuard } from "@/hooks/useTenantGuard";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useCallback, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,15 +28,25 @@ import {
   useComplianceBranches, useConfirmBranchLocation, type ComplianceBranchOption,
 } from "@/hooks/useComplianceBranches";
 
+const COMPLIANCE_SECTIONS = [
+  ["induction", "Staff induction"], ["library", "Document library"],
+  ["branch", "Branch compliance"], ["certificates", "Certificates & expiry"],
+  ["inspection", "Inspection file"], ["allergen", "Allergen training"], ["incidents", "Incident book"],
+] as const;
+
 export default function DocumentsCompliance() {
-  const { data: branchData } = useComplianceBranches();
+  const [params, setParams] = useSearchParams();
+  const section = COMPLIANCE_SECTIONS.some(([key]) => key === params.get("tab")) ? params.get("tab")! : "induction";
+  const changeSection = (value: string) => setParams(previous => { const next = new URLSearchParams(previous); next.set("tab", value); return next; });
+  const { data: branchData, isLoading, isError, refetch } = useComplianceBranches();
   const options = branchData?.selectable ?? [];
   const needsReview = branchData?.needsReview ?? [];
-  const [branch, setBranch] = useState<string>("");
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+  const reset = useCallback(() => setSelectedBranch(null), []);
+  const { tenantReady } = useTenantGuard(reset);
+  const branch = selectedBranch === "" ? "" : options.find(option => option.branch === selectedBranch)?.branch ?? options[0]?.branch ?? "";
+  const setBranch = setSelectedBranch;
 
-  useEffect(() => {
-    if (!branch && options.length > 0) setBranch(options[0].branch);
-  }, [options, branch]);
 
   return (
     <AppLayout>
@@ -48,12 +61,22 @@ export default function DocumentsCompliance() {
           </p>
         </header>
 
+        {!tenantReady || isLoading ? <p role="status">Loading your compliance workspace…</p> : isError ? (
+          <div role="alert" className="rounded-xl border p-4 space-y-2"><p>Could not load your locations. Please retry before working with compliance records.</p><Button onClick={() => void refetch()}>Try again</Button></div>
+        ) : <>
         <ComplianceAttentionPanel />
 
         {needsReview.length > 0 && <BranchReviewNotice items={needsReview} />}
 
-        <Tabs defaultValue="induction" className="min-w-0 space-y-4">
-          <div className="-mx-4 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:px-0">
+        <Tabs value={section} onValueChange={changeSection} className="min-w-0 space-y-4">
+          <div className="sm:hidden space-y-2">
+            <label htmlFor="compliance-section" className="text-sm font-medium">Choose a section</label>
+            <Select value={section} onValueChange={changeSection}>
+              <SelectTrigger id="compliance-section" className="min-h-11"><SelectValue /></SelectTrigger>
+              <SelectContent>{COMPLIANCE_SECTIONS.map(([key, title]) => <SelectItem key={key} value={key}>{title}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="hidden sm:block overflow-x-auto">
           <TabsList className="flex w-max min-w-full flex-nowrap h-auto justify-start">
             <TabsTrigger value="induction">Staff induction</TabsTrigger>
             <TabsTrigger value="library">Document library</TabsTrigger>
@@ -65,24 +88,29 @@ export default function DocumentsCompliance() {
           </TabsList>
           </div>
 
-          <TabsContent value="induction" className="space-y-6">
-            <InductionLessonsPanel />
-            <StaffInductionSection />
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                Alcohol sales authorisations
-              </p>
-              <AlcoholAuthorisationBoard />
-              <div className="mt-4">
-                <AlcoholAuthorisationsPanel />
-              </div>
+          <TabsContent value="induction" className="space-y-4">
+            <div className="rounded-xl border bg-card p-4 space-y-2">
+              <h2 className="font-semibold">Help each starter take the next step</h2>
+              <p className="text-sm text-muted-foreground">Send the relevant approved pack, monitor their reading and assessment, then record practical sign-off. Staff details and contract approval remain separate checks.</p>
             </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                Reminders &amp; new versions
-              </p>
-              <TrainingAutomationPanel />
-            </div>
+            <Accordion type="multiple" defaultValue={["staff"]} className="space-y-3">
+              <AccordionItem value="staff" className="rounded-xl border px-4">
+                <AccordionTrigger>1. Send and monitor staff induction</AccordionTrigger>
+                <AccordionContent><StaffInductionSection /></AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="lessons" className="rounded-xl border px-4">
+                <AccordionTrigger>2. Review and release phone-friendly lessons</AccordionTrigger>
+                <AccordionContent><InductionLessonsPanel /></AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="alcohol" className="rounded-xl border px-4">
+                <AccordionTrigger>3. Check alcohol sales authorisations</AccordionTrigger>
+                <AccordionContent><AlcoholAuthorisationBoard /><div className="mt-4"><AlcoholAuthorisationsPanel /></div></AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="reminders" className="rounded-xl border px-4">
+                <AccordionTrigger>4. Manage reminders and document updates</AccordionTrigger>
+                <AccordionContent><TrainingAutomationPanel /></AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </TabsContent>
 
           <TabsContent value="library">
@@ -115,6 +143,7 @@ export default function DocumentsCompliance() {
             <IncidentBookSection branch={branch || undefined} />
           </TabsContent>
         </Tabs>
+        </>}
       </div>
     </AppLayout>
   );

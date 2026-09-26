@@ -196,7 +196,7 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
           {autoDraft.ready ? (
             <>
               <p className="text-xs text-muted-foreground">
-                Everything has been approved, so the contract is ready to be prepared from the
+                Staff checks are clear. Prepare the contract, then review the rate, hours, holiday terms and notice period using the
                 approved details. It is produced as a draft for your review — nothing is sent or
                 signed until you decide.
               </p>
@@ -207,11 +207,12 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
           ) : (
             <>
               <p className="text-xs text-muted-foreground">
-                The contract will be prepared once these are settled:
+                Before you prepare the contract, resolve these checks:
               </p>
               <ul className="text-xs text-foreground space-y-0.5">
                 {autoDraft.outstanding.map((o) => <li key={o}>• {o}</li>)}
               </ul>
+              {autoDraft.error && <Button variant="outline" size="sm" onClick={autoDraft.retry}>Retry staff checks</Button>}
             </>
           )}
         </div>
