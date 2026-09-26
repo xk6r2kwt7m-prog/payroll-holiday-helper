@@ -328,9 +328,13 @@ export function useApproveTimeEntries() {
     mutationFn: async ({
       entryIds,
       mode = "approve_single",
+      reviewReason,
+      reviewedFlags,
     }: {
       entryIds: string[];
       mode?: "approve_single" | "approve_batch_selected" | "approve_batch_daily";
+      reviewReason?: string;
+      reviewedFlags?: string[];
     }) => {
       await assertPermission("approve_timesheets", tenantId!);
       const { data: { user } } = await supabase.auth.getUser();
@@ -349,6 +353,7 @@ export function useApproveTimeEntries() {
       await writeTimeEntryAudit(tenantId!, "approve", entryIds, user.id, {
         approval_mode: mode,
         count: entryIds.length,
+        ...(reviewReason ? { review_reason: reviewReason, reviewed_flags: reviewedFlags || [] } : {}),
       });
 
       return { approved: entryIds.length };

@@ -20,6 +20,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { usePermission } from "@/hooks/useRolePermissions";
 import { useTenantGuard } from "@/hooks/useTenantGuard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isBatchEligible, partitionBatchSelection } from "@/lib/time-entry-batch-review";
 
 export default function Timesheets() {
   const { t } = useI18n();
@@ -73,9 +74,12 @@ export default function Timesheets() {
   const cleanPendingIds = useMemo(() => {
     if (!entries) return [];
     return entries
-      .filter((e: any) => e.status === "pending" && computeFlags(e).length === 0)
+      .filter((e: any) => isBatchEligible(e, computeFlags(e)))
       .map((e: any) => e.id);
   }, [entries]);
+
+  const batchSelection = useMemo(() =>
+    partitionBatchSelection(entries || [], selectedIds, computeFlags), [entries, selectedIds]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -93,9 +97,17 @@ export default function Timesheets() {
   };
 
   const handleBulkApprove = async () => {
+    if (batchSelection.heldIds.length) {
+      toast.error(`${batchSelection.heldIds.length} selected timesheet(s) need individual review. Select clean pending entries to approve as a batch.`);
+      return;
+    }
+    if (!batchSelection.eligibleIds.length) {
+      toast.error("No clean pending timesheets are selected.");
+      return;
+    }
     try {
-      await approveEntries.mutateAsync({ entryIds: selectedIds, mode: "approve_batch_selected" });
-      toast.success(`Approved ${selectedIds.length} timesheet(s)`);
+      await approveEntries.mutateAsync({ entryIds: batchSelection.eligibleIds, mode: "approve_batch_selected" });
+      toast.success(`Approved ${batchSelection.eligibleIds.length} timesheet(s)`);
       setSelectedIds([]);
     } catch (err: any) {
       toast.error(err.message);
@@ -306,9 +318,16 @@ export default function Timesheets() {
                               size="icon"
                               variant="ghost"
                               className="h-7 w-7 text-success hover:text-success"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                approveEntries.mutateAsync({ entryIds: [entry.id], mode: "approve_single" }).then(() => toast.success("Approved"));
+                                if (hasFlags || !isBatchEligible(entry, flags)) {
+                                  setReviewEntry(entry);
+                                  return;
+                                }
+                                try {
+                                  await approveEntries.mutateAsync({ entryIds: [entry.id], mode: "approve_single" });
+                                  toast.success("Approved");
+                                } catch (err: any) { toast.error(err.message || "Approval failed"); }
                               }}
                             >
                               <Check className="h-4 w-4" />
@@ -357,7 +376,9 @@ export default function Timesheets() {
               className="shadow-elevated px-6"
             >
               <Check className="h-4 w-4 mr-2" />
-              {t("timesheets.approve_count", { count: String(selectedIds.length) })}
+              {batchSelection.heldIds.length > 0
+                ? `Review ${batchSelection.heldIds.length} selected entry(s) first`
+                : t("timesheets.approve_count", { count: String(batchSelection.eligibleIds.length) })}
             </Button>
           </div>
         )}

@@ -39,7 +39,8 @@ export function TimesheetsSection() {
       </h2>
       {myEntries.slice(0, 20).map((entry: any) => {
         const isExpanded = expandedId === entry.id;
-        const hasLocation = entry.clock_in_latitude || entry.clock_out_latitude;
+        const hasLocation = (entry.clock_in_latitude != null && entry.clock_in_longitude != null) ||
+          (entry.clock_out_latitude != null && entry.clock_out_longitude != null);
 
         return (
           <div key={entry.id} className="rounded-xl bg-card border border-border shadow-sm overflow-hidden">
