@@ -1,6 +1,6 @@
 import { ReactNode, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { FloatingActionButton } from "./FloatingActionButton";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +69,7 @@ const pageVariants = {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
+  const reduceMotion = useReducedMotion();
   const { user, isAdmin, isManagerOrAbove, isSupervisorOrAbove, role, signOut } = useAuth();
   const isMobile = useIsMobile();
   const { data: settings } = useCompanySettings();
@@ -142,8 +143,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen min-w-0 overflow-x-hidden bg-background flex flex-col">
+      <a href="#workspace-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-card focus:px-4 focus:py-3 focus:text-foreground focus:shadow-lg">Skip to content</a>
       {/* Top navigation bar — desktop only */}
-      <header className="hidden md:flex items-center h-12 border-b border-border/60 bg-card px-5 shrink-0 z-50">
+      <header className="hidden md:flex flex-wrap items-center min-h-16 gap-y-2 border-b border-border/60 bg-card px-4 py-2 lg:px-6 shrink-0 z-50">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 mr-6 shrink-0">
           <img
@@ -157,7 +159,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </Link>
 
         {/* Primary nav tabs — centered */}
-        <nav className="flex items-center gap-0.5 flex-1 justify-center">
+        <nav aria-label="Main navigation" className="flex items-center gap-0.5 flex-1 justify-center">
           {primaryNavItems.filter(item => canAccess(item.minRole)).map((item) => {
             const active = isNavActive(item);
 
@@ -171,7 +173,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   <DropdownMenuTrigger asChild>
                     <button
                       className={cn(
-                        "relative flex items-center gap-1 px-3.5 py-2 text-sm font-medium rounded-md transition-colors outline-none",
+                        "relative flex items-center gap-1 px-2.5 lg:px-3.5 min-h-11 py-3 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         active
                           ? "text-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -195,6 +197,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <DropdownMenuItem key={child.path} asChild>
                           <Link
                             to={child.path}
+                            aria-current={childActive ? "page" : undefined}
                             className={cn(
                               "gap-2.5 cursor-pointer",
                               childActive && "bg-primary/10 text-primary font-medium"
@@ -215,9 +218,10 @@ export function AppLayout({ children }: AppLayoutProps) {
             return (
               <Link
                 key={item.path}
+                aria-current={active ? "page" : undefined}
                 to={item.path}
                 className={cn(
-                  "relative px-3.5 py-2 text-sm font-medium rounded-md transition-colors",
+                  "relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring px-2.5 lg:px-3.5 min-h-11 py-3 text-sm font-medium rounded-md transition-colors",
                   active
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -241,7 +245,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <button
                   className={cn(
-                    "flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors outline-none",
+                    "flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     isMoreActive
                       ? "text-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -283,7 +287,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                aria-label="Search"
+                className="h-10 w-10"
                 onClick={() =>
                   document.dispatchEvent(
                     new KeyboardEvent("keydown", { key: "k", metaKey: true })
@@ -312,7 +317,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                aria-label="Sign out"
+                className="h-10 w-10 text-muted-foreground hover:text-foreground"
                 onClick={signOut}
               >
                 <LogOut className="h-4 w-4" />
@@ -324,15 +330,15 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col min-h-0 min-w-0">
+      <main id="workspace-content" tabIndex={-1} className="flex-1 flex flex-col min-h-0 min-w-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
-            variants={pageVariants}
-            initial="initial"
+            variants={reduceMotion ? undefined : pageVariants}
+            initial={reduceMotion ? false : "initial"}
             animate="animate"
             exit="exit"
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={{ duration: reduceMotion ? 0 : 0.15, ease: "easeOut" }}
             className="flex-1 flex flex-col min-w-0 w-full px-4 py-4 sm:px-6 sm:py-6 pb-32 md:pb-6 overflow-x-hidden"
           >
             {children}
