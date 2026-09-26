@@ -99,6 +99,11 @@ test('staff preview hides manager-only navigation and former colleague records',
 test('phone, theme and reset switches restore the starting state', () => {
   click('device', '');
   assert.ok(document.querySelector('.phone-frame'));
+  click('menu', '');
+  assert.ok(document.querySelector('.nav-close'));
+  assert.ok(document.querySelector('.nav-scrim'));
+  document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert.equal(document.querySelector('.nav-scrim'), null);
   click('theme', '');
   assert.equal(document.documentElement.dataset.theme, 'dark');
   click('reset', '');

@@ -34,7 +34,8 @@ export function render(focusSearch = false) {
   const page = sections.find(x => x.id === state.page) || sections[0];
   document.documentElement.dataset.theme = state.theme;
   app.innerHTML = `<div class="demo-frame ${state.device === 'Phone' ? 'phone-frame' : ''}"><div class="app-shell">
-    <aside class="sidebar ${state.navOpen ? 'open' : ''}" aria-label="Main navigation"><div class="brand"><span class="brand-symbol">✳</span><span>ugly<span class="brand-light">ops</span><small>THE PEOPLE WORKSPACE</small></span></div><nav>${nav(state)}</nav><div class="sidebar-foot"><span class="tiny-spark">✳</span><div><strong>Design preview</strong><small>Fictional information only</small></div></div></aside>
+    <aside class="sidebar ${state.navOpen ? 'open' : ''}" aria-label="Main navigation"><div class="brand"><span class="brand-symbol">✳</span><span>ugly<span class="brand-light">ops</span><small>THE PEOPLE WORKSPACE</small></span><button class="nav-close" data-action="menu" aria-label="Close navigation">×</button></div><nav>${nav(state)}</nav><div class="sidebar-foot"><span class="tiny-spark">✳</span><div><strong>Design preview</strong><small>Fictional information only</small></div></div></aside>
+    ${state.navOpen ? '<button class="nav-scrim" data-action="menu" aria-label="Close navigation"></button>' : ''}
     <div class="app-main"><header class="topbar"><div class="top-start"><button class="menu-button" data-action="menu" aria-label="Toggle navigation" aria-expanded="${state.navOpen}">☰</button><span class="crumb">Workspace <span aria-hidden="true">/</span> <strong>${e(page.label)}</strong></span></div>
     <div class="top-tools"><label class="sr-only" for="location-picker">Preview location</label><select id="location-picker" data-change="location">${locations.map(x => `<option ${state.location === x ? 'selected' : ''}>${x}</option>`).join('')}</select><label class="sr-only" for="role-picker">Preview role</label><select id="role-picker" data-change="role">${['Manager', 'Admin', 'Staff'].map(x => `<option ${state.role === x ? 'selected' : ''}>${x}</option>`).join('')}</select><span class="top-avatar" aria-hidden="true">UD</span></div></header>
     <div class="preview-bar"><span class="preview-pill">DESIGN PREVIEW</span><span>Explore the full app with fictional information. Actions here never save, send or approve.</span><div class="preview-actions">${button(state.device === 'Desktop' ? 'Phone view' : 'Desktop view', 'device')}${button(state.theme === 'light' ? 'Dark' : 'Light', 'theme')}${button('Reset demo', 'reset')}</div></div>
@@ -69,6 +70,7 @@ function act(action, value) {
   }
   render();
   if (action === 'navigate') app.querySelector('#main-content')?.focus();
+  if (action === 'menu') app.querySelector(state.navOpen ? '.nav-close' : '.menu-button')?.focus();
 }
 
 app.addEventListener('click', event => {
@@ -81,6 +83,9 @@ app.addEventListener('change', event => {
 });
 app.addEventListener('input', event => {
   if (event.target.dataset.input === 'search') { state.search = event.target.value; render(true); }
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && state.navOpen) { event.preventDefault(); act('menu', ''); }
 });
 window.addEventListener('hashchange', () => {
   const requested = window.location.hash.slice(1);
