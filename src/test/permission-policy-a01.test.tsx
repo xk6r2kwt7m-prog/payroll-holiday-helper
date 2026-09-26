@@ -6,6 +6,7 @@ import { decidePermission } from "@/lib/permission-policy";
 
 const m = vi.hoisted(() => ({
   roles: [] as any, rolesError: null as any,
+  membershipError: null as any,
   platform: null as any,
   perms: [] as any, permsError: null as any,
   tenantId: "t1" as string | null, role: "manager" as string | null, authLoading: false, roleStatus: "resolved" as string,
@@ -16,7 +17,11 @@ vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { getUser: async () => ({ data: { user: { id: "u1" } } }) },
     from: (table: string) => {
-      if (table === "user_roles") return { select: () => ({ eq: async () => ({ data: m.roles, error: m.rolesError }) }) };
+      if (table === "tenant_members") {
+        const membership: any = { select: () => membership, eq: () => membership,
+          maybeSingle: async () => ({ data: m.role ? { role: m.role } : null, error: m.membershipError }) };
+        return membership;
+      }
       if (table === "platform_admins") return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: m.platform, error: null }) }) }) };
       const chain: any = {
         select: () => chain,
@@ -28,14 +33,16 @@ vi.mock("@/integrations/supabase/client", () => ({
     },
   },
 }));
-vi.mock("@/hooks/useTenant", () => ({ useTenant: () => ({ tenantId: m.tenantId, isPlatformAdmin: false }) }));
+vi.mock("@/hooks/useTenant", () => ({ useTenant: () => ({ tenantId: m.tenantId, tenantRole: m.role,
+  tenantResolved: !!m.tenantId, loading: false, isPlatformAdmin: false }) }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ role: m.role, roleStatus: m.roleStatus, loading: m.authLoading, user: { id: "u1" } }) }));
 
 import { assertPermission } from "@/lib/permission-guard";
 import { usePermissionDecision } from "@/hooks/useRolePermissions";
 
 beforeEach(() => {
-  Object.assign(m, { roles: [{ role: "manager" }], rolesError: null, platform: null, perms: [], permsError: null, tenantId: "t1", role: "manager", authLoading: false, roleStatus: "resolved", permCalls: [] });
+  Object.assign(m, { roles: [{ role: "manager" }], rolesError: null, membershipError: null,
+    platform: null, perms: [], permsError: null, tenantId: "t1", role: "manager", authLoading: false, roleStatus: "resolved", permCalls: [] });
 });
 
 describe("A01 shared policy", () => {
@@ -80,18 +87,18 @@ describe("A01 assertPermission", () => {
     m.permsError = { message: "offline" };
     await expect(assertPermission("approve_timesheets", "t1")).rejects.toThrow(/could not check/i);
   });
-  it("refuses when the role read fails", async () => {
-    m.rolesError = { message: "offline" };
+  it("refuses when the active membership read fails", async () => {
+    m.membershipError = { message: "offline" };
     await expect(assertPermission("approve_timesheets", "t1")).rejects.toThrow(/could not check/i);
   });
   it("refuses unknown roles and missing workspace", async () => {
-    m.roles = [{ role: "intruder" }];
+    m.role = "intruder";
     await expect(assertPermission("view_schedules", "t1")).rejects.toThrow(/Permission denied/);
-    m.roles = [{ role: "manager" }];
+    m.role = "manager";
     await expect(assertPermission("view_schedules", null)).rejects.toThrow(/no workspace/);
   });
   it("admin still passes", async () => {
-    m.roles = [{ role: "admin" }]; m.permsError = { message: "x" };
+    m.role = "company_admin"; m.permsError = { message: "x" };
     await expect(assertPermission("view_pay_data", "t1")).resolves.toBeUndefined();
   });
 });
@@ -121,18 +128,24 @@ describe("A01 usePermissionDecision", () => {
     const b = renderHook(() => usePermissionDecision("view_schedules"), { wrapper: wrap(client()) });
     expect(b.result.current).toBe("unresolved");
   });
-  it("a failed role lookup is never basic staff access", async () => {
-    m.role = null; m.roleStatus = "failed";
+  it("a missing active workspace membership never falls back to basic staff access", async () => {
+    m.role = null;
     const { result } = renderHook(() => usePermissionDecision("view_schedules"), { wrapper: wrap(client()) });
-    await new Promise(r => setTimeout(r, 30));
-    expect(result.current).toBe("unresolved");
+    await waitFor(() => expect(result.current).toBe("denied"));
   });
-  it("a genuinely missing role row keeps the existing staff defaults", async () => {
-    m.role = null; m.roleStatus = "resolved";
+  it("an active employee membership gets basic staff defaults", async () => {
+    m.role = "employee";
     const { result } = renderHook(() => usePermissionDecision("view_schedules"), { wrapper: wrap(client()) });
     await waitFor(() => expect(result.current).toBe("allowed"));
     const b = renderHook(() => usePermissionDecision("view_employees"), { wrapper: wrap(client()) });
     await waitFor(() => expect(b.result.current).toBe("denied"));
+  });
+  it("does not apply a different workspace's manager role to this workspace", async () => {
+    m.role = "employee";
+    m.roles = [{ role: "manager" }];
+    await expect(assertPermission("approve_timesheets", "t1")).rejects.toThrow(/Permission denied/);
+    const { result } = renderHook(() => usePermissionDecision("approve_timesheets"), { wrapper: wrap(client()) });
+    await waitFor(() => expect(result.current).toBe("denied"));
   });
   it("does not reuse another workspace's cached overrides", async () => {
     const c = client();
