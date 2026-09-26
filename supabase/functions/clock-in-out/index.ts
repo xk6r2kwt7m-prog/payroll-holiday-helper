@@ -172,11 +172,23 @@ Deno.serve(async (req) => {
       .eq("tenant_id", employee.tenant_id);
     if (branchesError) return json({ error: "Could not check your branch. Please try again." }, 503);
 
+    // Missing location is recorded as unverified, never as proof of presence.
+    // Reject malformed or half-supplied coordinates rather than silently
+    // treating zero, NaN, or an invalid latitude as a missing GPS reading.
+    const hasLat = latitude !== undefined && latitude !== null;
+    const hasLon = longitude !== undefined && longitude !== null;
+    if (hasLat !== hasLon || (hasLat && (
+      typeof latitude !== "number" || typeof longitude !== "number" ||
+      !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180
+    ))) return json({ error: "Location details could not be checked. Try again without location or ask a manager." }, 400);
+    const hasLocation = hasLat && hasLon;
+
     // Check geofence if coordinates provided
     let withinGeofence = false;
     let branchToUse = branch;
 
-    if (typeof latitude === "number" && typeof longitude === "number") {
+    if (hasLocation) {
       if (tenantBranches) {
         for (const b of tenantBranches) {
           const distance = haversineDistance(
@@ -251,7 +263,7 @@ Deno.serve(async (req) => {
       }
 
       // Block clock-in if outside geofence
-      if (!withinGeofence && latitude && longitude) {
+      if (!withinGeofence && hasLocation) {
         return new Response(
           JSON.stringify({
             error: "You are outside the allowed area. Please move closer to the branch or request a manager override.",
@@ -272,8 +284,8 @@ Deno.serve(async (req) => {
           branch: branchToUse,
           department: employee.department,
           clock_in_time: new Date().toISOString(),
-          clock_in_latitude: latitude || null,
-          clock_in_longitude: longitude || null,
+          clock_in_latitude: hasLocation ? latitude : null,
+          clock_in_longitude: hasLocation ? longitude : null,
           clock_in_within_geofence: withinGeofence,
           scheduled_start: shift?.start_time || null,
           scheduled_end: shift?.end_time || null,
@@ -297,7 +309,8 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, entry, within_geofence: withinGeofence }),
+        JSON.stringify({ success: true, entry, within_geofence: withinGeofence,
+          requires_review: !hasLocation, location_status: hasLocation ? "inside_geofence" : "unavailable" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -322,17 +335,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Block clock-out if outside geofence
-      if (!withinGeofence && latitude && longitude) {
-        return new Response(
-          JSON.stringify({
-            error: "You are outside the allowed area to clock out. Please move closer to the branch.",
-            within_geofence: false,
-            requires_override: true,
-          }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+      // An employee must be able to end an open shift. Outside or missing GPS
+      // is flagged for manager review instead of trapping a running clock.
 
       const clockOutTime = new Date().toISOString();
 
@@ -346,8 +350,8 @@ Deno.serve(async (req) => {
 
       const updatePayload: Record<string, unknown> = {
         clock_out_time: clockOutTime,
-        clock_out_latitude: latitude || null,
-        clock_out_longitude: longitude || null,
+        clock_out_latitude: hasLocation ? latitude : null,
+        clock_out_longitude: hasLocation ? longitude : null,
         clock_out_within_geofence: withinGeofence,
         notes: notes || null,
       };
@@ -375,7 +379,9 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, entry: updated, within_geofence: withinGeofence }),
+        JSON.stringify({ success: true, entry: updated, within_geofence: withinGeofence,
+          requires_review: !withinGeofence, location_status: !hasLocation ? "unavailable" :
+            withinGeofence ? "inside_geofence" : "outside_geofence" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

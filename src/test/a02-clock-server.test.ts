@@ -188,4 +188,32 @@ describe('A02 clock server with synthetic rows', () => {
     expect(r.status).toBe(503);
     expect(s.rows.time_entries).toHaveLength(0);
   });
+  it('records a missing GPS reading as unverified and allows clock-in for manager review', async () => {
+    const s = server();
+    const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby' });
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ requires_review: true, location_status: 'unavailable' });
+    expect(s.rows.time_entries[0]).toMatchObject({ clock_in_latitude: null, clock_in_longitude: null, clock_in_within_geofence: false });
+  });
+  it('rejects partial and out-of-range GPS readings', async () => {
+    const s = server();
+    for (const coords of [{ latitude: 51.5 }, { latitude: 91, longitude: -0.1 }, { latitude: 0, longitude: -181 }]) {
+      const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby', ...coords });
+      expect(r.status).toBe(400);
+    }
+    expect(s.rows.time_entries).toHaveLength(0);
+  });
+  it('does not treat valid zero coordinates as a missing location', async () => {
+    const s = server();
+    const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby', latitude: 0, longitude: 0 });
+    expect(r.status).toBe(403);
+    expect(s.rows.time_entries).toHaveLength(0);
+  });
+  it('lets staff clock out away from the branch while flagging the reading for manager review', async () => {
+    const s = server({ rows: { time_entries: [{ id: 'open', employee_id: 'employee-a', tenant_id: 'tenant-a', status: 'clocked_in', clock_in_time: '2026-09-20T08:00:00Z' }] } });
+    const r = await s.request({ action: 'clock_out', tenant_id: 'tenant-a', latitude: 0, longitude: 0 });
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ requires_review: true, location_status: 'outside_geofence' });
+    expect(s.rows.time_entries[0]).toMatchObject({ clock_out_latitude: 0, clock_out_longitude: 0, clock_out_within_geofence: false });
+  });
 });

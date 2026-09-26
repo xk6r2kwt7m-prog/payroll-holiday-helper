@@ -37,7 +37,7 @@ export function AttendanceDashboard({ entries, evidenceFiles = [] }: AttendanceD
     { label: "Pending Approval", value: stats.pending, icon: Clock, color: "text-warning", bg: "bg-warning/10" },
     { label: "Approved", value: stats.approved, icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
     { label: "On Shift Now", value: stats.onShift, icon: Clock, color: "text-primary", bg: "bg-primary/10" },
-    { label: "Geofence Issues", value: stats.outsideGeofence, icon: MapPin, color: "text-destructive", bg: "bg-destructive/10" },
+    { label: "Location to review", value: stats.outsideGeofence, icon: MapPin, color: "text-warning", bg: "bg-warning/10" },
     { label: "Late Clock-ins", value: stats.lateClockIns, icon: AlertTriangle, color: "text-warning", bg: "bg-warning/10" },
     { label: "Evidence Pending", value: stats.pendingEvidence, icon: FileText, color: "text-primary", bg: "bg-primary/10" },
   ];
