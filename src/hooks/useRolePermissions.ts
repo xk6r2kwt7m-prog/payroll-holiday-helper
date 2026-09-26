@@ -73,7 +73,8 @@ export function usePermissionDecision(key: PermissionKey): PermissionDecision {
   const { isPlatformAdmin } = useTenant();
   const { data, isError } = useRoleOverrides();
   return decidePermission({
-    roles: loading ? null : role ? [role] : [],
+    // A signed-in user without a role row keeps the existing staff defaults.
+    roles: loading ? null : [role ?? "staff"],
     key,
     isPlatformAdmin,
     overrides: data,
