@@ -18,9 +18,10 @@ for i,(k,f,o,n,s,e) in enumerate(rows):
     ok('submission '+k, f"INSERT INTO staff_detail_changes(id,tenant_id,employee_id,section,field_name,field_label,old_value,new_value,sensitive,needs_review,state) VALUES('{ids[k]}','{T}','{e}','personal','{f}','{f}',{('NULL' if o is None else repr(o))},'{n}',{s},true,'pending')")
 ok('install staff approvals (20260926110000)', open(PM+'20260926110000_atomic_staff_approvals.sql').read())
 ok('install manager amendment', open(PM+'20260926110500_manager_ordinary_staff_review.proposed.sql').read())
+ok('install manager read boundary', open(PM+'20260926160000_manager_submission_read_boundary.proposed.sql').read())
 FP="SELECT md5(concat((SELECT string_agg(to_jsonb(x)::text,'' ORDER BY id) FROM employees x),(SELECT string_agg(to_jsonb(x)::text,'' ORDER BY id) FROM staff_detail_changes x),(SELECT count(*) FROM audit_log)::text,(SELECT count(*) FROM bank_detail_verifications)::text))"
 d=lambda k,u,acc='true': sql(f"SELECT decide_staff_detail_atomic('{ids[k]}',{acc},'Tester','n')",u)
-check('manager can read ordinary submissions only (RLS)', val("SELECT string_agg(field_name,',' ORDER BY field_name) FROM staff_detail_changes",M)=='date_of_birth,email,forename,nationality,preferred_name,settlement_status', val("SELECT string_agg(field_name,',') FROM staff_detail_changes",M))
+check('manager can read ordinary submissions only (RLS)', val("SELECT string_agg(field_name,',' ORDER BY field_name) FROM staff_detail_changes",M)=='email,forename,nationality,preferred_name', val("SELECT string_agg(field_name,',') FROM staff_detail_changes",M))
 for k,why in [('c2','NI number (protected)'),('c6','passport (protected)'),('c3','date of birth'),('c8','settlement status'),('c5','employee outside manager branch')]:
     for acc in ('true','false'):
         b=val(FP); rc,o,e=d(k,M,acc); check(f'manager {"accept" if acc=="true" else "reject"} refused: {why}', rc!=0 and 'administrator' in e and val(FP)==b, o+e)

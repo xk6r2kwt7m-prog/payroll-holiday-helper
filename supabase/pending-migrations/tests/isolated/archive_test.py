@@ -16,6 +16,7 @@ FP="""SELECT md5(concat_ws('|',
 fp=lambda p: val(FP%((p,)*6))
 # second archived fixture WITH entries, to prove recalculation of entries/ledger is blocked: archive March copy later
 ok('install archive change', open('/dev-server/supabase/pending-migrations/20260926150000_payroll_period_archive.proposed.sql').read())
+ok('install original overpayment protection', open('/dev-server/supabase/pending-migrations/20260926161000_archived_overpayment_integrity.proposed.sql').read())
 before=fp(F); stored=val(f"SELECT concat_ws('/',timesheet_total,incentives_total,holidays_total,grand_total,status,updated_at) FROM payroll_periods WHERE id={F}")
 check('installing archives nothing', val('SELECT count(*) FROM payroll_period_archives')=='0')
 check('installing leaves the Feb-like period unchanged', fp(F)==before)
@@ -50,6 +51,8 @@ attempts={
  'add note':f"INSERT INTO payroll_period_notes(tenant_id,payroll_period_id,note) VALUES('aaaaaaaa-aaaa-aaaa-aaaa-00000000000a',{F},'x')",
  'edit import':f"UPDATE payroll_imports SET file_name='y' WHERE payroll_period_id={F}",
  'move import out':f"UPDATE payroll_imports SET payroll_period_id={C} WHERE payroll_period_id={F}",
+ 'edit original overpayment amount':f"UPDATE payroll_overpayments SET estimated_overpayment=1 WHERE payroll_period_id={F}",
+ 'edit original overpayment rate':f"UPDATE payroll_overpayments SET hourly_rate=1 WHERE payroll_period_id={F}",
  'delete overpayments':f"DELETE FROM payroll_overpayments WHERE payroll_period_id={F}",
  'move overpayment out':f"UPDATE payroll_overpayments SET payroll_period_id={C} WHERE payroll_period_id={F}",
  'add overpayment':f"INSERT INTO payroll_overpayments(tenant_id,payroll_period_id,employee_id,overlap_start_date,overlap_end_date,hourly_rate) VALUES('aaaaaaaa-aaaa-aaaa-aaaa-00000000000a',{F},'e1000000-0000-0000-0000-000000000001','2026-01-19','2026-01-20',1)",
@@ -88,3 +91,6 @@ check('after undo, archived-period edits work again (proves guards removed)', sq
 ok('re-install after undo', open('/dev-server/supabase/pending-migrations/20260926150000_payroll_period_archive.proposed.sql').read().replace('CREATE TABLE public.payroll_period_archives','CREATE TABLE IF NOT EXISTS public.payroll_period_archives').replace('CREATE POLICY payroll_archive_admin_read','DROP POLICY IF EXISTS payroll_archive_admin_read ON public.payroll_period_archives; CREATE POLICY payroll_archive_admin_read').replace('CREATE TRIGGER trg_payroll_period_archives_','DROP TRIGGER IF EXISTS trg_payroll_period_archives_immutable ON payroll_period_archives; DROP TRIGGER IF EXISTS trg_payroll_period_archives_no_truncate ON payroll_period_archives; CREATE TRIGGER trg_payroll_period_archives_',1).replace("CREATE TRIGGER trg_payroll_period_archives_no_truncate","CREATE TRIGGER trg_payroll_period_archives_no_truncate"))
 check('re-installed guards protect existing archives immediately', sql(f"UPDATE payroll_periods SET period_name='x' WHERE id={F}",A)[0]!=0)
 print('ARCHIVE', R)
+
+ok('reapply overpayment protection after reinstall', open('/dev-server/supabase/pending-migrations/20260926161000_archived_overpayment_integrity.proposed.sql').read())
+check('reinstalled archive also locks original debt', sql(f"UPDATE payroll_overpayments SET estimated_overpayment=1 WHERE payroll_period_id={F}",A)[0]!=0)
