@@ -172,8 +172,10 @@ export function useSubmitPayrollForReview() {
 
       return data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      invalidateHolidayDerivedQueries(queryClient);
     },
   });
 }
@@ -212,8 +214,10 @@ export function useApprovePayrollPeriod() {
 
       return data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      invalidateHolidayDerivedQueries(queryClient);
     },
   });
 }
@@ -252,8 +256,10 @@ export function useReopenPayrollPeriod() {
 
       return data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["payroll_periods", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["payroll_entries"] });
+      invalidateHolidayDerivedQueries(queryClient);
     },
   });
 }
