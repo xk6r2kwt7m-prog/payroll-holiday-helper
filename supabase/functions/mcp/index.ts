@@ -170,7 +170,7 @@ var list_payroll_periods_default = defineTool5({
 });
 
 // src/lib/mcp/index.ts
-var projectRef = "hukujeeeawfuywpiclyd";
+var projectRef = "localhost";
 var mcp_default = defineMcp({
   name: "uglyops-mcp",
   title: "UglyOps",
