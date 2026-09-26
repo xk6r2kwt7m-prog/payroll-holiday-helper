@@ -5,7 +5,9 @@ import ts from '/dev-server/node_modules/typescript/lib/typescript.js';
 import { readFileSync } from 'node:fs';
 
 const SRC = process.argv[2] || '/tmp/pr16/index.ts';
-const sql = postgres({ host: '/tmp/iso', port: 55432, user: 'postgres', database: 'a02', max: 4, onnotice: () => {} });
+// Mirror PostgREST DATE as YYYY-MM-DD in the isolated postgres.js client.
+const sql = postgres({ host: '/tmp/iso', port: 55432, user: 'postgres', database: 'a02', max: 4,
+  onnotice: () => {}, types: { date: { to: 25, from: [1082], serialize: x => x, parse: x => x } } });
 const A = 'aaaaaaaa-aaaa-aaaa-aaaa-00000000000a', B = 'bbbbbbbb-bbbb-bbbb-bbbb-00000000000b';
 const E1 = 'e1000000-0000-0000-0000-000000000001', E2 = 'e2000000-0000-0000-0000-000000000002', EB = 'eb000000-0000-0000-0000-00000000000b';
 const U1 = '33333333-3333-3333-3333-333333333333', UX = '77777777-7777-7777-7777-777777777777', UB = '88888888-8888-8888-8888-888888888888';
