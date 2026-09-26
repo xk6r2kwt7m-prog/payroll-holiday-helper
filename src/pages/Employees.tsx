@@ -1,3 +1,4 @@
+import { matchesEmployeeSearch } from "@/lib/employee-directory-search";
 import { useState, useEffect, useMemo } from "react";
 import { Search, Users, UserPlus, Filter, CheckSquare, Square, Archive, ArrowUpDown, MailWarning, ArrowLeft } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -36,15 +37,26 @@ type ViewMode = "dashboard" | "directory";
 const Employees = () => {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [departmentFilter, setDepartmentFilter] = useState<Department | "all">(
-    (searchParams.get("dept") as Department) || "all"
+    ["FOH", "BOH", "CPU"].includes(searchParams.get("dept") || "") ? searchParams.get("dept") as Department : "all"
   );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
 
   // Default to dashboard unless deep-linked to edit/directory
-  const hasDeepLink = searchParams.has("edit") || searchParams.get("view") === "directory";
-  const [viewMode, setViewMode] = useState<ViewMode>(hasDeepLink ? "directory" : "dashboard");
+  const hasDeepLink = ["edit", "dept", "status", "q"].some(key => searchParams.has(key)) || searchParams.get("view") === "directory";
+  const viewMode: ViewMode = hasDeepLink ? "directory" : "dashboard";
+  const setViewMode = (mode: ViewMode, query?: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (mode === "dashboard") {
+      ["view", "edit", "tab", "dept", "status", "q"].forEach(key => next.delete(key));
+    } else {
+      next.set("view", "directory");
+      if (query !== undefined) { next.set("q", query); setSearchQuery(query); }
+    }
+    clearSelection();
+    setSearchParams(next);
+  };
   const [sortBy, setSortBy] = useState<SortOption>("alpha");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [detailSheetOpen, setDetailSheetOpen] = useState(false);
@@ -88,9 +100,10 @@ const Employees = () => {
   // Handle deep-link query params: ?dept=, ?edit=, ?tab=
   useEffect(() => {
     const dept = searchParams.get("dept") as Department;
-    if (dept && ["FOH", "BOH", "CPU"].includes(dept)) {
-      setDepartmentFilter(dept);
-    }
+    setDepartmentFilter(dept && ["FOH", "BOH", "CPU"].includes(dept) ? dept : "all");
+    const status = searchParams.get("status");
+    setStatusFilter(status && ["active", "starter", "leaver", "onboarding", "archived"].includes(status) ? status as StatusFilter : "active");
+    setSearchQuery(searchParams.get("q") || "");
   }, [searchParams]);
 
   // Deep-link: ?edit=<employeeId>&tab=<tabName> opens the employee detail sheet
@@ -131,11 +144,7 @@ const Employees = () => {
 
   const filteredEmployees = useMemo(() => {
     let result = employees.filter((emp) => {
-      const matchesSearch = !searchQuery ||
-        emp.forename.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.surname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.employee_ref?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = matchesEmployeeSearch(emp, searchQuery);
 
       const matchesDepartment = departmentFilter === "all" || emp.department === departmentFilter;
 
@@ -166,6 +175,11 @@ const Employees = () => {
 
     return result;
   }, [employees, searchQuery, departmentFilter, statusFilter, sortBy]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setIsSelectionMode(false);
+  }, [searchQuery, departmentFilter, statusFilter]);
 
   const selectedEmployees = employees.filter(e => selectedIds.has(e.id));
   const allFilteredSelected = filteredEmployees.length > 0 && filteredEmployees.every(e => selectedIds.has(e.id));
@@ -244,14 +258,23 @@ const Employees = () => {
     setIsSelectionMode(false);
   };
 
+  const handleStatusChange = (status: StatusFilter) => {
+    setStatusFilter(status);
+    const next = new URLSearchParams(searchParams);
+    next.set("view", "directory"); next.set("status", status);
+    setSearchParams(next);
+  };
+
   const handleDepartmentChange = (dept: Department | "all") => {
     setDepartmentFilter(dept);
+    const next = new URLSearchParams(searchParams);
+    next.set("view", "directory");
     if (dept === "all") {
-      searchParams.delete("dept");
+      next.delete("dept");
     } else {
-      searchParams.set("dept", dept);
+      next.set("dept", dept);
     }
-    setSearchParams(searchParams);
+    setSearchParams(next);
   };
 
   if (error) {
@@ -270,7 +293,7 @@ const Employees = () => {
   if (viewMode === "dashboard") {
     return (
       <AppLayout>
-        <PeopleDashboard onViewDirectory={() => setViewMode("directory")} />
+        <PeopleDashboard onViewDirectory={(query) => setViewMode("directory", query)} />
       </AppLayout>
     );
   }
@@ -278,15 +301,14 @@ const Employees = () => {
   return (
     <AppLayout>
       <div className="space-y-4 max-w-7xl mx-auto min-w-0 w-full overflow-x-hidden">
-        {/* Back to dashboard */}
-        <Button variant="ghost" size="sm" className="gap-1.5 -ml-2 text-muted-foreground" onClick={() => setViewMode("dashboard")}>
-          <ArrowLeft className="h-4 w-4" />
-          People
-        </Button>
+        <nav aria-label="People views" className="inline-flex rounded-xl bg-muted p-1 gap-1">
+          <Button variant="ghost" className="min-h-11" onClick={() => setViewMode("dashboard")}>Overview</Button>
+          <Button variant="secondary" className="min-h-11" aria-current="page">Directory</Button>
+        </nav>
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
           <div className="min-w-0">
-            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 shrink-0">
                 <Users className="h-4 w-4 text-muted-foreground" />
               </div>
@@ -298,7 +320,9 @@ const Employees = () => {
               <Button
                 variant={isSelectionMode ? "secondary" : "ghost"}
                 size="icon"
-                className="h-8 w-8"
+                className="h-11 w-11"
+                aria-label={isSelectionMode ? "Cancel employee selection" : "Select employees"}
+                aria-pressed={isSelectionMode}
                 onClick={() => isSelectionMode ? clearSelection() : setIsSelectionMode(true)}
               >
                 {isSelectionMode ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
@@ -307,83 +331,27 @@ const Employees = () => {
             {canEdit && (
               <InviteEmployeeDialog
                 trigger={
-                  <Button size="icon" variant="outline" className="h-8 w-8 sm:hidden">
+                  <Button size="icon" variant="outline" aria-label="Invite employee" className="h-11 w-11 sm:hidden">
                     <UserPlus className="h-4 w-4" />
                   </Button>
                 }
               />
             )}
             {canEdit && <span className="hidden sm:inline-flex"><InviteEmployeeDialog /></span>}
-            {canEdit && <EmployeeFormDialog onSuccess={() => setStatusFilter("starter")} />}
+            {canEdit && <EmployeeFormDialog onSuccess={() => handleStatusChange("starter")} />}
           </div>
         </div>
-
-        {/* Status Pills */}
-        <div className="flex gap-1.5 flex-wrap pb-1">
-          {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
-            if (status === "archived" && !canManageLifecycle) return null;
-            const count = counts[status];
-            const config = STATUS_CONFIG[status];
-            const isActive = statusFilter === status;
-            return (
-              <button
-                key={status}
-                onClick={() => setStatusFilter(status)}
-                className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all whitespace-nowrap",
-                  isActive ? config.style + " shadow-sm" : "bg-card text-muted-foreground border-border/60 hover:border-border"
-                )}
-              >
-                <span className="text-sm">{config.emoji}</span>
-                <span>{config.label}</span>
-                <span className={cn(
-                  "ml-0.5 tabular-nums font-semibold",
-                  isActive ? "" : "text-muted-foreground/50"
-                )}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Leaver/Archived mode banner */}
-        {(statusFilter === "leaver" || statusFilter === "archived") && (
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
-            statusFilter === "leaver" ? "bg-destructive/5 text-destructive border border-destructive/10" : "bg-muted text-muted-foreground border border-border"
-          )}>
-            <span>{statusFilter === "leaver" ? "👋" : "📦"}</span>
-            <span>{statusFilter === "leaver" ? t("employees.viewing_leavers") : t("employees.viewing_archived")}</span>
-            <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs px-2" onClick={() => setStatusFilter("active")}>
-              {t("common.back_to_active")}
-            </Button>
-          </div>
-        )}
-
-        {/* Missing email alert */}
-        {canEdit && counts.missingEmail > 0 && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-warning/5 text-warning border border-warning/15">
-            <MailWarning className="h-3.5 w-3.5 shrink-0" />
-            <span>{counts.missingEmail} active employee{counts.missingEmail !== 1 ? 's' : ''} missing email — they won't receive rota or invite notifications</span>
-          </div>
-        )}
-
-        {/* Pending invitations */}
-        {canEdit && <InvitationsPanel />}
-
-        {/* Information requests sent to existing staff, plus expiring documents */}
-        {canEdit && <InfoRequestsPanel />}
 
         {/* Search + Dept + Sort row */}
         <div className="flex flex-col gap-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder={t("employees.search_placeholder")}
+              aria-label="Search employees by name, department or reference"
+              placeholder="Search name, department or reference"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-10"
+              onChange={(e) => { setSearchQuery(e.target.value); const next = new URLSearchParams(searchParams); next.set("q", e.target.value); setSearchParams(next, { replace: true }); }}
+              className="pl-10 h-12 rounded-xl bg-card"
             />
           </div>
 
@@ -393,8 +361,9 @@ const Employees = () => {
                 <button
                   key={key}
                   onClick={() => handleDepartmentChange(key as Department | "all")}
+                  aria-pressed={departmentFilter === key}
                   className={cn(
-                    "px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap shrink-0",
+                    "min-h-11 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap shrink-0",
                     departmentFilter === key
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -413,9 +382,9 @@ const Employees = () => {
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground">
+                  <Button variant="ghost" size="sm" aria-label={`Sort employees: ${SORT_OPTIONS[sortBy]}`} className="min-h-11 px-3 text-sm text-muted-foreground">
                     <ArrowUpDown className="h-3 w-3 mr-1" />
-                    <span className="hidden sm:inline">{SORT_OPTIONS[sortBy]}</span>
+                    <span>{SORT_OPTIONS[sortBy]}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -430,9 +399,67 @@ const Employees = () => {
           </div>
         </div>
 
+        {/* Status Pills */}
+        <div className="flex gap-1.5 flex-wrap pb-1">
+          {(Object.keys(STATUS_CONFIG) as StatusFilter[]).map((status) => {
+            if (status === "archived" && !canManageLifecycle) return null;
+            const count = counts[status];
+            const config = STATUS_CONFIG[status];
+            const isActive = statusFilter === status;
+            return (
+              <button
+                key={status}
+                onClick={() => handleStatusChange(status)}
+                aria-pressed={statusFilter === status}
+                className={cn(
+                  "flex items-center gap-1.5 min-h-11 px-3 py-2 rounded-lg text-sm font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring whitespace-nowrap",
+                  isActive ? config.style + " shadow-sm" : "bg-card text-muted-foreground border-border/60 hover:border-border"
+                )}
+              >
+                <span className="text-sm">{config.emoji}</span>
+                <span>{config.label}</span>
+                <span className={cn(
+                  "ml-0.5 tabular-nums font-semibold",
+                  isActive ? "" : "text-muted-foreground/50"
+                )}>
+                  {isLoading || status === "archived" && !includeArchived ? "—" : count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Leaver/Archived mode banner */}
+        {(statusFilter === "leaver" || statusFilter === "archived") && (
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
+            statusFilter === "leaver" ? "bg-destructive/5 text-destructive border border-destructive/10" : "bg-muted text-muted-foreground border border-border"
+          )}>
+            <span>{statusFilter === "leaver" ? "👋" : "📦"}</span>
+            <span>{statusFilter === "leaver" ? t("employees.viewing_leavers") : t("employees.viewing_archived")}</span>
+            <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs px-2" onClick={() => handleStatusChange("active")}>
+              {t("common.back_to_active")}
+            </Button>
+          </div>
+        )}
+
+        {/* Missing email alert */}
+        {canEdit && counts.missingEmail > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs bg-warning/5 text-warning border border-warning/15">
+            <MailWarning className="h-3.5 w-3.5 shrink-0" />
+            <span>{counts.missingEmail} current team member{counts.missingEmail !== 1 ? 's' : ''} missing email — they won't receive rota or invite notifications</span>
+          </div>
+        )}
+
+        {/* Pending invitations */}
+        {canEdit && <InvitationsPanel />}
+
+        {/* Information requests sent to existing staff, plus expiring documents */}
+        {canEdit && <InfoRequestsPanel />}
+
         {/* Results count */}
         {(searchQuery || departmentFilter !== "all") && (
-          <p className="text-xs text-muted-foreground">
+          <p role="status" aria-live="polite" className="text-sm text-muted-foreground">
             {filteredEmployees.length === 1
               ? t("common.results", { count: filteredEmployees.length })
               : t("common.results_plural", { count: filteredEmployees.length })}
@@ -486,9 +513,9 @@ const Employees = () => {
               variant="link"
               size="sm"
               onClick={() => {
-                setSearchQuery("");
-                handleDepartmentChange("all");
-                setStatusFilter("active");
+                const next = new URLSearchParams(searchParams);
+                ["q", "dept", "status"].forEach(key => next.delete(key));
+                next.set("view", "directory"); setSearchParams(next);
               }}
               className="mt-2"
             >
@@ -506,6 +533,7 @@ const Employees = () => {
                   <div className="absolute top-3 left-3 z-10">
                     <Checkbox
                       checked={selectedIds.has(employee.id)}
+                      aria-label={`Select ${employee.forename} ${employee.surname}`}
                       onCheckedChange={() => toggleSelection(employee.id)}
                       className="h-5 w-5 bg-background border-2"
                     />
@@ -513,7 +541,6 @@ const Employees = () => {
                 )}
                 <div
                   className={selectedIds.has(employee.id) ? "ring-2 ring-primary rounded-xl" : ""}
-                  onClick={isSelectionMode ? () => toggleSelection(employee.id) : undefined}
                 >
                   <EmployeeCard
                     employee={employee}
@@ -522,7 +549,7 @@ const Employees = () => {
                     onArchive={handleArchive}
                     onMarkLeaver={handleMarkLeaver}
                     onRestore={handleRestore}
-                    onViewDetails={handleViewDetails}
+                    onViewDetails={isSelectionMode ? (employee) => toggleSelection(employee.id) : handleViewDetails}
                     index={index}
                   />
                 </div>
