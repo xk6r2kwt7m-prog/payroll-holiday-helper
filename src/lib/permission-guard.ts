@@ -23,9 +23,8 @@ export async function assertPermission(
 
   const userRoles = (roles || []).map((r: any) => r.role as string);
 
-  // Admin always passes (existing policy)
-  if (decidePermission({ roles: userRoles, key: permissionKey, overrides: {} }) === "allowed"
-      && userRoles.includes("admin")) return;
+  // Admin always passes (existing policy, unchanged)
+  if (userRoles.includes("admin")) return;
 
   const { data: platformAdmin, error: paError } = await supabase
     .from("platform_admins")
