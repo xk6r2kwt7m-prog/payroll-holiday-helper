@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesUpdate } from "@/integrations/supabase/types";
 import { useTenant } from "@/hooks/useTenant";
 import { assertPermission } from "@/lib/permission-guard";
+import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
 
 export type TimeEntry = Tables<"time_entries">;
 export type TimeEntryUpdate = TablesUpdate<"time_entries">;
