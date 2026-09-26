@@ -91,6 +91,9 @@ test('staff preview hides manager-only navigation and former colleague records',
   click('navigate', 'rota');
   assert.doesNotMatch(text(), /Leon Ortiz/);
   change('role-picker', 'Manager');
+  assert.equal(document.querySelector('[data-action="navigate"][data-value="payroll"]'), null);
+  assert.equal(document.querySelector('[data-action="navigate"][data-value="contracts"]'), null);
+  change('role-picker', 'Admin');
 });
 
 test('phone, theme and reset switches restore the starting state', () => {

@@ -9,13 +9,20 @@ const screens = { home: homeScreen, people: peopleScreen, joining: joiningScreen
   rota: rotaScreen, timesheets: timesheetScreen, holiday: holidayScreen, payroll: payrollScreen,
   compliance: complianceScreen, learning: learningScreen, absence: absenceScreen, messages: messagesScreen,
   reports: reportsScreen, recruitment: recruitmentScreen, locations: locationsScreen, settings: settingsScreen };
-const staffPages = new Set(['home', 'rota', 'timesheets', 'holiday', 'learning', 'settings']);
+const staffPages = new Set(['home', 'rota', 'timesheets', 'holiday', 'learning']);
+// Display-only navigation follows the current route gates. Server authorisation remains authoritative.
+const adminPages = new Set(['contracts', 'payroll', 'recruitment', 'locations', 'settings']);
+function visibleToRole(page, role) {
+  if (role === 'Staff') return staffPages.has(page);
+  if (role === 'Manager') return !adminPages.has(page);
+  return true;
+}
 const app = document.getElementById('app');
 export let state = initialState();
 
 function nav(s) {
   let previous = '';
-  return sections.filter(x => s.role !== 'Staff' || staffPages.has(x.id)).map(item => {
+  return sections.filter(x => visibleToRole(x.id, s.role)).map(item => {
     const group = item.group !== previous ? `<div class="nav-group">${e(item.group)}</div>` : '';
     previous = item.group;
     return `${group}<button class="nav-link ${s.page === item.id ? 'chosen' : ''}" data-action="navigate" data-value="${item.id}" ${s.page === item.id ? 'aria-current="page"' : ''}><span class="nav-icon" aria-hidden="true">${item.icon}</span><span>${e(item.label)}</span>${s.page === item.id ? '<span class="nav-mark" aria-hidden="true"></span>' : ''}</button>`;
@@ -23,7 +30,7 @@ function nav(s) {
 }
 
 export function render(focusSearch = false) {
-  if (state.role === 'Staff' && !staffPages.has(state.page)) state.page = 'home';
+  if (!visibleToRole(state.page, state.role)) state.page = 'home';
   const page = sections.find(x => x.id === state.page) || sections[0];
   document.documentElement.dataset.theme = state.theme;
   app.innerHTML = `<div class="demo-frame ${state.device === 'Phone' ? 'phone-frame' : ''}"><div class="app-shell">
@@ -38,7 +45,7 @@ export function render(focusSearch = false) {
 
 function act(action, value) {
   switch (action) {
-    case 'navigate': if (!screens[value] || (state.role === 'Staff' && !staffPages.has(value))) return; state.page = value; state.navOpen = false; state.notice = ''; window.location.hash = value; break;
+    case 'navigate': if (!screens[value] || !visibleToRole(value, state.role)) return; state.page = value; state.navOpen = false; state.notice = ''; window.location.hash = value; break;
     case 'person': state.selectedPerson = value; break;
     case 'people-filter': state.peopleFilter = value; state.selectedPerson = null; break;
     case 'joining-step': state.joiningStep = Number(value); break;
@@ -77,7 +84,7 @@ app.addEventListener('input', event => {
 });
 window.addEventListener('hashchange', () => {
   const requested = window.location.hash.slice(1);
-  if (screens[requested] && requested !== state.page && (state.role !== 'Staff' || staffPages.has(requested))) { state.page = requested; render(); }
+  if (screens[requested] && requested !== state.page && visibleToRole(requested, state.role)) { state.page = requested; render(); }
 });
 const initialPage = window.location.hash.slice(1);
 if (screens[initialPage]) state.page = initialPage;

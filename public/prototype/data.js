@@ -32,7 +32,7 @@ export const payrollSteps = ['Prepare', 'Review', 'Approval', 'Share'];
 
 export function initialState() {
   return {
-    page: 'home', role: 'Manager', location: 'All locations', device: 'Desktop',
+    page: 'home', role: 'Admin', location: 'All locations', device: 'Desktop',
     search: '', peopleFilter: 'Active', selectedPerson: null,
     joiningStep: 2, payrollStep: 1, payrollAcknowledged: false,
     holidayFilter: 'Current team', holidayReviewed: false,
