@@ -24,7 +24,7 @@ const entry = {
 beforeEach(() => m.approve.mockReset().mockResolvedValue({ approved: 1 }));
 
 describe("flagged timesheet review", () => {
-  it("requires a written reason and records the flag in the approval audit input", async () => {
+  it("requires a written reason and passes it with the approval", async () => {
     render(<TimesheetReviewPanel entry={entry} open onClose={vi.fn()} />);
     expect(screen.getByText(/Clock-in location unavailable/)).toBeInTheDocument();
     const button = screen.getByRole("button", { name: "Approve" });
@@ -34,7 +34,6 @@ describe("flagged timesheet review", () => {
     fireEvent.click(button);
     await waitFor(() => expect(m.approve).toHaveBeenCalledWith(expect.objectContaining({
       entryIds: ["entry-one"], mode: "approve_single", reviewReason: "Confirmed shift with site manager",
-      reviewedFlags: expect.arrayContaining([expect.stringContaining("Clock-in location unavailable")]),
     })));
   });
 

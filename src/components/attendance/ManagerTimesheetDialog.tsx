@@ -91,12 +91,6 @@ export function ManagerTimesheetDialog({ open, onClose, entry }: ManagerTimeshee
           entryId: entry.id,
           updates,
           reason: reason.trim(),
-          oldValues: {
-            clock_in_time: entry.clock_in_time,
-            clock_out_time: entry.clock_out_time,
-            break_minutes: entry.break_minutes,
-            branch: entry.branch,
-          },
         });
         toast.success("Timesheet entry updated");
       } else {
