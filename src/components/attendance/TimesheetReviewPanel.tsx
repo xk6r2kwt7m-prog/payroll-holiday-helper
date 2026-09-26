@@ -99,7 +99,6 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
       await approveEntries.mutateAsync({
         entryIds: [entry.id], mode: "approve_single",
         reviewReason: hasFlags ? reviewReason.trim() : undefined,
-        reviewedFlags: hasFlags ? flags.map(f => f.label) : undefined,
       });
       toast.success("Approved");
       onClose();

@@ -207,6 +207,14 @@ Deno.serve(async (req) => {
       return json({ error: "This branch is not available in your workspace." }, 400);
     }
 
+    // App and function versions must move with the database audit trigger.
+    // A missing trigger means the service refuses the write rather than
+    // recording a shift with no immutable history.
+    const { data: historyReady, error: historyError } = await serviceClient.rpc("timesheet_history_ready");
+    if (historyError || historyReady !== true) {
+      return json({ error: "Secure timesheet history is unavailable. Please ask a manager for help." }, 503);
+    }
+
     if (action === "clock_in") {
       if (!branchToUse) {
         return new Response(
