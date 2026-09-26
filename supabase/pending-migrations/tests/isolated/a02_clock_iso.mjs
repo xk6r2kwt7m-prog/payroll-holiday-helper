@@ -5,7 +5,11 @@ import ts from '/dev-server/node_modules/typescript/lib/typescript.js';
 import { readFileSync } from 'node:fs';
 
 const SRC = process.argv[2] || '/tmp/pr16/index.ts';
-const sql = postgres({ host: '/tmp/iso', port: 55432, user: 'postgres', database: 'a02', max: 4, onnotice: () => {} });
+// Supabase/PostgREST exposes DATE as YYYY-MM-DD. The private postgres.js
+// client must do the same or the rota matcher receives an artificial ISO
+// timestamp and the isolated result differs from production behaviour.
+const sql = postgres({ host: '/tmp/iso', port: 55432, user: 'postgres', database: 'a02', max: 4,
+  onnotice: () => {}, types: { date: { to: 25, from: [1082], serialize: x => x, parse: x => x } } });
 const A = 'aaaaaaaa-aaaa-aaaa-aaaa-00000000000a', B = 'bbbbbbbb-bbbb-bbbb-bbbb-00000000000b';
 const E1 = 'e1000000-0000-0000-0000-000000000001', E2 = 'e2000000-0000-0000-0000-000000000002', EB = 'eb000000-0000-0000-0000-00000000000b';
 const U1 = '33333333-3333-3333-3333-333333333333', UX = '77777777-7777-7777-7777-777777777777', UB = '88888888-8888-8888-8888-888888888888';
@@ -16,7 +20,7 @@ const check = (name, ok, info = '') => { ok ? R.pass++ : (R.fail++, fails.push(n
 function client() {
   return { from(table) {
     const f = []; let cols = '*', lim, mut, wantRows = false;
-    const where = () => f.length ? sql`where ${f.map(([c, v], i) => sql`${i ? sql`and` : sql``} ${sql(c)} = ${v}`)}` : sql``;
+    const where = () => f.length ? sql`where ${f.map(([c, v], i) => sql`${i ? sql`and` : sql``} ${v?.inDates ? sql`${sql(c)} = ANY(${v.inDates}::date[])` : sql`${sql(c)} = ${v}`}`)}` : sql``;
     const run = async () => {
       if (failTable === table) return { data: null, error: { message: 'db offline' } };
       try {
@@ -30,6 +34,7 @@ function client() {
     const q = {
       select: (c) => { if (mut) wantRows = true; else if (c) cols = c; return q; },
       eq: (c, v) => { f.push([c, v]); return q; },
+      in: (c, dates) => { f.push([c, { inDates: dates }]); return q; },
       limit: async (n) => { lim = n; return run(); },
       maybeSingle: async () => { const r = await run(); return r.error ? r : r.data.length > 1 ? { data: null, error: { code: 'PGRST116' } } : { data: r.data[0] ?? null, error: null }; },
       single: async () => { const r = await run(); return r.error ? r : r.data.length === 1 ? { data: r.data[0], error: null } : { data: null, error: { code: 'PGRST116' } }; },
@@ -84,6 +89,18 @@ await reset();
   check('workspace selector not belonging to caller -> no record, nothing written', r.s === 404 && (await sql`select 1 from time_entries`).length === 0, JSON.stringify(r)); }
 { const r = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Brixton', latitude: 51.5130, longitude: -0.1390 });
   check('GPS at Carnaby while claiming Brixton refused', r.s === 403 && (await entries()).length === 0, JSON.stringify(r)); }
+await reset();
+{ const r = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby', latitude: 0, longitude: 0 });
+  check('valid zero coordinates outside geofence are refused', r.s === 403 && (await entries()).length === 0, JSON.stringify(r)); }
+{ const r = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby', latitude: 91, longitude: 0 });
+  check('invalid coordinates are refused', r.s === 400 && (await entries()).length === 0, JSON.stringify(r)); }
+await reset();
+{ const i = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  const o = await load(`${D}T17:00:00Z`, U1)({ action: 'clock_out', tenant_id: A, latitude: 0, longitude: 0 });
+  const [e] = await entries();
+  check('GPS unavailable clock-in and outside-area clock-out complete with review flags', i.s === 200 && i.b.requires_review === true &&
+    o.s === 200 && o.b.requires_review === true && e.clock_in_within_geofence === false && e.clock_out_within_geofence === false &&
+    e.clock_in_latitude === null && Number(e.clock_out_latitude) === 0, JSON.stringify([i, o])); }
 
 // ---- 2. normal day, validated shift, clock-out, hours trigger
 await reset();
@@ -127,12 +144,28 @@ await reset();
 { const s = await shift(E1, A, 'Carnaby', '2026-09-21', '00:00', '06:00');
   const i = await load(`${D}T23:50:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
   const [e] = await entries();
-  check('LIMIT: early clock-in before midnight for a shift dated next day auto-links (expected to fail)', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+  check('BST: local next-day shift links when UTC is still the previous day', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
 await reset();
 { const s = await shift(E1, A, 'Carnaby', '2026-09-21', '00:30', '06:00'); // London 00:25 BST = 23:25 UTC previous day
   const i = await load(`${D}T23:25:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
   const [e] = await entries();
-  check('LIMIT: London-time (BST) date used for fallback shift match (expected to fail)', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+  check('BST: 00:25 local near a 00:30 rota start links', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+await reset();
+{ const s = await shift(E1, A, 'Carnaby', '2026-09-21', '00:00', '06:00'); // 23:50 BST = 22:50 UTC
+  const i = await load(`${D}T22:50:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  const [e] = await entries();
+  check('BST: 23:50 local early for next-day midnight shift links', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+await reset();
+{ const s = await shift(E1, A, 'Carnaby', '2026-01-11', '00:00', '06:00');
+  const i = await load('2026-01-10T23:50:00Z', U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  const [e] = await entries();
+  check('GMT: 23:50 local early for next-day midnight shift links', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+await reset();
+{ const s1 = await shift(E1, A, 'Carnaby', D, '21:30', '05:30');
+  const s2 = await shift(E1, A, 'Carnaby', D, '22:00', '06:00');
+  const i = await load(`${D}T20:55:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  const [e] = await entries();
+  check('two plausible rota shifts do not auto-link either', i.s === 200 && e.shift_id === null && s1 !== s2, JSON.stringify(e?.shift_id)); }
 await reset();
 { const s = await shift(E1, A, 'Carnaby', '2026-09-21', '00:00', '06:00');
   const i = await load(`${D}T23:50:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby', shift_id: s });
@@ -147,9 +180,17 @@ await reset();
   check('same employee without workspace selector (older app) still clocks in', i.s === 200, JSON.stringify(i));
   await load(`${D}T17:00:00Z`, UX)({ action: 'clock_out' }); }
 await sql`update tenant_members set is_active=false where user_id=${U1}`;
+await reset();
 { const i = await load(`${D}T10:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
-  check('FINDING: revoked membership still clocks in (not addressed by PR #16)', i.s === 200, JSON.stringify(i)); }
+  check('revoked membership cannot clock in', i.s === 403 && (await entries()).length === 0, JSON.stringify(i)); }
+{ const [e] = await sql`insert into time_entries(employee_id,tenant_id,branch,department,clock_in_time,status) values (${E1},${A},'Carnaby','FOH',${D+'T09:00:00Z'},'clocked_in') returning id`;
+  const o = await load(`${D}T17:00:00Z`, U1)({ action: 'clock_out', tenant_id: A });
+  const [still] = await sql`select status from time_entries where id=${e.id}`;
+  check('revoked membership cannot close an existing open clock-in', o.s === 403 && still.status === 'clocked_in', JSON.stringify(o)); }
 await sql`update tenant_members set is_active=true where user_id=${U1}`;
+await reset();
+{ failTable = 'tenant_members'; const i = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' }); failTable = null;
+  check('membership check outage refuses clock-in without writing', i.s === 503 && (await entries()).length === 0, JSON.stringify(i)); }
 { const bRows = await sql`select 1 from time_entries where tenant_id=${B}`; check('workspace B untouched throughout', bRows.length === 0); }
 
 console.log('A02_ISO', JSON.stringify(R)); if (fails.length) console.log('FAILED:\n- ' + fails.join('\n- '));

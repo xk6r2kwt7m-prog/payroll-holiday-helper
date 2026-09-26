@@ -19,15 +19,11 @@ import { cn } from "@/lib/utils";
 import { ManagerTimesheetDialog } from "@/components/attendance/ManagerTimesheetDialog";
 import { computeFlags } from "@/components/attendance/TimesheetReviewPanel";
 import { toast } from "sonner";
+import { isBatchEligible } from "@/lib/time-entry-batch-review";
 
 /** Check if an entry is "clean" — pending with no blocking flags */
 function isCleanPending(entry: any): boolean {
-  if (entry.status !== "pending") return false;
-  if (!entry.clock_out_time) return false;
-  if (entry.total_hours == null || entry.total_hours <= 0) return false;
-  const flags = computeFlags(entry);
-  const hasBlockingFlag = flags.some(f => f.severity === "error");
-  return !hasBlockingFlag;
+  return isBatchEligible(entry, computeFlags(entry));
 }
 
 export function AttendanceReport() {
@@ -286,7 +282,7 @@ export function AttendanceReport() {
                       <TableCell className="text-xs">{e.clock_out_time ? format(new Date(e.clock_out_time), "HH:mm") : "–"}</TableCell>
                       <TableCell className="text-xs font-medium">{e.total_hours ?? "–"}</TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {e.clock_in_latitude ? (
+                        {e.clock_in_latitude != null && e.clock_in_longitude != null ? (
                           <div className="flex items-center gap-1">
                             <MapPin className={cn("h-3 w-3", e.clock_in_within_geofence === false ? "text-destructive" : "text-success")} />
                             <span className="text-[10px] text-muted-foreground">

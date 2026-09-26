@@ -10,6 +10,7 @@ import {
   type OverrideMap,
   type PermissionDecision,
   type PermissionKey,
+  permissionRoleForMembership,
 } from "@/lib/permission-policy";
 
 export { PERMISSION_KEYS };
@@ -69,13 +70,14 @@ export function useSaveRolePermissions() {
 
 /** Full decision: allowed, denied, or unresolved (loading / failed read). */
 export function usePermissionDecision(key: PermissionKey): PermissionDecision {
-  const { role, roleStatus, loading } = useAuth();
-  const { isPlatformAdmin } = useTenant();
+  const { loading: authLoading } = useAuth();
+  const { tenantId, tenantRole, tenantResolved, loading: tenantLoading, isPlatformAdmin } = useTenant();
   const { data, isError } = useRoleOverrides();
+  const role = permissionRoleForMembership(tenantRole);
   return decidePermission({
-    // A failed role lookup is unresolved — never basic staff access.
-    // A signed-in user with genuinely no role row keeps the existing staff defaults.
-    roles: loading || roleStatus === "failed" || roleStatus === "loading" ? null : [role ?? "staff"],
+    // Only the active workspace's resolved membership can grant a role.
+    // A missing or revoked membership cannot inherit a role from elsewhere.
+    roles: authLoading || tenantLoading || !tenantResolved || !tenantId ? null : role ? [role] : [],
     key,
     isPlatformAdmin,
     overrides: data,

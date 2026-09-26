@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { MapPin, Navigation, ExternalLink } from "lucide-react";
+import { MapPin, Navigation } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -14,37 +15,22 @@ interface LocationMapPreviewProps {
   lng?: number | null;
   label: string;
   withinGeofence?: boolean | null;
-  /** Show inline embedded map tile (default: false — shows link only) */
+  /** Show coordinate detail inline (default: false — shows a detail button) */
   showInlineMap?: boolean;
 }
 
-function MapEmbed({ lat, lng, label }: { lat: number; lng: number; label: string }) {
-  const [failed, setFailed] = useState(false);
-  const tileUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.003},${lat - 0.002},${lng + 0.003},${lat + 0.002}&layer=mapnik&marker=${lat},${lng}`;
-
-  if (failed) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-muted/50 rounded">
-        <MapPin className="h-3 w-3" />
-        {label}: {lat.toFixed(5)}, {lng.toFixed(5)}
-      </div>
-    );
-  }
-
+function PrivateLocationDetail({ lat, lng, label }: { lat: number; lng: number; label: string }) {
   return (
-    <iframe
-      title={`${label} location`}
-      src={tileUrl}
-      className="w-full h-40 rounded border border-border"
-      onError={() => setFailed(true)}
-      loading="lazy"
-    />
+    <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 bg-muted/50 rounded">
+      <MapPin className="h-3 w-3" />
+      <span>{label} coordinates: {lat.toFixed(5)}, {lng.toFixed(5)}</span>
+    </div>
   );
 }
 
 export function LocationMapPreview({ lat, lng, label, withinGeofence, showInlineMap = false }: LocationMapPreviewProps) {
   const [showModal, setShowModal] = useState(false);
-  const hasLocation = lat != null && lng != null && lat !== 0 && lng !== 0;
+  const hasLocation = lat != null && lng != null;
 
   if (!hasLocation) {
     return (
@@ -75,7 +61,7 @@ export function LocationMapPreview({ lat, lng, label, withinGeofence, showInline
           )}
         </div>
 
-        {showInlineMap && <MapEmbed lat={lat} lng={lng} label={label} />}
+        {showInlineMap && <PrivateLocationDetail lat={lat} lng={lng} label={label} />}
 
         <button
           type="button"
@@ -84,7 +70,7 @@ export function LocationMapPreview({ lat, lng, label, withinGeofence, showInline
         >
           <Navigation className="h-3 w-3 flex-shrink-0" />
           <span>{lat.toFixed(5)}, {lng.toFixed(5)}</span>
-          <span className="text-muted-foreground ml-auto">View on map →</span>
+          <span className="text-muted-foreground ml-auto">View details →</span>
         </button>
       </div>
 
@@ -107,22 +93,14 @@ export function LocationMapPreview({ lat, lng, label, withinGeofence, showInline
                 </Badge>
               )}
             </DialogTitle>
+            <DialogDescription className="text-xs">Recorded location for manager review.</DialogDescription>
           </DialogHeader>
           <div className="px-4 pb-2">
-            <MapEmbed lat={lat} lng={lng} label={label} />
+            <PrivateLocationDetail lat={lat} lng={lng} label={label} />
           </div>
-          <div className="px-4 pb-4 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {lat.toFixed(6)}, {lng.toFixed(6)}
-            </span>
-            <a
-              href={`https://www.google.com/maps?q=${lat},${lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              Open in Google Maps <ExternalLink className="h-3 w-3" />
-            </a>
+          <div className="px-4 pb-4 text-xs text-muted-foreground">
+            <span>Exact coordinates: {lat.toFixed(6)}, {lng.toFixed(6)}</span>
+            <p className="mt-1">Coordinates are shown here without opening a map provider.</p>
           </div>
         </DialogContent>
       </Dialog>
