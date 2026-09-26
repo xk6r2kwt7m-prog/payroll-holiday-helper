@@ -5,7 +5,9 @@ import ts from '/dev-server/node_modules/typescript/lib/typescript.js';
 import { readFileSync } from 'node:fs';
 
 const SRC = process.argv[2] || '/tmp/pr16/index.ts';
-const sql = postgres({ host: '/tmp/iso', port: 55432, user: 'postgres', database: 'a02', max: 4, onnotice: () => {} });
+// Mirror PostgREST DATE as YYYY-MM-DD in the isolated postgres.js client.
+const sql = postgres({ host: '/tmp/iso', port: 55432, user: 'postgres', database: 'a02', max: 4,
+  onnotice: () => {}, types: { date: { to: 25, from: [1082], serialize: x => x, parse: x => x } } });
 const A = 'aaaaaaaa-aaaa-aaaa-aaaa-00000000000a', B = 'bbbbbbbb-bbbb-bbbb-bbbb-00000000000b';
 const E1 = 'e1000000-0000-0000-0000-000000000001', E2 = 'e2000000-0000-0000-0000-000000000002', EB = 'eb000000-0000-0000-0000-00000000000b';
 const U1 = '33333333-3333-3333-3333-333333333333', UX = '77777777-7777-7777-7777-777777777777', UB = '88888888-8888-8888-8888-888888888888';
@@ -16,7 +18,7 @@ const check = (name, ok, info = '') => { ok ? R.pass++ : (R.fail++, fails.push(n
 function client() {
   return { from(table) {
     const f = []; let cols = '*', lim, mut, wantRows = false;
-    const where = () => f.length ? sql`where ${f.map(([c, v], i) => sql`${i ? sql`and` : sql``} ${sql(c)} = ${v}`)}` : sql``;
+    const where = () => f.length ? sql`where ${f.map(([c, v], i) => sql`${i ? sql`and` : sql``} ${v?.inDates ? sql`${sql(c)} = ANY(${v.inDates}::date[])` : sql`${sql(c)} = ${v}`}`)}` : sql``;
     const run = async () => {
       if (failTable === table) return { data: null, error: { message: 'db offline' } };
       try {
@@ -30,6 +32,7 @@ function client() {
     const q = {
       select: (c) => { if (mut) wantRows = true; else if (c) cols = c; return q; },
       eq: (c, v) => { f.push([c, v]); return q; },
+      in: (c, dates) => { f.push([c, { inDates: dates }]); return q; },
       limit: async (n) => { lim = n; return run(); },
       maybeSingle: async () => { const r = await run(); return r.error ? r : r.data.length > 1 ? { data: null, error: { code: 'PGRST116' } } : { data: r.data[0] ?? null, error: null }; },
       single: async () => { const r = await run(); return r.error ? r : r.data.length === 1 ? { data: r.data[0], error: null } : { data: null, error: { code: 'PGRST116' } }; },
@@ -127,12 +130,28 @@ await reset();
 { const s = await shift(E1, A, 'Carnaby', '2026-09-21', '00:00', '06:00');
   const i = await load(`${D}T23:50:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
   const [e] = await entries();
-  check('LIMIT: early clock-in before midnight for a shift dated next day auto-links (expected to fail)', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+  check('BST: local next-day shift links when UTC is still the previous day', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
 await reset();
 { const s = await shift(E1, A, 'Carnaby', '2026-09-21', '00:30', '06:00'); // London 00:25 BST = 23:25 UTC previous day
   const i = await load(`${D}T23:25:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
   const [e] = await entries();
-  check('LIMIT: London-time (BST) date used for fallback shift match (expected to fail)', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+  check('BST: 00:25 local near a 00:30 rota start links', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+await reset();
+{ const s = await shift(E1, A, 'Carnaby', '2026-09-21', '00:00', '06:00'); // 23:50 BST = 22:50 UTC
+  const i = await load(`${D}T22:50:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  const [e] = await entries();
+  check('BST: 23:50 local early for next-day midnight shift links', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+await reset();
+{ const s = await shift(E1, A, 'Carnaby', '2026-01-11', '00:00', '06:00');
+  const i = await load('2026-01-10T23:50:00Z', U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  const [e] = await entries();
+  check('GMT: 23:50 local early for next-day midnight shift links', i.s === 200 && e.shift_id === s, `saved shift_id=${e?.shift_id}`); }
+await reset();
+{ const s1 = await shift(E1, A, 'Carnaby', D, '21:30', '05:30');
+  const s2 = await shift(E1, A, 'Carnaby', D, '22:00', '06:00');
+  const i = await load(`${D}T20:55:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  const [e] = await entries();
+  check('two plausible rota shifts do not auto-link either', i.s === 200 && e.shift_id === null && s1 !== s2, JSON.stringify(e?.shift_id)); }
 await reset();
 { const s = await shift(E1, A, 'Carnaby', '2026-09-21', '00:00', '06:00');
   const i = await load(`${D}T23:50:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby', shift_id: s });
