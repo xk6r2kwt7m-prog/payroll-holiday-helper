@@ -1,3 +1,4 @@
+import { effectiveRtwStatus } from "./right-to-work-review";
 /**
  * When is a contract ready to be prepared on its own?
  *
@@ -21,6 +22,8 @@ export interface ContractAutoDraftInput {
   changes: readonly AutoDraftChange[];
   /** Right-to-work state on the record: requested / submitted / verified / rejected / expired. */
   rtwStatus?: string | null;
+  rtwExpiresOn?: string | null;
+  today?: string;
   /** True when a bank change is accepted but not yet confirmed directly with the employee. */
   bankAwaitingDirectConfirmation?: boolean;
   /** Contract fields still missing from the record (labels, from the existing gate). */
@@ -48,7 +51,7 @@ export function evaluateContractAutoDraft(
     outstanding.push("Bank details still need confirming directly with the employee");
   }
 
-  const rtw = (input.rtwStatus ?? "").trim();
+  const rtw = effectiveRtwStatus(input.rtwStatus, input.rtwExpiresOn, input.today);
   if (rtw !== "verified") {
     outstanding.push(
       rtw === "rejected" || rtw === "expired"

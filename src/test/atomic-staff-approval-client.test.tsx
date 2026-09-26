@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useDecideStaffDetailChange, useVerifyBankChange } from "@/hooks/useStaffDetailChanges";
+import { useDecideStaffDetailChange, useVerifyBankChange, useRecordRightToWorkDecision } from "@/hooks/useStaffDetailChanges";
 const state=vi.hoisted(()=>({ rpc:vi.fn(), from:vi.fn() }));
 vi.mock("@/integrations/supabase/client",()=>({supabase:state}));
 vi.mock("@/hooks/useTenant",()=>({useTenant:()=>({tenantId:"tenant"})}));
@@ -25,5 +25,24 @@ describe("atomic staff approval client",()=>{
   const {result}=renderHook(()=>useDecideStaffDetailChange());
   await expect((result.current as any).mutationFn({change:{id:"change"},accept:true,deciderName:"Manager"})).rejects.toThrow("Nothing was changed");
   expect(state.from).not.toHaveBeenCalled();
+ });
+});
+
+describe("right-to-work transaction client", () => {
+ it("uses a stable request id on retry and never writes review/audit separately", async () => {
+  const { result } = renderHook(() => useRecordRightToWorkDecision());
+  const input = { employeeId: "staff", decision: "verified", checkedByName: "Manager", notes: "Evidence checked", expectedUpdatedAt: "2026-09-26T10:00:00Z" };
+  state.rpc.mockResolvedValueOnce({error:{message:"Network unavailable"}});
+  await expect((result.current as any).mutationFn(input)).rejects.toThrow();
+  await (result.current as any).mutationFn(input);
+  expect(state.rpc.mock.calls[0][1]._request_id).toBe(state.rpc.mock.calls[1][1]._request_id);
+  expect(state.rpc.mock.calls[1][0]).toBe("record_rtw_decision_atomic");
+  expect(state.rpc.mock.calls[1][1]._expires_on).toBeNull();
+  expect(state.from).not.toHaveBeenCalled();
+ });
+ it("refuses reviews with no evidence revision", async () => {
+  const { result } = renderHook(() => useRecordRightToWorkDecision());
+  await expect((result.current as any).mutationFn({employeeId:"staff",decision:"verified",checkedByName:"Manager",notes:"Checked"})).rejects.toThrow("Reload");
+  expect(state.rpc).not.toHaveBeenCalled();
  });
 });

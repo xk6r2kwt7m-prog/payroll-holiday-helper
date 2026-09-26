@@ -28,25 +28,7 @@ function daysBetween(from: string | Date, to: Date): number {
   return Math.floor((to.getTime() - start.getTime()) / 86_400_000);
 }
 
-/** True when this unfinished induction is due a reminder now. */
-export function inductionReminderDue(pack: InductionPackLike, now = new Date()): boolean {
-  if (pack.is_test_send) return false;
-  if (pack.completed_at) return false;
-  if (!pack.sent_at) return false;
-  if (pack.token_expires_at && new Date(pack.token_expires_at).getTime() < now.getTime()) return false;
-
-  const sinceSent = daysBetween(pack.sent_at, now);
-  if (sinceSent < INDUCTION_REMINDER_DAYS[0]) return false;
-
-  // One reminder per scheduled point: never two on the same day.
-  if (pack.reminder_sent_at && daysBetween(pack.reminder_sent_at, now) < 1) return false;
-
-  if ((INDUCTION_REMINDER_DAYS as readonly number[]).includes(sinceSent)) return true;
-  if (sinceSent > INDUCTION_REMINDER_WEEKLY_AFTER) {
-    return (sinceSent - INDUCTION_REMINDER_WEEKLY_AFTER) % 7 === 0;
-  }
-  return false;
-}
+export { inductionReminderDue } from "../../supabase/functions/_shared/induction-reminder-policy";
 
 export type InductionStage = "not_opened" | "in_progress" | "completed";
 

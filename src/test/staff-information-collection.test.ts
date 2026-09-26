@@ -196,7 +196,9 @@ describe("reviewing what came back", () => {
   it("records who decided and when", () => {
     expect(hooks).toContain("decided_by_name");
     expect(hooks).toContain("decided_at");
-    expect(hooks).toContain("audit_log");
+    expect(hooks).toContain("record_rtw_decision_atomic");
+    const migration = read("supabase/pending-migrations/20260926130000_onboarding_evidence_guards.sql");
+    expect(migration).toContain("INSERT INTO public.audit_log");
   });
 
   it("does not use a changed bank account until it is confirmed with the employee", () => {
