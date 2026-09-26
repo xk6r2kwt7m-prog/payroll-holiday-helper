@@ -4,7 +4,7 @@ This draft extends the earlier Home / Employees / Payroll [workspace preview](./
 
 ## Try the journeys
 
-- Change between **Desktop** and **Phone view**, and between light and dark. The preview also adapts to the actual browser width. Use the location and role pickers to see different views. Role switching is a display simulation, **not authorisation**.
+- Change between **Desktop** and **Phone view**, and between light and dark. The preview also adapts to the actual browser width. Use the location and role pickers to see different views. The default Admin view shows every area; Manager hides admin-only areas and Staff shows personal areas. Role switching is a display simulation, **not authorisation**.
 - On **Home**, follow the urgent work cards. The manager view surfaces time, joining, holiday and payroll; staff see only their personal tasks.
 - On **People**, search and filter Active / Joining / Former, open a record and switch location. Former colleagues stay in history and are not current holiday requests.
 - On **Joining**, step through invitation, staff completion, human checks, contract and first-week tasks. Existing confirmed details should not be repeatedly requested. Bank/NI confirmation and right-to-work are depicted without storing any details.
@@ -28,6 +28,31 @@ This draft extends the earlier Home / Employees / Payroll [workspace preview](./
 | `scripts/prototype/check.mjs` | Interaction and isolation smoke tests | Run with `node --test scripts/prototype/check.mjs` |
 
 The directory does **not** import app code, call APIs, read storage, contain real staff records, replace rules, or require migrations. Never copy the fake role switch, fictional amounts, mock review actions or source data into production authority. Moving any screen into the real app needs current server permissions, loading/error states and a focused business-flow test. A static public route must be removed or gated before a production release if a preview should not be publicly discoverable.
+
+## Current app route coverage
+
+This is a **whole-workspace navigation and journey prototype**, with one representative screen per area. Specialist pages are shown through their parent journey, not individually rebuilt. That boundary keeps the review focused and avoids silently replacing working domain controls.
+
+| Prototype | Existing routes and related journeys |
+| --- | --- |
+| Home | `/`, staff dashboard `/staff` |
+| People | `/employees`, `/workforce` |
+| Joining | `/onboarding`, `/employee-onboarding`, token-based `/join`, `/my-details`, `/induction` |
+| Contracts | `/contracts`, `/sign/:token`, `/sign-licence/:token` |
+| Rota | `/schedule`, reports, analytics, labour cost, `/shift-marketplace` |
+| Timesheets | `/timesheets`, personal timesheet and clock panel in `/staff` |
+| Holiday | `/holidays`, `/holidays/manage`, `/holidays/audit` |
+| Payroll | `/payroll`, calendar, analytics, comparison, overpayments and audit |
+| Reports | `/reports`, `/financial` |
+| Documents | `/compliance`, `/document/view` |
+| Learning | `/training`, `/foh/*`, `/training/allergen-safety` |
+| Absence | `/absences`, `/report-incident`, `/disciplinary` |
+| Messages | `/announcements`, task reminders and email delivery feedback |
+| Hiring | talent pool and `/vacancies` |
+| Locations | `/locations`, `/locations/:branch` |
+| Settings | `/settings`, integrations and platform health |
+
+Public sign-in, account recovery, workspace selection, subscription administration, privacy and policy pages are outside this signed-in workspace preview. They need a separate accessible public-flow preview. The role picker follows broad current route visibility, but it does not model every stored permission, role combination or branch-specific access rule.
 
 ## Acceptance before adopting a screen
 
