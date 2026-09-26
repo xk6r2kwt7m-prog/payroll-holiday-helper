@@ -9,20 +9,24 @@ function server(fixture: {
   rows?: Record<string, Row[]>;
   fail?: string;
   userId?: string;
+  now?: string;
 } = {}) {
   const rows: Record<string, Row[]> = {
     employees: [employee], branch_locations: [branch], shifts: [], time_entries: [],
+    tenants: [{ id: 'tenant-a', timezone: 'Europe/London' }],
     ...fixture.rows,
   };
   let handler: (req: Request) => Promise<Response>;
   const dataClient = {
     from(table: string) {
       const filters: [string, any][] = [];
+      const included: [string, any[]][] = [];
       let mutation: { kind: 'update' | 'insert'; value: Row } | undefined;
       let max: number | undefined;
       const result = () => {
         if (fixture.fail === table) return { data: null, error: { message: 'db offline' } };
-        const matching = (rows[table] || []).filter(r => filters.every(([col, val]) => r[col] === val));
+        const matching = (rows[table] || []).filter(r => filters.every(([col, val]) => r[col] === val)
+          && included.every(([col, values]) => values.includes(r[col])));
         if (mutation?.kind === 'insert') {
           const added = { ...mutation.value, id: 'new-entry' };
           rows[table].push(added);
@@ -36,6 +40,7 @@ function server(fixture: {
       };
       const q: any = {
         select: () => q, eq: (col: string, val: any) => { filters.push([col, val]); return q; },
+        in: (col: string, values: any[]) => { included.push([col, values]); return q; },
         limit: async (n: number) => { max = n; return result(); },
         maybeSingle: async () => {
           const r = result();
@@ -58,7 +63,13 @@ function server(fixture: {
   const createClient = (_url: string, _key: string, options?: unknown) =>
     options ? { auth: { getUser: async () => ({ data: { user: { id: fixture.userId || 'user-a' } }, error: null }) } } : dataClient;
   const Deno = { env: { get: () => 'mock' }, serve: (cb: typeof handler) => { handler = cb; } };
-  new Function('createClient', 'Deno', compiled)(createClient, Deno);
+  const RealDate = Date;
+  const now = fixture.now || '2026-09-20T08:55:00Z';
+  class FakeDate extends RealDate {
+    constructor(...args: ConstructorParameters<typeof Date>) { args.length ? super(...args) : super(now); }
+    static now() { return new RealDate(now).getTime(); }
+  }
+  new Function('createClient', 'Deno', 'Date', compiled)(createClient, Deno, FakeDate);
   return {
     rows,
     async request(body: Row) {
@@ -122,9 +133,33 @@ describe('A02 clock server with synthetic rows', () => {
     expect(s.rows.time_entries[0]).toMatchObject({ employee_id: 'employee-a', tenant_id: 'tenant-a', shift_id: 'ours' });
   });
   it('clocks out its own open entry in the workspace', async () => {
-    const s = server({ rows: { time_entries: [{ id: 'ours', employee_id: 'employee-a', tenant_id: 'tenant-a', status: 'clocked_in', clock_in_time: '2026-09-26T09:00:00Z' }] } });
+    const s = server({ rows: { time_entries: [{ id: 'ours', employee_id: 'employee-a', tenant_id: 'tenant-a', status: 'clocked_in', clock_in_time: '2026-09-20T08:00:00Z' }] } });
     const r = await s.request({ action: 'clock_out', tenant_id: 'tenant-a' });
     expect(r.status).toBe(200);
     expect(s.rows.time_entries[0]).toHaveProperty('clock_out_time');
+  });
+  it.each([
+    ['BST early local evening', '2026-09-20T22:50:00Z', '2026-09-21', '00:00', 'Europe/London'],
+    ['BST 00:25 local', '2026-09-20T23:25:00Z', '2026-09-21', '00:30', 'Europe/London'],
+    ['GMT early local evening', '2026-01-10T23:50:00Z', '2026-01-11', '00:00', 'Europe/London'],
+    ['New York early local evening', '2026-09-21T03:50:00Z', '2026-09-21', '00:00', 'America/New_York'],
+    ['overnight starts on its own date', '2026-09-20T20:55:00Z', '2026-09-20', '22:00', 'Europe/London'],
+  ])('links a rota shift across midnight: %s', async (_label, now, date, start, timezone) => {
+    const s = server({ now, rows: {
+      tenants: [{ id: 'tenant-a', timezone }],
+      shifts: [{ id: 'night', employee_id: 'employee-a', tenant_id: 'tenant-a', branch: 'Carnaby', status: 'scheduled', shift_date: date, start_time: start, end_time: '06:00' }],
+    } });
+    const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby' });
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(s.rows.time_entries[0].shift_id).toBe('night');
+  });
+  it('does not guess between two nearby shifts', async () => {
+    const s = server({ rows: { shifts: ['09:00', '10:00'].map((start_time, i) => ({
+      id: String(i), employee_id: 'employee-a', tenant_id: 'tenant-a', branch: 'Carnaby',
+      status: 'scheduled', shift_date: '2026-09-20', start_time, end_time: '17:00',
+    })) } });
+    const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby' });
+    expect(r.status).toBe(200);
+    expect(s.rows.time_entries[0].shift_id).toBeNull();
   });
 });

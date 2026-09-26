@@ -25,6 +25,53 @@ function haversineDistance(
   return R * c;
 }
 
+// Convert a rota wall time using the workspace time zone. Offset checks on
+// both sides of the day also cover the hour when clocks move forward/back.
+function localParts(instant: Date, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(instant);
+  const value = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return { year: value("year"), month: value("month"), day: value("day"),
+    hour: value("hour"), minute: value("minute") };
+}
+
+function rotaStartInstants(date: string, time: string, timezone: string): number[] {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const naive = Date.UTC(year, month - 1, day, hour, minute);
+  const offsets = new Set<number>();
+  for (const around of [naive - 86400000, naive, naive + 86400000]) {
+    const local = localParts(new Date(around), timezone);
+    const represented = Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute);
+    offsets.add(Math.round((represented - around) / 60000));
+  }
+  return [...offsets].map((offset) => naive - offset * 60000).filter((candidate) => {
+    const local = localParts(new Date(candidate), timezone);
+    return local.year === year && local.month === month && local.day === day
+      && local.hour === hour && local.minute === minute;
+  });
+}
+
+function nearbyDates(now: Date, timezone: string): string[] {
+  const local = localParts(now, timezone);
+  const midnight = Date.UTC(local.year, local.month - 1, local.day);
+  return [-1, 0, 1].map((days) => new Date(midnight + days * 86400000).toISOString().slice(0, 10));
+}
+
+function matchingRotaShift(
+  shifts: { id: string; shift_date: string; start_time: string; end_time: string }[],
+  now: Date, timezone: string,
+) {
+  // These bounds only select an optional rota link; they do not prevent a
+  // genuine clock-in when a shift is missing or unusually early/late.
+  const candidates = shifts.filter((shift) => rotaStartInstants(
+    shift.shift_date, shift.start_time, timezone,
+  ).some((start) => now.getTime() >= start - 2 * 3600000 && now.getTime() <= start + 4 * 3600000));
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -178,14 +225,20 @@ Deno.serve(async (req) => {
         if (!data) return json({ error: "That shift does not belong to you in this workspace." }, 400);
         shift = data;
       } else {
-        const today = new Date().toISOString().split("T")[0];
+        const { data: workspace, error: workspaceError } = await serviceClient.from("tenants")
+          .select("timezone").eq("id", employee.tenant_id).single();
+        if (workspaceError || !workspace?.timezone) return json({ error: "Could not check your workspace time zone. Please try again." }, 503);
+        let dates: string[];
+        try { dates = nearbyDates(new Date(), workspace.timezone); }
+        catch { return json({ error: "Your workspace time zone needs review. Ask a manager for help." }, 503); }
         const { data, error } = await serviceClient.from("shifts")
-          .select("id, start_time, end_time")
+          .select("id, shift_date, start_time, end_time")
           .eq("employee_id", employee.id).eq("tenant_id", employee.tenant_id)
-          .eq("shift_date", today).eq("branch", branchToUse)
-          .eq("status", "scheduled").maybeSingle();
+          .eq("branch", branchToUse).eq("status", "scheduled")
+          .in("shift_date", dates);
         if (error) return json({ error: "Could not check your shift. Please try again." }, 503);
-        shift = data;
+        try { shift = matchingRotaShift(data ?? [], new Date(), workspace.timezone); }
+        catch { return json({ error: "Could not check the rota time. Please try again." }, 503); }
       }
 
       // Block clock-in if outside geofence
