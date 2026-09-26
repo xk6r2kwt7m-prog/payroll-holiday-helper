@@ -6,8 +6,7 @@ import {
   Coffee, CheckCircle2, AlertCircle, ArrowRight, Pause, Play, Navigation,
   ClipboardList, AlertTriangle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ClockStatusError } from "@/components/dashboard/ClockStatusError";
+import { Button } from "@/components/ui/button"; import { ClockStatusError } from "@/components/dashboard/ClockStatusError";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
@@ -490,9 +489,7 @@ export function StaffHome() {
             ? isOnBreak ? "border-warning/30 bg-warning/5" : "border-success/30 bg-success/5"
             : "border-border bg-card shadow-sm"
         )}>
-          {employeeLookupFailed || activeEntryError ? (
-            <ClockStatusError error={activeEntryError} onRetry={() => { retryEmployee(); retryActiveEntry(); }} />
-          ) : activeEntry ? (
+          {employeeLookupFailed || activeEntryError ? <ClockStatusError error={activeEntryError} onRetry={() => { retryEmployee(); retryActiveEntry(); }} /> : activeEntry ? (
             <ActiveShiftCard
               activeEntry={activeEntry}
               elapsedTime={elapsedTime}
