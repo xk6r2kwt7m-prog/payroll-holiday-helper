@@ -19,13 +19,16 @@ interface QuizTakerProps {
 }
 
 export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryLimit = 3, quizPassed, onComplete }: QuizTakerProps) {
-  const { data: questions = [], isLoading } = useQuizQuestions(moduleId);
-  const { data: attempts = [], isLoading: attemptsLoading } = useQuizAttempts(assignmentId);
+  const questionsQuery = useQuizQuestions(moduleId);
+  const { data: questions = [], isLoading } = questionsQuery;
+  const attemptsQuery = useQuizAttempts(assignmentId);
+  const { data: attempts = [], isLoading: attemptsLoading } = attemptsQuery;
   const submitQuiz = useSubmitQuiz();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [showResults, setShowResults] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submittedAttempt, setSubmittedAttempt] = useState<number | null>(null);
+  const submitted = submittedAttempt !== null;
   const [showReview, setShowReview] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -55,6 +58,7 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
   }
 
   if (isLoading || attemptsLoading) return <div className="text-center py-6 text-sm text-muted-foreground">Loading quiz…</div>;
+  if (questionsQuery.isError || attemptsQuery.isError) return <div role="alert" className="space-y-3"><p>Could not load the assessment or attempt history. Please retry before continuing.</p><Button onClick={() => { void questionsQuery.refetch(); void attemptsQuery.refetch(); }}>Try again</Button></div>;
   if (questions.length === 0) return (
     <div className="text-center py-8">
       <GraduationCap className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
@@ -66,7 +70,7 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
   // Attempt count from DB
   const dbAttemptCount = attempts.length;
   const currentAttemptNumber = dbAttemptCount + 1;
-  const attemptsUsed = dbAttemptCount + (submitted ? 1 : 0);
+  const attemptsUsed = Math.max(dbAttemptCount, submittedAttempt ?? 0);
   const attemptsRemaining = retryLimit - attemptsUsed;
   const isLocked = attemptsRemaining <= 0 && !submitted;
 
@@ -118,8 +122,7 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
     const correct = questions.filter(q => answers[q.id] === q.correct_option).length;
     const score = Math.round((correct / questions.length) * 100);
     const passed = score >= passMark;
-    setShowResults(true);
-    setSubmitted(true);
+    if (submitQuiz.isPending) return;
     submitQuiz.mutate({
       assignmentId,
       employeeId,
@@ -130,6 +133,8 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
       answers,
     }, {
       onSuccess: () => {
+        setSubmittedAttempt(currentAttemptNumber);
+        setShowResults(true);
         if (passed) setTimeout(onComplete, 2000);
       },
     });
@@ -139,7 +144,7 @@ export function QuizTaker({ moduleId, assignmentId, employeeId, passMark, retryL
     setAnswers({});
     setCurrentIndex(0);
     setShowResults(false);
-    setSubmitted(false);
+    setSubmittedAttempt(null);
     setShowReview(false);
   };
 
