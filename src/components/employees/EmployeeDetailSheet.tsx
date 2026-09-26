@@ -24,6 +24,8 @@ import { StaffChangesReview } from "./StaffChangesReview";
 import { EmployeePrivacyLog } from "./EmployeePrivacyLog";
 import { useSensitiveEmployeeFields } from "@/hooks/useSensitiveEmployeeFields";
 import { RecordRightToWorkCheck } from "./RecordRightToWorkCheck";
+import { ManagerStaffChangesReview } from "./ManagerStaffChangesReview";
+import { useTenant } from "@/hooks/useTenant";
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
@@ -224,6 +226,7 @@ export function EmployeeDetailSheet({ employee, open, onOpenChange, isAdmin, can
           {/* Details the staff member sent that differ from our record */}
           {isAdmin && <SubmittedDetailsReview employeeId={employee.id} />}
           {canViewSensitive && <StaffChangesReview employeeId={employee.id} />}
+          {!canViewSensitive && tenantRole === "manager" && <ManagerStaffChangesReview employeeId={employee.id} />}
 
           {/* Personal Information */}
           <Section title="Personal Information" icon={User}>
