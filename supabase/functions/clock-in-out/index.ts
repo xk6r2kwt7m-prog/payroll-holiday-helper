@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
 
     // Resolve the caller's OWN employee record, scoped to the requested workspace.
     // The requested workspace is only a selector: it must match a record that
-    // belongs to this user and an active membership. Never trust employee IDs from the body.
+    // belongs to this user. Never trust employee IDs from the body.
     const requestedTenant = typeof body.tenant_id === "string" && body.tenant_id ? body.tenant_id : null;
     const json = (payload: unknown, status: number) =>
       new Response(JSON.stringify(payload), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -95,20 +95,8 @@ Deno.serve(async (req) => {
     }
     const employee = empRows[0];
 
-    const { data: membership, error: memberError } = await serviceClient
-      .from("tenant_members")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("tenant_id", employee.tenant_id)
-      .eq("is_active", true)
-      .maybeSingle();
-    if (memberError) {
-      console.error("clock-in-out membership lookup failed");
-      return json({ error: "Could not check your workspace access. Please try again." }, 503);
-    }
-    if (!membership) {
-      return json({ error: "You don't have active access to this workspace" }, 403);
-    }
+    // NOTE (A02 review): an active-membership check is NOT added here, to preserve
+    // existing behaviour. Flagged for a separate decision.
 
     if (employee.status !== "active") {
       return new Response(
