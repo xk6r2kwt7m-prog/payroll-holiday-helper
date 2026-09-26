@@ -6,7 +6,7 @@ import { AccessDenied } from "@/components/AccessDenied";
 import { ModuleUnavailable } from "@/components/ModuleUnavailable";
 import { TenantSuspended } from "@/components/TenantSuspended";
 import { type AppRole, getRoleLevel } from "@/lib/roles";
-import { usePermission, type PermissionKey } from "@/hooks/useRolePermissions";
+import { usePermissionDecision, useRolePermissions, type PermissionKey } from "@/hooks/useRolePermissions";
 
 export type ModuleKey = "scheduling" | "payroll" | "training" | "documents" | "analytics";
 
@@ -35,8 +35,9 @@ export function ProtectedRoute({
     showTenantPicker, tenantStatus,
   } = useTenant();
 
-  // Permission check (safe to call unconditionally — returns true for admin/platform admin)
-  const hasPermission = usePermission(requiredPermission || "view_employees");
+  // Permission check (safe to call unconditionally — returns allowed for admin/platform admin)
+  const permissionDecision = usePermissionDecision(requiredPermission || "view_employees");
+  const permissionsFailed = useRolePermissions().isError;
 
   // ─── GATE 1: Auth or tenant still loading ───
   if (authLoading || tenantLoading) {
@@ -100,8 +101,19 @@ export function ProtectedRoute({
     }
   }
 
-  // ─── GATE 9: Permission key check ───
-  if (requiredPermission && !isPlatformAdmin && !hasPermission) {
+  // ─── GATE 9: Permission key check (never falls back to defaults) ───
+  if (requiredPermission && !isPlatformAdmin && permissionDecision !== "allowed") {
+    if (permissionDecision === "unresolved") {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <p className="text-muted-foreground text-sm" role="status">
+            {permissionsFailed
+              ? "Your access could not be checked. Please refresh to try again."
+              : "Checking access…"}
+          </p>
+        </div>
+      );
+    }
     return <AccessDenied />;
   }
 

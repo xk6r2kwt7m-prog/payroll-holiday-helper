@@ -22,3 +22,9 @@
 - Use synthetic data for tests. Never commit credentials, real staff details, authentication browser state or database exports.
 - Browser checks without a successful authenticated workflow are smoke checks, not proof that payroll or staff workflows work.
 - Report prepared, tested and deployed changes separately. Include remaining limitations and rollback implications. Do not claim the app is error-free.
+
+## Module boundaries
+- Run `npm run check:architecture` for source changes. Read `docs/app-audit/architecture.md` before extracting shared modules.
+- Do not regenerate `scripts/architecture/baseline.json` or move logic into excluded/shared folders to bypass a failing check. Explain and review each intentional exception.
+- Prefer one workflow correction per draft. Keep behaviour-preserving extractions separate from business-rule or permission changes.
+- A passing boundary check does not replace checking the changed-file list and affected consumers. Include both in the PR.
