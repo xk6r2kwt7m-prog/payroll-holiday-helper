@@ -44,7 +44,7 @@ function MapEmbed({ lat, lng, label }: { lat: number; lng: number; label: string
 
 export function LocationMapPreview({ lat, lng, label, withinGeofence, showInlineMap = false }: LocationMapPreviewProps) {
   const [showModal, setShowModal] = useState(false);
-  const hasLocation = lat != null && lng != null && lat !== 0 && lng !== 0;
+  const hasLocation = lat != null && lng != null;
 
   if (!hasLocation) {
     return (

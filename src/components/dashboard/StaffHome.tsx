@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Clock, MapPin, Calendar, ChevronRight, Megaphone, Sun, FileText,
-  Coffee, CheckCircle2, AlertCircle, ArrowRight, Pause, Play, Navigation,
+  Coffee, CheckCircle2, AlertCircle, ArrowRight, Pause, Play,
   ClipboardList, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button"; import { ClockStatusError } from "@/components/dashboard/ClockStatusError";
@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ReadinessBanner } from "@/components/staff-portal/ReadinessBanner";
 import { MyAvailabilityCard } from "@/components/staff-portal/MyAvailabilityCard";
+import { ClockLocationStatus } from "@/components/dashboard/ClockLocationStatus";
 
 const anim = { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 } };
 
@@ -36,34 +37,6 @@ function GreetingHeader({ name }: { name: string }) {
       <h1 className="text-xl font-bold text-foreground">{greeting()}, {name || "there"} 👋</h1>
       <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, d MMMM")}</p>
     </motion.div>
-  );
-}
-
-function GpsIndicator({ status, distance }: { status: string; distance?: number | null }) {
-  const withinGeofence = distance != null && distance <= 200;
-  return (
-    <div className="flex items-center gap-2 text-xs justify-center py-1.5 rounded-lg bg-muted/50 px-3">
-      <Navigation className={cn(
-        "h-3.5 w-3.5",
-        status === "granted"
-          ? withinGeofence ? "text-success" : "text-warning"
-          : status === "denied" ? "text-destructive" : "text-muted-foreground"
-      )} />
-      <span className={cn(
-        "font-medium",
-        status === "granted"
-          ? withinGeofence ? "text-success" : "text-warning"
-          : "text-muted-foreground"
-      )}>
-        {status === "granted"
-          ? withinGeofence
-            ? "Within work area"
-            : distance != null
-              ? `${Math.round(distance)}m from workplace`
-              : "Location verified"
-          : status === "denied" ? "Enable location services" : "Checking location..."}
-      </span>
-    </div>
   );
 }
 
@@ -132,6 +105,7 @@ function ActiveShiftCard({
 function ClockInCard({
   gpsStatus,
   gpsDistance,
+  gpsRadius,
   selectedBranch,
   setSelectedBranch,
   branches,
@@ -140,8 +114,9 @@ function ClockInCard({
   hasShiftToday,
   nextShiftTime,
 }: {
-  gpsStatus: string;
+  gpsStatus: "loading" | "granted" | "denied" | "unavailable";
   gpsDistance?: number | null;
+  gpsRadius?: number | null;
   selectedBranch: string;
   setSelectedBranch: (v: string) => void;
   branches: any[];
@@ -166,7 +141,7 @@ function ClockInCard({
         )}
       </div>
 
-      <GpsIndicator status={gpsStatus} distance={gpsDistance} />
+      <ClockLocationStatus status={gpsStatus} distance={gpsDistance} radius={gpsRadius} />
 
       {branches && branches.length > 1 && (
         <Select value={selectedBranch} onValueChange={setSelectedBranch}>
@@ -183,7 +158,7 @@ function ClockInCard({
 
       <Button
         onClick={onClockIn}
-        disabled={isPending || gpsStatus !== "granted"}
+        disabled={isPending || gpsStatus === "loading"}
         className={cn(
           "w-full h-14 text-base font-semibold rounded-xl",
           !hasShiftToday && "bg-muted-foreground hover:bg-muted-foreground/90"
@@ -255,6 +230,7 @@ export function StaffHome() {
   const tenantId = employee?.tenant_id ?? null;
   const [gpsStatus, setGpsStatus] = useState<"loading" | "granted" | "denied" | "unavailable">("loading");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [checkingClockLocation, setCheckingClockLocation] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState("");
   const [elapsedTime, setElapsedTime] = useState("");
   const [isOnBreak, setIsOnBreak] = useState(false);
@@ -293,7 +269,7 @@ export function StaffHome() {
     navigator.geolocation.getCurrentPosition(
       (pos) => { setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGpsStatus("granted"); },
       () => setGpsStatus("denied"),
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }, []);
 
@@ -321,6 +297,22 @@ export function StaffHome() {
       Math.sin(dLon / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }, [coords, branches, selectedBranch]);
+  const gpsRadius = branches?.find((b: any) => b.branch === selectedBranch)?.geofence_radius_meters ?? null;
+
+  const freshClockLocation = async () => {
+    if (!navigator.geolocation) { setCoords(null); setGpsStatus("unavailable"); return null; }
+    setCheckingClockLocation(true);
+    return new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const next = { lat: position.coords.latitude, lng: position.coords.longitude };
+          setCoords(next); setGpsStatus("granted"); setCheckingClockLocation(false); resolve(next);
+        },
+        () => { setCoords(null); setGpsStatus("unavailable"); setCheckingClockLocation(false); resolve(null); },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+      );
+    });
+  };
 
   // Elapsed timer
   useEffect(() => {
@@ -340,8 +332,9 @@ export function StaffHome() {
   const handleClockIn = async () => {
     if (!selectedBranch) { toast.error("Please select a location"); return; }
     try {
-      await clockInOut.mutateAsync({ action: "clock_in", latitude: coords?.lat, longitude: coords?.lng, branch: selectedBranch });
-      toast.success("Clocked in!");
+      const location = await freshClockLocation();
+      const result = await clockInOut.mutateAsync({ action: "clock_in", latitude: location?.lat, longitude: location?.lng, branch: selectedBranch });
+      toast.success(result.requires_review ? "Clocked in. Your manager will review the location." : "Clocked in!");
     } catch (err: any) {
       toast.error(err.requires_override ? "Outside allowed area. Ask your manager." : err.message);
     }
@@ -349,6 +342,7 @@ export function StaffHome() {
 
   const handleClockOut = async () => {
     try {
+      const location = await freshClockLocation();
       // If still on break, end it first and calculate final break total
       let totalBreakMs = accumulatedBreakMs;
       if (isOnBreak && breakStartTime) {
@@ -356,13 +350,13 @@ export function StaffHome() {
       }
       const breakMins = Math.round(totalBreakMs / 60000);
 
-      await clockInOut.mutateAsync({
+      const result = await clockInOut.mutateAsync({
         action: "clock_out",
-        latitude: coords?.lat,
-        longitude: coords?.lng,
+        latitude: location?.lat,
+        longitude: location?.lng,
         break_minutes: breakMins > 0 ? breakMins : undefined,
       });
-      toast.success("Clocked out!");
+      toast.success(result.requires_review ? "Clocked out. Your manager will review the location." : "Clocked out!");
       setIsOnBreak(false);
       setBreakStartTime(null);
       setAccumulatedBreakMs(0);
@@ -495,18 +489,19 @@ export function StaffHome() {
               elapsedTime={elapsedTime}
               onClockOut={handleClockOut}
               onBreak={handleBreak}
-              isPending={clockInOut.isPending}
+              isPending={clockInOut.isPending || checkingClockLocation}
               isOnBreak={isOnBreak}
             />
           ) : (
             <ClockInCard
               gpsStatus={gpsStatus}
               gpsDistance={gpsDistance}
+              gpsRadius={gpsRadius}
               selectedBranch={selectedBranch}
               setSelectedBranch={setSelectedBranch}
               branches={branches || []}
               onClockIn={handleClockIn}
-              isPending={clockInOut.isPending}
+              isPending={clockInOut.isPending || checkingClockLocation}
               hasShiftToday={todayShifts.length > 0}
               nextShiftTime={nextShiftTime}
             />
