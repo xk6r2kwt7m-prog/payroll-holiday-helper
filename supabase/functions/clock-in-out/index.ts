@@ -105,29 +105,38 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Only an existing branch of the employee's workspace may be recorded.
+    // A client-supplied branch or shift ID is never authority for a different site.
+    if (branch && typeof branch !== "string") {
+      return json({ error: "Select a valid branch." }, 400);
+    }
+    const { data: tenantBranches, error: branchesError } = await serviceClient
+      .from("branch_locations")
+      .select("branch, latitude, longitude, geofence_radius_meters")
+      .eq("tenant_id", employee.tenant_id);
+    if (branchesError) return json({ error: "Could not check your branch. Please try again." }, 503);
+
     // Check geofence if coordinates provided
     let withinGeofence = false;
     let branchToUse = branch;
 
-    if (latitude && longitude) {
-      const { data: branches } = await serviceClient
-        .from("branch_locations")
-        .select("*")
-        .eq("tenant_id", employee.tenant_id);
-
-      if (branches) {
-        for (const b of branches) {
+    if (typeof latitude === "number" && typeof longitude === "number") {
+      if (tenantBranches) {
+        for (const b of tenantBranches) {
           const distance = haversineDistance(
             latitude, longitude,
             Number(b.latitude), Number(b.longitude)
           );
-          if (distance <= b.geofence_radius_meters) {
+          if (distance <= b.geofence_radius_meters && (!branchToUse || branchToUse === b.branch)) {
             withinGeofence = true;
             if (!branchToUse) branchToUse = b.branch;
             break;
           }
         }
       }
+    }
+    if (branchToUse && !(tenantBranches ?? []).some((b) => b.branch === branchToUse)) {
+      return json({ error: "This branch is not available in your workspace." }, 400);
     }
 
     if (action === "clock_in") {
@@ -139,14 +148,17 @@ Deno.serve(async (req) => {
       }
 
       // Check if already clocked in
-      const { data: existing } = await serviceClient
+      const { data: existing, error: existingError } = await serviceClient
         .from("time_entries")
         .select("id")
         .eq("employee_id", employee.id)
+        .eq("tenant_id", employee.tenant_id)
         .eq("status", "clocked_in")
-        .maybeSingle();
+        .limit(2);
 
-      if (existing) {
+      if (existingError) return json({ error: "Could not check your clock-in status. Please try again." }, 503);
+
+      if (existing?.length) {
         return new Response(
           JSON.stringify({ error: "Already clocked in. Please clock out first." }),
           { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -154,15 +166,27 @@ Deno.serve(async (req) => {
       }
 
       // Find matching shift for today
-      const today = new Date().toISOString().split("T")[0];
-      const { data: shift } = await serviceClient
-        .from("shifts")
-        .select("id, start_time, end_time")
-        .eq("employee_id", employee.id)
-        .eq("shift_date", today)
-        .eq("branch", branchToUse)
-        .eq("status", "scheduled")
-        .maybeSingle();
+      let shift;
+      if (shift_id) {
+        if (typeof shift_id !== "string") return json({ error: "Select a valid shift." }, 400);
+        const { data, error } = await serviceClient.from("shifts")
+          .select("id, start_time, end_time")
+          .eq("id", shift_id).eq("tenant_id", employee.tenant_id)
+          .eq("employee_id", employee.id).eq("branch", branchToUse)
+          .eq("status", "scheduled").maybeSingle();
+        if (error) return json({ error: "Could not check your shift. Please try again." }, 503);
+        if (!data) return json({ error: "That shift does not belong to you in this workspace." }, 400);
+        shift = data;
+      } else {
+        const today = new Date().toISOString().split("T")[0];
+        const { data, error } = await serviceClient.from("shifts")
+          .select("id, start_time, end_time")
+          .eq("employee_id", employee.id).eq("tenant_id", employee.tenant_id)
+          .eq("shift_date", today).eq("branch", branchToUse)
+          .eq("status", "scheduled").maybeSingle();
+        if (error) return json({ error: "Could not check your shift. Please try again." }, 503);
+        shift = data;
+      }
 
       // Block clock-in if outside geofence
       if (!withinGeofence && latitude && longitude) {
@@ -182,7 +206,7 @@ Deno.serve(async (req) => {
         .insert({
           employee_id: employee.id,
           tenant_id: employee.tenant_id,
-          shift_id: shift_id || shift?.id || null,
+          shift_id: shift?.id || null,
           branch: branchToUse,
           department: employee.department,
           clock_in_time: new Date().toISOString(),
@@ -218,14 +242,18 @@ Deno.serve(async (req) => {
 
     if (action === "clock_out") {
       // Find active clock-in
-      const { data: activeEntry, error: findError } = await serviceClient
+      const { data: activeRows, error: findError } = await serviceClient
         .from("time_entries")
         .select("*")
         .eq("employee_id", employee.id)
+        .eq("tenant_id", employee.tenant_id)
         .eq("status", "clocked_in")
-        .maybeSingle();
+        .limit(2);
 
-      if (findError || !activeEntry) {
+      if (findError) return json({ error: "Could not check your clock-in status. Please try again." }, 503);
+      if ((activeRows?.length ?? 0) > 1) return json({ error: "More than one open clock-in was found. Ask a manager to review your timesheet." }, 409);
+      const activeEntry = activeRows?.[0];
+      if (!activeEntry) {
         return new Response(
           JSON.stringify({ error: "No active clock-in found" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -271,10 +299,13 @@ Deno.serve(async (req) => {
         .from("time_entries")
         .update(updatePayload)
         .eq("id", activeEntry.id)
+        .eq("tenant_id", employee.tenant_id)
+        .eq("status", "clocked_in")
         .select()
         .single();
 
       if (updateError) {
+        if (updateError.code === "PGRST116") return json({ error: "Your clock-in changed. Refresh and try again." }, 409);
         return new Response(
           JSON.stringify({ error: updateError.message }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
