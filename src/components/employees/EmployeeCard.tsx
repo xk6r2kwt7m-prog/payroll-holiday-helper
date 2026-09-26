@@ -88,13 +88,13 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
   return (
     <div
       className={cn(
-        "group rounded-xl bg-card border border-border/50 shadow-card p-3.5 transition-all cursor-pointer hover:shadow-elevated hover:border-border",
+        "group rounded-xl bg-card border border-border/50 shadow-sm p-4 transition-colors cursor-pointer hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         isAlreadyArchived && "opacity-60"
       )}
       onClick={() => onViewDetails(employee)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter") onViewDetails(employee); }}
+      onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onViewDetails(employee); } }}
       style={{ animationDelay: `${index * 30}ms` }}
     >
       {/* Row 1: Avatar + Name + Status + Actions */}
@@ -106,7 +106,7 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
         </Avatar>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold text-foreground truncate leading-tight">
+          <p className="text-sm font-semibold text-foreground break-words leading-snug">
             {employee.forename} {employee.surname}
           </p>
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground leading-tight mt-0.5">
@@ -137,7 +137,8 @@ export function EmployeeCard({ employee, isAdmin, canViewSensitive = false, onAr
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                aria-label={`Actions for ${employee.forename} ${employee.surname}`}
+                className="h-11 w-11 shrink-0 text-muted-foreground"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="h-4 w-4" />
