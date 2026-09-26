@@ -1,4 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { getCanonicalOrigin } from '@/lib/getCanonicalUrl';
@@ -24,57 +26,67 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Role hierarchy imported from @/lib/roles
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            fetchRole(session.user.id);
-          }, 0);
-        } else {
-          setRole(null);
-        }
-      }
-    );
+    let active = true;
+    let generation = 0;
+    let currentUserId: string | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchRole(session.user.id);
-      }
-      setLoading(false);
+    // Session events can overtake bootstrap or an earlier role request.
+    // Only the latest session may publish a role or finish loading.
+    const acceptSession = (nextSession: Session | null) => {
+      if (!active) return;
+      const request = ++generation;
+      const nextUserId = nextSession?.user.id ?? null;
+      clearTimeout(timer);
+      if (currentUserId !== nextUserId) queryClient.clear();
+      currentUserId = nextUserId;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      setRole(null);
+      setLoading(!!nextUserId);
+      if (!nextUserId) return;
+
+      // Keep Supabase requests outside its synchronous auth callback.
+      timer = setTimeout(async () => {
+        try {
+          const { data, error } = await supabase.from('user_roles')
+            .select('role').eq('user_id', nextUserId).maybeSingle();
+          if (!active || request !== generation) return;
+          const candidate = data?.role;
+          setRole(!error && candidate && Object.prototype.hasOwnProperty.call(ROLE_HIERARCHY, candidate)
+            ? candidate as AppRole : null);
+        } catch {
+          if (active && request === generation) setRole(null);
+        } finally {
+          if (active && request === generation) setLoading(false);
+        }
+      }, 0);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => acceptSession(nextSession)
+    );
+    const bootstrapGeneration = generation;
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (active && generation === bootstrapGeneration) acceptSession(error ? null : data.session);
+    }).catch(() => {
+      if (active && generation === bootstrapGeneration) acceptSession(null);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (!error && data) {
-        setRole(data.role as AppRole);
-      } else {
-        setRole(null);
-      }
-    } catch {
-      setRole(null);
-    }
-  };
+    return () => {
+      active = false;
+      ++generation;
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
+  }, [queryClient]);
 
   const isAdmin = role === 'admin';
   const isManagerOrAbove = role !== null && ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.manager;
@@ -107,10 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
-    setRole(null);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      // The SIGNED_OUT event clears identity, role and cached account data.
+    } catch {
+      toast.error('Could not sign out. Please try again.');
+    }
   };
 
   return (
