@@ -338,20 +338,22 @@ export function useTrainingAssignments(filters?: { documentId?: string; employee
 }
 
 export function useMyTrainingAssignments(employeeId?: string) {
+  const { tenantId } = useTenant();
   return useQuery({
-    queryKey: ["my_training_assignments", employeeId],
+    queryKey: ["my_training_assignments", tenantId, employeeId],
     queryFn: async (): Promise<TrainingAssignment[]> => {
       if (!employeeId) return [];
       const { data, error } = await supabase
         .from("training_assignments")
         .select("*, training_library(*)")
+        .eq("tenant_id", tenantId!)
         .eq("employee_id", employeeId)
         .not("status", "eq", "cancelled")
         .order("due_date", { ascending: true });
       if (error) throw error;
       return (data ?? []) as unknown as TrainingAssignment[];
     },
-    enabled: !!employeeId,
+    enabled: !!tenantId && !!employeeId,
   });
 }
 

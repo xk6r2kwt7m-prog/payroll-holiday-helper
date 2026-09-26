@@ -36,14 +36,20 @@ export function InductionJourney({ employeeId, tenantId, department }: Induction
   const role: InductionPackRole = suggestPackForJobTitle(department);
   const pack = getInductionPack(role);
 
-  const { data: approvals = [], isLoading: loadingApprovals } = useLessonApprovals();
-  const { data: progress = [], isLoading: loadingProgress } = useLessonProgress(employeeId);
+  const approvalsQuery = useLessonApprovals();
+  const { data: approvals = [], isLoading: loadingApprovals } = approvalsQuery;
+  const progressQuery = useLessonProgress(employeeId);
+  const { data: progress = [], isLoading: loadingProgress } = progressQuery;
   const complete = useCompleteLesson();
 
   const [openLesson, setOpenLesson] = useState<InductionLessonRef | null>(null);
 
   if (loadingApprovals || loadingProgress) {
     return <div className="h-24 rounded-xl bg-muted/40 animate-pulse" />;
+  }
+
+  if (approvalsQuery.isError || progressQuery.isError) {
+    return <div role="alert" className="rounded-xl border p-4 space-y-3"><p>We could not load your induction progress. Please try again.</p><Button variant="outline" onClick={() => { void approvalsQuery.refetch(); void progressQuery.refetch(); }}>Try again</Button></div>;
   }
 
   const released = releasedLessons(role, approvals);
@@ -138,7 +144,7 @@ export function InductionJourney({ employeeId, tenantId, department }: Induction
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{lesson.title}</p>
+                <p className="text-sm font-medium break-words">{lesson.title}</p>
                 <p className="text-xs text-muted-foreground line-clamp-2">
                   {approved ? lesson.summary : "Being prepared by your manager"}
                 </p>

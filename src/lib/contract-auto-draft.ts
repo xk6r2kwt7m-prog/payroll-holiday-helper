@@ -49,7 +49,7 @@ export function evaluateContractAutoDraft(
   }
 
   const rtw = (input.rtwStatus ?? "").trim();
-  if (rtw && rtw !== "verified" && rtw !== "not_submitted") {
+  if (rtw !== "verified") {
     outstanding.push(
       rtw === "rejected" || rtw === "expired"
         ? "Right to work is not acceptable — new evidence is needed"

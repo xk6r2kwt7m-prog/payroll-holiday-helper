@@ -1,3 +1,4 @@
+import { getStaffTrainingStatus as getStaffStatus, staffTrainingJourney, type StaffTrainingStatus as StaffStatus } from "@/lib/staff-training-journey";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -32,19 +33,6 @@ interface StaffTrainingViewProps {
 
 // ─── Status helpers ───
 
-type StaffStatus = "overdue" | "due_now" | "in_progress" | "awaiting_signoff" | "not_started" | "completed" | "failed";
-
-function getStaffStatus(a: TrainingAssignment): StaffStatus {
-  const isOverdue = a.due_date && differenceInDays(new Date(), parseISO(a.due_date)) > 0;
-  if (["completed", "acknowledged"].includes(a.status)) return "completed";
-  if (a.quiz_passed === false && a.quiz_score != null) return "failed";
-  if (a.signoff_required && a.status !== "completed" && !a.signed_off_at && (a.viewed_at || a.quiz_passed)) return "awaiting_signoff";
-  if (isOverdue && !["completed", "acknowledged", "cancelled"].includes(a.status)) return "overdue";
-  if (a.status === "viewed" || (a.quiz_score != null && !a.quiz_passed)) return "in_progress";
-  if (a.due_date && differenceInDays(parseISO(a.due_date), new Date()) <= 7 && differenceInDays(parseISO(a.due_date), new Date()) >= 0) return "due_now";
-  return "not_started";
-}
-
 function getStatusBadge(status: StaffStatus) {
   const map: Record<StaffStatus, { label: string; className: string }> = {
     overdue: { label: "Overdue", className: "bg-destructive/10 text-destructive" },
@@ -60,18 +48,21 @@ function getStatusBadge(status: StaffStatus) {
 }
 
 export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
-  const { data: assignments = [], isLoading } = useMyTrainingAssignments(employeeId);
+  const { data: assignments = [], isLoading, isError, refetch } = useMyTrainingAssignments(employeeId);
   const updateAssignment = useUpdateAssignment();
-  const [selectedAssignment, setSelectedAssignment] = useState<TrainingAssignment | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const selectedAssignment = assignments.find(a => a.id === selectedId && a.status !== "cancelled" && a.training_library?.status === "published") ?? null;
+  const setSelectedAssignment = (assignment: TrainingAssignment | null) => setSelectedId(assignment?.id ?? null);
   const [showQuiz, setShowQuiz] = useState(false);
 
   if (isLoading) return <div className="text-center py-8 text-sm text-muted-foreground">Loading...</div>;
 
+  if (isError) return <div role="alert" className="rounded-xl border p-4 space-y-3"><p>We could not load your training. Your progress has not been changed.</p><Button variant="outline" onClick={() => void refetch()}>Try again</Button></div>;
+
   // Only show published training
-  const visibleAssignments = assignments.filter(a => {
-    const lib = a.training_library;
-    return lib && lib.status === "published";
-  });
+  const journey = staffTrainingJourney(assignments);
+  const visibleAssignments = journey.visible;
 
   // Group assignments by status
   const grouped = {
@@ -84,11 +75,9 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
     completed: visibleAssignments.filter(a => getStaffStatus(a) === "completed"),
   };
 
-  const pending = visibleAssignments.filter(a => !["completed", "acknowledged"].includes(a.status));
-  const completed = visibleAssignments.filter(a => ["completed", "acknowledged"].includes(a.status));
-  const completionRate = visibleAssignments.length > 0
-    ? Math.round((completed.length / visibleAssignments.length) * 100)
-    : 100;
+  const pending = journey.actionable;
+  const completed = journey.completed;
+  const completionRate = journey.percent;
 
   const handleMarkViewed = (a: TrainingAssignment) => {
     if (a.status !== "assigned") return;
@@ -134,15 +123,30 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
             <Progress value={completionRate} className="h-1.5 mb-2" />
             <div className="flex gap-4 text-[10px] text-muted-foreground uppercase tracking-wider">
               <span>{completed.length} done</span>
-              <span>{pending.length} to do</span>
+              <span>{pending.length} for you</span>
+              <span>{journey.waiting.length} with your manager</span>
               {grouped.overdue.length > 0 && <span className="text-destructive font-medium">{grouped.overdue.length} overdue</span>}
             </div>
           </div>
         </motion.div>
       )}
 
+      {journey.next && (
+        <section className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3" aria-label="Your next task">
+          <h3 className="text-sm font-semibold">Your next task</h3>
+          <p className="text-sm text-muted-foreground">Start with this one. Your saved progress stays available when you return.</p>
+          <AssignmentCard assignment={journey.next} staffStatus={getStaffStatus(journey.next)}
+            onOpen={() => { handleMarkViewed(journey.next!); setSelectedAssignment(journey.next); setShowQuiz(false); }} />
+        </section>
+      )}
+      {visibleAssignments.length > 0 && <Button variant="outline" className="w-full min-h-11" aria-expanded={showAll} onClick={() => setShowAll(value => !value)}>
+        {showAll ? "Show next task only" : "View my full plan and completed work"}
+      </Button>}
+      {!journey.next && journey.waiting.length > 0 && <p className="rounded-xl border p-4 text-sm">Your next step is with your manager. They need to check and sign off {journey.waiting.length} item(s). You do not need to repeat completed steps.</p>}
+      {!journey.next && journey.waiting.length === 0 && completed.length > 0 && <p className="rounded-xl border p-4 text-sm">All your currently assigned work is complete. Any new assignments will appear here.</p>}
+
       {/* Grouped Sections */}
-      {activeGroups.map((group, gi) => (
+      {showAll && activeGroups.map((group, gi) => (
         <motion.div key={group.key} {...anim} transition={{ delay: 0.04 * gi }}>
           <div className="flex items-center gap-2 mb-2">
             {group.icon}
@@ -164,7 +168,7 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
       ))}
 
       {/* Completed */}
-      {grouped.completed.length > 0 && (
+      {showAll && grouped.completed.length > 0 && (
         <motion.div {...anim} transition={{ delay: 0.1 }}>
           <h3 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
             <CheckCircle2 className="h-3.5 w-3.5 text-success inline mr-1.5" />
@@ -204,6 +208,7 @@ export function StaffTrainingView({ employeeId }: StaffTrainingViewProps) {
       {/* Detail Dialog */}
       {selectedAssignment && (
         <AssignmentDetailDialog
+          key={selectedAssignment.id}
           assignment={selectedAssignment}
           employeeId={employeeId}
           open={!!selectedAssignment}
@@ -248,13 +253,13 @@ function AssignmentCard({ assignment, staffStatus, onOpen }: {
          <FileText className="h-5 w-5 text-muted-foreground" />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">{doc?.title || "Document"}</p>
+        <p className="text-sm font-semibold text-foreground break-words">{doc?.title || "Document"}</p>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           {getStatusBadge(staffStatus)}
           <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>
           {assignment.is_mandatory && <Badge className="text-[10px] bg-destructive/10 text-destructive">Required</Badge>}
         </div>
-        <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-muted-foreground">
           {compLabel && <span>{compLabel}</span>}
           {doc?.estimated_minutes && <span>{doc.estimated_minutes} min</span>}
           {assignment.due_date && (

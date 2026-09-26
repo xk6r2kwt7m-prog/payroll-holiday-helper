@@ -18,40 +18,57 @@ import { isBankField, useStaffDetailChanges, useRightToWorkReview } from "@/hook
  */
 export function useContractAutoDraft(employeeId?: string): ContractAutoDraftResult & {
   loading: boolean;
+  error: boolean;
+  retry: () => void;
   /** Where to go to prepare the draft, pre-filled with this person's details. */
   prepareHref: string;
 } {
   const { tenantId } = useTenant();
-  const { data: changes = [], isLoading: changesLoading } = useStaffDetailChanges(employeeId);
-  const { data: rtw, isLoading: rtwLoading } = useRightToWorkReview(employeeId);
+  const changesQuery = useStaffDetailChanges(employeeId);
+  const changes = changesQuery.data ?? [];
+  const rtwQuery = useRightToWorkReview(employeeId);
+  const rtw = rtwQuery.data;
 
-  const { data: record, isLoading: recordLoading } = useQuery({
+  const recordQuery = useQuery({
     queryKey: ["contract_auto_draft_record", tenantId, employeeId],
     enabled: !!tenantId && !!employeeId,
     queryFn: async () => {
-      const [{ data: emp, error: empErr }, { data: onb }, { data: docs }] = await Promise.all([
+      const [employeeResult, onboardingResult, documentsResult, bankResult] = await Promise.all([
         supabase
           .from("employees")
           .select("forename, surname, date_of_birth, start_date, hourly_rate, department")
+          .eq("tenant_id", tenantId!)
           .eq("id", employeeId!)
           .maybeSingle(),
         supabase
           .from("employee_onboarding_data")
           .select("personal_info")
+          .eq("tenant_id", tenantId!)
           .eq("employee_id", employeeId!)
           .maybeSingle(),
         supabase
           .from("employee_documents")
           .select("id")
+          .eq("tenant_id", tenantId!)
           .eq("employee_id", employeeId!)
           .eq("document_type", "contract")
           .limit(1),
+        supabase.from("bank_detail_verifications").select("change_id")
+          .eq("tenant_id", tenantId!).eq("employee_id", employeeId!)
+          .eq("confirmed_directly", true),
       ]);
-      if (empErr) throw empErr;
-      return { emp, onb, hasContract: (docs ?? []).length > 0 };
+      for (const result of [employeeResult, onboardingResult, documentsResult, bankResult]) {
+        if (result.error) throw result.error;
+      }
+      if (!employeeResult.data) throw new Error("Employee record could not be found");
+      return { emp: employeeResult.data, onb: onboardingResult.data,
+        hasContract: (documentsResult.data ?? []).length > 0,
+        verifiedBankChanges: (bankResult.data ?? []).map(row => row.change_id),
+      };
     },
   });
 
+  const record = recordQuery.data;
   const missingContractFields = useMemo(() => {
     const emp = record?.emp as Record<string, unknown> | null | undefined;
     if (!emp) return [] as string[];
@@ -65,13 +82,14 @@ export function useContractAutoDraft(employeeId?: string): ContractAutoDraftResu
     if (!String(emp.forename ?? "").trim() || !String(emp.surname ?? "").trim()) out.push("Legal name");
     if (!String(address).trim()) out.push("Home address");
     if (!String(emp.start_date ?? "").trim()) out.push("Start date");
-    if (!Number(emp.hourly_rate ?? 0)) out.push("Hourly rate");
+    if (!Number.isFinite(Number(emp.hourly_rate)) || Number(emp.hourly_rate) <= 0) out.push("Hourly rate");
     if (!String(emp.department ?? "").trim()) out.push("Role or department");
     return out;
   }, [record]);
 
   const bankAwaitingDirectConfirmation = changes.some(
-    (c) => isBankField(c.field_name) && c.state === "pending" && c.needs_review,
+    (c) => isBankField(c.field_name) && c.state !== "rejected" && c.needs_review
+      && !record?.verifiedBankChanges.includes(c.id),
   );
 
   const result = evaluateContractAutoDraft({
@@ -87,9 +105,18 @@ export function useContractAutoDraft(employeeId?: string): ContractAutoDraftResu
     hasContract: record?.hasContract ?? false,
   });
 
+  const queries = [changesQuery, rtwQuery, recordQuery];
+  const loading = queries.some(query => query.isLoading || query.isFetching);
+  const unavailable = !tenantId || !employeeId || queries.some(query => query.isError) || !record;
   return {
     ...result,
-    loading: changesLoading || rtwLoading || recordLoading,
+    ready: !loading && !unavailable && result.ready,
+    outstanding: loading ? ["Checking staff details and approvals…"]
+      : unavailable ? ["Staff checks could not be loaded. Retry before preparing the contract."]
+      : result.outstanding,
+    loading,
+    error: unavailable && !loading,
+    retry: () => { queries.forEach(query => { void query.refetch(); }); },
     prepareHref: employeeId ? `/contracts?employee=${employeeId}` : "/contracts",
   };
 }
