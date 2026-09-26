@@ -14,6 +14,7 @@ function server(fixture: {
   const rows: Record<string, Row[]> = {
     employees: [employee], branch_locations: [branch], shifts: [], time_entries: [],
     tenants: [{ id: 'tenant-a', timezone: 'Europe/London' }],
+    tenant_members: [{ tenant_id: 'tenant-a', user_id: 'user-a', is_active: true }],
     ...fixture.rows,
   };
   let handler: (req: Request) => Promise<Response>;
@@ -161,5 +162,30 @@ describe('A02 clock server with synthetic rows', () => {
     const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby' });
     expect(r.status).toBe(200);
     expect(s.rows.time_entries[0].shift_id).toBeNull();
+  });
+  it('refuses a revoked workspace member before writing an entry', async () => {
+    const s = server({ rows: { tenant_members: [{ tenant_id: 'tenant-a', user_id: 'user-a', is_active: false }] } });
+    const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby' });
+    expect(r.status).toBe(403);
+    expect(s.rows.time_entries).toHaveLength(0);
+  });
+  it('refuses clock-out after membership revocation without closing the entry', async () => {
+    const entry = { id: 'open', tenant_id: 'tenant-a', employee_id: 'employee-a', status: 'clocked_in', clock_in_time: '2026-09-20T08:00:00Z' };
+    const s = server({ rows: { tenant_members: [{ tenant_id: 'tenant-a', user_id: 'user-a', is_active: false }], time_entries: [entry] } });
+    const r = await s.request({ action: 'clock_out', tenant_id: 'tenant-a' });
+    expect(r.status).toBe(403);
+    expect(s.rows.time_entries[0]).toEqual(entry);
+  });
+  it('preserves linked legacy staff with no membership row until reconciliation', async () => {
+    const s = server({ rows: { tenant_members: [] } });
+    const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby' });
+    expect(r.status).toBe(200);
+    expect(s.rows.time_entries).toHaveLength(1);
+  });
+  it('fails closed when workspace membership cannot be checked', async () => {
+    const s = server({ fail: 'tenant_members' });
+    const r = await s.request({ action: 'clock_in', tenant_id: 'tenant-a', branch: 'Carnaby' });
+    expect(r.status).toBe(503);
+    expect(s.rows.time_entries).toHaveLength(0);
   });
 });
