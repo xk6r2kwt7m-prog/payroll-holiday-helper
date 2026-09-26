@@ -1,3 +1,4 @@
+import { PayrollJourney } from "@/components/payroll/PayrollJourney";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { usePayrollEntryLocations } from "@/hooks/usePayrollLocations";
 import { buildLocationSplitRows } from "@/lib/payroll-report-transform";
@@ -922,35 +923,57 @@ const Payroll = () => {
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-bold text-foreground tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 shrink-0">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </div>
               {t("payroll.title")}
             </h1>
           </div>
-          <div className="flex gap-1.5 shrink-0">
-            {selectedPeriod && entries.length > 0 && (
-              <>
-                <SendPayrollEmailDialog
-                  period={selectedPeriod as any}
-                  entries={entries as any}
-                  holidayPayments={holidayPayments as any}
-                  allEmployees={allEmployeesForReports as any}
-                  priorPeriodEmployeeIds={priorPeriodEmployeeIds}
-                  priorEntryRates={priorEntryRates}
-                  disabled={!isAdmin || !!approvalDataBlock}
-                />
-                <Button variant="outline" size="sm" disabled={!!approvalDataBlock} onClick={() => setReportBuilderOpen(true)} className="h-8 px-2.5 sm:px-3 text-xs">
-                  <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
-                  <span className="hidden sm:inline">PDF</span>
-                </Button>
-              </>
-            )}
-          </div>
+
         </div>
 
         <PayrollNavStrip />
+        {/* Period Selector */}
+        {periods.length > 0 && (
+          <div className="-mx-4 sm:mx-0 px-4 sm:px-0">
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
+              {periods.slice(0, 6).map((period) => (
+                <button
+                  key={period.id}
+                  aria-pressed={selectedPeriod?.id === period.id}
+                  onClick={() => setSelectedPeriodId(period.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors min-h-11 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    selectedPeriod?.id === period.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-card-foreground border-border/60 hover:bg-muted/50"
+                  )}
+                >
+                  <span className="truncate max-w-[120px]">{period.period_name}</span>
+                  <span className={cn(
+                    "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                    statusStyles[period.status]
+                  )}>
+                    {statusLabels[period.status]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedPeriod && (
+          <PayrollJourney
+            status={selectedPeriod.status}
+            entryCount={entries.length}
+            dataBlock={approvalDataBlock}
+            blockerCount={pageSeverity.blockerCount}
+            canPrepare={isAdmin && canViewPayData}
+            onPrepare={() => setMobileActionsOpen(true)}
+          />
+        )}
+
         {approvalDataBlock && (
           <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
             <p>{approvalDataBlock}</p>
@@ -981,6 +1004,8 @@ const Payroll = () => {
           />
         )}
 
+        <section id="payroll-approval" tabIndex={-1} aria-label="Approval checks" className="scroll-mt-6">
+        {selectedPeriod && entries.length === 0 && <p className="text-sm text-muted-foreground">Add payroll entries before reviewing approval checks.</p>}
         {/* One-stop "Close this payroll period" panel — gathers blockers,
             acknowledgements and the submit/approve action in a single place.
             Uses the same handlers and gates as the detailed sections below. */}
@@ -1010,6 +1035,8 @@ const Payroll = () => {
           />
         )}
 
+        </section>
+
         {selectedPeriod && (
           <PayrollOverrideDialog
             open={overrideOpen}
@@ -1029,7 +1056,7 @@ const Payroll = () => {
                 Phase A: collapsed behind an "Actions" toggle on mobile,
                 fully visible from sm: upward. All admin actions remain reachable. */}
             {canViewPayData && isAdmin && (
-              <div data-testid="payroll-admin-actions">
+              <div id="payroll-prepare" tabIndex={-1} className="scroll-mt-6" data-testid="payroll-admin-actions">
                 <div className="sm:hidden">
                   <Button
                     variant="outline"
@@ -1088,34 +1115,6 @@ const Payroll = () => {
             {/* Source / original timesheet download */}
             {selectedPeriod && <PayrollSourceInfo periodId={selectedPeriod.id} />}
 
-        {/* Period Selector */}
-        {periods.length > 0 && (
-          <div className="-mx-4 sm:mx-0 px-4 sm:px-0">
-            <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:flex-wrap sm:overflow-visible">
-              {periods.slice(0, 6).map((period) => (
-                <button
-                  key={period.id}
-                  onClick={() => setSelectedPeriodId(period.id)}
-                  className={cn(
-                    "flex items-center gap-1.5 shrink-0 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors min-h-[36px]",
-                    selectedPeriod?.id === period.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card text-card-foreground border-border/60 hover:bg-muted/50"
-                  )}
-                >
-                  <span className="truncate max-w-[120px]">{period.period_name}</span>
-                  <span className={cn(
-                    "inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-none",
-                    statusStyles[period.status]
-                  )}>
-                    {statusLabels[period.status]}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Stats */}
         <SensitiveSection
           sectionKey="payroll-stats-overview"
@@ -1153,6 +1152,11 @@ const Payroll = () => {
 
         {/* Payroll Reminders */}
         {selectedPeriod && <PayrollReminders periodId={selectedPeriod.id} />}
+
+        <div id="payroll-review" tabIndex={-1} className="scroll-mt-6">
+          <h2 className="text-base font-semibold">Review this period</h2>
+          <p className="text-sm text-muted-foreground">Check staff details, resolve the issues below and review each employee’s pay.</p>
+        </div>
 
         {/* Missing Employee Info for Payroll */}
         {selectedPeriod && entries.length > 0 && (
@@ -1358,6 +1362,33 @@ const Payroll = () => {
             externalApprovalBlock={phase5ApprovalBlock}
           />
         )}
+
+        <section id="payroll-reports" tabIndex={-1} className="scroll-mt-6 rounded-xl border border-border bg-card p-4 space-y-3" aria-label="Reports and sending">
+          <div>
+            <h2 className="text-base font-semibold">Reports and sending</h2>
+            <p className="text-sm text-muted-foreground">Check the approval status, report contents and recipient before sending.</p>
+            {entries.length === 0 && <p className="text-sm text-muted-foreground mt-2">Reports become available once this period contains payroll entries.</p>}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedPeriod && entries.length > 0 && (
+              <>
+                <SendPayrollEmailDialog
+                  period={selectedPeriod as any}
+                  entries={entries as any}
+                  holidayPayments={holidayPayments as any}
+                  allEmployees={allEmployeesForReports as any}
+                  priorPeriodEmployeeIds={priorPeriodEmployeeIds}
+                  priorEntryRates={priorEntryRates}
+                  disabled={!isAdmin || !!approvalDataBlock}
+                />
+                <Button variant="outline" size="sm" disabled={!!approvalDataBlock} onClick={() => setReportBuilderOpen(true)} aria-label="Build payroll PDF" className="min-h-11 px-3 text-sm">
+                  <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />
+                  <span>PDF</span>
+                </Button>
+              </>
+            )}
+          </div>
+        </section>
 
         {/* Leaver settlement alerts — read-only nudge to Settle Leaver */}
         {selectedPeriod && entries.length > 0 && (
