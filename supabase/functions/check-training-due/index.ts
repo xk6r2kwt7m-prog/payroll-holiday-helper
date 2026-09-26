@@ -1,3 +1,4 @@
+import { londonDateKey, trainingReminderDecision } from "../_shared/training-reminder-policy.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { guardRequest } from "../_shared/auth-guard.ts";
 
@@ -16,6 +17,7 @@ Deno.serve(async (req) => {
   // company administrator may start one — never an anonymous caller.
   const guard = await guardRequest(req, { adminOnly: true, cors: corsHeaders });
   if (!guard.ok) return guard.response;
+  if (!guard.internal && !guard.tenantId) return new Response(JSON.stringify({ error: "Company must be specified" }), { status: 403, headers: corsHeaders });
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -23,31 +25,16 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr = londonDateKey(today);
+    const in7Str = new Date(Date.parse(todayStr) + 7 * 86400000).toISOString().slice(0, 10);
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split("T")[0];
-
-    const in7Days = new Date(today);
-    in7Days.setDate(in7Days.getDate() + 7);
-    const in7Str = in7Days.toISOString().split("T")[0];
-
-    // Past 7 days for overdue window
-    const past7 = new Date(today);
-    past7.setDate(past7.getDate() - 7);
-    const past7Str = past7.toISOString().split("T")[0];
-
-    // Fetch assignments that are assigned/in-progress with a due_date in range
-    const { data: assignments, error } = await supabase
-      .from("training_assignments")
-      .select(
-        "id, due_date, employee_id, document_id, tenant_id, status, training_library(title), employees(user_id, forename, surname)"
-      )
-      .in("status", ["assigned", "in_progress"])
-      .not("due_date", "is", null)
-      .gte("due_date", past7Str)
-      .lte("due_date", in7Str);
+    // Human administrators can only run their own workspace. Only scheduler runs span tenants.
+    let assignmentQuery = supabase.from("training_assignments")
+      .select("id, due_date, employee_id, document_id, tenant_id, status, viewed_at, acknowledged_at, quiz_passed, signoff_required, signed_off_at, training_library(title, status, requires_quiz, requires_acknowledgement), employees(user_id, forename, surname, status, archived_at, end_date, is_test_record)")
+      .in("status", ["assigned", "viewed", "in_progress", "acknowledged"])
+      .not("due_date", "is", null).lte("due_date", in7Str);
+    if (!guard.internal) assignmentQuery = assignmentQuery.eq("tenant_id", guard.tenantId!);
+    const { data: assignments, error } = await assignmentQuery;
 
     if (error) throw error;
     if (!assignments || assignments.length === 0) {
@@ -58,29 +45,31 @@ Deno.serve(async (req) => {
     }
 
     // Deduplicate: check which notifications were already sent today
-    const { data: existingNotifs } = await supabase
+    const { data: existingNotifs, error: dedupeError } = await supabase
       .from("notifications")
-      .select("metadata")
-      .gte("created_at", todayStr + "T00:00:00Z")
+      .select("metadata, user_id")
+      .gte("created_at", new Date(today.getTime() - 26 * 3600000).toISOString())
       .in("event_type", ["training_due_soon", "training_overdue"]);
 
+    if (dedupeError) throw dedupeError;
     const alreadyNotified = new Set<string>();
     if (existingNotifs) {
       for (const n of existingNotifs) {
         const meta = n.metadata as any;
-        if (meta?.assignment_id) alreadyNotified.add(meta.assignment_id);
+        if (meta?.assignment_id && meta?.reminder_date === todayStr) alreadyNotified.add(`${meta.assignment_id}:${n.user_id}`);
       }
     }
 
     // Get tenant admins/managers
     const tenantIds = [...new Set(assignments.map((a: any) => a.tenant_id))];
-    const { data: tenantMembers } = await supabase
+    const { data: tenantMembers, error: membersError } = await supabase
       .from("tenant_members")
       .select("user_id, tenant_id")
       .in("tenant_id", tenantIds)
       .in("role", ["company_admin", "manager"])
       .eq("is_active", true);
 
+    if (membersError) throw membersError;
     const adminsByTenant = new Map<string, string[]>();
     if (tenantMembers) {
       for (const m of tenantMembers) {
@@ -92,10 +81,11 @@ Deno.serve(async (req) => {
     const notifications: any[] = [];
 
     for (const a of assignments as any[]) {
-      if (alreadyNotified.has(a.id)) continue;
+      const decision = trainingReminderDecision(a, todayStr);
+      if (!decision) continue;
 
       const dueDate = new Date(a.due_date + "T00:00:00");
-      const daysUntil = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+      const { daysUntil, managerOnly } = decision;
       const title = a.training_library?.title || "Training";
       const emp = a.employees;
       const empName = emp ? `${emp.forename} ${emp.surname}` : "Unknown";
@@ -104,6 +94,7 @@ Deno.serve(async (req) => {
       });
 
       const metadata = {
+        reminder_date: todayStr,
         assignment_id: a.id,
         document_id: a.document_id,
         due_date: a.due_date,
@@ -139,8 +130,12 @@ Deno.serve(async (req) => {
         adminBody = `${empName}'s "${title}" is due on ${dateLabel} (${daysUntil} days).`;
       }
 
-      // Notify employee
-      if (emp?.user_id) {
+      if (managerOnly) {
+        adminTitle = `Training sign-off needed: ${empName}`;
+        adminBody = `${empName} has completed the staff steps for "${title}". Please review the practical evidence and sign off when satisfied.`;
+      }
+      // Staff are not chased for a step that only their manager can complete.
+      if (!managerOnly && emp?.user_id && !alreadyNotified.has(`${a.id}:${emp.user_id}`)) {
         notifications.push({
           tenant_id: a.tenant_id,
           user_id: emp.user_id,
@@ -155,6 +150,7 @@ Deno.serve(async (req) => {
       // Notify admins/managers
       const admins = adminsByTenant.get(a.tenant_id) || [];
       for (const adminId of admins) {
+        if (alreadyNotified.has(`${a.id}:${adminId}`) || (!managerOnly && adminId === emp?.user_id)) continue;
         notifications.push({
           tenant_id: a.tenant_id,
           user_id: adminId,
@@ -169,11 +165,13 @@ Deno.serve(async (req) => {
 
     // Filter notifications against user preferences
     const userIds = [...new Set(notifications.map((n: any) => n.user_id))];
-    const { data: prefRows } = await supabase
+    if (notifications.length === 0) return new Response(JSON.stringify({ notifications_sent: 0 }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const { data: prefRows, error: preferencesError } = await supabase
       .from("notification_preferences")
       .select("user_id, training")
       .in("user_id", userIds);
 
+    if (preferencesError) throw preferencesError;
     const disabledUsers = new Set<string>();
     if (prefRows) {
       for (const p of prefRows) {
@@ -190,7 +188,7 @@ Deno.serve(async (req) => {
           .from("notifications")
           .insert(batch);
         if (insertError) {
-          console.error("Insert error:", insertError);
+          throw insertError;
         } else {
           insertedCount += batch.length;
         }

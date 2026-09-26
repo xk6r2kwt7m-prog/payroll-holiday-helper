@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
   // signed-in company administrator may start one — never an anonymous caller.
   const guard = await guardRequest(req, { adminOnly: true, cors: corsHeaders });
   if (!guard.ok) return guard.response;
+  if (!guard.internal && !guard.tenantId) return new Response(JSON.stringify({ error: "Company must be specified" }), { status: 403, headers: corsHeaders });
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -53,19 +54,21 @@ Deno.serve(async (req) => {
   try {
     // Preferences first: automatic emails are opt-in per tenant. Nothing is
     // sent unless the tenant has explicitly switched the feature on.
-    const { data: prefRows } = await supabase
-      .from("tenant_preferences")
-      .select("tenant_id, preferences")
-      .eq("category", "training_docs");
+    let preferencesQuery = supabase.from("tenant_preferences")
+      .select("tenant_id, preferences").eq("category", "training_docs");
+    if (!guard.internal) preferencesQuery = preferencesQuery.eq("tenant_id", guard.tenantId!);
+    const { data: prefRows, error: preferencesError } = await preferencesQuery;
+    if (preferencesError) throw preferencesError;
     const prefsByTenant = new Map<string, any>();
     for (const row of prefRows ?? []) prefsByTenant.set(row.tenant_id, row.preferences ?? {});
 
     // ── 1. Chase unfinished inductions (only when the tenant opted in) ──────
-    const { data: packs } = await supabase
+    const { data: packs, error: packsError } = await supabase
       .from("induction_packs")
       .select("id, tenant_id, employee_id, token, sent_at, completed_at, reminder_sent_at, reminder_count, token_expires_at, is_test_send, recipient_email, branch, staff_role, employees(forename, surname, email, status, archived_at)")
       .is("completed_at", null);
 
+    if (packsError) throw packsError;
     for (const pack of packs ?? []) {
       if (prefsByTenant.get(pack.tenant_id)?.induction_reminders_enabled !== true) continue;
       if (!reminderDue(pack, now)) continue;
@@ -80,7 +83,7 @@ Deno.serve(async (req) => {
         .eq("pack_id", pack.id);
 
       const days = daysBetween(pack.sent_at, now);
-      await supabase.functions.invoke("send-notification", {
+      const delivery = await supabase.functions.invoke("send-notification", {
         body: {
           to: email,
           subject: "Reminder: please finish your induction",
@@ -96,13 +99,18 @@ Deno.serve(async (req) => {
         },
       });
 
-      await supabase
+      if (delivery.error || delivery.data?.error || delivery.data?.success === false) {
+        notes.push(`Induction reminder delivery failed for pack ${pack.id}; not recorded as sent.`);
+        continue;
+      }
+      const { error: reminderUpdateError } = await supabase
         .from("induction_packs")
         .update({
           reminder_sent_at: now.toISOString(),
           reminder_count: (pack.reminder_count ?? 0) + 1,
         })
         .eq("id", pack.id);
+      if (reminderUpdateError) throw reminderUpdateError;
       reminders++;
     }
 
