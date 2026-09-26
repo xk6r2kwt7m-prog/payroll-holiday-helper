@@ -11,7 +11,7 @@ import { TALENT_POOL_ROUTE } from "@/lib/routes";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenant } from "@/hooks/useTenant";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import type { ModuleKey } from "@/components/ProtectedRoute";
 import { getRoleLevel } from "@/lib/roles";
 import { type PermissionKey, NAV_PERMISSION_MAP } from "@/hooks/usePermissionGate";
@@ -202,7 +202,7 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav data-testid="mobile-bottom-nav" className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border pb-safe">
+    <nav aria-label="Mobile navigation" data-testid="mobile-bottom-nav" className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border pb-safe">
       <div className="flex items-center justify-around px-1 h-16 min-w-0">
         {visibleMainNav.map((item) => {
           const isActive = isNavActive(item);
@@ -210,13 +210,14 @@ export function MobileBottomNav() {
             <Link
               key={item.path}
               to={item.path}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors min-h-[48px]",
+                "flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[48px]",
                 isActive ? "text-primary" : "text-muted-foreground active:text-foreground"
               )}
             >
               <item.icon className={cn("h-5 w-5", isActive && "stroke-[2.5px]")} />
-              <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-none">{item.label}</span>
+              <span className="max-w-full truncate px-0.5 text-xs font-medium leading-tight">{item.label}</span>
               {isActive && <div className="w-1 h-1 rounded-full bg-primary mt-0.5" />}
             </Link>
           );
@@ -228,18 +229,20 @@ export function MobileBottomNav() {
             <SheetTrigger asChild>
               <button
                 className={cn(
-                  "flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors min-h-[48px]",
+                  "flex min-w-0 flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[48px]",
                   isMoreActive ? "text-primary" : "text-muted-foreground active:text-foreground"
                 )}
               >
                 <MoreHorizontal className={cn("h-5 w-5", isMoreActive && "stroke-[2.5px]")} />
-                <span className="text-[10px] font-medium leading-none">More</span>
+                <span className="text-xs font-medium leading-tight">More</span>
                 {isMoreActive && <div className="w-1 h-1 rounded-full bg-primary mt-0.5" />}
               </button>
             </SheetTrigger>
             <SheetContent side="bottom" className="rounded-t-2xl pb-safe max-h-[80vh] overflow-y-auto">
               <div className="pt-2 pb-4">
                 <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-4" />
+                <SheetTitle className="px-4 text-xl">Your workspace</SheetTitle>
+                <SheetDescription className="px-4 mt-1 mb-4">Find tools, manage your workspace and account.</SheetDescription>
 
                 {visibleMoreGroups.map((group, gi) => (
                   <div key={group.title} className={cn(gi > 0 && "mt-3")}>
@@ -254,7 +257,7 @@ export function MobileBottomNav() {
                           to={item.path}
                           onClick={() => setMoreOpen(false)}
                           className={cn(
-                            "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors min-h-[48px]",
+                            "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[48px]",
                             isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted active:bg-muted"
                           )}
                         >
@@ -275,7 +278,7 @@ export function MobileBottomNav() {
                       to="/platform-admin"
                       onClick={() => setMoreOpen(false)}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors min-h-[48px]",
+                        "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[48px]",
                         location.pathname === "/platform-admin" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted active:bg-muted"
                       )}
                     >
