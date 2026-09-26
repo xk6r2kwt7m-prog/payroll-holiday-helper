@@ -1,3 +1,5 @@
+import { useEmployees } from "@/hooks/useEmployees";
+import { filterHolidayTeam, type HolidayTeamScope } from "@/lib/holiday-team-scope";
 import { Badge } from "@/components/ui/badge";
 import { summariseHolidayYear } from "@/lib/holiday-year-summary";
 import { addComputedCarryOver } from "@/lib/holiday-carry-over";
@@ -86,6 +88,12 @@ const Holidays = () => {
   const { data: holidayPrefs } = useTenantPreferences("holiday_display", HOLIDAY_DISPLAY_DEFAULTS);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [viewModeInit, setViewModeInit] = useState(false);
+  const [teamScope, setTeamScope] = useState<HolidayTeamScope>("current");
+  const [today, setToday] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setToday(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<DepartmentFilter>("all");
   const [selectedYear, setSelectedYear] = useState<LeaveYear>(() => String(new Date().getFullYear()));
@@ -98,6 +106,7 @@ const Holidays = () => {
   const resetPageState = useCallback(() => {
     setSearchQuery("");
     setDepartmentFilter("all");
+    setTeamScope("current");
     setSelectedEmployeeId(null);
     setFormulaOpen(false);
   }, []);
@@ -121,6 +130,7 @@ const Holidays = () => {
     }
   }, [holidayPrefs, viewModeInit]);
 
+  const employeesQuery = useEmployees(true);
   const periodsQuery = usePayrollPeriods();
   const { data: periods = [] } = periodsQuery;
   // Fetch each source once, across all pages. Historical years still feed carry-over.
@@ -131,7 +141,7 @@ const Holidays = () => {
   const adjustmentsQuery = useAllHolidayAdjustments();
   const { data: payrollEntries = [], isLoading: entriesLoading } = entriesQuery;
   const { data: adjustments = [] } = adjustmentsQuery;
-  const sourceQueries = [periodsQuery, paymentsQuery, balancesQuery, ledgerQuery, entriesQuery, adjustmentsQuery];
+  const sourceQueries = [employeesQuery, periodsQuery, paymentsQuery, balancesQuery, ledgerQuery, entriesQuery, adjustmentsQuery];
   const sourceError = sourceQueries.some(query => query.isError);
   const sourceLoading = sourceQueries.some(query => query.isLoading);
   const retrySources = () => { sourceQueries.forEach(query => { void query.refetch(); }); };
@@ -361,7 +371,11 @@ const Holidays = () => {
     return result;
   }, [yearData, legacyYearSummaries, payrollEntries]);
   const currentSummaries = allYearSummaries[selectedYear] || [];
-  const sourceReviewCount = currentSummaries.filter(row => row.requiresReview).length;
+  // Filter presentation after computing balances from the full historical sources.
+  const teamSummaries = useMemo(() => filterHolidayTeam(
+    currentSummaries, employeesQuery.data ?? [], teamScope, today,
+  ), [currentSummaries, employeesQuery.data, teamScope, today]);
+  const sourceReviewCount = teamSummaries.filter(row => row.requiresReview).length;
 
   // Build formula breakdown for a specific employee
   const openFormulaBreakdown = useCallback((employeeId: string) => {
@@ -504,12 +518,12 @@ const Holidays = () => {
 
   // Filter summaries
   const filteredSummaries = useMemo(() => {
-    return currentSummaries.filter(s => {
+    return teamSummaries.filter(s => {
       const matchesSearch = s.employeeName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDept = departmentFilter === "all" || s.department === departmentFilter;
       return matchesSearch && matchesDept;
     });
-  }, [currentSummaries, searchQuery, departmentFilter]);
+  }, [teamSummaries, searchQuery, departmentFilter]);
 
   // Totals
   const totals = useMemo(() => {
@@ -562,6 +576,11 @@ const Holidays = () => {
     const paymentsEmployeeCount = new Set(currentPayments.filter((p: any) => p.employee_id).map((p: any) => p.employee_id)).size;
     const isBalanceComplete = balanceEmployeeCount >= payrollEmployeeCount * 0.8; // 80% threshold
 
+    const auditTotals = currentSummaries.reduce((acc, row) => ({
+      accrued: acc.accrued + row.hoursAccrued, taken: acc.taken + row.hoursTaken,
+      carryOver: acc.carryOver + row.hoursCarriedOver, paid: acc.paid + row.totalPaid,
+      balance: acc.balance + row.balance,
+    }), { accrued: 0, taken: 0, carryOver: 0, paid: 0, balance: 0 });
     return {
       year,
       totalPayrollEntries: payrollEntries.length,
@@ -576,12 +595,12 @@ const Holidays = () => {
       accrualFromPayrollEntries: Math.round(totalAccruedFromEntries * 100) / 100,
       accrualRate: leaveRules?.accrualRate ?? 0.1207,
       expectedAccrual: Math.round(totalWorkedHours * (leaveRules?.accrualRate ?? 0.1207) * 100) / 100,
-      dashboardAccrued: Math.round(totals.accrued * 100) / 100,
-      dashboardTaken: Math.round(totals.taken * 100) / 100,
-      dashboardCarryOver: Math.round(totals.carryOver * 100) / 100,
-      dashboardPaid: Math.round(totals.paid * 100) / 100,
-      dashboardBalance: Math.round(totals.balance * 100) / 100,
-      overdrawnCount,
+      dashboardAccrued: Math.round(auditTotals.accrued * 100) / 100,
+      dashboardTaken: Math.round(auditTotals.taken * 100) / 100,
+      dashboardCarryOver: Math.round(auditTotals.carryOver * 100) / 100,
+      dashboardPaid: Math.round(auditTotals.paid * 100) / 100,
+      dashboardBalance: Math.round(auditTotals.balance * 100) / 100,
+      overdrawnCount: currentSummaries.filter(row => row.hoursTaken > row.hoursAccrued + row.hoursCarriedOver).length,
       sourceTables: {
         accrued: "payroll_entries.holiday_accrued_hours → filtered by payroll_periods.start_date",
         taken: "holiday_payments.hours → filtered by leave_year_start",
@@ -592,11 +611,11 @@ const Holidays = () => {
         employeeCount: "Union of employees in payroll_entries and holiday_payments for the year",
       },
     };
-  }, [selectedYear, payrollEntries, currentSummaries, currentPayments, totals, overdrawnCount, leaveRules, yearData]);
+  }, [selectedYear, payrollEntries, currentSummaries, currentPayments, leaveRules, yearData]);
 
   // Alerts
   const alerts = useMemo(() => {
-    return currentSummaries
+    return filteredSummaries
       .map(s => {
         const total = s.hoursAccrued + s.hoursCarriedOver;
         const usagePercent = total > 0 ? (s.hoursTaken / total) * 100 : 0;
@@ -617,13 +636,13 @@ const Holidays = () => {
         return null;
       })
       .filter(Boolean) as any[];
-  }, [currentSummaries]);
+  }, [filteredSummaries]);
 
   // Department summaries
   const departmentSummaries = useMemo(() => {
     const deptMap = new Map<string, { department: string; employeeCount: number; totalAccrued: number; totalTaken: number; totalPaid: number; usageSum: number; overdrawnCount: number }>();
 
-    currentSummaries.forEach(s => {
+    filteredSummaries.forEach(s => {
       if (!deptMap.has(s.department)) {
         deptMap.set(s.department, { department: s.department, employeeCount: 0, totalAccrued: 0, totalTaken: 0, totalPaid: 0, usageSum: 0, overdrawnCount: 0 });
       }
@@ -641,7 +660,7 @@ const Holidays = () => {
       ...d,
       avgUsagePercent: d.employeeCount > 0 ? d.usageSum / d.employeeCount : 0,
     }));
-  }, [currentSummaries]);
+  }, [filteredSummaries]);
 
   // Payment history for table
   const paymentHistory = useMemo(() => {
@@ -711,7 +730,7 @@ const Holidays = () => {
           <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
             <strong>{sourceReviewCount} employee balance{sourceReviewCount === 1 ? " needs" : "s need"} review.</strong> The figures below use the holiday ledger plus unposted accrual. Historical records disagree or are incomplete; no entitlement has been deleted or automatically transferred.
             <Button variant="outline" size="sm" className="ml-2" onClick={() => setSubTab("integrity")}>Review sources</Button>
-            <ul className="mt-2">{currentSummaries.filter(row => row.requiresReview).map(row => <li key={row.employeeId}>{row.employeeName}: ledger plus pending {formatHours(row.balance)}h; previous calculation {formatHours(row.legacyBalance ?? 0)}h.</li>)}</ul>
+            <ul className="mt-2">{teamSummaries.filter(row => row.requiresReview).map(row => <li key={row.employeeId}>{row.employeeName}: ledger plus pending {formatHours(row.balance)}h; previous calculation {formatHours(row.legacyBalance ?? 0)}h.</li>)}</ul>
           </div>
         )}
         {/* Leave Year Selector */}
@@ -744,6 +763,24 @@ const Holidays = () => {
               </div>
             </div>
           </Tabs>
+        </div>
+
+        <div className="rounded-xl border bg-card p-4 space-y-2">
+          <label htmlFor="holiday-team" className="text-sm font-medium">Whose holidays?</label>
+          <Select value={teamScope} onValueChange={(value: HolidayTeamScope) => setTeamScope(value)}>
+            <SelectTrigger id="holiday-team" className="w-full sm:w-64"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="current">Current team</SelectItem>
+              <SelectItem value="former">Former employees</SelectItem>
+              <SelectItem value="all">All records</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Overview, totals, alerts and departments follow this selection. Current team includes staff working their notice.
+            Former employees’ balances are retained for final settlement.
+            Payment history, employee lookup and audit checks always include all records.
+          </p>
+          {teamScope !== "all" && <p className="text-xs text-muted-foreground">{currentSummaries.length - teamSummaries.length} other employee records hidden from this view. All records also includes future starters and records without a matching employee profile.</p>}
         </div>
 
         {/* Stats — conditionally show balance summary based on preference */}
@@ -862,7 +899,7 @@ const Holidays = () => {
 
           {(searchQuery || departmentFilter !== "all") && (
             <p className="text-xs text-muted-foreground mt-2">
-              Showing {filteredSummaries.length} of {currentSummaries.length} employees
+              Showing {filteredSummaries.length} of {teamSummaries.length} employees
             </p>
           )}
 
@@ -871,7 +908,7 @@ const Holidays = () => {
             {entriesLoading ? (
               <LoadingSkeleton />
             ) : filteredSummaries.length === 0 ? (
-              <EmptyState hasFilters={!!(searchQuery || departmentFilter !== "all")} onClearFilters={() => { setSearchQuery(""); setDepartmentFilter("all"); }} />
+              <EmptyState onClearFilters={() => { setTeamScope("all"); setSearchQuery(""); setDepartmentFilter("all"); }} />
             ) : viewMode === "cards" ? (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredSummaries.map((summary, index) => (
@@ -981,7 +1018,7 @@ const Holidays = () => {
                     highlight={Math.abs(auditData.accrualFromPayrollEntries - auditData.expectedAccrual) > 5}
                   />
                   <AuditRow
-                    label="Dashboard Shows (accrued)"
+                    label="All records (accrued)"
                     value={formatHours(auditData.dashboardAccrued)}
                     highlight={Math.abs(auditData.dashboardAccrued - auditData.accrualFromPayrollEntries) > 1}
                   />
@@ -989,7 +1026,7 @@ const Holidays = () => {
               </div>
 
               <div className="border-t border-border pt-4">
-                <h4 className="text-sm font-semibold text-card-foreground mb-3">Dashboard Totals</h4>
+                <h4 className="text-sm font-semibold text-card-foreground mb-3">All-record totals for this leave year</h4>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <AuditRow label="Hours Accrued" value={formatHours(auditData.dashboardAccrued)} />
                   <AuditRow label="Hours Carried Over" value={formatHours(auditData.dashboardCarryOver)} />
@@ -1169,23 +1206,13 @@ function LoadingSkeleton() {
   );
 }
 
-function EmptyState({ hasFilters, onClearFilters }: { hasFilters: boolean; onClearFilters: () => void }) {
+function EmptyState({ onClearFilters }: { onClearFilters: () => void }) {
   return (
-    <div className="rounded-xl bg-card shadow-card p-12 text-center animate-fade-in">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-4">
-        <Users className="h-8 w-8 text-primary" />
-      </div>
-      <h3 className="text-lg font-semibold text-card-foreground mb-2">No holiday data found</h3>
-      <p className="text-muted-foreground max-w-md mx-auto">
-        {hasFilters
-          ? "No employees match your current filters."
-          : "Import payroll data to start tracking holiday accruals."}
-      </p>
-      {hasFilters && (
-        <Button variant="link" onClick={onClearFilters} className="mt-2">
-          Clear filters
-        </Button>
-      )}
+    <div className="rounded-xl bg-card shadow-card p-12 text-center">
+      <Users className="h-8 w-8 text-primary mx-auto mb-4" />
+      <h3 className="text-lg font-semibold mb-2">No matching holiday records</h3>
+      <p className="text-muted-foreground">No records match this team, leave year and search.</p>
+      <Button variant="link" onClick={onClearFilters} className="mt-2">View all employee records</Button>
     </div>
   );
 }
