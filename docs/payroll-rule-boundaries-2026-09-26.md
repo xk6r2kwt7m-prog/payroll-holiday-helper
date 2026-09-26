@@ -41,3 +41,7 @@ Payment-source amount checks may flag legacy debits with missing money values. R
 Current warning text says records are missing or inconsistent. Detailed per-source issue presentation and a controlled reconciliation workflow are still follow-ups. These checks are client-facing safeguards; server-enforced financial integrity remains mandatory.
 
 No authenticated production sessions, live records, legal entitlement audit or deployed-schema verification were performed. No migration, release, approval or email was executed.
+
+## Hosted check blocker discovered after publication
+
+GitHub run 36226661720 on PR #3 failed at `npm ci`: the existing package-lock.json is out of sync with package.json (including Supabase, Zod and missing packages). Its typecheck/tests/build were therefore skipped. Local results above used the existing installed dependencies and remain local results only. PR #4 inherits this blocker. Reconcile the lockfile against deliberately chosen/tested versions in a separate dependency change, perform a clean install and rerun all gates. Do not replace npm ci with an unpinned install or disable the check to hide the failure.
