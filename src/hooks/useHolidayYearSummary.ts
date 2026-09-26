@@ -38,7 +38,7 @@ export function useHolidayYearSummary(
     queryFn: async () => {
       return fetchAllRows((from, to) => supabase
         .from("holiday_payments")
-        .select("id, total")
+        .select("id, hours, total")
         .eq("employee_id", employeeId!)
         .eq("leave_year_start", leaveYearStart)
         .eq("leave_year_end", `${year}-12-31`)
