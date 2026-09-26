@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QuizTaker } from "@/components/training/QuizTaker";
 import { quizCanCompleteAssignment } from "@/lib/staff-training-journey";
 const state = vi.hoisted(() => ({ error: false, mutate: vi.fn() }));
-vi.mock("@/hooks/useTrainingLibrary", () => ({ useQuizQuestions: () => ({ data: [{ id: "q", question: "Synthetic question?", options: ["First", "Second"], correct_option: 0 }], isLoading: false, isError: state.error, refetch: vi.fn() }) }));
+vi.mock("@/hooks/useStaffAssessment", () => ({ useStaffAssessmentQuestions: () => ({ data: [{ id: "q", question: "Synthetic question?", options: ["First", "Second"], correct_option: 0 }], isLoading: false, isError: state.error, refetch: vi.fn() }) }));
 vi.mock("@/hooks/useTrainingModules", () => ({ useQuizAttempts: () => ({ data: [], isLoading: false, isError: state.error, refetch: vi.fn() }), useSubmitQuiz: () => ({ mutate: state.mutate, isPending: false }) }));
 afterEach(cleanup);
 beforeEach(() => { state.error = false; vi.clearAllMocks(); });
