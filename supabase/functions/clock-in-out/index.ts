@@ -142,8 +142,17 @@ Deno.serve(async (req) => {
     }
     const employee = empRows[0];
 
-    // NOTE (A02 review): an active-membership check is NOT added here, to preserve
-    // existing behaviour. Flagged for a separate decision.
+    // A switched-off membership must stop clocking. A missing membership is
+    // preserved temporarily for the documented legacy linked employee; it
+    // must be reconciled through the separate reviewed access workflow.
+    const { data: membership, error: membershipError } = await serviceClient
+      .from("tenant_members")
+      .select("is_active")
+      .eq("tenant_id", employee.tenant_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (membershipError) return json({ error: "Could not check your workspace access. Please try again." }, 503);
+    if (membership?.is_active === false) return json({ error: "Your workspace access is inactive. Ask a manager for help." }, 403);
 
     if (employee.status !== "active") {
       return new Response(

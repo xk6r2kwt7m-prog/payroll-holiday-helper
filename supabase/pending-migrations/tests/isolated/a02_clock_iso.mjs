@@ -164,9 +164,17 @@ await reset();
   check('same employee without workspace selector (older app) still clocks in', i.s === 200, JSON.stringify(i));
   await load(`${D}T17:00:00Z`, UX)({ action: 'clock_out' }); }
 await sql`update tenant_members set is_active=false where user_id=${U1}`;
+await reset();
 { const i = await load(`${D}T10:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
-  check('FINDING: revoked membership still clocks in (not addressed by PR #16)', i.s === 200, JSON.stringify(i)); }
+  check('revoked membership cannot clock in', i.s === 403 && (await entries()).length === 0, JSON.stringify(i)); }
+{ const [e] = await sql`insert into time_entries(employee_id,tenant_id,branch,department,clock_in_time,status) values (${E1},${A},'Carnaby','FOH',${D+'T09:00:00Z'},'clocked_in') returning id`;
+  const o = await load(`${D}T17:00:00Z`, U1)({ action: 'clock_out', tenant_id: A });
+  const [still] = await sql`select status from time_entries where id=${e.id}`;
+  check('revoked membership cannot close an existing open clock-in', o.s === 403 && still.status === 'clocked_in', JSON.stringify(o)); }
 await sql`update tenant_members set is_active=true where user_id=${U1}`;
+await reset();
+{ failTable = 'tenant_members'; const i = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' }); failTable = null;
+  check('membership check outage refuses clock-in without writing', i.s === 503 && (await entries()).length === 0, JSON.stringify(i)); }
 { const bRows = await sql`select 1 from time_entries where tenant_id=${B}`; check('workspace B untouched throughout', bRows.length === 0); }
 
 console.log('A02_ISO', JSON.stringify(R)); if (fails.length) console.log('FAILED:\n- ' + fails.join('\n- '));
