@@ -19,15 +19,11 @@ import { cn } from "@/lib/utils";
 import { ManagerTimesheetDialog } from "@/components/attendance/ManagerTimesheetDialog";
 import { computeFlags } from "@/components/attendance/TimesheetReviewPanel";
 import { toast } from "sonner";
+import { isBatchEligible } from "@/lib/time-entry-batch-review";
 
 /** Check if an entry is "clean" — pending with no blocking flags */
 function isCleanPending(entry: any): boolean {
-  if (entry.status !== "pending") return false;
-  if (!entry.clock_out_time) return false;
-  if (entry.total_hours == null || entry.total_hours <= 0) return false;
-  const flags = computeFlags(entry);
-  const hasBlockingFlag = flags.some(f => f.severity === "error");
-  return !hasBlockingFlag;
+  return isBatchEligible(entry, computeFlags(entry));
 }
 
 export function AttendanceReport() {

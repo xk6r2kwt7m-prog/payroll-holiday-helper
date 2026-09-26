@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,9 @@ function computeFlags(entry: any): { type: "time" | "location" | "approval"; lab
   if (!entry.clock_out_time && entry.status !== "clocked_in") {
     flags.push({ type: "time", label: "Missing clock-out", severity: "error" });
   }
+  if (entry.status === "pending" && (entry.total_hours == null || entry.total_hours <= 0)) {
+    flags.push({ type: "time", label: "Worked hours are missing or invalid", severity: "error" });
+  }
   if (!entry.shift_id) {
     flags.push({ type: "time", label: "Unscheduled shift", severity: "warning" });
   }
@@ -67,19 +70,37 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
   const [rejectNotes, setRejectNotes] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [reviewReason, setReviewReason] = useState("");
   const approveEntries = useApproveTimeEntries();
   const rejectEntry = useRejectTimeEntry();
   const { data: evidenceFiles = [] } = useEvidenceFiles({ employeeId: entry?.employee_id });
+
+  useEffect(() => {
+    if (open) setReviewReason("");
+  }, [open, entry?.id]);
 
   if (!entry) return null;
 
   const flags = computeFlags(entry);
   const hasFlags = flags.length > 0;
   const isPending = entry.status === "pending";
+  const invalidHours = !entry.clock_out_time || entry.total_hours == null || entry.total_hours <= 0;
 
   const handleApprove = async () => {
+    if (invalidHours) {
+      toast.error("Review the clock-out and worked hours before approval.");
+      return;
+    }
+    if (hasFlags && reviewReason.trim().length < 10) {
+      toast.error("Explain your review of the flagged timesheet (at least 10 characters).");
+      return;
+    }
     try {
-      await approveEntries.mutateAsync({ entryIds: [entry.id], mode: "approve_single" });
+      await approveEntries.mutateAsync({
+        entryIds: [entry.id], mode: "approve_single",
+        reviewReason: hasFlags ? reviewReason.trim() : undefined,
+        reviewedFlags: hasFlags ? flags.map(f => f.label) : undefined,
+      });
       toast.success("Approved");
       onClose();
     } catch (err: any) { toast.error(err.message); }
@@ -254,6 +275,14 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
           {isPending && (
             <>
               <Separator />
+              {hasFlags && (
+                <div className="space-y-1.5 pb-3">
+                  <label htmlFor="timesheet-review-reason" className="text-xs font-medium">Why is it appropriate to approve these flagged hours?</label>
+                  <Textarea id="timesheet-review-reason" value={reviewReason} onChange={e => setReviewReason(e.target.value)}
+                    placeholder="Record what you checked with the staff member or site" />
+                  <p className="text-xs text-muted-foreground">Your explanation is saved in the approval audit record.</p>
+                </div>
+              )}
               {showRejectForm ? (
                 <div className="space-y-2">
                   <Textarea
@@ -271,7 +300,7 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <Button onClick={handleApprove} disabled={approveEntries.isPending} className="flex-1">
+                  <Button onClick={handleApprove} disabled={approveEntries.isPending || invalidHours || (hasFlags && reviewReason.trim().length < 10)} className="flex-1">
                     <Check className="h-4 w-4 mr-2" /> Approve
                   </Button>
                   <Button variant="destructive" onClick={() => setShowRejectForm(true)} className="flex-1">
@@ -297,6 +326,7 @@ export function TimesheetReviewPanel({ entry, open, onClose, branchLocations }: 
               </p>
             </div>
           )}
+
         </div>
 
         {/* Manager edit dialog */}
