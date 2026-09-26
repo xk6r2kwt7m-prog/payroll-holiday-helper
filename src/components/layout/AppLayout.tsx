@@ -330,7 +330,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Main content */}
-      <main id="workspace-content" tabIndex={-1} className="flex-1 flex flex-col min-h-0 min-w-0">
+      <main id="workspace-content" tabIndex={-1} className={cn("flex-1 flex flex-col min-h-0 min-w-0", ["/", "/employees", "/payroll"].includes(location.pathname) && "ops-workspace")}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
