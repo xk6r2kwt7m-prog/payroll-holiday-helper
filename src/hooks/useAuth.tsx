@@ -15,6 +15,8 @@ interface AuthContextType {
   isManagerOrAbove: boolean;
   isSupervisorOrAbove: boolean;
   role: AppRole | null;
+  /** 'failed' when the role lookup errored — never treat as a basic role */
+  roleStatus: 'none' | 'loading' | 'resolved' | 'failed';
   loading: boolean;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -30,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [roleStatus, setRoleStatus] = useState<AuthContextType['roleStatus']>('loading');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setRole(null);
+      setRoleStatus(nextUserId ? 'loading' : 'none');
       setLoading(!!nextUserId);
       if (!nextUserId) return;
 
@@ -60,10 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .select('role').eq('user_id', nextUserId).maybeSingle();
           if (!active || request !== generation) return;
           const candidate = data?.role;
-          setRole(!error && candidate && Object.prototype.hasOwnProperty.call(ROLE_HIERARCHY, candidate)
-            ? candidate as AppRole : null);
+          const valid = !error && candidate && Object.prototype.hasOwnProperty.call(ROLE_HIERARCHY, candidate);
+          setRole(valid ? candidate as AppRole : null);
+          // No row = resolved with no role; an error or unrecognised value = failed.
+          setRoleStatus(error || (candidate && !valid) ? 'failed' : 'resolved');
         } catch {
-          if (active && request === generation) setRole(null);
+          if (active && request === generation) { setRole(null); setRoleStatus('failed'); }
         } finally {
           if (active && request === generation) setLoading(false);
         }
@@ -129,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isManagerOrAbove, isSupervisorOrAbove, role, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isManagerOrAbove, isSupervisorOrAbove, role, roleStatus, loading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

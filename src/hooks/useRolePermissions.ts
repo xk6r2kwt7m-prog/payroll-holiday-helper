@@ -69,12 +69,13 @@ export function useSaveRolePermissions() {
 
 /** Full decision: allowed, denied, or unresolved (loading / failed read). */
 export function usePermissionDecision(key: PermissionKey): PermissionDecision {
-  const { role, loading } = useAuth();
+  const { role, roleStatus, loading } = useAuth();
   const { isPlatformAdmin } = useTenant();
   const { data, isError } = useRoleOverrides();
   return decidePermission({
-    // A signed-in user without a role row keeps the existing staff defaults.
-    roles: loading ? null : [role ?? "staff"],
+    // A failed role lookup is unresolved — never basic staff access.
+    // A signed-in user with genuinely no role row keeps the existing staff defaults.
+    roles: loading || roleStatus === "failed" || roleStatus === "loading" ? null : [role ?? "staff"],
     key,
     isPlatformAdmin,
     overrides: data,
