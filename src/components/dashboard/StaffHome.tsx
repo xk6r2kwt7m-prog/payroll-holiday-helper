@@ -7,10 +7,11 @@ import {
   ClipboardList, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ClockStatusError } from "@/components/dashboard/ClockStatusError";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCurrentEmployee } from "@/hooks/useCurrentEmployee";
-import { ActiveClockInConflictError, useActiveClockIn, useClockInOut, useMyTimeEntries, useUpdateBreakMinutes } from "@/hooks/useTimeEntries";
+import { useActiveClockIn, useClockInOut, useMyTimeEntries, useUpdateBreakMinutes } from "@/hooks/useTimeEntries";
 import { useShifts, useBranchLocations } from "@/hooks/useSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, isTomorrow, differenceInMinutes } from "date-fns";
@@ -490,16 +491,7 @@ export function StaffHome() {
             : "border-border bg-card shadow-sm"
         )}>
           {employeeLookupFailed || activeEntryError ? (
-            <div role="alert" className="text-center space-y-3">
-              <p className="text-sm font-medium text-foreground">
-                {activeEntryError instanceof ActiveClockInConflictError
-                  ? activeEntryError.message
-                  : "We couldn't load your clock-in status. Please try again."}
-              </p>
-              {!(activeEntryError instanceof ActiveClockInConflictError) && (
-                <Button variant="outline" size="sm" onClick={() => { retryEmployee(); retryActiveEntry(); }}>Try again</Button>
-              )}
-            </div>
+            <ClockStatusError error={activeEntryError} onRetry={() => { retryEmployee(); retryActiveEntry(); }} />
           ) : activeEntry ? (
             <ActiveShiftCard
               activeEntry={activeEntry}
