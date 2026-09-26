@@ -8,8 +8,17 @@ import { useMyTimeEntries } from "@/hooks/useTimeEntries";
 import { ClockEventLocations } from "@/components/attendance/LocationMapPreview";
 
 export function TimesheetsSection() {
-  const { data: myEntries } = useMyTimeEntries();
+  const { data: myEntries, isError, refetch } = useMyTimeEntries();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  if (isError) {
+    return (
+      <div role="alert" className="rounded-xl border border-border bg-card p-4 text-center space-y-2">
+        <p className="text-sm text-foreground">We couldn't load your timesheets.</p>
+        <button type="button" className="text-sm font-medium text-primary underline" onClick={() => refetch()}>Try again</button>
+      </div>
+    );
+  }
 
   if (!myEntries || myEntries.length === 0) {
     return (

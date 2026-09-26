@@ -99,6 +99,7 @@ export function useActiveClockIn() {
 
 export function useClockInOut() {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   return useMutation({
     mutationFn: async (body: {
       action: "clock_in" | "clock_out";
@@ -112,8 +113,10 @@ export function useClockInOut() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
+      // tenant_id tells the server which workspace's employee record to use;
+      // the server verifies it against the signed-in user's own records.
       const response = await supabase.functions.invoke("clock-in-out", {
-        body,
+        body: { ...body, tenant_id: tenantId ?? undefined },
       });
 
       if (response.error) {
