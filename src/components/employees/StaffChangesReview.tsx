@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { maskTail } from "@/lib/employee-columns";
 import {
   isBankField,
+  useBankDetailVerifications,
   useDecideStaffDetailChange,
   useRecordRightToWorkDecision,
   useRightToWorkReview,
@@ -36,6 +37,7 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
   const verifyBank = useVerifyBankChange();
   const recordRtw = useRecordRightToWorkDecision();
   const autoDraft = useContractAutoDraft(employeeId);
+  const bankEvidence = useBankDetailVerifications(employeeId);
 
   const [name, setName] = useState("");
   const [notes, setNotes] = useState("");
@@ -43,7 +45,8 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
   const [rtwName, setRtwName] = useState("");
   const [rtwNotes, setRtwNotes] = useState("");
 
-  const pending = changes.filter((c) => c.state === "pending" && c.needs_review);
+  const pending = changes.filter((c) => c.needs_review && (c.state === "pending"
+    || (c.state === "accepted" && isBankField(c.field_name) && !bankEvidence.data?.includes(c.id))));
   const bankPending = pending.filter((c) => isBankField(c.field_name));
   const otherPending = pending.filter((c) => !isBankField(c.field_name));
   const decided = changes.filter((c) => c.state !== "pending").slice(0, 6);
@@ -57,6 +60,9 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
 
   const rtwState = rtw?.rtw_status ?? "not_submitted";
   const rtwUnverified = ["submitted", "pending_review", "requested"].includes(rtwState);
+
+  if (bankEvidence.isLoading) return <p role="status" className="text-sm">Checking staff review evidence…</p>;
+  if (bankEvidence.isError) return <div role="alert" className="space-y-2"><p>Could not load banking confirmation evidence. Retry before reviewing the submitted details.</p><Button variant="outline" onClick={() => void bankEvidence.refetch()}>Retry review</Button></div>;
 
   const row = (c: StaffDetailChange) => (
     <div key={c.id} className="rounded-md bg-background border border-border p-3 space-y-2">
