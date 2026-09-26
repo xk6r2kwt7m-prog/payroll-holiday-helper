@@ -456,7 +456,7 @@ export function SettleLeaverDialog() {
     if (holidayDate && holidayDate.slice(0, 4) !== String(leaveYear)) return "The settlement date must match the leave year under review.";
     if (!periodId) return "Select a draft payroll period.";
     if (!employeeId) return "Select an employee to settle.";
-    if (employeeSummaryRaw?.requiresReview) return "Review missing payment or accrual ledger records before settlement.";
+    if (employeeSummaryRaw?.requiresReview) return "Review missing or inconsistent payment and accrual records before settlement.";
     if (evidenceError) return "Some settlement evidence could not be loaded. Retry before settling.";
     if (evidenceLoading) return "Loading the complete settlement evidence.";
     if (summaryError) return "The holiday balance could not be loaded. Retry before settling.";

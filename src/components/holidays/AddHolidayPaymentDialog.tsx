@@ -320,7 +320,7 @@ export function AddHolidayPaymentDialog({ defaultEmployeeId, onSuccess }: AddHol
               {summaryError && <Button type="button" variant="outline" size="sm" onClick={retrySummary}>Retry</Button>}
             </div>
           )}
-          {employeeSummaryRaw?.requiresReview && <p role="alert" className="text-sm text-destructive">Some payment or accrued-leave records are missing from the holiday ledger. Review the source records before recording another payment.</p>}
+          {employeeSummaryRaw?.requiresReview && <p role="alert" className="text-sm text-destructive">Payment or accrued-leave records are missing or disagree with the holiday ledger. Review the source records before recording another payment.</p>}
           {/* Holiday Summary Card */}
           {employeeId && employeeSummary && (
             <div className={cn(
