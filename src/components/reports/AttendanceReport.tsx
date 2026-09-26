@@ -286,7 +286,7 @@ export function AttendanceReport() {
                       <TableCell className="text-xs">{e.clock_out_time ? format(new Date(e.clock_out_time), "HH:mm") : "–"}</TableCell>
                       <TableCell className="text-xs font-medium">{e.total_hours ?? "–"}</TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {e.clock_in_latitude ? (
+                        {e.clock_in_latitude != null && e.clock_in_longitude != null ? (
                           <div className="flex items-center gap-1">
                             <MapPin className={cn("h-3 w-3", e.clock_in_within_geofence === false ? "text-destructive" : "text-success")} />
                             <span className="text-[10px] text-muted-foreground">

@@ -12,6 +12,7 @@ import { useApproveTimeEntries, useRejectTimeEntry } from "@/hooks/useTimeEntrie
 import { useEvidenceFiles } from "@/hooks/useEvidence";
 import { toast } from "sonner";
 import { ManagerTimesheetDialog } from "./ManagerTimesheetDialog";
+import { clockLocationFlags } from "@/lib/clock-location-review";
 
 interface TimesheetReviewPanelProps {
   entry: any;
@@ -52,15 +53,7 @@ function computeFlags(entry: any): { type: "time" | "location" | "approval"; lab
   }
 
   // Location flags
-  if (entry.clock_in_within_geofence === false) {
-    flags.push({ type: "location", label: "Clock-in outside geofence", severity: "error" });
-  }
-  if (entry.clock_out_within_geofence === false && entry.clock_out_time) {
-    flags.push({ type: "location", label: "Clock-out outside geofence", severity: "error" });
-  }
-  if (!entry.clock_in_latitude && !entry.clock_in_longitude) {
-    flags.push({ type: "location", label: "No GPS data captured", severity: "warning" });
-  }
+  flags.push(...clockLocationFlags(entry));
   if (entry.manager_override) {
     flags.push({ type: "approval", label: "Manager override used", severity: "warning" });
   }

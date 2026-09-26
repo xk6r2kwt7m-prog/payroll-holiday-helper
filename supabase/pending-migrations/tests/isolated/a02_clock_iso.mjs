@@ -85,6 +85,18 @@ await reset();
   check('workspace selector not belonging to caller -> no record, nothing written', r.s === 404 && (await sql`select 1 from time_entries`).length === 0, JSON.stringify(r)); }
 { const r = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Brixton', latitude: 51.5130, longitude: -0.1390 });
   check('GPS at Carnaby while claiming Brixton refused', r.s === 403 && (await entries()).length === 0, JSON.stringify(r)); }
+await reset();
+{ const r = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby', latitude: 0, longitude: 0 });
+  check('valid zero coordinates outside geofence are refused', r.s === 403 && (await entries()).length === 0, JSON.stringify(r)); }
+{ const r = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby', latitude: 91, longitude: 0 });
+  check('invalid coordinates are refused', r.s === 400 && (await entries()).length === 0, JSON.stringify(r)); }
+await reset();
+{ const i = await load(`${D}T09:00:00Z`, U1)({ action: 'clock_in', tenant_id: A, branch: 'Carnaby' });
+  const o = await load(`${D}T17:00:00Z`, U1)({ action: 'clock_out', tenant_id: A, latitude: 0, longitude: 0 });
+  const [e] = await entries();
+  check('GPS unavailable clock-in and outside-area clock-out complete with review flags', i.s === 200 && i.b.requires_review === true &&
+    o.s === 200 && o.b.requires_review === true && e.clock_in_within_geofence === false && e.clock_out_within_geofence === false &&
+    e.clock_in_latitude === null && Number(e.clock_out_latitude) === 0, JSON.stringify([i, o])); }
 
 // ---- 2. normal day, validated shift, clock-out, hours trigger
 await reset();
