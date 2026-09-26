@@ -100,6 +100,7 @@ export function useContractAutoDraft(employeeId?: string): ContractAutoDraftResu
       needs_review: c.needs_review,
     })),
     rtwStatus: rtw?.rtw_status ?? null,
+    rtwExpiresOn: rtw?.rtw_expires_on ?? null,
     bankAwaitingDirectConfirmation,
     missingContractFields,
     hasContract: record?.hasContract ?? false,

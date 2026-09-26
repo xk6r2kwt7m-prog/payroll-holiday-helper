@@ -535,7 +535,8 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
   onOpenChange: (open: boolean) => void;
 }) {
   const { data: employees = [] } = useEmployees();
-  const { data: existingAssignments = [] } = useTrainingAssignments({ documentId: module.id });
+  const assignmentQuery = useTrainingAssignments({ documentId: module.id });
+  const existingAssignments = assignmentQuery.data ?? [];
   const createAssignments = useCreateAssignments();
   const updateStatus = useUpdateModuleStatus();
   const updateItem = useUpdateLibraryItem();
@@ -544,6 +545,8 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
   const isPlatform = module.source_type === "platform" && module.tenant_id === null;
   const isArchived = module.status === "archived";
   const canEdit = canManage && !isPlatform && !isArchived;
+  const assessmentLocked = !!module.published_at || module.status === "published" || isArchived || existingAssignments.length > 0;
+  const canEditAssessment = canEdit && !assessmentLocked && !assignmentQuery.isLoading && !assignmentQuery.isError;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [dueDate, setDueDate] = useState("");
   const [detailTab, setDetailTab] = useState("info");
@@ -594,13 +597,15 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
         summary: editForm.summary || null,
         description: editForm.description || null,
         category: editForm.category,
-        completion_type: editForm.completion_type,
+        ...(assessmentLocked ? {} : { completion_type: editForm.completion_type }),
         audience_scope: editForm.audience_scope,
         is_mandatory: editForm.is_mandatory,
         estimated_minutes: editForm.estimated_minutes ? parseInt(editForm.estimated_minutes) : null,
         refresher_days: editForm.refresher_days ? parseInt(editForm.refresher_days) : null,
-        pass_mark: parseInt(editForm.pass_mark) || 80,
-        requires_quiz: editForm.completion_type === "quiz" || editForm.completion_type === "blended",
+        ...(assessmentLocked ? {} : {
+          pass_mark: parseInt(editForm.pass_mark) || 80,
+          requires_quiz: editForm.completion_type === "quiz" || editForm.completion_type === "blended",
+        }),
       },
       changeSummary: `Fields changed: ${changedFields.join(", ") || "none"}`,
     }, {
@@ -831,7 +836,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                   </div>
                   <div>
                     <Label className="text-xs">Completion Type</Label>
-                    <Select value={editForm.completion_type} onValueChange={v => setEditForm(f => ({ ...f, completion_type: v as TrainingCompletionType }))}>
+                    <Select disabled={!canEditAssessment} value={editForm.completion_type} onValueChange={v => setEditForm(f => ({ ...f, completion_type: v as TrainingCompletionType }))}>
                       <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                       <SelectContent>{COMPLETION_TYPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
                     </Select>
@@ -861,7 +866,7 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
                     </Select>
                   </div>
                   {(editForm.completion_type === "quiz" || editForm.completion_type === "blended") && (
-                    <div><Label className="text-xs">Pass Mark (%)</Label><Input type="number" value={editForm.pass_mark} onChange={e => setEditForm(f => ({ ...f, pass_mark: e.target.value }))} className="h-8" /></div>
+                    <div><Label className="text-xs">Pass Mark (%)</Label><Input disabled={!canEditAssessment} type="number" value={editForm.pass_mark} onChange={e => setEditForm(f => ({ ...f, pass_mark: e.target.value }))} className="h-8" /></div>
                   )}
                 </div>
                 <div className="flex items-center justify-between py-1">
@@ -1040,7 +1045,9 @@ function ModuleDetailSheet({ module, open, onOpenChange }: {
 
           {module.requires_quiz && (
             <TabsContent value="quiz" className="mt-3">
-              <QuizBuilder moduleId={module.id} canEdit={canManage && !isPlatform} />
+              {assessmentLocked && <p className="mb-3 text-sm text-muted-foreground">These questions are locked to preserve staff results. Create a separate draft version before changing the assessment.</p>}
+              {assignmentQuery.isError && <p role="alert" className="mb-3 text-sm">Could not check existing assignments. Editing is unavailable until the check succeeds.</p>}
+              <QuizBuilder moduleId={module.id} canEdit={canEditAssessment} />
             </TabsContent>
           )}
           {canManage && (

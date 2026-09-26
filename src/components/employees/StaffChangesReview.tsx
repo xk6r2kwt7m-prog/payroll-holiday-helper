@@ -1,3 +1,4 @@
+import { effectiveRtwStatus } from "@/lib/right-to-work-review";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +33,8 @@ import {
 export function StaffChangesReview({ employeeId }: { employeeId: string }) {
   const { isAdmin } = useAuth();
   const { data: changes = [] } = useStaffDetailChanges(employeeId);
-  const { data: rtw } = useRightToWorkReview(employeeId);
+  const rtwQuery = useRightToWorkReview(employeeId);
+  const rtw = rtwQuery.data;
   const decide = useDecideStaffDetailChange();
   const verifyBank = useVerifyBankChange();
   const recordRtw = useRecordRightToWorkDecision();
@@ -44,6 +46,7 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [rtwName, setRtwName] = useState("");
   const [rtwNotes, setRtwNotes] = useState("");
+  const [rtwExpiry, setRtwExpiry] = useState<string | undefined>(undefined);
 
   const pending = changes.filter((c) => c.needs_review && (c.state === "pending"
     || (c.state === "accepted" && isBankField(c.field_name) && !bankEvidence.data?.includes(c.id))));
@@ -58,9 +61,10 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
     return revealed[c.id] ? value : maskTail(value);
   };
 
-  const rtwState = rtw?.rtw_status ?? "not_submitted";
+  const rtwState = effectiveRtwStatus(rtw?.rtw_status, rtw?.rtw_expires_on);
   const rtwUnverified = ["submitted", "pending_review", "requested"].includes(rtwState);
 
+  if (rtwQuery.isError) return <div role="alert"><p>Could not load right-to-work evidence.</p><Button onClick={() => void rtwQuery.refetch()}>Retry review</Button></div>;
   if (bankEvidence.isLoading) return <p role="status" className="text-sm">Checking staff review evidence…</p>;
   if (bankEvidence.isError) return <div role="alert" className="space-y-2"><p>Could not load banking confirmation evidence. Retry before reviewing the submitted details.</p><Button variant="outline" onClick={() => void bankEvidence.refetch()}>Retry review</Button></div>;
 
@@ -261,20 +265,27 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
               <Textarea
                 value={rtwNotes}
                 onChange={(e) => setRtwNotes(e.target.value)}
-                placeholder="What you checked (optional)"
+                placeholder="What you checked and where the evidence is held (required)"
+                aria-label="Right-to-work evidence review"
                 className="min-h-16 text-sm"
               />
+              <Label htmlFor="rtw-expiry">Permission expiry date, if applicable</Label>
+              <Input id="rtw-expiry" type="date" value={rtwExpiry ?? rtw?.rtw_expires_on ?? ""}
+                onChange={event => setRtwExpiry(event.target.value)} />
+              <p className="text-xs text-muted-foreground">Leave blank only where the check confirms no time limit. Uploading a document alone does not verify right to work.</p>
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   className="flex-1"
-                  disabled={recordRtw.isPending || !rtwName.trim()}
+                  disabled={recordRtw.isPending || !rtwName.trim() || !rtwNotes.trim() || !rtw?.updated_at || rtwQuery.isError || rtwQuery.isFetching}
                   onClick={() =>
                     recordRtw.mutate({
                       employeeId,
                       decision: "verified",
                       checkedByName: rtwName,
                       notes: rtwNotes,
+                      expiresOn: rtwExpiry ?? rtw?.rtw_expires_on ?? null,
+                      expectedUpdatedAt: rtw!.updated_at,
                     })
                   }
                 >
@@ -284,13 +295,15 @@ export function StaffChangesReview({ employeeId }: { employeeId: string }) {
                   size="sm"
                   variant="outline"
                   className="flex-1"
-                  disabled={recordRtw.isPending || !rtwName.trim()}
+                  disabled={recordRtw.isPending || !rtwName.trim() || !rtwNotes.trim() || !rtw?.updated_at || rtwQuery.isError || rtwQuery.isFetching}
                   onClick={() =>
                     recordRtw.mutate({
                       employeeId,
                       decision: "rejected",
                       checkedByName: rtwName,
                       notes: rtwNotes,
+                      expiresOn: rtwExpiry ?? rtw?.rtw_expires_on ?? null,
+                      expectedUpdatedAt: rtw!.updated_at,
                     })
                   }
                 >
